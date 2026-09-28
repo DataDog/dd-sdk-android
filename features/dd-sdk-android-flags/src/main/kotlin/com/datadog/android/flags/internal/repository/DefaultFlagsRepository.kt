@@ -36,6 +36,15 @@ internal class DefaultFlagsRepository(
     private var requestedContext: EvaluationContext? = null
     private val atomicState = AtomicReference<FlagsState?>(null)
 
+    @Volatile
+    private var closed = false
+
+    @Volatile
+    private var cacheLoadPending = true
+
+    @Volatile
+    private var onCacheLoadCompleted: (() -> Unit)? = null
+
     @Suppress("UnsafeThirdPartyFunctionCall") // Safe: count is positive constant (1)
     private val persistenceLoadedLatch = CountDownLatch(1)
 
@@ -54,8 +63,26 @@ internal class DefaultFlagsRepository(
                 }
             }
         } finally {
+            cacheLoadPending = false
             persistenceLoadedLatch.countDown()
         }
+        if (!closed) onCacheLoadCompleted?.invoke()
+    }
+
+    override fun close() {
+        closed = true
+        onCacheLoadCompleted = null
+    }
+
+    override fun hasLoadedConfiguration(): Boolean = atomicState.get() != null
+
+    override fun isCacheLoadPending(): Boolean = cacheLoadPending
+
+    override fun hasLoadedConfigurationForContext(context: EvaluationContext): Boolean =
+        atomicState.get()?.context == context
+
+    override fun setOnCacheLoadCompletedListener(listener: () -> Unit) {
+        onCacheLoadCompleted = listener
     }
 
     override fun setRequestedContext(context: EvaluationContext) {

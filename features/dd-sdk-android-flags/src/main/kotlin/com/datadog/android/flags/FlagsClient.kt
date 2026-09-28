@@ -219,6 +219,7 @@ interface FlagsClient {
     class Builder {
         private val name: String
         private val sdkCore: FeatureSdkCore
+        private var clientReadyPolicy: ClientReadyPolicy? = null
 
         /**
          * Creates a builder for a named [FlagsClient].
@@ -242,6 +243,16 @@ interface FlagsClient {
                 DEFAULT_CLIENT_NAME
             }
             this.sdkCore = sdkCore as FeatureSdkCore
+        }
+
+        /**
+         * Overrides the feature's initial readiness policy for this client.
+         *
+         * @param policy when initial loading can complete successfully.
+         * @return this [Builder] instance.
+         */
+        fun clientReadyPolicy(policy: ClientReadyPolicy): Builder = apply {
+            clientReadyPolicy = policy
         }
 
         /**
@@ -295,7 +306,9 @@ interface FlagsClient {
 
             return flagsFeature.getOrRegisterNewClient(name) {
                 createInternal(
-                    configuration = flagsFeature.flagsConfiguration,
+                    configuration = flagsFeature.flagsConfiguration.copy(
+                        clientReadyPolicy = clientReadyPolicy ?: flagsFeature.flagsConfiguration.clientReadyPolicy
+                    ),
                     featureSdkCore = sdkCore,
                     flagsFeature = flagsFeature,
                     evaluationsFeature = evaluationsFeature,
@@ -435,7 +448,8 @@ interface FlagsClient {
                 precomputeMapper = precomputeMapper,
                 flagStateManager = flagStateManager,
                 initializationTimeoutMs = configuration.initializationTimeoutMs,
-                initializationTimeoutScheduler = flagsFeature.initializationTimeoutScheduler
+                initializationTimeoutScheduler = flagsFeature.initializationTimeoutScheduler,
+                clientReadyPolicy = configuration.clientReadyPolicy
             )
 
             val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)

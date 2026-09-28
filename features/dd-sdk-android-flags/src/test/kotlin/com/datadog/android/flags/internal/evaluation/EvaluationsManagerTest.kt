@@ -110,6 +110,7 @@ internal class EvaluationsManagerTest {
 
     @BeforeEach
     fun setUp() {
+        whenever(mockFlagsStateManager.lifecycleLock).thenReturn(Any())
         mockWebServer = MockWebServer()
         mockWebServer.start()
         whenever(mockFlagsStateManager.lifecycleLock) doReturn Any()
@@ -331,6 +332,7 @@ internal class EvaluationsManagerTest {
 
         whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
         whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(publicContext)
+        whenever(mockFlagsRepository.hasLoadedConfigurationForContext(publicContext)).thenReturn(true)
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
             .thenReturn(null)
 

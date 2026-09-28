@@ -13,14 +13,13 @@ sealed class FlagsClientState {
     /**
      * The client is not ready to evaluate flags.
      *
-     * This state occurs before the first [setEvaluationContext()] call.
-     * Maps to OpenFeature's [NOT_READY] state.
+     * This is the initial state before loading begins. A cache readiness policy can
+     * publish Stale before the first evaluation context is set.
      */
     object NotReady : FlagsClientState()
 
     /**
-     * The client has successfully loaded flags and they are available for evaluation.
-     * This is the normal operational state.
+     * The client has accepted a network configuration and its assignments are available for evaluation.
      */
     object Ready : FlagsClientState()
 
@@ -31,8 +30,10 @@ sealed class FlagsClientState {
     object Reconciling : FlagsClientState()
 
     /**
-     * The client is currently stale.
-     * Cached flags may still be available for evaluation during this state.
+     * The client has retained assignments without a successful current network refresh.
+     * This includes disk-backed initialization and matching retained data after a refresh failure.
+     * Initialization can complete successfully in this state. Per-flag resolution reasons separately
+     * describe disk origin (CACHED) or a requested-context mismatch (STALE).
      */
     object Stale : FlagsClientState()
 

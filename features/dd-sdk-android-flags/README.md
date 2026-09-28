@@ -133,6 +133,63 @@ client.setEvaluationContext(context)
   - Transition to a user ID when the user authenticates.
 - All attribute values must be strings. Convert numbers, booleans, and other types to strings before passing them.
 
+### Choose initialization readiness
+
+`ClientReadyPolicy.NETWORK` is the default: initialization waits for the initial network attempt. If it fails, an installed configuration can satisfy initialization; if disk loading is still pending, initialization waits for that result or the configured initialization deadline. Initialization fails when both sources are exhausted without a configuration.
+
+Use `CACHE_OR_NETWORK` to finish initialization as soon as a valid disk configuration is installed. The network request continues. Any valid installed configuration qualifies, including an empty configuration or one belonging to a previous context. Native state is `Stale` for disk-backed availability and becomes `Ready` after an accepted network response. Successful initialization does not require state `Ready`. This is a Datadog convention: disk data has not been revalidated during this initialization epoch; disk origin alone does not require OpenFeature STALE.
+
+After enabling Flags, create the public client and register a state listener:
+
+```kotlin
+val client = FlagsClient.Builder("checkout")
+    .clientReadyPolicy(ClientReadyPolicy.CACHE_OR_NETWORK)
+    .build()
+
+val listener = object : FlagsStateListener {
+    override fun onStateChanged(newState: FlagsClientState) {
+        // Observe availability/freshness here; dispatch UI work to the main thread.
+        // Resolve a flag at its actual point of use rather than evaluating all flags.
+        println("Flags state: $newState")
+    }
+}
+client.state.addListener(listener) // Immediately receives the current state.
+
+client.setEvaluationContext(
+    EvaluationContext(targetingKey = "user-123"),
+    object : EvaluationContextCallback {
+        override fun onSuccess() {
+            // The first callback succeeds once under the selected policy.
+            // A cache completion can happen synchronously or on the disk-loading thread.
+            println("Initial flag configuration is available")
+        }
+
+        override fun onFailure(error: Throwable) {
+            // Apply the application's initialization failure behavior.
+            println("Flag initialization failed: ${error.message}")
+        }
+    }
+)
+
+// At the point where the application actually uses this flag:
+val details = client.resolve("new-checkout", false)
+val useNewCheckout = details.value
+val reason = details.reason
+
+// When this observer is no longer needed:
+client.state.removeListener(listener)
+```
+
+The example uses the public `FlagsClient` interface; its `DatadogFlagsClient` implementation is internal. You can also set the policy for all newly created clients with `FlagsConfiguration.Builder().clientReadyPolicy(...)`. A named builder returns an existing client if one is already registered; it does not reconfigure that instance.
+
+For successful resolutions, `CACHED` means the assignment was loaded from disk and no differing context has been requested. `STALE` means the currently requested context differs from the assignment's context; it can apply to either disk-loaded or previously fetched assignments. This mismatch overlay is Datadog's chosen precedence for the STALE reason, not the complete OpenFeature definition. Accepted network responses retain their original reasons. An empty configuration can complete initialization but cannot provide a successful flag resolution. Resolution errors retain `ERROR` and the supplied default value.
+
+State and reason describe the current availability and evaluation. They do not record the exact historical trigger of initialization: `STALE` masks disk versus network origin, empty configurations provide no successful reason, and state and resolution reads are not an atomic pair. State `Stale` plus reason `CACHED` identifies disk-origin data without a context mismatch, but does not distinguish early disk readiness from fallback after a failed network attempt. No readiness-trigger metadata is exposed.
+
+The initialization deadline bounds the first callback only. Late disk/network results can recover the client without completing that callback twice. A superseded context operation reports its own outcome without replacing the newer assignments or state.
+
+The OpenFeature adapter uses its existing provider event stream. The pinned Kotlin SDK can overwrite a native `Stale` state with SDK `READY` when initialization returns normally; do not infer native freshness from OpenFeature client status. Use this native API when that distinction matters. Configuration-change notifications and per-flag observation are separate from this readiness policy.
+
 ### Evaluate feature flags
 
 The `FlagsClient` provides two ways to resolve flag values:

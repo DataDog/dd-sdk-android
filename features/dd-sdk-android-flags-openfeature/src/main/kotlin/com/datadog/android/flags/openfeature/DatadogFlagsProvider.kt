@@ -9,6 +9,7 @@ package com.datadog.android.flags.openfeature
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.ClientReadyPolicy
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
@@ -42,7 +43,8 @@ import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationCont
  * Create a [FlagsClient] and wrap it with the extension function:
  *
  * ```kotlin
- * import com.datadog.android.flags.FlagsClient
+ * import com.datadog.android.flags.ClientReadyPolicy
+import com.datadog.android.flags.FlagsClient
  * import com.datadog.android.flags.openfeature.asOpenFeatureProvider
  * import dev.openfeature.kotlin.sdk.OpenFeatureAPI
  *
@@ -96,7 +98,9 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * If an initial context is provided, it will be set on the [FlagsClient] before waiting, otherwise
      * an empty context will be used in order to initialize the underlying [FlagsClient].
      *
-     * The method suspends while the [FlagsClient] in turn, takes the context and fetches the flags from the server.
+     * The method suspends until the client's initial readiness policy is satisfied or initialization fails.
+     * Cache readiness can complete this method before the background network refresh finishes if the
+     * policy is set to [ClientReadyPolicy.CACHE_OR_NETWORK].
      *
      * @param initialContext The initial evaluation context to set (optional)
      * @throws OpenFeatureError if initialization fails or reaches the configured Flags initialization timeout
@@ -191,17 +195,17 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     /**
      * Returns a Flow that emits provider state change events.
      *
-     * Per the OpenFeature spec, providers emit only certain events - others are handled
-     * by the SDK automatically:
+     * The pinned OpenFeature Kotlin SDK derives some lifecycle status changes from
+     * initialize/context callbacks, following the legacy specification lifecycle model:
      *
      * **Provider emits** (via this Flow):
      * - [FlagsClientState.Ready] → [OpenFeatureProviderEvents.ProviderReady]
      * - [FlagsClientState.Stale] → [OpenFeatureProviderEvents.ProviderStale]
      * - [FlagsClientState.Error] → [OpenFeatureProviderEvents.ProviderError]
      *
-     * **SDK emits** (not from provider):
-     * - [PROVIDER_RECONCILING]: SDK emits while [onContextSet] is executing
-     * - [PROVIDER_CONTEXT_CHANGED]: SDK emits when [onContextSet] completes
+     * **SDK status updates** (not provider event types):
+     * - Reconciling while [onContextSet] is executing
+     * - Ready when [initialize] or [onContextSet] completes normally
      *
      * **Filtered** (not emitted):
      * - [FlagsClientState.NotReady]: Pre-initialization state, [initialize] blocks
@@ -218,7 +222,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
             override fun onStateChanged(newState: FlagsClientState) {
                 val providerEvent: OpenFeatureProviderEvents? = when (newState) {
                     FlagsClientState.NotReady -> null // SDK handles via blocking initialize()
-                    FlagsClientState.Reconciling -> null // SDK emits PROVIDER_RECONCILING
+                    FlagsClientState.Reconciling -> null // SDK manages reconciliation status
                     FlagsClientState.Ready -> OpenFeatureProviderEvents.ProviderReady
                     FlagsClientState.Stale -> OpenFeatureProviderEvents.ProviderStale
                     is FlagsClientState.Error -> newState.error.let { cause ->

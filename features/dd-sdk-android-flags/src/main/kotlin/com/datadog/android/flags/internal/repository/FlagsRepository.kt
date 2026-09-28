@@ -10,8 +10,14 @@ import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.tools.annotation.NoOpImplementation
 
+@Suppress("TooManyFunctions") // Assignment reads, writes and internal lifecycle notifications.
 @NoOpImplementation
 internal interface FlagsRepository {
+    fun close()
+    fun hasLoadedConfiguration(): Boolean
+    fun isCacheLoadPending(): Boolean
+    fun hasLoadedConfigurationForContext(context: EvaluationContext): Boolean
+    fun setOnCacheLoadCompletedListener(listener: () -> Unit)
     fun getPrecomputedFlag(key: String): PrecomputedFlag?
     fun getEvaluationContext(): EvaluationContext?
     fun setRequestedContext(context: EvaluationContext)
