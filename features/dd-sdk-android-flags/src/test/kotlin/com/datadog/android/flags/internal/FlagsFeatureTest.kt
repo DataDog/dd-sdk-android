@@ -11,9 +11,11 @@ import android.content.pm.ApplicationInfo
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -257,6 +259,53 @@ internal class FlagsFeatureTest {
 
         // Then
         assertThat(timeoutCompleted.await(1, TimeUnit.SECONDS)).isTrue()
+    }
+
+    @Test
+    fun `M reject reentrant client registration W onStop drains registry`(forge: Forge) {
+        val fakeClientName = forge.anAlphabeticalString()
+        val mockClient = mock<DatadogFlagsClient>()
+        val mockClientFactory = mock<() -> FlagsClient>()
+        whenever(mockClientFactory.invoke()).thenReturn(mock<DatadogFlagsClient>())
+        val reentrantClient = AtomicReference<FlagsClient>()
+        testedFeature.onInitialize(mockContext)
+        testedFeature.getOrRegisterNewClient(fakeClientName) { mockClient }
+        whenever(mockClient.stop()).thenAnswer {
+            reentrantClient.set(testedFeature.getOrRegisterNewClient(fakeClientName, mockClientFactory))
+            null
+        }
+
+        testedFeature.onStop()
+
+        assertThat(reentrantClient.get()).isInstanceOf(NoOpFlagsClient::class.java)
+        assertThat(testedFeature.getClient(fakeClientName)).isNull()
+        verifyNoInteractions(mockClientFactory)
+        verify(mockClient).stop()
+    }
+
+    @Test
+    fun `M allow fresh registration W initialize after stop`(forge: Forge) {
+        val fakeClientName = forge.anAlphabeticalString()
+        val mockOldClient = mock<DatadogFlagsClient>()
+        val mockFreshClient = mock<DatadogFlagsClient>()
+        val mockStoppedFactory = mock<() -> FlagsClient>()
+        val mockFreshFactory = mock<() -> FlagsClient>()
+        whenever(mockStoppedFactory.invoke()).thenReturn(mock<DatadogFlagsClient>())
+        whenever(mockFreshFactory.invoke()).thenReturn(mockFreshClient)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.getOrRegisterNewClient(fakeClientName) { mockOldClient }
+        testedFeature.onStop()
+
+        val stoppedClient = testedFeature.getOrRegisterNewClient(fakeClientName, mockStoppedFactory)
+        testedFeature.onInitialize(mockContext)
+        val restartedClient = testedFeature.getOrRegisterNewClient(fakeClientName, mockFreshFactory)
+
+        assertThat(stoppedClient).isInstanceOf(NoOpFlagsClient::class.java)
+        verifyNoInteractions(mockStoppedFactory)
+        assertThat(restartedClient).isSameAs(mockFreshClient)
+        assertThat(testedFeature.getClient(fakeClientName)).isSameAs(mockFreshClient)
+        verify(mockFreshFactory).invoke()
+        verify(mockOldClient).stop()
     }
 
     // endregion

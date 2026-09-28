@@ -61,6 +61,9 @@ internal class FlagsFeature(
      */
     private val registeredClients: MutableMap<String, FlagsClient> = mutableMapOf()
 
+    // Guarded by registeredClients, including admission before invoking a client factory.
+    private var isStopped = false
+
     // region Storage Feature
 
     override val storageConfiguration = FeatureStorageConfiguration.DEFAULT
@@ -112,29 +115,34 @@ internal class FlagsFeature(
     override val name: String = FLAGS_FEATURE_NAME
 
     override fun onInitialize(appContext: Context) {
-        if (isInitialized) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { "onInitialize called multiple times - ignoring duplicate call" }
+        synchronized(registeredClients) {
+            if (isInitialized) {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.MAINTAINER,
+                    { "onInitialize called multiple times - ignoring duplicate call" }
+                )
+                return
+            }
+            isDebugBuild = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+            dataWriter = createDataWriter()
+            processor = ExposureEventsProcessor(
+                writer = dataWriter,
+                timeProvider = sdkCore.timeProvider
             )
-            return
+            isInitialized = true
+            isStopped = false
         }
-        isDebugBuild = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-        isInitialized = true
-        dataWriter = createDataWriter()
-        processor = ExposureEventsProcessor(
-            writer = dataWriter,
-            timeProvider = sdkCore.timeProvider
-        )
     }
 
     override fun onStop() {
-        dataWriter = NoOpRecordWriter()
-        isInitialized = false // Allow re-initialization if feature is restarted
         val clients = synchronized(registeredClients) {
+            isStopped = true
+            dataWriter = NoOpRecordWriter()
+            isInitialized = false // Allow re-initialization if feature is restarted
             registeredClients.values.toList().also { registeredClients.clear() }
         }
+        // Client listeners may reenter the registry, so drain outside its lock.
         clients.filterIsInstance<DatadogFlagsClient>().forEach { it.stop() }
     }
 
@@ -150,8 +158,10 @@ internal class FlagsFeature(
      */
     internal fun getClient(name: String): FlagsClient? = synchronized(registeredClients) { registeredClients[name] }
 
+    @Suppress("ReturnCount") // Stop guards must run in both registry critical sections.
     internal fun getOrRegisterNewClient(name: String, newClientFactory: () -> FlagsClient): FlagsClient {
         val existingClient = synchronized(registeredClients) {
+            if (isStopped) return stoppedClient(name)
             registeredClients[name]
         }
         if (existingClient != null) {
@@ -167,6 +177,7 @@ internal class FlagsFeature(
 
         // Need to check again since we dropped the lock to log above.
         return synchronized(registeredClients) {
+            if (isStopped) return stoppedClient(name)
             registeredClients[name] ?: run {
                 val newClient = newClientFactory()
                 registeredClients[name] = newClient
@@ -174,6 +185,12 @@ internal class FlagsFeature(
             }
         }
     }
+
+    private fun stoppedClient(name: String): FlagsClient = NoOpFlagsClient(
+        name = name,
+        reason = "Flags feature stopped",
+        logWithPolicy = { message, level -> logErrorWithPolicy(message, level) }
+    )
 
     internal fun unregisterClient(name: String) = registeredClients.remove(name)
 
