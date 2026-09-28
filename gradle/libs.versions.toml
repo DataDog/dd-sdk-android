@@ -112,7 +112,7 @@ ktorServer = "3.0.0-rc-1"
 
 # Otel
 jctools = "3.3.0"
-openTelemetry = "1.40.0"
+openTelemetry = "1.62.0"
 re2j = "1.7"
 material3Android = "1.1.2"
 
