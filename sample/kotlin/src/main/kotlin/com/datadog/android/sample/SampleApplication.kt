@@ -79,9 +79,11 @@ import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
 import io.opentelemetry.api.GlobalOpenTelemetry
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -269,11 +271,10 @@ class SampleApplication : Application() {
             targetingKey = userId,
             attributes = attributes
         )
-        OpenFeatureAPI.setProvider(provider, initialContext = context)
-
-        // Observe provider errors separately from the client status shown by the UI.
-        applicationScope.launch {
-            OpenFeatureAPI.observe<OpenFeatureProviderEvents.ProviderError>()
+        // Subscribe on the main thread before initialization can emit transient errors.
+        // Observe this provider directly: API observation switches providers asynchronously.
+        applicationScope.launch(Dispatchers.Main.immediate, start = CoroutineStart.UNDISPATCHED) {
+            provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderError>()
                 .catch { error ->
                     GlobalRumMonitor.get().addError(
                         "OpenFeature observer error",
@@ -295,6 +296,7 @@ class SampleApplication : Application() {
                     )
                 }
         }
+        OpenFeatureAPI.setProvider(provider, initialContext = context)
     }
 
     private fun initializeLogs() {

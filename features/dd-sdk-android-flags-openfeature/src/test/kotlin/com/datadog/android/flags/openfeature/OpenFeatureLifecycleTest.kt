@@ -425,6 +425,42 @@ internal class OpenFeatureLifecycleTest {
         }
     }
 
+    @Test
+    fun `M capture transient startup error W provider observer subscribed before initialization`() = runTest {
+        val fixture = Fixture()
+        val errors = mutableListOf<OpenFeatureProviderEvents.ProviderError>()
+        // Eager dispatcher models Main.immediate during Application.onCreate.
+        val subscription = backgroundScope.launch(
+            UnconfinedTestDispatcher(testScheduler),
+            start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED
+        ) {
+            fixture.provider.observe().collect { event ->
+                if (event is OpenFeatureProviderEvents.ProviderError) errors.add(event)
+            }
+        }
+        try {
+            assertThat(fixture.state.listenerCount).isEqualTo(1)
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            val initialization = async(dispatcher) {
+                OpenFeatureAPI.setProviderAndWait(fixture.provider, ImmutableContext("user"), dispatcher)
+            }
+            testScheduler.runCurrent()
+            fixture.state.update(FlagsClientState.Error(IllegalStateException("Transient startup failure")))
+            fixture.state.update(FlagsClientState.Ready)
+            fixture.callback.onSuccess()
+            testScheduler.runCurrent()
+            initialization.await()
+            assertThat(errors).hasSize(1)
+            assertThat(errors.single().eventDetails?.message).isEqualTo("Transient startup failure")
+            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Ready)
+        } finally {
+            subscription.cancel()
+            OpenFeatureAPI.shutdown()
+            testScheduler.runCurrent()
+        }
+        assertThat(fixture.state.listenerCount).isZero()
+    }
+
     private class Fixture {
         val state = TestStateObservable()
         val flagsClient = mock<FlagsClient>()
