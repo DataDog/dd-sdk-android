@@ -44,7 +44,7 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum._RumInternalProxy
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
@@ -113,9 +113,9 @@ internal class DatadogRumMonitor(
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
     private val viewEventMapper: ViewEventMapper,
-    rumViewEventWriteConfig: RumViewEventWriteConfig,
+    viewEventWriteConfig: ViewEventWriteConfig,
     heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
-    timeseriesCollectorFactory: TimeseriesCollector.Factory
+    timeseriesCollector: TimeseriesCollector
 ) : RumMonitor, AdvancedRumMonitor {
 
     @Volatile private var cachedViewUrl: String? = null
@@ -142,9 +142,9 @@ internal class DatadogRumMonitor(
         rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
         insightsCollector = insightsCollector,
         viewEventMapper = viewEventMapper,
-        rumViewEventWriteConfig = rumViewEventWriteConfig,
+        viewEventWriteConfig = viewEventWriteConfig,
         heatmapIdentifierRegistry = heatmapIdentifierRegistry,
-        timeseriesCollectorFactory = timeseriesCollectorFactory
+        timeseriesCollector = timeseriesCollector
     )
 
     internal var debugListener: RumDebugListener? = null

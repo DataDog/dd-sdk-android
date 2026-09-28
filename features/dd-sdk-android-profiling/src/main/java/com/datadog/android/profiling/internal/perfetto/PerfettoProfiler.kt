@@ -173,7 +173,6 @@ internal class PerfettoProfiler(
                     fileSize = fileSizeSafe(result.resultFilePath, internalLogger),
                     durationMs = duration,
                     resultCallbackDelayMs = resultCallbackDelayMs,
-                    clientClockDriftMs = timeProvider.getServerOffsetMillis(),
                     stopReason = resolveStopReason(result.errorCode),
                     bufferSizeKb = BUFFER_SIZE_KB,
                     samplingFrequencyHz = profilingSamplingRateHz

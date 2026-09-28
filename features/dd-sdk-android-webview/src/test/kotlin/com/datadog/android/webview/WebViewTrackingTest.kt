@@ -693,10 +693,10 @@ internal class WebViewTrackingTest {
         }
 
         whenever(
-            mockCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
+            mockCore.getFeature(Feature.WEB_RUM_FEATURE_NAME)
         ) doReturn mockWebViewRumFeature
         whenever(
-            mockCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
+            mockCore.getFeature(Feature.WEB_LOGS_FEATURE_NAME)
         ) doReturn mockWebViewLogsFeature
 
         whenever(mockCore.registerFeature(any())) doAnswer {

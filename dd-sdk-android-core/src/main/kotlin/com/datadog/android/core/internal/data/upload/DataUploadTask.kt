@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.data.upload
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.storage.RawBatchEvent
@@ -29,6 +30,7 @@ internal class DataUploadTask(
     private val systemInfoProvider: SystemInfoProvider,
     internal val uploadSchedulerStrategy: UploadSchedulerStrategy,
     internal val maxBatchesPerJob: Int,
+    private val internalLogger: InternalLogger,
     private val benchmarkUploads: BenchmarkUploads = BenchmarkUploads()
 ) : Callable<Long> {
 
@@ -40,32 +42,53 @@ internal class DataUploadTask(
      * @return the delay in ms before the next cycle should run.
      */
     @WorkerThread
+    @Suppress("NestedBlockDepth")
     override fun call(): Long {
         var uploadAttempts = 0
         var lastBatchUploadStatus: UploadStatus? = null
-        if (isNetworkAvailable() && isSystemReady()) {
-            val context = contextProvider.getContext(withFeatureContexts = emptySet())
-            var batchConsumerAvailableAttempts = maxBatchesPerJob
-            do {
-                benchmarkUploads.incrementBenchmarkUploadsCount(
-                    featureName = featureName
+        try {
+            if (isNetworkAvailable() && isSystemReady()) {
+                val context = contextProvider.getContext(withFeatureContexts = emptySet())
+                var batchConsumerAvailableAttempts = maxBatchesPerJob
+                do {
+                    benchmarkUploads.incrementBenchmarkUploadsCount(
+                        featureName = featureName
+                    )
+                    batchConsumerAvailableAttempts--
+                    lastBatchUploadStatus = handleNextBatch(context)
+                    if (lastBatchUploadStatus != null) {
+                        uploadAttempts++
+                    }
+                } while (
+                    batchConsumerAvailableAttempts > 0 && lastBatchUploadStatus is UploadStatus.Success
                 )
-                batchConsumerAvailableAttempts--
-                lastBatchUploadStatus = handleNextBatch(context)
-                if (lastBatchUploadStatus != null) {
-                    uploadAttempts++
-                }
-            } while (
-                batchConsumerAvailableAttempts > 0 && lastBatchUploadStatus is UploadStatus.Success
+            }
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { "$featureName: data upload cycle threw an uncaught exception" },
+                e
             )
+            lastBatchUploadStatus = UploadStatus.UnknownException(e)
         }
 
-        return uploadSchedulerStrategy.getMsDelayUntilNextUpload(
-            featureName,
-            uploadAttempts,
-            lastBatchUploadStatus?.code,
-            lastBatchUploadStatus?.throwable
-        )
+        return try {
+            uploadSchedulerStrategy.getMsDelayUntilNextUpload(
+                featureName,
+                uploadAttempts,
+                lastBatchUploadStatus?.code,
+                lastBatchUploadStatus?.throwable
+            )
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { "$featureName: uploadSchedulerStrategy threw while computing the next delay" },
+                e
+            )
+            DefaultUploadSchedulerStrategy.NETWORK_ERROR_DELAY_MS
+        }
     }
 
     // endregion

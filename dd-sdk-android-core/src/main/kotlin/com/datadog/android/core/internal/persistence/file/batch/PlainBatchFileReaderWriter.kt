@@ -217,7 +217,7 @@ internal class PlainBatchFileReaderWriter(
         return result
     }
 
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "LongMethod")
     @Throws(IOException::class)
     private fun readBlock(
         stream: InputStream,
@@ -262,7 +262,24 @@ internal class PlainBatchFileReaderWriter(
         }
 
         val dataSize = headerBuffer.int
-        val dataBuffer = ByteArray(dataSize)
+        if (dataSize < 0) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { ERROR_CORRUPTED_BLOCK_SIZE },
+                additionalProperties = telemetryContext.asAttributesMap(
+                    bytesLost = remaining,
+                    TELEMETRY_BATCH_OPERATION to "Block(${expectedBlockType.name}):Data read",
+                    TELEMETRY_BATCH_BYTES_ACTUAL to dataSize
+                )
+            )
+            return BlockReadResult(null, headerReadBytes)
+        }
+
+        // dataSize comes straight from the file, so a corrupted header could ask for way more
+        // than we have room for - cap it at what's left so we don't try to allocate something huge
+        @Suppress("UnsafeThirdPartyFunctionCall") // dataSize is validated to be non-negative above
+        val dataBuffer = ByteArray(minOf(dataSize, remaining))
 
         @Suppress("UnsafeThirdPartyFunctionCall") // method declares throwing IOException
         val dataReadBytes = stream.read(dataBuffer)
@@ -358,6 +375,7 @@ internal class PlainBatchFileReaderWriter(
         internal const val ERROR_UNEXPECTED_EOF = "Unexpected EOF"
         internal const val ERROR_UNEXPECTED_BLOCK_TYPE_MET = "Unexpected block type identifier met"
         internal const val ERROR_UNEXPECTED_NUMBERS_OF_BYTES = "Number of bytes read doesn't match with expected"
+        internal const val ERROR_CORRUPTED_BLOCK_SIZE = "Corrupted block: declared data size is invalid"
         internal const val WARNING_NOT_ALL_DATA_READ =
             "File %s is probably corrupted, not all content was read."
     }

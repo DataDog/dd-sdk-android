@@ -12,7 +12,7 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
@@ -82,7 +82,7 @@ internal class RumViewEventWriterTest {
         }
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
         testedWriter = RumViewEventWriterImpl(
-            config = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            config = ViewEventWriteConfig.FullViewOnlyAtStart,
             viewEventMapper = mockViewEventMapper,
             sdkCore = rumMonitor.mockSdkCore
         )

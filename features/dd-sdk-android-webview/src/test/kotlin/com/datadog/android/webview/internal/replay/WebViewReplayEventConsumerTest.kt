@@ -116,7 +116,7 @@ internal class WebViewReplayEventConsumerTest {
         ) doReturn fakeRumContext
 
         whenever(
-            mockSdkCore.getFeature(WebViewReplayFeature.WEB_REPLAY_FEATURE_NAME)
+            mockSdkCore.getFeature(Feature.WEB_SESSION_REPLAY_FEATURE_NAME)
         ) doReturn mockSessionReplayFeatureScope
         whenever(mockEventWriteScope.invoke(any())) doAnswer {
             val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)

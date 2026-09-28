@@ -9,6 +9,8 @@ package com.datadog.android.sdk.integration.rum
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
+import androidx.test.runner.lifecycle.Stage
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.model.TimeseriesCpuEvent
 import com.datadog.android.rum.model.TimeseriesMemoryEvent
@@ -23,18 +25,50 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.RuleChain
+import org.junit.rules.TestRule
 import org.junit.runner.RunWith
+import org.junit.runners.model.Statement
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 internal class TimeseriesCollectionTest {
 
-    @get:Rule
-    val mockServerRule = RumMockServerActivityTestRule(
+    private val mockServerRule = RumMockServerActivityTestRule(
         TimeseriesTrackingPlaygroundActivity::class.java,
         keepRequests = true,
         trackingConsent = TrackingConsent.GRANTED
     )
+
+    // TODO RUM-18601: ProcessLifecycleMonitor's counters desync when it registers after activity already started.
+    // Waiting here, outside mockServerRule, runs before that Activity launches (Rule#before order), so it blocks
+    // the launch until the process is genuinely idle instead of racing it. Real fix will be made in
+    // ProcessLifecycleMonitor itself (identity-based tracking); this only protects this test class.
+    private val quiescentProcessRule = TestRule { base, _ ->
+        object : Statement() {
+            override fun evaluate() {
+                waitForNoForegroundActivities()
+                base.evaluate()
+            }
+        }
+    }
+
+    @get:Rule
+    val ruleChain: RuleChain = RuleChain.outerRule(quiescentProcessRule).around(mockServerRule)
+
+    private fun waitForNoForegroundActivities() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        ConditionWatcher {
+            var isQuiescent = false
+            instrumentation.runOnMainSync {
+                val monitor = ActivityLifecycleMonitorRegistry.getInstance()
+                isQuiescent = Stage.entries
+                    .filter { it != Stage.DESTROYED }
+                    .all { monitor.getActivitiesInStage(it).isEmpty() }
+            }
+            isQuiescent
+        }.doWait(timeoutMs = QUIESCENT_PROCESS_WAIT_MS)
+    }
 
     @Test
     fun verifyCpuAndMemoryTimeseriesAreCollected() {
@@ -111,6 +145,7 @@ internal class TimeseriesCollectionTest {
     }
 
     companion object {
+        private const val QUIESCENT_PROCESS_WAIT_MS = 5000L
         private const val CPU_TIMESERIES_NAME = "cpu"
         private const val MEMORY_TIMESERIES_NAME = "memory"
         private const val TIMESERIES_TYPE = "timeseries"

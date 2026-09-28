@@ -19,7 +19,7 @@ import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -65,7 +65,7 @@ internal class RumViewManagerScope(
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val insightsCollector: InsightsCollector,
     internal val viewEventMapper: ViewEventMapper,
-    private val rumViewEventWriteConfig: RumViewEventWriteConfig,
+    private val viewEventWriteConfig: ViewEventWriteConfig,
     private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
 ) : RumScope {
 
@@ -303,7 +303,7 @@ internal class RumViewManagerScope(
             displayInfoProvider = displayInfoProvider,
             insightsCollector = insightsCollector,
             viewEventMapper = viewEventMapper,
-            rumViewEventWriteConfig = rumViewEventWriteConfig,
+            viewEventWriteConfig = viewEventWriteConfig,
             heatmapIdentifierRegistry = heatmapIdentifierRegistry
         )
         applicationDisplayed = true
@@ -390,7 +390,7 @@ internal class RumViewManagerScope(
             insightsCollector = insightsCollector,
             rumViewEventWriterFactory = {
                 RumViewEventWriter.create(
-                    config = rumViewEventWriteConfig,
+                    config = viewEventWriteConfig,
                     viewEventMapper = viewEventMapper,
                     sdkCore = sdkCore
                 )
@@ -441,7 +441,7 @@ internal class RumViewManagerScope(
             insightsCollector = insightsCollector,
             rumViewEventWriterFactory = {
                 RumViewEventWriter.create(
-                    config = rumViewEventWriteConfig,
+                    config = viewEventWriteConfig,
                     viewEventMapper = viewEventMapper,
                     sdkCore = sdkCore
                 )

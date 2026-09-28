@@ -15,6 +15,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.AnyThread
+import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
@@ -22,6 +23,7 @@ import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
+import com.datadog.android.api.logToUser
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
@@ -36,6 +38,7 @@ import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
+import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.profiling.ProfilingAnomalyDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingThreadDump
@@ -50,8 +53,8 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
@@ -59,6 +62,7 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumDataWriter
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
@@ -86,17 +90,23 @@ import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
 import com.datadog.android.rum.internal.startup.DefaultAppStartupActivityPredicate
+import com.datadog.android.rum.internal.startup.PreLaunchRumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
+import com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl
+import com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporterImpl
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
+import com.datadog.android.rum.internal.startup.name
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
-import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollectorFactory
-import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.PipelineFactory
 import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.collector.DefaultTimeseriesCollector
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
+import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistryImpl
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.CPUVitalReader
 import com.datadog.android.rum.internal.vitals.CpuStatReader
@@ -143,7 +153,7 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * RUM feature class, which needs to be registered with Datadog SDK instance.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 internal class RumFeature(
     private val sdkCore: FeatureSdkCore,
     internal val applicationId: String,
@@ -165,6 +175,11 @@ internal class RumFeature(
     internal var trackFrustrations: Boolean = false
 
     internal var viewTrackingStrategy: ViewTrackingStrategy = NoOpViewTrackingStrategy()
+
+    // Set by initRumAppStartupDetector() when the pre-launch module supplied the detector, in
+    // which case attachPreLaunchRumAppStartupDetector() takes over from Rum.enable() instead of
+    // this feature owning a detector of its own.
+    internal var usePreLaunchDetector: Boolean = false
     internal var actionTrackingStrategy: UserActionTrackingStrategy =
         NoOpUserActionTrackingStrategy()
     internal var longTaskTrackingStrategy: TrackingStrategy = NoOpTrackingStrategy()
@@ -176,6 +191,7 @@ internal class RumFeature(
     internal var debugActivityLifecycleListener =
         AtomicReference<Application.ActivityLifecycleCallbacks>(null)
     internal var frameStatesAggregator: Application.ActivityLifecycleCallbacks? = null
+    internal var timeseriesProcessLifecycleMonitor: ProcessLifecycleMonitor? = null
     internal var sessionListener: RumSessionListener = NoOpRumSessionListener()
 
     internal var vitalExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
@@ -191,10 +207,14 @@ internal class RumFeature(
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
     internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
     override val heatmapIdentifierRegistry: HeatmapIdentifierRegistry = HeatmapIdentifierRegistry.create()
-    internal var timeseriesCollectorFactory: TimeseriesCollector.Factory = NoOpTimeseriesCollectorFactory()
+    internal var timeseriesCollector: TimeseriesCollector = NoOpTimeseriesCollector()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
     internal var rumAppStartupDetector: RumAppStartupDetector? = null
+
+    // The listener this feature handed to the process-scoped PreLaunchRumAppStartupDetector, kept
+    // so onStop() can detach exactly this one and leave any other SDK core's listener attached.
+    internal var preLaunchRumAppStartupListener: RumAppStartupDetector.Listener? = null
 
     // region Feature
 
@@ -292,17 +312,15 @@ internal class RumFeature(
 
         sessionListener = configuration.sessionListener
 
-        configuration.timeseriesConfiguration?.let { timeseriesConfiguration ->
-            timeseriesCollectorFactory = DefaultTimeseriesCollectorFactory(
-                sdkCore = sdkCore,
-                dataWriter = dataWriter,
-                insightsCollector = insightsCollector,
-                configuration = timeseriesConfiguration,
-                scheduledExecutorService = vitalExecutorService,
-                totalRamBytes = appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L,
-                batteryInfoProvider = batteryInfoProvider,
-                displayInfoProvider = displayInfoProvider
-            )
+        configuration.timeseriesConfiguration?.let {
+            if (appContext is Application) {
+                initializeTimeseriesCollection(appContext, it)
+            } else {
+                sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
+                    "Rum feature should have been initialized with android.app.Application context, " +
+                        "but ${appContext.javaClass.name} is given"
+                }
+            }
         }
 
         initRumAppStartupDetector()
@@ -310,6 +328,31 @@ internal class RumFeature(
         sdkCore.setEventReceiver(name, this)
 
         initialized.set(true)
+    }
+
+    private fun initializeTimeseriesCollection(
+        appContext: Application,
+        timeseriesConfiguration: TimeseriesConfiguration
+    ) {
+        val pipelinesFactory = PipelineFactory(
+            totalRamBytes = appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L,
+            sdkCore = sdkCore,
+            dataWriter = dataWriter,
+            insightsCollector = insightsCollector,
+            enabledTypes = timeseriesConfiguration.enabledTypes,
+            batteryInfoProvider = batteryInfoProvider,
+            displayInfoProvider = displayInfoProvider
+        )
+
+        timeseriesCollector = DefaultTimeseriesCollector(
+            scheduledExecutorService = vitalExecutorService,
+            pipelinesFactory = pipelinesFactory,
+            internalLogger = sdkCore.internalLogger
+        ).also { collector ->
+            timeseriesProcessLifecycleMonitor = ProcessLifecycleMonitor(collector).apply {
+                appContext.registerActivityLifecycleCallbacks(this)
+            }
+        }
     }
 
     private fun Application.initializeFrameStatesAggregator(listeners: List<FrameStateListener>) {
@@ -370,7 +413,11 @@ internal class RumFeature(
 
         unregisterTrackingStrategies(appContext)
 
-        timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+        timeseriesCollector = NoOpTimeseriesCollector()
+        timeseriesProcessLifecycleMonitor?.let {
+            (appContext as? Application)?.unregisterActivityLifecycleCallbacks(it)
+        }
+        timeseriesProcessLifecycleMonitor = null
         (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.stopTimeseries()
 
         dataWriter = NoOpDataWriter()
@@ -394,11 +441,11 @@ internal class RumFeature(
         val detector = rumAppStartupDetector
         if (isMainThread()) {
             @Suppress("ThreadSafety") // just verified we are on the main thread
-            detector?.destroy()
+            tearDownRumAppStartupDetection(detector)
         } else {
             handler.post {
                 @Suppress("ThreadSafety") // handler posts to the main looper
-                detector?.destroy()
+                tearDownRumAppStartupDetection(detector)
             }
         }
 
@@ -770,34 +817,110 @@ internal class RumFeature(
         (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addSessionReplaySkippedFrame()
     }
 
+    /**
+     * Wires up app-startup (AppStart + TTID) detection.
+     *
+     * When the `dd-sdk-android-rum-prelaunch` module is on the classpath, a
+     * [RumAppStartupDetectorImpl] was already created inside a ContentProvider before this SDK
+     * initialized, and it buffered whatever it observed. In that case we reuse it rather than
+     * creating a second detector — [attachPreLaunchRumAppStartupDetector] drains the buffer once
+     * the real monitor is registered. Otherwise we create the detector here as usual.
+     *
+     * `appStartupActivityPredicate` does not apply on this path: the launch was already captured
+     * before this core existed, too late for a predicate whose job is to move the measurement on
+     * to the next Activity. See `PreLaunchRumAppStartupDetector.install()`.
+     */
     private fun initRumAppStartupDetector() {
-        rumAppStartupDetector = RumAppStartupDetector.create(
+        if (!PreLaunchRumAppStartupDetector.isInstalled) {
+            createDefaultRumAppStartupDetector()
+            return
+        }
+
+        usePreLaunchDetector = true
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.DEBUG,
+            InternalLogger.Target.MAINTAINER,
+            { "TTID: reusing pre-launch RumAppStartupDetector" }
+        )
+    }
+
+    private fun createDefaultRumAppStartupDetector() {
+        val internalSdkCore = sdkCore as InternalSdkCore
+        rumAppStartupDetector = RumAppStartupDetectorImpl(
             application = appContext.applicationContext as Application,
-            sdkCore = sdkCore as InternalSdkCore,
-            listener = object : RumAppStartupDetector.Listener {
+            buildSdkVersionProvider = buildSdkVersionProvider,
+            appStartupTime = {
+                Time.fromNanoTime(internalSdkCore.appStartTimeNs, internalSdkCore.timeProvider)
+            },
+            currentTime = { Time.now(internalSdkCore.timeProvider) },
+            listener = createRumAppStartupListener(),
+            appStartupActivityPredicate = {
+                configuration.appStartupActivityPredicate.shouldTrackStartup(it)
+            },
+            rumFirstDrawTimeReporter = RumFirstDrawTimeReporterImpl(
+                internalLogger = sdkCore.internalLogger,
+                timeProviderNs = { internalSdkCore.timeProvider.getDeviceElapsedTimeNanos() },
+                windowCallbacksRegistry = RumWindowCallbacksRegistryImpl(),
+                handler = Handler(Looper.getMainLooper())
+            )
+        )
+    }
 
-                override fun onAppStartupDetected(scenario: RumStartupScenario) {
-                    val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
-                    rumMonitor.sendAppStartEvent(scenario)
+    private fun createRumAppStartupListener(): RumAppStartupDetector.Listener =
+        object : RumAppStartupDetector.Listener {
+            override fun onAppStartupDetected(scenario: RumStartupScenario) {
+                val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor
+                if (rumMonitor == null) {
+                    return
                 }
+                rumMonitor.sendAppStartEvent(scenario)
+            }
 
-                override fun onTTIDComputed(
-                    scenario: RumStartupScenario,
-                    durationNs: Long,
-                    wasForwarded: Boolean
-                ) {
-                    val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
-                    val info = RumTTIDInfo(
+            override fun onTTIDComputed(
+                scenario: RumStartupScenario,
+                durationNs: Long,
+                wasForwarded: Boolean
+            ) {
+                val rumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor
+                if (rumMonitor == null) {
+                    return
+                }
+                rumMonitor.sendTTIDEvent(
+                    RumTTIDInfo(
                         scenario = scenario,
                         durationNs = durationNs,
                         wasForwarded = wasForwarded
                     )
+                )
+            }
+        }
 
-                    rumMonitor.sendTTIDEvent(info)
-                }
-            },
-            appStartupActivityPredicate = configuration.appStartupActivityPredicate
-        )
+    /**
+     * Hands this feature's listener to the pre-launch detector and drains its buffered events.
+     *
+     * Called from [com.datadog.android.rum.Rum.enable] after `GlobalRumMonitor.registerIfAbsent()`,
+     * so the real monitor is available when the buffered events are replayed.
+     */
+    internal fun attachPreLaunchRumAppStartupDetector() {
+        if (!usePreLaunchDetector) {
+            return
+        }
+
+        val listener = createRumAppStartupListener()
+        preLaunchRumAppStartupListener = listener
+        PreLaunchRumAppStartupDetector.attach(listener)
+    }
+
+    /**
+     * Tears down whichever form of app-startup detection this feature was using.
+     *
+     * Only this feature's listener is detached; another SDK core may still be using the detector.
+     */
+    @MainThread
+    private fun tearDownRumAppStartupDetection(detector: RumAppStartupDetector?) {
+        detector?.destroy()
+        preLaunchRumAppStartupListener?.let { PreLaunchRumAppStartupDetector.detach(it) }
+        preLaunchRumAppStartupListener = null
     }
 
     // endregion
@@ -836,7 +959,7 @@ internal class RumFeature(
         val disableJankStats: Boolean,
         val insightsCollector: InsightsCollector,
         val appStartupActivityPredicate: AppStartupActivityPredicate,
-        val rumViewEventWriteConfig: RumViewEventWriteConfig,
+        val viewEventWriteConfig: ViewEventWriteConfig,
         val timeseriesConfiguration: TimeseriesConfiguration?
     )
 
@@ -893,7 +1016,7 @@ internal class RumFeature(
             disableJankStats = false,
             insightsCollector = NoOpInsightsCollector(),
             appStartupActivityPredicate = DefaultAppStartupActivityPredicate,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.AlwaysFullView,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             timeseriesConfiguration = null
         )
 

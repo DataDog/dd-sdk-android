@@ -395,6 +395,9 @@ public abstract interface class com/datadog/android/api/feature/Feature {
 	public static final field SESSION_REPLAY_RESOURCES_FEATURE_NAME Ljava/lang/String;
 	public static final field TRACING_CLIENT_STATS_FEATURE_NAME Ljava/lang/String;
 	public static final field TRACING_FEATURE_NAME Ljava/lang/String;
+	public static final field WEB_LOGS_FEATURE_NAME Ljava/lang/String;
+	public static final field WEB_RUM_FEATURE_NAME Ljava/lang/String;
+	public static final field WEB_SESSION_REPLAY_FEATURE_NAME Ljava/lang/String;
 	public abstract fun getName ()Ljava/lang/String;
 	public abstract fun onInitialize (Landroid/content/Context;)V
 	public abstract fun onStop ()V
@@ -411,6 +414,9 @@ public final class com/datadog/android/api/feature/Feature$Companion {
 	public static final field SESSION_REPLAY_RESOURCES_FEATURE_NAME Ljava/lang/String;
 	public static final field TRACING_CLIENT_STATS_FEATURE_NAME Ljava/lang/String;
 	public static final field TRACING_FEATURE_NAME Ljava/lang/String;
+	public static final field WEB_LOGS_FEATURE_NAME Ljava/lang/String;
+	public static final field WEB_RUM_FEATURE_NAME Ljava/lang/String;
+	public static final field WEB_SESSION_REPLAY_FEATURE_NAME Ljava/lang/String;
 }
 
 public abstract interface class com/datadog/android/api/feature/FeatureContextUpdateReceiver {
@@ -900,6 +906,7 @@ public abstract interface class com/datadog/android/core/internal/persistence/De
 
 public final class com/datadog/android/core/internal/persistence/file/FileExtKt {
 	public static final fun canReadSafe (Ljava/io/File;Lcom/datadog/android/api/InternalLogger;)Z
+	public static final fun deleteSafe (Ljava/io/File;Lcom/datadog/android/api/InternalLogger;)Z
 	public static final fun existsSafe (Ljava/io/File;Lcom/datadog/android/api/InternalLogger;)Z
 	public static final fun lengthSafe (Ljava/io/File;Lcom/datadog/android/api/InternalLogger;)J
 	public static final fun listFilesSafe (Ljava/io/File;Lcom/datadog/android/api/InternalLogger;Ljava/io/FilenameFilter;)[Ljava/io/File;

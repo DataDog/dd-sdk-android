@@ -16,7 +16,6 @@ internal sealed class ProfilingTelemetryEvent {
         val fileSize: Long,
         val durationMs: Long,
         val resultCallbackDelayMs: Long,
-        val clientClockDriftMs: Long,
         val stopReason: String,
         val bufferSizeKb: Int,
         val samplingFrequencyHz: Int
@@ -32,7 +31,6 @@ internal sealed class ProfilingTelemetryEvent {
         val errorMessage: String?,
         val fileSize: Long,
         val callbackDelayMs: Long?,
-        val clientClockDriftMs: Long,
         val droppedAsStale: Boolean
     ) : ProfilingTelemetryEvent()
 }

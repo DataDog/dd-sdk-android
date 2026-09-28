@@ -15,7 +15,7 @@ import com.datadog.android.internal.profiling.ProfilerEvent.RumOomErrorEvent
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
-import java.io.File
+import com.datadog.android.profiling.internal.utils.fileDeleteSafe
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -48,7 +48,7 @@ internal class PendingTriggerProfileStorage(
             profilingResult = result
             matchResult()
         }
-        overriddenResult?.let { safeDelete(it.resultFilePath) }
+        overriddenResult?.let { fileDeleteSafe(it.resultFilePath, internalLogger) }
         if (pair != null) {
             val (matchedResult, gatingEvent) = pair
             onMatch(matchedResult, gatingEvent)
@@ -108,7 +108,7 @@ internal class PendingTriggerProfileStorage(
             deviceNow = timeProvider.getDeviceTimestampMillis(),
             serverNow = timeProvider.getServerTimestampMillis()
         )
-        expired?.let { safeDelete(it.resultFilePath) }
+        expired?.let { fileDeleteSafe(it.resultFilePath, internalLogger) }
     }
 
     override fun stop() {
@@ -118,7 +118,7 @@ internal class PendingTriggerProfileStorage(
             gatingEventCleanupTask?.cancel(false)
             gatingEventCleanupTask = null
         }
-        clear()?.let { safeDelete(it.resultFilePath) }
+        clear()?.let { fileDeleteSafe(it.resultFilePath, internalLogger) }
     }
 
     internal fun clear(): PerfettoResult? = synchronized(lock) {
@@ -154,27 +154,6 @@ internal class PendingTriggerProfileStorage(
         }
     }
 
-    private fun safeDelete(path: String) {
-        try {
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            val deleted = File(path).delete()
-            if (!deleted) {
-                internalLogger?.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.MAINTAINER,
-                    { LOG_FILE_DELETE_FAILED }
-                )
-            }
-        } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-            internalLogger?.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { LOG_FILE_DELETE_FAILED },
-                t
-            )
-        }
-    }
-
     private fun ProfilerEvent.triggerType(): ProfilingStartReason? = when (this) {
         is RumAnrEvent -> ProfilingStartReason.ANR
         is RumOomErrorEvent -> ProfilingStartReason.OUT_OF_MEMORY
@@ -192,6 +171,5 @@ internal class PendingTriggerProfileStorage(
     companion object {
         private const val OPERATION_NAME_RESULT_CLEANUP = "pending_trigger_result_cleanup"
         private const val OPERATION_NAME_GATING_EVENT_CLEANUP = "pending_trigger_gating_event_cleanup"
-        private const val LOG_FILE_DELETE_FAILED = "Failed to delete pending trigger trace file."
     }
 }

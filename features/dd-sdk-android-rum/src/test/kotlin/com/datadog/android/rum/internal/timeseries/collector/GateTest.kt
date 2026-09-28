@@ -245,7 +245,7 @@ internal class GateTest {
         testedGate.setRumContext(fakeRumContextOf(RumViewType.FOREGROUND)) { _, _ -> }
 
         // When
-        testedGate.setForeground(true, mockOnUpdated)
+        testedGate.setForeground(true, onUpdated = mockOnUpdated)
 
         // Then
         verifyNoInteractions(mockOnUpdated)
@@ -258,7 +258,7 @@ internal class GateTest {
         testedGate.setRumContext(fakeRumContextOf(RumViewType.FOREGROUND)) { _, _ -> }
 
         // When
-        testedGate.setForeground(true, mockOnUpdated)
+        testedGate.setForeground(true, onUpdated = mockOnUpdated)
 
         // Then
         verify(mockOnUpdated).invoke(2, fakeRumContextOf(RumViewType.FOREGROUND))
@@ -272,10 +272,44 @@ internal class GateTest {
         testedGate.setForeground(true) { _, _ -> }
 
         // When
-        testedGate.setForeground(true, mockOnUpdated)
+        testedGate.setForeground(true, onUpdated = mockOnUpdated)
 
         // Then
         verifyNoInteractions(mockOnUpdated)
+    }
+
+    // endregion
+
+    // region startBackgroundTransition() / setForeground(transitionId)
+
+    @Test
+    fun `M apply update W setForeground() { ticket still current }`() {
+        // Given
+        testedGate.setSessionActive(true) { _, _ -> }
+        testedGate.setRumContext(fakeRumContextOf(RumViewType.FOREGROUND)) { _, _ -> }
+        val ticket = testedGate.startBackgroundTransition()
+
+        // When
+        testedGate.setForeground(true, ticket, mockOnUpdated)
+
+        // Then
+        verify(mockOnUpdated).invoke(2, fakeRumContextOf(RumViewType.FOREGROUND))
+    }
+
+    @Test
+    fun `M not apply update W setForeground() { superseded by a later ticket }`() {
+        // Given
+        testedGate.setSessionActive(true) { _, _ -> }
+        testedGate.setRumContext(fakeRumContextOf(RumViewType.FOREGROUND)) { _, _ -> }
+        val staleTicket = testedGate.startBackgroundTransition()
+        testedGate.startBackgroundTransition()
+
+        // When
+        testedGate.setForeground(true, staleTicket, mockOnUpdated)
+
+        // Then
+        verifyNoInteractions(mockOnUpdated)
+        assertThat(testedGate.getRumContext()).isNull()
     }
 
     // endregion

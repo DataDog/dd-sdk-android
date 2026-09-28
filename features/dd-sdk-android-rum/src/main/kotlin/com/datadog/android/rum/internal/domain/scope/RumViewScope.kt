@@ -28,7 +28,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
@@ -786,8 +786,7 @@ internal open class RumViewScope(
             profilingStatus = if (isTriggeredByProfiling) {
                 resolveErrorProfilingStatus(datadogContext)
                     ?: ErrorEvent.Profiling(
-                        status = ErrorEvent.ProfilingStatus.RUNNING,
-                        clockDrift = datadogContext.time.serverTimeOffsetMs
+                        status = ErrorEvent.ProfilingStatus.RUNNING
                     )
             } else if (event.throwable is ANRException) {
                 resolveErrorProfilingStatus(datadogContext)
@@ -1800,11 +1799,9 @@ internal open class RumViewScope(
     private fun resolveErrorProfilingStatus(datadogContext: DatadogContext): ErrorEvent.Profiling? {
         val isRunning = datadogContext.isProfilerRunning()
         val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
-        val clockDrift = datadogContext.time.serverTimeOffsetMs
         return when {
             isRunning -> ErrorEvent.Profiling(
-                status = ErrorEvent.ProfilingStatus.RUNNING,
-                clockDrift = clockDrift
+                status = ErrorEvent.ProfilingStatus.RUNNING
             )
 
             quotaReason != null -> ErrorEvent.Profiling(
@@ -1821,11 +1818,9 @@ internal open class RumViewScope(
     ): VitalOperationStepEvent.Profiling? {
         val isRunning = datadogContext.isProfilerRunning()
         val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
-        val clockDrift = datadogContext.time.serverTimeOffsetMs
         return when {
             isRunning -> VitalOperationStepEvent.Profiling(
-                status = VitalOperationStepEvent.ProfilingStatus.RUNNING,
-                clockDrift = clockDrift
+                status = VitalOperationStepEvent.ProfilingStatus.RUNNING
             )
 
             quotaReason != null -> VitalOperationStepEvent.Profiling(
@@ -1840,11 +1835,9 @@ internal open class RumViewScope(
     private fun resolveLongTaskProfilingStatus(datadogContext: DatadogContext): LongTaskEvent.Profiling? {
         val isRunning = datadogContext.isProfilerRunning()
         val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
-        val clockDrift = datadogContext.time.serverTimeOffsetMs
         return when {
             isRunning -> LongTaskEvent.Profiling(
-                status = LongTaskEvent.ProfilingStatus.RUNNING,
-                clockDrift = clockDrift
+                status = LongTaskEvent.ProfilingStatus.RUNNING
             )
 
             quotaReason != null -> LongTaskEvent.Profiling(
@@ -1861,8 +1854,7 @@ internal open class RumViewScope(
         val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
         return when {
             isRunning -> ViewEvent.Profiling(
-                status = ViewEvent.ProfilingStatus.RUNNING,
-                clockDrift = datadogContext.time.serverTimeOffsetMs
+                status = ViewEvent.ProfilingStatus.RUNNING
             )
 
             quotaReason != null -> ViewEvent.Profiling(
@@ -1930,7 +1922,7 @@ internal open class RumViewScope(
             displayInfoProvider: InfoProvider<DisplayInfo>,
             insightsCollector: InsightsCollector,
             viewEventMapper: ViewEventMapper,
-            rumViewEventWriteConfig: RumViewEventWriteConfig,
+            viewEventWriteConfig: ViewEventWriteConfig,
             heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
@@ -1971,7 +1963,7 @@ internal open class RumViewScope(
                 insightsCollector = insightsCollector,
                 rumViewEventWriterFactory = {
                     RumViewEventWriter.create(
-                        config = rumViewEventWriteConfig,
+                        config = viewEventWriteConfig,
                         viewEventMapper = viewEventMapper,
                         sdkCore = sdkCore
                     )
