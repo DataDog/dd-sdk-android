@@ -148,7 +148,10 @@ internal class EvaluationsManager(
             flagStateManager.updateState(FlagsClientState.NotReady)
             result
         }
-        callback?.onFailure(IllegalStateException("Flags client stopped"))
+        // Drain admitted operations so their callbacks settle; release the dedicated worker afterward.
+        @Suppress("UnsafeThirdPartyFunctionCall") // Android does not use a SecurityManager.
+        executorService.shutdown()
+        callback?.onFailure(IllegalStateException(CLIENT_STOPPED_MESSAGE))
     }
 
     /**
@@ -172,7 +175,7 @@ internal class EvaluationsManager(
         val matchingCachedAssignments = AtomicBoolean(false)
         val (generation, initializationCompletion) = synchronized(initializationTerminalLock) {
             if (stopped) {
-                callback?.onFailure(IllegalStateException("Flags client stopped"))
+                callback?.onFailure(IllegalStateException(CLIENT_STOPPED_MESSAGE))
                 return
             }
             val generation = ++contextGeneration
@@ -200,39 +203,51 @@ internal class EvaluationsManager(
     ) {
         sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
             ?.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) { datadogContext ->
-                executorService.executeSafe(
-                    operationName = FETCH_AND_STORE_OPERATION_NAME,
-                    internalLogger = internalLogger
-                ) {
-                    internalLogger.log(
-                        InternalLogger.Level.DEBUG,
-                        InternalLogger.Target.MAINTAINER,
-                        { "Processing evaluation context: ${context.targetingKey}" }
-                    )
-                    val hadFlags = flagsRepository.hasFlags()
-                    matchingCachedAssignments.set(
-                        hadFlags && flagsRepository.getEvaluationContext() == context
-                    )
-                    val response = assignmentsReader.readPrecomputedFlags(context, datadogContext)
-                    if (response != null) {
-                        val flagsMap = precomputeMapper.map(response)
-                        internalLogger.log(
-                            InternalLogger.Level.DEBUG,
-                            InternalLogger.Target.MAINTAINER,
-                            { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
-                        )
-
-                        completeSuccess(generation, initializationCompletion, callback, context, flagsMap)
+                val stoppedCallback = synchronized(initializationTerminalLock) {
+                    if (stopped) {
+                        initializationCompletion?.take()?.callback
+                            ?: if (initializationCompletion == null) callback else null
                     } else {
-                        internalLogger.log(
-                            InternalLogger.Level.WARN,
-                            InternalLogger.Target.USER,
-                            { NETWORK_REQUEST_FAILED_MESSAGE }
-                        )
+                        executorService.executeSafe(
+                            operationName = FETCH_AND_STORE_OPERATION_NAME,
+                            internalLogger = internalLogger
+                        ) {
+                            internalLogger.log(
+                                InternalLogger.Level.DEBUG,
+                                InternalLogger.Target.MAINTAINER,
+                                { "Processing evaluation context: ${context.targetingKey}" }
+                            )
+                            val hadFlags = flagsRepository.hasFlags()
+                            matchingCachedAssignments.set(
+                                hadFlags && flagsRepository.getEvaluationContext() == context
+                            )
+                            val response = assignmentsReader.readPrecomputedFlags(context, datadogContext)
+                            if (response != null) {
+                                val flagsMap = precomputeMapper.map(response)
+                                internalLogger.log(
+                                    InternalLogger.Level.DEBUG,
+                                    InternalLogger.Target.MAINTAINER,
+                                    {
+                                        "Successfully processed context ${context.targetingKey} " +
+                                            "with ${flagsMap.size} flags"
+                                    }
+                                )
 
-                        completeFailure(generation, initializationCompletion, callback, context)
+                                completeSuccess(generation, initializationCompletion, callback, context, flagsMap)
+                            } else {
+                                internalLogger.log(
+                                    InternalLogger.Level.WARN,
+                                    InternalLogger.Target.USER,
+                                    { NETWORK_REQUEST_FAILED_MESSAGE }
+                                )
+
+                                completeFailure(generation, initializationCompletion, callback, context)
+                            }
+                        }
+                        null
                     }
                 }
+                stoppedCallback?.onFailure(IllegalStateException(CLIENT_STOPPED_MESSAGE))
             }
     }
 
@@ -335,6 +350,7 @@ internal class EvaluationsManager(
     }
 
     companion object {
+        private const val CLIENT_STOPPED_MESSAGE = "Flags client stopped"
         private const val FETCH_AND_STORE_OPERATION_NAME = "Fetch and store flags for evaluation context"
         private const val NETWORK_REQUEST_FAILED_MESSAGE =
             "Unable to fetch feature flags. Please check your network connection."
