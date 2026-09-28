@@ -26,6 +26,11 @@ dependencies {
     // Recommended: RUM integration to correlate flags and RUM session data
     implementation("com.datadoghq:dd-sdk-android-rum:<latest-version>")
 }
+```
+
+This module uses OpenFeature Kotlin SDK 0.8.0. When upgrading from 0.6.2, rebuild consumers
+and migrate any custom OpenFeature hooks to the 0.8 hook-data signatures. Provider events
+are now constructed with calls such as `ProviderReady()` and expose `eventDetails`.
 
 ### Initial setup
 
@@ -130,6 +135,40 @@ val isEnabled = client.getBooleanValue("my-feature", false)
 - For anonymous users, use a **persistent UUID** as the targeting key (persist it in a store such as `SharedPreferences`).
 
 For complete details on using the OpenFeature API, including flag evaluation methods, hooks, state management, and events, see the [OpenFeature Kotlin SDK documentation](https://openfeature.dev/docs/reference/technologies/client/kotlin/)
+
+### Observe operational status
+
+Use the OpenFeature client's `statusFlow` for readiness, reconciliation and error status:
+
+```kotlin
+val client = OpenFeatureAPI.getClient()
+lifecycleScope.launch {
+    client.statusFlow.collect { status ->
+        // Update the UI for NotReady, Ready, Reconciling, Stale, Error or Fatal.
+    }
+}
+```
+
+The flow replays the current SDK status and follows provider replacement. Provider events
+are a separate surface, available through `OpenFeatureAPI.observe<T>()`. In Kotlin SDK 0.8.0,
+configuration-change events do not change status, and context reconciliation produces status
+updates rather than dedicated reconciliation/context-changed events.
+
+Kotlin **package 0.8.0** follows the legacy **specification v0.8** lifecycle model:
+[§1.7.3](https://github.com/open-feature/spec/blob/v0.8.0/specification/sections/01-flag-evaluation.md#requirement-173)
+requires Ready after normal initialization. Consequently, SDK status can differ from native
+`FlagsClient.state` when successful initialization uses stale cached flags. This synthesis is
+legacy behavior, not by itself a historical spec violation. Specification v0.9 instead assigns
+[lifecycle transitions to provider events](https://github.com/open-feature/spec/blob/v0.9.0/specification/sections/02-providers.md#requirement-281);
+this dependency upgrade does not implement that model.
+
+Cancelling a provider lifecycle coroutine stops the adapter's wait; a late native callback cannot
+resume that cancelled operation. The native request and its state notifications can continue;
+provider shutdown does not shut down the separately owned native client. This does not guarantee ordering for all overlapping
+native requests or independently invoked `AndWait` calls.
+
+Package 0.8.0 also skips reconciliation when a newly set context equals the current context;
+[upstream fix #251](https://github.com/open-feature/kotlin-sdk/pull/251) is not included in that release.
 
 ## Integration with RUM
 

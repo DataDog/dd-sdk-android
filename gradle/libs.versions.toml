@@ -104,7 +104,7 @@ newPipeExtractor = "v0.24.6"
 navigation3 = "1.0.0-alpha01"
 kotlinxSerializationCore = "1.8.1"
 lifecycleViewmodelNav3 = "1.0.0-alpha01"
-openFeature = "0.6.2"
+openFeature = "0.8.0"
 
 # Local Server
 ktor = "2.3.13"

@@ -12,27 +12,32 @@ import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * Extension function to convert callback-based [setEvaluationContext] to suspend function.
  *
- * Wraps the callback API in a [suspendCoroutine], converting success/failure callbacks
+ * Wraps the callback API in [suspendCancellableCoroutine], converting success/failure callbacks
  * to [resume]/[resumeWithException].
  *
- * A timeout with matching cached assignments completes successfully and leaves the provider stale.
+ * Cancellation stops waiting without cancelling the native request or suppressing its state events.
+ * A late callback cannot resume a cancelled OpenFeature lifecycle operation and overwrite its
+ * replacement status.
+ *
+ * A timeout with matching cached assignments completes successfully and leaves the native client stale.
+ * OpenFeature Kotlin 0.8 independently sets its status to Ready on successful lifecycle completion;
+ * that status can differ from the native state depending on when provider events are collected.
  *
  * @param context The evaluation context to set
  * @throws [OpenFeatureError.GeneralError] if setting the context fails. The first context operation also
  * fails when the configured Flags initialization timeout elapses without matching cached assignments.
  */
 internal suspend fun FlagsClient.setEvaluationContextSuspend(context: EvaluationContext) {
-    // Subsequent invocation of any resume function will produce
-    // an IllegalStateException, but we are safe here
+    // The native API completes this callback once; a callback arriving after cancellation is ignored.
     @Suppress("UnsafeThirdPartyFunctionCall")
-    suspendCoroutine<Unit> { continuation ->
+    suspendCancellableCoroutine<Unit> { continuation ->
         val callback = object : EvaluationContextCallback {
             override fun onSuccess() {
                 continuation.resume(Unit)

@@ -56,6 +56,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -527,8 +528,8 @@ internal class DatadogFlagsProviderTest {
         // Then - the timeout is recoverable and a late result restores readiness
         assertThat(events).hasSize(2)
         val providerError = events[0] as OpenFeatureProviderEvents.ProviderError
-        assertThat(providerError.error).isInstanceOf(OpenFeatureError.GeneralError::class.java)
-        assertThat(providerError.error).hasMessage(timeoutMessage)
+        assertThat(providerError.eventDetails?.errorCode).isEqualTo(OpenFeatureErrorCode.GENERAL)
+        assertThat(providerError.eventDetails?.message).isEqualTo(timeoutMessage)
         assertThat(events[1]).isInstanceOf(OpenFeatureProviderEvents.ProviderReady::class.java)
     }
 
@@ -564,7 +565,7 @@ internal class DatadogFlagsProviderTest {
         testScheduler.runCurrent()
         job.cancel()
 
-        // Then - Reconciling is filtered (SDK emits PROVIDER_RECONCILING)
+        // Then - Reconciling is filtered (SDK updates its Reconciling status)
         assertThat(events).isEmpty()
     }
 

@@ -19,7 +19,7 @@ import com.datadog.android.sample.R
 import dev.openfeature.kotlin.sdk.Client
 import dev.openfeature.kotlin.sdk.FlagEvaluationDetails
 import dev.openfeature.kotlin.sdk.OpenFeatureAPI
-import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
+import dev.openfeature.kotlin.sdk.OpenFeatureStatus
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -66,28 +66,26 @@ internal class OpenFeatureFragment :
     }
 
     private fun observeProviderState() {
-        val provider = OpenFeatureAPI.getProvider()
+        val client = OpenFeatureAPI.getClient()
 
         // Display initial state
         updateProviderState(STATE_INITIALIZING)
 
-        // Observe state changes
+        // statusFlow replays current status and follows provider replacement. Provider events
+        // are observed separately through OpenFeatureAPI.observe(), when needed.
         viewLifecycleOwner.lifecycleScope.launch {
-            provider.observe()
+            client.statusFlow
                 .catch {
                     updateProviderState(STATE_ERROR)
                 }
-                .collect { event ->
-                    val stateName = when (event) {
-                        is OpenFeatureProviderEvents.ProviderReady ->
-                            STATE_READY
-                        is OpenFeatureProviderEvents.ProviderStale ->
-                            STATE_STALE
-                        is OpenFeatureProviderEvents.ProviderError ->
-                            STATE_ERROR
-                        is OpenFeatureProviderEvents.ProviderConfigurationChanged ->
-                            STATE_CONFIG_CHANGED
-                        else -> event::class.simpleName ?: "Unknown"
+                .collect { status ->
+                    val stateName = when (status) {
+                        OpenFeatureStatus.NotReady -> STATE_INITIALIZING
+                        OpenFeatureStatus.Ready -> STATE_READY
+                        OpenFeatureStatus.Reconciling -> STATE_RECONCILING
+                        OpenFeatureStatus.Stale -> STATE_STALE
+                        is OpenFeatureStatus.Error -> STATE_ERROR
+                        is OpenFeatureStatus.Fatal -> STATE_FATAL
                     }
                     updateProviderState(stateName)
                 }
@@ -231,6 +229,7 @@ internal class OpenFeatureFragment :
         private const val STATE_READY = "READY"
         private const val STATE_STALE = "STALE"
         private const val STATE_ERROR = "ERROR"
-        private const val STATE_CONFIG_CHANGED = "CONFIG_CHANGED"
+        private const val STATE_RECONCILING = "RECONCILING"
+        private const val STATE_FATAL = "FATAL"
     }
 }

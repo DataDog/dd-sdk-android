@@ -10,7 +10,6 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsClient
-import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.openfeature.internal.adapters.convertToValue
@@ -24,6 +23,7 @@ import dev.openfeature.kotlin.sdk.ProviderEvaluation
 import dev.openfeature.kotlin.sdk.ProviderMetadata
 import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
+import dev.openfeature.kotlin.sdk.exceptions.ErrorCode
 import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -90,13 +90,14 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     /**
      * Initializes the provider with the given evaluation context.
      *
-     * Per the OpenFeature spec, this method blocks until the underlying [FlagsClient] has complete setting
-     * the initial evaluation context.
+     * Suspends until the underlying [FlagsClient] completes the initial context operation.
+     * Kotlin SDK 0.8.0 then derives Ready/Error from normal/abnormal completion, following the
+     * specification v0.8 lifecycle model. This is not specification v0.9 event-owned initialization.
      *
      * If an initial context is provided, it will be set on the [FlagsClient] before waiting, otherwise
      * an empty context will be used in order to initialize the underlying [FlagsClient].
      *
-     * The method suspends while the [FlagsClient] in turn, takes the context and fetches the flags from the server.
+     * Cancelling the coroutine stops this wait, but does not cancel the native request.
      *
      * @param initialContext The initial evaluation context to set (optional)
      * @throws OpenFeatureError if initialization fails or reaches the configured Flags initialization timeout
@@ -110,9 +111,10 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     /**
      * Called when the evaluation context changes.
      *
-     * Per the OpenFeature spec, this method performs blocking work and suspends until
-     * the provider is ready again or encounters an error. This allows the OpenFeature SDK
-     * to emit [PROVIDER_RECONCILING] events while this method executes.
+     * Suspends until the context operation completes or encounters an error. OpenFeature Kotlin
+     * 0.8 updates its status to Reconciling while this method executes, then Ready or Error.
+     * These are status updates, not provider events; this SDK version has no reconciliation
+     * or context-changed event types.
      *
      * Uses the callback API to wait for completion without manual listener management.
      *
@@ -191,21 +193,15 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     /**
      * Returns a Flow that emits provider state change events.
      *
-     * Per the OpenFeature spec, providers emit only certain events - others are handled
-     * by the SDK automatically:
+     * Maps native Ready, Stale and Error notifications to provider events. Native errors are
+     * recoverable: a subsequent context operation or a late response can restore readiness.
+     * Each collector registers a native listener that replays the current state; only the
+     * mapped states produce provider events.
      *
-     * **Provider emits** (via this Flow):
-     * - [FlagsClientState.Ready] → [OpenFeatureProviderEvents.ProviderReady]
-     * - [FlagsClientState.Stale] → [OpenFeatureProviderEvents.ProviderStale]
-     * - [FlagsClientState.Error] → [OpenFeatureProviderEvents.ProviderError]
-     *
-     * **SDK emits** (not from provider):
-     * - [PROVIDER_RECONCILING]: SDK emits while [onContextSet] is executing
-     * - [PROVIDER_CONTEXT_CHANGED]: SDK emits when [onContextSet] completes
-     *
-     * **Filtered** (not emitted):
-     * - [FlagsClientState.NotReady]: Pre-initialization state, [initialize] blocks
-     * - [FlagsClientState.Reconciling]: Context reconciliation, SDK handles via blocking [onContextSet]
+     * OpenFeature Kotlin 0.8 separately updates its status during initialize/onContextSet.
+     * Native NotReady and Reconciling notifications have no corresponding supported event
+     * here. Applications observing operational status should use Client.statusFlow; API.observe
+     * subscribes to provider events. Configuration changes are distinct from readiness.
      *
      * The Flow automatically cleans up the listener when the collector is cancelled.
      *
@@ -218,18 +214,15 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
             override fun onStateChanged(newState: FlagsClientState) {
                 val providerEvent: OpenFeatureProviderEvents? = when (newState) {
                     FlagsClientState.NotReady -> null // SDK handles via blocking initialize()
-                    FlagsClientState.Reconciling -> null // SDK emits PROVIDER_RECONCILING
-                    FlagsClientState.Ready -> OpenFeatureProviderEvents.ProviderReady
-                    FlagsClientState.Stale -> OpenFeatureProviderEvents.ProviderStale
-                    is FlagsClientState.Error -> newState.error.let { cause ->
-                        OpenFeatureProviderEvents.ProviderError(
-                            error = if (cause is FlagsInitializationTimeoutException) {
-                                OpenFeatureError.GeneralError(cause.message ?: "Flags initialization timed out")
-                            } else {
-                                OpenFeatureError.ProviderFatalError()
-                            }
+                    FlagsClientState.Reconciling -> null // SDK updates its Reconciling status
+                    FlagsClientState.Ready -> OpenFeatureProviderEvents.ProviderReady()
+                    FlagsClientState.Stale -> OpenFeatureProviderEvents.ProviderStale()
+                    is FlagsClientState.Error -> OpenFeatureProviderEvents.ProviderError(
+                        eventDetails = OpenFeatureProviderEvents.EventDetails(
+                            errorCode = ErrorCode.GENERAL,
+                            message = newState.error?.message ?: "Unable to refresh feature flags"
                         )
-                    }
+                    )
                 }
                 providerEvent?.let { trySend(it) }
             }

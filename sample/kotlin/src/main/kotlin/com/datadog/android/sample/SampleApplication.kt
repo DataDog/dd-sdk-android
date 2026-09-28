@@ -251,10 +251,7 @@ class SampleApplication : Application() {
         val flagsClient = FlagsClient.Builder().build()
         val provider = flagsClient.asOpenFeatureProvider()
 
-        // Set as OpenFeature provider
-        OpenFeatureAPI.setProvider(provider)
-
-        // Set evaluation context on OpenFeatureAPI (provider forwards to FlagsClient)
+        // Build the initial context before registering the provider.
         val preferences = Preferences.defaultPreferences(this)
         val userId = preferences.getUserId()?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString()
         val attributes = buildMap {
@@ -272,11 +269,11 @@ class SampleApplication : Application() {
             targetingKey = userId,
             attributes = attributes
         )
-        OpenFeatureAPI.setEvaluationContext(context)
+        OpenFeatureAPI.setProvider(provider, initialContext = context)
 
-        // Observe OpenFeature provider state changes
+        // Observe provider errors separately from the client status shown by the UI.
         applicationScope.launch {
-            provider.observe()
+            OpenFeatureAPI.observe<OpenFeatureProviderEvents.ProviderError>()
                 .catch { error ->
                     GlobalRumMonitor.get().addError(
                         "OpenFeature observer error",
@@ -286,23 +283,16 @@ class SampleApplication : Application() {
                     )
                 }
                 .collect { event ->
-                    // Track provider errors in RUM
-                    when (event) {
-                        is OpenFeatureProviderEvents.ProviderError -> {
-                            GlobalRumMonitor.get().addError(
-                                "OpenFeature provider error",
-                                RumErrorSource.SOURCE,
-                                null,
-                                mapOf(
-                                    "error" to event.error.toString(),
-                                    "component" to "openfeature-provider"
-                                )
-                            )
-                        }
-                        else -> {
-                            // Ignore other events (UI handles state display)
-                        }
-                    }
+                    GlobalRumMonitor.get().addError(
+                        "OpenFeature provider error",
+                        RumErrorSource.SOURCE,
+                        null,
+                        mapOf(
+                            "error" to (event.eventDetails?.message ?: "Unknown provider error"),
+                            "error_code" to event.eventDetails?.errorCode?.name,
+                            "component" to "openfeature-provider"
+                        )
+                    )
                 }
         }
     }
