@@ -134,6 +134,47 @@ internal class DatadogFlagsClientTest {
         )
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = ["boolean", "string", "object"])
+    fun `M preserve Long default W incompatible flag type`(type: String, forge: Forge) {
+        val flag = forge.getForgery<PrecomputedFlag>().copy(variationType = type, variationValue = "1")
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext("long"))
+            .thenReturn(flag to EvaluationContext("user"))
+        val result = testedClient.resolve("long", Long.MAX_VALUE)
+        assertThat(result.value).isEqualTo(Long.MAX_VALUE)
+        assertThat(result.errorCode).isEqualTo(ErrorCode.TYPE_MISMATCH)
+        assertThat(result.reason).isEqualTo(ResolutionReason.ERROR)
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(longs = [Long.MIN_VALUE, Long.MAX_VALUE, 9007199254740993])
+    fun `M preserve exact integer value W resolve Long`(value: Long, forge: Forge) {
+        val flag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.INTEGER.value,
+            variationValue = value.toString()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext("long"))
+            .thenReturn(flag to EvaluationContext("user"))
+        val result = testedClient.resolve("long", 0L)
+        assertThat(result.value).isEqualTo(value)
+        assertThat(result.errorCode).isNull()
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = ["9223372036854775808", "-9223372036854775809", "1.5"])
+    fun `M return exact default W Long overflow or fractional value`(value: String, forge: Forge) {
+        val flag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.NUMBER.value,
+            variationValue = value
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext("long"))
+            .thenReturn(flag to EvaluationContext("user"))
+        val result = testedClient.resolve("long", Long.MAX_VALUE)
+        assertThat(result.value).isEqualTo(Long.MAX_VALUE)
+        assertThat(result.errorCode).isEqualTo(ErrorCode.PARSE_ERROR)
+        assertThat(result.reason).isEqualTo(ResolutionReason.ERROR)
+    }
+
     // region resolveBooleanValue()
 
     @Test

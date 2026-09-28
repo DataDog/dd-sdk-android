@@ -54,6 +54,7 @@ internal object FlagValueConverter {
                 Boolean::class -> variationValue.lowercase(Locale.US).toBooleanStrictOrNull() as? T
                 String::class -> variationValue as T
                 Int::class -> variationValue.toIntOrNull() as? T
+                Long::class -> variationValue.toLongOrNull() as? T
                 Double::class -> variationValue.toDoubleOrNull() as? T
                 Map::class -> variationValue.toMap() as? T
                 JSONObject::class -> {
@@ -88,7 +89,8 @@ internal object FlagValueConverter {
     fun isTypeCompatible(variationType: String, targetType: KClass<*>): Boolean = when (targetType) {
         Boolean::class -> variationType == VariationType.BOOLEAN.value
         String::class -> variationType == VariationType.STRING.value
-        Int::class -> variationType == VariationType.INTEGER.value || variationType == VariationType.NUMBER.value
+        Int::class, Long::class ->
+            variationType == VariationType.INTEGER.value || variationType == VariationType.NUMBER.value
         Double::class ->
             variationType == VariationType.NUMBER.value || variationType == VariationType.FLOAT.value ||
                 variationType == VariationType.INTEGER.value
@@ -110,6 +112,7 @@ internal object FlagValueConverter {
         Boolean::class -> "Boolean"
         String::class -> "String"
         Int::class -> "Int"
+        Long::class -> "Long"
         Double::class -> "Double"
         JSONObject::class -> "JSONObject"
         Map::class -> "Map"

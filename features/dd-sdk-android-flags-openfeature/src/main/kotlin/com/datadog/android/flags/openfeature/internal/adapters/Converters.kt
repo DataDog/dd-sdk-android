@@ -28,6 +28,7 @@ internal fun OpenFeatureEvaluationContext.toDatadogEvaluationContext(): Evaluati
                 is Value.String -> value.asString() ?: value.toString()
                 is Value.Boolean -> value.asBoolean()?.toString() ?: value.toString()
                 is Value.Integer -> value.asInteger()?.toString() ?: value.toString()
+                is Value.Long -> value.asLong()?.toString() ?: value.toString()
                 is Value.Double -> value.asDouble()?.toString() ?: value.toString()
                 else -> value.toString()
             }
@@ -58,6 +59,7 @@ private fun Map<String, Any>.toEvaluationMetadata(): EvaluationMetadata {
             is String -> builder.putString(key, value)
             is Boolean -> builder.putBoolean(key, value)
             is Int -> builder.putInt(key, value)
+            is Long -> builder.putLong(key, value)
             is Double -> builder.putDouble(key, value)
             else -> builder.putString(key, value.toString())
         }

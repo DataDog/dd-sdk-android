@@ -50,6 +50,16 @@ buildscript {
 }
 
 allprojects {
+    // Temporary, immutable pending-0.9 Android snapshot. Remove this repository when 0.9 is released.
+    repositories.exclusiveContent {
+        forRepository {
+            repositories.maven {
+                name = "openFeaturePendingRelease"
+                url = uri("https://central.sonatype.com/repository/maven-snapshots/")
+            }
+        }
+        filter { includeModule("dev.openfeature", "kotlin-sdk-android") }
+    }
     repositories.depotProxied(providers) {
         google()
         mavenCentral()

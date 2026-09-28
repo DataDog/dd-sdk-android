@@ -1,7 +1,7 @@
 Dependencies List
 
 androidx.annotation:annotation-jvm:1.9.1                        :   59 Kb
-dev.openfeature:kotlin-sdk-android:0.8.0                        :  186 Kb
+dev.openfeature:kotlin-sdk-android:0.9.0-20260925.210300-13     :  216 Kb
 org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.20                  :  963 b 
 org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.20                  :  969 b 
 org.jetbrains.kotlin:kotlin-stdlib:2.2.10                       : 1709 Kb
