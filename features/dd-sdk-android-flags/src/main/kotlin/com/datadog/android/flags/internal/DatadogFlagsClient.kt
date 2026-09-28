@@ -154,7 +154,7 @@ internal class DatadogFlagsClient(
     /**
      * Resolves a flag value with detailed resolution information.
      *
-     * @param T The type of the flag value (Boolean, String, Int, Double, or JSONObject).
+     * @param T The type of the flag value (Boolean, String, Int, Long, Double, or JSONObject).
      * @param flagKey The key of the flag to query.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return [ResolutionDetails] with either the parsed value and metadata, or an error.
