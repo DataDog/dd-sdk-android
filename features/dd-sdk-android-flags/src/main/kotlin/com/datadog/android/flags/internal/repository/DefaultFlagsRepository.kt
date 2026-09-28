@@ -83,6 +83,7 @@ internal class DefaultFlagsRepository(
     override fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
+        dispatchFirstFlags: (() -> Unit) -> Unit,
         onInstalled: () -> Unit
     ) {
         val firstInstallation = synchronized(stateLock) {
@@ -124,7 +125,7 @@ internal class DefaultFlagsRepository(
             }
         } finally {
             if (firstInstallation) {
-                firstFlags.complete(flags.keys)
+                dispatchFirstFlags { firstFlags.complete(flags.keys) }
             }
         }
         if (storageFailure != null) throw storageFailure

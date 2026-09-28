@@ -92,36 +92,47 @@ internal class EvaluationsManager(
     private val initializationTimeoutScheduler: InitializationTimeoutScheduler
 ) {
     private val didStartInitialization = AtomicBoolean(false)
-    private val initializationTerminalLock = Any()
+    private val initializationTerminalLock = flagStateManager.lifecycleLock
+    private var contextGeneration = 0L
 
     /**
      * Processes a new evaluation context by fetching flags and storing atomically.
      *
      * This method asynchronously fetches precomputed flag evaluations for the given context
-     * and atomically updates both the context and flag data in the repository. Network failures
+     * and atomically updates both the context and flag data if the request is still current. Network failures
      * retain the previously installed assignments and their original context.
      *
      * The operation is performed on the configured executor service and will not block the
      * calling thread. Errors are logged but do not propagate to the caller.
      *
-     * @param context The evaluation context to process. Must be non-null and contain
+     * @param requestedContext The evaluation context to process. Must be non-null and contain
      * a valid targeting key.
      * @param callback Optional callback invoked when the context is set and the flags have been fetched successfully or not.
      */
-    fun updateEvaluationsForContext(context: EvaluationContext, callback: EvaluationContextCallback? = null) {
+    fun updateEvaluationsForContext(requestedContext: EvaluationContext, callback: EvaluationContextCallback? = null) {
         // Own the attributes before asynchronous work or reentrant lifecycle callbacks can run.
-        val requestedContext = context.copy(attributes = context.attributes.toMap())
-        flagsRepository.setRequestedContext(requestedContext)
-        fetchEvaluationsForContext(requestedContext, callback)
+        val context = requestedContext.copy(attributes = requestedContext.attributes.toMap())
+        val matchingCachedAssignments = AtomicBoolean(false)
+        val (generation, initializationCompletion) = synchronized(initializationTerminalLock) {
+            // Capture request order and context together before a listener can admit another request.
+            val generation = ++contextGeneration
+            flagsRepository.setRequestedContext(context)
+            val completion = startInitializationTimeout(context, callback, matchingCachedAssignments, generation) {
+                flagStateManager.updateState(FlagsClientState.Reconciling)
+            }
+            if (completion == null) flagStateManager.updateState(FlagsClientState.Reconciling)
+            generation to completion
+        }
+        fetchEvaluationsForContext(context, callback, matchingCachedAssignments, generation, initializationCompletion)
     }
 
-    private fun fetchEvaluationsForContext(context: EvaluationContext, callback: EvaluationContextCallback?) {
-        val matchingCachedAssignments = AtomicBoolean(false)
-        val initializationCompletion = startInitializationTimeout(context, callback, matchingCachedAssignments) {
-            flagStateManager.updateState(FlagsClientState.Reconciling)
-        }
-        if (initializationCompletion == null) flagStateManager.updateState(FlagsClientState.Reconciling)
-
+    private fun fetchEvaluationsForContext(
+        context: EvaluationContext,
+        callback: EvaluationContextCallback?,
+        matchingCachedAssignments: AtomicBoolean,
+        generation: Long,
+        initializationCompletion: InitializationCompletion?
+    ) {
         sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
             ?.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) { datadogContext ->
                 executorService.executeSafe(
@@ -141,7 +152,7 @@ internal class EvaluationsManager(
                     val response = assignmentsReader.readPrecomputedFlags(context, datadogContext)
                     if (response != null) {
                         val flagsMap = precomputeMapper.map(response)
-                        installFlags(context, flagsMap, initializationCompletion, callback)
+                        installFlags(context, flagsMap, generation, initializationCompletion, callback)
                     } else {
                         internalLogger.log(
                             InternalLogger.Level.WARN,
@@ -155,10 +166,12 @@ internal class EvaluationsManager(
                         val completionCallback = synchronized(initializationTerminalLock) {
                             val result = initializationCompletion?.take()?.callback
                                 ?: if (initializationCompletion == null) callback else null
-                            if (matchingCachedAssignments.get()) {
-                                flagStateManager.updateState(FlagsClientState.Stale)
-                            } else {
-                                flagStateManager.updateState(FlagsClientState.Error(throwable))
+                            if (generation == contextGeneration) {
+                                if (matchingCachedAssignments.get()) {
+                                    flagStateManager.updateState(FlagsClientState.Stale)
+                                } else {
+                                    flagStateManager.updateState(FlagsClientState.Error(throwable))
+                                }
                             }
                             result
                         }
@@ -171,17 +184,36 @@ internal class EvaluationsManager(
     private fun installFlags(
         context: EvaluationContext,
         flagsMap: Map<String, PrecomputedFlag>,
+        generation: Long,
         initializationCompletion: InitializationCompletion?,
         callback: EvaluationContextCallback?
     ) {
-        flagsRepository.setFlagsAndContext(context, flagsMap) {
-            val completionCallback = synchronized(initializationTerminalLock) {
-                val result = initializationCompletion?.take()?.callback
-                    ?: if (initializationCompletion == null) callback else null
-                flagStateManager.updateState(FlagsClientState.Ready)
-                result
+        var completionCallback: EvaluationContextCallback? = null
+        var publishFirstFlags: (() -> Unit)? = null
+        try {
+            synchronized(initializationTerminalLock) {
+                if (generation == contextGeneration) {
+                    // Keep admission serialized through installation and storage submission.
+                    flagsRepository.setFlagsAndContext(
+                        context,
+                        flagsMap,
+                        dispatchFirstFlags = { publishFirstFlags = it }
+                    ) {
+                        completionCallback = initializationCompletion?.take()?.callback
+                            ?: if (initializationCompletion == null) callback else null
+                        flagStateManager.updateState(FlagsClientState.Ready)
+                    }
+                } else {
+                    completionCallback = initializationCompletion?.take()?.callback
+                        ?: if (initializationCompletion == null) callback else null
+                }
             }
-            completionCallback?.onSuccess()
+        } finally {
+            try {
+                completionCallback?.onSuccess()
+            } finally {
+                publishFirstFlags?.invoke()
+            }
         }
         internalLogger.log(
             InternalLogger.Level.DEBUG,
@@ -194,6 +226,7 @@ internal class EvaluationsManager(
         context: EvaluationContext,
         callback: EvaluationContextCallback?,
         matchingCachedAssignments: AtomicBoolean,
+        generation: Long,
         beforeScheduling: () -> Unit
     ): InitializationCompletion? {
         val timeoutMs = initializationTimeoutMs
@@ -207,7 +240,9 @@ internal class EvaluationsManager(
                     val claimedResult = completion.take(shouldCancelTimeout = false)
                         ?: return@synchronized null
                     val currentState = flagStateManager.getCurrentState()
-                    if (currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale) {
+                    if (generation == contextGeneration &&
+                        currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale
+                    ) {
                         val hasMatchingCachedAssignments = matchingCachedAssignments.get() ||
                             flagsRepository.hasLoadedFlagsForContext(context)
                         val timeoutState = if (hasMatchingCachedAssignments) {

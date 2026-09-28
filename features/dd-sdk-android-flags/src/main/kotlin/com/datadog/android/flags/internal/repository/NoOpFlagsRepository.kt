@@ -20,6 +20,7 @@ internal class NoOpFlagsRepository : FlagsRepository {
     override fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
+        dispatchFirstFlags: (() -> Unit) -> Unit,
         onInstalled: () -> Unit
     ) {
         onInstalled()

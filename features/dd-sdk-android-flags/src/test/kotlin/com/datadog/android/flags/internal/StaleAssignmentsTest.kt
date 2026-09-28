@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.FlagsStateEntry
@@ -43,10 +44,14 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.FutureTask
+import java.util.concurrent.TimeUnit
 
 /** Exercises request admission, assignment installation and reads together, with explicitly queued fetches. */
 @ExtendWith(ForgeExtension::class)
@@ -73,6 +78,7 @@ internal class StaleAssignmentsTest {
         val featureScope = mock<FeatureScope>()
         val executor = mock<ExecutorService>()
         val datadogContext = forge.getForgery<DatadogContext>()
+        whenever(stateManager.lifecycleLock) doReturn Any()
         whenever(sdkCore.internalLogger) doReturn mock()
         whenever(sdkCore.timeProvider) doReturn mock()
         whenever(sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)) doReturn featureScope
@@ -181,7 +187,7 @@ internal class StaleAssignmentsTest {
     }
 
     @Test
-    fun `M mark older response stale W newer context requested during fetch`() {
+    fun `M retain cached assignments W newer context supersedes in flight response`() {
         install(fromDisk = true)
         whenever(reader.readPrecomputedFlags(eq(assignmentContext), any())) doAnswer {
             // A is in flight when B is synchronously requested and queued behind it.
@@ -196,17 +202,15 @@ internal class StaleAssignmentsTest {
         runNextFetch()
         assertReason("STALE")
         assertThat(repository.getEvaluationContext()).isEqualTo(assignmentContext)
-        val saved = argumentCaptor<FlagsStateEntry>()
-        verify(dataStore).setValue(any(), saved.capture(), any(), anyOrNull(), any())
-        assertThat(saved.firstValue.evaluationContext).isEqualTo(assignmentContext)
-        assertThat(saved.firstValue.flags["flag"]).isSameAs(flag)
+        verify(dataStore, never()).setValue(any(), any<FlagsStateEntry>(), any(), anyOrNull(), any())
         runNextFetch()
         assertReason("SPLIT", value = false)
         assertThat(repository.getEvaluationContext()).isEqualTo(otherContext)
     }
 
     @Test
-    fun `M retain older response as stale W newer fetch fails`() {
+    fun `M retain installed assignments as stale W superseded response succeeds and newer fetch fails`() {
+        install(fromDisk = true)
         whenever(reader.readPrecomputedFlags(eq(assignmentContext), any())) doAnswer {
             testedClient.setEvaluationContext(otherContext)
             "response-a"
@@ -216,6 +220,113 @@ internal class StaleAssignmentsTest {
         runNextFetch()
         runNextFetch()
         assertReason("STALE")
+        testedClient.setEvaluationContext(assignmentContext)
+        assertReason("CACHED")
+        verify(dataStore, never()).setValue(any(), any<FlagsStateEntry>(), any(), anyOrNull(), any())
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M preserve newer memory and persistence W older response completes last`(sameContext: Boolean) {
+        install(fromDisk = true)
+        val newerContext = if (sameContext) assignmentContext.copy() else otherContext
+        val oldReadStarted = CountDownLatch(1)
+        val releaseOldRead = CountDownLatch(1)
+        whenever(reader.readPrecomputedFlags(any(), any())).thenAnswer {
+            oldReadStarted.countDown()
+            check(releaseOldRead.await(5, TimeUnit.SECONDS))
+            "response-a"
+        }.thenReturn("response-b")
+        val replacement = flag.copy(variationValue = "false", reason = "SPLIT")
+        whenever(mapper.map("response-a")) doReturn mapOf("flag" to flag)
+        whenever(mapper.map("response-b")) doReturn mapOf("flag" to replacement)
+        val oldCallback = mock<EvaluationContextCallback>()
+        val newCallback = mock<EvaluationContextCallback>()
+        testedClient.setEvaluationContext(assignmentContext, oldCallback)
+        val oldTask = tasks.removeAt(0)
+        val oldResult = FutureTask { oldTask.run() }
+        val oldThread = Thread(oldResult)
+
+        try {
+            oldThread.start()
+            assertThat(oldReadStarted.await(5, TimeUnit.SECONDS)).isTrue()
+            testedClient.setEvaluationContext(newerContext, newCallback)
+            runNextFetch()
+            assertReason("SPLIT", value = false)
+            val installedSnapshot = testedClient.getFlagAssignmentsSnapshot()
+
+            releaseOldRead.countDown()
+            oldResult.get(5, TimeUnit.SECONDS)
+
+            assertReason("SPLIT", value = false)
+            assertThat(repository.getEvaluationContext()).isEqualTo(newerContext)
+            assertThat(testedClient.getFlagAssignmentsSnapshot()).isEqualTo(installedSnapshot)
+            val saved = argumentCaptor<FlagsStateEntry>()
+            verify(dataStore, times(1)).setValue(any(), saved.capture(), any(), anyOrNull(), any())
+            assertThat(saved.firstValue.evaluationContext).isEqualTo(newerContext)
+            assertThat(saved.firstValue.flags).isEqualTo(mapOf("flag" to replacement))
+            verify(stateManager, times(1)).updateState(FlagsClientState.Ready)
+            verify(oldCallback).onSuccess()
+            verify(newCallback).onSuccess()
+            verify(oldCallback, never()).onFailure(any())
+            verify(newCallback, never()).onFailure(any())
+        } finally {
+            releaseOldRead.countDown()
+            oldThread.join(TimeUnit.SECONDS.toMillis(5))
+        }
+    }
+
+    @Test
+    fun `M retain newer state W obsolete request fails after newer success`() {
+        val oldCallback = mock<EvaluationContextCallback>()
+        whenever(reader.readPrecomputedFlags(eq(assignmentContext), any())) doAnswer {
+            testedClient.setEvaluationContext(otherContext)
+            runNextFetch()
+            null
+        }
+        whenever(reader.readPrecomputedFlags(eq(otherContext), any())) doReturn "response-b"
+        whenever(mapper.map("response-b")) doReturn mapOf("flag" to flag)
+
+        testedClient.setEvaluationContext(assignmentContext, oldCallback)
+        runNextFetch()
+
+        assertReason("TARGETING_MATCH")
+        assertThat(repository.getEvaluationContext()).isEqualTo(otherContext)
+        verify(stateManager, times(2)).updateState(FlagsClientState.Reconciling)
+        verify(stateManager).updateState(FlagsClientState.Ready)
+        verify(stateManager, never()).updateState(any<FlagsClientState.Error>())
+        verify(stateManager, never()).updateState(FlagsClientState.Stale)
+        verify(oldCallback).onFailure(any())
+        verify(oldCallback, never()).onSuccess()
+    }
+
+    @Test
+    fun `M preserve latest admission W reconciling listener requests another context`() {
+        var didReenter = false
+        doAnswer {
+            if (!didReenter) {
+                didReenter = true
+                testedClient.setEvaluationContext(otherContext)
+            }
+            null
+        }.whenever(stateManager).updateState(FlagsClientState.Reconciling)
+        whenever(reader.readPrecomputedFlags(eq(assignmentContext), any())) doReturn "response-a"
+        whenever(reader.readPrecomputedFlags(eq(otherContext), any())) doReturn "response-b"
+        whenever(mapper.map("response-a")) doReturn mapOf("flag" to flag)
+        val replacement = flag.copy(variationValue = "false", reason = "SPLIT")
+        whenever(mapper.map("response-b")) doReturn mapOf("flag" to replacement)
+
+        testedClient.setEvaluationContext(assignmentContext)
+        // Reentrant B dispatches first, then outer A resumes and dispatches its obsolete fetch.
+        runNextFetch()
+        runNextFetch()
+
+        assertReason("SPLIT", value = false)
+        assertThat(repository.getEvaluationContext()).isEqualTo(otherContext)
+        val saved = argumentCaptor<FlagsStateEntry>()
+        verify(dataStore).setValue(any(), saved.capture(), any(), anyOrNull(), any())
+        assertThat(saved.firstValue.evaluationContext).isEqualTo(otherContext)
+        assertThat(saved.firstValue.flags).isEqualTo(mapOf("flag" to replacement))
     }
 
     @Test

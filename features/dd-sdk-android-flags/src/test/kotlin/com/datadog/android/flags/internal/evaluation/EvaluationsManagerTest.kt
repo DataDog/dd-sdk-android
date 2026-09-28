@@ -56,6 +56,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -115,6 +116,7 @@ internal class EvaluationsManagerTest {
     fun setUp() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
+        whenever(mockFlagsStateManager.lifecycleLock) doReturn Any()
 
         evaluationsManager = EvaluationsManager(
             sdkCore = mockSdkCore,
@@ -608,6 +610,44 @@ internal class EvaluationsManagerTest {
 
         // Then
         assertThat(stateAtTimeoutCallback).isEqualTo(FlagsClientState.Stale)
+    }
+
+    @Test
+    fun `M preserve newer pending state W superseded initialization times out and completes late`() {
+        val firstCallback = mock<EvaluationContextCallback>()
+        val operations = mutableListOf<Runnable>()
+        var timeoutAction: (() -> Unit)? = null
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operations += it.getArgument<Runnable>(0)
+            null
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), any())) doReturn EMPTY_FLAGS_RESPONSE_JSON
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)) doReturn emptyMap()
+        val stateManager = FlagsStateManager(
+            DDCoreStateHolder.create(
+                initialState = FlagsClientState.NotReady,
+                onStateChanged = FlagsStateListener::onStateChanged
+            )
+        )
+        val testedManager = createManager(
+            flagStateManager = stateManager,
+            initializationTimeoutMs = 2_500L,
+            scheduler = InitializationTimeoutScheduler { _, action ->
+                timeoutAction = action
+                {}
+            }
+        )
+        testedManager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), firstCallback)
+        testedManager.updateEvaluationsForContext(EvaluationContext("newer", emptyMap()))
+
+        checkNotNull(timeoutAction).invoke()
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+        operations[0].run()
+
+        verify(firstCallback).onFailure(any<FlagsInitializationTimeoutException>())
+        verify(firstCallback, never()).onSuccess()
+        verify(mockFlagsRepository, never()).setFlagsAndContext(any(), any())
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
     }
 
     @Test
