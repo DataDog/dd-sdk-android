@@ -9,8 +9,8 @@ package com.datadog.android.flags.model
 /**
  * Reason codes explaining why a particular flag value was resolved.
  *
- * These values indicate the evaluation path taken to determine the flag value,
- * providing context for debugging and analytics.
+ * These values indicate the evaluation path taken to determine the flag value, or for
+ * [CACHED] the source of the value, providing context for debugging and analytics.
  */
 enum class ResolutionReason {
     /**
@@ -52,6 +52,7 @@ enum class ResolutionReason {
 
     /**
      * The value was restored from persistent storage during client initialization.
+     * A successful fetch has not replaced it yet. The original evaluation reason is not reported.
      */
     CACHED
 }

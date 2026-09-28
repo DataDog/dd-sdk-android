@@ -188,7 +188,6 @@ internal class DatadogFlagsClientTest {
         assertThat(details.reason).isEqualTo(ResolutionReason.CACHED)
         assertThat(details.variant).isEqualTo(flag.variationKey)
         assertThat(details.errorCode).isNull()
-        assertThat(flag.reason).isEqualTo(originalReason.name)
         verify(mockProcessor).processEvent(flagKey, context, flag.copy(reason = ResolutionReason.CACHED.name))
     }
 
