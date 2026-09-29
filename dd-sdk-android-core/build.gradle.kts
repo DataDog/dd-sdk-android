@@ -141,8 +141,6 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
-    testImplementation(libs.okHttpMock)
-    testImplementation(libs.okHttpTls)
     unmock(libs.robolectric)
 
     // Test Fixtures
