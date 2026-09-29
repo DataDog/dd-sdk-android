@@ -121,7 +121,12 @@ internal class EvaluationsManager(
             val result = initialCompletion?.take()?.callback
             // An old initial waiter can settle without publishing status for a newer request.
             if (contextGeneration <= 1 && (failureGeneration == null || failureGeneration == contextGeneration)) {
-                publishState(if (usable) FlagsClientState.Stale else FlagsClientState.Error(networkFailure()))
+                val state = when {
+                    !usable -> FlagsClientState.Error(networkFailure())
+                    failureGeneration != null -> FlagsClientState.Stale
+                    else -> FlagsClientState.Ready
+                }
+                publishState(state)
             }
             result to usable
         }
@@ -272,7 +277,8 @@ internal class EvaluationsManager(
             if (generation == contextGeneration) {
                 if (initializationCompletion != null) initialNetworkSucceeded = true
                 flagsRepository.setFlagsAndContext(context, flags)
-                publishState(FlagsClientState.Ready)
+                // A cache-first client can already be Ready. Notify again for the accepted network snapshot.
+                flagStateManager.updateState(FlagsClientState.Ready)
             }
             result
         }

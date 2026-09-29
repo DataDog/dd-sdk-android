@@ -14,12 +14,13 @@ sealed class FlagsClientState {
      * The client is not ready to evaluate flags.
      *
      * This is the initial state before loading begins. A cache readiness policy can
-     * publish Stale before the first evaluation context is set.
+     * publish Ready before the first evaluation context is set.
      */
     object NotReady : FlagsClientState()
 
     /**
-     * The client has accepted a network configuration and its assignments are available for evaluation.
+     * The client has usable assignments available under its readiness policy.
+     * These can come from disk with a cache-first policy or from an accepted network response.
      */
     object Ready : FlagsClientState()
 
@@ -30,8 +31,7 @@ sealed class FlagsClientState {
     object Reconciling : FlagsClientState()
 
     /**
-     * The client has retained assignments without a successful current network refresh.
-     * This includes disk-backed initialization and matching retained data after a refresh failure.
+     * Reconciliation failed and the client has retained usable assignments.
      * Initialization can complete successfully in this state. Per-flag resolution reasons separately
      * describe disk origin (CACHED) or a requested-context mismatch (STALE).
      */

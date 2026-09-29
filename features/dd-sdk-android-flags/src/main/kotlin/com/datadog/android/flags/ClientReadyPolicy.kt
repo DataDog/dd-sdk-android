@@ -9,7 +9,7 @@ package com.datadog.android.flags
 /**
  * Determines when initial loading can complete with usable assignments.
  * Native cached evaluations may already be available before this readiness boundary.
- * Disk-backed availability uses native Stale freshness; accepted network results use Ready.
+ * Cache-first availability and accepted network results use Ready; retained assignments after a failed refresh use Stale.
  */
 enum class ClientReadyPolicy {
     /**

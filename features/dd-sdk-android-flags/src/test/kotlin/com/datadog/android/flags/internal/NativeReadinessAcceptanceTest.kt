@@ -125,11 +125,11 @@ internal class NativeReadinessAcceptanceTest {
     fun `M expose installed cached details inside state and success callbacks W matching disk load`() {
         testedClient.state.addListener(object : FlagsStateListener {
             override fun onStateChanged(newState: FlagsClientState) {
-                if (newState == FlagsClientState.Stale) assertDetails(ResolutionReason.CACHED)
+                if (newState == FlagsClientState.Ready) assertDetails(ResolutionReason.CACHED)
             }
         })
         whenever(mockCallback.onSuccess()).doAnswer {
-            assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+            assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
             assertDetails(ResolutionReason.CACHED)
             null
         }
@@ -146,7 +146,7 @@ internal class NativeReadinessAcceptanceTest {
     fun `M expose cached details W disk loads before first context`() {
         loadDisk()
 
-        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
         assertDetails(ResolutionReason.CACHED)
         testedClient.setEvaluationContext(fakeContext, mockCallback)
         verify(mockCallback).onSuccess()
@@ -154,30 +154,44 @@ internal class NativeReadinessAcceptanceTest {
     }
 
     @Test
-    fun `M complete availability with stale reason W requested context differs from disk`() {
+    fun `M complete availability with stale reason W mismatched disk {provisional eligibility}`() {
         val otherContext = fakeContext.copy(targetingKey = fakeContext.targetingKey + forge.anAlphabeticalString())
         testedClient.setEvaluationContext(otherContext, mockCallback)
 
         loadDisk()
 
-        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
         assertDetails(ResolutionReason.STALE)
         verify(mockCallback).onSuccess()
         verifyNoMoreInteractions(mockCallback)
     }
 
     @Test
-    fun `M publish ready with original reason W network replaces disk without completing twice`() {
+    fun `M notify ready twice W network replaces cache with new value and original reason`() {
+        val observedValues = mutableListOf<Boolean>()
+        val observedReasons = mutableListOf<ResolutionReason?>()
+        testedClient.state.addListener(object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                if (newState == FlagsClientState.Ready) {
+                    val details = testedClient.resolve(fakeKey, fakeValue)
+                    observedValues.add(details.value)
+                    observedReasons.add(details.reason)
+                    assertThat(details.errorCode).isNull()
+                }
+            }
+        })
         testedClient.setEvaluationContext(fakeContext, mockCallback)
         loadDisk()
-        val response = forge.anAlphabeticalString()
-        whenever(mockReader.readPrecomputedFlags(any(), any())).thenReturn(response)
-        whenever(mockMapper.map(response)).thenReturn(mapOf(fakeKey to fakeFlag))
+        val fakeResponse = forge.anAlphabeticalString()
+        val fakeNetworkFlag = fakeFlag.copy(variationValue = (!fakeValue).toString())
+        whenever(mockReader.readPrecomputedFlags(any(), any())).thenReturn(fakeResponse)
+        whenever(mockMapper.map(fakeResponse)).thenReturn(mapOf(fakeKey to fakeNetworkFlag))
 
         network.run()
 
         assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
-        assertDetails(ResolutionReason.valueOf(fakeFlag.reason))
+        assertThat(observedValues).containsExactly(fakeValue, !fakeValue)
+        assertThat(observedReasons).containsExactly(ResolutionReason.CACHED, ResolutionReason.valueOf(fakeFlag.reason))
         verify(mockCallback).onSuccess()
         verifyNoMoreInteractions(mockCallback)
     }
@@ -188,7 +202,7 @@ internal class NativeReadinessAcceptanceTest {
 
         loadDisk(emptyMap())
 
-        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
         verify(mockCallback).onSuccess()
         verifyNoMoreInteractions(mockCallback)
     }

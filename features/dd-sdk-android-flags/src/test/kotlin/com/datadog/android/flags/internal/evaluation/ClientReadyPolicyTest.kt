@@ -111,13 +111,13 @@ internal class ClientReadyPolicyTest {
     }
 
     @Test
-    fun `M publish stale availability W disk install {cache policy and network not dispatched}`() {
+    fun `M publish ready availability W disk install {cache policy and network not dispatched}`() {
         createManager(ClientReadyPolicy.CACHE_OR_NETWORK)
         testedManager.updateEvaluationsForContext(fakeContext, mockCallback)
 
         loadDisk()
 
-        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
         verify(mockCallback).onSuccess()
         verify(mockReader, never()).readPrecomputedFlags(any(), any())
     }
@@ -129,7 +129,7 @@ internal class ClientReadyPolicyTest {
 
         loadDisk()
 
-        assertThat(stateManager.getCurrentState()).isNotEqualTo(FlagsClientState.Stale)
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
         verify(mockCallback, never()).onSuccess()
     }
 
@@ -140,7 +140,7 @@ internal class ClientReadyPolicyTest {
 
         testedManager.updateEvaluationsForContext(fakeContext, mockCallback)
 
-        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
         verify(mockCallback).onSuccess()
     }
 
@@ -171,7 +171,7 @@ internal class ClientReadyPolicyTest {
             stateReader?.join(5000)
         }
 
-        assertThat(observedState.get()).isEqualTo(FlagsClientState.Stale)
+        assertThat(observedState.get()).isEqualTo(FlagsClientState.Ready)
         verify(mockCallback).onSuccess()
         verify(mockCallback, never()).onFailure(any())
     }
@@ -216,14 +216,14 @@ internal class ClientReadyPolicyTest {
     }
 
     @Test
-    fun `M publish stale availability W valid empty cache`() {
+    fun `M publish ready availability W valid empty cache`() {
         createManager(ClientReadyPolicy.CACHE_OR_NETWORK)
         testedManager.updateEvaluationsForContext(fakeContext, mockCallback)
         fakeEntry = fakeEntry.copy(flags = emptyMap())
 
         loadDisk()
 
-        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
         verify(mockCallback).onSuccess()
     }
 
@@ -250,8 +250,20 @@ internal class ClientReadyPolicyTest {
 
         diskRead.onFailure()
 
-        assertThat(stateManager.getCurrentState()).isNotEqualTo(FlagsClientState.Stale)
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
         verify(mockCallback, never()).onSuccess()
+    }
+
+    @Test
+    fun `M remain reconciling W disk has no installed configuration`() {
+        createManager(ClientReadyPolicy.CACHE_OR_NETWORK)
+        testedManager.updateEvaluationsForContext(fakeContext, mockCallback)
+
+        diskRead.onSuccess(null)
+
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+        verify(mockCallback, never()).onSuccess()
+        verify(mockCallback, never()).onFailure(any())
     }
 
     @Test
@@ -368,7 +380,7 @@ internal class ClientReadyPolicyTest {
         loadDisk()
         checkNotNull(timeoutAction).invoke()
 
-        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
         verify(mockCancelTimeout).invoke()
         verify(mockCallback).onSuccess()
         verify(mockCallback, never()).onFailure(any())
@@ -380,7 +392,7 @@ internal class ClientReadyPolicyTest {
         testedManager.updateEvaluationsForContext(fakeContext, mockCallback)
         whenever(mockReader.readPrecomputedFlags(any(), any())).doAnswer {
             loadDisk()
-            assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+            assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
             verify(mockCallback).onSuccess()
             null
         }
@@ -392,18 +404,20 @@ internal class ClientReadyPolicyTest {
     }
 
     @Test
-    fun `M publish stale availability W cache installed before any context request`() {
+    fun `M publish ready availability W cache installed before any context request`() {
         createManager(ClientReadyPolicy.CACHE_OR_NETWORK)
 
         loadDisk()
 
-        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
         verify(mockExecutor, never()).execute(any())
     }
 
     @ParameterizedTest
     @EnumSource(ClientReadyPolicy::class)
-    fun `M use mismatched cache W initial fetch fails {current eligibility policy}`(policy: ClientReadyPolicy) {
+    fun `M use mismatched cache W initial fetch fails {provisional any installed cache eligibility}`(
+        policy: ClientReadyPolicy
+    ) {
         val requestedContext = forge.getForgery<EvaluationContext>().copy(
             targetingKey = fakeContext.targetingKey + forge.anAlphabeticalString()
         )
@@ -436,7 +450,7 @@ internal class ClientReadyPolicyTest {
     }
 
     @Test
-    fun `M publish stale before completion W cache satisfies initial request`() {
+    fun `M publish ready before completion W cache satisfies initial request`() {
         createManager(ClientReadyPolicy.CACHE_OR_NETWORK)
         val observedStates = mutableListOf<FlagsClientState>()
         whenever(mockCallback.onSuccess()).doAnswer {
@@ -448,7 +462,7 @@ internal class ClientReadyPolicyTest {
         loadDisk()
         networkOperation.run()
 
-        assertThat(observedStates).containsExactly(FlagsClientState.Stale)
+        assertThat(observedStates).containsExactly(FlagsClientState.Ready)
         verify(mockCallback).onSuccess()
         verify(mockCallback, never()).onFailure(any())
     }

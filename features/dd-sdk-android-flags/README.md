@@ -137,7 +137,7 @@ client.setEvaluationContext(context)
 
 `ClientReadyPolicy.NETWORK` is the default: initialization waits for the initial network attempt. If it fails, an installed configuration can satisfy initialization; if disk loading is still pending, initialization waits for that result or the configured initialization deadline. Initialization fails when both sources are exhausted without a configuration.
 
-Use `CACHE_OR_NETWORK` to finish initialization as soon as a valid disk configuration is installed. The network request continues. Any valid installed configuration qualifies, including an empty configuration or one belonging to a previous context. Native state is `Stale` for disk-backed availability and becomes `Ready` after an accepted network response. Successful initialization does not require state `Ready`. This is a Datadog convention: disk data has not been revalidated during this initialization epoch; disk origin alone does not require OpenFeature STALE.
+Use `CACHE_OR_NETWORK` to finish initialization as soon as a valid disk configuration is installed. The network request continues. Any valid installed configuration qualifies, including an empty configuration or one belonging to a previous context. Cache-first availability publishes `Ready`. The later accepted network result notifies listeners again with `Ready` after installing its assignments; the initialization callback still completes only once. A failed network attempt with usable assignments publishes `Stale`, preserving their evaluation reasons.
 
 After enabling Flags, create the public client and register a state listener:
 
@@ -184,11 +184,25 @@ The example uses the public `FlagsClient` interface; its `DatadogFlagsClient` im
 
 For successful resolutions, `CACHED` means the assignment was loaded from disk and no differing context has been requested. `STALE` means the currently requested context differs from the assignment's context; it can apply to either disk-loaded or previously fetched assignments. This mismatch overlay is Datadog's chosen precedence for the STALE reason, not the complete OpenFeature definition. Accepted network responses retain their original reasons. An empty configuration can complete initialization but cannot provide a successful flag resolution. Resolution errors retain `ERROR` and the supplied default value.
 
-State and reason describe the current availability and evaluation. They do not record the exact historical trigger of initialization: `STALE` masks disk versus network origin, empty configurations provide no successful reason, and state and resolution reads are not an atomic pair. State `Stale` plus reason `CACHED` identifies disk-origin data without a context mismatch, but does not distinguish early disk readiness from fallback after a failed network attempt. No readiness-trigger metadata is exposed.
+State and reason describe the current availability and evaluation. They do not record the exact historical trigger of initialization: `STALE` masks disk versus network origin, empty configurations provide no successful reason, and state and resolution reads are not an atomic pair. Reason `CACHED` identifies disk-origin data without a context mismatch. State `Ready` permits evaluation under the chosen policy; it does not promise a fresh network response. No readiness-trigger metadata is exposed.
 
 The initialization deadline bounds the first callback only. Late disk/network results can recover the client without completing that callback twice. A superseded context operation reports its own outcome without replacing the newer assignments or state.
 
-The OpenFeature adapter uses its existing provider event stream. The pinned Kotlin SDK can overwrite a native `Stale` state with SDK `READY` when initialization returns normally; do not infer native freshness from OpenFeature client status. Use this native API when that distinction matters. Configuration-change notifications and per-flag observation are separate from this readiness policy.
+The OpenFeature adapter forwards cache-first `Ready` through its existing provider event stream. In a coroutine, use the public provider conversion to access early cached assignments through OpenFeature:
+
+```kotlin
+val provider = FlagsClient.Builder("checkout")
+    .clientReadyPolicy(ClientReadyPolicy.CACHE_OR_NETWORK)
+    .build()
+    .asOpenFeatureProvider()
+OpenFeatureAPI.setProviderAndWait(provider, ImmutableContext(targetingKey = "user-123"))
+val details = OpenFeatureAPI.getClient().getBooleanDetails("new-checkout", false)
+// Before the network completes, matching disk assignments report reason CACHED.
+```
+
+This example requires the OpenFeature integration module and its `asOpenFeatureProvider` extension. A different requested context projects successful assignment reasons as `STALE`; current cache eligibility includes those assignments. This eligibility is independent of the readiness state.
+
+Retained-cache failure during an active OpenFeature lifecycle remains a separate compatibility boundary: the pinned Kotlin SDK can overwrite native `Stale` with SDK `READY` when initialization returns normally. A native Stale event alone does not prove the final OpenFeature status. Configuration-change notifications and per-flag observation are separate from this readiness policy.
 
 ### Evaluate feature flags
 

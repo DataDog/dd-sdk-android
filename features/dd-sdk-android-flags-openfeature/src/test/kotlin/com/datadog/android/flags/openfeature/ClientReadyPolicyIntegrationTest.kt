@@ -53,7 +53,7 @@ import java.util.concurrent.ExecutorService
 @ExtendWith(ForgeExtension::class)
 internal class ClientReadyPolicyIntegrationTest {
     @Test
-    fun `M expose cached evaluation W disk load {native stale but legacy SDK ready}`(forge: Forge) = runTest {
+    fun `M expose cached evaluation W disk load {native and OpenFeature ready}`(forge: Forge) = runTest {
         val fixture = Fixture(forge, ClientReadyPolicy.CACHE_OR_NETWORK)
         val dispatcher = StandardTestDispatcher(testScheduler)
         val events = mutableListOf<OpenFeatureProviderEvents>()
@@ -69,8 +69,8 @@ internal class ClientReadyPolicyIntegrationTest {
             fixture.loadDisk()
             testScheduler.runCurrent()
 
-            assertThat(events).contains(OpenFeatureProviderEvents.ProviderStale)
-            assertThat(fixture.client.state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+            assertThat(events).containsExactly(OpenFeatureProviderEvents.ProviderReady)
+            assertThat(fixture.client.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
             assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Ready)
             assertThat(initialization.isCompleted).isTrue()
             initialization.await()
@@ -81,10 +81,11 @@ internal class ClientReadyPolicyIntegrationTest {
 
             fixture.networkOperation.run()
             testScheduler.runCurrent()
-            assertThat(events.count { it == OpenFeatureProviderEvents.ProviderReady }).isEqualTo(1)
+            assertThat(events.count { it == OpenFeatureProviderEvents.ProviderReady }).isEqualTo(2)
             assertThat(events).doesNotContain(OpenFeatureProviderEvents.ProviderConfigurationChanged)
-            assertThat(OpenFeatureAPI.getClient().getBooleanDetails(fixture.flagKey, fixture.flagValue).value)
-                .isEqualTo(!fixture.flagValue)
+            val refreshedDetails = OpenFeatureAPI.getClient().getBooleanDetails(fixture.flagKey, fixture.flagValue)
+            assertThat(refreshedDetails.value).isEqualTo(!fixture.flagValue)
+            assertThat(refreshedDetails.reason).isEqualTo("TARGETING_MATCH")
         } finally {
             collector.cancelAndJoin()
             OpenFeatureAPI.shutdown()
@@ -128,7 +129,7 @@ internal class ClientReadyPolicyIntegrationTest {
     }
 
     @Test
-    fun `M expose legacy ordering difference W provider initialized after disk load`(forge: Forge) = runTest {
+    fun `M expose ready cached evaluation W provider initialized after disk load`(forge: Forge) = runTest {
         val fixture = Fixture(forge, ClientReadyPolicy.CACHE_OR_NETWORK)
         fixture.loadDisk()
         val dispatcher = StandardTestDispatcher(testScheduler)
@@ -136,7 +137,7 @@ internal class ClientReadyPolicyIntegrationTest {
             OpenFeatureAPI.setProviderAndWait(fixture.provider, ImmutableContext(fixture.targetingKey), dispatcher)
             testScheduler.runCurrent()
 
-            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Stale)
+            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Ready)
             val details = OpenFeatureAPI.getClient().getBooleanDetails(fixture.flagKey, !fixture.flagValue)
             assertThat(details.value).isEqualTo(fixture.flagValue)
             assertThat(details.reason).isEqualTo("CACHED")
