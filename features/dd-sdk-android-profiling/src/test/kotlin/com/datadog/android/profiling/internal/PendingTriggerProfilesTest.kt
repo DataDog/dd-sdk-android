@@ -11,6 +11,7 @@ import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.perfetto.ProfileType
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfileStorage
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
 import org.assertj.core.api.Assertions.assertThat
@@ -208,7 +209,14 @@ internal class PendingTriggerProfilesTest {
         start = detectedAtMs,
         startReason = startReason,
         end = detectedAtMs,
-        resultFilePath = path
+        resultFilePath = path,
+        profileTypes = listOf(
+            if (startReason == ProfilingStartReason.ANR) {
+                ProfileType.SYSTEM_TRACE
+            } else {
+                ProfileType.STACK_SAMPLING
+            }
+        )
     )
 
     private fun anrErrorEvent(
