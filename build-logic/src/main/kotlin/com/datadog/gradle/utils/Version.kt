@@ -44,7 +44,7 @@ data class Version(
         }
 
         data class Dogfood(val shortSha: String) : Type() {
-            override val suffix: String = "-dogfood-$shortSha"
+            override val suffix: String = "-dogfood-$shortSha-SNAPSHOT"
         }
     }
 
