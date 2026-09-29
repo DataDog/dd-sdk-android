@@ -672,6 +672,21 @@ publish:release-all:
     paths:
       - "**/verification-metadata.xml"
 
+# Manual publish for dogfood builds
+publish:dogfooding:
+  tags: [ "arch:amd64" ]
+  only:
+    - dogfooding
+  when: manual
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  interruptible: false
+  script:
+    - !reference [.snippets, set-publishing-credentials]
+    - !reference [.snippets, setup-gradle]
+    - ./gradlew publishToSonatype --stacktrace --no-daemon
+
 
 # SLACK NOTIFICATIONS
 
