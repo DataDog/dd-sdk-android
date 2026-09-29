@@ -39,8 +39,7 @@ import okhttp3.OkHttpClient
  */
 @ExperimentalRumApi
 @ExperimentalTraceApi
-@Suppress("PackageNameVisibility")
-internal fun OkHttpClient.Builder.configureDatadogInstrumentation(
+fun OkHttpClient.Builder.configureDatadogInstrumentation(
     apmInstrumentationConfiguration: ApmNetworkInstrumentationConfiguration?,
     rumInstrumentationConfiguration: RumNetworkInstrumentationConfiguration?
 ) = OkHttpIntegrationPlugin(this, rumInstrumentationConfiguration, apmInstrumentationConfiguration)
