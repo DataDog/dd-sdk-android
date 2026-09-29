@@ -111,6 +111,12 @@ stages:
     - export CENTRAL_PUBLISHER_PASSWORD=$(get_secret $DD_ANDROID_SECRET__PUBLISHING_CENTRAL_PWD)
     - export GPG_PUBLIC_FINGERPRINT=$(get_secret $DD_ANDROID_SECRET__SIGNING_GPG_PUBLIC_KEY | gpg --import --import-options show-only | grep -E -o -e "[A-F0-9]{40}")
 
+.cpu-memory-intensive-job:
+  variables:
+    KUBERNETES_MEMORY_REQUEST: "8Gi"
+    KUBERNETES_MEMORY_LIMIT: "32Gi"
+    KUBERNETES_CPU_REQUEST: 20
+
 .base-cache-pull-job:
   cache:
     key: $CI_COMMIT_REF_SLUG
@@ -161,6 +167,7 @@ create_key:
 analysis:generated-files-check:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: verify
@@ -173,6 +180,7 @@ analysis:generated-files-check:
 analysis:ktlint:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: verify
@@ -184,6 +192,7 @@ analysis:ktlint:
 analysis:detekt:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: verify
@@ -195,6 +204,7 @@ analysis:detekt:
 analysis:android-lint:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: verify
@@ -206,6 +216,7 @@ analysis:android-lint:
 test:debug:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: verify
@@ -229,6 +240,7 @@ test:debug:
 test:tools:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: verify
@@ -246,6 +258,7 @@ test:tools:
 test:build-logic:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: verify
@@ -261,6 +274,8 @@ test:build-logic:
       junit: "build-logic/build/test-results/test/*.xml"
 
 test:kover:
+  extends:
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: verify
@@ -344,6 +359,7 @@ test-pyramid:core-it-median-api:
 test-pyramid:single-fit-logs:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -361,6 +377,7 @@ test-pyramid:single-fit-logs:
 test-pyramid:single-fit-rum:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -378,6 +395,7 @@ test-pyramid:single-fit-rum:
 test-pyramid:single-fit-trace:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -395,6 +413,7 @@ test-pyramid:single-fit-trace:
 test-pyramid:single-fit-okhttp:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -412,6 +431,7 @@ test-pyramid:single-fit-okhttp:
 test-pyramid:single-fit-profiling:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -491,6 +511,7 @@ test-pyramid:ndk-instrumented-latest-api:
 test-pyramid:api-coverage:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -507,6 +528,7 @@ test-pyramid:api-coverage:
 test-pyramid:publish-e2e-synthetics:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -534,6 +556,7 @@ test-pyramid:publish-e2e-synthetics:
 test-pyramid:publish-webview-synthetics:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -561,6 +584,7 @@ test-pyramid:publish-webview-synthetics:
 test-pyramid:publish-staging-synthetics:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -588,6 +612,7 @@ test-pyramid:publish-staging-synthetics:
 test-pyramid:publish-benchmark-synthetics:
   extends:
     - .base-cache-pull-job
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: test-pyramid
@@ -627,6 +652,8 @@ test-pyramid:rum-fit-tests:
 # PUBLISH ARTIFACTS ON MAVEN
 
 publish:release-all:
+  extends:
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   interruptible: false
   only:
