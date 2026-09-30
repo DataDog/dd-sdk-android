@@ -16,6 +16,7 @@ internal fun interface OnDrawListenerProducer {
         decorViews: List<View>,
         textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy,
-        touchPrivacyManager: TouchPrivacyManager
+        touchPrivacyManager: TouchPrivacyManager,
+        frameHealthMonitor: FrameHealthMonitor?
     ): OnDemandCaptureListener
 }

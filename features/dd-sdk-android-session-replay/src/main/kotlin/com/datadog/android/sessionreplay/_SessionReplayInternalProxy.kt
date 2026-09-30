@@ -46,6 +46,18 @@ class _SessionReplayInternalProxy(private val builder: SessionReplayConfiguratio
         return builder.setInternalCallback(internalCallback)
     }
 
+    /**
+     * Enables or disables backing off capture further while this device's own recent frames are
+     * janky - missing their own deadline (e.g. a focused text input's cursor blink triggering a
+     * capture on every draw). Off by default.
+     *
+     * @param enabled whether jank-aware backoff should be active.
+     * @return [SessionReplayConfiguration.Builder] instance.
+     */
+    fun setJankAwareBackoffEnabled(enabled: Boolean): SessionReplayConfiguration.Builder {
+        return builder.setJankAwareBackoffEnabled(enabled)
+    }
+
     companion object {
         /**
          * Identifies [view] as a host slot for embedded Session Replay content.

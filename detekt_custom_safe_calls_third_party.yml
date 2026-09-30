@@ -1,6 +1,9 @@
 datadog:
   UnsafeThirdPartyFunctionCall:
     knownSafeThirdPartyCalls:
+      # region Android
+      - "android.view.Window.OnFrameMetricsAvailableListener(kotlin.Function3)"
+      # endregion
       # region Apollo Kotlin
       - "com.apollographql.apollo.api.json.buildJsonString(kotlin.String?, kotlin.Function1)"
       - "com.apollographql.apollo.api.ApolloRequest.newBuilder()"
@@ -407,6 +410,7 @@ datadog:
       - "java.util.WeakHashMap.containsKey(android.view.Window?)"
       - "java.util.WeakHashMap.forEach(kotlin.Function1)"
       - "java.util.WeakHashMap.getOrPut(android.app.Activity?, kotlin.Function0)"
+      - "java.util.WeakHashMap.getOrPut(android.view.Window?, kotlin.Function0)"
       - "java.util.WeakHashMap.put(android.app.Activity?, android.view.ViewTreeObserver.OnDrawListener?)"
       - "java.util.WeakHashMap.put(android.app.Activity?, com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener?)"
       - "java.util.WeakHashMap.put(android.view.Window?, kotlin.Any?)"
@@ -473,6 +477,7 @@ datadog:
       - "kotlin.collections.arrayListOf()"
       - "kotlin.collections.ArrayList(kotlin.Int)"
       - "kotlin.collections.ArrayList(kotlin.collections.MutableCollection?)"
+      - "kotlin.collections.buildList(kotlin.Function1)"
       - "kotlin.collections.buildMap(kotlin.Function1)"
       - "kotlin.collections.Collection.flatten()"
       - "kotlin.collections.Collection.firstOrNull()"
@@ -586,6 +591,7 @@ datadog:
       - "kotlin.collections.Map.toJsonObject()"
       - "kotlin.collections.Map.toMap()"
       - "kotlin.collections.Map.toMutableMap()"
+      - "kotlin.collections.MutableCollection.any(kotlin.Function1)"
       - "kotlin.collections.MutableCollection.firstOrNull(kotlin.Function1)"
       - "kotlin.collections.MutableCollection.filterIsInstance()"
       - "kotlin.collections.MutableCollection.flatMap(kotlin.Function1)"
@@ -892,6 +898,7 @@ datadog:
       - "kotlin.Float.percent()"
       - "kotlin.Float.roundToInt()"
       - "kotlin.Float.roundToLong()"
+      - "kotlin.Float.takeIf(kotlin.Function1)"
       - "kotlin.Float.toDouble()"
       - "kotlin.Float.toFloat()"
       - "kotlin.Float.toInt()"
@@ -915,6 +922,7 @@ datadog:
       - "kotlin.IntArray.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
       - "kotlin.IntArray.toSet()"
       - "kotlin.Long.coerceAtLeast(kotlin.Long)"
+      - "kotlin.Long.coerceAtMost(kotlin.Long)"
       - "kotlin.Long.coerceIn(kotlin.Long, kotlin.Long)"
       - "kotlin.Long.countLeadingZeroBits()"
       - "kotlin.Long.hashCode()"

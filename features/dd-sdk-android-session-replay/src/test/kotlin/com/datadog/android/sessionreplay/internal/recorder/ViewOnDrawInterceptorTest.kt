@@ -77,7 +77,8 @@ internal class ViewOnDrawInterceptorTest {
                 decorViews = fakeDecorViews,
                 textAndInputPrivacy = fakeTextAndInputPrivacy,
                 imagePrivacy = fakeImagePrivacy,
-                touchPrivacyManager = mockTouchPrivacyManager
+                touchPrivacyManager = mockTouchPrivacyManager,
+                frameHealthMonitor = null
             )
         ) doReturn mockOnDrawListener
         whenever(mockOnDrawListener.captureNow()) doReturn true
@@ -109,7 +110,7 @@ internal class ViewOnDrawInterceptorTest {
         testedInterceptor = ViewOnDrawInterceptor(
             internalLogger = mockInternalLogger,
             touchPrivacyManager = mockTouchPrivacyManager,
-            onDrawListenerProducer = { _, privacy, _, _ ->
+            onDrawListenerProducer = { _, privacy, _, _, _ ->
                 check(privacy == fakeTextAndInputPrivacy) {
                     "Expected to create an OnDrawListener with privacy $fakeTextAndInputPrivacy but was $privacy"
                 }
@@ -132,8 +133,9 @@ internal class ViewOnDrawInterceptorTest {
         val mockOnDrawListener = mock<OnDemandCaptureListener>()
         testedInterceptor = ViewOnDrawInterceptor(
             internalLogger = mockInternalLogger,
-            touchPrivacyManager = mockTouchPrivacyManager
-        ) { _, _, _, _ -> mockOnDrawListener }
+            touchPrivacyManager = mockTouchPrivacyManager,
+            onDrawListenerProducer = { _, _, _, _, _ -> mockOnDrawListener }
+        )
 
         // When
         testedInterceptor.intercept(fakeDecorViews, fakeTextAndInputPrivacy, fakeImagePrivacy)
@@ -190,6 +192,27 @@ internal class ViewOnDrawInterceptorTest {
 
         // Then
         assertThat(result).isEqualTo(ViewOnDrawInterceptor.CaptureRequestResult.NOT_CAPTURED)
+    }
+
+    @Test
+    fun `M reset the debounce state W resetDebounceStateOnAllWindows()`() {
+        // Given
+        testedInterceptor.intercept(fakeDecorViews, fakeTextAndInputPrivacy, fakeImagePrivacy)
+        clearInvocations(mockOnDrawListener)
+
+        // When
+        testedInterceptor.resetDebounceStateOnAllWindows()
+
+        // Then - the same listener instance is registered for every decor view, so the dedup via
+        // decorOnDrawListeners.values.toSet() means it's reset exactly once, not once per view.
+        verify(mockOnDrawListener).resetDebounceState()
+    }
+
+    @Test
+    fun `M do nothing W resetDebounceStateOnAllWindows { nothing intercepted }`() {
+        // When/Then - safe to call before intercept() is ever invoked
+        testedInterceptor.resetDebounceStateOnAllWindows()
+        verifyNoInteractions(mockOnDrawListener)
     }
 
     @Test

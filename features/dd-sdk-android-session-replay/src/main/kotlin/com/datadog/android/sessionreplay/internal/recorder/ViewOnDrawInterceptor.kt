@@ -18,7 +18,8 @@ import java.util.WeakHashMap
 internal class ViewOnDrawInterceptor(
     private val internalLogger: InternalLogger,
     private val touchPrivacyManager: TouchPrivacyManager,
-    private val onDrawListenerProducer: OnDrawListenerProducer
+    private val onDrawListenerProducer: OnDrawListenerProducer,
+    private val frameHealthMonitor: FrameHealthMonitor? = null
 ) {
     internal val decorOnDrawListeners: WeakHashMap<View, OnDemandCaptureListener> =
         WeakHashMap()
@@ -30,7 +31,13 @@ internal class ViewOnDrawInterceptor(
     ) {
         stopInterceptingAndRemove(decorViews)
         val onDrawListener =
-            onDrawListenerProducer.create(decorViews, textAndInputPrivacy, imagePrivacy, touchPrivacyManager)
+            onDrawListenerProducer.create(
+                decorViews,
+                textAndInputPrivacy,
+                imagePrivacy,
+                touchPrivacyManager,
+                frameHealthMonitor
+            )
         decorViews.forEach { decorView ->
             val viewTreeObserver = decorView.viewTreeObserver
             if (viewTreeObserver != null && viewTreeObserver.isAlive) {
@@ -83,6 +90,18 @@ internal class ViewOnDrawInterceptor(
         } else {
             CaptureRequestResult.NOT_CAPTURED
         }
+    }
+
+    /**
+     * A screen transition's own capture is taken via [requestCapture], which already bypasses the
+     * debouncer for that one shot - but leaves each window's debouncer state untouched. Without
+     * this, a debouncer still backed off from the previous screen's load would keep throttling the
+     * new screen's own subsequent, ordinary draw-triggered captures. Call this once per transition,
+     * alongside [requestCapture].
+     */
+    @MainThread
+    fun resetDebounceStateOnAllWindows() {
+        decorOnDrawListeners.values.toSet().forEach { it.resetDebounceState() }
     }
 
     /**
