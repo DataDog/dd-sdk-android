@@ -110,6 +110,7 @@ object WebViewTracking {
                 allowedHosts,
                 privacyLevel,
                 webViewRumFeature,
+                featureSdkCore,
                 featureSdkCore.internalLogger
             ),
             DATADOG_EVENT_BRIDGE_NAME
