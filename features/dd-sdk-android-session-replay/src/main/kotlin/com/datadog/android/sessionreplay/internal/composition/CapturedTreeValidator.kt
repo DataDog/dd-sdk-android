@@ -53,17 +53,6 @@ internal interface CapturedTreeValidator {
     ): CaptureValidationResult
 }
 
-internal class DefaultCapturedTreeValidator : CapturedTreeValidator {
-
-    override fun validate(snapshot: CapturedFullSnapshot): CaptureValidationResult =
-        CapturedSnapshotValidation(snapshot).validate()
-
-    override fun validate(
-        mutation: CapturedMutationSet,
-        base: CapturedFullSnapshot
-    ): CaptureValidationResult = CapturedMutationValidation(mutation, base).validate()
-}
-
 internal fun validationFailure(
     code: CaptureValidationErrorCode,
     identity: CapturedIdentity? = null,

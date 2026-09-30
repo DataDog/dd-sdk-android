@@ -253,6 +253,13 @@ data class SessionReplayConfiguration internal constructor(
          *
          * Disabled by default.
          *
+         * Heatmap recording ([setHeatmapsEnabled]) is not supported by this pipeline yet; combining
+         * the two will log a warning and no heatmap data will be recorded.
+         *
+         * Embedded content is not supported by this pipeline yet either; a warning is logged the
+         * first time an embedded content slot requests a capture and no embedded content will be
+         * recorded.
+         *
          * @param enabled whether composition-tree recording should be used.
          */
         @ExperimentalSessionReplayApi

@@ -6,10 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
-internal fun interface CapturedSnapshotProducer {
-    fun capture(): CapturedFullSnapshot?
-}
-
 internal data class CapturedBounds(
     val x: Long,
     val y: Long,
@@ -114,8 +110,12 @@ internal sealed interface PixelResource {
         val mimeType: String? = null
     ) : PixelResource
 
-    object Unresolved : PixelResource
+    companion object {
+        val Unresolved: PixelResource = UnresolvedPixelResource()
+    }
 }
+
+private class UnresolvedPixelResource : PixelResource
 
 internal data class CapturedClip(
     val top: Long? = null,
