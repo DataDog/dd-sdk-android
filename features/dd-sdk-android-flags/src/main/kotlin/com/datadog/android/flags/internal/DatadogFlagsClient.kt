@@ -10,13 +10,16 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsClientEventHandler
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientEventType
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.model.UnparsedFlag
@@ -40,6 +43,7 @@ import org.json.JSONObject
  * @param exposureProcessor responsible for writing exposure batches to be sent to flags backend.
  * @param evaluationsFeature the evaluations subfeature for accessing processor and context (optional).
  * @param flagStateManager channel for managing state change listeners
+ * @param eventDispatcher channel for configuration installation notifications
  */
 @Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
 internal class DatadogFlagsClient(
@@ -50,10 +54,23 @@ internal class DatadogFlagsClient(
     private val rumEvaluationLogger: RumEvaluationLogger,
     private val exposureProcessor: EventsProcessor,
     private val evaluationsFeature: EvaluationsFeature?,
-    private val flagStateManager: FlagsStateManager
+    private val flagStateManager: FlagsStateManager,
+    private val eventDispatcher: FlagsEventDispatcher = FlagsEventDispatcher(featureSdkCore.internalLogger)
 ) : FlagsClient {
 
     override val state: StateObservable = flagStateManager
+
+    internal fun startLoading() {
+        (flagsRepository as? DefaultFlagsRepository)?.startLoading()
+    }
+
+    override fun addHandler(type: FlagsClientEventType, handler: FlagsClientEventHandler) {
+        eventDispatcher.addHandler(type, handler)
+    }
+
+    override fun removeHandler(type: FlagsClientEventType, handler: FlagsClientEventHandler) {
+        eventDispatcher.removeHandler(type, handler)
+    }
 
     // region FlagsClient
 

@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
 import com.datadog.android.flags.internal.EvaluationsFeature
+import com.datadog.android.flags.internal.FlagsEventDispatcher
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.LogWithPolicy
@@ -28,6 +29,7 @@ import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientEventType
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.internal.utils.DDCoreStateHolder
@@ -62,6 +64,20 @@ import org.json.JSONObject
  * ```
  */
 interface FlagsClient {
+    /**
+     * Registers a handler for future installations, without replay. Repeated registration of
+     * the same handler is ignored. Notifications do not change readiness and include accepted
+     * identical or empty configurations. Handlers can resolve directly; a later installation
+     * may already have superseded the notified data. Use [Builder.addHandler] to observe disk restoration.
+     * Custom client implementations may leave this optional notification API unsupported.
+     */
+    fun addHandler(type: FlagsClientEventType, handler: FlagsClientEventHandler) = Unit
+
+    /**
+     * Removes a handler. A callback already executing may finish; queued calls are skipped.
+     */
+    fun removeHandler(type: FlagsClientEventType, handler: FlagsClientEventHandler) = Unit
+
     /**
      * Sets the [EvaluationContext] for flag resolution.
      *
@@ -219,6 +235,17 @@ interface FlagsClient {
     class Builder {
         private val name: String
         private val sdkCore: FeatureSdkCore
+        private val handlers = mutableListOf<Pair<FlagsClientEventType, FlagsClientEventHandler>>()
+
+        /**
+         * Registers before disk restoration starts. The client is registered before callbacks run,
+         * so a handler may use [FlagsClient.get] even if it runs before [build] returns.
+         * Handlers are ignored when build returns an already existing client or a no-op client.
+         */
+        @Suppress("UnsafeThirdPartyFunctionCall") // Privately owned mutable list.
+        fun addHandler(type: FlagsClientEventType, handler: FlagsClientEventHandler): Builder = apply {
+            handlers.add(type to handler)
+        }
 
         /**
          * Creates a builder for a named [FlagsClient].
@@ -299,9 +326,10 @@ interface FlagsClient {
                     featureSdkCore = sdkCore,
                     flagsFeature = flagsFeature,
                     evaluationsFeature = evaluationsFeature,
-                    name = name
+                    name = name,
+                    handlers = handlers
                 )
-            }
+            }.also { (it as? DatadogFlagsClient)?.startLoading() }
         }
     }
 
@@ -393,18 +421,23 @@ interface FlagsClient {
             featureSdkCore: FeatureSdkCore,
             flagsFeature: FlagsFeature,
             evaluationsFeature: EvaluationsFeature?,
-            name: String
+            name: String,
+            handlers: List<Pair<FlagsClientEventType, FlagsClientEventHandler>> = emptyList()
         ): FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
             )
             val datastore = featureSdkCore.getFeature(FLAGS_FEATURE_NAME)
                 ?.dataStore
+            val eventDispatcher = FlagsEventDispatcher(featureSdkCore.internalLogger)
+            handlers.forEach { (type, handler) -> eventDispatcher.addHandler(type, handler) }
             val flagsRepository = if (datastore != null) {
                 DefaultFlagsRepository(
                     featureSdkCore = featureSdkCore,
                     dataStore = datastore,
-                    instanceName = name
+                    instanceName = name,
+                    eventDispatcher = eventDispatcher,
+                    loadImmediately = false
                 )
             } else {
                 NoOpFlagsRepository()
@@ -435,7 +468,8 @@ interface FlagsClient {
                 precomputeMapper = precomputeMapper,
                 flagStateManager = flagStateManager,
                 initializationTimeoutMs = configuration.initializationTimeoutMs,
-                initializationTimeoutScheduler = flagsFeature.initializationTimeoutScheduler
+                initializationTimeoutScheduler = flagsFeature.initializationTimeoutScheduler,
+                eventDispatcher = eventDispatcher
             )
 
             val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)
@@ -448,7 +482,8 @@ interface FlagsClient {
                 rumEvaluationLogger = rumEvaluationLogger,
                 exposureProcessor = flagsFeature.processor,
                 evaluationsFeature = evaluationsFeature,
-                flagStateManager = flagStateManager
+                flagStateManager = flagStateManager,
+                eventDispatcher = eventDispatcher
             )
         }
 

@@ -4,6 +4,8 @@ interface com.datadog.android.flags.EvaluationContextCallback
 object com.datadog.android.flags.Flags
   fun enable(FlagsConfiguration = FlagsConfiguration.default, com.datadog.android.api.SdkCore = Datadog.getInstance())
 interface com.datadog.android.flags.FlagsClient
+  fun addHandler(com.datadog.android.flags.model.FlagsClientEventType, FlagsClientEventHandler)
+  fun removeHandler(com.datadog.android.flags.model.FlagsClientEventType, FlagsClientEventHandler)
   fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext, EvaluationContextCallback? = null)
   fun resolveBooleanValue(String, Boolean): Boolean
   fun resolveStringValue(String, String): String
@@ -14,10 +16,13 @@ interface com.datadog.android.flags.FlagsClient
   fun <T: Any> resolve(String, T): com.datadog.android.flags.model.ResolutionDetails<T>
   val state: StateObservable
   class Builder
+    fun addHandler(com.datadog.android.flags.model.FlagsClientEventType, FlagsClientEventHandler): Builder
     constructor(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance())
     fun build(): FlagsClient
   companion object 
     fun get(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
+interface com.datadog.android.flags.FlagsClientEventHandler
+  fun handle(com.datadog.android.flags.model.FlagsClientEventDetails)
 data class com.datadog.android.flags.FlagsConfiguration
   fun copy(Boolean = this.trackExposures, Boolean = this.trackEvaluations, String? = this.customExposureEndpoint, String? = this.customEvaluationEndpoint, String? = this.customFlagEndpoint, Long = this.evaluationFlushIntervalMs, Boolean = this.rumIntegrationEnabled, Boolean = this.gracefulModeEnabled): FlagsConfiguration
   class Builder
@@ -51,6 +56,12 @@ data class com.datadog.android.flags.model.EvaluationContext
   constructor(String, Map<String, String> = emptyMap())
   companion object 
     val EMPTY: EvaluationContext
+class com.datadog.android.flags.model.FlagsClientEventDetails
+  constructor(String, List<String>? = null, String? = null, FlagsEventErrorCode? = null, Map<String, FlagsEventMetadataValue> = emptyMap())
+  val flagsChanged: List<String>?
+  val eventMetadata: Map<String, FlagsEventMetadataValue>
+enum com.datadog.android.flags.model.FlagsClientEventType
+  - CONFIGURATION_CHANGED
 sealed class com.datadog.android.flags.model.FlagsClientState
   object NotReady : FlagsClientState
   object Ready : FlagsClientState
@@ -58,6 +69,24 @@ sealed class com.datadog.android.flags.model.FlagsClientState
   object Stale : FlagsClientState
   data class Error : FlagsClientState
     constructor(Throwable? = null)
+enum com.datadog.android.flags.model.FlagsEventErrorCode
+  - PROVIDER_NOT_READY
+  - FLAG_NOT_FOUND
+  - PARSE_ERROR
+  - TYPE_MISMATCH
+  - TARGETING_KEY_MISSING
+  - INVALID_CONTEXT
+  - PROVIDER_FATAL
+  - GENERAL
+sealed class com.datadog.android.flags.model.FlagsEventMetadataValue
+  data class StringValue : FlagsEventMetadataValue
+    constructor(String)
+  data class BooleanValue : FlagsEventMetadataValue
+    constructor(Boolean)
+  data class LongValue : FlagsEventMetadataValue
+    constructor(Long)
+  data class DoubleValue : FlagsEventMetadataValue
+    constructor(Double)
 data class com.datadog.android.flags.model.ResolutionDetails<T: Any>
   constructor(T, String? = null, ResolutionReason? = null, ErrorCode? = null, String? = null, Map<String, Any> = emptyMap())
 enum com.datadog.android.flags.model.ResolutionReason

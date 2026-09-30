@@ -92,3 +92,6 @@ datadogBuild {
             "library for Android applications."
     )
 }
+
+// Keep additive default interface methods callable by existing Java/Kotlin implementations.
+kotlin.compilerOptions.freeCompilerArgs.add("-Xjvm-default=all-compatibility")

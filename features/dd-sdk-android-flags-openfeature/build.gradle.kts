@@ -56,6 +56,7 @@ dependencies {
     implementation(libs.coroutinesCore)
     implementation(libs.androidXAnnotation)
 
+    testImplementation(libs.okHttp)
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(

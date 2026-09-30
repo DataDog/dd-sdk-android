@@ -10,12 +10,14 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
+import com.datadog.android.flags.internal.FlagsEventDispatcher
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 internal class DefaultFlagsRepository(
@@ -23,9 +25,13 @@ internal class DefaultFlagsRepository(
     private val instanceName: String,
     private val dataStore: DataStoreHandler,
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
-    private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS
+    private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS,
+    private val eventDispatcher: FlagsEventDispatcher = FlagsEventDispatcher(internalLogger),
+    loadImmediately: Boolean = true
 ) : FlagsRepository {
     private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
+    private val installationLock = Any()
+    private val loadStarted = AtomicBoolean(false)
     private val atomicState = AtomicReference<FlagsState?>(null)
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Safe: count is positive constant (1)
@@ -34,23 +40,40 @@ internal class DefaultFlagsRepository(
     private val persistenceManager = FlagsPersistenceManager(
         dataStore = dataStore,
         instanceName = instanceName,
-        internalLogger = internalLogger
-    ) { persistedState ->
-        try {
-            persistedState?.let {
-                val cachedFlags = it.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) }
-                val loadedState = FlagsState(it.evaluationContext, cachedFlags)
-                atomicState.compareAndSet(null, loadedState)
+        internalLogger = internalLogger,
+        onStateLoaded = { persistedState ->
+            synchronized(installationLock) {
+                persistedState?.let {
+                    val cachedFlags = it.flags.mapValues { (_, flag) ->
+                        flag.copy(reason = ResolutionReason.CACHED.name)
+                    }
+                    val loadedState = FlagsState(it.evaluationContext, cachedFlags)
+                    if (atomicState.compareAndSet(null, loadedState)) {
+                        eventDispatcher.enqueueConfigurationChanged()
+                    }
+                }
+                persistenceLoadedLatch.countDown()
             }
-        } finally {
-            persistenceLoadedLatch.countDown()
-        }
+            eventDispatcher.drain()
+        },
+        loadImmediately = false
+    )
+
+    init {
+        if (loadImmediately) startLoading()
+    }
+
+    internal fun startLoading() {
+        if (loadStarted.compareAndSet(false, true)) persistenceManager.loadFlagsState()
     }
 
     override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
         val newState = FlagsState(context, flags)
-        atomicState.set(newState)
-        persistenceLoadedLatch.countDown()
+        synchronized(installationLock) {
+            atomicState.set(newState)
+            persistenceLoadedLatch.countDown()
+            eventDispatcher.enqueueConfigurationChanged()
+        }
 
         persistenceManager.saveFlagsState(
             context = context,
@@ -69,6 +92,7 @@ internal class DefaultFlagsRepository(
                 }
             }
         )
+        eventDispatcher.drain()
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {

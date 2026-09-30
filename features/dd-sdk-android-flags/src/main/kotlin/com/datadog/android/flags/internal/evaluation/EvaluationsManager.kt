@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsInitializationTimeoutException
+import com.datadog.android.flags.internal.FlagsEventDispatcher
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
@@ -78,6 +79,7 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
  * @param flagStateManager channel for notifying state change listeners
  * @param initializationTimeoutMs optional maximum duration of the first context operation
  * @param initializationTimeoutScheduler schedules the first context timeout
+ * @param eventDispatcher defers configuration notifications until lifecycle completion
  */
 internal class EvaluationsManager(
     private val sdkCore: FeatureSdkCore,
@@ -88,7 +90,8 @@ internal class EvaluationsManager(
     private val precomputeMapper: PrecomputeMapper,
     private val flagStateManager: FlagsStateManager,
     private val initializationTimeoutMs: Long?,
-    private val initializationTimeoutScheduler: InitializationTimeoutScheduler
+    private val initializationTimeoutScheduler: InitializationTimeoutScheduler,
+    private val eventDispatcher: FlagsEventDispatcher = FlagsEventDispatcher(internalLogger)
 ) {
     private val didStartInitialization = AtomicBoolean(false)
     private val initializationTerminalLock = Any()
@@ -107,6 +110,7 @@ internal class EvaluationsManager(
      * a valid targeting key.
      * @param callback Optional callback invoked when the context is set and the flags have been fetched successfully or not.
      */
+    @Suppress("LongMethod") // Keep installation, lifecycle completion and deferred event dispatch visibly ordered.
     fun updateEvaluationsForContext(context: EvaluationContext, callback: EvaluationContextCallback? = null) {
         val matchingCachedAssignments = AtomicBoolean(false)
         val initializationCompletion = startInitializationTimeout(context, callback, matchingCachedAssignments) {
@@ -133,20 +137,22 @@ internal class EvaluationsManager(
                     val response = assignmentsReader.readPrecomputedFlags(context, datadogContext)
                     if (response != null) {
                         val flagsMap = precomputeMapper.map(response)
-                        flagsRepository.setFlagsAndContext(context, flagsMap)
-                        internalLogger.log(
-                            InternalLogger.Level.DEBUG,
-                            InternalLogger.Target.MAINTAINER,
-                            { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
-                        )
+                        eventDispatcher.deferDispatch {
+                            flagsRepository.setFlagsAndContext(context, flagsMap)
+                            internalLogger.log(
+                                InternalLogger.Level.DEBUG,
+                                InternalLogger.Target.MAINTAINER,
+                                { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
+                            )
 
-                        val completionCallback = synchronized(initializationTerminalLock) {
-                            val result = initializationCompletion?.take()?.callback
-                                ?: if (initializationCompletion == null) callback else null
-                            flagStateManager.updateState(FlagsClientState.Ready)
-                            result
+                            val completionCallback = synchronized(initializationTerminalLock) {
+                                val result = initializationCompletion?.take()?.callback
+                                    ?: if (initializationCompletion == null) callback else null
+                                flagStateManager.updateState(FlagsClientState.Ready)
+                                result
+                            }
+                            completionCallback?.onSuccess()
                         }
-                        completionCallback?.onSuccess()
                     } else {
                         internalLogger.log(
                             InternalLogger.Level.WARN,

@@ -11,13 +11,22 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.NoOpFlagsClient
+import com.datadog.android.flags.internal.model.FlagsStateEntry
+import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientEventType.CONFIGURATION_CHANGED
+import com.datadog.android.flags.model.FlagsClientState
+import com.datadog.android.flags.model.ResolutionReason
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONObject
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -26,8 +35,11 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -117,6 +129,43 @@ internal class FlagsClientTest {
         val flagsFeature = sdkCore.getFeature(FLAGS_FEATURE_NAME)
             ?.unwrap<FlagsFeature>()
         flagsFeature?.clearClients()
+    }
+
+    @Test
+    fun `M resolve restored assignment from builder handler W synchronous disk load before build returns`() {
+        val dataStore = mock<DataStoreHandler>()
+        val scope = mockSdkCore.getFeature(FLAGS_FEATURE_NAME)!!
+        whenever(scope.dataStore).thenReturn(dataStore)
+        whenever(mockSdkCore.createSingleThreadExecutorService(any())).thenReturn(mock())
+        whenever(mockSdkCore.createOkHttpCallFactory()).thenReturn(mock())
+        val context = EvaluationContext("disk", emptyMap())
+        val flag = PrecomputedFlag("boolean", "true", false, "allocation", "variant", JSONObject(), "STATIC")
+        doAnswer {
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(
+                DataStoreContent(1, FlagsStateEntry(context, mapOf("flag" to flag), 0))
+            )
+            null
+        }.whenever(dataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        var calls = 0
+        var returned = false
+        val handler = FlagsClientEventHandler {
+            assertThat(returned).isFalse()
+            val registered = FlagsClient.get(sdkCore = mockSdkCore)
+            assertThat(registered.state.getCurrentState()).isEqualTo(FlagsClientState.NotReady)
+            val resolved = registered.resolve("flag", false)
+            assertThat(resolved.value).isTrue()
+            assertThat(resolved.reason).isEqualTo(ResolutionReason.CACHED)
+            assertThat(resolved.errorCode).isNull()
+            calls++
+        }
+        val client = FlagsClient.Builder(sdkCore = mockSdkCore).addHandler(CONFIGURATION_CHANGED, handler).build()
+        returned = true
+        assertThat(calls).isEqualTo(1)
+        assertThat(client.state.getCurrentState()).isEqualTo(FlagsClientState.NotReady)
+        client.removeHandler(CONFIGURATION_CHANGED, handler)
+        assertThat(FlagsClient.Builder(sdkCore = mockSdkCore).addHandler(CONFIGURATION_CHANGED, handler).build())
+            .isSameAs(client)
+        assertThat(calls).isEqualTo(1)
     }
 
     // region Static Flag Resolution Methods

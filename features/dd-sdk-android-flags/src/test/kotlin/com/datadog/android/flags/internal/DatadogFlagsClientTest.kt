@@ -41,6 +41,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -1467,6 +1468,9 @@ internal class DatadogFlagsClientTest {
             evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager
         )
+
+        // The dispatcher obtains its logger during construction; resolution must still perform no SDK work.
+        clearInvocations(mockFeatureSdkCore)
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)

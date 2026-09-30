@@ -271,3 +271,34 @@ For more information on Feature Flags in Datadog, see the [official Feature Flag
 
 [1]: https://docs.datadoghq.com/real_user_monitoring/application_monitoring/android/setup
 [2]: https://docs.datadoghq.com/getting_started/feature_flags/
+
+## Observe installed assignments
+
+Register a native handler on the builder to observe the initial disk restoration as well as later network installations:
+
+```kotlin
+import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsClientEventHandler
+import com.datadog.android.flags.model.FlagsClientEventType
+
+val handler = FlagsClientEventHandler {
+    // The named client is registered even if this callback runs before build() returns.
+    val current = FlagsClient.get("checkout")
+    val details = current.resolve("new-checkout", false)
+    // Use details.value and details.reason; schedule UI work on the main thread as needed.
+}
+val client = FlagsClient.Builder("checkout")
+    .addHandler(FlagsClientEventType.CONFIGURATION_CHANGED, handler)
+    .build()
+
+// Later subscriptions observe future installations only.
+client.removeHandler(FlagsClientEventType.CONFIGURATION_CHANGED, handler)
+```
+
+Every accepted disk or network installation emits `CONFIGURATION_CHANGED`, including identical-content and empty snapshots. A missing, unreadable or invalid disk snapshot that installs nothing emits no event. Rejected late disk results also emit nothing. The event does not change readiness: the native client can resolve installed disk assignments while its state remains `NotReady`; this notification does not bypass the OpenFeature SDK's readiness gate. Context-only changes and STALE-only reason projections are not installations.
+
+Notifications carry the standard provider name and optional event-details fields. Currently `flagsChanged`, `message` and `errorCode` are absent, and `eventMetadata` is empty. Do not infer a value diff or a snapshot version from an event. Another accepted installation can supersede the data before a handler resolves it. Event construction does not evaluate flags or emit exposure telemetry; calling `resolve` in your handler retains normal evaluation tracking.
+
+Handlers run serially on the thread draining that client's queue, outside its event and installation locks. They may resolve flags, register/remove handlers, or request another context. Keep them short and non-blocking. Network notifications wait until the existing lifecycle completion/callback finishes; disk notifications do not wait for network completion. Handler exceptions are logged and other handlers continue; fatal JVM errors are not intercepted. Removing a handler skips pending calls, but cannot cancel a callback already executing. Repeated registration of the same handler object is ignored. Builder handlers are ignored if the builder returns an existing or no-op client.
+
+This native increment supports only `CONFIGURATION_CHANGED`. The existing state listener API remains available; full lifecycle events and OpenFeature event forwarding are separate work. Existing custom `FlagsClient` implementations inherit no-op add/remove methods unless they implement notifications.

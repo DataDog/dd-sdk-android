@@ -19,14 +19,15 @@ internal class FlagsPersistenceManager(
     private val dataStore: DataStoreHandler,
     instanceName: String,
     private val internalLogger: InternalLogger,
-    onStateLoaded: (FlagsStateEntry?) -> Unit
+    loadImmediately: Boolean = true,
+    private val onStateLoaded: (FlagsStateEntry?) -> Unit
 ) {
     private val serializer = FlagsStateSerializer(internalLogger)
     private val deserializer = FlagsStateDeserializer(internalLogger)
     private val flagsStateKey: String = "$FLAGS_STATE_KEY_PREFIX-$instanceName"
 
     init {
-        loadFlagsState(onStateLoaded)
+        if (loadImmediately) loadFlagsState()
     }
 
     internal fun saveFlagsState(
@@ -49,7 +50,7 @@ internal class FlagsPersistenceManager(
         )
     }
 
-    private fun loadFlagsState(onStateLoaded: (FlagsStateEntry?) -> Unit) {
+    internal fun loadFlagsState() {
         dataStore.value(
             key = flagsStateKey,
             deserializer = deserializer,

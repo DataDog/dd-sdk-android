@@ -17,6 +17,7 @@ import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags.internal.FlagsEventDispatcher
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
@@ -25,6 +26,7 @@ import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientEventType.CONFIGURATION_CHANGED
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.utils.DDCoreStateHolder
@@ -136,6 +138,129 @@ internal class EvaluationsManagerTest {
             val runnable = invocation.getArgument<Runnable>(0)
             runnable.run()
         }
+    }
+
+    @Test
+    fun `M retain new reconciliation state W installation handler sets another context`() {
+        val dispatcher = FlagsEventDispatcher(mockInternalLogger)
+        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockSdkCore.timeProvider).thenReturn(mock())
+        val repository = DefaultFlagsRepository(
+            mockSdkCore,
+            "events",
+            mock(),
+            eventDispatcher = dispatcher,
+            loadImmediately = false,
+            persistenceLoadTimeoutMs = 0
+        )
+        val stateManager =
+            FlagsStateManager(DDCoreStateHolder.create(FlagsClientState.NotReady, FlagsStateListener::onStateChanged))
+        val pending = mutableListOf<Runnable>()
+        whenever(mockExecutorService.execute(any())).thenAnswer { pending.add(it.getArgument(0)); null }
+        evaluationsManager = EvaluationsManager(
+            mockSdkCore, mockExecutorService, mockInternalLogger, repository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, stateManager, null, { _, _ -> {} }, dispatcher
+        )
+        val first = EvaluationContext("first", emptyMap())
+        val second = EvaluationContext("second", emptyMap())
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), any())).thenReturn("response")
+        whenever(mockPrecomputeMapper.map("response")).thenReturn(emptyMap())
+        var calls = 0
+        dispatcher.addHandler(CONFIGURATION_CHANGED) {
+            calls++
+            assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+            assertThat(repository.getEvaluationContext()).isEqualTo(first)
+            evaluationsManager.updateEvaluationsForContext(second)
+        }
+
+        evaluationsManager.updateEvaluationsForContext(first)
+        pending.removeAt(0).run()
+
+        assertThat(calls).isEqualTo(1)
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+        assertThat(pending).hasSize(1)
+    }
+
+    @Test
+    fun `M not notify configuration W failed refresh marks client stale`() {
+        val dispatcher = FlagsEventDispatcher(mockInternalLogger)
+        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockSdkCore.timeProvider).thenReturn(mock())
+        val repository = DefaultFlagsRepository(
+            mockSdkCore,
+            "events",
+            mock(),
+            eventDispatcher = dispatcher,
+            loadImmediately = false
+        )
+        val context = EvaluationContext("same", emptyMap())
+        val flag = PrecomputedFlag("boolean", "true", false, "allocation", "variant", JSONObject(), "STATIC")
+        repository.setFlagsAndContext(context, mapOf("flag" to flag))
+        val stateManager =
+            FlagsStateManager(DDCoreStateHolder.create(FlagsClientState.Ready, FlagsStateListener::onStateChanged))
+        evaluationsManager = EvaluationsManager(
+            mockSdkCore, mockExecutorService, mockInternalLogger, repository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, stateManager, null, { _, _ -> {} }, dispatcher
+        )
+        var calls = 0
+        dispatcher.addHandler(CONFIGURATION_CHANGED) { calls++ }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), any())).thenReturn(null)
+
+        evaluationsManager.updateEvaluationsForContext(context)
+
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        assertThat(calls).isZero()
+        assertThat(repository.getPrecomputedFlag("flag")).isEqualTo(flag)
+    }
+
+    @Test
+    fun `M preserve accepted install notifications W completion callback installs again`() {
+        val dispatcher = FlagsEventDispatcher(mockInternalLogger)
+        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockSdkCore.timeProvider).thenReturn(mock())
+        val repository = DefaultFlagsRepository(
+            mockSdkCore,
+            "events",
+            mock(),
+            eventDispatcher = dispatcher,
+            loadImmediately = false,
+            persistenceLoadTimeoutMs = 0
+        )
+        val stateManager =
+            FlagsStateManager(DDCoreStateHolder.create(FlagsClientState.NotReady, FlagsStateListener::onStateChanged))
+        evaluationsManager = EvaluationsManager(
+            mockSdkCore, mockExecutorService, mockInternalLogger, repository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, stateManager, null, { _, _ -> {} }, dispatcher
+        )
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), any())).thenReturn("response")
+        whenever(mockPrecomputeMapper.map("response")).thenReturn(emptyMap())
+        val first = EvaluationContext("first", emptyMap())
+        val second = EvaluationContext("second", emptyMap())
+        val calls = mutableListOf<String>()
+        val observedContexts = mutableListOf<EvaluationContext?>()
+        dispatcher.addHandler(CONFIGURATION_CHANGED) {
+            calls.add("event")
+            observedContexts.add(repository.getEvaluationContext())
+            assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        }
+        val callback = object : EvaluationContextCallback {
+            override fun onSuccess() {
+                calls.add("callback-first")
+                evaluationsManager.updateEvaluationsForContext(
+                    second,
+                    object : EvaluationContextCallback {
+                        override fun onSuccess() { calls.add("callback-second") }
+                        override fun onFailure(error: Throwable) { error("unexpected failure") }
+                    }
+                )
+            }
+            override fun onFailure(error: Throwable) { error("unexpected failure") }
+        }
+        evaluationsManager.updateEvaluationsForContext(first, callback)
+        assertThat(calls).containsExactly("callback-first", "callback-second", "event", "event")
+        // Both accepted installations notify. Events make no snapshot-version promise, so both
+        // handlers may resolve the latest installation after a reentrant completion callback.
+        assertThat(observedContexts).containsExactly(second, second)
     }
 
     @AfterEach

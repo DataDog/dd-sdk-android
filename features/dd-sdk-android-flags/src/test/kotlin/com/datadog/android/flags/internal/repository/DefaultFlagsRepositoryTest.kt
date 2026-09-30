@@ -11,9 +11,11 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.flags.internal.FlagsEventDispatcher
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientEventType.CONFIGURATION_CHANGED
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -404,6 +406,84 @@ internal class DefaultFlagsRepositoryTest {
         }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
         testedRepository = DefaultFlagsRepository(mockFeatureSdkCore, forge.anAlphabeticalString(), mockDataStore)
         return callback
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M notify only accepted installations W disk and network complete`(diskFirst: Boolean) {
+        val dispatcher = FlagsEventDispatcher(mockInternalLogger)
+        lateinit var callback: DataStoreReadCallback<FlagsStateEntry>
+        doAnswer {
+            callback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        testedRepository = DefaultFlagsRepository(
+            mockFeatureSdkCore,
+            "events",
+            mockDataStore,
+            eventDispatcher = dispatcher
+        )
+        val observed = mutableListOf<Map<String, PrecomputedFlag>>()
+        dispatcher.addHandler(CONFIGURATION_CHANGED) { observed.add(testedRepository.getFlagsSnapshot()) }
+        val content = DataStoreContent(1, FlagsStateEntry(testContext, singleFlagMap, 0))
+        if (diskFirst) callback.onSuccess(content)
+        testedRepository.setFlagsAndContext(testContext, singleFlagMap)
+        if (!diskFirst) callback.onSuccess(content)
+        // Identical installations and empty configurations each emit; no content diff is needed.
+        testedRepository.setFlagsAndContext(testContext, singleFlagMap)
+        testedRepository.setFlagsAndContext(testContext, emptyMap())
+        testedRepository.setFlagsAndContext(testContext, emptyMap())
+
+        assertThat(observed).hasSize(if (diskFirst) 5 else 4)
+        if (diskFirst) assertThat(observed.first().values.single().reason).isEqualTo("CACHED")
+        assertThat(observed.takeLast(4)).containsExactly(singleFlagMap, singleFlagMap, emptyMap(), emptyMap())
+    }
+
+    @Test
+    fun `M notify empty disk installation W disk callback reenters repository`() {
+        val dispatcher = FlagsEventDispatcher(mockInternalLogger)
+        lateinit var callback: DataStoreReadCallback<FlagsStateEntry>
+        doAnswer {
+            callback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        testedRepository = DefaultFlagsRepository(
+            mockFeatureSdkCore,
+            "events",
+            mockDataStore,
+            eventDispatcher = dispatcher
+        )
+        var calls = 0
+        dispatcher.addHandler(CONFIGURATION_CHANGED) {
+            calls++
+            assertThat(testedRepository.getEvaluationContext()).isEqualTo(testContext)
+            assertThat(testedRepository.getFlagsSnapshot()).isEmpty()
+            if (calls == 1) testedRepository.setFlagsAndContext(testContext, emptyMap())
+        }
+        callback.onSuccess(DataStoreContent(1, FlagsStateEntry(testContext, emptyMap(), 0)))
+        assertThat(calls).isEqualTo(2)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M not notify W disk completes without data`(failure: Boolean) {
+        val dispatcher = FlagsEventDispatcher(mockInternalLogger)
+        lateinit var callback: DataStoreReadCallback<FlagsStateEntry>
+        doAnswer {
+            callback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        var calls = 0
+        dispatcher.addHandler(CONFIGURATION_CHANGED) { calls++ }
+        testedRepository = DefaultFlagsRepository(
+            mockFeatureSdkCore,
+            "events",
+            mockDataStore,
+            eventDispatcher = dispatcher
+        )
+        if (failure) callback.onFailure() else callback.onSuccess(null)
+        assertThat(calls).isZero()
+        assertThat(testedRepository.getEvaluationContext()).isNull()
     }
 
     // region hasFlags
