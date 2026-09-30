@@ -48,7 +48,11 @@ internal class ProfilingFeature(
     private val sdkCore: FeatureSdkCore,
     private val configuration: ProfilingConfiguration,
     private val profiler: Profiler
-) : StorageBackedFeature, FeatureEventReceiver, FeatureContextUpdateReceiver, ProfilerCallback {
+) : StorageBackedFeature,
+    FeatureEventReceiver,
+    FeatureContextUpdateReceiver,
+    ProfilerCallback,
+    ProfilingStatusListener {
 
     @Volatile
     internal var lastSeenRumSessionId: String? = null
@@ -110,6 +114,7 @@ internal class ProfilingFeature(
             this.internalLogger = sdkCore.internalLogger
             setAnrTriggerEnabled(configuration.anrTriggerEnabled)
             registerProfilingCallback(appContext, this@ProfilingFeature)
+            registerProfilerStatusListener(this@ProfilingFeature)
         }
         ProfilingStorage.setSampleRate(appContext, configuration.applicationLaunchSampleRate)
         // Set the profiling flag in SharedPreferences to profile for the next app launch
@@ -117,7 +122,6 @@ internal class ProfilingFeature(
         isLaunchProfilingActive = profiler.isRunning()
         sdkCore.setEventReceiver(name, this)
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
             context[FeatureContextKeys.PROFILING_SAMPLE_RATE] = configuration.continuousSampleRate
             context[FeatureContextKeys.PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE] =
                 configuration.applicationLaunchSampleRate
@@ -167,6 +171,7 @@ internal class ProfilingFeature(
             stop()
             setTriggersEnabled(appContext, false)
             unregisterProfilingCallback(appContext)
+            unregisterProfilerStatusListener(this@ProfilingFeature)
         }
         sdkCore.removeEventReceiver(name)
         sdkCore.removeContextUpdateReceiver(this)
@@ -224,9 +229,6 @@ internal class ProfilingFeature(
     override fun onSuccess(result: PerfettoResult) {
         perfettoResult = result
         tryWriteProfilingEvent()
-        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
-        }
     }
 
     override fun onFailure(startReason: ProfilingStartReason) {
@@ -238,9 +240,6 @@ internal class ProfilingFeature(
             continuousProfilingScheduler?.onAppLaunchProfilingComplete()
         } else if (startReason == ProfilingStartReason.CONTINUOUS) {
             continuousProfilingScheduler?.onActiveWindowEnded()
-        }
-        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
         }
     }
 
@@ -312,6 +311,12 @@ internal class ProfilingFeature(
             sessionId = sessionId,
             rumSessionSampleRate = sampleRate
         )
+    }
+
+    override fun onProfilingStatusChange(isRunning: Boolean) {
+        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+            context[FeatureContextKeys.PROFILER_IS_RUNNING] = isRunning
+        }
     }
 
     @Suppress("ReturnCount")

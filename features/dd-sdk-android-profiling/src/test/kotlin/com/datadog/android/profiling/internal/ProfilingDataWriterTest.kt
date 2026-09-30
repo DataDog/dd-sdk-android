@@ -25,6 +25,7 @@ import com.datadog.android.profiling.assertj.RumMetadataEventsAssert.Companion.a
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.perfetto.ProfileType
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.model.ProfileEvent
 import com.datadog.android.profiling.model.RumMetadataEvent
@@ -176,6 +177,9 @@ internal class ProfilingDataWriterTest {
         )
         fakeDatadogContext.appBuildId?.let {
             expectedTagList.add("build_id:${fakeDatadogContext.appBuildId}")
+        }
+        fakeResult.profileTypes.forEach {
+            expectedTagList.add("profile_type:${it.value}")
         }
 
         assertThat(actualEvent)
@@ -645,7 +649,8 @@ internal class ProfilingDataWriterTest {
                 start = detectedAtMs,
                 startReason = ProfilingStartReason.OUT_OF_MEMORY,
                 end = detectedAtMs,
-                resultFilePath = profileFile.absolutePath
+                resultFilePath = profileFile.absolutePath,
+                profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
             ),
             rumErrorId = rumErrorId,
             rumContext = rumContext
@@ -666,7 +671,8 @@ internal class ProfilingDataWriterTest {
             "sdk_version:${fakeDatadogContext.sdkVersion}",
             "profiler_version:${fakeDatadogContext.sdkVersion}",
             "runtime_version:${fakeDatadogContext.deviceInfo.osVersion}",
-            "operation:out_of_memory"
+            "operation:out_of_memory",
+            "profile_type:heap_histogram"
         )
         fakeDatadogContext.appBuildId?.let {
             expectedTagList.add("build_id:${fakeDatadogContext.appBuildId}")
@@ -716,7 +722,8 @@ internal class ProfilingDataWriterTest {
                 start = 1_000L,
                 startReason = ProfilingStartReason.MEMORY_ANOMALY,
                 end = 1_000L,
-                resultFilePath = profileFile.absolutePath
+                resultFilePath = profileFile.absolutePath,
+                profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
             ),
             rumErrorId = rumErrorId,
             rumContext = rumContext

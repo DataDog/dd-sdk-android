@@ -782,6 +782,7 @@ datadog:
       - "kotlin.collections.listOf(androidx.compose.ui.graphics.Color)"
       - "kotlin.collections.listOf(com.datadog.android.api.InternalLogger.Target)"
       - "kotlin.collections.listOf(com.datadog.android.core.feature.event.ThreadDump)"
+      - "kotlin.collections.listOf(com.datadog.android.profiling.internal.perfetto.ProfileType)"
       - "kotlin.collections.listOf(com.datadog.android.rum.internal.vitals.FPSVitalListener)"
       - "kotlin.collections.listOf(com.datadog.android.flags.model.BatchedFlagEvaluations.FlagEvaluation)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ActionEvent.Interface)"

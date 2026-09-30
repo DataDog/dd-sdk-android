@@ -9,16 +9,28 @@ package com.datadog.android.profiling.internal.perfetto
 import com.datadog.android.profiling.internal.ProfilingStartReason
 
 /**
+ * Type of trace captured in the profile. A single profile can contain several
+ * trace types (e.g. system trace + stack sampling), hence the list on [PerfettoResult].
+ */
+internal enum class ProfileType(val value: String) {
+    STACK_SAMPLING("stack_sampling"),
+    SYSTEM_TRACE("system_trace"),
+    HEAP_HISTOGRAM("heap_histogram")
+}
+
+/**
  * Result of a profiling request made through [androidx.core.os.requestProfiling].
  *
  * @param start the start time of the profiling in milliseconds since epoch.
  * @param startReason the start reason used to start profiler.
  * @param end the end time of the profiling in milliseconds since epoch.
  * @param resultFilePath the path to the file containing the profiling result.
+ * @param profileTypes the types of traces contained in the profiling result.
  */
 internal data class PerfettoResult(
     val start: Long,
     val startReason: ProfilingStartReason,
     val end: Long,
-    val resultFilePath: String
+    val resultFilePath: String,
+    val profileTypes: List<ProfileType>
 )
