@@ -11,6 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import java.util.concurrent.ScheduledExecutorService
 
+@Suppress("TooManyFunctions")
 internal interface Profiler {
 
     val timeProvider: MutableTimeProvider
@@ -33,6 +34,10 @@ internal interface Profiler {
     fun registerProfilingCallback(appContext: Context, callback: ProfilerCallback)
 
     fun unregisterProfilingCallback(appContext: Context)
+
+    fun registerProfilerStatusListener(listener: ProfilingStatusListener)
+
+    fun unregisterProfilerStatusListener(listener: ProfilingStatusListener)
 
     fun setAnrTriggerEnabled(enabled: Boolean)
 

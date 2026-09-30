@@ -18,6 +18,7 @@ import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.perfetto.ProfileType
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.utils.fileDeleteSafe
 import com.datadog.android.profiling.model.ProfileEvent
@@ -97,7 +98,7 @@ internal class ProfilingDataWriter(
                         family = ProfileEvent.Family.ANDROID,
                         runtime = ProfileEvent.Family.ANDROID,
                         version = VERSION_NUMBER,
-                        tagsProfiler = buildTags(context, operation),
+                        tagsProfiler = buildTags(context, operation, perfettoResult.profileTypes),
                         application = ProfileEvent.Application(id = rumContext.applicationId),
                         session = ProfileEvent.Session(id = rumContext.sessionId),
                         view = ProfileEvent.View(
@@ -289,7 +290,7 @@ internal class ProfilingDataWriter(
             family = ProfileEvent.Family.ANDROID,
             runtime = ProfileEvent.Family.ANDROID,
             version = VERSION_NUMBER,
-            tagsProfiler = buildTags(context, profilingResult.startReason.value),
+            tagsProfiler = buildTags(context, profilingResult.startReason.value, profilingResult.profileTypes),
             application = ProfileEvent.Application(id = rumContext.applicationId),
             session = ProfileEvent.Session(id = rumContext.sessionId),
             longTask = ProfileEvent.LongTask(id = longTaskIds.toList()),
@@ -370,7 +371,11 @@ internal class ProfilingDataWriter(
         }.toString().toByteArray(Charsets.UTF_8)
     }
 
-    private fun buildTags(context: DatadogContext, operation: String): String = buildString {
+    private fun buildTags(
+        context: DatadogContext,
+        operation: String,
+        profileTypes: List<ProfileType>
+    ): String = buildString {
         append("$TAG_KEY_SERVICE:${context.service}")
         append(",")
         append("$TAG_KEY_ENV:${context.env}")
@@ -387,6 +392,10 @@ internal class ProfilingDataWriter(
         context.appBuildId?.let { buildId ->
             append(",")
             append("$TAG_KEY_BUILD_ID:$buildId")
+        }
+        profileTypes.forEach {
+            append(",")
+            append("$TAG_KEY_PROFILE_TYPE:${it.value}")
         }
     }
 
@@ -418,6 +427,7 @@ internal class ProfilingDataWriter(
         private const val TAG_KEY_RUNTIME_VERSION = "runtime_version"
         private const val TAG_KEY_ENV = "env"
         private const val TAG_KEY_OPERATION = "operation"
+        private const val TAG_KEY_PROFILE_TYPE = "profile_type"
         internal const val PERFETTO_ATTACHMENT_NAME = "perfetto.proto"
         internal const val RUM_MOBILE_EVENTS_ATTACHMENT_NAME = "rum-mobile-events.json"
 

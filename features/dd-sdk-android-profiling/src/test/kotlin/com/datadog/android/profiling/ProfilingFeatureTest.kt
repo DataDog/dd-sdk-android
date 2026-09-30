@@ -37,6 +37,7 @@ import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.ProfilingWriter
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.perfetto.ProfileType
 import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaReason
@@ -803,7 +804,8 @@ internal class ProfilingFeatureTest {
                 start = 0L,
                 startReason = ProfilingStartReason.APPLICATION_LAUNCH,
                 end = 1000L,
-                resultFilePath = "/fake/path"
+                resultFilePath = "/fake/path",
+                profileTypes = listOf(ProfileType.STACK_SAMPLING)
             )
         )
 
@@ -1016,7 +1018,8 @@ internal class ProfilingFeatureTest {
                 start = 0L,
                 startReason = ProfilingStartReason.APPLICATION_LAUNCH,
                 end = 1L,
-                resultFilePath = "/fake"
+                resultFilePath = "/fake",
+                profileTypes = listOf(ProfileType.STACK_SAMPLING)
             )
         )
         // Open continuous active window
@@ -1108,7 +1111,8 @@ internal class ProfilingFeatureTest {
                 start = 0L,
                 startReason = ProfilingStartReason.APPLICATION_LAUNCH,
                 end = 1L,
-                resultFilePath = "/fake"
+                resultFilePath = "/fake",
+                profileTypes = listOf(ProfileType.STACK_SAMPLING)
             )
         )
         // Open continuous active window
@@ -1249,7 +1253,8 @@ internal class ProfilingFeatureTest {
                 start = 0L,
                 startReason = ProfilingStartReason.APPLICATION_LAUNCH,
                 end = 1L,
-                resultFilePath = "/fake"
+                resultFilePath = "/fake",
+                profileTypes = listOf(ProfileType.STACK_SAMPLING)
             )
         )
         // Open window 1
@@ -1271,7 +1276,8 @@ internal class ProfilingFeatureTest {
                 start = 0L,
                 startReason = ProfilingStartReason.CONTINUOUS,
                 end = 1L,
-                resultFilePath = "/fake"
+                resultFilePath = "/fake",
+                profileTypes = listOf(ProfileType.STACK_SAMPLING)
             )
         )
 

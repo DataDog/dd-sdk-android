@@ -29,6 +29,7 @@ import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import com.datadog.android.profiling.internal.trigger.ProfilingTriggerRegistrar
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -91,7 +92,7 @@ internal class PerfettoProfilerTest {
     private lateinit var mockExecutorService: ScheduledExecutorService
 
     @Mock
-    private lateinit var mockStopSignal: CancellationSignal
+    private lateinit var mockCancellationSignal: CancellationSignal
 
     @Mock
     private lateinit var mockProfilerCallback: ProfilerCallback
@@ -437,6 +438,96 @@ internal class PerfettoProfilerTest {
     }
 
     @Test
+    fun `M notify current status W registerProfilerStatusListener`(@BoolForgery fakeRunning: Boolean) {
+        // Given
+        if (fakeRunning) {
+            testedProfiler.start(mockContext, ProfilingStartReason.CONTINUOUS, emptyMap())
+        }
+        val mockStatusListener = mock<ProfilingStatusListener>()
+
+        // When
+        testedProfiler.registerProfilerStatusListener(mockStatusListener)
+
+        // Then
+        verify(mockStatusListener).onProfilingStatusChange(fakeRunning)
+    }
+
+    @Test
+    fun `M notify running status W start`() {
+        // Given
+        val mockStatusListener = mock<ProfilingStatusListener>()
+        testedProfiler.registerProfilerStatusListener(mockStatusListener)
+
+        // When
+        testedProfiler.start(mockContext, ProfilingStartReason.CONTINUOUS, emptyMap())
+
+        // Then
+        inOrder(mockStatusListener) {
+            verify(mockStatusListener).onProfilingStatusChange(false)
+            verify(mockStatusListener).onProfilingStatusChange(true)
+        }
+    }
+
+    @Test
+    fun `M notify stopped status W profiling result received`(@BoolForgery fakeSuccess: Boolean) {
+        // Given
+        val mockStatusListener = mock<ProfilingStatusListener>()
+        testedProfiler.start(mockContext, ProfilingStartReason.CONTINUOUS, emptyMap())
+        testedProfiler.registerProfilerStatusListener(mockStatusListener)
+        verify(mockService).requestProfiling(
+            eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+            any<Bundle>(),
+            eq(ProfilingStartReason.CONTINUOUS.value),
+            any(),
+            eq(mockExecutorService),
+            callbackCaptor.capture()
+        )
+        val fakeResult = mock<ProfilingResult> {
+            on { errorCode } doReturn if (fakeSuccess) ProfilingResult.ERROR_NONE else 1
+            on { resultFilePath } doReturn fakePath
+        }
+
+        // When
+        callbackCaptor.firstValue.accept(fakeResult)
+
+        // Then
+        inOrder(mockStatusListener) {
+            verify(mockStatusListener).onProfilingStatusChange(true)
+            verify(mockStatusListener).onProfilingStatusChange(false)
+        }
+        assertThat(testedProfiler.isRunning()).isFalse()
+    }
+
+    @Test
+    fun `M keep running status W stop {awaiting result}`() {
+        // Given
+        testedProfiler.start(mockContext, ProfilingStartReason.CONTINUOUS, emptyMap())
+        val mockStatusListener = mock<ProfilingStatusListener>()
+        testedProfiler.registerProfilerStatusListener(mockStatusListener)
+
+        // When
+        testedProfiler.stop()
+
+        // Then
+        verify(mockStatusListener).onProfilingStatusChange(true)
+        assertThat(testedProfiler.isRunning()).isTrue()
+    }
+
+    @Test
+    fun `M stop notifying listener W unregisterProfilerStatusListener`() {
+        // Given
+        val mockStatusListener = mock<ProfilingStatusListener>()
+        testedProfiler.registerProfilerStatusListener(mockStatusListener)
+
+        // When
+        testedProfiler.unregisterProfilerStatusListener(mockStatusListener)
+        testedProfiler.start(mockContext, ProfilingStartReason.CONTINUOUS, emptyMap())
+
+        // Then
+        verify(mockStatusListener).onProfilingStatusChange(false)
+    }
+
+    @Test
     fun `M return false W isRunning { profiler not started }`() {
         // When
         val status = testedProfiler.isRunning()
@@ -546,6 +637,7 @@ internal class PerfettoProfilerTest {
         // Then
         val status = testedProfiler.isRunning()
         assertThat(status).isFalse
+        verify(mockProfilerCallback).onSuccess(any())
     }
 
     @Test
@@ -965,7 +1057,7 @@ internal class PerfettoProfilerTest {
             ProfilingStartReason::class.java,
             listOf(ProfilingStartReason.APPLICATION_LAUNCH)
         )
-        testedProfiler.stopSignal = mockStopSignal
+        testedProfiler.stopSignal = mockCancellationSignal
 
         // When
         testedProfiler.start(
@@ -976,7 +1068,7 @@ internal class PerfettoProfilerTest {
 
         // Then
         verifyNoInteractions(mockExecutorService)
-        verifyNoInteractions(mockStopSignal)
+        verifyNoInteractions(mockCancellationSignal)
     }
 
     @Test
@@ -990,14 +1082,14 @@ internal class PerfettoProfilerTest {
         )
         val timerRunnableCaptor = argumentCaptor<Runnable>()
         verify(mockExecutorService).schedule(timerRunnableCaptor.capture(), any(), any())
-        testedProfiler.stopSignal = mockStopSignal
-        whenever(mockStopSignal.isCanceled).doReturn(false)
+        testedProfiler.stopSignal = mockCancellationSignal
+        whenever(mockCancellationSignal.isCanceled).doReturn(false)
 
         // When
         timerRunnableCaptor.firstValue.run()
 
         // Then
-        verify(mockStopSignal).cancel()
+        verify(mockCancellationSignal).cancel()
     }
 
     @Test
@@ -1011,14 +1103,14 @@ internal class PerfettoProfilerTest {
         )
         val timerRunnableCaptor = argumentCaptor<Runnable>()
         verify(mockExecutorService).schedule(timerRunnableCaptor.capture(), any(), any())
-        testedProfiler.stopSignal = mockStopSignal
-        whenever(mockStopSignal.isCanceled).doReturn(false)
+        testedProfiler.stopSignal = mockCancellationSignal
+        whenever(mockCancellationSignal.isCanceled).doReturn(false)
 
         // When
         timerRunnableCaptor.firstValue.run()
 
         // Then
-        verify(mockStopSignal, never()).cancel()
+        verify(mockCancellationSignal, never()).cancel()
     }
 
     // region ANR trigger registration

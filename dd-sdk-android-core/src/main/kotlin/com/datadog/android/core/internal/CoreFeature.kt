@@ -167,6 +167,9 @@ internal class CoreFeature(
     internal var packageVersionProvider: AppVersionProvider = NoOpAppVersionProvider()
     internal var androidInfoProvider: AndroidInfoProvider = NoOpAndroidInfoProvider()
 
+    @Volatile
+    private var needsClearTextHttp: Boolean = false
+
     internal lateinit var callFactory: OkHttpCallFactory
     internal var kronosClock: KronosClock? = null
 
@@ -323,6 +326,7 @@ internal class CoreFeature(
                 )
             }
 
+            needsClearTextHttp = false
             initialized.set(false)
             ndkCrashHandler = NoOpNdkCrashHandler()
             trackingConsentProvider = NoOpConsentProvider()
@@ -348,6 +352,12 @@ internal class CoreFeature(
         return object : Call.Factory {
             // Create a new client that shares pools with the base client
             private val client = lazySharedOkHttpClient.newBuilder()
+                .apply {
+                    if (needsClearTextHttp) {
+                        // Internal test endpoints may use HTTP while other features still need HTTPS.
+                        connectionSpecs(lazySharedOkHttpClient.connectionSpecs + ConnectionSpec.CLEARTEXT)
+                    }
+                }
                 .apply(block)
                 .build()
 
@@ -601,6 +611,7 @@ internal class CoreFeature(
     }
 
     private fun readConfigurationSettings(configuration: Configuration.Core) {
+        needsClearTextHttp = configuration.needsClearTextHttp
         batchSize = configuration.batchSize
         uploadFrequency = configuration.uploadFrequency
         localDataEncryption = configuration.encryption
