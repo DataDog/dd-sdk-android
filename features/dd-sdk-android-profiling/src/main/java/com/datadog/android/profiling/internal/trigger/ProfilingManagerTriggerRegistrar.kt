@@ -16,6 +16,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.perfetto.ProfileType
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.utils.ThreadDumper
@@ -157,7 +158,8 @@ internal class ProfilingManagerTriggerRegistrar(
                 start = detectedAtMs,
                 startReason = ProfilingStartReason.ANR,
                 end = detectedAtMs,
-                resultFilePath = resultPath
+                resultFilePath = resultPath,
+                profileTypes = listOf(ProfileType.SYSTEM_TRACE)
             )
         )
     }

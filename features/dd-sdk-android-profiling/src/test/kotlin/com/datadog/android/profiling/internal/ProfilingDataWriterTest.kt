@@ -175,6 +175,9 @@ internal class ProfilingDataWriterTest {
         fakeDatadogContext.appBuildId?.let {
             expectedTagList.add("build_id:${fakeDatadogContext.appBuildId}")
         }
+        fakeResult.profileTypes.forEach {
+            expectedTagList.add("profile_type:${it.value}")
+        }
 
         assertThat(actualEvent)
             .hasStart(formatIsoUtc(fakeResult.start))

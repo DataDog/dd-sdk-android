@@ -141,7 +141,8 @@ internal class PerfettoProfiler(
                                 start = profilingStartTime,
                                 startReason = startReason,
                                 end = resultCallbackTime,
-                                resultFilePath = it
+                                resultFilePath = it,
+                                profileTypes = listOf(ProfileType.STACK_SAMPLING)
                             )
                         )
                     }
