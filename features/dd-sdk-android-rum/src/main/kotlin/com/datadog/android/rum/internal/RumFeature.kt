@@ -338,9 +338,9 @@ internal class RumFeature(
             sdkCore = sdkCore,
             dataWriter = dataWriter,
             insightsCollector = insightsCollector,
-            enabledTypes = timeseriesConfiguration.enabledTypes,
             batteryInfoProvider = batteryInfoProvider,
-            displayInfoProvider = displayInfoProvider
+            displayInfoProvider = displayInfoProvider,
+            configuration = timeseriesConfiguration
         )
 
         timeseriesCollector = DefaultTimeseriesCollector(
@@ -417,7 +417,10 @@ internal class RumFeature(
             (appContext as? Application)?.unregisterActivityLifecycleCallbacks(it)
         }
         timeseriesProcessLifecycleMonitor = null
-        (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.stopTimeseries()
+        (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.apply {
+            stopTimeseries()
+            cancelSessionExpiryCheck()
+        }
 
         dataWriter = NoOpDataWriter()
 

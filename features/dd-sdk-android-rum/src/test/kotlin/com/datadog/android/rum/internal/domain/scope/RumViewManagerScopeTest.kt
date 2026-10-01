@@ -58,6 +58,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -703,6 +704,29 @@ internal class RumViewManagerScopeTest {
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
             RumViewManagerScope.MESSAGE_MISSING_VIEW
+        )
+    }
+
+    @Test
+    fun `M neither warn nor start a ViewScope W handleEvent { SessionExpiryCheck, app displayed, no active view }`(
+        @Forgery fakeTime: Time
+    ) {
+        // Given
+        testedScope.applicationDisplayed = true
+        val fakeEvent = RumRawEvent.SessionExpiryCheck(fakeTime)
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        assertThat(testedScope.childrenScopes).isEmpty()
+        verify(mockInternalLogger, never()).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.USER),
+            any(),
+            anyOrNull(),
+            any(),
+            anyOrNull()
         )
     }
 

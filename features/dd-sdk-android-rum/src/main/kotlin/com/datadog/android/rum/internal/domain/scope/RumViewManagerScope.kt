@@ -475,7 +475,8 @@ internal class RumViewManagerScope(
             RumRawEvent.ResourceDropped::class.java,
             RumRawEvent.ResourceSent::class.java,
             RumRawEvent.UpdatePerformanceMetric::class.java,
-            RumRawEvent.UpdateExternalRefreshRate::class.java
+            RumRawEvent.UpdateExternalRefreshRate::class.java,
+            RumRawEvent.SessionExpiryCheck::class.java
         )
 
         internal const val RUM_BACKGROUND_VIEW_ID = "com.datadog.background.view"

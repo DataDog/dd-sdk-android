@@ -2666,6 +2666,78 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M re-arm expiry check at inactivity deadline W handleEvent() { tracked session }`(
+        @LongForgery(min = 1L, max = 1_000_000L) fakeDelayMs: Long
+    ) {
+        // Given
+        val mockSessionScope = mock<RumSessionScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+        whenever(mockSessionScope.getRumContext()) doReturn RumContext()
+        whenever(mockSessionScope.nanosUntilInactivityExpiry()) doReturn TimeUnit.MILLISECONDS.toNanos(fakeDelayMs)
+
+        // When
+        testedMonitor.sendWebViewEvent()
+        testedMonitor.sendWebViewEvent()
+
+        // Then
+        inOrder(mockHandler) {
+            repeat(2) {
+                verify(mockHandler).removeCallbacks(testedMonitor.sessionExpiryCheckRunnable)
+                verify(mockHandler).postDelayed(same(testedMonitor.sessionExpiryCheckRunnable), eq(fakeDelayMs))
+            }
+        }
+    }
+
+    @Test
+    fun `M remove pending check without re-arming W handleEvent() { nothing to expire }`() {
+        // Given
+        val mockSessionScope = mock<RumSessionScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+        whenever(mockSessionScope.getRumContext()) doReturn RumContext()
+        whenever(mockSessionScope.nanosUntilInactivityExpiry()) doReturn null
+
+        // When
+        testedMonitor.sendWebViewEvent()
+
+        // Then
+        verify(mockHandler).removeCallbacks(testedMonitor.sessionExpiryCheckRunnable)
+        verify(mockHandler, never()).postDelayed(any(), any())
+    }
+
+    @Test
+    fun `M send SessionExpiryCheck and re-arm W sessionExpiryCheckRunnable run()`(
+        @LongForgery(min = 1L, max = 1_000_000L) fakeDelayMs: Long
+    ) {
+        // Given
+        val mockSessionScope = mock<RumSessionScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+        whenever(mockSessionScope.getRumContext()) doReturn RumContext()
+        whenever(mockSessionScope.nanosUntilInactivityExpiry()) doReturn TimeUnit.MILLISECONDS.toNanos(fakeDelayMs)
+        testedMonitor.sendWebViewEvent()
+
+        // When
+        testedMonitor.sessionExpiryCheckRunnable.run()
+
+        // Then
+        verify(mockApplicationScope).handleEvent(
+            argThat { this is RumRawEvent.SessionExpiryCheck },
+            same(fakeDatadogContext),
+            same(mockEventWriteScope),
+            same(mockWriter)
+        )
+        verify(mockHandler, times(2)).postDelayed(same(testedMonitor.sessionExpiryCheckRunnable), eq(fakeDelayMs))
+    }
+
+    @Test
+    fun `M remove pending check W cancelSessionExpiryCheck()`() {
+        // When
+        testedMonitor.cancelSessionExpiryCheck()
+
+        // Then
+        verify(mockHandler).removeCallbacks(testedMonitor.sessionExpiryCheckRunnable)
+    }
+
+    @Test
     fun `M handle performance metric update W updatePerformanceMetric()`(
         forge: Forge
     ) {

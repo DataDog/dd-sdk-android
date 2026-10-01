@@ -877,11 +877,16 @@ internal class RumFeatureTest {
     @Test
     @OptIn(ExperimentalRumApi::class)
     fun `M wire timeseries factory W initialize { timeseries enabled }`(
-        @LongForgery(min = 1L) fakeTotalRamBytes: Long
+        @LongForgery(min = 1L) fakeTotalRamBytes: Long,
+        @IntForgery(min = 2, max = 128) fakeBufferSize: Int,
+        @LongForgery(min = 1L, max = 1000L) fakeIntervalMs: Long
     ) {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
-            timeseriesConfiguration = TimeseriesConfiguration.DEFAULT
+            timeseriesConfiguration = TimeseriesConfiguration(TimeseriesConfiguration.DEFAULT.enabledTypes).apply {
+                bufferSize = fakeBufferSize
+                intervalMs = fakeIntervalMs
+            }
         )
         testedFeature = RumFeature(
             mockSdkCore,
@@ -920,6 +925,8 @@ internal class RumFeatureTest {
             .isSameAs(testedFeature.insightsCollector)
         assertThat(pipelinesFactory.getFieldValue<Long, PipelineFactory>("totalRamBytes"))
             .isEqualTo(fakeTotalRamBytes)
+        assertThat(pipelinesFactory.getFieldValue<TimeseriesConfiguration, PipelineFactory>("configuration"))
+            .isSameAs(fakeConfiguration.timeseriesConfiguration)
         assertThat(
             pipelinesFactory.getFieldValue<InfoProvider<*>, PipelineFactory>("batteryInfoProvider")
         )
