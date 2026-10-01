@@ -15,9 +15,12 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.flags.AssignmentAuthorization
+import com.datadog.android.flags.AssignmentProtection
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.evaluation.InitializationTimeoutScheduler
+import com.datadog.android.flags.internal.net.AssignmentAuthorizationStore
 import com.datadog.android.flags.internal.net.ExposuresRequestFactory
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
@@ -48,6 +51,10 @@ internal class FlagsFeature(
     @Volatile
     private var isInitialized = false
 
+    private val authorizationExpirationLock = Any()
+    private var authorizationExpirationExecutor: ScheduledExecutorService? = null
+    private var authorizationGeneration = 0L
+
     /**
      * Indicates whether the app is running in debug mode.
      * Set once during onInitialize() and never changes for the process lifetime.
@@ -60,6 +67,11 @@ internal class FlagsFeature(
      * This map stores all clients created for this feature instance.
      */
     private val registeredClients: MutableMap<String, FlagsClient> = mutableMapOf()
+
+    internal val assignmentAuthorizationStore = AssignmentAuthorizationStore(
+        flagsConfiguration.assignmentAuthorization,
+        sdkCore.timeProvider::getServerTimestampMillis
+    )
 
     // region Storage Feature
 
@@ -78,7 +90,10 @@ internal class FlagsFeature(
     internal val precomputedRequestFactory =
         PrecomputedAssignmentsRequestFactory(
             internalLogger = sdkCore.internalLogger,
-            customFlagEndpoint = flagsConfiguration.customFlagEndpoint
+            customFlagEndpoint = flagsConfiguration.customFlagEndpoint,
+            authorizationStore = assignmentAuthorizationStore,
+            assignmentProtection = flagsConfiguration.assignmentProtection,
+            hasValidProtectionConfiguration = flagsConfiguration.hasValidAssignmentProtectionConfiguration
         )
 
     internal val initializationTimeoutScheduler = InitializationTimeoutScheduler { timeoutMs, action ->
@@ -127,14 +142,20 @@ internal class FlagsFeature(
             writer = dataWriter,
             timeProvider = sdkCore.timeProvider
         )
+        scheduleAuthorizationExpiration(assignmentAuthorizationStore.snapshot().authorization)
     }
 
     override fun onStop() {
+        synchronized(authorizationExpirationLock) {
+            authorizationExpirationExecutor?.shutdownSafely()
+            authorizationExpirationExecutor = null
+        }
         dataWriter = NoOpRecordWriter()
         isInitialized = false // Allow re-initialization if feature is restarted
-        synchronized(registeredClients) {
-            registeredClients.clear()
+        val clients = synchronized(registeredClients) {
+            registeredClients.values.toList().also { registeredClients.clear() }
         }
+        clients.forEach { (it as? DatadogFlagsClient)?.reset() }
     }
 
     private fun createDataWriter(): RecordWriter = ExposureEventRecordWriter(sdkCore)
@@ -174,9 +195,74 @@ internal class FlagsFeature(
         }
     }
 
-    internal fun unregisterClient(name: String) = registeredClients.remove(name)
+    internal fun unregisterClient(name: String) = synchronized(registeredClients) {
+        registeredClients.remove(name)
+    }
 
-    internal fun clearClients() = registeredClients.clear()
+    internal fun clearClients() = synchronized(registeredClients) {
+        registeredClients.clear()
+    }
+
+    internal fun setAssignmentAuthorization(authorization: AssignmentAuthorization?) {
+        if (flagsConfiguration.assignmentProtection != AssignmentProtection.SIGNED_AND_AUTHORIZED) {
+            sdkCore.internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.USER,
+                messageBuilder = {
+                    "Assignment authorization requires SIGNED_AND_AUTHORIZED assignment protection"
+                },
+                onlyOnce = true
+            )
+            return
+        }
+        synchronized(authorizationExpirationLock) {
+            assignmentAuthorizationStore.update(authorization)
+            val currentAuthorization = assignmentAuthorizationStore.snapshot().authorization
+            authorizationGeneration += 1
+            val generation = authorizationGeneration
+            scheduleAuthorizationExpiration(currentAuthorization)
+            notifyAuthorizationChanged(currentAuthorization != null, generation)
+        }
+    }
+
+    private fun notifyAuthorizationChanged(hasAuthorization: Boolean, generation: Long) {
+        val clients = synchronized(registeredClients) { registeredClients.values.toList() }
+        clients.forEach {
+            if (generation != authorizationGeneration) return
+            (it as? DatadogFlagsClient)?.assignmentAuthorizationDidChange(hasAuthorization)
+        }
+    }
+
+    private fun scheduleAuthorizationExpiration(authorization: AssignmentAuthorization?) {
+        synchronized(authorizationExpirationLock) {
+            authorizationExpirationExecutor?.shutdownSafely()
+            authorizationExpirationExecutor = null
+            if (authorization == null) return
+
+            val executor = sdkCore.createScheduledExecutorService(AUTHORIZATION_EXPIRATION_EXECUTOR_NAME)
+            authorizationExpirationExecutor = executor
+            executor.scheduleSafe(
+                operationName = AUTHORIZATION_EXPIRATION_OPERATION_NAME,
+                delay = (
+                    authorization.expiresAt.time - sdkCore.timeProvider.getServerTimestampMillis()
+                    ).coerceAtLeast(0),
+                unit = TimeUnit.MILLISECONDS,
+                internalLogger = sdkCore.internalLogger,
+                runnable = {
+                    synchronized(authorizationExpirationLock) {
+                        if (assignmentAuthorizationStore.expireIfMatches(authorization)) {
+                            authorizationGeneration += 1
+                            notifyAuthorizationChanged(false, authorizationGeneration)
+                        }
+                        if (authorizationExpirationExecutor === executor) {
+                            authorizationExpirationExecutor = null
+                        }
+                    }
+                    executor.shutdownSafely()
+                }
+            )
+        }
+    }
 
     // endregion
 
@@ -231,6 +317,8 @@ internal class FlagsFeature(
         private const val LOG_TAG = "[Datadog Flags]"
         private const val INITIALIZATION_TIMEOUT_EXECUTOR_NAME = "flags-initialization-timeout"
         private const val INITIALIZATION_TIMEOUT_OPERATION_NAME = "Wait for Flags initialization"
+        private const val AUTHORIZATION_EXPIRATION_EXECUTOR_NAME = "flags-authorization-expiration"
+        private const val AUTHORIZATION_EXPIRATION_OPERATION_NAME = "Expire Flags assignment authorization"
     }
 }
 

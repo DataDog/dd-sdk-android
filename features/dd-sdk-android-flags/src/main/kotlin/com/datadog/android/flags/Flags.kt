@@ -45,4 +45,21 @@ object Flags {
         )
         sdkCore.registerFeature(flagsFeature)
     }
+
+    /**
+     * Replaces the cached authorization for protected assignment delivery.
+     *
+     * Pass `null` during logout. Existing clients immediately stop using prior assignments.
+     */
+    @JvmOverloads
+    @JvmStatic
+    fun setAssignmentAuthorization(
+        authorization: AssignmentAuthorization?,
+        sdkCore: SdkCore = Datadog.getInstance()
+    ) {
+        (sdkCore as FeatureSdkCore)
+            .getFeature(com.datadog.android.api.feature.Feature.FLAGS_FEATURE_NAME)
+            ?.unwrap<FlagsFeature>()
+            ?.setAssignmentAuthorization(authorization)
+    }
 }

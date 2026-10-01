@@ -7,8 +7,10 @@
 package com.datadog.android.flags.internal.persistence
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.AssignmentProtection
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.net.ProtectedAssignmentEnvelope
 import com.datadog.android.flags.model.EvaluationContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -153,5 +155,42 @@ internal class FlagsStateSerializerTest {
         // Should still produce valid JSON even in edge cases
         SerializedFlagsStateAssert.assertThatSerializedFlagsState(serialized)
             .hasEmptyFlags()
+    }
+
+    @Test
+    fun `M preserve verified artifact W serialize() { protected state }`(forge: Forge) {
+        // Given
+        val rawResponseBody = "{\"data\":{\"id\":\"subject-1\"}}"
+        val envelope = ProtectedAssignmentEnvelope(
+            protection = AssignmentProtection.SIGNED,
+            requestNonce = "000102030405060708090a0b0c0d0e0f",
+            responseStatus = 200,
+            authorizationPolicyVersion = null,
+            rulesRevision = "rules-42",
+            issuedAt = 1_789_096_800L,
+            expiresAt = 1_789_097_100L,
+            certificateId = "certificate-id",
+            certificate = "certificate",
+            signature = "signature"
+        )
+        val state = FlagsStateEntry(
+            evaluationContext = EvaluationContext(forge.anAlphabeticalString(), emptyMap()),
+            flags = emptyMap(),
+            lastUpdateTimestamp = fakeTimestamp,
+            rawResponseBody = rawResponseBody,
+            protectedEnvelope = envelope
+        )
+
+        // When
+        val json = JSONObject(testedSerializer.serialize(state))
+
+        // Then
+        assertThat(json.getString("rawResponseBody")).isEqualTo(rawResponseBody)
+        val protectedJson = json.getJSONObject("protectedEnvelope")
+        assertThat(protectedJson.getString("protection")).isEqualTo("SIGNED")
+        assertThat(protectedJson.getString("requestNonce")).isEqualTo(envelope.requestNonce)
+        assertThat(protectedJson.getString("rulesRevision")).isEqualTo("rules-42")
+        assertThat(protectedJson.has("authorizationPolicyVersion")).isFalse()
+        assertThat(protectedJson.getString("certificateId")).isEqualTo("certificate-id")
     }
 }
