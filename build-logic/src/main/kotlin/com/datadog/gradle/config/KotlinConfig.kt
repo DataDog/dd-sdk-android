@@ -20,8 +20,8 @@ internal fun Project.kotlinConfig(
             jvmTarget.set(jvmBytecodeTarget)
             val isCI = System.getenv("CI").toBoolean()
             allWarningsAsErrors.set(evaluateWarningsAsErrors && isCI)
-            apiVersion.set(KotlinVersion.KOTLIN_2_0)
-            languageVersion.set(KotlinVersion.KOTLIN_2_0)
+            apiVersion.set(KotlinVersion.KOTLIN_2_1)
+            languageVersion.set(KotlinVersion.KOTLIN_2_1)
         }
     }
 }

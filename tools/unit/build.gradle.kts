@@ -4,23 +4,22 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import com.android.build.api.variant.HostTestBuilder
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.java11
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import com.datadog.gradle.config.java17
 
 plugins {
+    // Applied before the Android plugin on purpose (not under "Analysis tools"): AGP 9 applies
+    // the Kotlin plugin itself, and ktlint-gradle 14.2.0 registers its Android source-set tasks
+    // twice when it comes after the Kotlin plugin.
+    id("ktlint")
+
     // Build
     id("com.android.library")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    kotlin("android")
     id("de.mobilej.unmock")
     id("datadogBuildConfig")
 }
 
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION")
 android {
     compileSdk = AndroidConfig.TARGET_SDK
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
@@ -32,18 +31,7 @@ android {
     namespace = "com.datadog.tools.unit"
 
     compileOptions {
-        java11()
-    }
-
-    sourceSets.named("main") {
-        java.srcDir("src/main/kotlin")
-        java.srcDir("src/main/java")
-    }
-    sourceSets.named("test") {
-        java.srcDir("src/test/kotlin")
-    }
-    sourceSets.named("androidTest") {
-        java.srcDir("src/androidTest/kotlin")
+        java17()
     }
 
     flavorDimensions += "platform"
@@ -63,6 +51,16 @@ android {
     }
 }
 
+androidComponents {
+    // AGP 9 disables host (unit) tests for non-test build types by default, so the
+    // release unit-test tasks (e.g. testJvmReleaseUnitTest, required by the root
+    // :unitTestTools aggregation) are no longer generated. Re-enable them here, mirroring
+    // androidLibraryConfig() which this module can't use because of its custom flavors.
+    beforeVariants { variant ->
+        variant.hostTests[HostTestBuilder.UNIT_TEST_TYPE]?.enable = true
+    }
+}
+
 dependencies {
     implementation(libs.kotlin)
     implementation(libs.bundles.jUnit5)
@@ -76,11 +74,7 @@ unMock {
     keepStartingWith("org.json")
 }
 
-// It has to target 11 even if it is for unit-tests and this lib is not client facing, because
-// with bytecode of Java 17 there is an error:
-// Cannot inline bytecode built with JVM target 17 into bytecode that is being built with JVM target 11
-
 datadogBuild {
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyJunitConfig()
 }

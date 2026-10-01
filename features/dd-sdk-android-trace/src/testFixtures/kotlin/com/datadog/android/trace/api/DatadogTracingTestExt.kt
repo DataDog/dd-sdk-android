@@ -30,7 +30,7 @@ val DatadogSpanContext.resourceName: String?
     get() = ddSpanContext?.resourceName?.toString()
 
 val DatadogSpanContext.serviceName: String?
-    get() = ddSpanContext?.serviceName?.toString()
+    get() = ddSpanContext?.serviceName
 
 val DatadogTraceId.Companion.ZERO: DatadogTraceId
     get() = DatadogTraceIdAdapter(DDTraceId.ZERO)

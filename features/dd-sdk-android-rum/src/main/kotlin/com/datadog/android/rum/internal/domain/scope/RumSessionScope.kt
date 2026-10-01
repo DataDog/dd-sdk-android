@@ -65,8 +65,8 @@ internal class RumSessionScope(
     private val rumSessionTypeOverride: RumSessionType?,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
-    private val viewEventMapper: ViewEventMapper,
-    private val viewEventWriteConfig: ViewEventWriteConfig,
+    viewEventMapper: ViewEventMapper,
+    viewEventWriteConfig: ViewEventWriteConfig,
     heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
     private val timeseriesCollector: TimeseriesCollector = NoOpTimeseriesCollector()
 ) : RumScope {
@@ -263,7 +263,7 @@ internal class RumSessionScope(
         return !isActive && childScope == null
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "CyclomaticComplexMethod")
     private fun updateSession(event: RumRawEvent) {
         val nanoTime = sdkCore.timeProvider.getDeviceElapsedRealtimeNanos()
         val isNewSession = sessionId == RumContext.NULL_UUID

@@ -219,7 +219,7 @@ internal class NoOpFlagsClientTest {
         val fakeDefaultValue = forge.aDouble()
 
         // When
-        val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue.toDouble())
+        val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)

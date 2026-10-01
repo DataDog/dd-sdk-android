@@ -25,7 +25,7 @@ internal class WebViewNativeRumViewsCache(
         val iterator = parentViewsHistoryQueue.iterator()
         var backupCandidate: String? = null
         while (iterator.hasNext()) {
-            // the function is synchronized and we are checking hasNext() before calling next()
+            // the function is synchronized, and we are checking hasNext() before calling next()
             @Suppress("UnsafeThirdPartyFunctionCall")
             val entry = iterator.next()
             if (entry.timestamp <= browserEventTimestampInMs) {
@@ -96,7 +96,7 @@ internal class WebViewNativeRumViewsCache(
         while (parentViewsHistoryQueue.size > DATA_CACHE_ENTRIES_LIMIT) {
             // removeAt(index) instead of removeLast here is on purpose, to prevent issues
             // with old AGP being used when compiling with Android API 35.
-            // the function is synchronized and we are checking the size before
+            // the function is synchronized, and we are checking the size before
             @Suppress("UnsafeThirdPartyFunctionCall")
             parentViewsHistoryQueue.removeAt(parentViewsHistoryQueue.size - 1)
         }

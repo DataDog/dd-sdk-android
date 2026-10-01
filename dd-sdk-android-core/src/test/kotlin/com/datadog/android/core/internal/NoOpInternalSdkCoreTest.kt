@@ -28,6 +28,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -92,7 +93,7 @@ internal class NoOpInternalSdkCoreTest {
         // Given
         whenever(mockFeature.name) doReturn fakeFeatureName
         val expectedMessage = "[${NoOpInternalSdkCore.name}]: " +
-            REGISTER_FEATURE_INVOKED_ON_NO_OP_CORE_ERROR.format(fakeFeatureName)
+            REGISTER_FEATURE_INVOKED_ON_NO_OP_CORE_ERROR.format(Locale.US, fakeFeatureName)
 
         // When + Then
         Mockito.mockStatic(Log::class.java).use { mockedLog ->
@@ -111,7 +112,7 @@ internal class NoOpInternalSdkCoreTest {
         // Given
         whenever(mockFeature.name) doReturn fakeFeatureName
         val expectedMessage = "[${NoOpInternalSdkCore.name}]: " +
-            REGISTER_FEATURE_INVOKED_ON_NO_OP_CORE_ERROR.format(fakeFeatureName)
+            REGISTER_FEATURE_INVOKED_ON_NO_OP_CORE_ERROR.format(Locale.US, fakeFeatureName)
 
         // When + Then
         Mockito.mockStatic(Log::class.java).use { mockedLog ->
@@ -128,7 +129,7 @@ internal class NoOpInternalSdkCoreTest {
     fun `M log error W getFeature()`(@StringForgery fakeFeatureName: String) {
         // Given
         val expectedMessage = "[${NoOpInternalSdkCore.name}]: " +
-            GET_FEATURE_INVOKED_ON_NO_OP_CORE_ERROR.format(fakeFeatureName)
+            GET_FEATURE_INVOKED_ON_NO_OP_CORE_ERROR.format(Locale.US, fakeFeatureName)
 
         // When + Then
         Mockito.mockStatic(Log::class.java).use { mockedLog ->
@@ -144,7 +145,7 @@ internal class NoOpInternalSdkCoreTest {
     fun `M log error only once W getFeature() {called multiple times}`(@StringForgery fakeFeatureName: String) {
         // Given
         val expectedMessage = "[${NoOpInternalSdkCore.name}]: " +
-            GET_FEATURE_INVOKED_ON_NO_OP_CORE_ERROR.format(fakeFeatureName)
+            GET_FEATURE_INVOKED_ON_NO_OP_CORE_ERROR.format(Locale.US, fakeFeatureName)
 
         // When + Then
         Mockito.mockStatic(Log::class.java).use { mockedLog ->
