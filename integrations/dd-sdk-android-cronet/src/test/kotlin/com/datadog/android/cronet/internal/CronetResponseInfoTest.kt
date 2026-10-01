@@ -6,6 +6,7 @@
 
 package com.datadog.android.cronet.internal
 
+import com.datadog.android.api.instrumentation.network.peekBody
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
@@ -240,5 +241,20 @@ internal class CronetResponseInfoTest {
 
         // Then
         assertThat(result).isEqualTo(fakeHeaderLength)
+    }
+
+    @Test
+    fun `M return null W peekBody() { response payload never flows through the SDK }`(
+        @LongForgery(min = 1) fakeMaxBytes: Long
+    ) {
+        // Given
+        whenever(mockUrlResponseInfo.allHeaders).thenReturn(fakeHeaders)
+        val responseInfo = CronetHttpResponseInfo(mockUrlResponseInfo, mockRequestInfo)
+
+        // When
+        val result = responseInfo.peekBody(fakeMaxBytes)
+
+        // Then
+        assertThat(result).isNull()
     }
 }
