@@ -4,6 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -48,6 +49,13 @@ createJsonModelsGenerationTask("generateFlagsModelsFromJson") {
 @Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.flags"
+    buildFeatures {
+        buildConfig = true
+    }
+    defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "SDK_VERSION_NAME", "\"${AndroidConfig.VERSION.name}\"")
+    }
 }
 
 dependencies {
@@ -75,6 +83,8 @@ dependencies {
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))
     testImplementation(libs.okHttpMock)
+    androidTestImplementation(libs.androidXTestRunner)
+    androidTestImplementation(libs.androidXTestJUnitExt)
     unmock(libs.robolectric)
 }
 

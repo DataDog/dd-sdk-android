@@ -10,11 +10,13 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
+import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.model.EvaluationContext
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 internal class DefaultFlagsRepository(
@@ -24,8 +26,16 @@ internal class DefaultFlagsRepository(
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
     private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS
 ) : FlagsRepository {
-    private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
+    private data class FlagsState(
+        val context: EvaluationContext,
+        val flags: Map<String, PrecomputedFlag>,
+        val obfuscation: FlagKeyObfuscation?
+    ) {
+        fun get(key: String): PrecomputedFlag? =
+            if (obfuscation == null) flags[key] else obfuscation.encode(key)?.let { flags[it] }
+    }
     private val atomicState = AtomicReference<FlagsState?>(null)
+    private val obfuscationSupported = AtomicBoolean(true)
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Safe: count is positive constant (1)
     private val persistenceLoadedLatch = CountDownLatch(1)
@@ -37,16 +47,21 @@ internal class DefaultFlagsRepository(
     ) { persistedState ->
         try {
             persistedState?.let {
-                val loadedState = FlagsState(it.evaluationContext, it.flags)
+                val loadedState = FlagsState(it.evaluationContext, it.flags, it.obfuscation)
                 atomicState.compareAndSet(null, loadedState)
+                discardUnsupportedAssignments()
             }
         } finally {
             persistenceLoadedLatch.countDown()
         }
     }
 
-    override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
-        val newState = FlagsState(context, flags)
+    override fun setFlagsAndContext(
+        context: EvaluationContext,
+        flags: Map<String, PrecomputedFlag>,
+        obfuscation: FlagKeyObfuscation?
+    ) {
+        val newState = FlagsState(context, flags, obfuscation)
         atomicState.set(newState)
         persistenceLoadedLatch.countDown()
 
@@ -54,7 +69,7 @@ internal class DefaultFlagsRepository(
             context = context,
             flags = flags,
             currentTimestamp = featureSdkCore.timeProvider.getDeviceTimestampMillis(),
-            object : DataStoreWriteCallback {
+            callback = object : DataStoreWriteCallback {
                 override fun onSuccess() {
                 }
 
@@ -65,15 +80,28 @@ internal class DefaultFlagsRepository(
                         messageBuilder = { ERROR_SAVING_FLAGS_STATE }
                     )
                 }
-            }
+            },
+            obfuscation = obfuscation
         )
+    }
+
+    override fun setObfuscationSupported(supported: Boolean) {
+        obfuscationSupported.set(supported)
+        discardUnsupportedAssignments()
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // The atomic update only filters an immutable state value.
+    private fun discardUnsupportedAssignments() {
+        if (!obfuscationSupported.get()) {
+            atomicState.updateAndGet { state -> state?.takeIf { it.obfuscation == null } }
+        }
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
         waitForPersistenceLoad()
         val state = atomicState.get()
         if (state != null) {
-            return state.flags[key]
+            return state.get(key)
         }
         internalLogger.log(
             InternalLogger.Level.WARN,
@@ -87,7 +115,8 @@ internal class DefaultFlagsRepository(
         waitForPersistenceLoad()
         val state = atomicState.get()
         if (state != null) {
-            return state.flags
+            // The React Native bridge consumes original keys and cannot decode this representation.
+            return if (state.obfuscation == null) state.flags else emptyMap()
         }
         internalLogger.log(
             InternalLogger.Level.WARN,
@@ -116,7 +145,7 @@ internal class DefaultFlagsRepository(
     override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? {
         waitForPersistenceLoad()
         val state = atomicState.get() ?: return null
-        val flag = state.flags[key] ?: return null
+        val flag = state.get(key) ?: return null
         return flag to state.context
     }
 

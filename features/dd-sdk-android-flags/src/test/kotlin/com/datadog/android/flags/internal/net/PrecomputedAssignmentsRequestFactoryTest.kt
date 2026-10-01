@@ -10,6 +10,7 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.flags.BuildConfig
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -63,6 +64,32 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     }
 
     // region create() - Success cases
+
+    @Test
+    fun `M negotiate encoding with flags version W create() { native source }`() {
+        val context = fakeDatadogContext.copy(source = "android", sdkVersion = "overridden-core-version")
+        val request = checkNotNull(testedFactory.create(EvaluationContext("subject", emptyMap()), context))
+        val buffer = Buffer()
+        checkNotNull(request.body).writeTo(buffer)
+        val attributes = JSONObject(buffer.readUtf8()).getJSONObject("data").getJSONObject("attributes")
+
+        assertThat(attributes.getJSONObject("supported_capabilities").getJSONArray("assignment_encodings").toString())
+            .isEqualTo("[\"flag-key-sha256-v1\"]")
+        assertThat(attributes.getJSONObject("source").getString("sdk_version")).isEqualTo(BuildConfig.SDK_VERSION_NAME)
+    }
+
+    @Test
+    fun `M omit encoding capability W create() { bridge sources }`() {
+        for (source in listOf("react-native", "flutter", "unknown")) {
+            val context = fakeDatadogContext.copy(source = source)
+            val request = checkNotNull(testedFactory.create(EvaluationContext("subject", emptyMap()), context))
+            val buffer = Buffer()
+            checkNotNull(request.body).writeTo(buffer)
+            val attributes = JSONObject(buffer.readUtf8()).getJSONObject("data").getJSONObject("attributes")
+
+            assertThat(attributes.has("supported_capabilities")).isFalse()
+        }
+    }
 
     @Test
     fun `M create valid request W create() { all fields present }`(
@@ -188,7 +215,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         // Validate source
         val source = attributes.getJSONObject("source")
         assertThat(source.getString("sdk_name")).isEqualTo("dd-sdk-android")
-        assertThat(source.getString("sdk_version")).isEqualTo(fakeDatadogContext.sdkVersion)
+        assertThat(source.getString("sdk_version")).isEqualTo(BuildConfig.SDK_VERSION_NAME)
     }
 
     @Test
