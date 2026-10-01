@@ -27,6 +27,7 @@ internal fun ProfilingConfiguration.applyRemoteConfiguration(
         applicationLaunchSampleRate = profiling.applicationLaunchSampleRate?.toFloat()
             ?: applicationLaunchSampleRate,
         continuousSampleRate = profiling.continuousSampleRate?.toFloat()
-            ?: continuousSampleRate
+            ?: continuousSampleRate,
+        anrTriggerEnabled = profiling.anrTriggerEnabled ?: anrTriggerEnabled
     )
 }
