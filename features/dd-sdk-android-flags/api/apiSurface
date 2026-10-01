@@ -68,6 +68,7 @@ enum com.datadog.android.flags.model.ResolutionReason
   - RULE_MATCH
   - PREREQUISITE_FAILED
   - ERROR
+  - CACHED
 interface com.datadog.android.flags.model.UnparsedFlag
   val variationType: String
   val variationValue: String
