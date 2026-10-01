@@ -17,7 +17,9 @@ data class ProfilingConfiguration internal constructor(
     internal val customEndpointUrl: String?,
     internal val applicationLaunchSampleRate: Float,
     internal val continuousSampleRate: Float,
-    internal val anrTriggerEnabled: Boolean
+    internal val anrTriggerEnabled: Boolean,
+    internal val oomTriggerEnabled: Boolean,
+    internal val anomalyTriggerEnabled: Boolean
 ) {
 
     /**
@@ -29,6 +31,8 @@ data class ProfilingConfiguration internal constructor(
         private var applicationLaunchSampleRate: Float = DEFAULT_APPLICATION_LAUNCH_SAMPLE_RATE
         private var continuousSampleRate: Float = DEFAULT_CONTINUOUS_SAMPLE_RATE
         private var anrTriggerEnabled: Boolean = DEFAULT_ANR_TRIGGER_ENABLED
+        private var oomTriggerEnabled: Boolean = DEFAULT_OOM_TRIGGER_ENABLED
+        private var anomalyTriggerEnabled: Boolean = DEFAULT_ANOMALY_TRIGGER_ENABLED
 
         /**
          * Sets the sampling rate for Application Launch profiling. It will be applied on the next application launch.
@@ -82,6 +86,34 @@ data class ProfilingConfiguration internal constructor(
         }
 
         /**
+         * Enables or disables collecting a profile when an out of memory event occurs.
+         *
+         * When enabled (default), a profile is collected on OOM so the SDK can report the OOM
+         * event. Only effective on Android CinnamonBun (API level 37) and above, where the
+         * system OOM profiling trigger is available.
+         *
+         * @param enabled `true` to collect a profile on OOM (default), `false` to disable it.
+         */
+        fun enableOutOfMemoryTrigger(enabled: Boolean): Builder {
+            this.oomTriggerEnabled = enabled
+            return this
+        }
+
+        /**
+         * Enables or disables collecting a profile when a memory anomaly is detected.
+         *
+         * When enabled (default), a profile is collected on anomaly so the SDK can report the
+         * anomaly event. Only effective on Android CinnamonBun (API level 37) and above, where
+         * the system anomaly profiling trigger is available.
+         *
+         * @param enabled `true` to collect a profile on anomaly (default), `false` to disable it.
+         */
+        fun enableAnomalyTrigger(enabled: Boolean): Builder {
+            this.anomalyTriggerEnabled = enabled
+            return this
+        }
+
+        /**
          * Builds a [ProfilingConfiguration] based on the current state of this Builder.
          */
         fun build(): ProfilingConfiguration {
@@ -89,7 +121,9 @@ data class ProfilingConfiguration internal constructor(
                 customEndpointUrl = customEndpointUrl,
                 applicationLaunchSampleRate = applicationLaunchSampleRate,
                 continuousSampleRate = continuousSampleRate,
-                anrTriggerEnabled = anrTriggerEnabled
+                anrTriggerEnabled = anrTriggerEnabled,
+                oomTriggerEnabled = oomTriggerEnabled,
+                anomalyTriggerEnabled = anomalyTriggerEnabled
             )
         }
     }
@@ -108,6 +142,17 @@ data class ProfilingConfiguration internal constructor(
          * making this an opt-out capability.
          */
         internal const val DEFAULT_ANR_TRIGGER_ENABLED: Boolean = true
+
+        /**
+         * OOM and anomaly-triggered profiling are enabled by default to preserve the existing
+         * behavior, making these opt-out capabilities.
+         */
+        internal const val DEFAULT_OOM_TRIGGER_ENABLED: Boolean = true
+
+        /**
+         * See [DEFAULT_OOM_TRIGGER_ENABLED].
+         */
+        internal const val DEFAULT_ANOMALY_TRIGGER_ENABLED: Boolean = true
 
         /**
          * A default configuration for the Profiling feature.

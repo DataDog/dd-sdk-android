@@ -21,7 +21,9 @@ class ProfilingConfigurationForgeryFactory :
             customEndpointUrl = forge.aNullable {
                 aStringMatching("http(s?)://[a-z]+\\.com/\\w+")
             },
-            anrTriggerEnabled = forge.aBool()
+            anrTriggerEnabled = forge.aBool(),
+            oomTriggerEnabled = forge.aBool(),
+            anomalyTriggerEnabled = forge.aBool()
         )
     }
 }

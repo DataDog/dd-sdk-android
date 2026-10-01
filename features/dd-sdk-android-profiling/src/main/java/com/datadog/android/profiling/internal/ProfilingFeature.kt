@@ -112,7 +112,11 @@ internal class ProfilingFeature(
             this.timeProvider.delegate = sdkCore.timeProvider
             resolveProfilingPackageVersionCode(appContext)
             this.internalLogger = sdkCore.internalLogger
-            setAnrTriggerEnabled(configuration.anrTriggerEnabled)
+            setEnabledTriggers(
+                configuration.anrTriggerEnabled,
+                configuration.oomTriggerEnabled,
+                configuration.anomalyTriggerEnabled
+            )
             registerProfilingCallback(appContext, this@ProfilingFeature)
             registerProfilerStatusListener(this@ProfilingFeature)
         }
