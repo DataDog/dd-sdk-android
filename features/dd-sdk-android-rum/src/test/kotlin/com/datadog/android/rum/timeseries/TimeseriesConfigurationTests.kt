@@ -16,6 +16,30 @@ import org.junit.jupiter.params.provider.EnumSource
 internal class TimeseriesConfigurationTests {
 
     @Test
+    fun `M use default collection settings W constructor()`() {
+        // When
+        val testedConfiguration = TimeseriesConfiguration(TimeseriesType.entries.toSet())
+
+        // Then
+        assertThat(testedConfiguration.bufferSize).isEqualTo(120)
+        assertThat(testedConfiguration.intervalMs).isEqualTo(1000L)
+    }
+
+    @Test
+    fun `M preserve shared defaults W changing internal collection settings`() {
+        // Given
+        val testedConfiguration = TimeseriesConfiguration(TimeseriesType.entries.toSet())
+
+        // When
+        testedConfiguration.bufferSize = 5
+        testedConfiguration.intervalMs = 50L
+
+        // Then
+        assertThat(TimeseriesConfiguration.DEFAULT.bufferSize).isEqualTo(120)
+        assertThat(TimeseriesConfiguration.DEFAULT.intervalMs).isEqualTo(1000L)
+    }
+
+    @Test
     fun `M collect all types W constructor() { all types passed }`() {
         // When
         val config = TimeseriesConfiguration(TimeseriesType.entries.toSet())

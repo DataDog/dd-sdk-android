@@ -155,6 +155,10 @@ internal class DatadogRumMonitor(
 
     private val isDebugEnabled = AtomicBoolean(false)
 
+    internal val sessionExpiryCheckRunnable = Runnable {
+        handleEvent(RumRawEvent.SessionExpiryCheck(now()))
+    }
+
     // region RumMonitor
 
     override fun getCurrentSessionId(callback: (String?) -> Unit) {
@@ -947,6 +951,25 @@ internal class DatadogRumMonitor(
         }
     }
 
+    internal fun cancelSessionExpiryCheck() {
+        handler.removeCallbacks(sessionExpiryCheckRunnable)
+    }
+
+    /**
+     * RUM evaluates session expiry only when an event arrives, so an idle app would keep an expired session
+     * TRACKED (and timeseries writing into it). Like the removed KeepAlive (RUM-10770), the check is re-armed
+     * after every event, so it only fires once RUM has been idle until the inactivity deadline. Unlike KeepAlive,
+     * it writes nothing: no view update, no session extension.
+     *
+     * Both calls run here, on the single RUM worker thread, so at most one check is ever pending.
+     */
+    @WorkerThread
+    private fun scheduleSessionExpiryCheck() {
+        handler.removeCallbacks(sessionExpiryCheckRunnable)
+        val delayNs = rootScope.activeSession?.nanosUntilInactivityExpiry() ?: return
+        handler.postDelayed(sessionExpiryCheckRunnable, TimeUnit.NANOSECONDS.toMillis(delayNs))
+    }
+
     internal fun handleEvent(event: RumRawEvent) {
         if (event is RumRawEvent.AddError && event.isFatal) {
             val handled = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
@@ -993,6 +1016,7 @@ internal class DatadogRumMonitor(
                                 synchronized(rootScope) {
                                     handleEventWithMethodCallPerf(event, datadogContext, writeScope)
                                     notifyDebugListenerWithState()
+                                    scheduleSessionExpiryCheck()
                                     val context = currentRumContext()
                                     updateCachedViewUrl(context)
                                     context

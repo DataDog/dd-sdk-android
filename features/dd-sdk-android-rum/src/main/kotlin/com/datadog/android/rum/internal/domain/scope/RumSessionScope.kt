@@ -230,6 +230,12 @@ internal class RumSessionScope(
 
     // endregion
 
+    internal fun nanosUntilInactivityExpiry(): Long? {
+        if (!isActive || sessionState != State.TRACKED) return null
+        val nowNs = sdkCore.timeProvider.getDeviceElapsedRealtimeNanos()
+        return (lastUserInteractionNs.get() + sessionInactivityNanos - nowNs).coerceAtLeast(0L)
+    }
+
     // region Internal
 
     private fun getActiveRumContext(): RumContext {

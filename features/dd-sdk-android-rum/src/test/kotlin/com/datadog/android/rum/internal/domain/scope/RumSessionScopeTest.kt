@@ -2058,6 +2058,90 @@ internal class RumSessionScopeTest {
     }
 
     @Test
+    fun `M expire session and stop timeseries W handleEvent { SessionExpiryCheck, session inactive }`(forge: Forge) {
+        // Given
+        initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val sessionId = testedScope.sessionId
+
+        // When
+        advanceTimeByMs(TEST_INACTIVITY_MS)
+        testedScope.handleEvent(
+            RumRawEvent.SessionExpiryCheck(currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        assertThat(testedScope.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
+        assertThat(testedScope.sessionId).isEqualTo(sessionId)
+        verify(mockTimeseriesCollector).onSessionStop(sessionId)
+        verify(mockTimeseriesCollector).onSessionStart(any(), any())
+    }
+
+    @Test
+    fun `M not extend session W handleEvent { SessionExpiryCheck, session active }`(forge: Forge) {
+        // Given
+        initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        advanceTimeByMs(TEST_INACTIVITY_MS / 2)
+        testedScope.handleEvent(
+            RumRawEvent.SessionExpiryCheck(currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        assertThat(testedScope.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+
+        // When
+        advanceTimeByMs(TEST_INACTIVITY_MS / 2 + 1)
+        testedScope.handleEvent(
+            RumRawEvent.SessionExpiryCheck(currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        assertThat(testedScope.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
+    }
+
+    @Test
+    fun `M return time left until inactivity expiry W nanosUntilInactivityExpiry() { tracked session }`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        advanceTimeByMs(TEST_INACTIVITY_MS / 4)
+
+        // When
+        val result = testedScope.nanosUntilInactivityExpiry()
+
+        // Then
+        assertThat(result).isEqualTo(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS - TEST_INACTIVITY_MS / 4))
+    }
+
+    @Test
+    fun `M return null W nanosUntilInactivityExpiry() { session expired }`(forge: Forge) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        advanceTimeByMs(TEST_INACTIVITY_MS)
+        testedScope.handleEvent(
+            RumRawEvent.SessionExpiryCheck(currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // When
+        val result = testedScope.nanosUntilInactivityExpiry()
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
     fun `M stop timeseries W handleEvent { StopSession }`(forge: Forge) {
         // Given
         initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)

@@ -27,7 +27,7 @@ internal class PipelineFactory(
     private val sdkCore: FeatureSdkCore,
     private val dataWriter: DataWriter<Any>,
     private val insightsCollector: InsightsCollector,
-    private val enabledTypes: Set<TimeseriesType>,
+    private val configuration: TimeseriesConfiguration,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>
 ) {
@@ -36,7 +36,7 @@ internal class PipelineFactory(
         TimeseriesType.MEMORY to ::createMemoryPipeline
     )
 
-    fun create(sessionType: RumSessionType): List<Pipeline<*>> = enabledTypes.mapNotNull {
+    fun create(sessionType: RumSessionType): List<Pipeline<*>> = configuration.enabledTypes.mapNotNull {
         typesFactory[it]?.invoke(sessionType)
     }
 
@@ -56,9 +56,9 @@ internal class PipelineFactory(
             reader = VitalReaderWrapper(
                 vitalReader = MemoryVitalReader(internalLogger = sdkCore.internalLogger),
                 timeProvider = sdkCore.timeProvider,
-                intervalMs = TimeseriesConfiguration.DEFAULT_INTERVAL_MS
+                intervalMs = configuration.intervalMs
             ),
-            buffer = Buffer(TimeseriesConfiguration.DEFAULT_BUFFER_SIZE),
+            buffer = Buffer(configuration.bufferSize),
             eventFactory = MemoryEventFactory(
                 sessionType = sessionType,
                 totalRamBytes = totalRamBytes,
@@ -78,9 +78,9 @@ internal class PipelineFactory(
         reader = CpuDatapointReader(
             cpuStatReader = CpuStatReader(internalLogger = sdkCore.internalLogger),
             timeProvider = sdkCore.timeProvider,
-            intervalMs = TimeseriesConfiguration.DEFAULT_INTERVAL_MS
+            intervalMs = configuration.intervalMs
         ),
-        buffer = Buffer(TimeseriesConfiguration.DEFAULT_BUFFER_SIZE),
+        buffer = Buffer(configuration.bufferSize),
         eventFactory = CpuEventFactory(
             sessionType = sessionType,
             timeProvider = sdkCore.timeProvider,

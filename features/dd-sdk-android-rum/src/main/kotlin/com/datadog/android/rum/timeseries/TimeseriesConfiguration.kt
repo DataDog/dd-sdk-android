@@ -15,6 +15,16 @@ class TimeseriesConfiguration(collectTypes: Set<TimeseriesType>) {
 
     internal val enabledTypes: Set<TimeseriesType> = collectTypes.toSet()
 
+    // These two settings let tests shorten sampling and buffer fill waits for tests.
+    // Keep them internal and hide their accessors from Java callers until they are part of the public API.
+    @get:JvmSynthetic
+    @set:JvmSynthetic
+    internal var bufferSize: Int = DEFAULT_BUFFER_SIZE
+
+    @get:JvmSynthetic
+    @set:JvmSynthetic
+    internal var intervalMs: Long = DEFAULT_INTERVAL_MS
+
     companion object {
 
         /** Default [TimeseriesConfiguration] collecting CPU and MEMORY timeseries types. */
