@@ -6,7 +6,9 @@
 
 package com.datadog.android.flags
 
+import com.datadog.android.api.SdkCore
 import com.datadog.android.flags.internal.DatadogFlagsClient
+import com.datadog.android.flags.internal.net.WrapperSdkSource
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.lint.InternalApi
@@ -24,6 +26,23 @@ import com.datadog.android.lint.InternalApi
 @InternalApi
 @Suppress("ClassName", "UndocumentedPublicFunction")
 class _FlagsInternalProxy(private val client: FlagsClient) {
+    companion object {
+        @JvmStatic
+        fun enable(
+            configuration: FlagsConfiguration,
+            sdkCore: SdkCore,
+            wrapperSdkName: String,
+            wrapperSdkVersion: String,
+            nativeBridgeVersion: String
+        ) {
+            Flags.enable(
+                configuration,
+                sdkCore,
+                WrapperSdkSource(wrapperSdkName, wrapperSdkVersion, nativeBridgeVersion)
+            )
+        }
+    }
+
     fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag> = if (client is DatadogFlagsClient) {
         client.getFlagAssignmentsSnapshot()
     } else {
