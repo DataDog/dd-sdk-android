@@ -15,7 +15,9 @@ internal interface FlagsRepository {
     fun getPrecomputedFlag(key: String): PrecomputedFlag?
     fun getEvaluationContext(): EvaluationContext?
     fun setRequestedContext(context: EvaluationContext)
-    fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>)
+
+    // Returns an optional first-install notification to invoke after enclosing lifecycle locks are released.
+    fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>): (() -> Unit)?
     fun getPrecomputedFlagWithContext(key: String): FlagWithContext?
     fun hasFlags(): Boolean
     fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean

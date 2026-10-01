@@ -125,6 +125,7 @@ internal class EvaluationsManager(
         fetchEvaluationsForContext(context, callback, matchingCachedAssignments, generation, initializationCompletion)
     }
 
+    @Suppress("LongMethod") // Keep admission, lifecycle update and outside-lock delivery visibly ordered.
     private fun fetchEvaluationsForContext(
         context: EvaluationContext,
         callback: EvaluationContextCallback?,
@@ -157,15 +158,20 @@ internal class EvaluationsManager(
                             { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
                         )
 
-                        val completionCallback = synchronized(initializationTerminalLock) {
-                            val result = initializationCompletion?.take()?.callback
-                                ?: if (initializationCompletion == null) callback else null
-                            if (generation == contextGeneration) {
-                                // Admission cannot race installation or the persistent-write submission.
-                                flagsRepository.setFlagsAndContext(context, flagsMap)
-                                flagStateManager.updateState(FlagsClientState.Ready)
+                        var firstFlagsDelivery: (() -> Unit)? = null
+                        val completionCallback = try {
+                            synchronized(initializationTerminalLock) {
+                                val result = initializationCompletion?.take()?.callback
+                                    ?: if (initializationCompletion == null) callback else null
+                                if (generation == contextGeneration) {
+                                    // Admission cannot race installation or the persistent-write submission.
+                                    firstFlagsDelivery = flagsRepository.setFlagsAndContext(context, flagsMap)
+                                    flagStateManager.updateState(FlagsClientState.Ready)
+                                }
+                                result
                             }
-                            result
+                        } finally {
+                            firstFlagsDelivery?.invoke()
                         }
                         completionCallback?.onSuccess()
                     } else {

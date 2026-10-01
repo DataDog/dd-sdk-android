@@ -133,6 +133,7 @@ internal class FlagsFeature(
         dataWriter = NoOpRecordWriter()
         isInitialized = false // Allow re-initialization if feature is restarted
         synchronized(registeredClients) {
+            registeredClients.values.forEach { (it as? DatadogFlagsClient)?.dispose() }
             registeredClients.clear()
         }
     }
@@ -174,9 +175,14 @@ internal class FlagsFeature(
         }
     }
 
-    internal fun unregisterClient(name: String) = registeredClients.remove(name)
+    internal fun unregisterClient(name: String) = synchronized(registeredClients) {
+        registeredClients.remove(name)?.also { (it as? DatadogFlagsClient)?.dispose() }
+    }
 
-    internal fun clearClients() = registeredClients.clear()
+    internal fun clearClients() = synchronized(registeredClients) {
+        registeredClients.values.forEach { (it as? DatadogFlagsClient)?.dispose() }
+        registeredClients.clear()
+    }
 
     // endregion
 

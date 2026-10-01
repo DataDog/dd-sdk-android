@@ -1158,6 +1158,110 @@ internal class EvaluationsManagerTest {
 
     // endregion
 
+    @Test
+    fun `M deliver first flags outside lifecycle lock W callback reenters context update`() {
+        val operations = mutableListOf<Runnable>()
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operations += it.getArgument<Runnable>(0)
+            null
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), any())) doReturn EMPTY_FLAGS_RESPONSE_JSON
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)) doReturn emptyMap()
+        val states = FlagsStateManager(
+            DDCoreStateHolder.create(
+                initialState = FlagsClientState.NotReady,
+                onStateChanged = FlagsStateListener::onStateChanged
+            )
+        )
+        val testedManager =
+            createManager(flagStateManager = states, scheduler = InitializationTimeoutScheduler { _, _ -> {} })
+        var calls = 0
+        val delivery: () -> Unit = {
+            assertThat(Thread.holdsLock(states.lifecycleLock)).isFalse()
+            calls++
+            testedManager.updateEvaluationsForContext(EvaluationContext("reentrant"))
+        }
+        whenever(mockFlagsRepository.setFlagsAndContext(any(), any())).thenReturn(delivery)
+        testedManager.updateEvaluationsForContext(EvaluationContext("first"))
+        operations[0].run()
+        assertThat(calls).isEqualTo(1)
+        assertThat(states.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+        assertThat(operations).hasSize(2)
+    }
+
+    @Test
+    fun `M deliver first flags W timeout callback remains blocked`() {
+        val operations = mutableListOf<Runnable>()
+        var timeout: (() -> Unit)? = null
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operations += it.getArgument<Runnable>(0)
+            null
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), any())) doReturn EMPTY_FLAGS_RESPONSE_JSON
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)) doReturn emptyMap()
+        val entered = CountDownLatch(1)
+        val finish = CountDownLatch(1)
+        val delivered = AtomicBoolean(false)
+        val delivery: () -> Unit = { delivered.set(true) }
+        whenever(mockFlagsRepository.setFlagsAndContext(any(), any())).thenReturn(delivery)
+        val testedManager =
+            createManager(
+                initializationTimeoutMs = 1,
+                scheduler = InitializationTimeoutScheduler { _, action ->
+                    timeout = action
+                    {}
+                }
+            )
+        val callback = object : EvaluationContextCallback {
+            override fun onSuccess() = fail<Unit>("timeout already won")
+            override fun onFailure(error: Throwable) {
+                entered.countDown()
+                check(finish.await(5, TimeUnit.SECONDS))
+            }
+        }
+        testedManager.updateEvaluationsForContext(EvaluationContext("first"), callback)
+        val timeoutThread = Thread { checkNotNull(timeout).invoke() }.apply { start() }
+        try {
+            assertThat(entered.await(5, TimeUnit.SECONDS)).isTrue()
+            operations.single().run()
+            assertThat(delivered.get()).isTrue()
+        } finally {
+            finish.countDown()
+            timeoutThread.join(5000)
+        }
+        assertThat(timeoutThread.isAlive).isFalse()
+    }
+
+    @Test
+    fun `M release accepted first flags W existing state listener throws`() {
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), any())) doReturn EMPTY_FLAGS_RESPONSE_JSON
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)) doReturn emptyMap()
+        val states = FlagsStateManager(
+            DDCoreStateHolder.create(
+                initialState = FlagsClientState.NotReady,
+                onStateChanged = FlagsStateListener::onStateChanged
+            )
+        )
+        states.addListener(object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                if (newState == FlagsClientState.Ready) error("customer state listener")
+            }
+        })
+        var delivered = false
+        val delivery: () -> Unit = {
+            assertThat(Thread.holdsLock(states.lifecycleLock)).isFalse()
+            delivered = true
+        }
+        whenever(mockFlagsRepository.setFlagsAndContext(any(), any())).thenReturn(delivery)
+        val testedManager =
+            createManager(flagStateManager = states, scheduler = InitializationTimeoutScheduler { _, _ -> {} })
+        // The direct test executor propagates the existing state-listener failure.
+        org.junit.jupiter.api.assertThrows<IllegalStateException> {
+            testedManager.updateEvaluationsForContext(EvaluationContext("first"))
+        }
+        assertThat(delivered).isTrue()
+    }
+
     private fun createManager(
         flagStateManager: FlagsStateManager = mockFlagsStateManager,
         initializationTimeoutMs: Long? = null,

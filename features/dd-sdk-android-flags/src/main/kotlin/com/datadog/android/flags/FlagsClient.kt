@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
 import com.datadog.android.flags.internal.EvaluationsFeature
+import com.datadog.android.flags.internal.FirstFlagsObserver
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.LogWithPolicy
@@ -30,7 +31,9 @@ import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
+import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.internal.utils.DDCoreStateHolder
+import com.datadog.android.lint.InternalApi
 import org.json.JSONObject
 
 /**
@@ -219,6 +222,27 @@ interface FlagsClient {
     class Builder {
         private val name: String
         private val sdkCore: FeatureSdkCore
+        private var firstFlagsCallback: FirstFlagsCallback? = null
+        private var firstFlagsSnapshotCallback: ((EvaluationContext, Map<String, UnparsedFlag>) -> Unit)? = null
+
+        /** Internal bridge hook capturing the first accepted context and assignments together. */
+        @InternalApi
+        fun onFirstFlagsSnapshot(callback: ((EvaluationContext, Map<String, UnparsedFlag>) -> Unit)?): Builder = apply {
+            firstFlagsSnapshotCallback = callback
+        }
+
+        /**
+         * Registers an optional callback for the first accepted cache or network installation.
+         * Registration precedes initialization. The callback may run before [build] returns;
+         * use its client parameter rather than a variable assigned from [build].
+         * Empty installations notify with an empty key list. No readiness transition is implied.
+         * Reusing an existing named client ignores this callback. A stopped client does not start
+         * pending delivery; a callback already started may finish. Exceptions are logged and isolated.
+         *
+         * @param callback the callback, or null to remove it from this builder.
+         * @return this builder.
+         */
+        fun onFirstFlags(callback: FirstFlagsCallback?): Builder = apply { firstFlagsCallback = callback }
 
         /**
          * Creates a builder for a named [FlagsClient].
@@ -293,15 +317,19 @@ interface FlagsClient {
                 .getFeature(FLAGS_EVALUATIONS_FEATURE_NAME)
                 ?.unwrap<EvaluationsFeature>()
 
-            return flagsFeature.getOrRegisterNewClient(name) {
+            val client = flagsFeature.getOrRegisterNewClient(name) {
                 createInternal(
                     configuration = flagsFeature.flagsConfiguration,
                     featureSdkCore = sdkCore,
                     flagsFeature = flagsFeature,
                     evaluationsFeature = evaluationsFeature,
-                    name = name
+                    name = name,
+                    onFirstFlags = firstFlagsCallback,
+                    onFirstFlagsSnapshot = firstFlagsSnapshotCallback
                 )
             }
+            (client as? DatadogFlagsClient)?.startLoading()
+            return client
         }
     }
 
@@ -393,18 +421,24 @@ interface FlagsClient {
             featureSdkCore: FeatureSdkCore,
             flagsFeature: FlagsFeature,
             evaluationsFeature: EvaluationsFeature?,
-            name: String
+            name: String,
+            onFirstFlags: FirstFlagsCallback? = null,
+            onFirstFlagsSnapshot: ((EvaluationContext, Map<String, UnparsedFlag>) -> Unit)? = null
         ): FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
             )
+            val firstFlagsObserver =
+                FirstFlagsObserver(onFirstFlags, featureSdkCore.internalLogger, onFirstFlagsSnapshot)
             val datastore = featureSdkCore.getFeature(FLAGS_FEATURE_NAME)
                 ?.dataStore
             val flagsRepository = if (datastore != null) {
                 DefaultFlagsRepository(
                     featureSdkCore = featureSdkCore,
                     dataStore = datastore,
-                    instanceName = name
+                    instanceName = name,
+                    firstFlagsObserver = firstFlagsObserver,
+                    loadImmediately = false
                 )
             } else {
                 NoOpFlagsRepository()
@@ -448,7 +482,8 @@ interface FlagsClient {
                 rumEvaluationLogger = rumEvaluationLogger,
                 exposureProcessor = flagsFeature.processor,
                 evaluationsFeature = evaluationsFeature,
-                flagStateManager = flagStateManager
+                flagStateManager = flagStateManager,
+                firstFlagsObserver = firstFlagsObserver
             )
         }
 

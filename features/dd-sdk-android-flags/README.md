@@ -271,3 +271,36 @@ For more information on Feature Flags in Datadog, see the [official Feature Flag
 
 [1]: https://docs.datadoghq.com/real_user_monitoring/application_monitoring/android/setup
 [2]: https://docs.datadoghq.com/getting_started/feature_flags/
+
+
+### First installed flags
+
+Register an optional callback before building the client to react to its first accepted cached or network assignments:
+
+```kotlin
+val client = FlagsClient.Builder()
+    .onFirstFlags { installedClient, event ->
+        // Use this client parameter: the callback can run before build() returns.
+        val installedKeys = event.flagsChanged.orEmpty()
+        // Evaluate only flags the application actually needs using installedClient.
+    }
+    .build()
+```
+
+The callback receives a `FlagsClientEvent` with type `CONFIGURATION_CHANGED`, provider name
+`Datadog Feature Flags Provider`, the complete first installed key list in `flagsChanged`, empty
+`metadata`, and no `message` or `errorCode`. A valid empty installation fires with `flagsChanged = []`.
+Missing, invalid, rejected or superseded results do not fire. Later refreshes and context changes
+never rearm the callback. Rebuilding an existing named client ignores the new builder callback.
+
+This is native assignment availability, not `READY` or an OpenFeature notification. Existing readiness,
+context eligibility and evaluation reasons remain unchanged. Producing the key list does not evaluate
+flags or generate exposure/evaluation telemetry. The event retains the first keys; reads through its
+client parameter observe the latest assignments, which may have changed by delivery time.
+
+Callbacks run outside SDK locks on the delivering thread and should be short. Exceptions are logged
+and isolated. Callback ordering relative to a concurrent initialization timeout callback is unspecified;
+first delivery does not wait for that callback or for network completion when disk wins. Registration
+precedes disk work, and the supplied public client is fully constructed and registered even if delivery
+happens before `build()` returns. Stopping/unregistering a client cancels callback delivery that has not
+started; a callback already started may finish. No late-subscription or general event-bus API is added.

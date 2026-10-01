@@ -10,12 +10,14 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
+import com.datadog.android.flags.internal.FirstFlagsObserver
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 internal class DefaultFlagsRepository(
@@ -23,7 +25,9 @@ internal class DefaultFlagsRepository(
     private val instanceName: String,
     private val dataStore: DataStoreHandler,
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
-    private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS
+    private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS,
+    private val firstFlagsObserver: FirstFlagsObserver? = null,
+    loadImmediately: Boolean = true
 ) : FlagsRepository {
     private data class FlagsState(
         val context: EvaluationContext,
@@ -33,6 +37,7 @@ internal class DefaultFlagsRepository(
 
     // Serialize request admission and both installation paths; readers capture one atomic state.
     private val stateLock = Any()
+    private val loadStarted = AtomicBoolean(false)
     private var requestedContext: EvaluationContext? = null
     private val atomicState = AtomicReference<FlagsState?>(null)
 
@@ -42,20 +47,39 @@ internal class DefaultFlagsRepository(
     private val persistenceManager = FlagsPersistenceManager(
         dataStore = dataStore,
         instanceName = instanceName,
-        internalLogger = internalLogger
-    ) { persistedState ->
-        try {
-            persistedState?.let {
-                val cachedFlags = it.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) }
-                synchronized(stateLock) {
-                    if (atomicState.get() == null) {
-                        atomicState.set(FlagsState(it.evaluationContext, cachedFlags, isStaleFor(it.evaluationContext)))
+        internalLogger = internalLogger,
+        loadImmediately = false,
+        onStateLoaded = { persistedState ->
+            var firstFlagsDelivery: (() -> Unit)? = null
+            try {
+                persistedState?.let {
+                    val cachedFlags = it.flags.mapValues { (_, flag) ->
+                        flag.copy(reason = ResolutionReason.CACHED.name)
+                    }
+                    synchronized(stateLock) {
+                        if (atomicState.get() == null) {
+                            atomicState.set(
+                                FlagsState(it.evaluationContext, cachedFlags, isStaleFor(it.evaluationContext))
+                            )
+                            firstFlagsDelivery = firstFlagsObserver?.claim(cachedFlags.keys) {
+                                FirstFlagsObserver.snapshot(it.evaluationContext, cachedFlags)
+                            }
+                        }
                     }
                 }
+            } finally {
+                persistenceLoadedLatch.countDown()
             }
-        } finally {
-            persistenceLoadedLatch.countDown()
+            firstFlagsDelivery?.invoke()
         }
+    )
+
+    init {
+        if (loadImmediately) startLoading()
+    }
+
+    internal fun startLoading() {
+        if (loadStarted.compareAndSet(false, true)) persistenceManager.loadFlagsState()
     }
 
     override fun setRequestedContext(context: EvaluationContext) {
@@ -67,29 +91,41 @@ internal class DefaultFlagsRepository(
         }
     }
 
-    override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
-        synchronized(stateLock) {
+    @Suppress("TooGenericExceptionCaught") // Persistence failure cannot undo accepted in-memory assignments.
+    override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>): (() -> Unit)? {
+        val firstFlagsDelivery = synchronized(stateLock) {
             atomicState.set(FlagsState(context, flags, isStaleFor(context)))
+            firstFlagsObserver?.claim(flags.keys) { FirstFlagsObserver.snapshot(context, flags) }
         }
         persistenceLoadedLatch.countDown()
 
-        persistenceManager.saveFlagsState(
-            context = context,
-            flags = flags,
-            currentTimestamp = featureSdkCore.timeProvider.getDeviceTimestampMillis(),
-            object : DataStoreWriteCallback {
-                override fun onSuccess() {
-                }
+        try {
+            persistenceManager.saveFlagsState(
+                context = context,
+                flags = flags,
+                currentTimestamp = featureSdkCore.timeProvider.getDeviceTimestampMillis(),
+                object : DataStoreWriteCallback {
+                    override fun onSuccess() {
+                    }
 
-                override fun onFailure() {
-                    internalLogger.log(
-                        target = InternalLogger.Target.MAINTAINER,
-                        level = InternalLogger.Level.WARN,
-                        messageBuilder = { ERROR_SAVING_FLAGS_STATE }
-                    )
+                    override fun onFailure() {
+                        internalLogger.log(
+                            target = InternalLogger.Target.MAINTAINER,
+                            level = InternalLogger.Level.WARN,
+                            messageBuilder = { ERROR_SAVING_FLAGS_STATE }
+                        )
+                    }
                 }
-            }
-        )
+            )
+        } catch (e: Exception) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { ERROR_SAVING_FLAGS_STATE },
+                e
+            )
+        }
+        return firstFlagsDelivery
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {

@@ -40,6 +40,7 @@ import org.json.JSONObject
  * @param exposureProcessor responsible for writing exposure batches to be sent to flags backend.
  * @param evaluationsFeature the evaluations subfeature for accessing processor and context (optional).
  * @param flagStateManager channel for managing state change listeners
+ * @param firstFlagsObserver one-shot installation callback holder
  */
 @Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
 internal class DatadogFlagsClient(
@@ -50,10 +51,20 @@ internal class DatadogFlagsClient(
     private val rumEvaluationLogger: RumEvaluationLogger,
     private val exposureProcessor: EventsProcessor,
     private val evaluationsFeature: EvaluationsFeature?,
-    private val flagStateManager: FlagsStateManager
+    private val flagStateManager: FlagsStateManager,
+    private val firstFlagsObserver: FirstFlagsObserver? = null
 ) : FlagsClient {
 
     override val state: StateObservable = flagStateManager
+
+    internal fun startLoading() {
+        firstFlagsObserver?.attachClient(this)
+        (flagsRepository as? com.datadog.android.flags.internal.repository.DefaultFlagsRepository)?.startLoading()
+    }
+
+    internal fun dispose() {
+        firstFlagsObserver?.dispose()
+    }
 
     // region FlagsClient
 

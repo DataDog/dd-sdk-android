@@ -1,6 +1,8 @@
 interface com.datadog.android.flags.EvaluationContextCallback
   fun onSuccess()
   fun onFailure(Throwable)
+interface com.datadog.android.flags.FirstFlagsCallback
+  fun onFirstFlags(FlagsClient, com.datadog.android.flags.model.FlagsClientEvent)
 object com.datadog.android.flags.Flags
   fun enable(FlagsConfiguration = FlagsConfiguration.default, com.datadog.android.api.SdkCore = Datadog.getInstance())
 interface com.datadog.android.flags.FlagsClient
@@ -14,6 +16,8 @@ interface com.datadog.android.flags.FlagsClient
   fun <T: Any> resolve(String, T): com.datadog.android.flags.model.ResolutionDetails<T>
   val state: StateObservable
   class Builder
+    fun onFirstFlagsSnapshot((com.datadog.android.flags.model.EvaluationContext, Map<String, com.datadog.android.flags.model.UnparsedFlag>) -> Unit?): Builder
+    fun onFirstFlags(FirstFlagsCallback?): Builder
     constructor(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance())
     fun build(): FlagsClient
   companion object 
@@ -51,6 +55,26 @@ data class com.datadog.android.flags.model.EvaluationContext
   constructor(String, Map<String, String> = emptyMap())
   companion object 
     val EMPTY: EvaluationContext
+enum com.datadog.android.flags.model.FlagsClientErrorCode
+  - PROVIDER_NOT_READY
+  - FLAG_NOT_FOUND
+  - PARSE_ERROR
+  - TYPE_MISMATCH
+  - TARGETING_KEY_MISSING
+  - INVALID_CONTEXT
+  - PROVIDER_FATAL
+  - GENERAL
+class com.datadog.android.flags.model.FlagsClientEvent
+  constructor(FlagsClientEventType, String, List<String>? = null, String? = null, FlagsClientErrorCode? = null, Map<String, FlagsEventMetadataValue> = emptyMap())
+  val flagsChanged: List<String>?
+  val metadata: Map<String, FlagsEventMetadataValue>
+enum com.datadog.android.flags.model.FlagsClientEventType
+  - CONFIGURATION_CHANGED
+  - READY
+  - ERROR
+  - STALE
+  - RECONCILING
+  - CONTEXT_CHANGED
 sealed class com.datadog.android.flags.model.FlagsClientState
   object NotReady : FlagsClientState
   object Ready : FlagsClientState
@@ -58,6 +82,15 @@ sealed class com.datadog.android.flags.model.FlagsClientState
   object Stale : FlagsClientState
   data class Error : FlagsClientState
     constructor(Throwable? = null)
+sealed class com.datadog.android.flags.model.FlagsEventMetadataValue
+  data class StringValue : FlagsEventMetadataValue
+    constructor(String)
+  data class BooleanValue : FlagsEventMetadataValue
+    constructor(Boolean)
+  data class LongValue : FlagsEventMetadataValue
+    constructor(Long)
+  data class DoubleValue : FlagsEventMetadataValue
+    constructor(Double)
 data class com.datadog.android.flags.model.ResolutionDetails<T: Any>
   constructor(T, String? = null, ResolutionReason? = null, ErrorCode? = null, String? = null, Map<String, Any> = emptyMap())
 enum com.datadog.android.flags.model.ResolutionReason
