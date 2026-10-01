@@ -587,6 +587,44 @@ internal class RumApplicationScopeTest {
     }
 
     @Test
+    fun `M send ApplicationStarted on the next event W handleEvent() { SessionExpiryCheck first }`(
+        @Forgery fakeExpiryCheckTime: Time,
+        forge: Forge
+    ) {
+        // Given
+        val fakeExpiryCheck = RumRawEvent.SessionExpiryCheck(fakeExpiryCheckTime)
+        val fakeEvent = forge.anyRumEvent(
+            excluding = listOf(RumRawEvent.ApplicationStarted::class, RumRawEvent.SdkInit::class)
+        )
+        val appStartTimeNs = forge.aLong(min = 0, max = fakeEvent.eventTime.nanoTime)
+        whenever(mockSdkCore.appStartTimeNs) doReturn appStartTimeNs
+        DdRumContentProvider.processImportance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        val mockSessionScope = mock<RumSessionScope>()
+        whenever(mockSessionScope.handleEvent(any(), any(), any(), any())) doReturn mockSessionScope
+        testedScope.childScopes.clear()
+        testedScope.childScopes += mockSessionScope
+
+        // When
+        testedScope.handleEvent(fakeExpiryCheck, fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<RumRawEvent> {
+            verify(mockSessionScope, times(3)).handleEvent(
+                capture(),
+                eq(fakeDatadogContext),
+                eq(mockEventWriteScope),
+                eq(mockWriter)
+            )
+            assertThat(allValues[0]).isSameAs(fakeExpiryCheck)
+            val appStartedEvent = allValues[1] as RumRawEvent.ApplicationStarted
+            assertThat(appStartedEvent.applicationStartupNanos)
+                .isEqualTo(fakeEvent.eventTime.nanoTime - appStartTimeNs)
+            assertThat(allValues[2]).isSameAs(fakeEvent)
+        }
+    }
+
+    @Test
     fun `M not send ApplicationStarted event W handleEvent { SdkInit event }`(
         forge: Forge
     ) {

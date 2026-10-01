@@ -219,7 +219,7 @@ object Rum {
         "RUM Feature is already enabled in this SDK core, ignoring the call to enable it."
 
     private fun Configuration.isTimeseriesConfigured(): Boolean {
-        return timeseriesConfiguration?.enabledTypes?.isNotEmpty() == true
+        return timeseriesConfiguration?.collectTypes?.isNotEmpty() == true
     }
 
     // endregion

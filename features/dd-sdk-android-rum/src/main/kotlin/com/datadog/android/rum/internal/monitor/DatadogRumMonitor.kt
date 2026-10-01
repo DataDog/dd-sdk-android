@@ -155,6 +155,13 @@ internal class DatadogRumMonitor(
 
     private val isDebugEnabled = AtomicBoolean(false)
 
+    internal var sessionExpirationChecker = SessionExpirationChecker(
+        monitor = this,
+        timeProvider = sdkCore.timeProvider,
+        checkIntervalMs = TimeUnit.NANOSECONDS.toMillis(RumSessionScope.DEFAULT_SESSION_INACTIVITY_NS) / 3,
+        handler = handler
+    )
+
     // region RumMonitor
 
     override fun getCurrentSessionId(callback: (String?) -> Unit) {
@@ -573,6 +580,10 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun checkSessionExpiry() {
+        sessionExpirationChecker.checkNow()
+    }
+
     override fun waitForResourceTiming(key: Any) {
         handleEvent(
             RumRawEvent.WaitForResourceTiming(key, now())
@@ -926,24 +937,28 @@ internal class DatadogRumMonitor(
         }
     }
 
-    /**
-     * Stops the timeseries collector on the currently active session, if any.
-     *
-     * Must be called from [RumFeature.onStop] **before** [GlobalRumMonitor.unregister], so that
-     * the active session can stop sampling and flush buffered timeseries data while the monitor is
-     * still reachable. The shared RUM vitals executor is owned and shut down separately by
-     * [RumFeature.onStop].
-     *
-     * Must be called **before** [RumFeature.dataWriter] is replaced with a
-     * [com.datadog.android.rum.internal.storage.NoOpDataWriter]. [EventWriter.write] captures the
-     * writer eagerly at call time, so the final flush issued inside [stop] will reach the real
-     * writer only if this ordering is maintained. Note: the flush is best-effort — if the core SDK
-     * de-initializes and shuts down its context executor before the async write task fires, the
-     * write is silently skipped regardless.
-     */
-    internal fun stopTimeseries() {
+    override fun stop() {
         synchronized(rootScope) {
+            /**
+             * Stops the timeseries collector on the currently active session, if any.
+             *
+             * Must be called from [RumFeature.onStop] **before** [GlobalRumMonitor.unregister], so that
+             * the active session can stop sampling and flush buffered timeseries data while the monitor is
+             * still reachable. The shared RUM vitals executor is owned and shut down separately by
+             * [RumFeature.onStop].
+             *
+             * Must be called **before** [RumFeature.dataWriter] is replaced with a
+             * [com.datadog.android.rum.internal.storage.NoOpDataWriter]. [EventWriter.write] captures the
+             * writer eagerly at call time, so the final flush issued inside [stop] will reach the real
+             * writer only if this ordering is maintained. Note: the flush is best-effort — if the core SDK
+             * de-initializes and shuts down its context executor before the async write task fires, the
+             * write is silently skipped regardless.
+             */
+            // TODO RUM-18821 Stop the active RUM session when the SDK is stopped
             rootScope.activeSession?.stopTimeseries()
+
+            // Under the same lock as onEventHandled(), so no expiry check can be posted after this one.
+            sessionExpirationChecker.onSdkStopped()
         }
     }
 
@@ -995,6 +1010,7 @@ internal class DatadogRumMonitor(
                                     notifyDebugListenerWithState()
                                     val context = currentRumContext()
                                     updateCachedViewUrl(context)
+                                    sessionExpirationChecker.onEventHandled(context?.sessionState)
                                     context
                                 }
                             }

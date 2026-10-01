@@ -16,12 +16,22 @@ import org.junit.jupiter.params.provider.EnumSource
 internal class TimeseriesConfigurationTests {
 
     @Test
+    fun `M use default collection settings W constructor()`() {
+        // When
+        val testedConfiguration = TimeseriesConfiguration(TimeseriesType.entries.toSet())
+
+        // Then
+        assertThat(testedConfiguration.bufferSize).isEqualTo(120)
+        assertThat(testedConfiguration.intervalMs).isEqualTo(1000L)
+    }
+
+    @Test
     fun `M collect all types W constructor() { all types passed }`() {
         // When
         val config = TimeseriesConfiguration(TimeseriesType.entries.toSet())
 
         // Then
-        assertThat(config.enabledTypes).containsExactlyInAnyOrderElementsOf(TimeseriesType.entries.toList())
+        assertThat(config.collectTypes).containsExactlyInAnyOrderElementsOf(TimeseriesType.entries.toList())
     }
 
     @ParameterizedTest
@@ -31,7 +41,7 @@ internal class TimeseriesConfigurationTests {
         val config = TimeseriesConfiguration(setOf(fakeType))
 
         // Then
-        assertThat(config.enabledTypes).containsExactly(fakeType)
+        assertThat(config.collectTypes).containsExactly(fakeType)
     }
 
     @Test
@@ -40,6 +50,6 @@ internal class TimeseriesConfigurationTests {
         val config = TimeseriesConfiguration(emptySet())
 
         // Then
-        assertThat(config.enabledTypes).isEmpty()
+        assertThat(config.collectTypes).isEmpty()
     }
 }
