@@ -46,7 +46,6 @@ import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.account.AccountFragment
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
-import com.datadog.android.sample.flags.OpenFeatureFragment
 import com.datadog.android.sample.flags.logAndEvaluateFirstFlags
 import com.datadog.android.sample.image.Coil3ImageLoader
 import com.datadog.android.sample.image.CoilImageLoader
@@ -252,11 +251,7 @@ class SampleApplication : Application() {
         // Create FlagsClient and convert to OpenFeature provider
         val flagsClient = FlagsClient.Builder().build()
         flagsClient.onFirstFlags { event ->
-            logAndEvaluateFirstFlags(
-                flagsClient,
-                event,
-                getSharedPreferences(OpenFeatureFragment.FIRST_FLAGS_PREFERENCES, Context.MODE_PRIVATE)
-            ) { message -> Log.i("FirstFlags", message) }
+            logAndEvaluateFirstFlags(flagsClient, event) { message -> Log.i("FirstFlags", message) }
         }
         val provider = flagsClient.asOpenFeatureProvider()
 
