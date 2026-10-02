@@ -14,6 +14,7 @@ import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
@@ -27,6 +28,8 @@ internal class DefaultFlagsRepository(
     private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
     private val atomicState = AtomicReference<FlagsState?>(null)
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // CountDownLatch rejects negative counts; 1 is valid.
+    private val persistenceLoadedLatch = CountDownLatch(1)
     private val firstFlags = FirstFlagsLatch()
 
     private val persistenceManager = FlagsPersistenceManager(
@@ -34,21 +37,33 @@ internal class DefaultFlagsRepository(
         instanceName = instanceName,
         internalLogger = internalLogger
     ) { persistedState ->
-        persistedState?.let {
-            val cachedFlags = it.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) }
-            val loadedState = FlagsState(it.evaluationContext, cachedFlags)
-            if (atomicState.compareAndSet(null, loadedState)) {
-                firstFlags.complete(cachedFlags.keys)
-            }
+        val installed = try {
+            persistedState != null && atomicState.compareAndSet(
+                null,
+                FlagsState(
+                    persistedState.evaluationContext,
+                    persistedState.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) }
+                )
+            )
+        } finally {
+            persistenceLoadedLatch.countDown()
+        }
+        if (installed && persistedState != null) {
+            firstFlags.complete(persistedState.flags.keys)
         }
     }
 
     override fun waitForFlags(): FirstFlagsLatch = firstFlags
 
-    override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
+    override fun setFlagsAndContext(
+        context: EvaluationContext,
+        flags: Map<String, PrecomputedFlag>,
+        onInstalled: () -> Unit
+    ) {
         val newState = FlagsState(context, flags)
 
         val firstInstallation = atomicState.getAndSet(newState) == null
+        persistenceLoadedLatch.countDown()
 
         try {
             persistenceManager.saveFlagsState(
@@ -68,6 +83,7 @@ internal class DefaultFlagsRepository(
                     }
                 }
             )
+            onInstalled()
         } finally {
             if (firstInstallation) {
                 firstFlags.complete(flags.keys)
@@ -128,7 +144,7 @@ internal class DefaultFlagsRepository(
 
     private fun waitForInstalledFlags() {
         try {
-            firstFlags.await(persistenceLoadTimeoutMs, TimeUnit.MILLISECONDS)
+            persistenceLoadedLatch.await(persistenceLoadTimeoutMs, TimeUnit.MILLISECONDS)
         } catch (e: InterruptedException) {
             @Suppress("UnsafeThirdPartyFunctionCall") // Safe: self-interruption is always permitted
             Thread.currentThread().interrupt()

@@ -36,14 +36,14 @@ internal class FirstFlagsInstallationTest {
     private val events = CopyOnWriteArrayList<List<String>>()
     private lateinit var disk: DataStoreReadCallback<FlagsStateEntry>
 
-    private fun repository(): DefaultFlagsRepository {
+    private fun repository(timeoutMs: Long = 1): DefaultFlagsRepository {
         whenever(core.internalLogger).thenReturn(logger)
         whenever(core.timeProvider).thenReturn(mock())
         doAnswer {
             disk = it.getArgument(2)
             null
         }.whenever(store).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
-        return DefaultFlagsRepository(core, "first", store, persistenceLoadTimeoutMs = 1).also {
+        return DefaultFlagsRepository(core, "first", store, persistenceLoadTimeoutMs = timeoutMs).also {
             it.waitForFlags().whenComplete { keys -> events.add(keys) }
         }
     }
@@ -52,6 +52,66 @@ internal class FirstFlagsInstallationTest {
         1,
         FlagsStateEntry(context, keys.associateWith { mock<PrecomputedFlag>() }, 0)
     )
+
+    @Test
+    fun `M wait for terminal bookkeeping W listener registers during installation`() {
+        val tested = repository()
+        val installed = CountDownLatch(1)
+        val finish = CountDownLatch(1)
+        val delivered = CountDownLatch(1)
+        val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
+        try {
+            val installation = executor.submit {
+                tested.setFlagsAndContext(context, emptyMap()) {
+                    installed.countDown()
+                    check(finish.await(5, TimeUnit.SECONDS))
+                }
+            }
+            assertThat(installed.await(5, TimeUnit.SECONDS)).isTrue()
+            tested.waitForFlags().whenComplete { delivered.countDown() }
+            assertThat(delivered.count).isEqualTo(1)
+            assertThat(events).isEmpty()
+            finish.countDown()
+            installation.get(5, TimeUnit.SECONDS)
+            assertThat(delivered.count).isZero()
+            assertThat(events).hasSize(1)
+        } finally {
+            finish.countDown()
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `M retain accepted event and propagate failure W terminal bookkeeping throws`() {
+        val tested = repository()
+        assertThrows<IllegalStateException> {
+            tested.setFlagsAndContext(context, emptyMap()) { error("terminal failure") }
+        }
+        assertThat(events).hasSize(1)
+        assertThat(tested.getEvaluationContext()).isEqualTo(context)
+    }
+
+    @Test
+    fun `M unblock getters W disk attempt ends without flags`() {
+        listOf(true, false).forEach { missing ->
+            val tested = repository(TimeUnit.MINUTES.toMillis(1))
+            val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
+            try {
+                val reads = executor.submit {
+                    assertThat(tested.getPrecomputedFlag("unknown")).isNull()
+                    assertThat(tested.getEvaluationContext()).isNull()
+                    assertThat(tested.getFlagsSnapshot()).isEmpty()
+                    assertThat(tested.hasFlags()).isFalse()
+                    assertThat(tested.getPrecomputedFlagWithContext("unknown")).isNull()
+                }
+                if (missing) disk.onSuccess(null) else disk.onFailure()
+                reads.get(5, TimeUnit.SECONDS)
+                assertThat(tested.waitForFlags().await(0, TimeUnit.MILLISECONDS)).isFalse()
+            } finally {
+                executor.shutdownNow()
+            }
+        }
+    }
 
     @Test
     fun `M notify disk first W network subsequently installs`() {
