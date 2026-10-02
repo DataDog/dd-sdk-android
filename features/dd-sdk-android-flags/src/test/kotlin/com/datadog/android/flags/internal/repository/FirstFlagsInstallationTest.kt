@@ -82,7 +82,7 @@ internal class FirstFlagsInstallationTest {
         try {
             assertThat(claimed.await(5, TimeUnit.SECONDS)).isTrue()
             tested.setFlagsAndContext(context, mapOf("network" to mock()))
-            assertThat(tested.waitForFlags().isDone).isFalse()
+            assertThat(tested.waitForFlags().await(0, TimeUnit.MILLISECONDS)).isFalse()
             assertThat(events).isEmpty()
         } finally {
             release.countDown()
@@ -109,7 +109,7 @@ internal class FirstFlagsInstallationTest {
             val tested = repository()
             if (missing) disk.onSuccess(null) else disk.onFailure()
             assertThat(events).isEmpty()
-            assertThat(tested.waitForFlags().isDone).isFalse()
+            assertThat(tested.waitForFlags().await(0, TimeUnit.MILLISECONDS)).isFalse()
             assertThat(tested.getFlagsSnapshot()).isEmpty()
             tested.setFlagsAndContext(context, emptyMap())
             assertThat(events).hasSize(1)

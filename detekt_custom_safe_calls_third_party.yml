@@ -214,8 +214,6 @@ datadog:
       - "java.util.concurrent.CopyOnWriteArraySet.remove(kotlin.String?)"
       - "java.util.concurrent.CopyOnWriteArraySet.toTypedArray()"
       - "java.util.concurrent.CountDownLatch.countDown()"
-      # Exception construction is safe; throwing the instance is checked separately.
-      - "java.util.concurrent.TimeoutException.constructor(kotlin.String?)"
       - "java.util.concurrent.ExecutorService.shutdown()"
       - "java.util.concurrent.ExecutorService.shutdownNow()"
       - "java.util.concurrent.Executors.newSingleThreadExecutor()"
