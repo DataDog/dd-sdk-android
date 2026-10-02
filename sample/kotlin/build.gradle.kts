@@ -146,10 +146,6 @@ datadog {
 }
 
 dependencies {
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.mockitoKotlin)
-    testImplementation(libs.assertJ)
-
     // Datadog Libraries
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-flags"))
