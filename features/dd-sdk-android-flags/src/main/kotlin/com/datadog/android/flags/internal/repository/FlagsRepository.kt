@@ -8,9 +8,7 @@ package com.datadog.android.flags.internal.repository
 
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.tools.annotation.NoOpImplementation
 
-@NoOpImplementation
 internal interface FlagsRepository {
     fun getPrecomputedFlag(key: String): PrecomputedFlag?
     fun getEvaluationContext(): EvaluationContext?
