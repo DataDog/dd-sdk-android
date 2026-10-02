@@ -20,4 +20,12 @@ internal interface OnDemandCaptureListener : ViewTreeObserver.OnDrawListener {
      */
     @MainThread
     fun captureNow(): Boolean
+
+    /**
+     * Resets this listener's own debounce/backoff state so its next draw-triggered capture runs
+     * immediately, regardless of recent load. Meant to be called alongside [captureNow] on a
+     * screen transition - see [Debouncer.forceNextExecution].
+     */
+    @MainThread
+    fun resetDebounceState()
 }

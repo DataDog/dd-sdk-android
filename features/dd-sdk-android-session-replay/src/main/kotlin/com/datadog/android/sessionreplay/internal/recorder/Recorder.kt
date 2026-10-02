@@ -20,5 +20,12 @@ internal interface Recorder {
 
     fun requestCapture(slotIds: Set<String>)
 
+    /**
+     * Called on every RUM view change, forcing an immediate capture and resetting each window's
+     * debounce/backoff state so a transition to a new screen is never delayed or throttled by
+     * leftover load from the previous one.
+     */
+    fun onViewTransition()
+
     fun stopRecorders()
 }

@@ -21,6 +21,7 @@ internal class DefaultOnDrawListenerProducer(
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val sdkCore: FeatureSdkCore,
     private val dynamicOptimizationEnabled: Boolean,
+    private val jankAwareBackoffEnabled: Boolean,
     private val rumContextProvider: RumContextProvider
 ) : OnDrawListenerProducer {
 
@@ -28,7 +29,8 @@ internal class DefaultOnDrawListenerProducer(
         decorViews: List<View>,
         textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy,
-        touchPrivacyManager: TouchPrivacyManager
+        touchPrivacyManager: TouchPrivacyManager,
+        frameHealthMonitor: FrameHealthMonitor?
     ): OnDemandCaptureListener {
         return WindowsOnDrawListener(
             zOrderedDecorViews = decorViews,
@@ -39,7 +41,9 @@ internal class DefaultOnDrawListenerProducer(
             sdkCore = sdkCore,
             methodCallSamplingRate = MethodCallSamplingRate.LOW.rate,
             dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+            jankAwareBackoffEnabled = jankAwareBackoffEnabled,
             touchPrivacyManager = touchPrivacyManager,
+            frameHealthMonitor = frameHealthMonitor,
             rumContextProvider = rumContextProvider
         )
     }

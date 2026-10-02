@@ -56,6 +56,7 @@ import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.SystemRequirementsConfiguration
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
+import com.datadog.android.sessionreplay._SessionReplayInternalProxy
 import com.datadog.android.sessionreplay.compose.ComposeExtensionSupport
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
@@ -332,6 +333,8 @@ class SampleApplication : Application() {
                 } else {
                     useLegacyConfiguration(this)
                 }
+
+                _SessionReplayInternalProxy(this).setJankAwareBackoffEnabled(true)
             }
             .addExtensionSupport(MaterialExtensionSupport())
             .addExtensionSupport(ComposeExtensionSupport())

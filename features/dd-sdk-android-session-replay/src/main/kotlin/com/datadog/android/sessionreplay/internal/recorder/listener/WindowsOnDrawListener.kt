@@ -17,6 +17,8 @@ import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
+import com.datadog.android.sessionreplay.internal.recorder.FrameHealthMonitor
+import com.datadog.android.sessionreplay.internal.recorder.JankAwareBackoffPolicy
 import com.datadog.android.sessionreplay.internal.recorder.OnDemandCaptureListener
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.withinSRBenchmarkSpan
@@ -33,10 +35,16 @@ internal class WindowsOnDrawListener(
     private val miscUtils: MiscUtils = MiscUtils,
     private val sdkCore: FeatureSdkCore,
     dynamicOptimizationEnabled: Boolean,
+    jankAwareBackoffEnabled: Boolean = false,
     private val touchPrivacyManager: TouchPrivacyManager,
+    frameHealthMonitor: FrameHealthMonitor? = null,
     private val debouncer: Debouncer = Debouncer(
         sdkCore = sdkCore,
-        dynamicOptimizationEnabled = dynamicOptimizationEnabled
+        dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+        jankAwareBackoffPolicy = JankAwareBackoffPolicy(
+            isEnabled = jankAwareBackoffEnabled,
+            frameHealthMonitor = frameHealthMonitor
+        )
     ),
     private val methodCallSamplingRate: Float,
     private val rumContextProvider: RumContextProvider
@@ -51,6 +59,11 @@ internal class WindowsOnDrawListener(
 
     @MainThread
     override fun captureNow(): Boolean = takeSnapshot()
+
+    @MainThread
+    override fun resetDebounceState() {
+        debouncer.forceNextExecution()
+    }
 
     // Note: we declare the anonymous object explicitly to annotate the run method as @UiThread
     @Suppress("ObjectLiteralToLambda")

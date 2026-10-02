@@ -86,6 +86,7 @@ internal class SessionReplayFeature(
         sampleRate: Float,
         startRecordingImmediately: Boolean,
         dynamicOptimizationEnabled: Boolean,
+        jankAwareBackoffEnabled: Boolean,
         internalCallback: SessionReplayInternalCallback,
         heatmapsEnabled: Boolean
     ) : this(
@@ -106,6 +107,7 @@ internal class SessionReplayFeature(
             customOptionSelectorDetectors,
             customDrawableMappers,
             dynamicOptimizationEnabled,
+            jankAwareBackoffEnabled,
             internalCallback,
             heatmapsEnabled
         )
@@ -449,6 +451,7 @@ internal class SessionReplayFeature(
         if (!isRecording.get()) {
             return
         }
+        sessionReplayRecorder.onViewTransition()
         val activeSlotIds = embeddedContentSlotRegistry.activeSlotIds()
         if (activeSlotIds.isNotEmpty()) {
             sessionReplayRecorder.requestCapture(activeSlotIds)

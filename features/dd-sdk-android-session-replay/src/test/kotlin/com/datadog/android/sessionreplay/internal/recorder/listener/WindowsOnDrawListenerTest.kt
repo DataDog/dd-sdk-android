@@ -222,6 +222,15 @@ internal class WindowsOnDrawListenerTest {
     }
 
     @Test
+    fun `M delegate to the debouncer W resetDebounceState()`() {
+        // When
+        testedListener.resetDebounceState()
+
+        // Then
+        verify(mockDebouncer).forceNextExecution()
+    }
+
+    @Test
     fun `M report no capture W captureNow() { queue refused the item }`() {
         // Given
         whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))

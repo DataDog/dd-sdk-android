@@ -72,6 +72,15 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val sessionReplayLifecycleCallback: LifecycleCallback
     private val recordedDataQueueHandler: RecordedDataQueueHandler
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor
+    private val frameHealthMonitor: FrameHealthMonitor
+
+    private val dynamicOptimizationEnabled: Boolean
+
+    // Gates frameHealthMonitor.startTracking() below, and (via DefaultOnDrawListenerProducer ->
+    // WindowsOnDrawListener -> Debouncer) whether isDegraded() is ever consulted: a capture-timing
+    // safeguard against sustained jank, with its own on/off switch. Internal-only, defaults to
+    // false; see SessionReplayConfiguration.Builder.setJankAwareBackoffEnabled.
+    private val jankAwareBackoffEnabled: Boolean
     private val internalLogger: InternalLogger
     private val uiHandler: Handler
     private val resourceResolver: ResourceResolver
@@ -107,6 +116,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         sdkCore: FeatureSdkCore,
         resourceDataStoreManager: ResourceDataStoreManager,
         dynamicOptimizationEnabled: Boolean,
+        jankAwareBackoffEnabled: Boolean,
         internalCallback: SessionReplayInternalCallback,
         embeddedContentSlotRegistry: EmbeddedContentSlotRegistry,
         heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
@@ -187,8 +197,12 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             webPImageCompression = WebPImageCompression(internalLogger)
         )
 
+        this.frameHealthMonitor = FrameHealthMonitor()
+        this.dynamicOptimizationEnabled = dynamicOptimizationEnabled
+        this.jankAwareBackoffEnabled = jankAwareBackoffEnabled
         this.viewOnDrawInterceptor = ViewOnDrawInterceptor(
             internalLogger = internalLogger,
+            frameHealthMonitor = frameHealthMonitor,
             onDrawListenerProducer = DefaultOnDrawListenerProducer(
                 snapshotProducer = SnapshotProducer(
                     imageWireframeHelper = DefaultImageWireframeHelper(
@@ -227,6 +241,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                 recordedDataQueueHandler = recordedDataQueueHandler,
                 sdkCore = sdkCore,
                 dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+                jankAwareBackoffEnabled = jankAwareBackoffEnabled,
                 rumContextProvider = rumContextProvider
             ),
             touchPrivacyManager = touchPrivacyManager
@@ -276,7 +291,10 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         embeddedContentSlotRegistry: EmbeddedContentSlotRegistry = EmbeddedContentSlotRegistry(),
         windowFromDecorView: (View) -> Window? = {
             WindowReflectionUtils.getWindowFromDecorView(it, internalLogger)
-        }
+        },
+        frameHealthMonitor: FrameHealthMonitor = FrameHealthMonitor(),
+        dynamicOptimizationEnabled: Boolean = true,
+        jankAwareBackoffEnabled: Boolean = false
     ) {
         this.appContext = appContext
         this.textAndInputPrivacy = textAndInputPrivacy
@@ -285,6 +303,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.windowInspector = windowInspector
         this.recordedDataQueueHandler = recordedDataQueueHandler
         this.viewOnDrawInterceptor = viewOnDrawInterceptor
+        this.frameHealthMonitor = frameHealthMonitor
+        this.dynamicOptimizationEnabled = dynamicOptimizationEnabled
+        this.jankAwareBackoffEnabled = jankAwareBackoffEnabled
         this.windowCallbackInterceptor = windowCallbackInterceptor
         this.sessionReplayLifecycleCallback = sessionReplayLifecycleCallback
         this.resourceResolver = resourceResolver
@@ -306,6 +327,10 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     override fun unregisterCallbacks() {
         appContext.unregisterActivityLifecycleCallbacks(sessionReplayLifecycleCallback)
         resourceResolver.unregisterCallbacks()
+        uiHandler.post {
+            @Suppress("ThreadSafety") // handler posts to the main looper
+            frameHealthMonitor.shutdown()
+        }
     }
 
     override fun resumeRecorders() {
@@ -313,6 +338,16 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             shouldRecord = true
             @Suppress("ThreadSafety") // handler posts to the main looper
             interceptCurrentWindows(sessionReplayLifecycleCallback.getCurrentWindows())
+        }
+    }
+
+    override fun onViewTransition() {
+        uiHandler.post {
+            @Suppress("ThreadSafety") // handler posts to the main looper
+            if (shouldRecord) {
+                viewOnDrawInterceptor.requestCapture()
+                viewOnDrawInterceptor.resetDebounceStateOnAllWindows()
+            }
         }
     }
 
@@ -400,6 +435,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         uiHandler.post {
             viewOnDrawInterceptor.stopIntercepting()
             windowCallbackInterceptor.stopIntercepting()
+            @Suppress("ThreadSafety") // handler posts to the main looper
+            frameHealthMonitor.stopTrackingAll()
             shouldRecord = false
         }
     }
@@ -420,8 +457,20 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     @MainThread
     private fun interceptCurrentWindows(windows: List<Window>) {
         val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
-        windowCallbackInterceptor.intercept(windows + resolveUntrackedWindows(decorViews, windows), appContext)
+        // Resolved once and reused below - windowFromDecorView is a reflection-based lookup, and
+        // both resolveUntrackedWindows and the jankAwareBackoffEnabled tracking below need the
+        // same decorViews -> Window mapping.
+        val decorViewWindowPairs = decorViews.mapNotNull { view ->
+            windowFromDecorView(view)?.let { view to it }
+        }
+        windowCallbackInterceptor.intercept(
+            windows + resolveUntrackedWindows(decorViewWindowPairs, windows),
+            appContext
+        )
         viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
+        if (jankAwareBackoffEnabled) {
+            decorViewWindowPairs.forEach { (_, window) -> frameHealthMonitor.startTracking(window) }
+        }
         if (captureRequested.get()) {
             viewOnDrawInterceptor.requestCapture()
         }
@@ -433,14 +482,18 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
             windowCallbackInterceptor.stopIntercepting(windows)
             viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)
+            windows.forEach { frameHealthMonitor.stopTracking(it) }
         }
     }
 
     // a window already open (e.g. a dialog) isn't reported through the Activity lifecycle
-    private fun resolveUntrackedWindows(decorViews: List<View>, knownWindows: List<Window>): List<Window> {
-        return decorViews
-            .filterNot { it.width == 0 || it.height == 0 }
-            .mapNotNull { windowFromDecorView(it) }
+    private fun resolveUntrackedWindows(
+        decorViewWindowPairs: List<Pair<View, Window>>,
+        knownWindows: List<Window>
+    ): List<Window> {
+        return decorViewWindowPairs
+            .filterNot { (view, _) -> view.width == 0 || view.height == 0 }
+            .map { (_, window) -> window }
             .filterNot { it in knownWindows || windowCallbackInterceptor.isExcluded(it) }
             .distinct()
     }

@@ -31,6 +31,7 @@ class SessionReplayConfigurationForgeryFactory : ForgeryFactory<SessionReplayCon
             startRecordingImmediately = forge.aBool(),
             sampleRate = forge.aFloat(min = 0f, max = 100f),
             dynamicOptimizationEnabled = forge.aBool(),
+            jankAwareBackoffEnabled = forge.aBool(),
             internalCallback = NoOpSessionReplayInternalCallback(),
             systemRequirementsConfiguration = SystemRequirementsConfiguration.Builder()
                 .setMinRAMSizeMb(forge.aSmallInt())

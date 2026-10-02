@@ -14,6 +14,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
+import com.datadog.android.sessionreplay.internal.recorder.FrameHealthMonitor
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
@@ -247,7 +248,12 @@ internal class SessionReplayRecorderTest {
         )
     }
 
-    private fun buildRecorderWith(windowFromDecorView: (View) -> Window?): SessionReplayRecorder {
+    private fun buildRecorderWith(
+        windowFromDecorView: (View) -> Window?,
+        frameHealthMonitor: FrameHealthMonitor = mock(),
+        dynamicOptimizationEnabled: Boolean = true,
+        jankAwareBackoffEnabled: Boolean = false
+    ): SessionReplayRecorder {
         return SessionReplayRecorder(
             appContext = appContext.mockInstance,
             textAndInputPrivacy = fakeTextAndInputPrivacy,
@@ -261,8 +267,68 @@ internal class SessionReplayRecorderTest {
             resourceResolver = mockResourceResolver,
             uiHandler = mockUiHandler,
             internalLogger = mockInternalLogger,
-            windowFromDecorView = windowFromDecorView
+            windowFromDecorView = windowFromDecorView,
+            frameHealthMonitor = frameHealthMonitor,
+            dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+            jankAwareBackoffEnabled = jankAwareBackoffEnabled
         )
+    }
+
+    @Test
+    fun `M start tracking the resolved window W resumeRecorders { jank aware backoff enabled }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockDecorView: View = mock {
+            whenever(it.width).thenReturn(forge.aPositiveInt(strict = true))
+            whenever(it.height).thenReturn(forge.aPositiveInt(strict = true))
+        }
+        val mockWindow: Window = mock()
+        val mockFrameHealthMonitor: FrameHealthMonitor = mock()
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDecorView))
+        testedSessionReplayRecorder = buildRecorderWith(
+            windowFromDecorView = { view -> if (view == mockDecorView) mockWindow else null },
+            frameHealthMonitor = mockFrameHealthMonitor,
+            // Deliberately off, to prove tracking is driven by jankAwareBackoffEnabled alone.
+            dynamicOptimizationEnabled = false,
+            jankAwareBackoffEnabled = true
+        )
+
+        // When
+        testedSessionReplayRecorder.resumeRecorders()
+
+        // Then
+        verify(mockFrameHealthMonitor).startTracking(mockWindow)
+    }
+
+    @Test
+    fun `M not track any window W resumeRecorders { jank aware backoff disabled }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockDecorView: View = mock {
+            whenever(it.width).thenReturn(forge.aPositiveInt(strict = true))
+            whenever(it.height).thenReturn(forge.aPositiveInt(strict = true))
+        }
+        val mockWindow: Window = mock()
+        val mockFrameHealthMonitor: FrameHealthMonitor = mock()
+        whenever(mockWindowInspector.getGlobalWindowViews(mockInternalLogger))
+            .thenReturn(listOf(mockDecorView))
+        testedSessionReplayRecorder = buildRecorderWith(
+            windowFromDecorView = { view -> if (view == mockDecorView) mockWindow else null },
+            frameHealthMonitor = mockFrameHealthMonitor,
+            // Deliberately on, to prove it alone does not imply jank-aware tracking.
+            dynamicOptimizationEnabled = true,
+            jankAwareBackoffEnabled = false
+        )
+
+        // When
+        testedSessionReplayRecorder.resumeRecorders()
+
+        // Then - nothing is ever tracked, so an integration that never opts into jank-aware
+        // backoff pays zero cost from FrameHealthMonitor's background thread/listener
+        verify(mockFrameHealthMonitor, never()).startTracking(any())
     }
 
     @Test
@@ -411,6 +477,45 @@ internal class SessionReplayRecorderTest {
 
         // Then
         verify(mockViewOnDrawInterceptor, never()).requestCapture()
+    }
+
+    @Test
+    fun `M request capture and reset debounce state W onViewTransition { recorder resumed }`() {
+        // Given
+        testedSessionReplayRecorder.resumeRecorders()
+        clearInvocations(mockViewOnDrawInterceptor)
+
+        // When
+        testedSessionReplayRecorder.onViewTransition()
+
+        // Then
+        verify(mockViewOnDrawInterceptor).requestCapture()
+        verify(mockViewOnDrawInterceptor).resetDebounceStateOnAllWindows()
+    }
+
+    @Test
+    fun `M do nothing W onViewTransition { recorder never resumed }`() {
+        // When
+        testedSessionReplayRecorder.onViewTransition()
+
+        // Then
+        verify(mockViewOnDrawInterceptor, never()).requestCapture()
+        verify(mockViewOnDrawInterceptor, never()).resetDebounceStateOnAllWindows()
+    }
+
+    @Test
+    fun `M do nothing W onViewTransition { recorder stopped after being resumed }`() {
+        // Given
+        testedSessionReplayRecorder.resumeRecorders()
+        testedSessionReplayRecorder.stopRecorders()
+        clearInvocations(mockViewOnDrawInterceptor)
+
+        // When
+        testedSessionReplayRecorder.onViewTransition()
+
+        // Then
+        verify(mockViewOnDrawInterceptor, never()).requestCapture()
+        verify(mockViewOnDrawInterceptor, never()).resetDebounceStateOnAllWindows()
     }
 
     @Test

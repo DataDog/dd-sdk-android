@@ -29,6 +29,7 @@ data class SessionReplayConfiguration internal constructor(
     internal val touchPrivacy: TouchPrivacy,
     internal val textAndInputPrivacy: TextAndInputPrivacy,
     internal val dynamicOptimizationEnabled: Boolean,
+    internal val jankAwareBackoffEnabled: Boolean,
     internal val systemRequirementsConfiguration: SystemRequirementsConfiguration,
     internal val internalCallback: SessionReplayInternalCallback,
     internal val heatmapsEnabled: Boolean
@@ -76,6 +77,8 @@ data class SessionReplayConfiguration internal constructor(
         private var textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL
         private val extensionSupportSet: MutableSet<ExtensionSupport> = mutableSetOf()
         private var dynamicOptimizationEnabled = true
+
+        private var jankAwareBackoffEnabled = false
         private var systemRequirementsConfiguration = SystemRequirementsConfiguration.NONE
         private var internalCallback: SessionReplayInternalCallback = NoOpSessionReplayInternalCallback()
         private var heatmapsEnabled = false
@@ -241,6 +244,15 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         /**
+         * Enables or disables backing off capture further while this device's own recent frames
+         * are janky. Internal-only - see [com.datadog.android.sessionreplay._SessionReplayInternalProxy].
+         */
+        internal fun setJankAwareBackoffEnabled(jankAwareBackoffEnabled: Boolean): Builder {
+            this.jankAwareBackoffEnabled = jankAwareBackoffEnabled
+            return this
+        }
+
+        /**
          * Builds a [SessionReplayConfiguration] based on the current state of this Builder.
          */
         fun build(): SessionReplayConfiguration {
@@ -256,6 +268,7 @@ data class SessionReplayConfiguration internal constructor(
                 sampleRate = sampleRate,
                 startRecordingImmediately = startRecordingImmediately,
                 dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+                jankAwareBackoffEnabled = jankAwareBackoffEnabled,
                 systemRequirementsConfiguration = systemRequirementsConfiguration,
                 internalCallback = internalCallback,
                 heatmapsEnabled = heatmapsEnabled
