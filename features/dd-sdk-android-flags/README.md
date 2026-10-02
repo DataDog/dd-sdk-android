@@ -295,7 +295,7 @@ name. The value requires no OpenFeature dependency.
 The [Kotlin sample application](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/SampleApplication.kt)
 registers this callback in `initializeFlags`. Its
 [sample-only helper](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/flags/FirstFlagsSample.kt)
-awaits an application-owned event future, logs the supplied keys and evaluates one saved Boolean flag. To try it, evaluate a real Boolean flag in the sample's OpenFeature screen,
+logs the supplied keys and evaluates one saved Boolean flag directly from the client callback. To try it, evaluate a real Boolean flag in the sample's OpenFeature screen,
 then relaunch the app and inspect the `FirstFlags` Logcat tag. Without a saved selection, the sample
 logs setup instructions and skips evaluation. Null keys log as `<absent>` and empty keys as `[]`.
 The existing String/Integer/Double evaluator remains available; this startup example uses Boolean only.
@@ -307,7 +307,8 @@ retained first result, including registrations after later installations or on a
 If the first result is available, the callback runs immediately on the calling thread; otherwise it
 runs on the installing thread. Callback exceptions are logged and isolated.
 
-The sample registers after building the client and completes an application-owned event future.
-An application coroutine awaits that future and evaluates through the client. Reads use current
+The sample builds and assigns the client, then registers a callback that logs keys and evaluates
+the saved flag directly. Pending callbacks are retained until a successful installation, which may
+never occur. Reads use current
 installed flags, not a pinned event snapshot. UI updates need the appropriate UI-thread dispatch.
 This notification does not imply readiness and adds no general event bus or OpenFeature forwarding.

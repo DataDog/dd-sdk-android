@@ -8,19 +8,14 @@ package com.datadog.android.sample.flags
 import android.content.SharedPreferences
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.model.FlagsClientEvent
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 
-/** Called after client construction; awaits the first event without blocking the SDK callback. */
-internal fun CoroutineScope.logAndEvaluateFirstFlags(
+/** Logs the first event and evaluates the saved flag directly through the assigned client. */
+internal fun logAndEvaluateFirstFlags(
     client: FlagsClient,
-    firstFlags: Deferred<FlagsClientEvent>,
+    event: FlagsClientEvent,
     selection: SharedPreferences,
     log: (String) -> Unit
-): Job = launch {
-    val event = firstFlags.await()
+) {
     log("Installed flag keys: ${event.flagsChanged ?: "<absent>"}")
     val key = selection.getString(OpenFeatureFragment.FIRST_FLAGS_KEY, null)
     if (key == null) {

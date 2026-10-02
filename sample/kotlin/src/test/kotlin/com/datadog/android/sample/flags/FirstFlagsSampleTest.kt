@@ -11,9 +11,6 @@ import com.datadog.android.flags.model.FlagsClientEvent
 import com.datadog.android.flags.model.FlagsClientEventType
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.yield
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -29,41 +26,22 @@ internal class FirstFlagsSampleTest {
     private val event = FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED, listOf("selected", "another"))
 
     @Test
-    fun `M retain early event W callback completes before client assignment`() = runBlocking {
-        val firstFlags = CompletableDeferred<FlagsClientEvent>()
-        val callback: (FlagsClientEvent) -> Unit = { firstFlags.complete(it) }
-        callback(event)
-        verifyNoInteractions(client)
-        // The application registers this continuation only after build returns and assigns the client.
+    fun `M log keys and evaluate selected flag W callback receives event`() {
         prepareSelection()
-        logAndEvaluateFirstFlags(client, firstFlags, selection, logs::add).join()
+        logAndEvaluateFirstFlags(client, event, selection, logs::add)
         assertSingleEvaluation()
     }
 
     @Test
-    fun `M suspend only continuation W event arrives after client assignment`() = runBlocking {
-        val firstFlags = CompletableDeferred<FlagsClientEvent>()
-        prepareSelection()
-        val job = logAndEvaluateFirstFlags(client, firstFlags, selection, logs::add)
-        yield()
-        assertThat(job.isCompleted).isFalse()
-        assertThat(logs).isEmpty()
-        verifyNoInteractions(client)
-        firstFlags.complete(event)
-        job.join()
-        assertSingleEvaluation()
-    }
-
-    @Test
-    fun `M distinguish absent and empty keys W no saved selection`() = runBlocking {
+    fun `M distinguish absent and empty keys W no saved selection`() {
         listOf(null, emptyList<String>()).forEach { keys ->
             logs.clear()
             logAndEvaluateFirstFlags(
                 client,
-                CompletableDeferred(FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED, keys)),
+                FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED, keys),
                 selection,
                 logs::add
-            ).join()
+            )
             assertThat(logs).containsExactly(
                 "Installed flag keys: ${keys ?: "<absent>"}",
                 "Select and evaluate a Boolean flag in OpenFeature, then relaunch the app."

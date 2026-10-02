@@ -230,7 +230,42 @@ internal class FirstFlagsIntegrationTest {
         server.enqueue(MockResponse().setBody(response(true)))
         first.setEvaluationContext(EvaluationContext("user"))
         assertThat(events).hasSize(2)
-        assertThat(events[0].flagsChanged).isEqualTo(events[1].flagsChanged)
+        assertThat(events[0]).isSameAs(events[1])
+    }
+
+    @Test
+    fun `M release locks W callback registers another handler on another thread`() {
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        val executor = Executors.newSingleThreadExecutor()
+        try {
+            client.onFirstFlags { event ->
+                events.add(event)
+                executor.submit {
+                    client.onFirstFlags { replay -> events.add(replay) }
+                }.get(5, TimeUnit.SECONDS)
+            }
+            server.enqueue(MockResponse().setBody(response(true)))
+            client.setEvaluationContext(EvaluationContext("user"))
+            assertThat(events).hasSize(2)
+            assertThat(events[1]).isSameAs(events[0])
+        } finally {
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `M isolate failures and deliver per registration W same handler registered twice`() {
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        client.onFirstFlags { error("application failure") }
+        val callback: (FlagsClientEvent) -> Unit = { events.add(it) }
+        client.onFirstFlags(callback)
+        client.onFirstFlags(callback)
+        server.enqueue(MockResponse().setBody(response(true)))
+        client.setEvaluationContext(EvaluationContext("user"))
+        client.onFirstFlags(callback)
+        assertThat(events).hasSize(3)
+        assertThat(events[1]).isSameAs(events[0])
+        assertThat(events[2]).isSameAs(events[0])
     }
 
     private fun cached(): String = checkNotNull(
