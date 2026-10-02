@@ -133,3 +133,7 @@ Some modules generate Kotlin data classes from JSON schemas at build time (e.g. 
 # Pull Requests
 
 - Use the project PR template (`.github/PULL_REQUEST_TEMPLATE.md`). 
+
+# Dogfooding Branch
+
+`dogfooding` is managed only through the scripts in `ci/scripts/dogfooding/`; read `ci/scripts/dogfooding/README.md` before helping with it. Never push to `dogfooding`, open a PR from a feature branch into it, or merge into it with squash or rebase: use `feature.sh`, `sync.sh` and `reset.sh`, which open the PRs. The only change made by hand is reverting a feature's dogfood merges, as described in the README's "Remove a single feature". Show the command and ask before running the scripts, since they push branches and open PRs.
