@@ -122,6 +122,38 @@ internal class StaleAssignmentsTest {
         )
     }
 
+    @Test
+    fun `M cancel pending first flags W context completion precedes deferred delivery`() {
+        whenever(reader.readPrecomputedFlags(any(), any())) doReturn "response"
+        whenever(mapper.map("response")) doReturn mapOf("flag" to flag)
+        var cancelledCalls = 0
+        val cancel = testedClient.onFirstFlags { cancelledCalls++ }
+        val activeKeys = mutableListOf<List<String>?>()
+        testedClient.onFirstFlags { activeKeys.add(it.flagsChanged) }
+        val callback = mock<EvaluationContextCallback>()
+        doAnswer {
+            assertThat(Thread.holdsLock(stateManager.lifecycleLock)).isFalse()
+            val cancellation = FutureTask {
+                cancel()
+                cancel()
+                testedClient.setEvaluationContext(otherContext)
+            }
+            Thread(cancellation).apply { isDaemon = true }.start()
+            cancellation.get(5, TimeUnit.SECONDS)
+            assertThat(activeKeys).isEmpty()
+            null
+        }.whenever(callback).onSuccess()
+        testedClient.setEvaluationContext(assignmentContext, callback)
+        runNextFetch()
+        assertThat(cancelledCalls).isZero()
+        assertThat(activeKeys).containsExactly(listOf("flag"))
+        assertReason("STALE")
+        testedClient.onFirstFlags { activeKeys.add(it.flagsChanged) }.invoke()
+        assertThat(activeKeys).containsExactly(listOf("flag"), listOf("flag"))
+        assertThat(tasks).hasSize(1)
+        verify(dataStore, times(1)).setValue(any(), any<FlagsStateEntry>(), any(), anyOrNull(), any())
+    }
+
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
     fun `M preserve storage error and notify W completion also throws`(sameError: Boolean) {
