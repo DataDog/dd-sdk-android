@@ -46,6 +46,8 @@ internal class ProfilingConfigurationBuilderTest {
         assertThat(configuration.customEndpointUrl).isNull()
         assertThat(configuration.continuousSampleRate).isEqualTo(DEFAULT_CONTINUOUS_SAMPLE_RATE)
         assertThat(configuration.anrTriggerEnabled).isTrue()
+        assertThat(configuration.oomTriggerEnabled).isTrue()
+        assertThat(configuration.anomalyTriggerEnabled).isTrue()
     }
 
     @Test
@@ -85,5 +87,31 @@ internal class ProfilingConfigurationBuilderTest {
 
         // Then
         assertThat(configuration.anrTriggerEnabled).isEqualTo(fakeEnabled)
+    }
+
+    @Test
+    fun `M build config with OOM trigger flag W enableOutOfMemoryTrigger() and build()`(
+        @BoolForgery fakeEnabled: Boolean
+    ) {
+        // When
+        val configuration = testedBuilder
+            .enableOutOfMemoryTrigger(fakeEnabled)
+            .build()
+
+        // Then
+        assertThat(configuration.oomTriggerEnabled).isEqualTo(fakeEnabled)
+    }
+
+    @Test
+    fun `M build config with anomaly trigger flag W enableAnomalyTrigger() and build()`(
+        @BoolForgery fakeEnabled: Boolean
+    ) {
+        // When
+        val configuration = testedBuilder
+            .enableAnomalyTrigger(fakeEnabled)
+            .build()
+
+        // Then
+        assertThat(configuration.anomalyTriggerEnabled).isEqualTo(fakeEnabled)
     }
 }

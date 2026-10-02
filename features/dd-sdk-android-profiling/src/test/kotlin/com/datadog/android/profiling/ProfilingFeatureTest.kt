@@ -194,7 +194,9 @@ internal class ProfilingFeatureTest {
         customEndpointUrl = null,
         applicationLaunchSampleRate = 100f,
         continuousSampleRate = 100f,
-        anrTriggerEnabled = true
+        anrTriggerEnabled = true,
+        oomTriggerEnabled = true,
+        anomalyTriggerEnabled = true
     )
 
     @BeforeEach
@@ -418,7 +420,9 @@ internal class ProfilingFeatureTest {
                 customEndpointUrl = null,
                 applicationLaunchSampleRate = 100f,
                 continuousSampleRate = 0f,
-                anrTriggerEnabled = true
+                anrTriggerEnabled = true,
+                oomTriggerEnabled = true,
+                anomalyTriggerEnabled = true
             ),
             mockProfiler
         )
@@ -497,7 +501,9 @@ internal class ProfilingFeatureTest {
                 customEndpointUrl = null,
                 applicationLaunchSampleRate = 100f,
                 continuousSampleRate = fakeContinuousRate,
-                anrTriggerEnabled = true
+                anrTriggerEnabled = true,
+                oomTriggerEnabled = true,
+                anomalyTriggerEnabled = true
             ),
             mockProfiler
         )
@@ -524,18 +530,28 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M propagate ANR trigger enabled flag W onInitialize`(
-        @BoolForgery fakeAnrTriggerEnabled: Boolean
+    fun `M propagate trigger enabled flags W onInitialize`(
+        @BoolForgery fakeAnrTriggerEnabled: Boolean,
+        @BoolForgery fakeOomTriggerEnabled: Boolean,
+        @BoolForgery fakeAnomalyTriggerEnabled: Boolean
     ) {
         // Given
-        val config = fakeConfiguration.copy(anrTriggerEnabled = fakeAnrTriggerEnabled)
+        val config = fakeConfiguration.copy(
+            anrTriggerEnabled = fakeAnrTriggerEnabled,
+            oomTriggerEnabled = fakeOomTriggerEnabled,
+            anomalyTriggerEnabled = fakeAnomalyTriggerEnabled
+        )
         testedFeature = ProfilingFeature(mockSdkCore, config, mockProfiler)
 
         // When
         testedFeature.onInitialize(mockContext)
 
         // Then
-        verify(mockProfiler).setAnrTriggerEnabled(fakeAnrTriggerEnabled)
+        verify(mockProfiler).setEnabledTriggers(
+            fakeAnrTriggerEnabled,
+            fakeOomTriggerEnabled,
+            fakeAnomalyTriggerEnabled
+        )
     }
 
     @Test
@@ -1047,7 +1063,9 @@ internal class ProfilingFeatureTest {
                 customEndpointUrl = null,
                 applicationLaunchSampleRate = 100f,
                 continuousSampleRate = 0f,
-                anrTriggerEnabled = true
+                anrTriggerEnabled = true,
+                oomTriggerEnabled = true,
+                anomalyTriggerEnabled = true
             ),
             mockProfiler
         )
@@ -1138,7 +1156,9 @@ internal class ProfilingFeatureTest {
                 customEndpointUrl = null,
                 applicationLaunchSampleRate = 100f,
                 continuousSampleRate = 0f,
-                anrTriggerEnabled = true
+                anrTriggerEnabled = true,
+                oomTriggerEnabled = true,
+                anomalyTriggerEnabled = true
             ),
             mockProfiler
         )
@@ -1163,7 +1183,9 @@ internal class ProfilingFeatureTest {
                 customEndpointUrl = null,
                 applicationLaunchSampleRate = 100f,
                 continuousSampleRate = 0f,
-                anrTriggerEnabled = true
+                anrTriggerEnabled = true,
+                oomTriggerEnabled = true,
+                anomalyTriggerEnabled = true
             ),
             mockProfiler
         )
@@ -1190,7 +1212,9 @@ internal class ProfilingFeatureTest {
                 customEndpointUrl = null,
                 applicationLaunchSampleRate = 100f,
                 continuousSampleRate = 0f,
-                anrTriggerEnabled = true
+                anrTriggerEnabled = true,
+                oomTriggerEnabled = true,
+                anomalyTriggerEnabled = true
             ),
             mockProfiler
         )

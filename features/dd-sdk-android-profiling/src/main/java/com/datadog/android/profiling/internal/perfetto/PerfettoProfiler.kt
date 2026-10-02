@@ -111,7 +111,7 @@ internal class PerfettoProfiler(
         }
 
     @Volatile
-    private var anrTriggerEnabled: Boolean = true
+    private var extendLaunchSession = false
 
     internal val triggerListener = object : ProfilingTriggerListener {
         override fun onAnrDetected(event: ProfilingAnrDetectedEvent, result: PerfettoResult) {
@@ -126,9 +126,6 @@ internal class PerfettoProfiler(
             callback?.onMemoryAnomalyDetected(result)
         }
     }
-
-    @Volatile
-    private var extendLaunchSession = false
 
     @Volatile
     private var callback: ProfilerCallback? = null
@@ -298,7 +295,7 @@ internal class PerfettoProfiler(
     override fun setTriggersEnabled(appContext: Context, enabled: Boolean) {
         synchronized(this) {
             if (buildSdkVersionProvider.isAtLeastBaklava) {
-                if (enabled && anrTriggerEnabled) {
+                if (enabled) {
                     triggerRegistrar.register(appContext, triggerListener)
                 } else {
                     triggerRegistrar.unregister(appContext)
@@ -340,8 +337,16 @@ internal class PerfettoProfiler(
         this.extendLaunchSession = extend
     }
 
-    override fun setAnrTriggerEnabled(enabled: Boolean) {
-        this.anrTriggerEnabled = enabled
+    override fun setEnabledTriggers(
+        anrTriggerEnabled: Boolean,
+        oomTriggerEnabled: Boolean,
+        anomalyTriggerEnabled: Boolean
+    ) {
+        triggerRegistrar.setEnabledTriggers(
+            anrTriggerEnabled,
+            oomTriggerEnabled,
+            anomalyTriggerEnabled
+        )
     }
 
     override fun resolveProfilingPackageVersionCode(appContext: Context) {

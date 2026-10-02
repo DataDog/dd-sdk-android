@@ -31,6 +31,8 @@ internal class ProfilingConfigurationTest {
         assertThat(config.customEndpointUrl).isNull()
         assertThat(config.applicationLaunchSampleRate).isEqualTo(15f)
         assertThat(config.anrTriggerEnabled).isTrue()
+        assertThat(config.oomTriggerEnabled).isTrue()
+        assertThat(config.anomalyTriggerEnabled).isTrue()
     }
 
     @Test
@@ -92,5 +94,21 @@ internal class ProfilingConfigurationTest {
 
         // Then
         assertThat(copied.anrTriggerEnabled).isFalse()
+    }
+
+    @Test
+    fun `M preserve OOM and anomaly trigger flags W data class copy()`() {
+        // Given
+        val original = ProfilingConfiguration.Builder()
+            .enableOutOfMemoryTrigger(false)
+            .enableAnomalyTrigger(false)
+            .build()
+
+        // When
+        val copied = original.copy(continuousSampleRate = 50f)
+
+        // Then
+        assertThat(copied.oomTriggerEnabled).isFalse()
+        assertThat(copied.anomalyTriggerEnabled).isFalse()
     }
 }

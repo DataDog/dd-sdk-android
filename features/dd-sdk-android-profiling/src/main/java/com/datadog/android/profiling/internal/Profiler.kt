@@ -39,7 +39,17 @@ internal interface Profiler {
 
     fun unregisterProfilerStatusListener(listener: ProfilingStatusListener)
 
-    fun setAnrTriggerEnabled(enabled: Boolean)
+    /**
+     * Sets which profiling trigger types (ANR, out of memory, memory anomaly) are enabled.
+     * Applied the next time triggers are registered for a RUM session (see
+     * [setTriggersEnabled]); trigger types not supported by the device API level are
+     * ignored.
+     */
+    fun setEnabledTriggers(
+        anrTriggerEnabled: Boolean,
+        oomTriggerEnabled: Boolean,
+        anomalyTriggerEnabled: Boolean
+    )
 
     /**
      * Enables or disables system profiling triggers for the current RUM session.

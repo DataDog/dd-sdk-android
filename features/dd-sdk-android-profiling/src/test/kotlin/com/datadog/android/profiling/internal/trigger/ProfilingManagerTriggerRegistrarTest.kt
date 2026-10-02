@@ -147,6 +147,35 @@ internal class ProfilingManagerTriggerRegistrarTest {
     }
 
     @Test
+    fun `M not register anything W register() {all trigger types disabled}`() {
+        // Given
+        testedRegistrar.triggersFactory = { emptyList() }
+
+        // When
+        testedRegistrar.register(mockContext, mockListener)
+
+        // Then
+        verify(mockService, never()).addProfilingTriggers(any())
+        verify(mockService, never()).registerForAllProfilingResults(any(), any())
+    }
+
+    @Test
+    fun `M register again after re-enabling W register() {disabled then enabled}`() {
+        // Given
+        testedRegistrar.triggersFactory = { emptyList() }
+        testedRegistrar.register(mockContext, mockListener)
+        testedRegistrar.triggersFactory = {
+            listOf(mock<ProfilingTrigger> { on { triggerType } doReturn ProfilingTrigger.TRIGGER_TYPE_ANR })
+        }
+
+        // When
+        testedRegistrar.register(mockContext, mockListener)
+
+        // Then
+        verify(mockService).addProfilingTriggers(any())
+    }
+
+    @Test
     fun `M ignore result W trigger callback fires {non-ANR trigger type}`() {
         // Given
         testedRegistrar.register(mockContext, mockListener)

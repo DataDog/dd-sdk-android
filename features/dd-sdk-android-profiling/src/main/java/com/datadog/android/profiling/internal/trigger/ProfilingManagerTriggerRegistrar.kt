@@ -61,6 +61,15 @@ internal class ProfilingManagerTriggerRegistrar(
         buildDefaultTriggers()
     }
 
+    @Volatile
+    private var anrTriggerEnabled: Boolean = true
+
+    @Volatile
+    private var oomTriggerEnabled: Boolean = true
+
+    @Volatile
+    private var anomalyTriggerEnabled: Boolean = true
+
     @RequiresApi(Build.VERSION_CODES.BAKLAVA)
     @Volatile
     private var registeredTriggerTypes: IntArray = intArrayOf(ProfilingTrigger.TRIGGER_TYPE_ANR)
@@ -68,21 +77,35 @@ internal class ProfilingManagerTriggerRegistrar(
     @RequiresApi(Build.VERSION_CODES.BAKLAVA)
     @Suppress("UnsafeThirdPartyFunctionCall")
     private fun buildDefaultTriggers(): List<ProfilingTrigger> {
-        // TODO RUM-18175: register each trigger type separately based on the
-        // ProfilingConfiguration so users can opt in/out of individual trigger
-        // types (e.g. enable OOM but not ANOMALY). Currently all triggers are
-        // registered together unconditionally.
+        // Each trigger type is registered separately based on the ProfilingConfiguration, so
+        // users can opt in/out of individual trigger types (e.g. enable OOM but not anomaly).
         val triggers = mutableListOf<ProfilingTrigger>()
-        triggers.add(ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR).build())
+        if (anrTriggerEnabled) {
+            triggers.add(ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR).build())
+        }
         if (buildSdkVersionProvider.isAtLeastCinnamonBun) {
-            triggers.add(
-                ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_OOM).build()
-            )
-            triggers.add(
-                ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANOMALY).build()
-            )
+            if (oomTriggerEnabled) {
+                triggers.add(
+                    ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_OOM).build()
+                )
+            }
+            if (anomalyTriggerEnabled) {
+                triggers.add(
+                    ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANOMALY).build()
+                )
+            }
         }
         return triggers
+    }
+
+    override fun setEnabledTriggers(
+        anrTriggerEnabled: Boolean,
+        oomTriggerEnabled: Boolean,
+        anomalyTriggerEnabled: Boolean
+    ) {
+        this.anrTriggerEnabled = anrTriggerEnabled
+        this.oomTriggerEnabled = oomTriggerEnabled
+        this.anomalyTriggerEnabled = anomalyTriggerEnabled
     }
 
     @RequiresApi(Build.VERSION_CODES.BAKLAVA)
@@ -109,6 +132,15 @@ internal class ProfilingManagerTriggerRegistrar(
 
         this.listener = listener
         val triggers = triggersFactory()
+        if (triggers.isEmpty()) {
+            registered.set(false)
+            internalLogger?.log(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.MAINTAINER,
+                { LOG_NO_TRIGGERS_ENABLED }
+            )
+            return
+        }
         registeredTriggerTypes = triggers.map { it.triggerType }.toIntArray()
         manager.addProfilingTriggers(triggers)
         manager.registerForAllProfilingResults(executorService, resultCallback)
@@ -233,6 +265,8 @@ internal class ProfilingManagerTriggerRegistrar(
 
     private companion object {
         const val MAX_CALLBACK_DELAY_MS = 1_000L
+        const val LOG_NO_TRIGGERS_ENABLED =
+            "No profiling trigger type is enabled; skipping trigger registration."
         const val LOG_NO_MANAGER =
             "Cannot register profiling trigger: ProfilingManager system service is unavailable."
     }

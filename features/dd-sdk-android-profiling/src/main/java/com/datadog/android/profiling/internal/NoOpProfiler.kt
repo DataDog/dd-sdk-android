@@ -43,7 +43,11 @@ internal class NoOpProfiler : Profiler {
 
     override fun unregisterProfilerStatusListener(listener: ProfilingStatusListener) = Unit
 
-    override fun setAnrTriggerEnabled(enabled: Boolean) = Unit
+    override fun setEnabledTriggers(
+        anrTriggerEnabled: Boolean,
+        oomTriggerEnabled: Boolean,
+        anomalyTriggerEnabled: Boolean
+    ) = Unit
 
     override fun setTriggersEnabled(appContext: Context, enabled: Boolean) = Unit
 

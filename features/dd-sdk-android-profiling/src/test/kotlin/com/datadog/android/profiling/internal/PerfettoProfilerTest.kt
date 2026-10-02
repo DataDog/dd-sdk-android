@@ -1222,11 +1222,32 @@ internal class PerfettoProfilerTest {
     }
 
     @Test
+    fun `M delegate trigger flags to registrar W setEnabledTriggers`() {
+        // When
+        testedProfiler.setEnabledTriggers(
+            anrTriggerEnabled = false,
+            oomTriggerEnabled = true,
+            anomalyTriggerEnabled = false
+        )
+
+        // Then
+        verify(mockRegistrar).setEnabledTriggers(
+            anrTriggerEnabled = false,
+            oomTriggerEnabled = true,
+            anomalyTriggerEnabled = false
+        )
+    }
+
+    @Test
     fun `M not delegate to registrar W registerProfilingCallback {ANR trigger disabled}`() {
         // Given
         // Drop interactions recorded by the set-up call (which used the default enabled state).
         reset(mockRegistrar)
-        testedProfiler.setAnrTriggerEnabled(false)
+        testedProfiler.setEnabledTriggers(
+            anrTriggerEnabled = false,
+            oomTriggerEnabled = true,
+            anomalyTriggerEnabled = false
+        )
 
         // When
         testedProfiler.registerProfilingCallback(mockContext, mockProfilerCallback)
@@ -1238,7 +1259,11 @@ internal class PerfettoProfilerTest {
     @Test
     fun `M not delegate to registrar W unregisterProfilingCallback {ANR trigger disabled}`() {
         // Given
-        testedProfiler.setAnrTriggerEnabled(false)
+        testedProfiler.setEnabledTriggers(
+            anrTriggerEnabled = false,
+            oomTriggerEnabled = true,
+            anomalyTriggerEnabled = false
+        )
 
         // When
         testedProfiler.unregisterProfilingCallback(mockContext)
