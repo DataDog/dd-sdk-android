@@ -68,7 +68,7 @@ interface FlagsClient {
      * Invokes [callback] once with the keys from the first installed cached or downloaded flags,
      * including an empty configuration. Missing or invalid cache does not trigger this callback.
      * Each registration receives the retained first result, even after subsequent flag updates.
-     * If flags are already installed, delivery is immediate on the calling thread; otherwise it runs
+     * If the first result is available, delivery is immediate on the calling thread; otherwise it runs
      * on the installing thread. Callback exceptions are logged and isolated.
      * Pending callbacks are retained until the first successful installation, which may never occur.
      * This notification does not imply readiness. Dispatch UI work to the appropriate thread.
