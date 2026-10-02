@@ -9,6 +9,8 @@ package com.datadog.android.flags.internal.repository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -91,6 +93,28 @@ internal class FirstFlagsFutureTest {
             } finally {
                 Thread.interrupted()
             }
+        }
+    }
+
+    @Test
+    fun `M deliver exactly once W registrations race with completion`() {
+        val future = FirstFlagsFuture()
+        val start = CountDownLatch(1)
+        val delivered = ConcurrentLinkedQueue<Int>()
+        val executor = Executors.newFixedThreadPool(8)
+        try {
+            val registrations = (0 until 100).map { index ->
+                executor.submit {
+                    start.await()
+                    future.whenComplete { delivered.add(index) }
+                }
+            }
+            start.countDown()
+            future.complete(listOf("first"))
+            registrations.forEach { it.get(5, TimeUnit.SECONDS) }
+            assertThat(delivered).containsExactlyInAnyOrderElementsOf((0 until 100).toList())
+        } finally {
+            executor.shutdownNow()
         }
     }
 }

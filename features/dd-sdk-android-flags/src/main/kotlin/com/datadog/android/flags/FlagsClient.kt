@@ -70,6 +70,7 @@ interface FlagsClient {
      * Each registration receives the retained first result, even after subsequent flag updates.
      * If flags are already installed, delivery is immediate on the calling thread; otherwise it runs
      * on the installing thread. Callback exceptions are logged and isolated.
+     * Pending callbacks are retained until the first successful installation, which may never occur.
      * This notification does not imply readiness. Dispatch UI work to the appropriate thread.
      */
     fun onFirstFlags(callback: (FlagsClientEvent) -> Unit)
