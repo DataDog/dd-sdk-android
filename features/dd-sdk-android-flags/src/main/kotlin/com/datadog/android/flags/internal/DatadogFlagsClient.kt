@@ -23,7 +23,6 @@ import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.model.UnparsedFlag
 import org.json.JSONObject
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Production implementation of [FlagsClient] that integrates with Datadog's flag evaluation system.
@@ -43,7 +42,6 @@ import java.util.concurrent.atomic.AtomicReference
  * @param exposureProcessor responsible for writing exposure batches to be sent to flags backend.
  * @param evaluationsFeature the evaluations subfeature for accessing processor and context (optional).
  * @param flagStateManager channel for managing state change listeners
- * @param onFirstFlags optional notification of the first installed assignments
  */
 @Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
 internal class DatadogFlagsClient(
@@ -54,19 +52,13 @@ internal class DatadogFlagsClient(
     private val rumEvaluationLogger: RumEvaluationLogger,
     private val exposureProcessor: EventsProcessor,
     private val evaluationsFeature: EvaluationsFeature?,
-    private val flagStateManager: FlagsStateManager,
-    onFirstFlags: ((FlagsClientEvent) -> Unit)? = null
+    private val flagStateManager: FlagsStateManager
 ) : FlagsClient {
-
-    @Suppress("UnsafeThirdPartyFunctionCall") // Stores the optional callback in a privately owned reference.
-    private val firstFlagsCallback = AtomicReference(onFirstFlags)
 
     override val state: StateObservable = flagStateManager
 
     @Suppress("TooGenericExceptionCaught") // Application callbacks must not interrupt installation or persistence.
-    internal fun subscribeToFirstFlags() {
-        @Suppress("UnsafeThirdPartyFunctionCall") // Atomically consumes the callback once.
-        val callback = firstFlagsCallback.getAndSet(null) ?: return
+    override fun onFirstFlags(callback: (FlagsClientEvent) -> Unit) {
         flagsRepository.waitForFlags().whenComplete { keys ->
             try {
                 callback(FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED, keys))

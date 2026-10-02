@@ -94,20 +94,22 @@ internal class FirstFlagsIntegrationTest {
         store.json = cached()
         var cachedValue: Boolean? = null
         var initialState: FlagsClientState? = null
-        val client = FlagsClient.Builder(sdkCore = core).onFirstFlags {
-            events.add(it)
-            // Another thread must be able to access the registry and evaluate before this callback returns.
-            val reader = Executors.newSingleThreadExecutor()
-            try {
-                cachedValue = reader.submit<Boolean> {
-                    val registered = FlagsClient.get(sdkCore = core)
-                    initialState = registered.state.getCurrentState()
-                    registered.resolveBooleanValue("enabled", false)
-                }.get(5, TimeUnit.SECONDS)
-            } finally {
-                reader.shutdownNow()
+        val client = FlagsClient.Builder(sdkCore = core).build().also { client ->
+            client.onFirstFlags {
+                events.add(it)
+                // Another thread must be able to access the registry and evaluate before this callback returns.
+                val reader = Executors.newSingleThreadExecutor()
+                try {
+                    cachedValue = reader.submit<Boolean> {
+                        val registered = FlagsClient.get(sdkCore = core)
+                        initialState = registered.state.getCurrentState()
+                        registered.resolveBooleanValue("enabled", false)
+                    }.get(5, TimeUnit.SECONDS)
+                } finally {
+                    reader.shutdownNow()
+                }
             }
-        }.build()
+        }
         assertThat(cachedValue).isTrue()
         assertThat(initialState).isEqualTo(FlagsClientState.NotReady)
         assertThat(events.single().flagsChanged).containsExactly("enabled")
@@ -118,7 +120,7 @@ internal class FirstFlagsIntegrationTest {
         assertThat(events).hasSize(1)
         // No public reset exists: a newly created client gets its own one-shot callback.
         feature.clearClients()
-        FlagsClient.Builder(sdkCore = core).onFirstFlags { events.add(it) }.build()
+        FlagsClient.Builder(sdkCore = core).build().onFirstFlags { events.add(it) }
         assertThat(events).hasSize(2)
     }
 
@@ -126,10 +128,12 @@ internal class FirstFlagsIntegrationTest {
     fun `M evaluate network first flags W late disk and later context update`() {
         store.json = cached()
         store.deferRead = true
-        val client = FlagsClient.Builder(sdkCore = core).onFirstFlags {
-            events.add(it)
-            assertThat(FlagsClient.get(sdkCore = core).resolveBooleanValue("enabled", true)).isFalse()
-        }.build()
+        val client = FlagsClient.Builder(sdkCore = core).build().also { client ->
+            client.onFirstFlags {
+                events.add(it)
+                assertThat(FlagsClient.get(sdkCore = core).resolveBooleanValue("enabled", true)).isFalse()
+            }
+        }
         server.enqueue(MockResponse().setBody(response(false)))
         client.setEvaluationContext(EvaluationContext("network-user"))
         store.releaseRead()
@@ -145,7 +149,9 @@ internal class FirstFlagsIntegrationTest {
     fun `M leave first notification available W missing invalid cache and failed HTTP`() {
         listOf(null, "not valid JSON").forEachIndexed { index, persisted ->
             store.json = persisted
-            val client = FlagsClient.Builder("client-$index", core).onFirstFlags { events.add(it) }.build()
+            val client = FlagsClient.Builder("client-$index", core).build().also { client ->
+                client.onFirstFlags { events.add(it) }
+            }
             assertThat(events).hasSize(index)
             server.enqueue(MockResponse().setResponseCode(500))
             client.setEvaluationContext(EvaluationContext("user"))
@@ -162,19 +168,21 @@ internal class FirstFlagsIntegrationTest {
     @Test
     fun `M allow context update from callback W network installation`() {
         var callbackValue: Boolean? = null
-        val client = FlagsClient.Builder(sdkCore = core).onFirstFlags {
-            events.add(it)
-            val reader = Executors.newSingleThreadExecutor()
-            try {
-                callbackValue = reader.submit<Boolean> {
-                    val registered = FlagsClient.get(sdkCore = core)
-                    registered.setEvaluationContext(EvaluationContext("reentrant-user"))
-                    registered.resolveBooleanValue("enabled", true)
-                }.get(5, TimeUnit.SECONDS)
-            } finally {
-                reader.shutdownNow()
+        val client = FlagsClient.Builder(sdkCore = core).build().also { client ->
+            client.onFirstFlags {
+                events.add(it)
+                val reader = Executors.newSingleThreadExecutor()
+                try {
+                    callbackValue = reader.submit<Boolean> {
+                        val registered = FlagsClient.get(sdkCore = core)
+                        registered.setEvaluationContext(EvaluationContext("reentrant-user"))
+                        registered.resolveBooleanValue("enabled", true)
+                    }.get(5, TimeUnit.SECONDS)
+                } finally {
+                    reader.shutdownNow()
+                }
             }
-        }.build()
+        }
         server.enqueue(MockResponse().setBody(response(true)))
         server.enqueue(MockResponse().setBody(response(false)))
         client.setEvaluationContext(EvaluationContext("initial-user"))
@@ -187,18 +195,22 @@ internal class FirstFlagsIntegrationTest {
     }
 
     @Test
-    fun `M clear callback W nullable builder registration`() {
+    fun `M replay first keys W registration after later installation`() {
         store.json = cached()
-        val client = FlagsClient.Builder(sdkCore = core).onFirstFlags { events.add(it) }.onFirstFlags(null).build()
-        assertThat(events).isEmpty()
-        assertThat(client.resolveBooleanValue("enabled", false)).isTrue()
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        server.enqueue(MockResponse().setBody("""{"data":{"attributes":{"flags":{}}}}"""))
+        client.setEvaluationContext(EvaluationContext("user"))
+        client.onFirstFlags { events.add(it) }
+        assertThat(events.single().flagsChanged).containsExactly("enabled")
     }
 
     @Test
     fun `M isolate callback failure W first network installation`() {
-        val client = FlagsClient.Builder(sdkCore = core).onFirstFlags {
-            throw IllegalStateException("application failure")
-        }.build()
+        val client = FlagsClient.Builder(sdkCore = core).build().also { client ->
+            client.onFirstFlags {
+                throw IllegalStateException("application failure")
+            }
+        }
         server.enqueue(MockResponse().setBody(response(true)))
         client.setEvaluationContext(EvaluationContext("user"))
         assertThat(client.resolveBooleanValue("enabled", false)).isTrue()
@@ -207,13 +219,18 @@ internal class FirstFlagsIntegrationTest {
     }
 
     @Test
-    fun `M preserve original registration W duplicate builder`() {
-        val first = FlagsClient.Builder(sdkCore = core).onFirstFlags { events.add(it) }.build()
-        val duplicate = FlagsClient.Builder(sdkCore = core).onFirstFlags { error("replacement callback") }.build()
+    fun `M notify each registration W duplicate client`() {
+        val first = FlagsClient.Builder(sdkCore = core).build().also { client ->
+            client.onFirstFlags { events.add(it) }
+        }
+        val duplicate = FlagsClient.Builder(sdkCore = core).build().also { client ->
+            client.onFirstFlags { events.add(it) }
+        }
         assertThat(duplicate).isSameAs(first)
         server.enqueue(MockResponse().setBody(response(true)))
         first.setEvaluationContext(EvaluationContext("user"))
-        assertThat(events).hasSize(1)
+        assertThat(events).hasSize(2)
+        assertThat(events[0].flagsChanged).isEqualTo(events[1].flagsChanged)
     }
 
     private fun cached(): String = checkNotNull(

@@ -300,16 +300,14 @@ then relaunch the app and inspect the `FirstFlags` Logcat tag. Without a saved s
 logs setup instructions and skips evaluation. Null keys log as `<absent>` and empty keys as `[]`.
 The existing String/Integer/Double evaluator remains available; this startup example uses Boolean only.
 
-`Builder.onFirstFlags(callback: ((FlagsClientEvent) -> Unit)?)` accepts a plain nullable Kotlin function.
-It receives only the event, once after the first accepted cache or network installation, with the
-complete installed keys (including an empty list). Missing/invalid cache and rejected disk results do
-not notify. The callback may run before `build()` returns; the sample callback only completes the
-event future. After construction returns and the client is assigned, an application coroutine awaits
-that future and evaluates through the client. An early event is retained and a late event suspends
-only the coroutine, never SDK construction. Reads use current installed assignments, not a pinned
-event snapshot. Application UI updates still need the appropriate UI-thread dispatch.
+`FlagsClient.onFirstFlags(callback: (FlagsClientEvent) -> Unit)` registers a one-shot callback.
+It receives the keys from the first accepted cache or network installation, including an empty list.
+Missing/invalid cache and rejected disk results do not notify. Every registration receives the
+retained first result, including registrations after later installations or on a reused named client.
+If the first result is available, the callback runs immediately on the calling thread; otherwise it
+runs on the installing thread. Callback exceptions are logged and isolated.
 
-Callbacks run on the delivering thread outside SDK locks. Callback exceptions are logged and isolated.
-Existing named clients ignore a new builder callback; passing null clears the callback on that builder.
-Later installations do not rearm it. This adds no general event bus, bridge, readiness changes or
-OpenFeature forwarding. Existing upstream context/admission and evaluation semantics remain unchanged.
+The sample registers after building the client and completes an application-owned event future.
+An application coroutine awaits that future and evaluates through the client. Reads use current
+installed flags, not a pinned event snapshot. UI updates need the appropriate UI-thread dispatch.
+This notification does not imply readiness and adds no general event bus or OpenFeature forwarding.

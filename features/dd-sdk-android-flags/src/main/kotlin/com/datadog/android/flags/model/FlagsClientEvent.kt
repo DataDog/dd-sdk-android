@@ -16,12 +16,13 @@ import java.util.Collections
  * @property type the event kind.
  * @param flagsChanged optional supplied keys; null means absent and an empty list means explicitly empty.
  */
-@Suppress("UnsafeThirdPartyFunctionCall") // Copy non-null keys into a privately owned unmodifiable list.
 class FlagsClientEvent @JvmOverloads constructor(
     val type: FlagsClientEventType,
     flagsChanged: List<String>? = null
 ) {
     /** Snapshot of supplied keys, or null when keys were not supplied. */
+    // ArrayList and unmodifiableList reject null inputs; let supplies non-null keys and the copy is non-null.
+    @Suppress("UnsafeThirdPartyFunctionCall")
     val flagsChanged: List<String>? = flagsChanged?.let { Collections.unmodifiableList(ArrayList(it)) }
 
     override fun toString(): String =
