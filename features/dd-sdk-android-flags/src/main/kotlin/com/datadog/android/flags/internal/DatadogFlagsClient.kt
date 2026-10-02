@@ -17,6 +17,8 @@ import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientEvent
+import com.datadog.android.flags.model.FlagsClientEventType
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.model.UnparsedFlag
@@ -53,7 +55,31 @@ internal class DatadogFlagsClient(
     private val flagStateManager: FlagsStateManager
 ) : FlagsClient {
 
+    private val firstFlagsLock = Any()
+    private var firstFlagsEvent: FlagsClientEvent? = null
+
     override val state: StateObservable = flagStateManager
+
+    @Suppress("TooGenericExceptionCaught") // Application callbacks must not interrupt installation or persistence.
+    override fun onFirstFlags(callback: (FlagsClientEvent) -> Unit): () -> Unit {
+        return flagsRepository.waitForFlags().whenComplete { keys ->
+            val event = synchronized(firstFlagsLock) {
+                firstFlagsEvent ?: FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED, keys).also {
+                    firstFlagsEvent = it
+                }
+            }
+            try {
+                callback(event)
+            } catch (exception: Exception) {
+                featureSdkCore.internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    { "First flags callback failed" },
+                    exception
+                )
+            }
+        }
+    }
 
     // region FlagsClient
 

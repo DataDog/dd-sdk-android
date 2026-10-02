@@ -46,6 +46,7 @@ import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.account.AccountFragment
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
+import com.datadog.android.sample.flags.logAndEvaluateFirstFlags
 import com.datadog.android.sample.image.Coil3ImageLoader
 import com.datadog.android.sample.image.CoilImageLoader
 import com.datadog.android.sample.image.FrescoImageLoader
@@ -249,6 +250,10 @@ class SampleApplication : Application() {
 
         // Create FlagsClient and convert to OpenFeature provider
         val flagsClient = FlagsClient.Builder().build()
+        // Application-lifetime callback; lifecycle-scoped callers retain and invoke the cancellation function.
+        flagsClient.onFirstFlags { event ->
+            logAndEvaluateFirstFlags(flagsClient, event) { message -> Log.i("FirstFlags", message) }
+        }
         val provider = flagsClient.asOpenFeatureProvider()
 
         // Set as OpenFeature provider

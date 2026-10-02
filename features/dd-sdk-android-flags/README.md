@@ -271,3 +271,69 @@ For more information on Feature Flags in Datadog, see the [official Feature Flag
 
 [1]: https://docs.datadoghq.com/real_user_monitoring/application_monitoring/android/setup
 [2]: https://docs.datadoghq.com/getting_started/feature_flags/
+
+
+### Event value shape
+
+`FlagsClientEvent` is an immutable value with required `type` and optional `flagsChanged` (default
+`null`). The constructor snapshots supplied keys; `null` means no keys were supplied, while
+`emptyList()` means an explicitly empty list. Key order and duplicates are preserved.
+
+```kotlin
+val event = FlagsClientEvent(
+    type = FlagsClientEventType.CONFIGURATION_CHANGED,
+    flagsChanged = listOf("checkout-enabled")
+)
+```
+
+`FlagsClientEventType` contains only `CONFIGURATION_CHANGED`, mapping directly to that shared event
+name. The value requires no OpenFeature dependency.
+
+
+### First installed flags callback
+
+The [Kotlin sample application](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/SampleApplication.kt)
+registers this callback in `initializeFlags`. Its
+[sample-only helper](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/flags/FirstFlagsSample.kt)
+logs the supplied keys and evaluates the Boolean flag `"my-flag-key"` with a default of `false`.
+Replace this example key with your flag key and inspect the `FirstFlags` Logcat tag.
+Null keys log as `<absent>` and empty keys as `[]`.
+
+`FlagsClient.onFirstFlags(callback: (FlagsClientEvent) -> Unit): () -> Unit` registers a one-shot callback.
+It receives the keys from the first accepted cache or network installation, including an empty list.
+Missing/invalid cache and rejected disk results do not notify. Every registration receives the
+retained first result, including registrations after later installations or on a reused named client.
+If the first result is available, the callback runs immediately on the calling thread; otherwise it
+runs on the installing thread. Callback exceptions are logged and isolated.
+
+The sample builds and assigns the client, then registers a callback that logs keys and evaluates
+the example flag directly. Pending callbacks are retained until delivery or cancellation. Keep the returned cancellation function and
+invoke it when its owner is destroyed to release captured references. Cancellation is idempotent
+and thread-safe; a callback already claimed for delivery may still run. Immediate replay happens
+before registration returns, so cancellation cannot undo it. Reads use current
+installed flags, not a pinned event snapshot. UI updates need the appropriate UI-thread dispatch.
+This notification does not imply readiness and adds no general event bus or OpenFeature forwarding.
+
+
+For a lifecycle-scoped owner, retain the returned function and invoke it during cleanup:
+
+```kotlin
+private var cancelFirstFlags: (() -> Unit)? = null
+
+fun registerFirstFlags(client: FlagsClient) {
+    cancelFirstFlags?.invoke()
+    cancelFirstFlags = client.onFirstFlags { event ->
+        val value = client.resolveBooleanValue("my-flag-key", false)
+        // Use event.flagsChanged and value; dispatch UI work to the UI thread.
+    }
+}
+
+fun releaseFirstFlags() {
+    cancelFirstFlags?.invoke()
+    cancelFirstFlags = null
+}
+```
+
+Call `releaseFirstFlags()` when the owning Activity or Fragment view is destroyed. Cancellation
+only unregisters this callback; it does not stop fetching flags or affect other registrations.
+The Application sample intentionally keeps its callback for the application lifetime.

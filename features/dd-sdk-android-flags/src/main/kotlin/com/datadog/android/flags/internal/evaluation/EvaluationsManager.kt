@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.internal.FlagsStateManager
+import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
@@ -133,20 +134,7 @@ internal class EvaluationsManager(
                     val response = assignmentsReader.readPrecomputedFlags(context, datadogContext)
                     if (response != null) {
                         val flagsMap = precomputeMapper.map(response)
-                        flagsRepository.setFlagsAndContext(context, flagsMap)
-                        internalLogger.log(
-                            InternalLogger.Level.DEBUG,
-                            InternalLogger.Target.MAINTAINER,
-                            { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
-                        )
-
-                        val completionCallback = synchronized(initializationTerminalLock) {
-                            val result = initializationCompletion?.take()?.callback
-                                ?: if (initializationCompletion == null) callback else null
-                            flagStateManager.updateState(FlagsClientState.Ready)
-                            result
-                        }
-                        completionCallback?.onSuccess()
+                        installFlags(context, flagsMap, initializationCompletion, callback)
                     } else {
                         internalLogger.log(
                             InternalLogger.Level.WARN,
@@ -171,6 +159,28 @@ internal class EvaluationsManager(
                     }
                 }
             }
+    }
+
+    private fun installFlags(
+        context: EvaluationContext,
+        flagsMap: Map<String, PrecomputedFlag>,
+        initializationCompletion: InitializationCompletion?,
+        callback: EvaluationContextCallback?
+    ) {
+        flagsRepository.setFlagsAndContext(context, flagsMap) {
+            val completionCallback = synchronized(initializationTerminalLock) {
+                val result = initializationCompletion?.take()?.callback
+                    ?: if (initializationCompletion == null) callback else null
+                flagStateManager.updateState(FlagsClientState.Ready)
+                result
+            }
+            completionCallback?.onSuccess()
+        }
+        internalLogger.log(
+            InternalLogger.Level.DEBUG,
+            InternalLogger.Target.MAINTAINER,
+            { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
+        )
     }
 
     private fun startInitializationTimeout(
