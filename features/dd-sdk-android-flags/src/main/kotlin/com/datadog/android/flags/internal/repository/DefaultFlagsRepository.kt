@@ -52,7 +52,11 @@ internal class DefaultFlagsRepository(
                         flag.copy(reason = ResolutionReason.CACHED.name)
                     }
                     atomicState.set(
-                        FlagsState(persistedState.evaluationContext, cachedFlags, isStaleFor(persistedState.evaluationContext))
+                        FlagsState(
+                            persistedState.evaluationContext,
+                            cachedFlags,
+                            isStaleFor(persistedState.evaluationContext)
+                        )
                     )
                     true
                 } else {

@@ -181,6 +181,8 @@ internal class EvaluationsManager(
             }
     }
 
+    // Preserve installation failures while delivering application callbacks outside the lifecycle lock.
+    @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
     private fun installFlags(
         context: EvaluationContext,
         flagsMap: Map<String, PrecomputedFlag>,
@@ -190,7 +192,7 @@ internal class EvaluationsManager(
     ) {
         var completionCallback: EvaluationContextCallback? = null
         var publishFirstFlags: (() -> Unit)? = null
-        try {
+        val installationFailure = try {
             synchronized(initializationTerminalLock) {
                 if (generation == contextGeneration) {
                     // Keep admission serialized through installation and storage submission.
@@ -208,13 +210,23 @@ internal class EvaluationsManager(
                         ?: if (initializationCompletion == null) callback else null
                 }
             }
-        } finally {
-            try {
-                completionCallback?.onSuccess()
-            } finally {
-                publishFirstFlags?.invoke()
-            }
+            null
+        } catch (exception: Exception) {
+            exception
         }
+        try {
+            completionCallback?.onSuccess()
+        } catch (exception: Exception) {
+            if (installationFailure == null) throw exception
+            if (installationFailure !== exception) {
+                // Both exceptions are non-null and distinct, so suppression is safe.
+                @Suppress("UnsafeThirdPartyFunctionCall")
+                installationFailure.addSuppressed(exception)
+            }
+        } finally {
+            publishFirstFlags?.invoke()
+        }
+        if (installationFailure != null) throw installationFailure
         internalLogger.log(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.MAINTAINER,

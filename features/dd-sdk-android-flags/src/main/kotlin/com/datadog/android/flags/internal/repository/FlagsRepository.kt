@@ -16,7 +16,8 @@ internal interface FlagsRepository {
 
     /**
      * Runs [onInstalled] after attempting storage submission, including when submission fails.
-     * For the first installation, it runs before publishing the first-flags result to listeners.
+     * For the first installation, it runs before handing publication to [dispatchFirstFlags].
+     * Callers holding an outer lock must defer that publication until after releasing the lock.
      */
     fun setFlagsAndContext(
         context: EvaluationContext,

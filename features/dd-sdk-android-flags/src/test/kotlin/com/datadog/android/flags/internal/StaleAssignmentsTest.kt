@@ -32,6 +32,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -41,6 +42,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -122,8 +124,116 @@ internal class StaleAssignmentsTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
+    fun `M preserve storage error and notify W completion also throws`(sameError: Boolean) {
+        val storageError = IllegalStateException("storage unavailable")
+        val completionError = if (sameError) storageError else IllegalArgumentException("completion failure")
+        doThrow(storageError).whenever(dataStore)
+            .setValue<FlagsStateEntry>(any(), any(), any(), anyOrNull(), any())
+        whenever(reader.readPrecomputedFlags(any(), any())) doReturn "response"
+        whenever(mapper.map("response")) doReturn mapOf("flag" to flag)
+        val callback = mock<EvaluationContextCallback>()
+        doThrow(completionError).whenever(callback).onSuccess()
+        val notifications = mutableListOf<List<String>>()
+        repository.waitForFlags().whenComplete { notifications.add(it) }
+        testedClient.setEvaluationContext(assignmentContext, callback)
+        val thrown = assertThrows<IllegalStateException> { runNextFetch() }
+        assertThat(thrown).isSameAs(storageError)
+        assertThat(thrown.suppressed.toList()).isEqualTo(if (sameError) emptyList() else listOf(completionError))
+        assertThat(notifications).containsExactly(listOf("flag"))
+        verify(stateManager).updateState(FlagsClientState.Ready)
+        verify(callback).onSuccess()
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = [0, 1, 2, 3, 4, 5, 6, 7])
+    fun `M notify only accepted generation W overlapping first requests`(combination: Int) {
+        val sameContext = combination and 1 != 0
+        val latestSucceeds = combination and 2 != 0
+        val olderCompletesFirst = combination and 4 != 0
+        val notifications = mutableListOf<List<String>>()
+        repository.waitForFlags().whenComplete { notifications.add(it) }
+        whenever(mapper.map("old")) doReturn mapOf("old" to flag)
+        whenever(mapper.map("new")) doReturn mapOf("new" to flag)
+        testedClient.setEvaluationContext(assignmentContext)
+        testedClient.setEvaluationContext(if (sameContext) assignmentContext.copy() else otherContext)
+        val old = tasks.removeAt(0)
+        val latest = tasks.removeAt(0)
+        val latestResponse = if (latestSucceeds) "new" else null
+        if (olderCompletesFirst) {
+            whenever(reader.readPrecomputedFlags(any(), any())).thenReturn("old", latestResponse)
+            old.run()
+            assertThat(notifications).isEmpty()
+            latest.run()
+        } else {
+            whenever(reader.readPrecomputedFlags(any(), any())).thenReturn(latestResponse, "old")
+            latest.run()
+            old.run()
+        }
+        assertThat(notifications).hasSize(if (latestSucceeds) 1 else 0)
+        val expectedKeys = if (latestSucceeds) setOf("new") else emptySet<String>()
+        assertThat(repository.getFlagsSnapshot().keys).isEqualTo(expectedKeys)
+        verify(dataStore, times(if (latestSucceeds) 1 else 0))
+            .setValue(any(), any<FlagsStateEntry>(), any(), anyOrNull(), any())
+        val replay = mutableListOf<List<String>>()
+        repository.waitForFlags().whenComplete { replay.add(it) }
+        assertThat(replay).isEqualTo(notifications)
+    }
+
+    @Test
+    fun `M deliver callbacks outside lifecycle lock W first network installation`() {
+        whenever(reader.readPrecomputedFlags(any(), any())) doReturn "response"
+        whenever(mapper.map("response")) doReturn mapOf("flag" to flag)
+        val delivered = mutableListOf<String>()
+        val callback = mock<EvaluationContextCallback>()
+        doAnswer {
+            assertThat(Thread.holdsLock(stateManager.lifecycleLock)).isFalse()
+            delivered.add("completion")
+            null
+        }.whenever(callback).onSuccess()
+        repository.waitForFlags().whenComplete {
+            assertThat(Thread.holdsLock(stateManager.lifecycleLock)).isFalse()
+            verify(stateManager).updateState(FlagsClientState.Ready)
+            val reentry = FutureTask {
+                testedClient.getFlagAssignmentsSnapshot()
+                testedClient.setEvaluationContext(otherContext)
+                repository.waitForFlags().whenComplete { keys -> assertThat(keys).containsExactly("flag") }
+            }
+            Thread(reentry).apply { isDaemon = true }.start()
+            reentry.get(5, TimeUnit.SECONDS)
+            delivered.add("first-flags")
+        }
+        testedClient.setEvaluationContext(assignmentContext, callback)
+        runNextFetch()
+        assertThat(delivered).containsExactly("completion", "first-flags")
+    }
+
+    @Test
+    fun `M retain first winner W completion installs newer assignments before notification`() {
+        val notifications = mutableListOf<List<String>>()
+        repository.waitForFlags().whenComplete { notifications.add(it) }
+        whenever(reader.readPrecomputedFlags(any(), any())).thenReturn("first", "second")
+        whenever(mapper.map("first")) doReturn mapOf("first" to flag)
+        whenever(mapper.map("second")) doReturn mapOf("second" to flag)
+        val callback = mock<EvaluationContextCallback>()
+        doAnswer {
+            testedClient.setEvaluationContext(otherContext)
+            runNextFetch()
+            assertThat(notifications).isEmpty()
+            null
+        }.whenever(callback).onSuccess()
+        testedClient.setEvaluationContext(assignmentContext, callback)
+        runNextFetch()
+        assertThat(notifications).containsExactly(listOf("first"))
+        assertThat(repository.getFlagsSnapshot()).containsOnlyKeys("second")
+        repository.waitForFlags().whenComplete { assertThat(it).containsExactly("first") }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
     fun `M restore original reason W switching context back to assignments`(fromDisk: Boolean) {
         install(fromDisk)
+        val notifications = mutableListOf<List<String>>()
+        repository.waitForFlags().whenComplete { notifications.add(it) }
         assertReason(originalReason(fromDisk))
         testedClient.setEvaluationContext(assignmentContext.copy())
         assertReason(originalReason(fromDisk))
@@ -132,6 +242,7 @@ internal class StaleAssignmentsTest {
         assertThat(repository.getEvaluationContext()).isEqualTo(assignmentContext)
         testedClient.setEvaluationContext(assignmentContext)
         assertReason(originalReason(fromDisk))
+        assertThat(notifications).hasSize(1)
     }
 
     @ParameterizedTest
