@@ -13,92 +13,85 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 
-internal class FirstFlagsFutureTest {
+internal class FirstFlagsLatchTest {
     @Test
     fun `M retain immutable first keys W completed before subscription`() {
-        val future = FirstFlagsFuture()
+        val latch = FirstFlagsLatch()
         val input = mutableListOf("first")
-        future.complete(input)
+        latch.complete(input)
         input.clear()
-        future.complete(listOf("later"))
+        latch.complete(listOf("later"))
         var delivered: List<String>? = null
-        future.whenComplete { delivered = it }
+        latch.whenComplete { delivered = it }
         assertThat(delivered).containsExactly("first")
-        assertThat(future.get()).isSameAs(delivered)
+        assertThat(latch.await(0, TimeUnit.MILLISECONDS)).isTrue()
         @Suppress("DontDowncastCollectionTypes") // Verify the returned Java collection cannot be mutated.
-        val mutableView = future.get() as MutableList
+        val mutableView = delivered as MutableList
         assertThrows<UnsupportedOperationException> { mutableView.clear() }
     }
 
     @Test
     fun `M deliver outside lock W pending listener reenters from another thread`() {
-        val future = FirstFlagsFuture()
+        val latch = FirstFlagsLatch()
         val executor = Executors.newSingleThreadExecutor()
         try {
-            future.whenComplete {
+            latch.whenComplete {
                 executor.submit {
-                    future.whenComplete { keys -> assertThat(keys).isEmpty() }
+                    latch.whenComplete { keys -> assertThat(keys).isEmpty() }
                 }.get(5, TimeUnit.SECONDS)
             }
-            future.complete(emptyList())
-            assertThat(future.isDone).isTrue()
+            latch.complete(emptyList())
+            assertThat(latch.await(0, TimeUnit.MILLISECONDS)).isTrue()
         } finally {
             executor.shutdownNow()
         }
     }
 
     @Test
-    fun `M remain pending W timeout and cancellation`() {
-        val future = FirstFlagsFuture()
-        assertThat(future.cancel(true)).isFalse()
-        assertThat(future.isCancelled).isFalse()
-        assertThrows<TimeoutException> { future.get(1, TimeUnit.MILLISECONDS) }
-        assertThat(future.isDone).isFalse()
+    fun `M remain pending W timeout`() {
+        val latch = FirstFlagsLatch()
+        assertThat(latch.await(1, TimeUnit.MILLISECONDS)).isFalse()
+        assertThat(latch.await(0, TimeUnit.MILLISECONDS)).isFalse()
     }
 
     @Test
     fun `M remain pending W generated no op repository`() {
-        assertThat(NoOpFlagsRepository().waitForFlags().isDone).isFalse()
+        assertThat(NoOpFlagsRepository().waitForFlags().await(0, TimeUnit.MILLISECONDS)).isFalse()
     }
 
     @Test
     fun `M distinguish empty installed keys from pending W completing empty configuration`() {
-        val future = FirstFlagsFuture()
+        val latch = FirstFlagsLatch()
         var delivered = false
-        future.whenComplete { keys ->
+        latch.whenComplete { keys ->
             assertThat(keys).isEmpty()
             delivered = true
         }
-        assertThat(future.isDone).isFalse()
+        assertThat(latch.await(0, TimeUnit.MILLISECONDS)).isFalse()
         assertThat(delivered).isFalse()
-        future.complete(emptyList())
-        assertThat(future.isDone).isTrue()
+        latch.complete(emptyList())
+        assertThat(latch.await(0, TimeUnit.MILLISECONDS)).isTrue()
         assertThat(delivered).isTrue()
-        assertThat(future.get(0, TimeUnit.NANOSECONDS)).isEmpty()
+        assertThat(latch.await(0, TimeUnit.NANOSECONDS)).isTrue()
     }
 
     @Test
-    fun `M propagate interruption W either get overload is interrupted`() {
-        listOf(false, true).forEach { timed ->
-            val future = FirstFlagsFuture()
-            try {
-                Thread.currentThread().interrupt()
-                assertThrows<InterruptedException> {
-                    if (timed) future.get(1, TimeUnit.SECONDS) else future.get()
-                }
-                assertThat(Thread.currentThread().isInterrupted).isFalse()
-                assertThat(future.isDone).isFalse()
-            } finally {
-                Thread.interrupted()
-            }
+    fun `M propagate interruption W wait is interrupted`() {
+        val latch = FirstFlagsLatch()
+        try {
+            Thread.currentThread().interrupt()
+            assertThrows<InterruptedException> { latch.await(1, TimeUnit.SECONDS) }
+            assertThat(Thread.currentThread().isInterrupted).isFalse()
+            assertThat(latch.await(0, TimeUnit.MILLISECONDS)).isFalse()
+        } finally {
+            Thread.interrupted()
         }
     }
 
     @Test
     fun `M deliver exactly once W registrations race with completion`() {
-        val future = FirstFlagsFuture()
+        val latch = FirstFlagsLatch()
         val start = CountDownLatch(1)
         val delivered = ConcurrentLinkedQueue<Int>()
         val executor = Executors.newFixedThreadPool(8)
@@ -106,11 +99,11 @@ internal class FirstFlagsFutureTest {
             val registrations = (0 until 100).map { index ->
                 executor.submit {
                     start.await()
-                    future.whenComplete { delivered.add(index) }
+                    latch.whenComplete { delivered.add(index) }
                 }
             }
             start.countDown()
-            future.complete(listOf("first"))
+            latch.complete(listOf("first"))
             registrations.forEach { it.get(5, TimeUnit.SECONDS) }
             assertThat(delivered).containsExactlyInAnyOrderElementsOf((0 until 100).toList())
         } finally {

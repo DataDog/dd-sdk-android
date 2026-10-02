@@ -16,7 +16,7 @@ internal interface FlagsRepository {
     fun getEvaluationContext(): EvaluationContext?
     fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>)
     fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>?
-    fun waitForFlags(): FirstFlagsFuture
+    fun waitForFlags(): FirstFlagsLatch
     fun hasFlags(): Boolean
     fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean
     fun getFlagsSnapshot(): Map<String, PrecomputedFlag>

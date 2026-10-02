@@ -8,19 +8,16 @@ package com.datadog.android.flags.internal.repository
 
 import java.util.Collections
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 
-/** One shared, non-cancellable completion containing the first installed assignment keys. */
-internal class FirstFlagsFuture : Future<List<String>> {
+/** Opens once with the first installed flag keys, retaining them for late listeners. */
+internal class FirstFlagsLatch {
     private val lock = Any()
 
     @Suppress("UnsafeThirdPartyFunctionCall") // CountDownLatch rejects negative counts; the constant 1 is valid.
     private val completed = CountDownLatch(1)
     private val listeners = mutableListOf<(List<String>) -> Unit>()
 
-    @Volatile
     private var keys: List<String> = emptyList()
 
     fun complete(installedKeys: Collection<String>) {
@@ -49,22 +46,7 @@ internal class FirstFlagsFuture : Future<List<String>> {
     }
 
     @Throws(InterruptedException::class)
-    // await can throw on interruption; Future.get requires propagation, so this is not a nonthrowing call.
+    // Interruption propagates to the repository, which restores the thread's interrupt status.
     @Suppress("UnsafeThirdPartyFunctionCall")
-    override fun get(): List<String> {
-        completed.await()
-        return keys
-    }
-
-    @Throws(InterruptedException::class, TimeoutException::class)
-    // await can throw on interruption; Future.get requires propagation and an exception on timeout.
-    @Suppress("UnsafeThirdPartyFunctionCall", "ThrowingInternalException")
-    override fun get(timeout: Long, unit: TimeUnit): List<String> {
-        if (!completed.await(timeout, unit)) throw TimeoutException("No flags installed")
-        return keys
-    }
-
-    override fun isDone(): Boolean = completed.count == 0L
-    override fun isCancelled(): Boolean = false
-    override fun cancel(mayInterruptIfRunning: Boolean): Boolean = false
+    fun await(timeout: Long, unit: TimeUnit): Boolean = completed.await(timeout, unit)
 }

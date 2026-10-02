@@ -15,7 +15,6 @@ import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 
 internal class DefaultFlagsRepository(
@@ -28,7 +27,7 @@ internal class DefaultFlagsRepository(
     private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
     private val atomicState = AtomicReference<FlagsState?>(null)
 
-    private val firstFlags = FirstFlagsFuture()
+    private val firstFlags = FirstFlagsLatch()
 
     private val persistenceManager = FlagsPersistenceManager(
         dataStore = dataStore,
@@ -44,7 +43,7 @@ internal class DefaultFlagsRepository(
         }
     }
 
-    override fun waitForFlags(): FirstFlagsFuture = firstFlags
+    override fun waitForFlags(): FirstFlagsLatch = firstFlags
 
     override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
         val newState = FlagsState(context, flags)
@@ -129,9 +128,7 @@ internal class DefaultFlagsRepository(
 
     private fun waitForInstalledFlags() {
         try {
-            firstFlags.get(persistenceLoadTimeoutMs, TimeUnit.MILLISECONDS)
-        } catch (_: TimeoutException) {
-            // No assignments installed yet; keep evaluation bounded.
+            firstFlags.await(persistenceLoadTimeoutMs, TimeUnit.MILLISECONDS)
         } catch (e: InterruptedException) {
             @Suppress("UnsafeThirdPartyFunctionCall") // Safe: self-interruption is always permitted
             Thread.currentThread().interrupt()
