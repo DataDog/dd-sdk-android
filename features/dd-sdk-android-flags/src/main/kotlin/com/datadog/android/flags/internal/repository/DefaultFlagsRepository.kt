@@ -55,6 +55,8 @@ internal class DefaultFlagsRepository(
 
     override fun waitForFlags(): FirstFlagsLatch = firstFlags
 
+    // Preserve storage failures while finishing the accepted installation before notifying listeners.
+    @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
     override fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
@@ -65,7 +67,7 @@ internal class DefaultFlagsRepository(
         val firstInstallation = atomicState.getAndSet(newState) == null
         persistenceLoadedLatch.countDown()
 
-        try {
+        val storageFailure = try {
             persistenceManager.saveFlagsState(
                 context = context,
                 flags = flags,
@@ -83,12 +85,26 @@ internal class DefaultFlagsRepository(
                     }
                 }
             )
+            null
+        } catch (exception: Exception) {
+            exception
+        }
+
+        try {
             onInstalled()
+        } catch (exception: Exception) {
+            if (storageFailure == null) throw exception
+            if (storageFailure !== exception) {
+                // Both exceptions are non-null and distinct, so addSuppressed cannot reject them.
+                @Suppress("UnsafeThirdPartyFunctionCall")
+                storageFailure.addSuppressed(exception)
+            }
         } finally {
             if (firstInstallation) {
                 firstFlags.complete(flags.keys)
             }
         }
+        if (storageFailure != null) throw storageFailure
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {

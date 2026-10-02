@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -51,11 +52,13 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
@@ -1078,6 +1081,48 @@ internal class EvaluationsManagerTest {
 
         // Then
         assertThat(stateWhenCallbackInvoked).isEqualTo(FlagsClientState.Ready)
+    }
+
+    @Test
+    fun `M disarm old timeout before first flags W storage throws and callback changes context`() {
+        val store = mock<DataStoreHandler>()
+        val storageError = IllegalStateException("storage unavailable")
+        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockSdkCore.timeProvider).thenReturn(mock())
+        doThrow(storageError).whenever(store)
+            .setValue<FlagsStateEntry>(any(), any(), any(), anyOrNull(), any())
+        val repository = DefaultFlagsRepository(mockSdkCore, "throwing", store, persistenceLoadTimeoutMs = 1)
+        val state = FlagsStateManager(
+            DDCoreStateHolder.create(FlagsClientState.NotReady, FlagsStateListener::onStateChanged)
+        )
+        val work = java.util.ArrayDeque<Runnable>()
+        doAnswer { work.add(it.getArgument(0)); null }.whenever(mockExecutorService).execute(any())
+        lateinit var timeout: () -> Unit
+        var cancelled = false
+        val manager = EvaluationsManager(
+            mockSdkCore, mockExecutorService, mockInternalLogger, repository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, state, 1000,
+            { _, action -> timeout = action; { cancelled = true } }
+        )
+        val context = EvaluationContext(fakeTargetingKey)
+        val callback = mock<EvaluationContextCallback>()
+        var firstFlagsCount = 0
+        repository.waitForFlags().whenComplete {
+            firstFlagsCount++
+            manager.updateEvaluationsForContext(EvaluationContext("newer"))
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext)).thenReturn("response")
+        whenever(mockPrecomputeMapper.map("response")).thenReturn(emptyMap())
+        manager.updateEvaluationsForContext(context, callback)
+        val thrown = assertThrows<IllegalStateException> { work.removeFirst().run() }
+        timeout()
+        assertThat(thrown).isSameAs(storageError)
+        assertThat(state.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+        assertThat(cancelled).isTrue()
+        assertThat(firstFlagsCount).isEqualTo(1)
+        assertThat(work).hasSize(1)
+        verify(callback).onSuccess()
+        verifyNoMoreInteractions(callback)
     }
 
     // region Cold-start integration
