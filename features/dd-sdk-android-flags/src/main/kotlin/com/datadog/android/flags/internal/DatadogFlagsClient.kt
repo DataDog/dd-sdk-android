@@ -398,6 +398,7 @@ internal class DatadogFlagsClient(
             reason = parseReason(precomputedFlag.reason),
             errorCode = null,
             errorMessage = null,
+            allocationKey = precomputedFlag.allocationKey.takeIf { it.isNotBlank() },
             flagMetadata = buildMetadata(precomputedFlag)
         )
 
@@ -408,9 +409,6 @@ internal class DatadogFlagsClient(
             when (value) {
                 is String, is Number, is Boolean -> metadata[key] = value
             }
-        }
-        if (precomputedFlag.allocationKey.isNotBlank()) {
-            metadata["allocationKey"] = precomputedFlag.allocationKey
         }
         return metadata
     }
