@@ -167,22 +167,20 @@ internal class EvaluationsManager(
         initializationCompletion: InitializationCompletion?,
         callback: EvaluationContextCallback?
     ) {
-        var completionCallback: EvaluationContextCallback? = null
         flagsRepository.setFlagsAndContext(context, flagsMap) {
-            completionCallback = synchronized(initializationTerminalLock) {
+            val completionCallback = synchronized(initializationTerminalLock) {
                 val result = initializationCompletion?.take()?.callback
                     ?: if (initializationCompletion == null) callback else null
                 flagStateManager.updateState(FlagsClientState.Ready)
                 result
             }
+            completionCallback?.onSuccess()
         }
         internalLogger.log(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.MAINTAINER,
             { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
         )
-
-        completionCallback?.onSuccess()
     }
 
     private fun startInitializationTimeout(
