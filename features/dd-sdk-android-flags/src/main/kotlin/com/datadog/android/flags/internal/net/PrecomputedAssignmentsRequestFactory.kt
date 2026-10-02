@@ -137,18 +137,15 @@ internal class PrecomputedAssignmentsRequestFactory(
 
     @Suppress("UnsafeThirdPartyFunctionCall") // call wrapped in try/catch
     private fun buildSourcePayload(context: DatadogContext): JSONObject {
-        val nativeSource = JSONObject()
-            .put("sdk_name", SDK_NAME)
-            .put("sdk_version", BuildConfig.SDK_VERSION_NAME)
         val wrapper = wrapperSource ?: if (context.source == "react-native") {
             // Older bridges cannot identify the loaded JavaScript reader.
             WrapperSdkSource("dd-sdk-reactnative", "unknown")
         } else {
-            return nativeSource
+            null
         }
         return JSONObject()
-            .put("sdk_name", wrapper.sdkName)
-            .put("sdk_version", wrapper.sdkVersion)
+            .put("sdk_name", wrapper?.sdkName ?: SDK_NAME)
+            .put("sdk_version", wrapper?.sdkVersion ?: BuildConfig.SDK_VERSION_NAME)
     }
 
     private val DatadogContext.rumApplicationId: String?
