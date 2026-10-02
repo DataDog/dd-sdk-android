@@ -32,12 +32,14 @@ import org.json.JSONObject
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -294,6 +296,74 @@ internal class FirstFlagsIntegrationTest {
         server.enqueue(MockResponse().setBody(response(false)))
         work.removeFirst().run()
         assertThat(client.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+    }
+
+    @Test
+    fun `M complete context before first flags W handler waits for completion`() {
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        val completed = CountDownLatch(1)
+        val callback = mock<EvaluationContextCallback>()
+        doAnswer { completed.countDown(); null }.whenever(callback).onSuccess()
+        var completionDelivered = false
+        client.onFirstFlags { completionDelivered = completed.await(5, TimeUnit.SECONDS) }
+        server.enqueue(MockResponse().setBody(response(true)))
+        client.setEvaluationContext(EvaluationContext("initial"), callback)
+        assertThat(completionDelivered).isTrue()
+        verify(callback).onSuccess()
+    }
+
+    @Test
+    fun `M preserve newer failure W context completion changes context`() {
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        val callback = mock<EvaluationContextCallback>()
+        doAnswer {
+            client.setEvaluationContext(EvaluationContext("newer"))
+            null
+        }.whenever(callback).onSuccess()
+        client.onFirstFlags { events.add(it) }
+        server.enqueue(MockResponse().setBody(response(true)))
+        server.enqueue(MockResponse().setResponseCode(500))
+        client.setEvaluationContext(EvaluationContext("initial"), callback)
+        assertThat(client.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+        assertThat(events).hasSize(1)
+        verify(callback).onSuccess()
+    }
+
+    @Test
+    fun `M preserve newer reconciliation W context completion queues context`() {
+        val executor = mock<java.util.concurrent.ExecutorService>()
+        val work = java.util.ArrayDeque<Runnable>()
+        doAnswer { work.add(it.getArgument(0)); null }.whenever(executor).execute(any())
+        whenever(core.createSingleThreadExecutorService(any())).thenReturn(executor)
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        val callback = mock<EvaluationContextCallback>()
+        doAnswer {
+            client.setEvaluationContext(EvaluationContext("newer"))
+            null
+        }.whenever(callback).onSuccess()
+        client.onFirstFlags { events.add(it) }
+        server.enqueue(MockResponse().setBody(response(true)))
+        client.setEvaluationContext(EvaluationContext("initial"), callback)
+        work.removeFirst().run()
+        assertThat(work).hasSize(1)
+        assertThat(client.state.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+        assertThat(events).hasSize(1)
+        verify(callback).onSuccess()
+    }
+
+    @Test
+    fun `M deliver accepted first flags W context completion throws`() {
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        val callback = mock<EvaluationContextCallback>()
+        doAnswer { error("application completion failure") }.whenever(callback).onSuccess()
+        client.onFirstFlags { events.add(it) }
+        server.enqueue(MockResponse().setBody(response(true)))
+        assertThrows<IllegalStateException> {
+            client.setEvaluationContext(EvaluationContext("initial"), callback)
+        }
+        assertThat(events).hasSize(1)
+        assertThat(client.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        verify(callback).onSuccess()
     }
 
     private fun cached(): String = checkNotNull(
