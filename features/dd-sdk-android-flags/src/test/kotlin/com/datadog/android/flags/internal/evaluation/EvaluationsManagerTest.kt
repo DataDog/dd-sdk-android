@@ -23,6 +23,7 @@ import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.FlagsRepository
+import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
@@ -146,6 +147,34 @@ internal class EvaluationsManagerTest {
     @AfterEach
     fun tearDown() {
         mockWebServer.shutdown()
+    }
+
+    @Test
+    fun `M complete context without first flags W no op repository`() {
+        val repository = NoOpFlagsRepository()
+        var notified = false
+        repository.waitForFlags().whenComplete { notified = true }
+        val callback = mock<EvaluationContextCallback>()
+        val context = EvaluationContext(fakeTargetingKey)
+        val manager = EvaluationsManager(
+            sdkCore = mockSdkCore,
+            executorService = mockExecutorService,
+            internalLogger = mockInternalLogger,
+            flagsRepository = repository,
+            assignmentsReader = mockAssignmentsDownloader,
+            precomputeMapper = mockPrecomputeMapper,
+            flagStateManager = mockFlagsStateManager,
+            initializationTimeoutMs = null,
+            initializationTimeoutScheduler = { _, _ -> {} }
+        )
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext)).thenReturn("response")
+        whenever(mockPrecomputeMapper.map("response")).thenReturn(emptyMap())
+        manager.updateEvaluationsForContext(context, callback)
+        verify(callback).onSuccess()
+        verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
+        assertThat(notified).isFalse()
+        assertThat(repository.getFlagsSnapshot()).isEmpty()
+        assertThat(repository.getEvaluationContext()).isNull()
     }
 
     @Test

@@ -56,7 +56,7 @@ internal class FirstFlagsLatchTest {
     }
 
     @Test
-    fun `M remain pending W generated no op repository`() {
+    fun `M remain pending W no op repository`() {
         assertThat(NoOpFlagsRepository().waitForFlags().await(0, TimeUnit.MILLISECONDS)).isFalse()
     }
 
