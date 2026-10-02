@@ -56,6 +56,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -115,6 +116,7 @@ internal class EvaluationsManagerTest {
     fun setUp() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
+        whenever(mockFlagsStateManager.lifecycleLock) doReturn Any()
 
         evaluationsManager = EvaluationsManager(
             sdkCore = mockSdkCore,
@@ -136,9 +138,9 @@ internal class EvaluationsManagerTest {
         }
 
         doAnswer {
-            it.getArgument<() -> Unit>(2).invoke()
+            it.getArgument<() -> Unit>(3).invoke()
             null
-        }.whenever(mockFlagsRepository).setFlagsAndContext(any(), any(), any())
+        }.whenever(mockFlagsRepository).setFlagsAndContext(any(), any(), any(), any())
 
         // Mock executor to run tasks synchronously for testing
         whenever(mockExecutorService.execute(any())).thenAnswer { invocation ->
@@ -226,7 +228,7 @@ internal class EvaluationsManagerTest {
         evaluationsManager.updateEvaluationsForContext(context)
 
         // Then
-        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(expectedFlags), any())
+        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(expectedFlags), any(), any())
         verify(mockInternalLogger, times(2)).log(
             eq(InternalLogger.Level.DEBUG),
             eq(InternalLogger.Target.MAINTAINER),
@@ -288,7 +290,7 @@ internal class EvaluationsManagerTest {
         evaluationsManager.updateEvaluationsForContext(context)
 
         // Then
-        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(emptyMap()), any())
+        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(emptyMap()), any(), any())
     }
 
     @Test
@@ -611,6 +613,44 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
+    fun `M preserve newer pending state W superseded initialization times out and completes late`() {
+        val firstCallback = mock<EvaluationContextCallback>()
+        val operations = mutableListOf<Runnable>()
+        var timeoutAction: (() -> Unit)? = null
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operations += it.getArgument<Runnable>(0)
+            null
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), any())) doReturn EMPTY_FLAGS_RESPONSE_JSON
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)) doReturn emptyMap()
+        val stateManager = FlagsStateManager(
+            DDCoreStateHolder.create(
+                initialState = FlagsClientState.NotReady,
+                onStateChanged = FlagsStateListener::onStateChanged
+            )
+        )
+        val testedManager = createManager(
+            flagStateManager = stateManager,
+            initializationTimeoutMs = 2_500L,
+            scheduler = InitializationTimeoutScheduler { _, action ->
+                timeoutAction = action
+                {}
+            }
+        )
+        testedManager.updateEvaluationsForContext(EvaluationContext("first", emptyMap()), firstCallback)
+        testedManager.updateEvaluationsForContext(EvaluationContext("newer", emptyMap()))
+
+        checkNotNull(timeoutAction).invoke()
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+        operations[0].run()
+
+        verify(firstCallback).onFailure(any<FlagsInitializationTimeoutException>())
+        verify(firstCallback, never()).onSuccess()
+        verify(mockFlagsRepository, never()).setFlagsAndContext(any(), any(), any(), any())
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+    }
+
+    @Test
     fun `M keep ready state W updateEvaluationsForContext() { newer request completed before timeout }`() {
         // Given
         val mockFirstCallback = mock<EvaluationContextCallback>()
@@ -859,7 +899,7 @@ internal class EvaluationsManagerTest {
         // Then
         verify(mockCallback).onFailure(any<FlagsInitializationTimeoutException>())
         verify(mockCallback, times(0)).onSuccess()
-        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(emptyMap()), any())
+        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(emptyMap()), any(), any())
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
     }
 

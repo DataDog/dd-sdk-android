@@ -12,17 +12,20 @@ import com.datadog.android.flags.model.EvaluationContext
 internal interface FlagsRepository {
     fun getPrecomputedFlag(key: String): PrecomputedFlag?
     fun getEvaluationContext(): EvaluationContext?
+    fun setRequestedContext(context: EvaluationContext)
 
     /**
      * Runs [onInstalled] after attempting storage submission, including when submission fails.
-     * For the first installation, it runs before publishing the first-flags result to listeners.
+     * For the first installation, it runs before handing publication to [dispatchFirstFlags].
+     * Callers holding an outer lock must defer that publication until after releasing the lock.
      */
     fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
+        dispatchFirstFlags: (() -> Unit) -> Unit = { it() },
         onInstalled: () -> Unit = {}
     )
-    fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>?
+    fun getPrecomputedFlagWithContext(key: String): FlagWithContext?
     fun waitForFlags(): FirstFlagsLatch
     fun hasFlags(): Boolean
     fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean

@@ -31,12 +31,16 @@ internal class FlagsStateManager(
     private val stateHolder: DDCoreStateHolder<FlagsClientState, FlagsStateListener>
 ) : StateObservable {
 
+    // Acquire this before the holder's lock, including listener registration callbacks.
+    // Sharing it with request admission allows listeners to reenter context updates safely.
+    internal val lifecycleLock = Any()
+
     /**
      * Returns the current state synchronously.
      *
      * @return The current [FlagsClientState].
      */
-    override fun getCurrentState(): FlagsClientState = stateHolder.currentState
+    override fun getCurrentState(): FlagsClientState = synchronized(lifecycleLock) { stateHolder.currentState }
 
     /**
      * Updates the state and notifies all listeners synchronously.
@@ -44,14 +48,14 @@ internal class FlagsStateManager(
      * @param newState The new state to transition to.
      */
     internal fun updateState(newState: FlagsClientState) {
-        stateHolder.updateState(newState)
+        synchronized(lifecycleLock) { stateHolder.updateState(newState) }
     }
 
     override fun addListener(listener: FlagsStateListener) {
-        stateHolder.addListener(listener)
+        synchronized(lifecycleLock) { stateHolder.addListener(listener) }
     }
 
     override fun removeListener(listener: FlagsStateListener) {
-        stateHolder.removeListener(listener)
+        synchronized(lifecycleLock) { stateHolder.removeListener(listener) }
     }
 }

@@ -284,7 +284,7 @@ internal class DefaultFlagsRepositoryTest {
             assertThat(snapshot[key]).isEqualTo(originalFlag.copy(reason = ResolutionReason.CACHED.name))
             assertThat(testedRepository.getPrecomputedFlag(key)).isSameAs(snapshot[key])
             assertThat(testedRepository.getPrecomputedFlagWithContext(key))
-                .isEqualTo(snapshot[key] to context)
+                .isEqualTo(FlagWithContext(snapshot.getValue(key), context, false))
         }
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(context)
         assertThat(flags.values.map { it.reason }).doesNotContain(ResolutionReason.CACHED.name)
