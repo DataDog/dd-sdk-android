@@ -90,10 +90,10 @@ internal class DefaultFlagsRepository(
         discardUnsupportedAssignments()
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // The atomic update only filters an immutable state value.
     private fun discardUnsupportedAssignments() {
-        if (!obfuscationSupported.get()) {
-            atomicState.updateAndGet { state -> state?.takeIf { it.obfuscation == null } }
+        while (!obfuscationSupported.get()) {
+            val state = atomicState.get() ?: return
+            if (state.obfuscation == null || atomicState.compareAndSet(state, null)) return
         }
     }
 

@@ -9,7 +9,6 @@ package com.datadog.android.flags.internal.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.flags.BuildConfig
 import com.datadog.android.flags.internal.getFlagsEndpoint
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.model.EvaluationContext
@@ -92,7 +91,7 @@ internal class PrecomputedAssignmentsRequestFactory(
             .put("targeting_key", context.targetingKey)
             .put("targeting_attributes", attributeObj)
         val env = buildEnvPayload(datadogContext)
-        val source = buildSourcePayload()
+        val source = buildSourcePayload(datadogContext)
         val attributes = JSONObject()
             .put("env", env)
             .put("source", source)
@@ -139,10 +138,10 @@ internal class PrecomputedAssignmentsRequestFactory(
             .put("dd_env", datadogContext.env)
 
     @Suppress("UnsafeThirdPartyFunctionCall") // call wrapped in try/catch
-    private fun buildSourcePayload(): JSONObject =
+    private fun buildSourcePayload(datadogContext: DatadogContext): JSONObject =
         JSONObject()
             .put("sdk_name", SDK_NAME)
-            .put("sdk_version", BuildConfig.SDK_VERSION_NAME)
+            .put("sdk_version", datadogContext.sdkVersion)
 
     private val DatadogContext.rumApplicationId: String?
         get() = featuresContext.get(Feature.RUM_FEATURE_NAME)

@@ -10,7 +10,6 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.flags.BuildConfig
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -66,7 +65,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     // region create() - Success cases
 
     @Test
-    fun `M negotiate encoding with flags version W create() { native source }`() {
+    fun `M advertise encoding capability W create() { native source }`() {
         val context = fakeDatadogContext.copy(source = "android", sdkVersion = "overridden-core-version")
         val request = checkNotNull(testedFactory.create(EvaluationContext("subject", emptyMap()), context))
         val buffer = Buffer()
@@ -75,7 +74,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
 
         assertThat(attributes.getJSONObject("supported_capabilities").getJSONArray("assignment_encodings").toString())
             .isEqualTo("[\"flag-key-sha256-v1\"]")
-        assertThat(attributes.getJSONObject("source").getString("sdk_version")).isEqualTo(BuildConfig.SDK_VERSION_NAME)
+        assertThat(attributes.getJSONObject("source").getString("sdk_version")).isEqualTo(context.sdkVersion)
     }
 
     @Test
@@ -215,7 +214,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         // Validate source
         val source = attributes.getJSONObject("source")
         assertThat(source.getString("sdk_name")).isEqualTo("dd-sdk-android")
-        assertThat(source.getString("sdk_version")).isEqualTo(BuildConfig.SDK_VERSION_NAME)
+        assertThat(source.getString("sdk_version")).isEqualTo(fakeDatadogContext.sdkVersion)
     }
 
     @Test
