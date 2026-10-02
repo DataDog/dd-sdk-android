@@ -70,10 +70,14 @@ interface FlagsClient {
      * Each registration receives the retained first result, even after subsequent flag updates.
      * If the first result is available, delivery is immediate on the calling thread; otherwise it runs
      * on the installing thread. Callback exceptions are logged and isolated.
-     * Pending callbacks are retained until the first successful installation, which may never occur.
+     * Pending callbacks are retained until delivery or cancellation. Invoke the returned cancellation function
+     * when the owner is destroyed to release captured references if flags never become available.
+     * The returned cancellation function is thread-safe and idempotent. A callback already claimed
+     * for delivery may still run; cancellation does not interrupt or wait for it.
+     * Immediate replay may occur before this method returns; cancellation cannot undo delivery.
      * This notification does not imply readiness. Dispatch UI work to the appropriate thread.
      */
-    fun onFirstFlags(callback: (FlagsClientEvent) -> Unit)
+    fun onFirstFlags(callback: (FlagsClientEvent) -> Unit): () -> Unit
 
     /**
      * Sets the [EvaluationContext] for flag resolution.

@@ -25,6 +25,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
@@ -133,7 +134,6 @@ internal class FirstFlagsInstallationTest {
                 }
                 if (missing) disk.onSuccess(null) else disk.onFailure()
                 reads.get(5, TimeUnit.SECONDS)
-                assertThat(tested.waitForFlags().await(0, TimeUnit.MILLISECONDS)).isFalse()
             } finally {
                 executor.shutdownNow()
             }
@@ -169,7 +169,6 @@ internal class FirstFlagsInstallationTest {
         try {
             assertThat(claimed.await(5, TimeUnit.SECONDS)).isTrue()
             tested.setFlagsAndContext(context, mapOf("network" to mock()))
-            assertThat(tested.waitForFlags().await(0, TimeUnit.MILLISECONDS)).isFalse()
             assertThat(events).isEmpty()
         } finally {
             release.countDown()
@@ -196,7 +195,6 @@ internal class FirstFlagsInstallationTest {
             val tested = repository()
             if (missing) disk.onSuccess(null) else disk.onFailure()
             assertThat(events).isEmpty()
-            assertThat(tested.waitForFlags().await(0, TimeUnit.MILLISECONDS)).isFalse()
             assertThat(tested.getFlagsSnapshot()).isEmpty()
             tested.setFlagsAndContext(context, emptyMap())
             assertThat(events).hasSize(1)
@@ -221,15 +219,22 @@ internal class FirstFlagsInstallationTest {
             events.clear()
             val tested = repository()
             val start = CountDownLatch(1)
-            val diskThread = thread { check(start.await(5, TimeUnit.SECONDS)); disk.onSuccess(restored(emptyList())) }
-            val networkThread = thread {
-                check(start.await(5, TimeUnit.SECONDS))
-                tested.setFlagsAndContext(context, mapOf("network" to mock()))
+            val executor = Executors.newFixedThreadPool(2)
+            try {
+                val diskWorker = executor.submit {
+                    check(start.await(5, TimeUnit.SECONDS))
+                    disk.onSuccess(restored(emptyList()))
+                }
+                val networkWorker = executor.submit {
+                    check(start.await(5, TimeUnit.SECONDS))
+                    tested.setFlagsAndContext(context, mapOf("network" to mock()))
+                }
+                start.countDown()
+                diskWorker.get(5, TimeUnit.SECONDS)
+                networkWorker.get(5, TimeUnit.SECONDS)
+            } finally {
+                executor.shutdownNow()
             }
-            start.countDown()
-            diskThread.join(5000)
-            networkThread.join(5000)
-            assertThat(diskThread.isAlive || networkThread.isAlive).isFalse()
             assertThat(events).hasSize(1)
             assertThat(events.single()).isIn(emptyList<String>(), listOf("network"))
             assertThat(tested.getFlagsSnapshot()).containsOnlyKeys("network")

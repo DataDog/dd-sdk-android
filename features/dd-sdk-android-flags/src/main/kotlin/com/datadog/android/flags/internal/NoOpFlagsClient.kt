@@ -37,9 +37,10 @@ internal class NoOpFlagsClient(
     private val logWithPolicy: LogWithPolicy
 ) : FlagsClient {
 
-    override fun onFirstFlags(callback: (FlagsClientEvent) -> Unit) {
+    override fun onFirstFlags(callback: (FlagsClientEvent) -> Unit): () -> Unit {
         // This fallback never installs flags, so there is no first result to deliver.
         logOperation("onFirstFlags", InternalLogger.Level.WARN)
+        return {}
     }
 
     override val state: StateObservable = object : StateObservable {

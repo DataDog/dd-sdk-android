@@ -24,6 +24,7 @@ import com.datadog.android.flags.internal.persistence.FlagsStateSerializer
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientEvent
 import com.datadog.android.flags.model.FlagsClientState
+import com.datadog.android.flags.model.ResolutionReason
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -89,6 +90,55 @@ internal class FirstFlagsIntegrationTest {
         server.shutdown()
         http.connectionPool.evictAll()
         http.dispatcher.executorService.shutdownNow()
+    }
+
+    @Test
+    fun `M deliver pending cached flags on disk worker W cache wins before network`() {
+        store.json = cached()
+        store.deferRead = true
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        var deliveryThread: Thread? = null
+        var cachedValue: Boolean? = null
+        var cachedReason: ResolutionReason? = null
+        client.onFirstFlags {
+            events.add(it)
+            deliveryThread = Thread.currentThread()
+            val details = client.resolve("enabled", false)
+            cachedValue = details.value
+            cachedReason = details.reason
+        }
+        assertThat(events).isEmpty()
+        val executor = Executors.newSingleThreadExecutor()
+        try {
+            val worker = executor.submit<Thread> {
+                store.releaseRead()
+                Thread.currentThread()
+            }.get(5, TimeUnit.SECONDS)
+            assertThat(deliveryThread).isSameAs(worker)
+        } finally {
+            executor.shutdownNow()
+        }
+        assertThat(cachedValue).isTrue()
+        assertThat(cachedReason).isEqualTo(ResolutionReason.CACHED)
+        assertThat(events.single().flagsChanged).containsExactly("enabled")
+        server.enqueue(MockResponse().setBody(response(false)))
+        client.setEvaluationContext(EvaluationContext("network-user"))
+        assertThat(events).hasSize(1)
+        assertThat(client.resolveBooleanValue("enabled", true)).isFalse()
+    }
+
+    @Test
+    fun `M release cancelled registration W first flags arrive later`() {
+        store.json = cached()
+        store.deferRead = true
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        val registration = client.onFirstFlags { events.add(it) }
+        registration()
+        registration()
+        store.releaseRead()
+        assertThat(events).isEmpty()
+        client.onFirstFlags { events.add(it) }.invoke()
+        assertThat(events.single().flagsChanged).containsExactly("enabled")
     }
 
     @Test

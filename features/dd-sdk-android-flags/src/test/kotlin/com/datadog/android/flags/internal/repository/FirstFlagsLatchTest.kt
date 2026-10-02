@@ -16,6 +16,70 @@ import java.util.concurrent.TimeUnit
 
 internal class FirstFlagsLatchTest {
     @Test
+    fun `M remove only cancelled listener W repeated cancellation`() {
+        val latch = FirstFlagsLatch()
+        val delivered = mutableListOf<String>()
+        val cancelled = latch.whenComplete { delivered.add("cancelled") }
+        latch.whenComplete { delivered.add("active") }
+        cancelled()
+        cancelled()
+        latch.complete(listOf("first"))
+        val late = latch.whenComplete { delivered.add("late") }
+        late()
+        assertThat(delivered).containsExactly("active", "late")
+    }
+
+    @Test
+    fun `M cancel unclaimed callback W completion has captured listeners`() {
+        val latch = FirstFlagsLatch()
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        var delivered = false
+        latch.whenComplete {
+            entered.countDown()
+            check(release.await(5, TimeUnit.SECONDS))
+        }
+        val registration = latch.whenComplete { delivered = true }
+        val executor = Executors.newSingleThreadExecutor()
+        try {
+            val completion = executor.submit { latch.complete(emptyList()) }
+            check(entered.await(5, TimeUnit.SECONDS))
+            registration()
+            release.countDown()
+            completion.get(5, TimeUnit.SECONDS)
+            assertThat(delivered).isFalse()
+        } finally {
+            release.countDown()
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `M allow claimed callback to finish W cancelled during delivery`() {
+        val latch = FirstFlagsLatch()
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        var delivered = false
+        val registration = latch.whenComplete {
+            entered.countDown()
+            check(release.await(5, TimeUnit.SECONDS))
+            delivered = true
+        }
+        val executor = Executors.newSingleThreadExecutor()
+        try {
+            val completion = executor.submit { latch.complete(emptyList()) }
+            check(entered.await(5, TimeUnit.SECONDS))
+            registration()
+            release.countDown()
+            completion.get(5, TimeUnit.SECONDS)
+            assertThat(delivered).isTrue()
+        } finally {
+            release.countDown()
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
     fun `M retain immutable first keys W completed before subscription`() {
         val latch = FirstFlagsLatch()
         val input = mutableListOf("first")
@@ -25,7 +89,6 @@ internal class FirstFlagsLatchTest {
         var delivered: List<String>? = null
         latch.whenComplete { delivered = it }
         assertThat(delivered).containsExactly("first")
-        assertThat(latch.await(0, TimeUnit.MILLISECONDS)).isTrue()
         @Suppress("DontDowncastCollectionTypes") // Verify the returned Java collection cannot be mutated.
         val mutableView = delivered as MutableList
         assertThrows<UnsupportedOperationException> { mutableView.clear() }
@@ -42,22 +105,17 @@ internal class FirstFlagsLatchTest {
                 }.get(5, TimeUnit.SECONDS)
             }
             latch.complete(emptyList())
-            assertThat(latch.await(0, TimeUnit.MILLISECONDS)).isTrue()
         } finally {
             executor.shutdownNow()
         }
     }
 
     @Test
-    fun `M remain pending W timeout`() {
-        val latch = FirstFlagsLatch()
-        assertThat(latch.await(1, TimeUnit.MILLISECONDS)).isFalse()
-        assertThat(latch.await(0, TimeUnit.MILLISECONDS)).isFalse()
-    }
-
-    @Test
     fun `M remain pending W no op repository`() {
-        assertThat(NoOpFlagsRepository().waitForFlags().await(0, TimeUnit.MILLISECONDS)).isFalse()
+        var delivered = false
+        val registration = NoOpFlagsRepository().waitForFlags().whenComplete { delivered = true }
+        registration()
+        assertThat(delivered).isFalse()
     }
 
     @Test
@@ -68,25 +126,9 @@ internal class FirstFlagsLatchTest {
             assertThat(keys).isEmpty()
             delivered = true
         }
-        assertThat(latch.await(0, TimeUnit.MILLISECONDS)).isFalse()
         assertThat(delivered).isFalse()
         latch.complete(emptyList())
-        assertThat(latch.await(0, TimeUnit.MILLISECONDS)).isTrue()
         assertThat(delivered).isTrue()
-        assertThat(latch.await(0, TimeUnit.NANOSECONDS)).isTrue()
-    }
-
-    @Test
-    fun `M propagate interruption W wait is interrupted`() {
-        val latch = FirstFlagsLatch()
-        try {
-            Thread.currentThread().interrupt()
-            assertThrows<InterruptedException> { latch.await(1, TimeUnit.SECONDS) }
-            assertThat(Thread.currentThread().isInterrupted).isFalse()
-            assertThat(latch.await(0, TimeUnit.MILLISECONDS)).isFalse()
-        } finally {
-            Thread.interrupted()
-        }
     }
 
     @Test

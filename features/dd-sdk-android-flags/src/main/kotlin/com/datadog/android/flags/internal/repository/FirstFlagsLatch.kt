@@ -7,46 +7,47 @@
 package com.datadog.android.flags.internal.repository
 
 import java.util.Collections
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
-/** Opens once with the first installed flag keys, retaining them for late listeners. */
+/** Retains the first installed flag keys for cancellable, one-shot listeners. */
 internal class FirstFlagsLatch {
     private val lock = Any()
-
-    @Suppress("UnsafeThirdPartyFunctionCall") // CountDownLatch rejects negative counts; the constant 1 is valid.
-    private val completed = CountDownLatch(1)
-    private val listeners = mutableListOf<(List<String>) -> Unit>()
-
-    private var keys: List<String> = emptyList()
+    private val listeners = mutableListOf<PendingCallback>()
+    private var keys: List<String>? = null
 
     fun complete(installedKeys: Collection<String>) {
         // Both calls reject null inputs; installedKeys and its newly allocated copy are non-null.
         @Suppress("UnsafeThirdPartyFunctionCall")
         val snapshot = Collections.unmodifiableList(ArrayList(installedKeys))
         val callbacks = synchronized(lock) {
-            if (completed.count == 0L) return
+            if (keys != null) return
             keys = snapshot
-            completed.countDown()
             listeners.toList().also { listeners.clear() }
         }
-        callbacks.forEach { it(snapshot) }
+        callbacks.forEach { pending ->
+            val callback = synchronized(lock) {
+                pending.listener.also { pending.listener = null }
+            }
+            callback?.invoke(snapshot)
+        }
     }
 
-    fun whenComplete(listener: (List<String>) -> Unit) {
+    // The private mutable list supports mutation; PendingCallback uses non-throwing identity equality.
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    fun whenComplete(listener: (List<String>) -> Unit): () -> Unit {
+        val pending = PendingCallback(listener)
         val snapshot = synchronized(lock) {
-            if (completed.count == 0L) {
-                keys
-            } else {
-                listeners.add(listener)
-                null
+            keys.also { snapshot ->
+                if (snapshot == null) listeners.add(pending) else pending.listener = null
             }
         }
         snapshot?.let(listener)
+        return {
+            synchronized(lock) {
+                pending.listener = null
+                listeners.remove(pending)
+            }
+        }
     }
 
-    @Throws(InterruptedException::class)
-    // Interruption propagates to the repository, which restores the thread's interrupt status.
-    @Suppress("UnsafeThirdPartyFunctionCall")
-    fun await(timeout: Long, unit: TimeUnit): Boolean = completed.await(timeout, unit)
+    private class PendingCallback(var listener: ((List<String>) -> Unit)?)
 }
