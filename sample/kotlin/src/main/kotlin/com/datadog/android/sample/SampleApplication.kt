@@ -22,6 +22,7 @@ import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.model.FlagsClientEvent
 import com.datadog.android.flags.openfeature.asOpenFeatureProvider
 import com.datadog.android.insights.enableRumDebugWidget
 import com.datadog.android.log.Logger
@@ -44,6 +45,8 @@ import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.account.AccountFragment
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
+import com.datadog.android.sample.flags.OpenFeatureFragment
+import com.datadog.android.sample.flags.logAndEvaluateFirstFlags
 import com.datadog.android.sample.image.Coil3ImageLoader
 import com.datadog.android.sample.image.CoilImageLoader
 import com.datadog.android.sample.image.FrescoImageLoader
@@ -76,6 +79,7 @@ import dev.openfeature.kotlin.sdk.OpenFeatureAPI
 import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
 import io.opentelemetry.api.GlobalOpenTelemetry
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -246,7 +250,15 @@ class SampleApplication : Application() {
         Flags.enable(flagsConfig)
 
         // Create FlagsClient and convert to OpenFeature provider
-        val flagsClient = FlagsClient.Builder().build()
+        val firstFlags = CompletableDeferred<FlagsClientEvent>()
+        val flagsClient = FlagsClient.Builder()
+            .onFirstFlags { event -> firstFlags.complete(event) }
+            .build()
+        applicationScope.logAndEvaluateFirstFlags(
+            flagsClient,
+            firstFlags,
+            getSharedPreferences(OpenFeatureFragment.FIRST_FLAGS_PREFERENCES, Context.MODE_PRIVATE)
+        ) { message -> Log.i("FirstFlags", message) }
         val provider = flagsClient.asOpenFeatureProvider()
 
         // Set as OpenFeature provider
