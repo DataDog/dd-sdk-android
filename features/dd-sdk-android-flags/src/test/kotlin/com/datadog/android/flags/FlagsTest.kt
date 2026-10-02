@@ -16,11 +16,14 @@ import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.internal.EvaluationsFeature
 import com.datadog.android.flags.internal.FlagsFeature
+import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -73,6 +76,32 @@ internal class FlagsTest {
     }
 
     // region enable()
+
+    @Test
+    fun `M report loaded JavaScript version W enable from wrapper`() {
+        _FlagsInternalProxy.enable(
+            FlagsConfiguration.Builder().trackEvaluations(false).build(),
+            mockSdkCore,
+            "dd-sdk-reactnative",
+            "4.2.0-js.1"
+        )
+        val features = argumentCaptor<Feature>()
+        verify(mockSdkCore).registerFeature(features.capture())
+        val flags = features.firstValue as FlagsFeature
+        val request = checkNotNull(
+            flags.precomputedRequestFactory.create(
+                EvaluationContext("athlete", emptyMap()),
+                mockDatadogContext
+            )
+        )
+        val buffer = Buffer()
+        checkNotNull(request.body).writeTo(buffer)
+        val source = JSONObject(buffer.readUtf8()).getJSONObject("data")
+            .getJSONObject("attributes").getJSONObject("source")
+        assertThat(source.getString("sdk_name")).isEqualTo("dd-sdk-reactnative")
+        assertThat(source.getString("sdk_version")).isEqualTo("4.2.0-js.1")
+        assertThat(source.length()).isEqualTo(2)
+    }
 
     @Test
     fun `M register FlagsFeature and EvaluationsFeature W enable() { standard configuration }`() {

@@ -10,6 +10,7 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.flags.BuildConfig
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -138,6 +139,21 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     // region create() - Request body validation
 
     @Test
+    fun `M identify legacy wrapper W create() { no loaded JS metadata }`() {
+        val request = checkNotNull(
+            testedFactory.create(
+                EvaluationContext("athlete", emptyMap()),
+                fakeDatadogContext.copy(source = "react-native", sdkVersion = "99.99.99")
+            )
+        )
+        val source = JSONObject(extractRequestBodyAsString(request)).getJSONObject("data")
+            .getJSONObject("attributes").getJSONObject("source")
+        assertThat(source.getString("sdk_name")).isEqualTo("dd-sdk-reactnative")
+        assertThat(source.getString("sdk_version")).isEqualTo("unknown")
+        assertThat(source.length()).isEqualTo(2)
+    }
+
+    @Test
     fun `M create correct JSON body W create() { with attributes }`(
         @StringForgery fakeTargetingKey: String
     ) {
@@ -188,7 +204,21 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         // Validate source
         val source = attributes.getJSONObject("source")
         assertThat(source.getString("sdk_name")).isEqualTo("dd-sdk-android")
-        assertThat(source.getString("sdk_version")).isEqualTo(fakeDatadogContext.sdkVersion)
+        assertThat(source.getString("sdk_version")).isEqualTo(BuildConfig.SDK_VERSION_NAME)
+    }
+
+    @Test
+    fun `M report Flags artifact version W create() { telemetry version override }`() {
+        val datadogContext = fakeDatadogContext.copy(sdkVersion = "99.99.99-telemetry")
+        val context = EvaluationContext("subject", mapOf("sdk_version" to "88.88.88-attribute"))
+
+        val request = checkNotNull(testedFactory.create(context, datadogContext))
+        val source = JSONObject(extractRequestBodyAsString(request))
+            .getJSONObject("data").getJSONObject("attributes").getJSONObject("source")
+
+        assertThat(source.getString("sdk_name")).isEqualTo("dd-sdk-android")
+        assertThat(source.getString("sdk_version")).isEqualTo(BuildConfig.SDK_VERSION_NAME)
+        assertThat(source.getString("sdk_version")).isNotEqualTo(datadogContext.sdkVersion)
     }
 
     @Test
