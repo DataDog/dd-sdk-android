@@ -42,6 +42,10 @@ data class Version(
         object Snapshot : Type() {
             override val suffix: String = "-SNAPSHOT"
         }
+
+        data class Dogfood(val shortSha: String) : Type() {
+            override val suffix: String = "-dogfood-$shortSha-SNAPSHOT"
+        }
     }
 
     // endregion

@@ -130,4 +130,14 @@ class VersionTest {
         val expected = "4.11.5-SNAPSHOT"
         assertThat(name).isEqualTo(expected)
     }
+
+    @Test
+    fun addSuffixForDogfood() {
+        // When
+        val name = Version(4, 11, 5, Version.Type.Dogfood("a1b2c3d")).name
+
+        // Then
+        val expected = "4.11.5-dogfood-a1b2c3d-SNAPSHOT"
+        assertThat(name).isEqualTo(expected)
+    }
 }
