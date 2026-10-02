@@ -97,8 +97,8 @@ internal class EvaluationsManager(
      * Processes a new evaluation context by fetching flags and storing atomically.
      *
      * This method asynchronously fetches precomputed flag evaluations for the given context
-     * and atomically updates both the context and flag data in the repository. Network failures
-     * result in an empty flag set being stored with the context, allowing graceful degradation.
+     * and atomically updates the context, assignments, and encoding descriptor. Network and decode
+     * failures retain the last assignments and mark matching cached assignments as stale.
      *
      * The operation is performed on the configured executor service and will not block the
      * calling thread. Errors are logged but do not propagate to the caller.
@@ -107,6 +107,7 @@ internal class EvaluationsManager(
      * a valid targeting key.
      * @param callback Optional callback invoked when the context is set and the flags have been fetched successfully or not.
      */
+    @Suppress("LongMethod") // Keep response acceptance and timeout completion in the same operation.
     fun updateEvaluationsForContext(context: EvaluationContext, callback: EvaluationContextCallback? = null) {
         val matchingCachedAssignments = AtomicBoolean(false)
         val initializationCompletion = startInitializationTimeout(context, callback, matchingCachedAssignments) {
@@ -126,14 +127,18 @@ internal class EvaluationsManager(
                         { "Processing evaluation context: ${context.targetingKey}" }
                     )
 
+                    val supportsObfuscation = datadogContext.source == "android"
+                    flagsRepository.setObfuscationSupported(supportsObfuscation)
                     val hadFlags = flagsRepository.hasFlags()
                     matchingCachedAssignments.set(
                         hadFlags && flagsRepository.getEvaluationContext() == context
                     )
                     val response = assignmentsReader.readPrecomputedFlags(context, datadogContext)
-                    if (response != null) {
-                        val flagsMap = precomputeMapper.map(response)
-                        flagsRepository.setFlagsAndContext(context, flagsMap)
+                    val assignments = response?.let { precomputeMapper.map(it) }
+                        ?.takeIf { it.obfuscation == null || supportsObfuscation }
+                    if (assignments != null) {
+                        val flagsMap = assignments.flags
+                        flagsRepository.setFlagsAndContext(context, flagsMap, assignments.obfuscation)
                         internalLogger.log(
                             InternalLogger.Level.DEBUG,
                             InternalLogger.Target.MAINTAINER,
@@ -148,13 +153,22 @@ internal class EvaluationsManager(
                         }
                         completionCallback?.onSuccess()
                     } else {
+                        val failureMessage = if (response == null) {
+                            NETWORK_REQUEST_FAILED_MESSAGE
+                        } else {
+                            DECODE_FAILED_MESSAGE
+                        }
                         internalLogger.log(
                             InternalLogger.Level.WARN,
                             InternalLogger.Target.USER,
-                            { NETWORK_REQUEST_FAILED_MESSAGE }
+                            { failureMessage }
                         )
 
-                        val throwable = NetworkRequestFailedException(NETWORK_REQUEST_FAILED_MESSAGE)
+                        val throwable = if (response == null) {
+                            NetworkRequestFailedException(NETWORK_REQUEST_FAILED_MESSAGE)
+                        } else {
+                            IllegalArgumentException(DECODE_FAILED_MESSAGE)
+                        }
                         // Only use cached flags if they match the requested context to avoid
                         // serving flags from a different user/context.
                         val completionCallback = synchronized(initializationTerminalLock) {
@@ -209,6 +223,7 @@ internal class EvaluationsManager(
     }
 
     companion object {
+        private const val DECODE_FAILED_MESSAGE = "Unable to decode feature flag assignments"
         private const val FETCH_AND_STORE_OPERATION_NAME = "Fetch and store flags for evaluation context"
         private const val NETWORK_REQUEST_FAILED_MESSAGE =
             "Unable to fetch feature flags. Please check your network connection."

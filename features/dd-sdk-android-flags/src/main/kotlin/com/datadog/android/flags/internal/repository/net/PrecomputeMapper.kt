@@ -7,7 +7,9 @@
 package com.datadog.android.flags.internal.repository.net
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.JsonKeys
+import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import org.json.JSONException
 import org.json.JSONObject
@@ -19,11 +21,13 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
     // JSONObject methods accept non-null String parameters despite Detekt's incorrect nullable interpretation
     // All getJsonObject calls are wrapped in try-catch for JSONException which is the actual exception thrown
     @Suppress("UnsafeThirdPartyFunctionCall")
-    internal fun map(rawJson: String): Map<String, PrecomputedFlag> = try {
+    internal fun map(rawJson: String): PrecomputedAssignments? = try {
         val jsonResponse = JSONObject(rawJson)
         val data = jsonResponse.getJSONObject("data")
         val attributes = data.getJSONObject("attributes")
         val flags = attributes.getJSONObject("flags")
+        val obfuscation = FlagKeyObfuscation.read(attributes)
+        if (obfuscation != null) FlagKeyObfuscation.validateKeys(flags.keys())
 
         val flagsMap = mutableMapOf<String, PrecomputedFlag>()
 
@@ -51,7 +55,7 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
             flagsMap[flagKey] = precomputedFlag
         }
 
-        flagsMap
+        PrecomputedAssignments(flagsMap, obfuscation)
     } catch (e: JSONException) {
         internalLogger.log(
             level = InternalLogger.Level.WARN,
@@ -68,7 +72,7 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
             onlyOnce = true
         )
 
-        emptyMap()
+        null
     }
 
     private companion object {

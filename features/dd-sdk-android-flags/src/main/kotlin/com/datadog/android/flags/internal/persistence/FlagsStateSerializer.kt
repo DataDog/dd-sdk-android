@@ -19,7 +19,7 @@ import org.json.JSONObject
  */
 internal class FlagsStateSerializer(private val internalLogger: InternalLogger) : Serializer<FlagsStateEntry> {
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall") // JSON operations are caught below.
     override fun serialize(model: FlagsStateEntry): String = try {
         val json = JSONObject()
 
@@ -33,7 +33,14 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
         model.flags.forEach { (key, flag) ->
             flagsJson.put(key, serializePrecomputedFlag(flag))
         }
-        json.put(JsonKeys.FLAGS.value, flagsJson)
+        if (model.obfuscation == null) {
+            json.put(JsonKeys.FLAGS.value, flagsJson)
+        } else {
+            // Older SDKs must reject this cache instead of reading digests as original keys.
+            json.put("encodedFlags", flagsJson)
+            json.put("obfuscated", true)
+            json.put("obfuscation", model.obfuscation.toJson())
+        }
 
         json.put(JsonKeys.LAST_UPDATE_TIMESTAMP.value, model.lastUpdateTimestamp)
 

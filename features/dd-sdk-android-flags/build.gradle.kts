@@ -48,6 +48,9 @@ createJsonModelsGenerationTask("generateFlagsModelsFromJson") {
 @Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.flags"
+    defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
 }
 
 dependencies {
@@ -75,6 +78,8 @@ dependencies {
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))
     testImplementation(libs.okHttpMock)
+    androidTestImplementation(libs.androidXTestRunner)
+    androidTestImplementation(libs.androidXTestJUnitExt)
     unmock(libs.robolectric)
 }
 

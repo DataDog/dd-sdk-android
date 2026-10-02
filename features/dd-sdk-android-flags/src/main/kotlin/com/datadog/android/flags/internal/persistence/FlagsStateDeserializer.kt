@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal.persistence
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.JsonKeys
 import com.datadog.android.flags.internal.model.PrecomputedFlag
@@ -26,7 +27,9 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
         val evaluationContext = deserializeEvaluationContext(contextJson)
 
         @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-        val flagsJson = json.getJSONObject(JsonKeys.FLAGS.value)
+        val obfuscation = FlagKeyObfuscation.read(json)
+        val flagsJson = json.getJSONObject(if (obfuscation == null) JsonKeys.FLAGS.value else "encodedFlags")
+        if (obfuscation != null) FlagKeyObfuscation.validateKeys(flagsJson.keys())
         val flags = deserializeFlags(flagsJson)
 
         @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
@@ -35,7 +38,8 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
         FlagsStateEntry(
             evaluationContext = evaluationContext,
             flags = flags,
-            lastUpdateTimestamp = timestamp
+            lastUpdateTimestamp = timestamp,
+            obfuscation = obfuscation
         )
     } catch (e: JSONException) {
         internalLogger.log(

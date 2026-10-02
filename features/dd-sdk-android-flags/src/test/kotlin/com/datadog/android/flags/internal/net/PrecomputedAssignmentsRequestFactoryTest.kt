@@ -65,6 +65,32 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     // region create() - Success cases
 
     @Test
+    fun `M advertise encoding capability W create() { native source }`() {
+        val context = fakeDatadogContext.copy(source = "android", sdkVersion = "overridden-core-version")
+        val request = checkNotNull(testedFactory.create(EvaluationContext("subject", emptyMap()), context))
+        val buffer = Buffer()
+        checkNotNull(request.body).writeTo(buffer)
+        val attributes = JSONObject(buffer.readUtf8()).getJSONObject("data").getJSONObject("attributes")
+
+        assertThat(attributes.getJSONObject("supported_capabilities").getJSONArray("assignment_encodings").toString())
+            .isEqualTo("[\"flag-key-sha256-v1\"]")
+        assertThat(attributes.getJSONObject("source").getString("sdk_version")).isEqualTo(context.sdkVersion)
+    }
+
+    @Test
+    fun `M omit encoding capability W create() { bridge sources }`() {
+        for (source in listOf("react-native", "flutter", "unknown")) {
+            val context = fakeDatadogContext.copy(source = source)
+            val request = checkNotNull(testedFactory.create(EvaluationContext("subject", emptyMap()), context))
+            val buffer = Buffer()
+            checkNotNull(request.body).writeTo(buffer)
+            val attributes = JSONObject(buffer.readUtf8()).getJSONObject("data").getJSONObject("attributes")
+
+            assertThat(attributes.has("supported_capabilities")).isFalse()
+        }
+    }
+
+    @Test
     fun `M create valid request W create() { all fields present }`(
         @StringForgery fakeTargetingKey: String
     ) {

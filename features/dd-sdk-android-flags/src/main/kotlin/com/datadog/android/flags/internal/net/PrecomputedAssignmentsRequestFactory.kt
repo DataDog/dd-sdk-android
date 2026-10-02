@@ -10,11 +10,13 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.internal.getFlagsEndpoint
+import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -94,6 +96,13 @@ internal class PrecomputedAssignmentsRequestFactory(
             .put("env", env)
             .put("source", source)
             .put("subject", subject)
+        // Bridge SDKs that consume raw snapshots cannot resolve encoded keys yet.
+        if (datadogContext.source == "android") {
+            attributes.put(
+                "supported_capabilities",
+                JSONObject().put("assignment_encodings", JSONArray().put(FlagKeyObfuscation.SCHEME))
+            )
+        }
         val data = JSONObject()
             .put("type", "precompute-assignments-request")
             .put("attributes", attributes)

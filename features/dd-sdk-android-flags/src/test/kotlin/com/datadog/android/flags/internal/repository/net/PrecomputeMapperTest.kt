@@ -84,7 +84,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = testedMapper.map(json)
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(1)
@@ -113,7 +113,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = testedMapper.map(json)
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(1)
@@ -137,7 +137,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = testedMapper.map(json)
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(1)
@@ -161,7 +161,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = testedMapper.map(json)
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(1)
@@ -185,7 +185,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = testedMapper.map(json)
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(1)
@@ -213,7 +213,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = testedMapper.map(json)
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(1)
@@ -242,7 +242,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = testedMapper.map(json)
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(1)
@@ -277,7 +277,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = testedMapper.map(json)
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(3)
@@ -304,7 +304,7 @@ internal class PrecomputeMapperTest {
         val json = buildValidJson(emptyMap())
 
         // When
-        val result = testedMapper.map(json)
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).isEmpty()
@@ -325,7 +325,7 @@ internal class PrecomputeMapperTest {
         val json = buildValidJson(mapOf(fakeFlagKey to flagJson))
 
         // When
-        val result = testedMapper.map(json)
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         val flag = result[fakeFlagKey]
@@ -344,7 +344,7 @@ internal class PrecomputeMapperTest {
         val json = buildValidJson(mapOf(fakeFlagKey to flagJson))
 
         // When
-        val result = testedMapper.map(json)
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         val flag = result[fakeFlagKey]
@@ -363,7 +363,7 @@ internal class PrecomputeMapperTest {
         val json = buildValidJson(mapOf(fakeFlagKey to flagJson))
 
         // When
-        val result = testedMapper.map(json)
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         val flag = result[fakeFlagKey]
@@ -385,7 +385,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = testedMapper.map(json)
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         val flag = result[fakeFlagKey]
@@ -399,7 +399,7 @@ internal class PrecomputeMapperTest {
     // region Error Handling
 
     @Test
-    fun `M return empty map and log error W map() { invalid JSON }`() {
+    fun `M return null and log error W map() { invalid JSON }`() {
         // Given
         val invalidJson = "{ invalid json"
 
@@ -407,7 +407,7 @@ internal class PrecomputeMapperTest {
         val result = testedMapper.map(invalidJson)
 
         // Then
-        assertThat(result).isEmpty()
+        assertThat(result).isNull()
 
         val messageCaptor = argumentCaptor<() -> String>()
         verify(mockInternalLogger).log(
@@ -422,7 +422,7 @@ internal class PrecomputeMapperTest {
     }
 
     @Test
-    fun `M return empty map and log error W map() { missing data field }`() {
+    fun `M return null and log error W map() { missing data field }`() {
         // Given
         val jsonWithoutData = JSONObject().apply {
             put("notData", JSONObject())
@@ -432,7 +432,7 @@ internal class PrecomputeMapperTest {
         val result = testedMapper.map(jsonWithoutData)
 
         // Then
-        assertThat(result).isEmpty()
+        assertThat(result).isNull()
 
         val messageCaptor = argumentCaptor<() -> String>()
         verify(mockInternalLogger).log(
@@ -447,7 +447,7 @@ internal class PrecomputeMapperTest {
     }
 
     @Test
-    fun `M return empty map and log error W map() { missing attributes field }`() {
+    fun `M return null and log error W map() { missing attributes field }`() {
         // Given
         val jsonWithoutAttributes = JSONObject().data {
             put("notAttributes", JSONObject())
@@ -457,7 +457,7 @@ internal class PrecomputeMapperTest {
         val result = testedMapper.map(jsonWithoutAttributes)
 
         // Then
-        assertThat(result).isEmpty()
+        assertThat(result).isNull()
 
         val messageCaptor = argumentCaptor<() -> String>()
         verify(mockInternalLogger).log(
@@ -472,7 +472,7 @@ internal class PrecomputeMapperTest {
     }
 
     @Test
-    fun `M return empty map and log error W map() { missing flags field }`() {
+    fun `M return null and log error W map() { missing flags field }`() {
         // Given
         val jsonWithoutFlags = JSONObject().data {
             attributes {
@@ -484,7 +484,7 @@ internal class PrecomputeMapperTest {
         val result = testedMapper.map(jsonWithoutFlags)
 
         // Then
-        assertThat(result).isEmpty()
+        assertThat(result).isNull()
 
         val messageCaptor = argumentCaptor<() -> String>()
         verify(mockInternalLogger).log(
@@ -499,7 +499,7 @@ internal class PrecomputeMapperTest {
     }
 
     @Test
-    fun `M return empty map and log error W map() { missing required flag fields }`() {
+    fun `M return null and log error W map() { missing required flag fields }`() {
         // Given
         val jsonWithIncompleteFlag = JSONObject().data {
             attributes {
@@ -516,7 +516,7 @@ internal class PrecomputeMapperTest {
         val result = testedMapper.map(jsonWithIncompleteFlag)
 
         // Then
-        assertThat(result).isEmpty()
+        assertThat(result).isNull()
 
         val messageCaptor = argumentCaptor<() -> String>()
         verify(mockInternalLogger).log(
@@ -531,7 +531,7 @@ internal class PrecomputeMapperTest {
     }
 
     @Test
-    fun `M return empty map and log error W map() { empty JSON string }`() {
+    fun `M return null and log error W map() { empty JSON string }`() {
         // Given
         val emptyJson = ""
 
@@ -539,7 +539,7 @@ internal class PrecomputeMapperTest {
         val result = testedMapper.map(emptyJson)
 
         // Then
-        assertThat(result).isEmpty()
+        assertThat(result).isNull()
 
         val messageCaptor = argumentCaptor<() -> String>()
         verify(mockInternalLogger).log(
@@ -573,7 +573,7 @@ internal class PrecomputeMapperTest {
         }.toString()
 
         // When
-        val result = testedMapper.map(json)
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(1)
