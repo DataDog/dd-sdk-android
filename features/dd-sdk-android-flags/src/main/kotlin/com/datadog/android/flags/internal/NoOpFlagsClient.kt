@@ -13,6 +13,7 @@ import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientEvent
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import org.json.JSONObject
@@ -35,6 +36,11 @@ internal class NoOpFlagsClient(
     private val reason: String,
     private val logWithPolicy: LogWithPolicy
 ) : FlagsClient {
+
+    override fun onFirstFlags(callback: (FlagsClientEvent) -> Unit) {
+        // This fallback never installs flags, so there is no first result to deliver.
+        logOperation("onFirstFlags", InternalLogger.Level.WARN)
+    }
 
     override val state: StateObservable = object : StateObservable {
         override fun getCurrentState(): FlagsClientState = FlagsClientState.NotReady

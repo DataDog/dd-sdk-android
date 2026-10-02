@@ -17,6 +17,7 @@ public abstract interface class com/datadog/android/flags/FlagsClient {
 	public static fun get (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsClient;
 	public static fun get (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/flags/FlagsClient;
 	public abstract fun getState ()Lcom/datadog/android/flags/StateObservable;
+	public abstract fun onFirstFlags (Lkotlin/jvm/functions/Function1;)V
 	public abstract fun resolve (Ljava/lang/String;Ljava/lang/Object;)Lcom/datadog/android/flags/model/ResolutionDetails;
 	public abstract fun resolveBooleanValue (Ljava/lang/String;Z)Z
 	public abstract fun resolveDoubleValue (Ljava/lang/String;D)D
@@ -31,7 +32,6 @@ public final class com/datadog/android/flags/FlagsClient$Builder {
 	public fun <init> (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)V
 	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun build ()Lcom/datadog/android/flags/FlagsClient;
-	public final fun onFirstFlags (Lkotlin/jvm/functions/Function1;)Lcom/datadog/android/flags/FlagsClient$Builder;
 }
 
 public final class com/datadog/android/flags/FlagsClient$Companion {

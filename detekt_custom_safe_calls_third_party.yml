@@ -214,6 +214,8 @@ datadog:
       - "java.util.concurrent.CopyOnWriteArraySet.remove(kotlin.String?)"
       - "java.util.concurrent.CopyOnWriteArraySet.toTypedArray()"
       - "java.util.concurrent.CountDownLatch.countDown()"
+      # Exception construction is safe; throwing the instance is checked separately.
+      - "java.util.concurrent.TimeoutException.constructor(kotlin.String?)"
       - "java.util.concurrent.ExecutorService.shutdown()"
       - "java.util.concurrent.ExecutorService.shutdownNow()"
       - "java.util.concurrent.Executors.newSingleThreadExecutor()"
@@ -280,6 +282,7 @@ datadog:
       - "java.util.concurrent.atomic.AtomicReference.constructor(kotlin.String?)"
       - "java.util.concurrent.atomic.AtomicReference.constructor(kotlin.collections.Set?)"
       - "java.util.concurrent.atomic.AtomicReference.get()"
+      - "java.util.concurrent.atomic.AtomicReference.getAndSet(com.datadog.android.flags.internal.repository.DefaultFlagsRepository.FlagsState?)"
       - "java.util.concurrent.atomic.AtomicReference.getAndSet(kotlin.String?)"
       - "java.util.concurrent.atomic.AtomicReference.getAndSet(java.util.concurrent.Future?)"
       - "java.util.concurrent.atomic.AtomicReference.set(android.app.Application.ActivityLifecycleCallbacks?)"

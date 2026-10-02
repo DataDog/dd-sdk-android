@@ -63,6 +63,17 @@ import org.json.JSONObject
  * ```
  */
 interface FlagsClient {
+
+    /**
+     * Invokes [callback] once with the keys from the first installed cached or downloaded flags,
+     * including an empty configuration. Missing or invalid cache does not trigger this callback.
+     * Each registration receives the retained first result, even after subsequent flag updates.
+     * If flags are already installed, delivery is immediate on the calling thread; otherwise it runs
+     * on the installing thread. Callback exceptions are logged and isolated.
+     * This notification does not imply readiness. Dispatch UI work to the appropriate thread.
+     */
+    fun onFirstFlags(callback: (FlagsClientEvent) -> Unit)
+
     /**
      * Sets the [EvaluationContext] for flag resolution.
      *
@@ -220,16 +231,6 @@ interface FlagsClient {
     class Builder {
         private val name: String
         private val sdkCore: FeatureSdkCore
-        private var firstFlagsCallback: ((FlagsClientEvent) -> Unit)? = null
-
-        /**
-         * Notifies once when the first cached or downloaded assignments are installed, including empty assignments.
-         * The callback may run before [build] returns or on the installing thread. Exceptions are logged.
-         * This notification does not imply readiness. Pass null to clear the callback.
-         */
-        fun onFirstFlags(callback: ((FlagsClientEvent) -> Unit)?): Builder = apply {
-            firstFlagsCallback = callback
-        }
 
         /**
          * Creates a builder for a named [FlagsClient].
@@ -304,18 +305,15 @@ interface FlagsClient {
                 .getFeature(FLAGS_EVALUATIONS_FEATURE_NAME)
                 ?.unwrap<EvaluationsFeature>()
 
-            val client = flagsFeature.getOrRegisterNewClient(name) {
+            return flagsFeature.getOrRegisterNewClient(name) {
                 createInternal(
                     configuration = flagsFeature.flagsConfiguration,
                     featureSdkCore = sdkCore,
                     flagsFeature = flagsFeature,
                     evaluationsFeature = evaluationsFeature,
-                    name = name,
-                    onFirstFlags = firstFlagsCallback
+                    name = name
                 )
             }
-            (client as? DatadogFlagsClient)?.subscribeToFirstFlags()
-            return client
         }
     }
 
@@ -407,8 +405,7 @@ interface FlagsClient {
             featureSdkCore: FeatureSdkCore,
             flagsFeature: FlagsFeature,
             evaluationsFeature: EvaluationsFeature?,
-            name: String,
-            onFirstFlags: ((FlagsClientEvent) -> Unit)? = null
+            name: String
         ): FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
@@ -463,8 +460,7 @@ interface FlagsClient {
                 rumEvaluationLogger = rumEvaluationLogger,
                 exposureProcessor = flagsFeature.processor,
                 evaluationsFeature = evaluationsFeature,
-                flagStateManager = flagStateManager,
-                onFirstFlags = onFirstFlags
+                flagStateManager = flagStateManager
             )
         }
 

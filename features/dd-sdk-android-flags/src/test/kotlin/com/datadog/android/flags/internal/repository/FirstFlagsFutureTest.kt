@@ -60,4 +60,37 @@ internal class FirstFlagsFutureTest {
     fun `M remain pending W generated no op repository`() {
         assertThat(NoOpFlagsRepository().waitForFlags().isDone).isFalse()
     }
+
+    @Test
+    fun `M distinguish empty installed keys from pending W completing empty configuration`() {
+        val future = FirstFlagsFuture()
+        var delivered = false
+        future.whenComplete { keys ->
+            assertThat(keys).isEmpty()
+            delivered = true
+        }
+        assertThat(future.isDone).isFalse()
+        assertThat(delivered).isFalse()
+        future.complete(emptyList())
+        assertThat(future.isDone).isTrue()
+        assertThat(delivered).isTrue()
+        assertThat(future.get(0, TimeUnit.NANOSECONDS)).isEmpty()
+    }
+
+    @Test
+    fun `M propagate interruption W either get overload is interrupted`() {
+        listOf(false, true).forEach { timed ->
+            val future = FirstFlagsFuture()
+            try {
+                Thread.currentThread().interrupt()
+                assertThrows<InterruptedException> {
+                    if (timed) future.get(1, TimeUnit.SECONDS) else future.get()
+                }
+                assertThat(Thread.currentThread().isInterrupted).isFalse()
+                assertThat(future.isDone).isFalse()
+            } finally {
+                Thread.interrupted()
+            }
+        }
+    }
 }

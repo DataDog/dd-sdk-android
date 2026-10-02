@@ -13,19 +13,22 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
 /** One shared, non-cancellable completion containing the first installed assignment keys. */
-@Suppress("UnsafeThirdPartyFunctionCall") // Private monitor, positive latch count, and privately owned snapshot.
 internal class FirstFlagsFuture : Future<List<String>> {
     private val lock = Any()
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // CountDownLatch rejects negative counts; the constant 1 is valid.
     private val completed = CountDownLatch(1)
     private val listeners = mutableListOf<(List<String>) -> Unit>()
 
     @Volatile
-    private var keys: List<String>? = null
+    private var keys: List<String> = emptyList()
 
     fun complete(installedKeys: Collection<String>) {
+        // Both calls reject null inputs; installedKeys and its newly allocated copy are non-null.
+        @Suppress("UnsafeThirdPartyFunctionCall")
         val snapshot = Collections.unmodifiableList(ArrayList(installedKeys))
         val callbacks = synchronized(lock) {
-            if (keys != null) return
+            if (completed.count == 0L) return
             keys = snapshot
             completed.countDown()
             listeners.toList().also { listeners.clear() }
@@ -35,25 +38,33 @@ internal class FirstFlagsFuture : Future<List<String>> {
 
     fun whenComplete(listener: (List<String>) -> Unit) {
         val snapshot = synchronized(lock) {
-            keys.also { if (it == null) listeners.add(listener) }
+            if (completed.count == 0L) {
+                keys
+            } else {
+                listeners.add(listener)
+                null
+            }
         }
         snapshot?.let(listener)
     }
 
-    @Suppress("CheckInternal") // The latch opens only after the result is stored.
+    @Throws(InterruptedException::class)
+    // await can throw on interruption; Future.get requires propagation, so this is not a nonthrowing call.
+    @Suppress("UnsafeThirdPartyFunctionCall")
     override fun get(): List<String> {
         completed.await()
-        return checkNotNull(keys)
+        return keys
     }
 
-    // Future requires timeout failure; an open latch guarantees keys.
-    @Suppress("CheckInternal", "ThrowingInternalException")
+    @Throws(InterruptedException::class, TimeoutException::class)
+    // await can throw on interruption; Future.get requires propagation and an exception on timeout.
+    @Suppress("UnsafeThirdPartyFunctionCall", "ThrowingInternalException")
     override fun get(timeout: Long, unit: TimeUnit): List<String> {
         if (!completed.await(timeout, unit)) throw TimeoutException("No flags installed")
-        return checkNotNull(keys)
+        return keys
     }
 
-    override fun isDone(): Boolean = keys != null
+    override fun isDone(): Boolean = completed.count == 0L
     override fun isCancelled(): Boolean = false
     override fun cancel(mayInterruptIfRunning: Boolean): Boolean = false
 }

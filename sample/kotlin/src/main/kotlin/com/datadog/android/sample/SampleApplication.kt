@@ -253,9 +253,8 @@ class SampleApplication : Application() {
 
         // Create FlagsClient and convert to OpenFeature provider
         val firstFlags = CompletableDeferred<FlagsClientEvent>()
-        val flagsClient = FlagsClient.Builder()
-            .onFirstFlags { event -> firstFlags.complete(event) }
-            .build()
+        val flagsClient = FlagsClient.Builder().build()
+        flagsClient.onFirstFlags { event -> firstFlags.complete(event) }
         applicationScope.logAndEvaluateFirstFlags(
             flagsClient,
             firstFlags,

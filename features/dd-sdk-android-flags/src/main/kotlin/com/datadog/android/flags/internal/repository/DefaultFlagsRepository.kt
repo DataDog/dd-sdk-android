@@ -49,7 +49,6 @@ internal class DefaultFlagsRepository(
     override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
         val newState = FlagsState(context, flags)
 
-        @Suppress("UnsafeThirdPartyFunctionCall") // Atomic replacement of a privately owned reference.
         val firstInstallation = atomicState.getAndSet(newState) == null
 
         try {
