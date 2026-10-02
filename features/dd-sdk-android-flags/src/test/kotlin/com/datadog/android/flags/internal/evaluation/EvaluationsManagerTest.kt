@@ -131,6 +131,11 @@ internal class EvaluationsManagerTest {
             it.getArgument<(DatadogContext) -> Unit>(1).invoke(fakeDatadogContext)
         }
 
+        doAnswer {
+            it.getArgument<() -> Unit>(2).invoke()
+            null
+        }.whenever(mockFlagsRepository).setFlagsAndContext(any(), any(), any())
+
         // Mock executor to run tasks synchronously for testing
         whenever(mockExecutorService.execute(any())).thenAnswer { invocation ->
             val runnable = invocation.getArgument<Runnable>(0)
@@ -189,7 +194,7 @@ internal class EvaluationsManagerTest {
         evaluationsManager.updateEvaluationsForContext(context)
 
         // Then
-        verify(mockFlagsRepository).setFlagsAndContext(context, expectedFlags)
+        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(expectedFlags), any())
         verify(mockInternalLogger, times(2)).log(
             eq(InternalLogger.Level.DEBUG),
             eq(InternalLogger.Target.MAINTAINER),
@@ -251,7 +256,7 @@ internal class EvaluationsManagerTest {
         evaluationsManager.updateEvaluationsForContext(context)
 
         // Then
-        verify(mockFlagsRepository).setFlagsAndContext(context, emptyMap())
+        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(emptyMap()), any())
     }
 
     @Test
@@ -822,7 +827,7 @@ internal class EvaluationsManagerTest {
         // Then
         verify(mockCallback).onFailure(any<FlagsInitializationTimeoutException>())
         verify(mockCallback, times(0)).onSuccess()
-        verify(mockFlagsRepository).setFlagsAndContext(context, emptyMap())
+        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(emptyMap()), any())
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
     }
 

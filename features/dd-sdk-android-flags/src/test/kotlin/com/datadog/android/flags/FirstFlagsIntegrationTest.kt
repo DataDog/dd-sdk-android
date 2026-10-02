@@ -268,6 +268,34 @@ internal class FirstFlagsIntegrationTest {
         assertThat(events[2]).isSameAs(events[0])
     }
 
+    @Test
+    fun `M preserve newer failure W first callback changes context`() {
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        client.onFirstFlags { client.setEvaluationContext(EvaluationContext("newer")) }
+        server.enqueue(MockResponse().setBody(response(true)))
+        server.enqueue(MockResponse().setResponseCode(500))
+        client.setEvaluationContext(EvaluationContext("initial"))
+        assertThat(client.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+    }
+
+    @Test
+    fun `M preserve reconciling W first callback queues newer context`() {
+        val executor = mock<java.util.concurrent.ExecutorService>()
+        val work = java.util.ArrayDeque<Runnable>()
+        doAnswer { work.add(it.getArgument(0)); null }.whenever(executor).execute(any())
+        whenever(core.createSingleThreadExecutorService(any())).thenReturn(executor)
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        client.onFirstFlags { client.setEvaluationContext(EvaluationContext("newer")) }
+        server.enqueue(MockResponse().setBody(response(true)))
+        client.setEvaluationContext(EvaluationContext("initial"))
+        work.removeFirst().run()
+        assertThat(work).hasSize(1)
+        assertThat(client.state.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+        server.enqueue(MockResponse().setBody(response(false)))
+        work.removeFirst().run()
+        assertThat(client.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+    }
+
     private fun cached(): String = checkNotNull(
         FlagsStateSerializer(logger).serialize(
             FlagsStateEntry(
