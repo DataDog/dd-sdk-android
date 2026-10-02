@@ -6,10 +6,12 @@
 
 package com.datadog.android.internal.utils
 
+import com.datadog.android.internal.time.TimeProvider
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import java.util.concurrent.TimeUnit
 
 /**
  * Formats the given epoch milliseconds to an ISO-8601 formatted string in UTC timezone.
@@ -26,3 +28,12 @@ fun formatIsoUtc(epochMillis: Long): String {
     sdf.timeZone = TimeZone.getTimeZone("UTC")
     return sdf.format(Date(epochMillis))
 }
+
+/**
+ * Returns the offset between NTP-corrected (server) time and the boot clock, in nanoseconds.
+ *
+ * Adding this offset to a [TimeProvider.getDeviceElapsedRealtimeNanos] timestamp yields the
+ * NTP-corrected time at which that boot-clock timestamp occurred.
+ */
+fun TimeProvider.bootNtpOffsetNs(): Long =
+    TimeUnit.MILLISECONDS.toNanos(getServerTimestampMillis()) - getDeviceElapsedRealtimeNanos()

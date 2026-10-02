@@ -15,6 +15,7 @@ import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.internal.utils.bootNtpOffsetNs
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.perfetto.ProfileType
@@ -233,7 +234,8 @@ internal class ProfilingManagerTriggerRegistrar(
                         startReason = ProfilingStartReason.ANR,
                         end = detectedAtMs,
                         resultFilePath = resultPath,
-                        profileTypes = listOf(ProfileType.SYSTEM_TRACE)
+                        profileTypes = listOf(ProfileType.SYSTEM_TRACE),
+                        bootNtpNs = timeProvider.bootNtpOffsetNs()
                     )
                 )
 
@@ -244,7 +246,8 @@ internal class ProfilingManagerTriggerRegistrar(
                         startReason = ProfilingStartReason.OUT_OF_MEMORY,
                         end = detectedAtMs,
                         resultFilePath = resultPath,
-                        profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
+                        profileTypes = listOf(ProfileType.HEAP_HISTOGRAM),
+                        bootNtpNs = timeProvider.bootNtpOffsetNs()
                     )
                 )
 
@@ -257,7 +260,8 @@ internal class ProfilingManagerTriggerRegistrar(
                         // end is same as start in point-in-time profile
                         end = detectedAtMs,
                         resultFilePath = resultPath,
-                        profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
+                        profileTypes = listOf(ProfileType.HEAP_HISTOGRAM),
+                        bootNtpNs = timeProvider.bootNtpOffsetNs()
                     )
                 )
         }

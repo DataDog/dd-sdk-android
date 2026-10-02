@@ -20,6 +20,7 @@ internal class NoOpProfiler : Profiler {
     override val timeProvider: MutableTimeProvider = MutableTimeProvider.create(DefaultTimeProvider())
     override var internalLogger: InternalLogger? = null
     override val scheduledExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
+    override val isOomTriggerActive: Boolean = false
 
     override fun start(
         appContext: Context,

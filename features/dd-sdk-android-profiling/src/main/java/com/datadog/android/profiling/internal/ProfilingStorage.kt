@@ -47,8 +47,13 @@ internal object ProfilingStorage {
         return PendingOomProfile.fromJson(serialized)
     }
 
+    /**
+     * Consumes a pending out-of-memory profile marker. The removal is synchronous: if the
+     * process dies before an `apply()`-based removal reaches disk, the marker would survive and
+     * the same trace could be replayed again on the next launch.
+     */
     internal fun removePendingOomProfile(appContext: Context) {
-        getStorage(appContext).remove(KEY_PENDING_OOM_PROFILE)
+        getStorage(appContext).remove(KEY_PENDING_OOM_PROFILE, sync = true)
     }
 
     /**
@@ -65,8 +70,14 @@ internal object ProfilingStorage {
         return PendingOomGatingEvent.fromJson(serialized)
     }
 
+    /**
+     * Consumes a pending OOM gating event marker, either because it was matched or because it
+     * expired. The removal is synchronous for the same reason as [removePendingOomProfile]: an
+     * unmatched `apply()` could leave the marker behind for the OS to deliver a trigger result
+     * against on a later launch, replaying an already-consumed match.
+     */
     internal fun removePendingOomGatingEvent(appContext: Context) {
-        getStorage(appContext).remove(KEY_PENDING_OOM_GATING_EVENT)
+        getStorage(appContext).remove(KEY_PENDING_OOM_GATING_EVENT, sync = true)
     }
 
     @JvmStatic
