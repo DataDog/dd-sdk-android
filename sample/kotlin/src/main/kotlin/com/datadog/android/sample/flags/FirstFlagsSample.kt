@@ -5,24 +5,16 @@
  */
 package com.datadog.android.sample.flags
 
-import android.content.SharedPreferences
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.model.FlagsClientEvent
 
-/** Logs the first event and evaluates the saved flag directly through the assigned client. */
+/** Logs the first event and evaluates an example flag directly through the assigned client. */
 internal fun logAndEvaluateFirstFlags(
     client: FlagsClient,
     event: FlagsClientEvent,
-    selection: SharedPreferences,
     log: (String) -> Unit
 ) {
     log("Installed flag keys: ${event.flagsChanged ?: "<absent>"}")
-    val key = selection.getString(OpenFeatureFragment.FIRST_FLAGS_KEY, null)
-    if (key == null) {
-        log("Select and evaluate a Boolean flag in OpenFeature, then relaunch the app.")
-    } else {
-        val defaultValue = selection.getBoolean(OpenFeatureFragment.FIRST_FLAGS_DEFAULT, false)
-        val details = client.resolve(key, defaultValue)
-        log("$key = ${details.value} (reason=${details.reason})")
-    }
+    val details = client.resolve("my-flag-key", false)
+    log("my-flag-key = ${details.value} (reason=${details.reason})")
 }

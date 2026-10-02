@@ -5,7 +5,6 @@
  */
 package com.datadog.android.sample.flags
 
-import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -135,15 +134,8 @@ internal class OpenFeatureFragment :
 
     private fun evaluateBooleanFlag(client: Client, flagKey: String, defaultValue: String): String {
         val default = defaultValue.toBooleanStrictOrNull() ?: false
-        // Reuse this real flag selection for the native first-flags example on the next app start.
-        requireContext().getSharedPreferences(FIRST_FLAGS_PREFERENCES, Context.MODE_PRIVATE)
-            .edit()
-            .putString(FIRST_FLAGS_KEY, flagKey)
-            .putBoolean(FIRST_FLAGS_DEFAULT, default)
-            .apply()
         val details = client.getBooleanDetails(flagKey, default)
-        return formatEvaluationDetails("Boolean", details) +
-            "\nSaved for first-flags evaluation on next app start; see the FirstFlags Logcat tag."
+        return formatEvaluationDetails("Boolean", details)
     }
 
     private fun evaluateStringFlag(client: Client, flagKey: String, defaultValue: String): String {
@@ -230,10 +222,6 @@ internal class OpenFeatureFragment :
     // endregion
 
     companion object {
-        internal const val FIRST_FLAGS_PREFERENCES = "first_flags_sample"
-        internal const val FIRST_FLAGS_KEY = "key"
-        internal const val FIRST_FLAGS_DEFAULT = "default"
-
         private const val FLAG_TYPE_BOOLEAN = 0
         private const val FLAG_TYPE_STRING = 1
         private const val FLAG_TYPE_INTEGER = 2
