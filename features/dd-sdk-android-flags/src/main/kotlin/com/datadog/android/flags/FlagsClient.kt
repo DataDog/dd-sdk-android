@@ -28,6 +28,7 @@ import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientEvent
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.internal.utils.DDCoreStateHolder
@@ -219,6 +220,16 @@ interface FlagsClient {
     class Builder {
         private val name: String
         private val sdkCore: FeatureSdkCore
+        private var firstFlagsCallback: ((FlagsClientEvent) -> Unit)? = null
+
+        /**
+         * Notifies once when the first cached or downloaded assignments are installed, including empty assignments.
+         * The callback may run before [build] returns or on the installing thread. Exceptions are logged.
+         * This notification does not imply readiness. Pass null to clear the callback.
+         */
+        fun onFirstFlags(callback: ((FlagsClientEvent) -> Unit)?): Builder = apply {
+            firstFlagsCallback = callback
+        }
 
         /**
          * Creates a builder for a named [FlagsClient].
@@ -293,15 +304,18 @@ interface FlagsClient {
                 .getFeature(FLAGS_EVALUATIONS_FEATURE_NAME)
                 ?.unwrap<EvaluationsFeature>()
 
-            return flagsFeature.getOrRegisterNewClient(name) {
+            val client = flagsFeature.getOrRegisterNewClient(name) {
                 createInternal(
                     configuration = flagsFeature.flagsConfiguration,
                     featureSdkCore = sdkCore,
                     flagsFeature = flagsFeature,
                     evaluationsFeature = evaluationsFeature,
-                    name = name
+                    name = name,
+                    onFirstFlags = firstFlagsCallback
                 )
             }
+            (client as? DatadogFlagsClient)?.subscribeToFirstFlags()
+            return client
         }
     }
 
@@ -393,7 +407,8 @@ interface FlagsClient {
             featureSdkCore: FeatureSdkCore,
             flagsFeature: FlagsFeature,
             evaluationsFeature: EvaluationsFeature?,
-            name: String
+            name: String,
+            onFirstFlags: ((FlagsClientEvent) -> Unit)? = null
         ): FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
@@ -448,7 +463,8 @@ interface FlagsClient {
                 rumEvaluationLogger = rumEvaluationLogger,
                 exposureProcessor = flagsFeature.processor,
                 evaluationsFeature = evaluationsFeature,
-                flagStateManager = flagStateManager
+                flagStateManager = flagStateManager,
+                onFirstFlags = onFirstFlags
             )
         }
 

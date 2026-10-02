@@ -271,3 +271,45 @@ For more information on Feature Flags in Datadog, see the [official Feature Flag
 
 [1]: https://docs.datadoghq.com/real_user_monitoring/application_monitoring/android/setup
 [2]: https://docs.datadoghq.com/getting_started/feature_flags/
+
+
+### Event value shape
+
+`FlagsClientEvent` is an immutable value with required `type` and optional `flagsChanged` (default
+`null`). The constructor snapshots supplied keys; `null` means no keys were supplied, while
+`emptyList()` means an explicitly empty list. Key order and duplicates are preserved.
+
+```kotlin
+val event = FlagsClientEvent(
+    type = FlagsClientEventType.CONFIGURATION_CHANGED,
+    flagsChanged = listOf("checkout-enabled")
+)
+```
+
+`FlagsClientEventType` contains only `CONFIGURATION_CHANGED`, mapping directly to that shared event
+name. The value requires no OpenFeature dependency.
+
+
+### First installed flags callback
+
+The [Kotlin sample application](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/SampleApplication.kt)
+registers this callback in `initializeFlags`. Its
+[sample-only helper](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/flags/FirstFlagsSample.kt)
+awaits an application-owned event future, logs the supplied keys and evaluates one saved Boolean flag. To try it, evaluate a real Boolean flag in the sample's OpenFeature screen,
+then relaunch the app and inspect the `FirstFlags` Logcat tag. Without a saved selection, the sample
+logs setup instructions and skips evaluation. Null keys log as `<absent>` and empty keys as `[]`.
+The existing String/Integer/Double evaluator remains available; this startup example uses Boolean only.
+
+`Builder.onFirstFlags(callback: ((FlagsClientEvent) -> Unit)?)` accepts a plain nullable Kotlin function.
+It receives only the event, once after the first accepted cache or network installation, with the
+complete installed keys (including an empty list). Missing/invalid cache and rejected disk results do
+not notify. The callback may run before `build()` returns; the sample callback only completes the
+event future. After construction returns and the client is assigned, an application coroutine awaits
+that future and evaluates through the client. An early event is retained and a late event suspends
+only the coroutine, never SDK construction. Reads use current installed assignments, not a pinned
+event snapshot. Application UI updates still need the appropriate UI-thread dispatch.
+
+Callbacks run on the delivering thread outside SDK locks. Callback exceptions are logged and isolated.
+Existing named clients ignore a new builder callback; passing null clears the callback on that builder.
+Later installations do not rearm it. This adds no general event bus, bridge, readiness changes or
+OpenFeature forwarding. Existing upstream context/admission and evaluation semantics remain unchanged.
