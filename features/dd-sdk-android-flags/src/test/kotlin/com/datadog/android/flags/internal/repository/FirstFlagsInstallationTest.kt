@@ -54,6 +54,33 @@ internal class FirstFlagsInstallationTest {
     )
 
     @Test
+    fun `M preserve storage error W terminal bookkeeping also throws`() {
+        listOf(false, true).forEach { sameError ->
+            events.clear()
+            val tested = repository()
+            val storageError = IllegalStateException("storage unavailable")
+            val terminalError = if (sameError) storageError else IllegalStateException("terminal failure")
+            doThrow(storageError).whenever(store)
+                .setValue<FlagsStateEntry>(any(), any(), any(), anyOrNull(), any())
+            var terminalCalls = 0
+            val thrown = assertThrows<IllegalStateException> {
+                tested.setFlagsAndContext(context, emptyMap()) {
+                    terminalCalls++
+                    throw terminalError
+                }
+            }
+            assertThat(thrown).isSameAs(storageError)
+            assertThat(terminalCalls).isEqualTo(1)
+            if (sameError) {
+                assertThat(thrown.suppressed).isEmpty()
+            } else {
+                assertThat(thrown.suppressed).containsExactly(terminalError)
+            }
+            assertThat(events).hasSize(1)
+        }
+    }
+
+    @Test
     fun `M wait for terminal bookkeeping W listener registers during installation`() {
         val tested = repository()
         val installed = CountDownLatch(1)

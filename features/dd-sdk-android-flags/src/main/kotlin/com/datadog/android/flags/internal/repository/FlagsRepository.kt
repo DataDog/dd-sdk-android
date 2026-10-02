@@ -14,8 +14,8 @@ internal interface FlagsRepository {
     fun getEvaluationContext(): EvaluationContext?
 
     /**
-     * Runs [onInstalled] after storage submission. For the first installation, it runs before
-     * publishing the first-flags result to listeners.
+     * Runs [onInstalled] after attempting storage submission, including when submission fails.
+     * For the first installation, it runs before publishing the first-flags result to listeners.
      */
     fun setFlagsAndContext(
         context: EvaluationContext,
