@@ -1096,6 +1096,50 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
+    fun `M notify first flags once W successful response arrives after initialization timeout`() {
+        // Given
+        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockSdkCore.timeProvider).thenReturn(mock())
+        val repository = DefaultFlagsRepository(mockSdkCore, "late-success", mock(), persistenceLoadTimeoutMs = 1)
+        val state = FlagsStateManager(
+            DDCoreStateHolder.create(FlagsClientState.NotReady, FlagsStateListener::onStateChanged)
+        )
+        val work = ArrayDeque<Runnable>()
+        doAnswer { work.add(it.getArgument(0)); null }.whenever(mockExecutorService).execute(any())
+        lateinit var timeout: () -> Unit
+        val manager = EvaluationsManager(
+            mockSdkCore, mockExecutorService, mockInternalLogger, repository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, state, 1000,
+            { _, action -> timeout = action; {} }
+        )
+        val context = EvaluationContext(fakeTargetingKey)
+        val callback = mock<EvaluationContextCallback>()
+        val firstKeys = mutableListOf<List<String>>()
+        repository.firstFlags.whenComplete { firstKeys.add(it) }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext)).thenReturn("response")
+        whenever(mockPrecomputeMapper.map("response")).thenReturn(mapOf("enabled" to mock()))
+
+        // When
+        manager.updateEvaluationsForContext(context, callback)
+        timeout()
+
+        // Then
+        assertThat(firstKeys).isEmpty()
+        assertThat(state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+        verify(callback).onFailure(any<FlagsInitializationTimeoutException>())
+        verify(callback, times(0)).onSuccess()
+
+        // When
+        work.removeFirst().run()
+
+        // Then
+        assertThat(firstKeys).containsExactly(listOf("enabled"))
+        assertThat(repository.getFlagsSnapshot()).containsOnlyKeys("enabled")
+        assertThat(state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        verifyNoMoreInteractions(callback)
+    }
+
+    @Test
     fun `M disarm old timeout before first flags W storage throws and callback changes context`() {
         val store = mock<DataStoreHandler>()
         val storageError = IllegalStateException("storage unavailable")
