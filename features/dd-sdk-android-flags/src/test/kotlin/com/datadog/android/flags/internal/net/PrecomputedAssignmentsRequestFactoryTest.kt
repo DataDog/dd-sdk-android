@@ -10,6 +10,8 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.flags.AssignmentAuthorization
+import com.datadog.android.flags.AssignmentProtection
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -30,6 +32,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Date
 import java.util.UUID
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
@@ -131,6 +134,185 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
 
         checkNotNull(request)
         assertThat(request.url.toString()).isEqualTo(fakeCustomEndpoint)
+    }
+
+    @Test
+    fun `M add signing metadata without authorization W create() { signed protection }`(
+        @StringForgery fakeTargetingKey: String
+    ) {
+        testedFactory = PrecomputedAssignmentsRequestFactory(
+            internalLogger = mockInternalLogger,
+            customFlagEndpoint = null,
+            assignmentProtection = AssignmentProtection.SIGNED
+        )
+
+        val request = testedFactory.create(
+            EvaluationContext(fakeTargetingKey, emptyMap()),
+            fakeDatadogContext
+        )
+
+        checkNotNull(request)
+        assertThat(request.header("Authorization")).isNull()
+        assertThat(request.header(PrecomputedAssignmentsVerifier.SIGNATURE_VERSION_HEADER)).isEqualTo("2")
+        assertThat(request.header(PrecomputedAssignmentsVerifier.REQUEST_NONCE_HEADER))
+            .matches("[0-9a-f]{32}")
+    }
+
+    @Test
+    fun `M omit protected fields W create() { protection disabled }`(
+        @StringForgery fakeTargetingKey: String
+    ) {
+        val request = testedFactory.create(
+            EvaluationContext(fakeTargetingKey, emptyMap()),
+            fakeDatadogContext
+        )
+
+        checkNotNull(request)
+        assertThat(request.header("Authorization")).isNull()
+        assertThat(request.header(PrecomputedAssignmentsVerifier.SIGNATURE_VERSION_HEADER)).isNull()
+        assertThat(request.header(PrecomputedAssignmentsVerifier.REQUEST_NONCE_HEADER)).isNull()
+    }
+
+    @Test
+    fun `M reuse verified nonce W create() { protected cache verification }`(
+        @StringForgery fakeTargetingKey: String
+    ) {
+        testedFactory = PrecomputedAssignmentsRequestFactory(
+            internalLogger = mockInternalLogger,
+            customFlagEndpoint = null,
+            assignmentProtection = AssignmentProtection.SIGNED
+        )
+
+        val request = testedFactory.create(
+            EvaluationContext(fakeTargetingKey, emptyMap()),
+            fakeDatadogContext,
+            nonceOverride = "000102030405060708090a0b0c0d0e0f"
+        )
+
+        checkNotNull(request)
+        assertThat(request.header(PrecomputedAssignmentsVerifier.REQUEST_NONCE_HEADER))
+            .isEqualTo("000102030405060708090a0b0c0d0e0f")
+    }
+
+    @Test
+    fun `M add authorization and signing metadata W create() { valid assignment authorization }`(
+        @StringForgery fakeTargetingKey: String
+    ) {
+        val authorizationStore = AssignmentAuthorizationStore(
+            AssignmentAuthorization("header.payload.signature", Date(System.currentTimeMillis() + 60_000))
+        )
+        testedFactory = PrecomputedAssignmentsRequestFactory(
+            mockInternalLogger,
+            null,
+            authorizationStore,
+            AssignmentProtection.SIGNED_AND_AUTHORIZED
+        )
+
+        val request = testedFactory.create(
+            EvaluationContext(fakeTargetingKey, emptyMap()),
+            fakeDatadogContext
+        )
+
+        checkNotNull(request)
+        assertThat(request.header("Authorization")).isEqualTo("Bearer header.payload.signature")
+        assertThat(request.header(PrecomputedAssignmentsVerifier.SIGNATURE_VERSION_HEADER)).isEqualTo("2")
+        assertThat(request.header(PrecomputedAssignmentsVerifier.REQUEST_NONCE_HEADER))
+            .matches("[0-9a-f]{32}")
+    }
+
+    @Test
+    fun `M return null W create() { expired assignment authorization }`(
+        @StringForgery fakeTargetingKey: String
+    ) {
+        testedFactory = PrecomputedAssignmentsRequestFactory(
+            mockInternalLogger,
+            null,
+            AssignmentAuthorizationStore(
+                AssignmentAuthorization("header.payload.signature", Date(System.currentTimeMillis() - 1))
+            ),
+            AssignmentProtection.SIGNED_AND_AUTHORIZED
+        )
+
+        val request = testedFactory.create(
+            EvaluationContext(fakeTargetingKey, emptyMap()),
+            fakeDatadogContext
+        )
+
+        assertThat(request).isNull()
+    }
+
+    @Test
+    fun `M return null W create() { signed and authorized without authorization }`(
+        @StringForgery fakeTargetingKey: String
+    ) {
+        testedFactory = PrecomputedAssignmentsRequestFactory(
+            internalLogger = mockInternalLogger,
+            customFlagEndpoint = null,
+            assignmentProtection = AssignmentProtection.SIGNED_AND_AUTHORIZED
+        )
+
+        val request = testedFactory.create(
+            EvaluationContext(fakeTargetingKey, emptyMap()),
+            fakeDatadogContext
+        )
+
+        assertThat(request).isNull()
+    }
+
+    @Test
+    fun `M return null W create() { invalid local protection configuration }`(
+        @StringForgery fakeTargetingKey: String
+    ) {
+        testedFactory = PrecomputedAssignmentsRequestFactory(
+            internalLogger = mockInternalLogger,
+            customFlagEndpoint = null,
+            assignmentProtection = AssignmentProtection.SIGNED,
+            hasValidProtectionConfiguration = false
+        )
+
+        val request = testedFactory.create(
+            EvaluationContext(fakeTargetingKey, emptyMap()),
+            fakeDatadogContext
+        )
+
+        assertThat(request).isNull()
+    }
+
+    @Test
+    fun `M return null W create() { protected custom endpoint is not HTTPS }`(
+        @StringForgery fakeTargetingKey: String
+    ) {
+        testedFactory = PrecomputedAssignmentsRequestFactory(
+            internalLogger = mockInternalLogger,
+            customFlagEndpoint = "http://example.test/precompute-assignments",
+            assignmentProtection = AssignmentProtection.SIGNED
+        )
+
+        val request = testedFactory.create(
+            EvaluationContext(fakeTargetingKey, emptyMap()),
+            fakeDatadogContext
+        )
+
+        assertThat(request).isNull()
+    }
+
+    @Test
+    fun `M return null W create() { protected request body exceeds limit }`() {
+        testedFactory = PrecomputedAssignmentsRequestFactory(
+            internalLogger = mockInternalLogger,
+            customFlagEndpoint = null,
+            assignmentProtection = AssignmentProtection.SIGNED
+        )
+
+        val request = testedFactory.create(
+            EvaluationContext(
+                targetingKey = "user-1",
+                attributes = mapOf("large" to "x".repeat(PrecomputedAssignmentsVerifier.MAX_REQUEST_BODY_BYTES))
+            ),
+            fakeDatadogContext
+        )
+
+        assertThat(request).isNull()
     }
 
     // endregion

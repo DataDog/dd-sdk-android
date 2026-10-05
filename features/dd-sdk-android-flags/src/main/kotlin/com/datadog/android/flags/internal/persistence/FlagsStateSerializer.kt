@@ -19,7 +19,7 @@ import org.json.JSONObject
  */
 internal class FlagsStateSerializer(private val internalLogger: InternalLogger) : Serializer<FlagsStateEntry> {
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall") // JSON failures return no persisted state.
     override fun serialize(model: FlagsStateEntry): String = try {
         val json = JSONObject()
 
@@ -36,6 +36,26 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
         json.put(JsonKeys.FLAGS.value, flagsJson)
 
         json.put(JsonKeys.LAST_UPDATE_TIMESTAMP.value, model.lastUpdateTimestamp)
+
+        val protectedEnvelope = model.protectedEnvelope
+        val rawResponseBody = model.rawResponseBody
+        if (protectedEnvelope != null && rawResponseBody != null) {
+            json.put(JsonKeys.RAW_RESPONSE_BODY.value, rawResponseBody)
+            json.put(
+                JsonKeys.PROTECTED_ENVELOPE.value,
+                JSONObject()
+                    .put(PROTECTION, protectedEnvelope.protection.name)
+                    .put(REQUEST_NONCE, protectedEnvelope.requestNonce)
+                    .put(RESPONSE_STATUS, protectedEnvelope.responseStatus)
+                    .put(AUTHORIZATION_POLICY_VERSION, protectedEnvelope.authorizationPolicyVersion)
+                    .put(RULES_REVISION, protectedEnvelope.rulesRevision)
+                    .put(ISSUED_AT, protectedEnvelope.issuedAt)
+                    .put(EXPIRES_AT, protectedEnvelope.expiresAt)
+                    .put(CERTIFICATE_ID, protectedEnvelope.certificateId)
+                    .put(CERTIFICATE, protectedEnvelope.certificate)
+                    .put(SIGNATURE, protectedEnvelope.signature)
+            )
+        }
 
         json.toString()
     } catch (e: JSONException) {
@@ -67,5 +87,18 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
         put(JsonKeys.EXTRA_LOGGING.value, flag.extraLogging)
         put(JsonKeys.REASON.value, flag.reason)
         flag.serialId?.let { put(JsonKeys.SERIAL_ID.value, it) }
+    }
+
+    private companion object {
+        const val PROTECTION = "protection"
+        const val REQUEST_NONCE = "requestNonce"
+        const val RESPONSE_STATUS = "responseStatus"
+        const val AUTHORIZATION_POLICY_VERSION = "authorizationPolicyVersion"
+        const val RULES_REVISION = "rulesRevision"
+        const val ISSUED_AT = "issuedAt"
+        const val EXPIRES_AT = "expiresAt"
+        const val CERTIFICATE_ID = "certificateId"
+        const val CERTIFICATE = "certificate"
+        const val SIGNATURE = "signature"
     }
 }

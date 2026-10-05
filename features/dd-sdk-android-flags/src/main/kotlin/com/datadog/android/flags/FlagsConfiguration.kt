@@ -21,7 +21,10 @@ data class FlagsConfiguration internal constructor(
     internal val evaluationFlushIntervalMs: Long,
     internal val rumIntegrationEnabled: Boolean,
     internal val gracefulModeEnabled: Boolean,
-    internal val initializationTimeoutMs: Long?
+    internal val initializationTimeoutMs: Long?,
+    internal val assignmentAuthorization: AssignmentAuthorization?,
+    internal val assignmentProtection: AssignmentProtection,
+    internal val hasValidAssignmentProtectionConfiguration: Boolean
 ) {
     /**
      * Copies this configuration and preserves the initialization timeout.
@@ -46,12 +49,16 @@ data class FlagsConfiguration internal constructor(
         evaluationFlushIntervalMs = evaluationFlushIntervalMs,
         rumIntegrationEnabled = rumIntegrationEnabled,
         gracefulModeEnabled = gracefulModeEnabled,
-        initializationTimeoutMs = initializationTimeoutMs
+        initializationTimeoutMs = initializationTimeoutMs,
+        assignmentAuthorization = assignmentAuthorization,
+        assignmentProtection = assignmentProtection,
+        hasValidAssignmentProtectionConfiguration = hasValidAssignmentProtectionConfiguration
     )
 
     /**
      * A Builder class for a [FlagsConfiguration].
      */
+    @Suppress("TooManyFunctions")
     class Builder {
         private var trackExposures: Boolean = true
         private var trackEvaluations: Boolean = true
@@ -62,6 +69,9 @@ data class FlagsConfiguration internal constructor(
         private var rumIntegrationEnabled: Boolean = true
         private var gracefulModeEnabled: Boolean = true
         private var initializationTimeoutMs: Long? = DEFAULT_INITIALIZATION_TIMEOUT_MS
+        private var assignmentAuthorization: AssignmentAuthorization? = null
+        private var assignmentProtection: AssignmentProtection = AssignmentProtection.DISABLED
+        private var assignmentProtectionWasExplicitlySet = false
 
         /**
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint.
@@ -171,6 +181,34 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
+         * Sets a cached customer token for protected assignment delivery.
+         *
+         * @param authorization the cached token and its expiration time.
+         * @return this [Builder] instance.
+         */
+        fun assignmentAuthorization(authorization: AssignmentAuthorization): Builder = apply {
+            assignmentAuthorization = authorization
+            if (!assignmentProtectionWasExplicitlySet) {
+                assignmentProtection = AssignmentProtection.SIGNED_AND_AUTHORIZED
+            }
+        }
+
+        /**
+         * Sets the minimum protection required for assignment delivery.
+         *
+         * [AssignmentProtection.SIGNED] does not require customer authorization.
+         * [AssignmentProtection.SIGNED_AND_AUTHORIZED] requires a current [AssignmentAuthorization].
+         * An incompatible configuration makes the Flags client non-operational. It never downgrades protection.
+         *
+         * @param protection the local protection policy.
+         * @return this [Builder] instance.
+         */
+        fun assignmentProtection(protection: AssignmentProtection): Builder = apply {
+            assignmentProtection = protection
+            assignmentProtectionWasExplicitlySet = true
+        }
+
+        /**
          * Sets whether RUM evaluation logging is enabled.
          * This adds the result of evaluating a feature flag to the view.
          * Enabled by default.
@@ -215,7 +253,11 @@ data class FlagsConfiguration internal constructor(
             evaluationFlushIntervalMs = evaluationFlushIntervalMs,
             rumIntegrationEnabled = rumIntegrationEnabled,
             gracefulModeEnabled = gracefulModeEnabled,
-            initializationTimeoutMs = initializationTimeoutMs
+            initializationTimeoutMs = initializationTimeoutMs,
+            assignmentAuthorization = assignmentAuthorization,
+            assignmentProtection = assignmentProtection,
+            hasValidAssignmentProtectionConfiguration =
+            assignmentProtection == AssignmentProtection.SIGNED_AND_AUTHORIZED || assignmentAuthorization == null
         )
 
         internal companion object {

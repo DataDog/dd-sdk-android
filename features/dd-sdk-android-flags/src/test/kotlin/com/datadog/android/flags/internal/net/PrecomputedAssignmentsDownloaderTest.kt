@@ -65,6 +65,9 @@ internal class PrecomputedAssignmentsDownloaderTest {
     @Mock
     lateinit var mockCall: Call
 
+    @Mock
+    lateinit var mockPayloadVerifier: AssignmentPayloadVerifier
+
     private lateinit var testedDownloader: PrecomputedAssignmentsDownloader
 
     @Forgery
@@ -89,7 +92,8 @@ internal class PrecomputedAssignmentsDownloaderTest {
         testedDownloader = PrecomputedAssignmentsDownloader(
             callFactory = mockCallFactory,
             internalLogger = mockInternalLogger,
-            requestFactory = mockRequestFactory
+            requestFactory = mockRequestFactory,
+            payloadVerifier = mockPayloadVerifier
         )
     }
 
@@ -115,7 +119,8 @@ internal class PrecomputedAssignmentsDownloaderTest {
         val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
 
         // Then
-        assertThat(result).isEqualTo(fakeResponseBody)
+        assertThat(result?.body).isEqualTo(fakeResponseBody)
+        assertThat(result?.protectedEnvelope).isNull()
         verify(mockRequestFactory).create(fakeEvaluationContext, fakeDatadogContext)
     }
 
@@ -368,6 +373,42 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W readPrecomputedFlags() { payload verification fails }`(
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        val fakeResponse = createSuccessfulResponse("{}", fakeUrl)
+        val verificationFailure = AssignmentPayloadVerificationException(
+            "Signed assignment signature is invalid"
+        )
+        testedDownloader = PrecomputedAssignmentsDownloader(
+            callFactory = mockCallFactory,
+            internalLogger = mockInternalLogger,
+            requestFactory = mockRequestFactory,
+            payloadVerifier = AssignmentPayloadVerifier { _, _, _ -> throw verificationFailure }
+        )
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
+            .doReturn(fakeRequest)
+        whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
+        whenever(mockCall.execute()).doReturn(fakeResponse)
+
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        assertThat(result).isNull()
+        val telemetryMessageCaptor = argumentCaptor<() -> String>()
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.TELEMETRY),
+            telemetryMessageCaptor.capture(),
+            eq(verificationFailure),
+            eq(true),
+            eq(null)
+        )
+        assertThat(telemetryMessageCaptor.firstValue.invoke())
+            .isEqualTo("Rejected an unverified flag assignments response")
     }
 
     @Test

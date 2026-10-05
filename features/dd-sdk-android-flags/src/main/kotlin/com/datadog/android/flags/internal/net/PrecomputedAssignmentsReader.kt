@@ -14,5 +14,10 @@ import com.datadog.tools.annotation.NoOpImplementation
 @NoOpImplementation
 internal interface PrecomputedAssignmentsReader {
     @WorkerThread
-    fun readPrecomputedFlags(context: EvaluationContext, datadogContext: DatadogContext): String?
+    fun readPrecomputedFlags(context: EvaluationContext, datadogContext: DatadogContext): PrecomputedAssignmentsPayload?
 }
+
+internal data class PrecomputedAssignmentsPayload(
+    val body: String,
+    val protectedEnvelope: ProtectedAssignmentEnvelope? = null
+)
