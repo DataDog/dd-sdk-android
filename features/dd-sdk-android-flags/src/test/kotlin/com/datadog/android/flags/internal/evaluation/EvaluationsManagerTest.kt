@@ -273,6 +273,7 @@ internal class EvaluationsManagerTest {
         // Given
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
         val context = publicContext
+        val callback = mock<EvaluationContextCallback>()
 
         val invalidResponse = "{ invalid json }"
         whenever(
@@ -281,13 +282,17 @@ internal class EvaluationsManagerTest {
                 fakeDatadogContext
             )
         ).thenReturn(invalidResponse)
-        whenever(mockPrecomputeMapper.map(invalidResponse)).thenReturn(emptyMap())
+        whenever(mockPrecomputeMapper.map(invalidResponse)).thenReturn(null)
 
         // When
-        evaluationsManager.updateEvaluationsForContext(context)
+        evaluationsManager.updateEvaluationsForContext(context, callback)
 
         // Then
-        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(emptyMap()), any())
+        verify(mockFlagsRepository, times(0)).setFlagsAndContext(any(), any(), any())
+        verify(mockFlagsStateManager).updateState(argThat { this is FlagsClientState.Error })
+        verify(mockFlagsStateManager, times(0)).updateState(FlagsClientState.Ready)
+        verify(callback).onFailure(any())
+        verify(callback, times(0)).onSuccess()
     }
 
     @Test
@@ -416,6 +421,9 @@ internal class EvaluationsManagerTest {
 
         // Then
         verify(mockCallback).onSuccess()
+        verify(mockCallback, times(0)).onFailure(any())
+        verify(mockFlagsRepository).setFlagsAndContext(eq(publicContext), eq(emptyMap()), any())
+        verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
     }
 
     @Test
