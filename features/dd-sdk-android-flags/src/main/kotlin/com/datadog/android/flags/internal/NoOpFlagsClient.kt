@@ -9,11 +9,12 @@ package com.datadog.android.flags.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsClientEventListener
 import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags.FlagsSubscription
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.FlagsClientEvent
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import org.json.JSONObject
@@ -37,10 +38,10 @@ internal class NoOpFlagsClient(
     private val logWithPolicy: LogWithPolicy
 ) : FlagsClient {
 
-    override fun onFirstFlags(callback: (FlagsClientEvent) -> Unit): () -> Unit {
+    override fun onFirstFlags(listener: FlagsClientEventListener): FlagsSubscription {
         // This fallback never installs flags, so there is no first result to deliver.
         logOperation("onFirstFlags", InternalLogger.Level.WARN)
-        return {}
+        return FlagsSubscription {}
     }
 
     override val state: StateObservable = object : StateObservable {

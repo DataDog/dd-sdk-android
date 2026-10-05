@@ -28,7 +28,6 @@ import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.FlagsClientEvent
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.internal.utils.DDCoreStateHolder
@@ -65,19 +64,19 @@ import org.json.JSONObject
 interface FlagsClient {
 
     /**
-     * Invokes [callback] once with the keys from the first installed cached or downloaded flags,
+     * Invokes [listener] once with the keys from the first installed cached or downloaded flags,
      * including an empty configuration. Missing or invalid cache does not trigger this callback.
      * Each registration receives the retained first result, even after subsequent flag updates.
      * If the first result is available, delivery is immediate on the calling thread; otherwise it runs
      * on the installing thread. Callback exceptions are logged and isolated.
-     * Pending callbacks are retained until delivery or cancellation. Invoke the returned cancellation function
+     * Pending callbacks are retained until delivery or cancellation. Unsubscribe the returned subscription
      * when the owner is destroyed to release captured references if flags never become available.
-     * The returned cancellation function is thread-safe and idempotent. A callback already claimed
+     * Unsubscription is thread-safe and idempotent. A callback already claimed
      * for delivery may still run; cancellation does not interrupt or wait for it.
      * Immediate replay may occur before this method returns; cancellation cannot undo delivery.
      * This notification does not imply readiness. Dispatch UI work to the appropriate thread.
      */
-    fun onFirstFlags(callback: (FlagsClientEvent) -> Unit): () -> Unit
+    fun onFirstFlags(listener: FlagsClientEventListener): FlagsSubscription
 
     /**
      * Sets the [EvaluationContext] for flag resolution.

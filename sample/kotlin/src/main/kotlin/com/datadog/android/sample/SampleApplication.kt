@@ -250,7 +250,7 @@ class SampleApplication : Application() {
 
         // Create FlagsClient and convert to OpenFeature provider
         val flagsClient = FlagsClient.Builder().build()
-        // Application-lifetime callback; lifecycle-scoped callers retain and invoke the cancellation function.
+        // Application-lifetime callback; lifecycle-scoped callers retain the subscription and call unsubscribe().
         flagsClient.onFirstFlags { event ->
             logAndEvaluateFirstFlags(flagsClient, event) { message -> Log.i("FirstFlags", message) }
         }

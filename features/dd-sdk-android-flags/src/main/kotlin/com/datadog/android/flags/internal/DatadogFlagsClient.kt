@@ -10,7 +10,9 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsClientEventListener
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.FlagsSubscription
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
@@ -61,15 +63,15 @@ internal class DatadogFlagsClient(
     override val state: StateObservable = flagStateManager
 
     @Suppress("TooGenericExceptionCaught") // Application callbacks must not interrupt installation or persistence.
-    override fun onFirstFlags(callback: (FlagsClientEvent) -> Unit): () -> Unit {
-        return flagsRepository.waitForFlags().whenComplete { keys ->
+    override fun onFirstFlags(listener: FlagsClientEventListener): FlagsSubscription {
+        val unsubscribe = flagsRepository.waitForFlags().whenComplete { keys ->
             val event = synchronized(firstFlagsLock) {
                 firstFlagsEvent ?: FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED, keys).also {
                     firstFlagsEvent = it
                 }
             }
             try {
-                callback(event)
+                listener.onEvent(event)
             } catch (exception: Exception) {
                 featureSdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
@@ -79,6 +81,7 @@ internal class DatadogFlagsClient(
                 )
             }
         }
+        return FlagsSubscription(unsubscribe)
     }
 
     // region FlagsClient

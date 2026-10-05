@@ -133,12 +133,26 @@ internal class FirstFlagsIntegrationTest {
         store.deferRead = true
         val client = FlagsClient.Builder(sdkCore = core).build()
         val registration = client.onFirstFlags { events.add(it) }
-        registration()
-        registration()
+        registration.unsubscribe()
+        registration.unsubscribe()
         store.releaseRead()
         assertThat(events).isEmpty()
-        client.onFirstFlags { events.add(it) }.invoke()
+        client.onFirstFlags { events.add(it) }.unsubscribe()
         assertThat(events.single().flagsChanged).containsExactly("enabled")
+    }
+
+    @Test
+    fun `M unsubscribe only one registration W same named listener registered twice`() {
+        store.json = cached()
+        store.deferRead = true
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        val listener = FlagsClientEventListener { events.add(it) }
+        val first = client.onFirstFlags(listener)
+        client.onFirstFlags(listener)
+        first.unsubscribe()
+        first.unsubscribe()
+        store.releaseRead()
+        assertThat(events).hasSize(1)
     }
 
     @Test
@@ -309,7 +323,7 @@ internal class FirstFlagsIntegrationTest {
     fun `M isolate failures and deliver per registration W same handler registered twice`() {
         val client = FlagsClient.Builder(sdkCore = core).build()
         client.onFirstFlags { error("application failure") }
-        val callback: (FlagsClientEvent) -> Unit = { events.add(it) }
+        val callback = FlagsClientEventListener { events.add(it) }
         client.onFirstFlags(callback)
         client.onFirstFlags(callback)
         server.enqueue(MockResponse().setBody(response(true)))

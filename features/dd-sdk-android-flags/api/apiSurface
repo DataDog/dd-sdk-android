@@ -4,7 +4,7 @@ interface com.datadog.android.flags.EvaluationContextCallback
 object com.datadog.android.flags.Flags
   fun enable(FlagsConfiguration = FlagsConfiguration.default, com.datadog.android.api.SdkCore = Datadog.getInstance())
 interface com.datadog.android.flags.FlagsClient
-  fun onFirstFlags((com.datadog.android.flags.model.FlagsClientEvent) -> Unit): () -> Unit
+  fun onFirstFlags(FlagsClientEventListener): FlagsSubscription
   fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext, EvaluationContextCallback? = null)
   fun resolveBooleanValue(String, Boolean): Boolean
   fun resolveStringValue(String, String): String
@@ -19,6 +19,8 @@ interface com.datadog.android.flags.FlagsClient
     fun build(): FlagsClient
   companion object 
     fun get(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
+interface com.datadog.android.flags.FlagsClientEventListener
+  fun onEvent(com.datadog.android.flags.model.FlagsClientEvent)
 data class com.datadog.android.flags.FlagsConfiguration
   fun copy(Boolean = this.trackExposures, Boolean = this.trackEvaluations, String? = this.customExposureEndpoint, String? = this.customEvaluationEndpoint, String? = this.customFlagEndpoint, Long = this.evaluationFlushIntervalMs, Boolean = this.rumIntegrationEnabled, Boolean = this.gracefulModeEnabled): FlagsConfiguration
   class Builder
@@ -35,6 +37,8 @@ data class com.datadog.android.flags.FlagsConfiguration
 class com.datadog.android.flags.FlagsInitializationTimeoutException : RuntimeException
 interface com.datadog.android.flags.FlagsStateListener
   fun onStateChanged(com.datadog.android.flags.model.FlagsClientState)
+interface com.datadog.android.flags.FlagsSubscription
+  fun unsubscribe()
 interface com.datadog.android.flags.StateObservable
   fun getCurrentState(): com.datadog.android.flags.model.FlagsClientState
   fun addListener(FlagsStateListener)
