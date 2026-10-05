@@ -15,6 +15,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
@@ -78,6 +79,7 @@ internal class TelemetryEventHandler(
             withFeatureContexts = setOf(
                 Feature.SESSION_REPLAY_FEATURE_NAME,
                 Feature.TRACING_FEATURE_NAME,
+                Feature.PROFILING_FEATURE_NAME,
                 Feature.RUM_FEATURE_NAME
             )
         ) { datadogContext, writeScope ->
@@ -328,6 +330,12 @@ internal class TelemetryEventHandler(
             sessionReplayFeatureContext[SESSION_REPLAY_TOUCH_PRIVACY_KEY] as? String
         val sessionReplayTextAndInputPrivacy =
             sessionReplayFeatureContext[SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY] as? String
+        val profilingContext = datadogContext.featuresContext[Feature.PROFILING_FEATURE_NAME].orEmpty()
+        val profilingSampleRate = profilingContext[FeatureContextKeys.PROFILING_SAMPLE_RATE] as? Number
+        val profilingAppLaunchSampleRate =
+            profilingContext[FeatureContextKeys.PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE] as? Number
+        val profilingAnrEnabled =
+            profilingContext[FeatureContextKeys.PROFILING_ANR_ENABLED] as? Boolean
         val viewTrackingStrategy = when (rumConfig?.viewTrackingStrategy) {
             is ActivityViewTrackingStrategy -> VTS.ACTIVITYVIEWTRACKINGSTRATEGY
             is FragmentViewTrackingStrategy -> VTS.FRAGMENTVIEWTRACKINGSTRATEGY
@@ -341,6 +349,7 @@ internal class TelemetryEventHandler(
         val tracerApi = resolveTracerApi(traceContext)
         val openTelemetryApiVersion = resolveOpenTelemetryApiVersion(tracerApi, traceContext)
         val useTracing = (traceFeature != null && tracerApi != null)
+        val useClientSideStats = sdkCore.getFeature(Feature.TRACING_CLIENT_STATS_FEATURE_NAME) != null
 
         val okhttpInterceptorSampleRate = traceContext[OKHTTP_INTERCEPTOR_SAMPLE_RATE] as? Float?
         val tracingHeaderTypes =
@@ -350,6 +359,7 @@ internal class TelemetryEventHandler(
             ?.timeThresholdInMilliseconds
         val tnsTimeBasedThreshold = (rumConfig?.initialResourceIdentifier as? TimeBasedInitialResourceIdentifier)
             ?.timeThresholdInMilliseconds
+        val rcMeta = sdkCore.remoteConfigurationSyncMetadata
 
         return TelemetryConfigurationEvent(
             dd = TelemetryConfigurationEvent.Dd(),
@@ -410,7 +420,22 @@ internal class TelemetryEventHandler(
                     numberOfDisplays = datadogContext.deviceInfo.numberOfDisplays?.toLong(),
                     traceSampleRate = okhttpInterceptorSampleRate?.toLong(),
                     selectedTracingPropagators = tracingHeaderTypes?.toSelectedTracingPropagators(),
-                    trackResourceHeaders = trackResourceHeaders
+                    trackResourceHeaders = trackResourceHeaders,
+                    useClientSideStats = useClientSideStats,
+                    remoteConfigurationId = datadogContext.remoteConfigurationId,
+                    profilingSampleRate = profilingSampleRate,
+                    profilingApplicationLaunchSampleRate = profilingAppLaunchSampleRate,
+                    profilingAnrEnabled = profilingAnrEnabled,
+                    remoteConfiguration = rcMeta?.let {
+                        TelemetryConfigurationEvent.RemoteConfiguration(
+                            configId = it.configId,
+                            versionId = it.versionId,
+                            lastModified = it.lastModified,
+                            lastSynced = it.lastSynced,
+                            firstApplied = it.firstApplied,
+                            syncId = it.syncId
+                        )
+                    }
                 )
             )
         )
@@ -577,7 +602,7 @@ internal class TelemetryEventHandler(
     private fun Map<String, Any?>.getFloat(key: LocalAttribute.Key) = get(key.toString()) as? Float
 
     private fun MutableMap<String, Any?>.cleanUpInternalAttributes() = toMutableMap().apply {
-        LocalAttribute.Key.values().forEach { key -> remove(key.toString()) }
+        LocalAttribute.Key.entries.forEach { key -> remove(key.toString()) }
     }
 
     private fun MutableMap<String, Any?>.addDiagnosticsAttributes() = apply {

@@ -167,7 +167,8 @@ internal class RequestTracingStateRegistryTest {
         )
         val newState = RequestTracingState(
             requestInfoBuilder = newRequestBuilder,
-            isSampled = true
+            isSampled = true,
+            isDefaultTracer = false
         )
 
         // When
@@ -184,7 +185,8 @@ internal class RequestTracingStateRegistryTest {
             requestInfoBuilder = OkHttpRequestInfoBuilder(
                 Request.Builder().url(fakeUrl)
             ),
-            isSampled = true
+            isSampled = true,
+            isDefaultTracer = false
         )
 
         // When
@@ -206,7 +208,8 @@ internal class RequestTracingStateRegistryTest {
         )
         val newState = RequestTracingState(
             requestInfoBuilder = newRequestBuilder,
-            isSampled = true
+            isSampled = true,
+            isDefaultTracer = false
         )
 
         // When
@@ -226,7 +229,8 @@ internal class RequestTracingStateRegistryTest {
         )
         val newState = RequestTracingState(
             requestInfoBuilder = newRequestBuilder,
-            isSampled = true
+            isSampled = true,
+            isDefaultTracer = false
         )
 
         // When
@@ -320,7 +324,8 @@ internal class RequestTracingStateRegistryTest {
             requestInfoBuilder = newRequestBuilder,
             isSampled = true,
             span = mockSpan,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            isDefaultTracer = false
         )
 
         // When
@@ -366,7 +371,8 @@ internal class RequestTracingStateRegistryTest {
                             requestInfoBuilder = OkHttpRequestInfoBuilder(
                                 Request.Builder().url(call.request().url.toString())
                             ),
-                            isSampled = true
+                            isSampled = true,
+                            isDefaultTracer = false
                         )
                     )
                     testedRegistry.get(call)

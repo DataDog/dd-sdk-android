@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rum-sdk-config-android",
+  "description": "Android RUM SDK Remote Configuration",
+  "type": "object",
+  "required": ["platform"],
+  "additionalProperties": false,
+  "properties": {
+    "platform": { "type": "string", "const": "android" },
+    "rum": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "mobile.json#/$defs/rum" },
+        {
+          "type": "object",
+          "properties": {
+            "crashReportsEnabled": { "type": "boolean" },
+            "trackNonFatalAnrs": { "type": "boolean" }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "sessionReplay": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "mobile.json#/$defs/sessionReplay" },
+        {
+          "type": "object",
+          "properties": {
+            "imagePrivacy": {
+              "type": "string",
+              "description": "Session Replay image masking level",
+              "enum": ["mask_none", "mask_large_only", "mask_all"]
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "profiling": { "$ref": "mobile.json#/$defs/profiling" },
+    "trace": { "$ref": "mobile.json#/$defs/trace" }
+  }
+}

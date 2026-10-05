@@ -64,7 +64,6 @@ import com.datadog.android.core.internal.thread.BroadcastReceiverThread
 import com.datadog.android.core.internal.thread.DatadogThreadFactory
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.thread.ScheduledExecutorServiceFactory
-import com.datadog.android.core.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.DatadogNtpEndpoint
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.LoggingSyncListener
@@ -72,10 +71,13 @@ import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.core.internal.utils.getSafe
+import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.TelemetryContext
+import com.datadog.android.internal.time.AppStartTimeProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.allowThreadDiskReads
@@ -165,6 +167,9 @@ internal class CoreFeature(
     internal var packageVersionProvider: AppVersionProvider = NoOpAppVersionProvider()
     internal var androidInfoProvider: AndroidInfoProvider = NoOpAndroidInfoProvider()
 
+    @Volatile
+    private var needsClearTextHttp: Boolean = false
+
     internal lateinit var callFactory: OkHttpCallFactory
     internal var kronosClock: KronosClock? = null
 
@@ -199,6 +204,9 @@ internal class CoreFeature(
 
     @Volatile
     internal var appBuildId: String? = null
+
+    @Volatile
+    internal var remoteConfigurationId: String? = null
     internal var customUploadSchedulerStrategy: UploadSchedulerStrategy? = null
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
@@ -318,6 +326,7 @@ internal class CoreFeature(
                 )
             }
 
+            needsClearTextHttp = false
             initialized.set(false)
             ndkCrashHandler = NoOpNdkCrashHandler()
             trackingConsentProvider = NoOpConsentProvider()
@@ -343,6 +352,12 @@ internal class CoreFeature(
         return object : Call.Factory {
             // Create a new client that shares pools with the base client
             private val client = lazySharedOkHttpClient.newBuilder()
+                .apply {
+                    if (needsClearTextHttp) {
+                        // Internal test endpoints may use HTTP while other features still need HTTPS.
+                        connectionSpecs(lazySharedOkHttpClient.connectionSpecs + ConnectionSpec.CLEARTEXT)
+                    }
+                }
                 .apply(block)
                 .build()
 
@@ -350,6 +365,12 @@ internal class CoreFeature(
                 return client.newCall(request)
             }
         }
+    }
+
+    fun flushContextThread() {
+        contextExecutorService
+            .submitSafe("context-drain-fence", internalLogger) {}
+            ?.getSafe("context-drain-fence", DRAIN_WAIT_SECONDS, TimeUnit.SECONDS, internalLogger)
     }
 
     @Throws(UnsupportedOperationException::class, InterruptedException::class)
@@ -590,6 +611,7 @@ internal class CoreFeature(
     }
 
     private fun readConfigurationSettings(configuration: Configuration.Core) {
+        needsClearTextHttp = configuration.needsClearTextHttp
         batchSize = configuration.batchSize
         uploadFrequency = configuration.uploadFrequency
         localDataEncryption = configuration.encryption
@@ -597,6 +619,7 @@ internal class CoreFeature(
         site = configuration.site
         backpressureStrategy = configuration.backpressureStrategy
         customUploadSchedulerStrategy = configuration.uploadSchedulerStrategy
+        remoteConfigurationId = configuration.remoteConfigurationId
     }
 
     private fun setupInfoProviders(

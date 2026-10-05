@@ -180,14 +180,14 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
     }
 
     fun hasView(expectedId: String?, expectedUrl: String?): LongTaskEventAssert {
-        assertThat(actual.view?.id)
+        assertThat(actual.view.id)
             .overridingErrorMessage(
-                "Expected event data to have view.id $expectedId but was ${actual.view?.id}"
+                "Expected event data to have view.id $expectedId but was ${actual.view.id}"
             )
             .isEqualTo(expectedId.orEmpty())
-        assertThat(actual.view?.url)
+        assertThat(actual.view.url)
             .overridingErrorMessage(
-                "Expected event data to have view.id $expectedUrl but was ${actual.view?.url}"
+                "Expected event data to have view.id $expectedUrl but was ${actual.view.url}"
             )
             .isEqualTo(expectedUrl.orEmpty())
         return this
@@ -437,16 +437,6 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
                     " but instead was: ${actual.dd.profiling?.status}"
             )
             .isEqualTo(profilingStatus)
-        return this
-    }
-
-    fun hasProfilingClockDrift(expected: Number?): LongTaskEventAssert {
-        assertThat(actual.dd.profiling?.clockDrift)
-            .overridingErrorMessage(
-                "Expected RUM event to have profiling clock_drift: $expected" +
-                    " but instead was: ${actual.dd.profiling?.clockDrift}"
-            )
-            .isEqualTo(expected)
         return this
     }
 

@@ -84,11 +84,6 @@ unMock {
 
 datadogBuild {
     applyAndroidLibraryConfig()
-    applyKotlinConfig(
-        // TODO RUM-18200 We access internal members of another module in this module
-        // This should be addressed properly, temporarily disable treating warnings as errors
-        evaluateWarningsAsErrors = false,
-        jvmBytecodeTarget = JvmTarget.JVM_11
-    )
+    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
     applyJunitConfig()
 }

@@ -33,12 +33,14 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -56,7 +58,7 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_NAME_CHARACTERS
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.OPERATION_ERROR_INVALID_OPERATION_KEY
-import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollectorFactory
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -139,7 +141,10 @@ internal class DatadogRumMonitorTest {
     lateinit var mockHandler: Handler
 
     @Mock
-    lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
+    lateinit var mockAccessibilityInfoProvider: InfoProvider<AccessibilityInfo>
+
+    @Mock
+    lateinit var mockViewEventMapper: ViewEventMapper
 
     @Mock
     lateinit var mockBatteryInfoProvider: InfoProvider<BatteryInfo>
@@ -222,6 +227,12 @@ internal class DatadogRumMonitorTest {
     lateinit var fakeTimeInfo: TimeInfo
 
     @Forgery
+    lateinit var fakeBatteryInfo: BatteryInfo
+
+    @Forgery
+    lateinit var fakeDisplayInfo: DisplayInfo
+
+    @Forgery
     lateinit var fakeViewUIPerformanceReport: ViewUIPerformanceReport
 
     @Forgery
@@ -254,7 +265,9 @@ internal class DatadogRumMonitorTest {
         whenever(
             mockSlowFramesListener.resolveReport(any(), any(), any())
         ) doReturn fakeViewUIPerformanceReport.snapshot()
-        whenever(mockAccessibilitySnapshotManager.getIfChanged()) doReturn mock()
+        whenever(mockAccessibilityInfoProvider.getState()) doReturn mock()
+        whenever(mockBatteryInfoProvider.getState()) doReturn fakeBatteryInfo
+        whenever(mockDisplayInfoProvider.getState()) doReturn fakeDisplayInfo
 
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
@@ -311,14 +324,16 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            accessibilityInfoProvider = mockAccessibilityInfoProvider,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            viewEventMapper = mockViewEventMapper,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+            timeseriesCollector = NoOpTimeseriesCollector()
         )
         testedMonitor.rootScope = mockApplicationScope
     }
@@ -346,14 +361,16 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            accessibilityInfoProvider = mockAccessibilityInfoProvider,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            viewEventMapper = mockViewEventMapper,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+            timeseriesCollector = NoOpTimeseriesCollector()
         )
 
         // When
@@ -424,14 +441,16 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            accessibilityInfoProvider = mockAccessibilityInfoProvider,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            viewEventMapper = mockViewEventMapper,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+            timeseriesCollector = NoOpTimeseriesCollector()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -470,14 +489,16 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            accessibilityInfoProvider = mockAccessibilityInfoProvider,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            viewEventMapper = mockViewEventMapper,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+            timeseriesCollector = NoOpTimeseriesCollector()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -1942,6 +1963,7 @@ internal class DatadogRumMonitorTest {
             "flutter" to RumErrorSourceType.FLUTTER,
             "ndk" to RumErrorSourceType.NDK,
             "ndk+il2cpp" to RumErrorSourceType.NDK_IL2CPP,
+            "maui" to RumErrorSourceType.MAUI,
             nonSupportedValue to RumErrorSourceType.ANDROID,
             null to RumErrorSourceType.ANDROID
         )
@@ -2288,14 +2310,16 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            accessibilityInfoProvider = mockAccessibilityInfoProvider,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            viewEventMapper = mockViewEventMapper,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+            timeseriesCollector = NoOpTimeseriesCollector()
         )
 
         // When
@@ -2331,14 +2355,16 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            accessibilityInfoProvider = mockAccessibilityInfoProvider,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            viewEventMapper = mockViewEventMapper,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+            timeseriesCollector = NoOpTimeseriesCollector()
         )
 
         // When
@@ -2374,15 +2400,17 @@ internal class DatadogRumMonitorTest {
             initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            accessibilityInfoProvider = mockAccessibilityInfoProvider,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionTypeOverride = null,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            viewEventMapper = mockViewEventMapper,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+            timeseriesCollector = NoOpTimeseriesCollector()
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -2601,14 +2629,16 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            accessibilityInfoProvider = mockAccessibilityInfoProvider,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            viewEventMapper = mockViewEventMapper,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = NoOpTimeseriesCollectorFactory()
+            timeseriesCollector = NoOpTimeseriesCollector()
         )
         testedMonitor.startView(key, name, attributes)
         // When

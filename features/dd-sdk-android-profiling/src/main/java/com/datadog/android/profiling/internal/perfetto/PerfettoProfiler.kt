@@ -20,12 +20,13 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilerCallback
 import com.datadog.android.profiling.internal.ProfilingStartReason
-import com.datadog.android.profiling.internal.anr.AnrListener
-import com.datadog.android.profiling.internal.anr.AnrProfilingTriggerRegistrar
-import com.datadog.android.profiling.internal.anr.AnrTriggerRegistrar
+import com.datadog.android.profiling.internal.ProfilingStatusListener
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
+import com.datadog.android.profiling.internal.trigger.ProfilingManagerTriggerRegistrar
+import com.datadog.android.profiling.internal.trigger.ProfilingTriggerListener
+import com.datadog.android.profiling.internal.trigger.ProfilingTriggerRegistrar
 import com.datadog.android.profiling.internal.utils.fileSizeSafe
 import com.datadog.android.profiling.internal.utils.getProfilingModuleLongVersionCode
 import com.datadog.android.profiling.internal.utils.isProfilingModuleVersionBlocked
@@ -44,7 +45,7 @@ import kotlin.random.Random
  * @param scheduledExecutorService the executor service to run the profiling task on.
  * @param profilingTelemetry shared telemetry helper that buffers metric events until a logger is
  * available and dispatches them through the unified `[Mobile Metric] Profiling Session` envelope.
- * @param anrTriggerRegistrar registrar that owns the system ANR profiling-trigger lifecycle.
+ * @param triggerRegistrar registrar that owns the system ANR profiling-trigger lifecycle.
  * The profiler passes its internal listener to it at register time; the listener
  * captures the profiler's `callback` so the registered SDK instance receives the detection.
  * @param buildSdkVersionProvider Build.VERSION.SDK_INT provider used for the test.
@@ -54,8 +55,8 @@ internal class PerfettoProfiler(
     override val timeProvider: MutableTimeProvider,
     override val scheduledExecutorService: ScheduledExecutorService,
     internal val profilingTelemetry: ProfilingTelemetry = ProfilingTelemetry(),
-    internal val anrTriggerRegistrar: AnrTriggerRegistrar =
-        AnrProfilingTriggerRegistrar(timeProvider, scheduledExecutorService, profilingTelemetry),
+    internal val triggerRegistrar: ProfilingTriggerRegistrar =
+        ProfilingManagerTriggerRegistrar(timeProvider, scheduledExecutorService, profilingTelemetry),
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : Profiler {
 
@@ -76,8 +77,13 @@ internal class PerfettoProfiler(
     @Volatile
     private var profilingStartTime = 0L
 
+    // Monotonic (boot-relative) captures used for duration and callback-delay, which must
+    // keep advancing during deep sleep and be immune to wall-clock adjustments.
     @Volatile
-    private var profilingStopTime = 0L
+    private var profilingStartElapsedMs = 0L
+
+    @Volatile
+    private var profilingStopElapsedMs = 0L
 
     @Volatile
     private var profilingStartReason: ProfilingStartReason = ProfilingStartReason.UNKNOWN
@@ -92,12 +98,15 @@ internal class PerfettoProfiler(
     override var internalLogger: InternalLogger? = null
         set(value) {
             field = value
-            anrTriggerRegistrar.internalLogger = value
+            triggerRegistrar.internalLogger = value
             profilingTelemetry.internalLogger = value
         }
 
-    internal val anrListener = AnrListener { event ->
-        callback?.onAnrDetected(event)
+    @Volatile
+    private var anrTriggerEnabled: Boolean = true
+
+    internal val triggerListener = ProfilingTriggerListener { event, result ->
+        callback?.onAnrDetected(event, result)
     }
 
     @Volatile
@@ -106,17 +115,22 @@ internal class PerfettoProfiler(
     @Volatile
     private var callback: ProfilerCallback? = null
 
+    private val statusLock = Any()
+    private var statusListener: ProfilingStatusListener = NoOpProfilingStatusListener
+
     init {
         resultCallback = Consumer<ProfilingResult> { result ->
             val resultCallbackTime = timeProvider.getDeviceTimestampMillis()
-            // profilingStopTime is 0L when profiling ended by timeout (stop() was never called).
-            // In that case, fall back to resultCallbackTime so duration is still meaningful.
-            val effectiveStopTime =
-                if (profilingStopTime > 0L) profilingStopTime else resultCallbackTime
-            val duration = effectiveStopTime - profilingStartTime
+            val resultCallbackElapsedMs = timeProvider.getDeviceElapsedRealtimeMillis()
+            // profilingStopElapsedMs is 0L when profiling ended by timeout (stop() was never
+            // called). In that case, fall back to the callback elapsed time so duration is
+            // still meaningful.
+            val effectiveStopElapsedMs =
+                if (profilingStopElapsedMs > 0L) profilingStopElapsedMs else resultCallbackElapsedMs
+            val duration = effectiveStopElapsedMs - profilingStartElapsedMs
             val resultCallbackDelayMs =
-                if (profilingStopTime > 0L) resultCallbackTime - profilingStopTime else 0L
-            val startReason = ProfilingStartReason.values().firstOrNull { it.value == result.tag.orEmpty() }
+                if (profilingStopElapsedMs > 0L) resultCallbackElapsedMs - profilingStopElapsedMs else 0L
+            val startReason = ProfilingStartReason.entries.firstOrNull { it.value == result.tag.orEmpty() }
                 ?: ProfilingStartReason.UNKNOWN
             if (result.errorCode == ProfilingResult.ERROR_NONE) {
                 // TODO RUM-13679: need to delete the file after it is no longer needed
@@ -127,7 +141,8 @@ internal class PerfettoProfiler(
                                 start = profilingStartTime,
                                 startReason = startReason,
                                 end = resultCallbackTime,
-                                resultFilePath = it
+                                resultFilePath = it,
+                                profileTypes = listOf(ProfileType.STACK_SAMPLING)
                             )
                         )
                     }
@@ -135,7 +150,7 @@ internal class PerfettoProfiler(
             } else {
                 notifyCallbacks { onFailure(startReason) }
             }
-            isRunning.set(false)
+            updateRunningStatus(false)
             profilingTelemetry.report(
                 ProfilingTelemetryEvent.SessionEnd(
                     startReason = profilingStartReason.value,
@@ -145,7 +160,6 @@ internal class PerfettoProfiler(
                     fileSize = fileSizeSafe(result.resultFilePath, internalLogger),
                     durationMs = duration,
                     resultCallbackDelayMs = resultCallbackDelayMs,
-                    clientClockDriftMs = timeProvider.getServerOffsetMillis(),
                     stopReason = resolveStopReason(result.errorCode),
                     bufferSizeKb = BUFFER_SIZE_KB,
                     samplingFrequencyHz = profilingSamplingRateHz
@@ -202,9 +216,10 @@ internal class PerfettoProfiler(
             return
         }
         // profiling will be launched when no session is currently running.
-        if (isRunning.compareAndSet(false, true)) {
+        if (updateRunningStatus(true)) {
             profilingStartTime = timeProvider.getDeviceTimestampMillis()
-            profilingStopTime = 0L
+            profilingStartElapsedMs = timeProvider.getDeviceElapsedRealtimeMillis()
+            profilingStopElapsedMs = 0L
             profilingStartReason = startReason
             profilingAppStartInfo = additionalAttributes[ProfilingTelemetry.KEY_APP_START_INFO]
             requestProfiling(
@@ -239,7 +254,7 @@ internal class PerfettoProfiler(
             // overwritten by that time. Probably need to allow a single profiler instance and stop profiler before
             // starting another request.
             stopSignal?.cancel()
-            profilingStopTime = timeProvider.getDeviceTimestampMillis()
+            profilingStopElapsedMs = timeProvider.getDeviceElapsedRealtimeMillis()
         }
     }
 
@@ -253,8 +268,8 @@ internal class PerfettoProfiler(
     ) {
         synchronized(this) {
             this.callback = callback
-            if (buildSdkVersionProvider.isAtLeastBaklava) {
-                anrTriggerRegistrar.register(appContext, anrListener)
+            if (buildSdkVersionProvider.isAtLeastBaklava && anrTriggerEnabled) {
+                triggerRegistrar.register(appContext, triggerListener)
             }
         }
     }
@@ -262,14 +277,47 @@ internal class PerfettoProfiler(
     override fun unregisterProfilingCallback(appContext: Context) {
         synchronized(this) {
             callback = null
-            if (buildSdkVersionProvider.isAtLeastBaklava) {
-                anrTriggerRegistrar.unregister(appContext)
+            if (buildSdkVersionProvider.isAtLeastBaklava && anrTriggerEnabled) {
+                triggerRegistrar.unregister(appContext)
             }
+        }
+    }
+
+    override fun registerProfilerStatusListener(listener: ProfilingStatusListener) {
+        synchronized(statusLock) {
+            if (statusListener === NoOpProfilingStatusListener) {
+                statusListener = listener
+                listener.onProfilingStatusChange(isRunning.get())
+            }
+        }
+    }
+
+    override fun unregisterProfilerStatusListener(listener: ProfilingStatusListener) {
+        synchronized(statusLock) {
+            if (statusListener === listener) {
+                statusListener = NoOpProfilingStatusListener
+            }
+        }
+    }
+
+    private fun updateRunningStatus(newStatus: Boolean): Boolean {
+        // Deliver the initial snapshot and later transitions in the same order, even
+        // when registration and completion happen on different threads.
+        return synchronized(statusLock) {
+            val changed = isRunning.compareAndSet(!newStatus, newStatus)
+            if (changed) {
+                statusListener.onProfilingStatusChange(newStatus)
+            }
+            changed
         }
     }
 
     override fun setExtendLaunchSession(extend: Boolean) {
         this.extendLaunchSession = extend
+    }
+
+    override fun setAnrTriggerEnabled(enabled: Boolean) {
+        this.anrTriggerEnabled = enabled
     }
 
     override fun resolveProfilingPackageVersionCode(appContext: Context) {
@@ -292,7 +340,7 @@ internal class PerfettoProfiler(
     }
 
     private fun resolveStopReason(errorCode: Int): String {
-        return if (profilingStopTime > 0L) {
+        return if (profilingStopElapsedMs > 0L) {
             ProfilingTelemetry.STOPPED_REASON_MANUAL
         } else {
             when (errorCode) {
@@ -319,6 +367,10 @@ internal class PerfettoProfiler(
         } else {
             PROFILING_MAX_DURATION_MS_CONTINUOUS
         }
+    }
+
+    private object NoOpProfilingStatusListener : ProfilingStatusListener {
+        override fun onProfilingStatusChange(isRunning: Boolean) = Unit
     }
 
     companion object {

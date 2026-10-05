@@ -209,6 +209,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         private Config config;
         private String serviceName;
         private Writer writer = new NoOpWriter();
+        private MetricsAggregator metricsAggregator = NoOpMetricsAggregator.INSTANCE;
         private IdGenerationStrategy idGenerationStrategy;
         private Sampler sampler;
         private HttpCodec.Extractor extractor;
@@ -235,6 +236,11 @@ public class CoreTracer implements AgentTracer.TracerAPI {
 
         public CoreTracerBuilder writer(Writer writer) {
             this.writer = writer;
+            return this;
+        }
+
+        public CoreTracerBuilder metricsAggregator(MetricsAggregator metricsAggregator) {
+            this.metricsAggregator = metricsAggregator;
             return this;
         }
 
@@ -350,6 +356,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
                     config,
                     serviceName,
                     writer,
+                    metricsAggregator,
                     idGenerationStrategy,
                     sampler,
                     injector,
@@ -375,6 +382,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
             final Config config,
             final String serviceName,
             final Writer writer,
+            final MetricsAggregator metricsAggregator,
             final IdGenerationStrategy idGenerationStrategy,
             final Sampler sampler,
             final HttpCodec.Injector injector,
@@ -479,7 +487,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         pendingTraceBuffer.start();
 
         this.writer.start();
-        metricsAggregator = NoOpMetricsAggregator.INSTANCE;
+        this.metricsAggregator = metricsAggregator;
         // Schedule the metrics aggregator to begin reporting after a random delay of 1 to 10 seconds
         // (using milliseconds granularity.) This avoids a fleet of traced applications starting at the
         // same time from sending metrics in sync.

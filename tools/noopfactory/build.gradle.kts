@@ -5,6 +5,7 @@
  */
 
 import com.datadog.gradle.config.taskConfig
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     // Build
@@ -32,7 +33,7 @@ datadogBuild {
     applyJunitConfig()
 }
 
-taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+taskConfig<KotlinCompile> {
     compilerOptions {
         optIn.add("kotlin.RequiresOptIn")
     }

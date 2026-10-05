@@ -650,7 +650,7 @@ class SwipeAndScrollActionTrackerTest {
         @Suppress("unused")
         @JvmStatic
         fun directionToReverseToRtl(): Stream<Arguments> {
-            return Direction.values()
+            return Direction.entries
                 .flatMap {
                     listOf(
                         Arguments.of(it, true, true),

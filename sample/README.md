@@ -27,6 +27,16 @@ To allow the download of logs (to test the `Data List` screen), add the followin
 }
 ```
 
+### Remote Configuration
+
+To enable Remote Configuration, add the following attribute. You can find the ID in the Datadog UI during application onboarding.
+
+```json
+{
+    "remoteConfigurationId": "YOUR REMOTE CONFIGURATION ID"
+}
+```
+
 ### Staging
 
 If you need to target a site that is not part of the `DatadogSite` enum, configure custom endpoints using the following attributes:

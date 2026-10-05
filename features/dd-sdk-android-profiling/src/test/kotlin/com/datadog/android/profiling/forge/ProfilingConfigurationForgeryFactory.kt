@@ -20,7 +20,8 @@ class ProfilingConfigurationForgeryFactory :
             continuousSampleRate = forge.aFloat(min = 0f, max = 100f),
             customEndpointUrl = forge.aNullable {
                 aStringMatching("http(s?)://[a-z]+\\.com/\\w+")
-            }
+            },
+            anrTriggerEnabled = forge.aBool()
         )
     }
 }

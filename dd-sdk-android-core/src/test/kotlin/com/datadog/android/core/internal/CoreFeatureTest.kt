@@ -30,7 +30,6 @@ import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvi
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.thread.BackPressuredBlockingQueue
 import com.datadog.android.core.internal.thread.BroadcastReceiverThread
-import com.datadog.android.core.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
@@ -38,6 +37,7 @@ import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.TelemetryContext
+import com.datadog.android.internal.time.AppStartTimeProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NoOpNdkCrashHandler
@@ -519,6 +519,29 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.appBuildId).isEqualTo(fakeBuildId.toString())
+    }
+
+    @Test
+    fun `M initializes remoteConfigurationId W initialize()`(
+        @StringForgery fakeRemoteConfigurationId: String
+    ) {
+        // Given
+        fakeConfig = fakeConfig.copy(
+            coreConfig = fakeConfig.coreConfig.copy(
+                remoteConfigurationId = fakeRemoteConfigurationId
+            )
+        )
+
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.remoteConfigurationId).isEqualTo(fakeRemoteConfigurationId)
     }
 
     @Test
@@ -1622,6 +1645,93 @@ internal class CoreFeatureTest {
     // endregion
 
     // region createOkHttpCallFactory
+
+    @Test
+    fun `M use TLS only W createOkHttpCallFactory() {cleartext disabled}`() {
+        initializeWithCleartextPolicy(false)
+
+        val specs = captureFactoryConnectionSpecs(testedFeature)
+
+        assertThat(specs).hasSize(1)
+        assertThat(specs.single().isTls).isTrue()
+        assertThat(specs.single().tlsVersions).containsExactly(TlsVersion.TLS_1_2, TlsVersion.TLS_1_3)
+        assertThat(specs.single().cipherSuites).containsExactlyElementsOf(CoreFeature.RESTRICTED_CIPHER_SUITES.toList())
+    }
+
+    @Test
+    fun `M preserve restricted TLS W createOkHttpCallFactory() {cleartext enabled}`() {
+        initializeWithCleartextPolicy(false)
+        val strictSpecs = captureFactoryConnectionSpecs(testedFeature)
+        testedFeature.stop()
+        initializeWithCleartextPolicy(true)
+
+        assertThat(captureFactoryConnectionSpecs(testedFeature))
+            .containsExactlyElementsOf(strictSpecs + ConnectionSpec.CLEARTEXT)
+        assertThat(strictSpecs).hasSize(1)
+        assertThat(strictSpecs.single().isTls).isTrue()
+    }
+
+    @Test
+    fun `M isolate cleartext policy W createOkHttpCallFactory() {multiple cores}`() {
+        initializeWithCleartextPolicy(true)
+        val otherCore = CoreFeature(
+            mockInternalLogger,
+            mockAppStartTimeProvider,
+            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService },
+            scheduledExecutorServiceFactory = { _, _, _ -> mockScheduledExecutorService },
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
+        )
+
+        otherCore.initialize(
+            appContext.mockInstance,
+            "$fakeSdkInstanceId-other",
+            fakeConfig.copy(coreConfig = fakeConfig.coreConfig.copy(needsClearTextHttp = false)),
+            fakeConsent
+        )
+        try {
+            assertThat(captureFactoryConnectionSpecs(testedFeature)).contains(ConnectionSpec.CLEARTEXT)
+            assertThat(captureFactoryConnectionSpecs(otherCore)).doesNotContain(ConnectionSpec.CLEARTEXT)
+        } finally {
+            otherCore.stop()
+        }
+    }
+
+    @Test
+    fun `M reset cleartext policy W stop() and initialize()`() {
+        initializeWithCleartextPolicy(true)
+        testedFeature.stop()
+
+        assertThat(captureFactoryConnectionSpecs(testedFeature)).doesNotContain(ConnectionSpec.CLEARTEXT)
+        initializeWithCleartextPolicy(false)
+        assertThat(captureFactoryConnectionSpecs(testedFeature)).doesNotContain(ConnectionSpec.CLEARTEXT)
+    }
+
+    @Test
+    fun `M apply caller connection specs last W createOkHttpCallFactory() {cleartext enabled}`() {
+        initializeWithCleartextPolicy(true)
+        lateinit var specs: List<ConnectionSpec>
+        testedFeature.createOkHttpCallFactory {
+            connectionSpecs(listOf(ConnectionSpec.RESTRICTED_TLS))
+            specs = build().connectionSpecs
+        }
+
+        assertThat(specs).containsExactly(ConnectionSpec.RESTRICTED_TLS)
+    }
+
+    private fun initializeWithCleartextPolicy(enabled: Boolean) {
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig.copy(coreConfig = fakeConfig.coreConfig.copy(needsClearTextHttp = enabled)),
+            fakeConsent
+        )
+    }
+
+    private fun captureFactoryConnectionSpecs(core: CoreFeature): List<ConnectionSpec> {
+        lateinit var specs: List<ConnectionSpec>
+        core.createOkHttpCallFactory { specs = build().connectionSpecs }
+        return specs
+    }
 
     @Test
     fun `M create call factory W createOkHttpCallFactory()`() {

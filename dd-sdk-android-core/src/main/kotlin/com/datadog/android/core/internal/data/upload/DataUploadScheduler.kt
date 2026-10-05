@@ -37,7 +37,8 @@ internal class DataUploadScheduler(
         networkInfoProvider = networkInfoProvider,
         systemInfoProvider = systemInfoProvider,
         uploadSchedulerStrategy = uploadSchedulerStrategy,
-        maxBatchesPerJob = maxBatchesPerJob
+        maxBatchesPerJob = maxBatchesPerJob,
+        internalLogger = internalLogger
     )
 ) : UploadScheduler {
 

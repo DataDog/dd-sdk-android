@@ -132,11 +132,6 @@ dependencies {
 }
 
 datadogBuild {
-    applyKotlinConfig(
-        // TODO RUM-18191
-        // Suppress -> generateFunctionKeyMetaClasses is deprecated. It was replaced by emitting annotations on functions
-        // instead. Use generateFunctionKeyMetaAnnotations instead. Seems to Compose <-> Kotlin mismatch.
-        evaluateWarningsAsErrors = false
-    )
+    applyKotlinConfig()
     applyJunitConfig()
 }

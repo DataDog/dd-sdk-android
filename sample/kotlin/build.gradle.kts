@@ -11,6 +11,7 @@ import com.datadog.gradle.config.configureFlavorForSampleApp
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.taskConfig
 import com.datadog.gradle.plugin.InstrumentationMode
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     // Build
@@ -186,6 +187,7 @@ dependencies {
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
     implementation(libs.bundles.androidXCompose)
+    implementation(libs.androidXLifecycleCompose)
     implementation(libs.material3Android)
     implementation(libs.googleAccompanistAppCompatTheme)
     implementation(libs.googleAccompanistPager)
@@ -243,7 +245,7 @@ datadogBuild {
     applyJunitConfig()
 }
 
-taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+taskConfig<KotlinCompile> {
     compilerOptions {
         optIn.add("kotlin.RequiresOptIn")
     }

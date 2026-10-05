@@ -15,7 +15,7 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import androidx.annotation.DrawableRes
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProviders
+import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.sample.R
 import com.datadog.android.sample.SampleApplication
 import com.datadog.android.trace.withinSpan
@@ -49,11 +49,10 @@ internal class TracesFragment : Fragment(), View.OnClickListener {
         return rootView
     }
 
-    @Suppress("UnsafeCallOnNullableType") // not an issue in the sample
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         val factory = SampleApplication.getViewModelFactory(requireContext())
-        viewModel = ViewModelProviders.of(this, factory).get(TracesViewModel::class.java)
+        viewModel = ViewModelProvider(this, factory)[TracesViewModel::class.java]
     }
 
     override fun onDetach() {

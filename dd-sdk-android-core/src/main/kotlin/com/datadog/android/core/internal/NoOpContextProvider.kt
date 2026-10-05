@@ -64,6 +64,7 @@ internal class NoOpContextProvider : ContextProvider {
         accountInfo = null,
         trackingConsent = TrackingConsent.NOT_GRANTED,
         appBuildId = null,
+        remoteConfigurationId = null,
         featuresContext = emptyMap()
     )
 }

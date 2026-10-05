@@ -12,15 +12,7 @@ import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface TimeseriesCollector {
-    fun onSessionStart()
-    fun onSessionStop()
+    fun onSessionStart(sessionId: String, sessionType: RumSessionType)
+    fun onSessionStop(sessionId: String)
     fun onRumContextUpdate(newRumContext: RumContext)
-
-    @NoOpImplementation
-    interface Factory {
-        fun create(
-            sessionType: RumSessionType,
-            rumContext: RumContext
-        ): TimeseriesCollector
-    }
 }

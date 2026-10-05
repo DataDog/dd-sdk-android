@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
 import com.datadog.android.compose.AttributesResolver
+import com.datadog.android.compose.ExperimentalTrackingApi
 import com.datadog.android.compose.Navigation3TrackingEffect
 
 internal class Navigation3Activity : ComponentActivity() {
@@ -26,6 +27,7 @@ internal class Navigation3Activity : ComponentActivity() {
         }
     }
 
+    @OptIn(ExperimentalTrackingApi::class)
     @Composable
     @Suppress("StringLiteralDuplication")
     private fun NavDisplaySample() {
@@ -41,11 +43,11 @@ internal class Navigation3Activity : ComponentActivity() {
         Navigation3TrackingEffect(
             backStack = backStack,
             attributesResolver = object : AttributesResolver<Nav3Page> {
-                override fun resolveAttributes(destination: Nav3Page): Map<String, Any?>? {
-                    return when (destination) {
+                override fun resolveAttributes(key: Nav3Page): Map<String, Any?>? {
+                    return when (key) {
                         is Nav3Page.Home -> mapOf("userId" to "defaultUser")
-                        is Nav3Page.Discovery -> mapOf("userId" to destination.userId)
-                        is Nav3Page.Settings -> mapOf("userId" to destination.userId)
+                        is Nav3Page.Discovery -> mapOf("userId" to key.userId)
+                        is Nav3Page.Settings -> mapOf("userId" to key.userId)
                     }
                 }
             }

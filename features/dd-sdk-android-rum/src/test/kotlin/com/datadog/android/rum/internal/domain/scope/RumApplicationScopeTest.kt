@@ -21,10 +21,11 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
@@ -83,7 +84,7 @@ internal class RumApplicationScopeTest {
     lateinit var mockEvent: RumRawEvent
 
     @Mock
-    lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
+    lateinit var mockAccessibilityInfoProvider: InfoProvider<AccessibilityInfo>
 
     @Mock
     lateinit var mockWriter: DataWriter<Any>
@@ -140,9 +141,6 @@ internal class RumApplicationScopeTest {
     lateinit var mockSessionSampler: Sampler<String>
 
     @Mock
-    lateinit var mockTimeseriesCollectorFactory: TimeseriesCollector.Factory
-
-    @Mock
     lateinit var mockTimeseriesCollector: TimeseriesCollector
 
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
@@ -180,13 +178,14 @@ internal class RumApplicationScopeTest {
         whenever(
             mockSlowFramesListener.resolveReport(any(), any(), any())
         ) doReturn viewUIPerformanceReport.snapshot()
-        whenever(mockAccessibilitySnapshotManager.getIfChanged()) doReturn mock()
+        whenever(mockAccessibilityInfoProvider.getState()) doReturn mock()
+        whenever(mockBatteryInfoProvider.getState()) doReturn BatteryInfo()
+        whenever(mockDisplayInfoProvider.getState()) doReturn DisplayInfo()
 
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
 
         whenever(mockSessionSampler.getSampleRate()).thenReturn(fakeSampleRate)
         whenever(mockSessionSampler.sample(any())).thenReturn(true)
-        whenever(mockTimeseriesCollectorFactory.create(any(), any())) doReturn mockTimeseriesCollector
 
         testedScope = RumApplicationScope(
             applicationId = fakeApplicationId,
@@ -204,13 +203,15 @@ internal class RumApplicationScopeTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            accessibilityInfoProvider = mockAccessibilityInfoProvider,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
+            viewEventMapper = mock<ViewEventMapper>(),
+            viewEventWriteConfig = ViewEventWriteConfig.AlwaysFullView,
             heatmapIdentifierRegistry = null,
-            timeseriesCollectorFactory = mockTimeseriesCollectorFactory
+            timeseriesCollector = mockTimeseriesCollector
         )
     }
 
@@ -227,7 +228,7 @@ internal class RumApplicationScopeTest {
     }
 
     @Test
-    fun `M propagate timeseriesFactory to every child session W handleEvent { startView, stop, startView }`(
+    fun `M propagate timeseriesCollector to every child session W handleEvent { startView, stop, startView }`(
         @StringForgery viewKey: String,
         @StringForgery viewName: String
     ) {
@@ -248,13 +249,8 @@ internal class RumApplicationScopeTest {
         // When - a brand new child session scope is created by the application scope
         testedScope.handleEvent(fakeStartViewEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
-        // Then - both the initial and the new child session use the factory we gave the application scope
-        val rumContextCaptor = argumentCaptor<RumContext>()
-        verify(mockTimeseriesCollectorFactory, times(2)).create(any(), rumContextCaptor.capture())
-        assertThat(rumContextCaptor.allValues.map { it.applicationId })
-            .containsOnly(fakeApplicationId)
-        assertThat(rumContextCaptor.firstValue.sessionId)
-            .isNotEqualTo(rumContextCaptor.secondValue.sessionId)
+        // Then - both the initial and the new child session use the collector we gave the application scope
+        verify(mockTimeseriesCollector, times(2)).onSessionStart(any(), any())
     }
 
     @Test

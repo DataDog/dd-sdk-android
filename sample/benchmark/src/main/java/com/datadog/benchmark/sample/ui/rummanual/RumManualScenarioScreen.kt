@@ -36,7 +36,7 @@ internal fun RumManualScenarioScreen(
     Column(modifier = modifier) {
         ExpandedItemView(
             titleText = "Select RUM event",
-            items = RumManualScenarioState.RumEventType.values().toList(),
+            items = RumManualScenarioState.RumEventType.entries.toList(),
             headerText = state.config.eventType.name,
             itemTextFactory = { it.name },
             onClick = { dispatch(RumManualScenarioScreenAction.SelectEventType(it)) }
@@ -112,7 +112,7 @@ private fun ActionEventConfiguration(
 ) {
     ExpandedItemView(
         titleText = "Action type",
-        items = RumActionType.values().toList(),
+        items = RumActionType.entries.toList(),
         headerText = config.actionType.name,
         itemTextFactory = { it.name },
         onClick = { dispatch(RumManualScenarioScreenAction.SelectActionType(it)) }

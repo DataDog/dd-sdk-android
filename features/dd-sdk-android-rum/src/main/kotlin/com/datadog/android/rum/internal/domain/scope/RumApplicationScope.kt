@@ -20,10 +20,12 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -53,13 +55,15 @@ internal class RumApplicationScope(
     internal val lastInteractionIdentifier: LastInteractionIdentifier?,
     private val slowFramesListener: SlowFramesListener?,
     private val rumSessionTypeOverride: RumSessionType?,
-    private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
+    private val accessibilityInfoProvider: InfoProvider<AccessibilityInfo>,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     private val insightsCollector: InsightsCollector,
+    private val viewEventMapper: ViewEventMapper,
+    private val viewEventWriteConfig: ViewEventWriteConfig,
     private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
-    private val timeseriesCollectorFactory: TimeseriesCollector.Factory
+    private val timeseriesCollector: TimeseriesCollector
 ) : RumScope, RumViewChangedListener {
 
     override val parentScope: RumScope? = null
@@ -85,13 +89,15 @@ internal class RumApplicationScope(
             lastInteractionIdentifier = lastInteractionIdentifier,
             slowFramesListener = slowFramesListener,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            accessibilitySnapshotManager = accessibilitySnapshotManager,
+            accessibilityInfoProvider = accessibilityInfoProvider,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
             insightsCollector = insightsCollector,
+            viewEventMapper = viewEventMapper,
+            viewEventWriteConfig = viewEventWriteConfig,
             heatmapIdentifierRegistry = heatmapIdentifierRegistry,
-            timeseriesCollectorFactory = timeseriesCollectorFactory
+            timeseriesCollector = timeseriesCollector
         )
     )
 
@@ -209,13 +215,15 @@ internal class RumApplicationScope(
             lastInteractionIdentifier = lastInteractionIdentifier,
             slowFramesListener = slowFramesListener,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            accessibilitySnapshotManager = accessibilitySnapshotManager,
+            accessibilityInfoProvider = accessibilityInfoProvider,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
             insightsCollector = insightsCollector,
+            viewEventMapper = viewEventMapper,
+            viewEventWriteConfig = viewEventWriteConfig,
             heatmapIdentifierRegistry = heatmapIdentifierRegistry,
-            timeseriesCollectorFactory = timeseriesCollectorFactory
+            timeseriesCollector = timeseriesCollector
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {

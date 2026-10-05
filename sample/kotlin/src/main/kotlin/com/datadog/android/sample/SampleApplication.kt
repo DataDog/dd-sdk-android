@@ -3,8 +3,6 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-
 package com.datadog.android.sample
 
 import android.annotation.SuppressLint
@@ -446,6 +444,11 @@ class SampleApplication : Application() {
             .setFirstPartyHosts(tracedHosts)
             .setBatchSize(BatchSize.SMALL)
             .setUploadFrequency(UploadFrequency.FREQUENT)
+            .apply {
+                if (BuildConfig.DD_REMOTE_CONFIGURATION_ID.isNotBlank()) {
+                    setRemoteConfigurationId(BuildConfig.DD_REMOTE_CONFIGURATION_ID)
+                }
+            }
 
         try {
             configBuilder.useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))

@@ -21,7 +21,7 @@ internal class TabsFragment : Fragment(R.layout.fragment_tabs) {
         super.onViewCreated(view, savedInstanceState)
         val bottomNavigationView = view.findViewById<BottomNavigationView>(R.id.main_nav_tab_layout)
         bottomNavigationView.menu.clear()
-        NavTab.values().forEachIndexed { index, tab ->
+        NavTab.entries.forEachIndexed { index, tab ->
             bottomNavigationView.menu.add(Menu.NONE, tab.id, index, tab.text).setIcon(tab.icon)
         }
     }

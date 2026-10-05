@@ -129,7 +129,8 @@ internal class DataUploadTaskTest {
             networkInfoProvider = mockNetworkInfoProvider,
             systemInfoProvider = mockSystemInfoProvider,
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
-            maxBatchesPerJob = fakeMaxBatchesPerJob
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger
         )
     }
 
@@ -550,6 +551,42 @@ internal class DataUploadTaskTest {
         assertThat(delayMs).isEqualTo(fakeDelayUntilNextUploadMs)
     }
 
+    @Test
+    fun `M not throw and M still return a delay W call() { storage throws }`(
+        @Forgery fakeThrowable: Throwable
+    ) {
+        // Given
+        whenever(mockStorage.readNextBatch()) doAnswer { throw fakeThrowable }
+
+        // When
+        val delayMs = testedTask.call()
+
+        // Then
+        verify(mockUploadSchedulerStrategy).getMsDelayUntilNextUpload(
+            fakeFeatureName,
+            0,
+            UploadStatus.UNKNOWN_RESPONSE_CODE,
+            fakeThrowable
+        )
+        assertThat(delayMs).isEqualTo(fakeDelayUntilNextUploadMs)
+    }
+
+    @Test
+    fun `M not throw and M return a fallback delay W call() { uploadSchedulerStrategy throws }`(
+        @Forgery fakeThrowable: Throwable
+    ) {
+        // Given
+        whenever(
+            mockUploadSchedulerStrategy.getMsDelayUntilNextUpload(any(), any(), anyOrNull(), anyOrNull())
+        ) doAnswer { throw fakeThrowable }
+
+        // When
+        val delayMs = testedTask.call()
+
+        // Then
+        assertThat(delayMs).isEqualTo(DefaultUploadSchedulerStrategy.NETWORK_ERROR_DELAY_MS)
+    }
+
     // region maxBatchesPerJob
 
     @Test
@@ -565,7 +602,8 @@ internal class DataUploadTaskTest {
             networkInfoProvider = mockNetworkInfoProvider,
             systemInfoProvider = mockSystemInfoProvider,
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
-            maxBatchesPerJob = fakeMaxBatchesPerJob
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger
         )
         val batches = forge.aList(
             size = forge.anInt(
@@ -619,7 +657,8 @@ internal class DataUploadTaskTest {
             networkInfoProvider = mockNetworkInfoProvider,
             systemInfoProvider = mockSystemInfoProvider,
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
-            maxBatchesPerJob = fakeMaxBatchesPerJob
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger
         )
         val fakeBatchesCount = forge.anInt(
             min = 1,
@@ -698,6 +737,7 @@ internal class DataUploadTaskTest {
             systemInfoProvider = mockSystemInfoProvider,
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
             maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
             benchmarkUploads = mockBenchmarkUploads
         )
 
@@ -722,6 +762,7 @@ internal class DataUploadTaskTest {
             systemInfoProvider = mockSystemInfoProvider,
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
             maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
             benchmarkUploads = mockBenchmarkUploads
         )
 
@@ -752,6 +793,7 @@ internal class DataUploadTaskTest {
             systemInfoProvider = mockSystemInfoProvider,
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
             maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
             benchmarkUploads = mockBenchmarkUploads
         )
 
@@ -792,6 +834,7 @@ internal class DataUploadTaskTest {
             systemInfoProvider = mockSystemInfoProvider,
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
             maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
             benchmarkUploads = mockBenchmarkUploads
         )
 

@@ -44,6 +44,8 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum._RumInternalProxy
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
+import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
@@ -51,7 +53,7 @@ import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -105,13 +107,15 @@ internal class DatadogRumMonitor(
     lastInteractionIdentifier: LastInteractionIdentifier?,
     slowFramesListener: SlowFramesListener?,
     rumSessionTypeOverride: RumSessionType?,
-    accessibilitySnapshotManager: AccessibilitySnapshotManager,
+    accessibilityInfoProvider: InfoProvider<AccessibilityInfo>,
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
+    private val viewEventMapper: ViewEventMapper,
+    viewEventWriteConfig: ViewEventWriteConfig,
     heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
-    timeseriesCollectorFactory: TimeseriesCollector.Factory
+    timeseriesCollector: TimeseriesCollector
 ) : RumMonitor, AdvancedRumMonitor {
 
     @Volatile private var cachedViewUrl: String? = null
@@ -132,13 +136,15 @@ internal class DatadogRumMonitor(
         lastInteractionIdentifier = lastInteractionIdentifier,
         slowFramesListener = slowFramesListener,
         rumSessionTypeOverride = rumSessionTypeOverride,
-        accessibilitySnapshotManager = accessibilitySnapshotManager,
+        accessibilityInfoProvider = accessibilityInfoProvider,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
         rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
         insightsCollector = insightsCollector,
+        viewEventMapper = viewEventMapper,
+        viewEventWriteConfig = viewEventWriteConfig,
         heatmapIdentifierRegistry = heatmapIdentifierRegistry,
-        timeseriesCollectorFactory = timeseriesCollectorFactory
+        timeseriesCollector = timeseriesCollector
     )
 
     internal var debugListener: RumDebugListener? = null
@@ -993,7 +999,7 @@ internal class DatadogRumMonitor(
                                 }
                             }
                         )
-                        val rumContext = future.getSafe("Rum get context", sdkCore.internalLogger)
+                        val rumContext = future?.getSafe("Rum get context", sdkCore.internalLogger)
                         // we are on the context thread already, so useContextThread=false
                         sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
                             it.clear()
@@ -1092,6 +1098,7 @@ internal class DatadogRumMonitor(
             "flutter" -> RumErrorSourceType.FLUTTER
             "ndk" -> RumErrorSourceType.NDK
             "ndk+il2cpp" -> RumErrorSourceType.NDK_IL2CPP
+            "maui" -> RumErrorSourceType.MAUI
             else -> RumErrorSourceType.ANDROID
         }
     }

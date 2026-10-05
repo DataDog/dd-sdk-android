@@ -9,6 +9,7 @@ package com.datadog.android.profiling.internal
 import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.ProfilingConfiguration.Companion.DEFAULT_CONTINUOUS_SAMPLE_RATE
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -44,6 +45,7 @@ internal class ProfilingConfigurationBuilderTest {
         // Then
         assertThat(configuration.customEndpointUrl).isNull()
         assertThat(configuration.continuousSampleRate).isEqualTo(DEFAULT_CONTINUOUS_SAMPLE_RATE)
+        assertThat(configuration.anrTriggerEnabled).isTrue()
     }
 
     @Test
@@ -70,5 +72,18 @@ internal class ProfilingConfigurationBuilderTest {
 
         // Then
         assertThat(configuration.customEndpointUrl).isEqualTo(endpoint)
+    }
+
+    @Test
+    fun `M build config with ANR trigger flag W enableAnrTrigger() and build()`(
+        @BoolForgery fakeEnabled: Boolean
+    ) {
+        // When
+        val configuration = testedBuilder
+            .enableAnrTrigger(fakeEnabled)
+            .build()
+
+        // Then
+        assertThat(configuration.anrTriggerEnabled).isEqualTo(fakeEnabled)
     }
 }

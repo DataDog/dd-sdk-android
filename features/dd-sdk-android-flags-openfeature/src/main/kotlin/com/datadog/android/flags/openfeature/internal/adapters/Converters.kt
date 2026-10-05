@@ -12,6 +12,7 @@ import com.datadog.android.flags.model.ResolutionDetails
 import dev.openfeature.kotlin.sdk.Builder
 import dev.openfeature.kotlin.sdk.EvaluationMetadata
 import dev.openfeature.kotlin.sdk.ProviderEvaluation
+import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 
@@ -23,7 +24,13 @@ internal fun OpenFeatureEvaluationContext.toDatadogEvaluationContext(): Evaluati
 
     val stringAttributes = this.asMap()
         .mapValues { (_, value) ->
-            value.toString()
+            when (value) {
+                is Value.String -> value.asString() ?: value.toString()
+                is Value.Boolean -> value.asBoolean()?.toString() ?: value.toString()
+                is Value.Integer -> value.asInteger()?.toString() ?: value.toString()
+                is Value.Double -> value.asDouble()?.toString() ?: value.toString()
+                else -> value.toString()
+            }
         }
 
     return EvaluationContext(

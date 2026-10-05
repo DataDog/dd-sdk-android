@@ -328,7 +328,7 @@ internal class DefaultImageWireframeHelper(
         // CompoundDrawables returns an array of indexes in the following order:
         // left, top, right, bottom
         textView.compoundDrawables.forEachIndexed { compoundDrawableIndex, _ ->
-            if (compoundDrawableIndex > CompoundDrawablePositions.values().size) {
+            if (compoundDrawableIndex > CompoundDrawablePositions.entries.size) {
                 return@forEachIndexed
             }
 

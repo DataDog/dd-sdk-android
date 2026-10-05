@@ -12,9 +12,11 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.android.trace.api.tracer.NoOpDatadogTracerBuilder
+import com.datadog.android.trace.internal.ClientStatsFeature
 import com.datadog.android.trace.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.internal.DatadogTracerBuilderAdapter
 import com.datadog.android.trace.internal._TraceInternalProxy
+import com.datadog.trace.common.metrics.NoOpMetricsAggregator
 import com.datadog.trace.common.writer.NoOpWriter
 import com.datadog.trace.core.CoreTracer
 
@@ -46,6 +48,13 @@ object DatadogTracing {
             val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)?.unwrap<Feature>()
             val internalCoreWriterProvider = tracingFeature as? InternalCoreWriterProvider
             val writer = (internalCoreWriterProvider?.getCoreTracerWriter() as? DatadogSpanWriterWrapper)?.delegate
+
+            val metricsFeature = if (tracingFeature != null) {
+                sdkCore.getFeature(Feature.TRACING_CLIENT_STATS_FEATURE_NAME)?.unwrap<ClientStatsFeature>()
+            } else {
+                null
+            }
+            val internalMetricsAggregator = metricsFeature?.aggregator
 
             when {
                 null == tracingFeature -> internalLogger.log(
@@ -80,7 +89,9 @@ object DatadogTracing {
             DatadogTracerBuilderAdapter(
                 sdkCore = sdkCore,
                 serviceName = sdkCore.service,
-                delegate = CoreTracer.CoreTracerBuilder(sdkCore.internalLogger).writer(writer ?: NoOpWriter())
+                delegate = CoreTracer.CoreTracerBuilder(sdkCore.internalLogger)
+                    .writer(writer ?: NoOpWriter())
+                    .metricsAggregator(internalMetricsAggregator ?: NoOpMetricsAggregator.INSTANCE)
             )
         }
     }

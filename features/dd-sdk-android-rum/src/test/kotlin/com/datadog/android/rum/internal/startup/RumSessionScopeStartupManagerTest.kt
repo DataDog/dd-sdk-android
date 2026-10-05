@@ -158,7 +158,7 @@ internal class RumSessionScopeStartupManagerTest {
 
         val fakeSource = if (isValidSource) {
             forge.anElementFrom(
-                ViewEvent.ViewEventSource.values().map { it.toJson().asString }
+                ViewEvent.ViewEventSource.entries.map { it.toJson().asString }
             )
         } else {
             forge.anAlphabeticalString()
@@ -1014,7 +1014,7 @@ internal class RumSessionScopeStartupManagerTest {
         val info = RumTTIDInfo(
             scenario = scenario,
             durationNs = forge.aLong(
-                min = RumSessionScopeStartupManagerImpl.MAX_TTID_DURATION_NS + 1
+                min = RumAppStartupDetectorImpl.MAX_TTID_DURATION_NS + 1
             )
         )
 

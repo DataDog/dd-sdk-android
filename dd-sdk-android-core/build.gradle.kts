@@ -8,6 +8,8 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.BuildConfigPropertiesKeys
 import com.datadog.gradle.config.GradlePropertiesKeys
+import com.datadog.gradle.utils.GitHashValueSource
+import com.datadog.gradle.utils.createJsonModelsGenerationTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -42,6 +44,13 @@ plugins {
     id("test-pyramid-api-surface")
 }
 
+createJsonModelsGenerationTask("generateRemoteConfigModelsFromJson") {
+    inputDirPath = "src/main/json/rc"
+    targetPackageName = "com.datadog.android.core.internal.remote.model"
+    ignoredFiles = listOf("mobile.json")
+    inputNameMapping = mapOf("android.json" to "RemoteConfiguration")
+}
+
 /**
  * Checks whether logcat logs should be enabled when building the release version of the library.
  * @return true if logcat logs should be enabled
@@ -71,9 +80,8 @@ android {
         buildConfigField(
             "String",
             "SDK_COMMIT_SHA1",
-            "\"${providers.exec {
-                commandLine("git", "rev-parse", "HEAD")
-            }.standardOutput.asText.get().trim()}\""
+            // make it more friendly to configuration cache
+            "\"${providers.of(GitHashValueSource::class) { }.get()}\""
         )
     }
 

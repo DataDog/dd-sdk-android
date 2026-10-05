@@ -232,7 +232,7 @@ internal class SdkFeature(
                     true
                 }
             )
-            .getSafe(operationName, internalLogger) ?: false
+            ?.getSafe(operationName, internalLogger) ?: false
     }
 
     override fun sendEvent(event: Any) {

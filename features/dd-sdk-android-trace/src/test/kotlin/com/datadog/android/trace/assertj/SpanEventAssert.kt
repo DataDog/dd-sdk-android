@@ -11,6 +11,7 @@ import com.datadog.android.api.context.DeviceInfo
 import com.datadog.android.api.context.DeviceType
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
+import com.datadog.android.trace.internal.domain.event.COMPUTE_STATS_META_KEY
 import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.TRACE_ID_META_KEY
 import com.datadog.android.trace.model.SpanEvent
@@ -117,6 +118,17 @@ internal class SpanEventAssert(actual: SpanEvent) :
                     " but instead was: ${actual.meta.dd.source}"
             )
             .isEqualTo(spanSource)
+        return this
+    }
+
+    fun hasComputeStats(computeStats: String?): SpanEventAssert {
+        val actual = actual.meta.additionalProperties[COMPUTE_STATS_META_KEY]
+        assertThat(actual)
+            .overridingErrorMessage(
+                "Expected SpanEvent to have _dd.compute_stats: $computeStats" +
+                    " but instead was: $actual"
+            )
+            .isEqualTo(computeStats)
         return this
     }
 

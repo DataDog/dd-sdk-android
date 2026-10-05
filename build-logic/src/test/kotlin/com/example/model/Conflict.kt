@@ -195,7 +195,7 @@ public data class Conflict(
 
         public companion object {
             @JvmStatic
-            public fun fromJson(jsonString: String): UserType = values().first {
+            public fun fromJson(jsonString: String): UserType = entries.first {
                 it.jsonValue == jsonString
             }
         }

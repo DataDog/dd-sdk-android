@@ -16,6 +16,16 @@ internal class ProfileEventAssert(actual: ProfileEvent) :
         ProfileEventAssert::class.java
     ) {
 
+    fun hasBootNtp(expected: Long): ProfileEventAssert {
+        assertThat(actual.dd?.bootNtp)
+            .overridingErrorMessage(
+                "Expected event data to have _dd.boot_ntp $expected " +
+                    "but was ${actual.dd?.bootNtp}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasStart(expected: String): ProfileEventAssert {
         assertThat(actual.start)
             .overridingErrorMessage(

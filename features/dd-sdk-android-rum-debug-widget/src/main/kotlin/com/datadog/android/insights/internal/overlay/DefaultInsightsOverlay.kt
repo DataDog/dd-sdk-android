@@ -11,9 +11,12 @@ import android.text.SpannableStringBuilder
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.annotation.ColorInt
 import androidx.core.view.isVisible
 import com.datadog.android.insights.internal.DefaultInsightsCollector
+import com.datadog.android.insights.internal.DefaultInsightsCollector.Companion.MAX_EVENTS_COUNT
 import com.datadog.android.insights.internal.InsightStateStorage
+import com.datadog.android.insights.internal.domain.TimelineEvent
 import com.datadog.android.insights.internal.extensions.animateVisibility
 import com.datadog.android.insights.internal.extensions.appendColored
 import com.datadog.android.insights.internal.extensions.color
@@ -23,6 +26,7 @@ import com.datadog.android.insights.internal.widgets.DragTouchListener
 import com.datadog.android.insights.internal.widgets.TimelineView
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
 import com.datadog.android.rumdebugwidget.R
+import kotlin.reflect.KClass
 
 /**
  * Overlay displaying performance metrics collected by the [DefaultInsightsCollector].
@@ -72,15 +76,8 @@ internal class DefaultInsightsOverlay(
                 }
             }
 
-            timelineLegend = overlayView.findViewById<TextView>(R.id.timeline_legend)?.apply {
-                text = SpannableStringBuilder()
-                    .append(SEP)
-                    .appendColored(ACTION, color(R.color.timeline_action)).append(SEP)
-                    .appendColored(RESOURCE, color(R.color.timeline_resource)).append(SEP)
-                    .appendColored(TIMESERIES, color(R.color.timeline_timeseries)).append(SEP)
-                    .appendColored(SLOW_FRAME, color(R.color.timeline_slow_frame)).append(SEP)
-                    .appendColored(FROZEN_FRAME, color(R.color.timeline_freeze_frame)).append(SEP)
-            }
+            timelineLegend = overlayView.findViewById(R.id.timeline_legend)
+            updateTimelineLegend(insightsCollector.eventTypeCounters)
 
             fab = overlayView.findViewById(R.id.fab)
             cpuValue = overlayView.setupChartView(R.id.vital_cpu, "CPU (ticks/s)")
@@ -222,19 +219,66 @@ internal class DefaultInsightsOverlay(
             threadsValue?.update(insightsCollector.threadsCount.toDouble())
             slowFrameRate?.update(insightsCollector.slowFramesRate)
             updateProfilerIndicator(insightsCollector.isProfilingRunning)
+            updateTimelineLegend(insightsCollector.eventTypeCounters)
         }
     }
 
-    private fun updateProfilerIndicator(isRunning: Boolean) {
-        profilerIndicator?.let { view ->
-            val statusColor = view.color(if (isRunning) R.color.profiler_on else R.color.profiler_off)
-            val label = if (isRunning) PROFILER_ON else PROFILER_OFF
-            view.text = SpannableStringBuilder()
-                .appendColored(PROFILER_DOT + label, statusColor)
-        }
+    private fun updateProfilerIndicator(isRunning: Boolean) = profilerIndicator?.let { view ->
+        val statusColor = view.color(if (isRunning) R.color.profiler_on else R.color.profiler_off)
+        val label = if (isRunning) PROFILER_ON else PROFILER_OFF
+        view.text = SpannableStringBuilder()
+            .appendColored(PROFILER_DOT + label, statusColor)
+    }
+
+    private fun updateTimelineLegend(counters: Map<KClass<out TimelineEvent>, Int>) = timelineLegend?.let { legend ->
+        legend.text = SpannableStringBuilder()
+            .append(SEP)
+            .appendLabel(
+                label = ACTION,
+                counter = counters[TimelineEvent.Action::class],
+                color = legend.color(R.color.timeline_action)
+            )
+            .append(SEP)
+            .appendLabel(
+                label = RESOURCE,
+                counter = counters[TimelineEvent.Resource::class],
+                color = legend.color(R.color.timeline_resource)
+            )
+            .append(SEP)
+            .appendLabel(
+                label = TIMESERIES,
+                counter = counters[TimelineEvent.TimeSeries::class],
+                color = legend.color(R.color.timeline_timeseries)
+            )
+            .append(SEP)
+            .appendLabel(
+                label = SLOW_FRAME,
+                counter = counters[TimelineEvent.SlowFrame::class],
+                color = legend.color(R.color.timeline_slow_frame)
+            )
+            .append(SEP)
+            .appendLabel(
+                label = FROZEN_FRAME,
+                counter = counters[TimelineEvent.LongTask::class],
+                color = legend.color(R.color.timeline_freeze_frame)
+            )
+            .append(SEP)
     }
 
     companion object {
+
+        private fun SpannableStringBuilder.appendLabel(
+            label: String,
+            counter: Int?,
+            @ColorInt color: Int
+        ) = apply {
+            val counterLabel = when {
+                counter == null || counter <= 0 -> "(0)"
+                counter <= MAX_EVENTS_COUNT -> "($counter)"
+                else -> "($MAX_EVENTS_COUNT+)"
+            }
+            return appendColored(label + counterLabel, color)
+        }
         private const val SEP = " | "
         private const val ACTION = "Action"
         private const val RESOURCE = "Resource"

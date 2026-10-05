@@ -7,6 +7,7 @@
 package com.datadog.android.profiling.forge
 
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.perfetto.ProfileType
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
@@ -16,7 +17,8 @@ internal class PerfettoResultFactory : ForgeryFactory<PerfettoResult> {
             start = forge.aLong(),
             startReason = forge.getForgery(),
             end = forge.aLong(),
-            resultFilePath = forge.anAlphabeticalString()
+            resultFilePath = forge.anAlphabeticalString(),
+            profileTypes = listOf(forge.anElementFrom(ProfileType.entries))
         )
     }
 }

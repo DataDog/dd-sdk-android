@@ -24,6 +24,7 @@ data class JsonDefinition(
     @SerializedName("anyOf") val anyOf: List<JsonDefinition>?,
     @SerializedName("properties") val properties: Map<String, JsonDefinition>?,
     @SerializedName("definitions") val definitions: Map<String, JsonDefinition>?,
+    @SerializedName("\$defs") val defs: Map<String, JsonDefinition>?,
     @SerializedName("readOnly") val readOnly: Boolean?,
     @SerializedName("additionalProperties") val additionalProperties: Any?,
     @SerializedName("default") val default: Any?
@@ -46,6 +47,7 @@ data class JsonDefinition(
             anyOf = null,
             properties = null,
             definitions = null,
+            defs = null,
             readOnly = null,
             additionalProperties = null,
             default = null
@@ -67,6 +69,7 @@ data class JsonDefinition(
             anyOf = null,
             properties = null,
             definitions = null,
+            defs = null,
             readOnly = null,
             additionalProperties = null,
             default = null

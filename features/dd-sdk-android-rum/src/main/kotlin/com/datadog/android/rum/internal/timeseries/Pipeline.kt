@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.timeseries
 
+import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
@@ -27,6 +28,7 @@ internal class Pipeline<T : Any>(
     private val buffer: Buffer<T>,
     private val eventFactory: EventFactory<T, *>,
     private val dataWriter: DataWriter<Any>,
+    private val internalLogger: InternalLogger,
     private val insightsCollector: InsightsCollector = NoOpInsightsCollector()
 ) {
     val intervalMs: Long get() = reader.intervalMs
@@ -42,8 +44,20 @@ internal class Pipeline<T : Any>(
         }
     }
 
-    @WorkerThread
-    fun flush(rumContext: RumContext) = synchronized(this) { drainAndWrite(rumContext) }
+    @AnyThread
+    fun flush(rumContext: RumContext) = synchronized(this) {
+        try {
+            drainAndWrite(rumContext)
+        } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                messageBuilder = { ERROR_FLUSH_FAILED },
+                throwable = t,
+                onlyOnce = true
+            )
+        }
+    }
 
     private fun drainAndWrite(rumContext: RumContext) {
         val dataPoints = buffer.drain().ifEmpty { return }
@@ -80,8 +94,8 @@ internal class Pipeline<T : Any>(
         null
     }
 
-    private companion object {
-        private const val ERROR_FLUSH_FAILED = "Timeseries flush failed"
-        private const val ERROR_EVENT_CREATION_FAILED = "Timeseries event creation failed"
+    internal companion object {
+        const val ERROR_FLUSH_FAILED = "Timeseries flush failed"
+        const val ERROR_EVENT_CREATION_FAILED = "Timeseries event creation failed"
     }
 }

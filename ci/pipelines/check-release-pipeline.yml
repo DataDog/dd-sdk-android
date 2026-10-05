@@ -23,4 +23,4 @@ notify:report-failure-to-slack:
   script:
     - BUILD_URL="$CI_PROJECT_URL/pipelines/$CI_PIPELINE_ID"
     - 'MESSAGE_TEXT=":status_alert: Some release artifacts were not published to maven. $BUILD_URL"'
-    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
+    - postmessage "$SLACK_OPS_CHANNEL" "$MESSAGE_TEXT"

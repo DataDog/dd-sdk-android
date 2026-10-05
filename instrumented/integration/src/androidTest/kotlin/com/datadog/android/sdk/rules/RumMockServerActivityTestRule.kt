@@ -7,7 +7,9 @@
 package com.datadog.android.sdk.rules
 
 import android.app.Activity
+import android.app.Application
 import android.content.Intent
+import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.utils.addExtras
@@ -21,13 +23,18 @@ internal open class RumMockServerActivityTestRule<T : Activity>(
 
     // region ActivityTestRule
 
+    private val callbackClasses: List<Class<out Application.ActivityLifecycleCallbacks>> = listOf(
+        ActivityViewTrackingStrategy::class.java,
+        ProcessLifecycleMonitor::class.java
+    )
+
     override fun beforeActivityLaunched() {
-        removeCallbacks(listOf(ActivityViewTrackingStrategy::class.java))
+        removeCallbacks(callbackClasses)
         super.beforeActivityLaunched()
     }
 
     override fun afterActivityFinished() {
-        removeCallbacks(listOf(ActivityViewTrackingStrategy::class.java))
+        removeCallbacks(callbackClasses)
         super.afterActivityFinished()
     }
 

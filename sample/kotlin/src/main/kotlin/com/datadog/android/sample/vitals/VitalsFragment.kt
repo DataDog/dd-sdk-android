@@ -14,7 +14,7 @@ import android.widget.CheckBox
 import android.widget.CompoundButton
 import android.widget.ProgressBar
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProviders
+import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.rum.operations.FailureReason
 import com.datadog.android.sample.R
 import com.google.android.material.textfield.TextInputEditText
@@ -57,9 +57,9 @@ internal class VitalsFragment :
         return rootView
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-        viewModel = ViewModelProviders.of(this).get(VitalsViewModel::class.java)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewModel = ViewModelProvider(this)[VitalsViewModel::class.java]
     }
 
     override fun onResume() {

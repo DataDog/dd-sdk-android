@@ -240,10 +240,10 @@ class FeatureSdkCoreTest : MockServerTest() {
         testedFeatureSdkCore.registerFeature(stubFeature)
         val fakeKeyValues1 = forge.aMap(
             size = forge.anInt(min = 1, max = 10)
-        ) { anAlphabeticalString() to anAlphabeticalString() }
+        ) { "first_${anAlphabeticalString()}" to anAlphabeticalString() }
         val fakeKeyValues2 = forge.aMap(
             size = forge.anInt(min = 1, max = 10)
-        ) { anAlphabeticalString() to anAlphabeticalString() }
+        ) { "second_${anAlphabeticalString()}" to anAlphabeticalString() }
         val expectedKeyValues = fakeKeyValues1 + fakeKeyValues2
 
         val updateAction = { newContext: Map<String, String> ->
@@ -276,10 +276,10 @@ class FeatureSdkCoreTest : MockServerTest() {
         testedFeatureSdkCore.registerFeature(stubFeature)
         val fakeKeyValues1 = forge.aMap(
             size = forge.anInt(min = 1, max = 10)
-        ) { anAlphabeticalString() to anAlphabeticalString() }
+        ) { "first_${anAlphabeticalString()}" to anAlphabeticalString() }
         val fakeKeyValues2 = forge.aMap(
             size = forge.anInt(min = 1, max = 10)
-        ) { anAlphabeticalString() to anAlphabeticalString() }
+        ) { "second_${anAlphabeticalString()}" to anAlphabeticalString() }
         val fakeModifiedValues = fakeKeyValues2.mapValues { (_, _) -> forge.anAlphabeticalString() }
         val expectedKeyValues = fakeKeyValues1 + fakeModifiedValues
 
@@ -323,10 +323,10 @@ class FeatureSdkCoreTest : MockServerTest() {
         testedFeatureSdkCore.registerFeature(stubFeature)
         val fakeKeyValues1 = forge.aMap(
             size = forge.anInt(min = 1, max = 10)
-        ) { anAlphabeticalString() to anAlphabeticalString() }
+        ) { "first_${anAlphabeticalString()}" to anAlphabeticalString() }
         val fakeKeyValues2 = forge.aMap(
             size = forge.anInt(min = 1, max = 10)
-        ) { anAlphabeticalString() to anAlphabeticalString() }
+        ) { "second_${anAlphabeticalString()}" to anAlphabeticalString() }
         val expectedKeyValues = (fakeKeyValues1 + fakeKeyValues2).toMutableMap()
         val droppedKeyValues = expectedKeyValues.removeRandomEntries(forge)
 

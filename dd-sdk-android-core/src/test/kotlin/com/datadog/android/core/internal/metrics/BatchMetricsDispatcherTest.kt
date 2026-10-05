@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -292,7 +293,7 @@ internal class BatchMetricsDispatcherTest {
     }
 
     @Test
-    fun `M do nothing W sendBatchDeletedMetric { feature unknown }`(forge: Forge) {
+    fun `M log maintainer error W sendBatchDeletedMetric { feature unknown }`(forge: Forge) {
         // Given
         val fakeUnknownFeature = forge.anAlphabeticalString()
         testedBatchMetricsDispatcher = BatchMetricsDispatcher(
@@ -309,7 +310,12 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
-        verifyNoInteractions(mockInternalLogger)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            "Feature $fakeUnknownFeature is not mapped to any" +
+                " track in the ${testedBatchMetricsDispatcher.javaClass.name}"
+        )
     }
 
     @Test
@@ -529,7 +535,7 @@ internal class BatchMetricsDispatcherTest {
     }
 
     @Test
-    fun `M do nothing W sendBatchClosedMetric { feature unknown }`(
+    fun `M log maintainer error W sendBatchClosedMetric { feature unknown }`(
         @Forgery fakeMetadata: BatchClosedMetadata,
         forge: Forge
     ) {
@@ -548,7 +554,12 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
 
         // Then
-        verifyNoInteractions(mockInternalLogger)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            "Feature $fakeUnknownFeature is not mapped to any" +
+                " track in the ${testedBatchMetricsDispatcher.javaClass.name}"
+        )
     }
 
     private fun resolveDefaultDeleteExtraProperties(file: File): MutableMap<String, Any?> {
@@ -627,8 +638,12 @@ internal class BatchMetricsDispatcherTest {
             Feature.RUM_FEATURE_NAME -> BatchMetricsDispatcher.RUM_TRACK_NAME
             Feature.LOGS_FEATURE_NAME -> BatchMetricsDispatcher.LOGS_TRACK_NAME
             Feature.TRACING_FEATURE_NAME -> BatchMetricsDispatcher.TRACE_TRACK_NAME
-            Feature.SESSION_REPLAY_FEATURE_NAME -> BatchMetricsDispatcher.SR_TRACK_NAME
-            Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME -> BatchMetricsDispatcher.SR_RESOURCES_TRACK_NAME
+            Feature.SESSION_REPLAY_FEATURE_NAME -> BatchMetricsDispatcher.SESSION_REPLAY_TRACK_NAME
+            Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME -> BatchMetricsDispatcher.SESSION_REPLAY_RESOURCES_TRACK_NAME
+            Feature.FLAGS_FEATURE_NAME -> BatchMetricsDispatcher.FLAGS_TRACK_NAME
+            Feature.FLAGS_EVALUATIONS_FEATURE_NAME -> BatchMetricsDispatcher.FLAGS_EVALUATIONS_TRACK_NAME
+            Feature.PROFILING_FEATURE_NAME -> BatchMetricsDispatcher.PROFILER_TRACK_NAME
+            Feature.TRACING_CLIENT_STATS_FEATURE_NAME -> BatchMetricsDispatcher.TRACING_CLIENT_STATS_TRACK_NAME
             else -> null
         }
     }

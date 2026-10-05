@@ -151,7 +151,7 @@ internal class DataStoreFileReaderTest {
         blocksReturned.removeAt(blocksReturned.lastIndex)
 
         val foundBlocks = blocksReturned.size
-        val expectedBlocks = TLVBlockType.values().size
+        val expectedBlocks = TLVBlockType.entries.size
         val expectedError = INVALID_NUMBER_OF_BLOCKS_ERROR.format(Locale.US, foundBlocks, expectedBlocks)
         val mockCallback = mock<DataStoreReadCallback<ByteArray>>()
 
@@ -224,7 +224,7 @@ internal class DataStoreFileReaderTest {
         // Given
         blocksReturned.removeAt(blocksReturned.lastIndex)
         val expectedMessage =
-            INVALID_NUMBER_OF_BLOCKS_ERROR.format(Locale.US, blocksReturned.size, TLVBlockType.values().size)
+            INVALID_NUMBER_OF_BLOCKS_ERROR.format(Locale.US, blocksReturned.size, TLVBlockType.entries.size)
         val mockCallback = mock<DataStoreReadCallback<ByteArray>>()
 
         // When

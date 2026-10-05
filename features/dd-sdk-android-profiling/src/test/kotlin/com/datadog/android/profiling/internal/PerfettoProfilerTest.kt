@@ -20,7 +20,6 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.forge.Configurator
-import com.datadog.android.profiling.internal.anr.AnrTriggerRegistrar
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.APP_LAUNCH_PROFILING_MAX_DURATION_MS
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_SAMPLING_RATE_APP_LAUNCH
@@ -28,7 +27,9 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companio
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
+import com.datadog.android.profiling.internal.trigger.ProfilingTriggerRegistrar
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -73,7 +74,7 @@ import java.util.function.Consumer
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-class PerfettoProfilerTest {
+internal class PerfettoProfilerTest {
 
     @Mock
     private lateinit var mockContext: Context
@@ -91,13 +92,13 @@ class PerfettoProfilerTest {
     private lateinit var mockExecutorService: ScheduledExecutorService
 
     @Mock
-    private lateinit var mockStopSignal: CancellationSignal
+    private lateinit var mockCancellationSignal: CancellationSignal
 
     @Mock
     private lateinit var mockProfilerCallback: ProfilerCallback
 
     @Mock
-    private lateinit var mockAnrRegistrar: AnrTriggerRegistrar
+    private lateinit var mockRegistrar: ProfilingTriggerRegistrar
 
     @Mock
     private lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
@@ -124,7 +125,7 @@ class PerfettoProfilerTest {
         testedProfiler = PerfettoProfiler(
             timeProvider = stubTimeProvider,
             scheduledExecutorService = mockExecutorService,
-            anrTriggerRegistrar = mockAnrRegistrar,
+            triggerRegistrar = mockRegistrar,
             buildSdkVersionProvider = mockBuildSdkVersionProvider,
             profilingTelemetry = ProfilingTelemetry().apply {
                 profilingPackageVersionCode = fakeProfilingPackageLongVersionCode
@@ -223,7 +224,6 @@ class PerfettoProfilerTest {
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 "duration" to fakeDuration,
                 "callback_delay_ms" to 0L,
-                "client_clock_drift_ms" to 0L,
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
                 "app_start_info" to null
@@ -286,7 +286,6 @@ class PerfettoProfilerTest {
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 "duration" to fakeDuration,
                 "callback_delay_ms" to 0L,
-                "client_clock_drift_ms" to 0L,
                 "error_message" to fakeErrorMessage,
                 "file_size" to 0L,
                 "stopped_reason" to "error",
@@ -351,7 +350,6 @@ class PerfettoProfilerTest {
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 "duration" to fakeDuration,
                 "callback_delay_ms" to 0L,
-                "client_clock_drift_ms" to 0L,
                 "error_message" to fakeErrorMessage,
                 "file_size" to 0L,
                 "stopped_reason" to "error",
@@ -437,6 +435,96 @@ class PerfettoProfilerTest {
 
         // Then
         assertThat(testedProfiler.isRunning()).isFalse
+    }
+
+    @Test
+    fun `M notify current status W registerProfilerStatusListener`(@BoolForgery fakeRunning: Boolean) {
+        // Given
+        if (fakeRunning) {
+            testedProfiler.start(mockContext, ProfilingStartReason.CONTINUOUS, emptyMap())
+        }
+        val mockStatusListener = mock<ProfilingStatusListener>()
+
+        // When
+        testedProfiler.registerProfilerStatusListener(mockStatusListener)
+
+        // Then
+        verify(mockStatusListener).onProfilingStatusChange(fakeRunning)
+    }
+
+    @Test
+    fun `M notify running status W start`() {
+        // Given
+        val mockStatusListener = mock<ProfilingStatusListener>()
+        testedProfiler.registerProfilerStatusListener(mockStatusListener)
+
+        // When
+        testedProfiler.start(mockContext, ProfilingStartReason.CONTINUOUS, emptyMap())
+
+        // Then
+        inOrder(mockStatusListener) {
+            verify(mockStatusListener).onProfilingStatusChange(false)
+            verify(mockStatusListener).onProfilingStatusChange(true)
+        }
+    }
+
+    @Test
+    fun `M notify stopped status W profiling result received`(@BoolForgery fakeSuccess: Boolean) {
+        // Given
+        val mockStatusListener = mock<ProfilingStatusListener>()
+        testedProfiler.start(mockContext, ProfilingStartReason.CONTINUOUS, emptyMap())
+        testedProfiler.registerProfilerStatusListener(mockStatusListener)
+        verify(mockService).requestProfiling(
+            eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+            any<Bundle>(),
+            eq(ProfilingStartReason.CONTINUOUS.value),
+            any(),
+            eq(mockExecutorService),
+            callbackCaptor.capture()
+        )
+        val fakeResult = mock<ProfilingResult> {
+            on { errorCode } doReturn if (fakeSuccess) ProfilingResult.ERROR_NONE else 1
+            on { resultFilePath } doReturn fakePath
+        }
+
+        // When
+        callbackCaptor.firstValue.accept(fakeResult)
+
+        // Then
+        inOrder(mockStatusListener) {
+            verify(mockStatusListener).onProfilingStatusChange(true)
+            verify(mockStatusListener).onProfilingStatusChange(false)
+        }
+        assertThat(testedProfiler.isRunning()).isFalse()
+    }
+
+    @Test
+    fun `M keep running status W stop {awaiting result}`() {
+        // Given
+        testedProfiler.start(mockContext, ProfilingStartReason.CONTINUOUS, emptyMap())
+        val mockStatusListener = mock<ProfilingStatusListener>()
+        testedProfiler.registerProfilerStatusListener(mockStatusListener)
+
+        // When
+        testedProfiler.stop()
+
+        // Then
+        verify(mockStatusListener).onProfilingStatusChange(true)
+        assertThat(testedProfiler.isRunning()).isTrue()
+    }
+
+    @Test
+    fun `M stop notifying listener W unregisterProfilerStatusListener`() {
+        // Given
+        val mockStatusListener = mock<ProfilingStatusListener>()
+        testedProfiler.registerProfilerStatusListener(mockStatusListener)
+
+        // When
+        testedProfiler.unregisterProfilerStatusListener(mockStatusListener)
+        testedProfiler.start(mockContext, ProfilingStartReason.CONTINUOUS, emptyMap())
+
+        // Then
+        verify(mockStatusListener).onProfilingStatusChange(false)
     }
 
     @Test
@@ -549,6 +637,7 @@ class PerfettoProfilerTest {
         // Then
         val status = testedProfiler.isRunning()
         assertThat(status).isFalse
+        verify(mockProfilerCallback).onSuccess(any())
     }
 
     @Test
@@ -701,7 +790,6 @@ class PerfettoProfilerTest {
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 "duration" to fakeDuration,
                 "callback_delay_ms" to 0L,
-                "client_clock_drift_ms" to 0L,
                 "error_message" to null,
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
@@ -725,7 +813,7 @@ class PerfettoProfilerTest {
 
     @ParameterizedTest(name = "startReason: {0}")
     @EnumSource(ProfilingStartReason::class)
-    internal fun `M include start_reason in telemetry W profiling finishes { startReason }`(
+    fun `M include start_reason in telemetry W profiling finishes { startReason }`(
         startReason: ProfilingStartReason,
         @LongForgery(min = 0L) fakeStartTime: Long,
         @LongForgery(min = 0L) fakeDuration: Long
@@ -767,7 +855,6 @@ class PerfettoProfilerTest {
                 "start_reason" to startReason.value,
                 "duration" to fakeDuration,
                 "callback_delay_ms" to 0L,
-                "client_clock_drift_ms" to 0L,
                 "error_message" to null,
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
@@ -836,7 +923,6 @@ class PerfettoProfilerTest {
                 "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value,
                 "duration" to fakeStopDelta,
                 "callback_delay_ms" to fakeCallbackDelta,
-                "client_clock_drift_ms" to 0L,
                 "file_size" to 0L,
                 "stopped_reason" to "manual",
                 "app_start_info" to null
@@ -929,7 +1015,6 @@ class PerfettoProfilerTest {
                 "start_reason" to ProfilingStartReason.CONTINUOUS.value,
                 "duration" to fakeDuration2,
                 "callback_delay_ms" to 0L,
-                "client_clock_drift_ms" to 0L,
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
                 "app_start_info" to null
@@ -972,7 +1057,7 @@ class PerfettoProfilerTest {
             ProfilingStartReason::class.java,
             listOf(ProfilingStartReason.APPLICATION_LAUNCH)
         )
-        testedProfiler.stopSignal = mockStopSignal
+        testedProfiler.stopSignal = mockCancellationSignal
 
         // When
         testedProfiler.start(
@@ -983,7 +1068,7 @@ class PerfettoProfilerTest {
 
         // Then
         verifyNoInteractions(mockExecutorService)
-        verifyNoInteractions(mockStopSignal)
+        verifyNoInteractions(mockCancellationSignal)
     }
 
     @Test
@@ -997,14 +1082,14 @@ class PerfettoProfilerTest {
         )
         val timerRunnableCaptor = argumentCaptor<Runnable>()
         verify(mockExecutorService).schedule(timerRunnableCaptor.capture(), any(), any())
-        testedProfiler.stopSignal = mockStopSignal
-        whenever(mockStopSignal.isCanceled).doReturn(false)
+        testedProfiler.stopSignal = mockCancellationSignal
+        whenever(mockCancellationSignal.isCanceled).doReturn(false)
 
         // When
         timerRunnableCaptor.firstValue.run()
 
         // Then
-        verify(mockStopSignal).cancel()
+        verify(mockCancellationSignal).cancel()
     }
 
     @Test
@@ -1018,14 +1103,14 @@ class PerfettoProfilerTest {
         )
         val timerRunnableCaptor = argumentCaptor<Runnable>()
         verify(mockExecutorService).schedule(timerRunnableCaptor.capture(), any(), any())
-        testedProfiler.stopSignal = mockStopSignal
-        whenever(mockStopSignal.isCanceled).doReturn(false)
+        testedProfiler.stopSignal = mockCancellationSignal
+        whenever(mockCancellationSignal.isCanceled).doReturn(false)
 
         // When
         timerRunnableCaptor.firstValue.run()
 
         // Then
-        verify(mockStopSignal, never()).cancel()
+        verify(mockCancellationSignal, never()).cancel()
     }
 
     // region ANR trigger registration
@@ -1034,7 +1119,7 @@ class PerfettoProfilerTest {
     fun `M delegate to registrar W registerProfilingCallback`() {
         // Set-up performs 1 registerProfilingCallback call, which delegates to the registrar,
         // passing the profiler's listener.
-        verify(mockAnrRegistrar).register(mockContext, testedProfiler.anrListener)
+        verify(mockRegistrar).register(mockContext, testedProfiler.triggerListener)
     }
 
     @Test
@@ -1043,22 +1128,23 @@ class PerfettoProfilerTest {
         testedProfiler.unregisterProfilingCallback(mockContext)
 
         // Then
-        verify(mockAnrRegistrar).unregister(mockContext)
+        verify(mockRegistrar).unregister(mockContext)
     }
 
     @Test
-    fun `M dispatch to registered callback W AnrListener fires`(
-        @Forgery fakeEvent: ProfilingAnrDetectedEvent
+    fun `M dispatch to registered callback W triggerListener fires`(
+        @Forgery fakeEvent: ProfilingAnrDetectedEvent,
+        @Forgery fakeResult: PerfettoResult
     ) {
         // When
-        testedProfiler.anrListener.onAnrDetected(fakeEvent)
+        testedProfiler.triggerListener.onAnrDetected(fakeEvent, fakeResult)
 
         // Then
-        verify(mockProfilerCallback).onAnrDetected(fakeEvent)
+        verify(mockProfilerCallback).onAnrDetected(fakeEvent, fakeResult)
     }
 
     @Test
-    fun `M propagate logger to anrTriggerRegistrar W internalLogger setter`() {
+    fun `M propagate logger to triggerRegistrar W internalLogger setter`() {
         // Given
         val anotherLogger = mock<InternalLogger>()
 
@@ -1066,21 +1152,47 @@ class PerfettoProfilerTest {
         testedProfiler.internalLogger = anotherLogger
 
         // Then
-        verify(mockAnrRegistrar).internalLogger = anotherLogger
+        verify(mockRegistrar).internalLogger = anotherLogger
     }
 
     @Test
     fun `M not delegate to registrar W registerProfilingCallback {SDK below BAKLAVA}`() {
         // Given
         // Drop interactions recorded by the BAKLAVA-stubbed set-up call.
-        reset(mockAnrRegistrar)
+        reset(mockRegistrar)
         whenever(mockBuildSdkVersionProvider.isAtLeastBaklava) doReturn false
 
         // When
         testedProfiler.registerProfilingCallback(mockContext, mockProfilerCallback)
 
         // Then
-        verify(mockAnrRegistrar, never()).register(any(), any())
+        verify(mockRegistrar, never()).register(any(), any())
+    }
+
+    @Test
+    fun `M not delegate to registrar W registerProfilingCallback {ANR trigger disabled}`() {
+        // Given
+        // Drop interactions recorded by the set-up call (which used the default enabled state).
+        reset(mockRegistrar)
+        testedProfiler.setAnrTriggerEnabled(false)
+
+        // When
+        testedProfiler.registerProfilingCallback(mockContext, mockProfilerCallback)
+
+        // Then
+        verify(mockRegistrar, never()).register(any(), any())
+    }
+
+    @Test
+    fun `M not delegate to registrar W unregisterProfilingCallback {ANR trigger disabled}`() {
+        // Given
+        testedProfiler.setAnrTriggerEnabled(false)
+
+        // When
+        testedProfiler.unregisterProfilingCallback(mockContext)
+
+        // Then
+        verify(mockRegistrar, never()).unregister(any())
     }
 
     @Test
@@ -1092,7 +1204,7 @@ class PerfettoProfilerTest {
         testedProfiler.unregisterProfilingCallback(mockContext)
 
         // Then
-        verify(mockAnrRegistrar, never()).unregister(any())
+        verify(mockRegistrar, never()).unregister(any())
     }
 
     // endregion
@@ -1176,7 +1288,7 @@ class PerfettoProfilerTest {
         val profiler = PerfettoProfiler(
             timeProvider = stubTimeProvider,
             scheduledExecutorService = mockExecutorService,
-            anrTriggerRegistrar = mockAnrRegistrar,
+            triggerRegistrar = mockRegistrar,
             buildSdkVersionProvider = mockBuildSdkVersionProvider,
             profilingTelemetry = ProfilingTelemetry()
         )
@@ -1287,15 +1399,17 @@ class PerfettoProfilerTest {
         var stopTime: Long = 0L
 
         var resultCallbackTime: Long = 0L
-        private var queryIncrement: Int = 0
+        private var wallQueryIncrement: Int = 0
+        private var elapsedQueryIncrement: Int = 0
 
         fun reset() {
-            queryIncrement = 0
+            wallQueryIncrement = 0
+            elapsedQueryIncrement = 0
         }
 
         override fun getDeviceTimestampMillis(): Long {
-            val current = queryIncrement
-            queryIncrement++
+            val current = wallQueryIncrement
+            wallQueryIncrement++
             return when (current) {
                 0 -> startTime
                 1 -> stopTime
@@ -1311,7 +1425,17 @@ class PerfettoProfilerTest {
 
         override fun getServerOffsetMillis(): Long = 0L
 
-        override fun getDeviceElapsedRealtimeMillis(): Long = 0L
+        override fun getDeviceElapsedRealtimeMillis(): Long {
+            val current = elapsedQueryIncrement
+            elapsedQueryIncrement++
+            return when (current) {
+                0 -> startTime
+                1 -> stopTime
+                else -> resultCallbackTime
+            }
+        }
+
+        override fun getDeviceElapsedRealtimeNanos(): Long = 0L
         override fun getDeviceUptimeMillis(): Long = 0L
     }
 }

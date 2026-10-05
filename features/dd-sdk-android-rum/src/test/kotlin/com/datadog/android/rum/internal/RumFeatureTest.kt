@@ -21,8 +21,6 @@ import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.feature.event.ThreadDump
-import com.datadog.android.event.EventMapper
-import com.datadog.android.event.MapperSerializer
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -42,12 +40,11 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
-import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
-import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.DefaultBatteryInfoProvider
 import com.datadog.android.rum.internal.domain.display.DefaultDisplayInfoProvider
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
+import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -55,7 +52,10 @@ import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
-import com.datadog.android.rum.internal.timeseries.DefaultTimeseriesCollectorFactory
+import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.PipelineFactory
+import com.datadog.android.rum.internal.timeseries.collector.DefaultTimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.collector.Looper
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
@@ -672,20 +672,16 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.dataWriter).isInstanceOf(RumDataWriter::class.java)
-        val serializer = (testedFeature.dataWriter as RumDataWriter).eventSerializer
-        assertThat(serializer).isInstanceOf(MapperSerializer::class.java)
-        val eventMapper = (serializer as MapperSerializer)
-            .getFieldValue<EventMapper<*>, MapperSerializer<*>>("eventMapper")
-        assertThat(eventMapper).isInstanceOf(RumEventMapper::class.java)
-        val rumEventMapper = eventMapper as RumEventMapper
+        val rumDataWriter = testedFeature.dataWriter as RumDataWriter
+        assertThat(rumDataWriter.eventSerializer).isInstanceOf(RumEventSerializer::class.java)
+        val rumEventMapper = rumDataWriter.eventMapper
+        assertThat(rumEventMapper).isInstanceOf(RumEventMapper::class.java)
         assertThat(rumEventMapper.actionEventMapper)
             .isSameAs(fakeConfiguration.actionEventMapper)
         assertThat(rumEventMapper.errorEventMapper)
             .isSameAs(fakeConfiguration.errorEventMapper)
         assertThat(rumEventMapper.resourceEventMapper)
             .isSameAs(fakeConfiguration.resourceEventMapper)
-        assertThat(rumEventMapper.viewEventMapper)
-            .isSameAs(fakeConfiguration.viewEventMapper)
         assertThat(rumEventMapper.longTaskEventMapper)
             .isSameAs(fakeConfiguration.longTaskEventMapper)
         assertThat(rumEventMapper.telemetryConfigurationMapper)
@@ -885,7 +881,7 @@ internal class RumFeatureTest {
     ) {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
-            timeseriesConfiguration = TimeseriesConfiguration.Builder().build()
+            timeseriesConfiguration = TimeseriesConfiguration.DEFAULT
         )
         testedFeature = RumFeature(
             mockSdkCore,
@@ -906,28 +902,89 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(appContext.mockInstance)
 
         // Then
-        val timeseriesFactory = testedFeature.timeseriesCollectorFactory
-        check(timeseriesFactory is DefaultTimeseriesCollectorFactory)
-        assertThat(timeseriesFactory.getFieldValue<DataWriter<*>, DefaultTimeseriesCollectorFactory>("dataWriter"))
+        val timeseriesCollector = testedFeature.timeseriesCollector
+        check(timeseriesCollector is DefaultTimeseriesCollector)
+        val looper = timeseriesCollector
+            .getFieldValue<Looper, DefaultTimeseriesCollector>("looper")
+        assertThat(
+            looper.getFieldValue<ScheduledExecutorService, Looper>("scheduledExecutorService")
+        ).isSameAs(testedFeature.vitalExecutorService)
+
+        val pipelinesFactory = timeseriesCollector
+            .getFieldValue<PipelineFactory, DefaultTimeseriesCollector>("pipelinesFactory")
+        assertThat(pipelinesFactory.getFieldValue<DataWriter<*>, PipelineFactory>("dataWriter"))
             .isSameAs(testedFeature.dataWriter)
         assertThat(
-            timeseriesFactory.getFieldValue<InsightsCollector, DefaultTimeseriesCollectorFactory>("insightsCollector")
+            pipelinesFactory.getFieldValue<InsightsCollector, PipelineFactory>("insightsCollector")
         )
             .isSameAs(testedFeature.insightsCollector)
-        assertThat(
-            timeseriesFactory
-                .getFieldValue<ScheduledExecutorService, DefaultTimeseriesCollectorFactory>("scheduledExecutorService")
-        ).isSameAs(testedFeature.vitalExecutorService)
-        assertThat(timeseriesFactory.getFieldValue<Long, DefaultTimeseriesCollectorFactory>("totalRamBytes"))
+        assertThat(pipelinesFactory.getFieldValue<Long, PipelineFactory>("totalRamBytes"))
             .isEqualTo(fakeTotalRamBytes)
         assertThat(
-            timeseriesFactory.getFieldValue<InfoProvider<*>, DefaultTimeseriesCollectorFactory>("batteryInfoProvider")
+            pipelinesFactory.getFieldValue<InfoProvider<*>, PipelineFactory>("batteryInfoProvider")
         )
             .isSameAs(testedFeature.batteryInfoProvider)
         assertThat(
-            timeseriesFactory.getFieldValue<InfoProvider<*>, DefaultTimeseriesCollectorFactory>("displayInfoProvider")
+            pipelinesFactory.getFieldValue<InfoProvider<*>, PipelineFactory>("displayInfoProvider")
         )
             .isSameAs(testedFeature.displayInfoProvider)
+    }
+
+    @Test
+    @OptIn(ExperimentalRumApi::class)
+    fun `M not wire timeseries factory and warn W initialize { timeseries enabled, non-Application context }`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            timeseriesConfiguration = TimeseriesConfiguration.DEFAULT
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+        val stubNonApplicationContext = mock<Context>()
+        whenever(stubNonApplicationContext.contentResolver) doReturn mock<ContentResolver>()
+        val mockResources = mock<Resources>()
+        whenever(stubNonApplicationContext.resources) doReturn mockResources
+        whenever(mockResources.configuration) doReturn mock()
+        whenever(stubNonApplicationContext.applicationContext) doReturn mock<Application>()
+
+        // When
+        testedFeature.onInitialize(stubNonApplicationContext)
+
+        // Then
+        assertThat(testedFeature.timeseriesCollector).isInstanceOf(NoOpTimeseriesCollector::class.java)
+        mockSdkCore.internalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            "Rum feature should have been initialized with android.app.Application context, " +
+                "but ${stubNonApplicationContext.javaClass.name} is given"
+        )
+    }
+
+    @Test
+    @OptIn(ExperimentalRumApi::class)
+    fun `M unregister timeseries process lifecycle monitor W onStop() { timeseries enabled }`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            timeseriesConfiguration = TimeseriesConfiguration.DEFAULT
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+        testedFeature.onInitialize(appContext.mockInstance)
+        val listener = checkNotNull(testedFeature.timeseriesProcessLifecycleMonitor)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(appContext.mockInstance).unregisterActivityLifecycleCallbacks(listener)
+        assertThat(testedFeature.timeseriesProcessLifecycleMonitor).isNull()
     }
 
     @Test
@@ -937,7 +994,7 @@ internal class RumFeatureTest {
         fakeConfiguration = fakeConfiguration.copy(
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER,
             slowFramesConfiguration = null,
-            timeseriesConfiguration = TimeseriesConfiguration.Builder().build()
+            timeseriesConfiguration = TimeseriesConfiguration.DEFAULT
         )
         testedFeature = RumFeature(
             mockSdkCore,
@@ -1260,6 +1317,8 @@ internal class RumFeatureTest {
 
         assertThat(attributesCaptor.firstValue[RumAttributes.INTERNAL_TIMESTAMP])
             .isEqualTo(fakeEvent.detectedAtMs)
+        assertThat(attributesCaptor.firstValue[RumAttributes.INTERNAL_TRIGGERED_BY_PROFILING] as Boolean)
+            .isTrue()
 
         @Suppress("UNCHECKED_CAST")
         val attached = attributesCaptor.firstValue[RumAttributes.INTERNAL_ALL_THREADS] as List<ThreadDump>
@@ -1724,9 +1783,6 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.accessibilityReader).isInstanceOf(NoOpAccessibilityReader::class.java)
-        assertThat(
-            testedFeature.accessibilitySnapshotManager
-        ).isInstanceOf(NoOpAccessibilitySnapshotManager::class.java)
     }
 
     @Test
@@ -1747,9 +1803,6 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.accessibilityReader).isInstanceOf(DefaultAccessibilityReader::class.java)
-        assertThat(
-            testedFeature.accessibilitySnapshotManager
-        ).isInstanceOf(DefaultAccessibilitySnapshotManager::class.java)
     }
 
     @Test
@@ -1772,9 +1825,6 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.accessibilityReader).isInstanceOf(NoOpAccessibilityReader::class.java)
-        assertThat(
-            testedFeature.accessibilitySnapshotManager
-        ).isInstanceOf(NoOpAccessibilitySnapshotManager::class.java)
     }
 
     @Test

@@ -29,8 +29,6 @@ internal abstract class FragmentTrackingTest :
         val activity = mockServerRule.activity
         val expectedEvents = mutableListOf<ExpectedEvent>()
 
-        // ignore first view event for application launch, it will be reduced
-
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
                 docVersion = 2
@@ -42,10 +40,19 @@ internal abstract class FragmentTrackingTest :
         waitForPendingRUMEvents()
 
         val fragmentAViewUrl = currentFragmentViewUrl(activity)
-        // ignore view event for view start, it will be reduced
 
+        // fragment A view started
         expectedEvents.add(
             ExpectedViewEvent(
+                fragmentAViewUrl,
+                2,
+                currentFragmentExtras(activity)
+            )
+        )
+
+        // fragment A view stopped
+        expectedEvents.add(
+            ExpectedViewUpdateEvent(
                 fragmentAViewUrl,
                 3,
                 currentFragmentExtras(activity)
@@ -58,11 +65,20 @@ internal abstract class FragmentTrackingTest :
         instrumentation.waitForIdleSync()
         val fragmentBViewUrl = currentFragmentViewUrl(activity)
         mockServerRule.activity.supportFragmentManager.fragments
-        // ignore view event for updating the time, it will be reduced
-        // view stopped
         waitForPendingRUMEvents()
+
+        // fragment B view started
         expectedEvents.add(
             ExpectedViewEvent(
+                fragmentBViewUrl,
+                2,
+                currentFragmentExtras(activity)
+            )
+        )
+
+        // fragment B view stopped
+        expectedEvents.add(
+            ExpectedViewUpdateEvent(
                 fragmentBViewUrl,
                 3,
                 currentFragmentExtras(activity)
@@ -73,7 +89,8 @@ internal abstract class FragmentTrackingTest :
         onView(ViewMatchers.withId(R.id.btn_last)).perform(ViewActions.click())
         instrumentation.waitForIdleSync()
         waitForPendingRUMEvents()
-        // for updating the time
+
+        // fragment A view started (again)
         expectedEvents.add(
             ExpectedViewEvent(
                 fragmentAViewUrl,

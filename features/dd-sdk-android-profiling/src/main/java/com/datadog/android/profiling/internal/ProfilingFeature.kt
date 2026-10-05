@@ -31,8 +31,13 @@ import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
 import com.datadog.android.profiling.internal.quota.ProfilingQuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaResult
+import com.datadog.android.profiling.internal.trigger.NoOpPendingTriggerProfiles
+import com.datadog.android.profiling.internal.trigger.PendingTriggerProfileStorage
+import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
+import com.datadog.android.profiling.internal.utils.fileDeleteSafe
 import java.util.Locale
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -42,7 +47,11 @@ internal class ProfilingFeature(
     private val sdkCore: FeatureSdkCore,
     private val configuration: ProfilingConfiguration,
     private val profiler: Profiler
-) : StorageBackedFeature, FeatureEventReceiver, FeatureContextUpdateReceiver, ProfilerCallback {
+) : StorageBackedFeature,
+    FeatureEventReceiver,
+    FeatureContextUpdateReceiver,
+    ProfilerCallback,
+    ProfilingStatusListener {
 
     @Volatile
     internal var lastSeenRumSessionId: String? = null
@@ -50,6 +59,9 @@ internal class ProfilingFeature(
     internal var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
     internal val pendingRumEvents = PendingRumEventsBuffer()
+
+    @Volatile
+    internal var pendingTriggerProfiles: PendingTriggerProfiles = NoOpPendingTriggerProfiles()
 
     @Volatile
     private var isLaunchProfilingActive: Boolean = false
@@ -91,11 +103,17 @@ internal class ProfilingFeature(
 
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
+        dataWriter = ProfilingDataWriter(sdkCore)
+        pendingTriggerProfiles = createPendingTriggerProfileStorage(
+            executor = profiler.scheduledExecutorService
+        )
         profiler.apply {
             this.timeProvider.delegate = sdkCore.timeProvider
             resolveProfilingPackageVersionCode(appContext)
             this.internalLogger = sdkCore.internalLogger
+            setAnrTriggerEnabled(configuration.anrTriggerEnabled)
             registerProfilingCallback(appContext, this@ProfilingFeature)
+            registerProfilerStatusListener(this@ProfilingFeature)
         }
         ProfilingStorage.setSampleRate(appContext, configuration.applicationLaunchSampleRate)
         // Set the profiling flag in SharedPreferences to profile for the next app launch
@@ -103,9 +121,11 @@ internal class ProfilingFeature(
         isLaunchProfilingActive = profiler.isRunning()
         sdkCore.setEventReceiver(name, this)
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
+            context[FeatureContextKeys.PROFILING_SAMPLE_RATE] = configuration.continuousSampleRate
+            context[FeatureContextKeys.PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE] =
+                configuration.applicationLaunchSampleRate
+            context[FeatureContextKeys.PROFILING_ANR_ENABLED] = configuration.anrTriggerEnabled
         }
-        dataWriter = createDataWriter(sdkCore)
 
         val quotaCallFactory = sdkCore.createOkHttpCallFactory {
             callTimeout(QUOTA_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
@@ -149,6 +169,7 @@ internal class ProfilingFeature(
         profiler.apply {
             stop()
             unregisterProfilingCallback(appContext)
+            unregisterProfilerStatusListener(this@ProfilingFeature)
         }
         sdkCore.removeEventReceiver(name)
         sdkCore.removeContextUpdateReceiver(this)
@@ -156,6 +177,8 @@ internal class ProfilingFeature(
         quotaChecker = NoOpQuotaChecker()
         quotaExecutor?.shutdownNow()
         quotaExecutor = null
+        pendingTriggerProfiles.stop()
+        pendingTriggerProfiles = NoOpPendingTriggerProfiles()
         lastQuotaResult = null
         lastSeenRumSessionId = null
         pendingRumEvents.clear()
@@ -185,6 +208,7 @@ internal class ProfilingFeature(
                 if (isRecordingProfile()) {
                     pendingRumEvents.add(event)
                 }
+                pendingTriggerProfiles.setRumGatingEvent(event)
             }
 
             else -> sdkCore.internalLogger.log(
@@ -203,9 +227,6 @@ internal class ProfilingFeature(
     override fun onSuccess(result: PerfettoResult) {
         perfettoResult = result
         tryWriteProfilingEvent()
-        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
-        }
     }
 
     override fun onFailure(startReason: ProfilingStartReason) {
@@ -218,16 +239,11 @@ internal class ProfilingFeature(
         } else if (startReason == ProfilingStartReason.CONTINUOUS) {
             continuousProfilingScheduler?.onActiveWindowEnded()
         }
-        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
-        }
     }
 
-    override fun onAnrDetected(event: ProfilingAnrDetectedEvent) {
-        // The ANR event should be forwarded to RUM only when profiling is actually running.
-        if (isLaunchProfilingActive || continuousProfilingScheduler?.isActive == true) {
-            sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(event)
-        }
+    override fun onAnrDetected(event: ProfilingAnrDetectedEvent, result: PerfettoResult) {
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(event)
+        pendingTriggerProfiles.setProfilingResult(result)
     }
 
     private fun onTtidEvent() {
@@ -267,6 +283,12 @@ internal class ProfilingFeature(
         )
     }
 
+    override fun onProfilingStatusChange(isRunning: Boolean) {
+        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+            context[FeatureContextKeys.PROFILER_IS_RUNNING] = isRunning
+        }
+    }
+
     @Suppress("ReturnCount")
     private fun tryWriteProfilingEvent() {
         val result = perfettoResult ?: return
@@ -288,11 +310,11 @@ internal class ProfilingFeature(
                                 quotaResult.reason.rawValue
                             )
                         )
-                        dataWriter.discard(result)
+                        fileDeleteSafe(result.resultFilePath, sdkCore.internalLogger)
                         pendingRumEvents.clear()
                     } else {
                         val (longTasks, anrEvents, vitalEvents) = pendingRumEvents.drain()
-                        dataWriter.write(
+                        dataWriter.writeManualProfile(
                             profilingResult = result,
                             longTasks = longTasks,
                             anrEvents = anrEvents,
@@ -309,7 +331,7 @@ internal class ProfilingFeature(
                 val scheduler = continuousProfilingScheduler ?: return
                 scheduler.onActiveWindowEnded()
                 val (longTasks, anrEvents, vitalEvents) = pendingRumEvents.drain()
-                dataWriter.write(
+                dataWriter.writeManualProfile(
                     profilingResult = result,
                     longTasks = longTasks,
                     anrEvents = anrEvents,
@@ -345,8 +367,40 @@ internal class ProfilingFeature(
         )
     }
 
-    private fun createDataWriter(sdkCore: FeatureSdkCore): ProfilingDataWriter {
-        return ProfilingDataWriter(sdkCore)
+    private fun createPendingTriggerProfileStorage(
+        executor: ScheduledExecutorService
+    ): PendingTriggerProfiles {
+        return PendingTriggerProfileStorage(
+            executor = executor,
+            timeProvider = sdkCore.timeProvider,
+            internalLogger = sdkCore.internalLogger,
+            onMatch = { perfettoResult, profilerEvent ->
+                when (profilerEvent) {
+                    is ProfilerEvent.RumAnrEvent -> {
+                        val quotaResult = lastQuotaResult
+                        if (quotaResult?.decision == QuotaResult.Decision.DENIED) {
+                            logToUser(
+                                LOG_TRIGGER_PROFILING_DROPPED_QUOTA_DENIED.format(
+                                    Locale.US,
+                                    quotaResult.reason.rawValue
+                                )
+                            )
+                            fileDeleteSafe(perfettoResult.resultFilePath, sdkCore.internalLogger)
+                        } else {
+                            dataWriter.writeTriggerProfile(
+                                perfettoResult = perfettoResult,
+                                rumErrorId = profilerEvent.id,
+                                rumContext = profilerEvent.rumContext
+                            )
+                        }
+                    }
+
+                    else -> {
+                        // Not a currently supported trigger-match type: nothing to write.
+                    }
+                }
+            }
+        )
     }
 
     internal fun propagateQuotaResult(result: QuotaResult) {
@@ -383,5 +437,7 @@ internal class ProfilingFeature(
         private const val QUOTA_EXECUTOR_CONTEXT = "profiling-quota"
         internal const val LOG_LAUNCH_PROFILING_DROPPED_QUOTA_DENIED =
             "Launch profiling dropped: quota denied (reason=%s)."
+        internal const val LOG_TRIGGER_PROFILING_DROPPED_QUOTA_DENIED =
+            "ANR trigger profile dropped: quota denied (reason=%s)."
     }
 }

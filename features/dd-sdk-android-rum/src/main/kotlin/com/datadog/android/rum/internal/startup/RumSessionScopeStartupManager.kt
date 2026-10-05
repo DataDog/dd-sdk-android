@@ -19,9 +19,9 @@ import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
 import com.datadog.android.rum.internal.profiling.isProfilerRunning
 import com.datadog.android.rum.internal.profiling.resolveProfilingQuotaReason
+import com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl.Companion.MAX_TTID_DURATION_NS
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.VitalAppLaunchEvent
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 internal interface RumSessionScopeStartupManager {
@@ -359,7 +359,6 @@ internal class RumSessionScopeStartupManagerImpl(
 
         internal const val TTFD_TOO_LARGE_MESSAGE = "TTFD value is too large, skipping it"
 
-        internal val MAX_TTID_DURATION_NS: Long = 1.minutes.inWholeNanoseconds
         internal val MAX_TTFD_DURATION_NS: Long = 90.seconds.inWholeNanoseconds
     }
 }

@@ -62,7 +62,7 @@ internal class DatastoreFileReader(
 
         // there should be as many blocks read as there are block types
         val numberBlocksFound = tlvBlocks.size
-        val numberBlocksExpected = TLVBlockType.values().size
+        val numberBlocksExpected = TLVBlockType.entries.size
         if (numberBlocksFound != numberBlocksExpected) {
             logInvalidNumberOfBlocksError(numberBlocksFound, numberBlocksExpected)
             callback.onFailure()

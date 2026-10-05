@@ -14,7 +14,7 @@ internal enum class SyntheticsRun(val value: String) {
 
     companion object {
         fun from(value: String): SyntheticsRun? {
-            return values().firstOrNull { it.value == value }
+            return entries.firstOrNull { it.value == value }
         }
     }
 }

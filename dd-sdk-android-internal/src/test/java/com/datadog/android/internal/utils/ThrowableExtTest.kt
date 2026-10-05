@@ -121,4 +121,33 @@ internal class ThrowableExtTest {
         // Then
         assertThat(result).isEqualTo(fakePartial)
     }
+
+    @Test
+    fun `M return message W loggableMessage()`(
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        val throwable = RuntimeException(fakeMessage)
+
+        // When
+        val result = throwable.loggableMessage()
+
+        // Then
+        assertThat(result).isEqualTo(fakeMessage)
+    }
+
+    @Test
+    fun `M return null W loggableMessage() {getMessage throws}`() {
+        // Given
+        val throwable = object : Throwable() {
+            override val message: String
+                get() = error("boom")
+        }
+
+        // When
+        val result = throwable.loggableMessage()
+
+        // Then
+        assertThat(result).isNull()
+    }
 }
