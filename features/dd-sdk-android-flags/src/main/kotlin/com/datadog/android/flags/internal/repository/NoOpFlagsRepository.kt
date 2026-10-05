@@ -15,15 +15,18 @@ internal class NoOpFlagsRepository : FlagsRepository {
 
     override fun getEvaluationContext(): EvaluationContext? = null
 
+    override fun setRequestedContext(context: EvaluationContext) = Unit
+
     override fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
+        dispatchFirstFlags: (() -> Unit) -> Unit,
         onInstalled: () -> Unit
     ) {
         onInstalled()
     }
 
-    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? = null
+    override fun getPrecomputedFlagWithContext(key: String): FlagWithContext? = null
 
     override fun waitForFlags(): FirstFlagsLatch = FirstFlagsLatch()
 

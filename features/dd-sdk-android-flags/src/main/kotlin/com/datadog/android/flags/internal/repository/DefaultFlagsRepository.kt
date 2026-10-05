@@ -25,7 +25,15 @@ internal class DefaultFlagsRepository(
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
     private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS
 ) : FlagsRepository {
-    private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
+    private data class FlagsState(
+        val context: EvaluationContext,
+        val flags: Map<String, PrecomputedFlag>,
+        val isStale: Boolean
+    )
+
+    // Serialize request admission and both installation paths; readers capture one atomic state.
+    private val stateLock = Any()
+    private var requestedContext: EvaluationContext? = null
     private val atomicState = AtomicReference<FlagsState?>(null)
 
     @Suppress("UnsafeThirdPartyFunctionCall") // CountDownLatch rejects negative counts; 1 is valid.
@@ -38,13 +46,23 @@ internal class DefaultFlagsRepository(
         internalLogger = internalLogger
     ) { persistedState ->
         val installed = try {
-            persistedState != null && atomicState.compareAndSet(
-                null,
-                FlagsState(
-                    persistedState.evaluationContext,
-                    persistedState.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) }
-                )
-            )
+            persistedState != null && synchronized(stateLock) {
+                if (atomicState.get() == null) {
+                    val cachedFlags = persistedState.flags.mapValues { (_, flag) ->
+                        flag.copy(reason = ResolutionReason.CACHED.name)
+                    }
+                    atomicState.set(
+                        FlagsState(
+                            persistedState.evaluationContext,
+                            cachedFlags,
+                            isStaleFor(persistedState.evaluationContext)
+                        )
+                    )
+                    true
+                } else {
+                    false
+                }
+            }
         } finally {
             persistenceLoadedLatch.countDown()
         }
@@ -55,16 +73,26 @@ internal class DefaultFlagsRepository(
 
     override fun waitForFlags(): FirstFlagsLatch = firstFlags
 
+    override fun setRequestedContext(context: EvaluationContext) {
+        synchronized(stateLock) {
+            requestedContext = context
+            atomicState.get()?.let { state ->
+                atomicState.set(state.copy(isStale = isStaleFor(state.context)))
+            }
+        }
+    }
+
     // Preserve storage failures while finishing the accepted installation before notifying listeners.
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
     override fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
+        dispatchFirstFlags: (() -> Unit) -> Unit,
         onInstalled: () -> Unit
     ) {
-        val newState = FlagsState(context, flags)
-
-        val firstInstallation = atomicState.getAndSet(newState) == null
+        val firstInstallation = synchronized(stateLock) {
+            atomicState.getAndSet(FlagsState(context, flags, isStaleFor(context))) == null
+        }
         persistenceLoadedLatch.countDown()
 
         val storageFailure = try {
@@ -101,7 +129,7 @@ internal class DefaultFlagsRepository(
             }
         } finally {
             if (firstInstallation) {
-                firstFlags.complete(flags.keys)
+                dispatchFirstFlags { firstFlags.complete(flags.keys) }
             }
         }
         if (storageFailure != null) throw storageFailure
@@ -125,7 +153,11 @@ internal class DefaultFlagsRepository(
         waitForInstalledFlags()
         val state = atomicState.get()
         if (state != null) {
-            return state.flags
+            return if (state.isStale) {
+                state.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.STALE.name) }
+            } else {
+                state.flags
+            }
         }
         internalLogger.log(
             InternalLogger.Level.WARN,
@@ -151,12 +183,15 @@ internal class DefaultFlagsRepository(
     }
 
     @Suppress("ReturnCount")
-    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? {
+    override fun getPrecomputedFlagWithContext(key: String): FlagWithContext? {
         waitForInstalledFlags()
         val state = atomicState.get() ?: return null
         val flag = state.flags[key] ?: return null
-        return flag to state.context
+        return FlagWithContext(flag, state.context, state.isStale)
     }
+
+    // Called only while holding stateLock. No request is distinct from EvaluationContext.EMPTY.
+    private fun isStaleFor(context: EvaluationContext): Boolean = requestedContext?.let { it != context } ?: false
 
     private fun waitForInstalledFlags() {
         try {

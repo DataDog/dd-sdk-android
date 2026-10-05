@@ -13,14 +13,17 @@ package com.datadog.android.flags
  * operation completes. It is normally invoked after the corresponding [FlagsClientState]
  * transition. The first operation can fail with [FlagsInitializationTimeoutException].
  * The request continues and can transition the client to [FlagsClientState.Ready] later.
+ * If another context update supersedes this operation, including an update with an equal context,
+ * its callback still reports its own outcome, but its response does not replace assignments or
+ * change client state. A callback is not a guarantee that its context is still current.
  */
 interface EvaluationContextCallback {
     /**
      * Invoked when the evaluation context update completes successfully.
      *
-     * This method is called on a background executor thread after the state transitions
-     * to [FlagsClientState.Ready]. The new flag evaluations are now available for
-     * subsequent flag resolution calls.
+     * This method is called on a background executor thread. If the operation is still current,
+     * its evaluations are installed before the state transitions to [FlagsClientState.Ready].
+     * A superseded operation completes without installing its evaluations or changing client state.
      */
     fun onSuccess()
 
@@ -32,6 +35,7 @@ interface EvaluationContextCallback {
      * [FlagsClientState.Error] (network failed with no cached flags). An initialization timeout uses
      * the same state selection based on matching cached assignments. The request continues and can
      * transition the client to [FlagsClientState.Ready] later.
+     * A superseded operation reports its failure without changing the current client state.
      *
      * @param error A [Throwable] containing details about the failure, typically including
      * a message explaining the network request failure.

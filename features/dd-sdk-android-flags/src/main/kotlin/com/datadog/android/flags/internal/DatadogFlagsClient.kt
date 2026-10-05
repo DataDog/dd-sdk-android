@@ -194,7 +194,7 @@ internal class DatadogFlagsClient(
         return when (resolution) {
             is InternalResolution.Success -> {
                 trackResolution(resolution)
-                createSuccessResolution(resolution.flag, resolution.value)
+                createSuccessResolution(resolution.flag, resolution.value, resolution.isStale)
             }
 
             is InternalResolution.Error -> {
@@ -271,7 +271,8 @@ internal class DatadogFlagsClient(
             override val flagKey: String,
             val value: T,
             val flag: PrecomputedFlag,
-            val context: EvaluationContext
+            val context: EvaluationContext,
+            val isStale: Boolean
         ) : InternalResolution<T>()
 
         data class Error<T : Any>(
@@ -325,7 +326,7 @@ internal class DatadogFlagsClient(
             )
         }
 
-        val (flag, context) = flagAndContext
+        val (flag, context, isStale) = flagAndContext
 
         val conversionResult = FlagValueConverter.convert(
             variationValue = flag.variationValue,
@@ -339,7 +340,8 @@ internal class DatadogFlagsClient(
                     flagKey = flagKey,
                     value = parsedValue,
                     flag = flag,
-                    context = context
+                    context = context,
+                    isStale = isStale
                 )
             },
             onFailure = { exception ->
@@ -420,11 +422,15 @@ internal class DatadogFlagsClient(
 
     // region Helper Methods
 
-    private fun <T : Any> createSuccessResolution(precomputedFlag: PrecomputedFlag, value: T): ResolutionDetails<T> =
+    private fun <T : Any> createSuccessResolution(
+        precomputedFlag: PrecomputedFlag,
+        value: T,
+        isStale: Boolean
+    ): ResolutionDetails<T> =
         ResolutionDetails(
             value = value,
             variant = precomputedFlag.variationKey.takeIf { it.isNotBlank() },
-            reason = parseReason(precomputedFlag.reason),
+            reason = if (isStale) ResolutionReason.STALE else parseReason(precomputedFlag.reason),
             errorCode = null,
             errorMessage = null,
             flagMetadata = buildMetadata(precomputedFlag)
