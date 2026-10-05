@@ -21,13 +21,15 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import kotlin.concurrent.thread
 
 internal class FirstFlagsInstallationTest {
     private val core = mock<FeatureSdkCore>()
@@ -45,7 +47,7 @@ internal class FirstFlagsInstallationTest {
             null
         }.whenever(store).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
         return DefaultFlagsRepository(core, "first", store, persistenceLoadTimeoutMs = timeoutMs).also {
-            it.waitForFlags().whenComplete { keys -> events.add(keys) }
+            it.firstFlags().whenComplete { keys -> events.add(keys) }
         }
     }
 
@@ -55,7 +57,66 @@ internal class FirstFlagsInstallationTest {
     )
 
     @Test
-    fun `M preserve storage error W terminal bookkeeping also throws`() {
+    fun `M not notify rejected cache W disk completes during network bookkeeping`() {
+        val tested = repository()
+        val inBookkeeping = CountDownLatch(1)
+        val finish = CountDownLatch(1)
+        val networkFlags = mapOf("network" to mock<PrecomputedFlag>())
+        val cachedState = restored(listOf("cache"))
+        val executor = Executors.newSingleThreadExecutor()
+        try {
+            val installation = executor.submit {
+                tested.setFlagsAndContext(context, networkFlags) {
+                    inBookkeeping.countDown()
+                    check(finish.await(5, TimeUnit.SECONDS))
+                }
+            }
+            assertThat(inBookkeeping.await(5, TimeUnit.SECONDS)).isTrue()
+            disk.onSuccess(cachedState)
+            assertThat(events).isEmpty()
+            finish.countDown()
+            installation.get(5, TimeUnit.SECONDS)
+        } finally {
+            finish.countDown()
+            executor.shutdownNow()
+        }
+        assertThat(events.single()).containsExactly("network")
+        assertThat(tested.getFlagsSnapshot()).containsOnlyKeys("network")
+    }
+
+    @Test
+    fun `M read cached state without waiting W first flags listener runs on disk worker`() {
+        val tested = repository(TimeUnit.MINUTES.toMillis(1))
+        val observed = CopyOnWriteArrayList<EvaluationContext?>()
+        tested.firstFlags().whenComplete { observed.add(tested.getEvaluationContext()) }
+        val cachedState = restored(listOf("cache"))
+        val executor = Executors.newSingleThreadExecutor()
+        try {
+            executor.submit { disk.onSuccess(cachedState) }.get(5, TimeUnit.SECONDS)
+        } finally {
+            executor.shutdownNow()
+        }
+        assertThat(observed).containsExactly(context)
+        assertThat(events.single()).containsExactly("cache")
+    }
+
+    @Test
+    fun `M read installed state without waiting W first flags listener runs on network worker`() {
+        val tested = repository(TimeUnit.MINUTES.toMillis(1))
+        val observed = CopyOnWriteArrayList<Set<String>>()
+        tested.firstFlags().whenComplete { observed.add(tested.getFlagsSnapshot().keys) }
+        val networkFlags = mapOf("network" to mock<PrecomputedFlag>())
+        val executor = Executors.newSingleThreadExecutor()
+        try {
+            executor.submit { tested.setFlagsAndContext(context, networkFlags) }.get(5, TimeUnit.SECONDS)
+        } finally {
+            executor.shutdownNow()
+        }
+        assertThat(observed.single()).containsExactly("network")
+    }
+
+    @Test
+    fun `M propagate terminal failure W storage submission also throws`() {
         listOf(false, true).forEach { sameError ->
             events.clear()
             val tested = repository()
@@ -70,13 +131,9 @@ internal class FirstFlagsInstallationTest {
                     throw terminalError
                 }
             }
-            assertThat(thrown).isSameAs(storageError)
+            assertThat(thrown).isSameAs(terminalError)
             assertThat(terminalCalls).isEqualTo(1)
-            if (sameError) {
-                assertThat(thrown.suppressed).isEmpty()
-            } else {
-                assertThat(thrown.suppressed).containsExactly(terminalError)
-            }
+            assertThat(thrown.suppressed).isEmpty()
             assertThat(events).hasSize(1)
         }
     }
@@ -96,7 +153,7 @@ internal class FirstFlagsInstallationTest {
                 }
             }
             assertThat(installed.await(5, TimeUnit.SECONDS)).isTrue()
-            tested.waitForFlags().whenComplete { delivered.countDown() }
+            tested.firstFlags().whenComplete { delivered.countDown() }
             assertThat(delivered.count).isEqualTo(1)
             assertThat(events).isEmpty()
             finish.countDown()
@@ -163,18 +220,20 @@ internal class FirstFlagsInstallationTest {
                     return setOf("cache")
                 }
         }
-        val loading = thread {
-            disk.onSuccess(DataStoreContent(1, FlagsStateEntry(context, flags, 0)))
-        }
+        val executor = Executors.newSingleThreadExecutor()
         try {
+            val loading = executor.submit {
+                disk.onSuccess(DataStoreContent(1, FlagsStateEntry(context, flags, 0)))
+            }
             assertThat(claimed.await(5, TimeUnit.SECONDS)).isTrue()
             tested.setFlagsAndContext(context, mapOf("network" to mock()))
             assertThat(events).isEmpty()
+            release.countDown()
+            loading.get(5, TimeUnit.SECONDS)
         } finally {
             release.countDown()
-            loading.join(5000)
+            executor.shutdownNow()
         }
-        assertThat(loading.isAlive).isFalse()
         assertThat(events.single()).containsExactly("cache")
         assertThat(tested.getFlagsSnapshot()).containsOnlyKeys("network")
     }
@@ -207,10 +266,18 @@ internal class FirstFlagsInstallationTest {
         val tested = repository()
         doThrow(IllegalStateException("storage unavailable")).whenever(store)
             .setValue<FlagsStateEntry>(any(), any(), any(), anyOrNull(), any())
-        assertThrows<IllegalStateException> { tested.setFlagsAndContext(context, emptyMap()) }
+        tested.setFlagsAndContext(context, emptyMap())
         assertThat(events).hasSize(1)
         assertThat(events.single()).isEmpty()
         assertThat(tested.getEvaluationContext()).isEqualTo(context)
+        verify(logger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
+            any(),
+            isA<IllegalStateException>(),
+            eq(false),
+            eq(null)
+        )
     }
 
     @Test

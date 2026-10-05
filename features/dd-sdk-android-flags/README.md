@@ -241,6 +241,47 @@ val analyticsClient = FlagsClient.get("analytics")
 
 **Note:** If you call `get()` before calling `build()` for that client name, a no-op client is returned that always returns default values and logs an error.
 
+### Wait for the first flags
+
+`onFirstFlags` notifies each registration once, when the client installs its first flags from disk
+cache or the network. For an Activity that owns a `client` (`render` is your own UI code):
+
+```kotlin
+private var firstFlagsSubscription: FlagsSubscription? = null
+
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    firstFlagsSubscription = client.onFirstFlags { event ->
+        // event.flagsChanged contains the first installed keys, possibly empty.
+        val enabled = client.resolveBooleanValue("my-flag-key", false)
+        runOnUiThread { render(enabled) }
+    }
+}
+
+override fun onDestroy() {
+    firstFlagsSubscription?.unsubscribe()
+    super.onDestroy()
+}
+```
+
+- An available first result replays synchronously before registration returns. Pending callbacks run
+  on a dedicated background thread. Dispatch UI work to the main thread.
+- Every registration receives the retained first result, even after later updates. Evaluations read
+  current flags, which may have changed since the event. Registration order is not guaranteed.
+- Missing or unreadable cache and malformed network responses do not trigger the callback. A valid
+  empty configuration does trigger it with an empty key list.
+- Unsubscription is thread-safe and idempotent and releases pending captures. A callback already
+  claimed for delivery may still run; cancellation does not interrupt it or undo synchronous replay.
+- This is not a readiness signal. Use `client.state` to track readiness.
+- Ordinary callback exceptions are logged and isolated.
+
+The listener and subscription are Kotlin functional interfaces: `FlagsClientEventListener.onEvent`
+and `FlagsSubscription.unsubscribe`. Trailing-lambda registration is supported.
+`FlagsClientEvent` snapshots its key list and currently supports `CONFIGURATION_CHANGED`.
+
+The [Kotlin sample](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/SampleApplication.kt)
+registers an application-lifetime callback, logs keys, and evaluates `"my-flag-key"` with default `false`.
+
 ## Integration with RUM
 
 When RUM is enabled in your application and RUM integration is enabled in the Flags configuration (default), flag evaluations are automatically:
@@ -271,82 +312,3 @@ For more information on Feature Flags in Datadog, see the [official Feature Flag
 
 [1]: https://docs.datadoghq.com/real_user_monitoring/application_monitoring/android/setup
 [2]: https://docs.datadoghq.com/getting_started/feature_flags/
-
-
-### Event value shape
-
-`FlagsClientEvent` is an immutable value with required `type` and optional `flagsChanged` (default
-`null`). The constructor snapshots supplied keys; `null` means no keys were supplied, while
-`emptyList()` means an explicitly empty list. Key order and duplicates are preserved.
-
-```kotlin
-val event = FlagsClientEvent(
-    type = FlagsClientEventType.CONFIGURATION_CHANGED,
-    flagsChanged = listOf("checkout-enabled")
-)
-```
-
-`FlagsClientEventType` contains only `CONFIGURATION_CHANGED`, mapping directly to that shared event
-name. The value requires no OpenFeature dependency.
-
-
-### First installed flags callback
-
-The [Kotlin sample application](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/SampleApplication.kt)
-registers this callback in `initializeFlags`. Its
-[sample-only helper](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/flags/FirstFlagsSample.kt)
-logs the supplied keys and evaluates the Boolean flag `"my-flag-key"` with a default of `false`.
-Replace this example key with your flag key and inspect the `FirstFlags` Logcat tag.
-Null keys log as `<absent>` and empty keys as `[]`.
-
-`FlagsClient.onFirstFlags(listener: FlagsClientEventListener): FlagsSubscription` registers a one-shot callback.
-It receives the keys from the first accepted cache or network installation, including an empty list.
-Missing/invalid cache and rejected disk results do not notify. Every registration receives the
-retained first result, including registrations after later installations or on a reused named client.
-If the first result is available, the callback runs immediately on the calling thread; otherwise it
-runs on the installing thread. Callback exceptions are logged and isolated.
-
-The sample builds and assigns the client, then registers a callback that logs keys and evaluates
-the example flag directly. Pending callbacks are retained until delivery or cancellation. Keep the returned subscription and
-call `unsubscribe()` when its owner is destroyed to release captured references. Cancellation is idempotent
-and thread-safe; a callback already claimed for delivery may still run. Immediate replay happens
-before registration returns, so cancellation cannot undo it. Reads use current
-installed flags, not a pinned event snapshot. UI updates need the appropriate UI-thread dispatch.
-This notification does not imply readiness and adds no general event bus or OpenFeature forwarding.
-
-
-For a lifecycle-scoped owner, retain the returned subscription and unsubscribe during cleanup:
-
-```kotlin
-private var firstFlagsSubscription: FlagsSubscription? = null
-
-fun registerFirstFlags(client: FlagsClient) {
-    firstFlagsSubscription?.unsubscribe()
-    firstFlagsSubscription = client.onFirstFlags { event ->
-        val value = client.resolveBooleanValue("my-flag-key", false)
-        // Use event.flagsChanged and value; dispatch UI work to the UI thread.
-    }
-}
-
-fun releaseFirstFlags() {
-    firstFlagsSubscription?.unsubscribe()
-    firstFlagsSubscription = null
-}
-```
-
-Call `releaseFirstFlags()` when the owning Activity or Fragment view is destroyed. Cancellation
-only unregisters this callback; it does not stop fetching flags or affect other registrations.
-The Application sample intentionally keeps its callback for the application lifetime.
-
-
-Both public types are Kotlin functional interfaces, so trailing-lambda registration remains supported:
-
-```kotlin
-fun interface FlagsClientEventListener {
-    fun onEvent(event: FlagsClientEvent)
-}
-
-fun interface FlagsSubscription {
-    fun unsubscribe()
-}
-```

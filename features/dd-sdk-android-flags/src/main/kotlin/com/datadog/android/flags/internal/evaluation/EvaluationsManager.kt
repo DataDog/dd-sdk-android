@@ -132,17 +132,18 @@ internal class EvaluationsManager(
                         hadFlags && flagsRepository.getEvaluationContext() == context
                     )
                     val response = assignmentsReader.readPrecomputedFlags(context, datadogContext)
-                    if (response != null) {
-                        val flagsMap = precomputeMapper.map(response)
+                    val flagsMap = response?.let { precomputeMapper.map(it) }
+                    if (flagsMap != null) {
                         installFlags(context, flagsMap, initializationCompletion, callback)
                     } else {
+                        val message = if (response == null) NETWORK_REQUEST_FAILED_MESSAGE else INVALID_RESPONSE_MESSAGE
                         internalLogger.log(
                             InternalLogger.Level.WARN,
                             InternalLogger.Target.USER,
-                            { NETWORK_REQUEST_FAILED_MESSAGE }
+                            { message }
                         )
 
-                        val throwable = NetworkRequestFailedException(NETWORK_REQUEST_FAILED_MESSAGE)
+                        val throwable = NetworkRequestFailedException(message)
                         // Only use cached flags if they match the requested context to avoid
                         // serving flags from a different user/context.
                         val completionCallback = synchronized(initializationTerminalLock) {
@@ -220,6 +221,7 @@ internal class EvaluationsManager(
 
     companion object {
         private const val FETCH_AND_STORE_OPERATION_NAME = "Fetch and store flags for evaluation context"
+        private const val INVALID_RESPONSE_MESSAGE = "Unable to read the feature flags response."
         private const val NETWORK_REQUEST_FAILED_MESSAGE =
             "Unable to fetch feature flags. Please check your network connection."
     }

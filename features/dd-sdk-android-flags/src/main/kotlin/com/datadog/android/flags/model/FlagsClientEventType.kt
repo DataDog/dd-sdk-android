@@ -6,8 +6,8 @@
 
 package com.datadog.android.flags.model
 
-/** Event kinds. Each constant maps directly to the identically named shared event type. */
+/** Kind of [FlagsClientEvent]. */
 enum class FlagsClientEventType {
-    /** Configuration changed. */
+    /** The installed flag configuration changed; [FlagsClientEvent.flagsChanged] lists the keys. */
     CONFIGURATION_CHANGED
 }

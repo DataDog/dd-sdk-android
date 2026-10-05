@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.Feature.Companion.FLAGS_EVALUATIONS_FEATU
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
 import com.datadog.android.flags.internal.EvaluationsFeature
@@ -68,7 +69,7 @@ interface FlagsClient {
      * including an empty configuration. Missing or invalid cache does not trigger this callback.
      * Each registration receives the retained first result, even after subsequent flag updates.
      * If the first result is available, delivery is immediate on the calling thread; otherwise it runs
-     * on the installing thread. Callback exceptions are logged and isolated.
+     * on a dedicated background thread. Callback exceptions are logged and isolated.
      * Pending callbacks are retained until delivery or cancellation. Unsubscribe the returned subscription
      * when the owner is destroyed to release captured references if flags never become available.
      * Unsubscription is thread-safe and idempotent. A callback already claimed
@@ -402,6 +403,7 @@ interface FlagsClient {
         // region Internal
 
         internal const val FLAGS_NETWORK_EXECUTOR_NAME = "flags-network"
+        internal const val FLAGS_FIRST_FLAGS_EXECUTOR_NAME = "flags-first-flags"
 
         @Suppress("LongMethod")
         internal fun createInternal(
@@ -420,7 +422,15 @@ interface FlagsClient {
                 DefaultFlagsRepository(
                     featureSdkCore = featureSdkCore,
                     dataStore = datastore,
-                    instanceName = name
+                    instanceName = name,
+                    deliverFirstFlags = { delivery ->
+                        val worker = featureSdkCore.createSingleThreadExecutorService(FLAGS_FIRST_FLAGS_EXECUTOR_NAME)
+                        try {
+                            worker.executeSafe("Deliver first flags", featureSdkCore.internalLogger, delivery)
+                        } finally {
+                            worker.shutdown()
+                        }
+                    }
                 )
             } else {
                 NoOpFlagsRepository()

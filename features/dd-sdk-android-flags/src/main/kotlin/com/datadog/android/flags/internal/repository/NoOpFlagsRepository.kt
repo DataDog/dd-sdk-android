@@ -25,7 +25,7 @@ internal class NoOpFlagsRepository : FlagsRepository {
 
     override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? = null
 
-    override fun waitForFlags(): FirstFlagsLatch = FirstFlagsLatch()
+    override fun firstFlags(): FirstFlagsLatch = FirstFlagsLatch()
 
     override fun hasFlags(): Boolean = false
 

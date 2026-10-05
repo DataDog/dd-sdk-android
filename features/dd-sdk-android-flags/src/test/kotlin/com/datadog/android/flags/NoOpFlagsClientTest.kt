@@ -57,6 +57,24 @@ internal class NoOpFlagsClientTest {
     // region setEvaluationContext()
 
     @Test
+    fun `M never invoke callback and log warning W onFirstFlags()`() {
+        // Given
+        var delivered = false
+
+        // When
+        val subscription = testedClient.onFirstFlags { delivered = true }
+        subscription.unsubscribe()
+        subscription.unsubscribe()
+
+        // Then
+        assertThat(delivered).isFalse()
+        verify(mockLogWithPolicy).invoke(
+            argThat { startsWith("onFirstFlags called on NoOpFlagsClient for client '$fakeClientName'") },
+            eq(InternalLogger.Level.WARN)
+        )
+    }
+
+    @Test
     fun `M do nothing W setEvaluationContext()`(forge: Forge) {
         // Given
         val fakeTargetingKey = forge.anAlphabeticalString()

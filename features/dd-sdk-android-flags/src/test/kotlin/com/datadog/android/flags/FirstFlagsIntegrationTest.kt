@@ -19,6 +19,7 @@ import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.model.FlagsStateEntry
+import com.datadog.android.flags.internal.model.JsonKeys
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsStateSerializer
 import com.datadog.android.flags.model.EvaluationContext
@@ -37,10 +38,15 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -93,10 +99,130 @@ internal class FirstFlagsIntegrationTest {
     }
 
     @Test
-    fun `M deliver pending cached flags on disk worker W cache wins before network`() {
+    fun `M shutdown callback worker W submission accepted or rejected`() {
+        listOf(false, true).forEach { rejected ->
+            val worker = mock<ExecutorService>()
+            if (rejected) {
+                doThrow(java.util.concurrent.RejectedExecutionException("stopped"))
+                    .whenever(worker).execute(any())
+            } else {
+                doAnswer { it.getArgument<Runnable>(0).run(); null }.whenever(worker).execute(any())
+            }
+            whenever(core.createSingleThreadExecutorService(eq(FlagsClient.FLAGS_FIRST_FLAGS_EXECUTOR_NAME)))
+                .thenReturn(worker)
+            store.json = cached()
+            store.deferRead = true
+            val client = FlagsClient.Builder("worker-$rejected", sdkCore = core).build()
+            var delivered = false
+            client.onFirstFlags { delivered = true }
+            store.releaseRead()
+            verify(worker).shutdown()
+            assertThat(delivered).isEqualTo(!rejected)
+        }
+    }
+
+    @Test
+    fun `M avoid callback worker W no pending listeners`() {
+        store.json = cached()
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        client.onFirstFlags { events.add(it) }
+        verify(core, never()).createSingleThreadExecutorService(FlagsClient.FLAGS_FIRST_FLAGS_EXECUTOR_NAME)
+        assertThat(events).hasSize(1)
+    }
+
+    @Test
+    fun `M notify empty keys W genuine empty cached configuration`() {
+        store.json = JSONObject(cached()).put(JsonKeys.FLAGS.value, JSONObject()).toString()
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        client.onFirstFlags { events.add(it) }
+        assertThat(events.single().flagsChanged).isEmpty()
+    }
+
+    @Test
+    fun `M notify empty keys W genuine empty network configuration`() {
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        client.onFirstFlags { events.add(it) }
+        val body = JSONObject(response(true)).apply {
+            getJSONObject("data").getJSONObject("attributes").put("flags", JSONObject())
+        }
+        server.enqueue(MockResponse().setBody(body.toString()))
+        client.setEvaluationContext(EvaluationContext("user"))
+        assertThat(events.single().flagsChanged).isEmpty()
+    }
+
+    @Test
+    fun `M not notify first flags W successful network body is malformed`() {
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        val callback = mock<EvaluationContextCallback>()
+        client.onFirstFlags { events.add(it) }
+        server.enqueue(MockResponse().setBody("not valid JSON"))
+
+        client.setEvaluationContext(EvaluationContext("user"), callback)
+
+        assertThat(events).isEmpty()
+        assertThat(client.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+        verify(callback).onFailure(any())
+        server.enqueue(MockResponse().setBody(response(true)))
+        client.setEvaluationContext(EvaluationContext("user"))
+        assertThat(events.single().flagsChanged).containsExactly("enabled")
+    }
+
+    @Test
+    fun `M not notify first flags W cached envelope contains only invalid flags`() {
+        store.json = JSONObject(cached()).apply {
+            getJSONObject(JsonKeys.FLAGS.value).getJSONObject("enabled").remove(JsonKeys.VARIATION_TYPE.value)
+        }.toString()
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        client.onFirstFlags { events.add(it) }
+        assertThat(events).isEmpty()
+        server.enqueue(MockResponse().setBody(response(true)))
+        client.setEvaluationContext(EvaluationContext("user"))
+        assertThat(events.single().flagsChanged).containsExactly("enabled")
+    }
+
+    @Test
+    fun `M let callback wait for a newer context W first network installation`() {
+        val executors = CopyOnWriteArrayList<ExecutorService>()
+        whenever(core.createSingleThreadExecutorService(any())).thenAnswer {
+            Executors.newSingleThreadExecutor().also(executors::add)
+        }
+        try {
+            val client = FlagsClient.Builder(sdkCore = core).build()
+            val newerApplied = CountDownLatch(1)
+            val finished = CountDownLatch(1)
+            var waited = false
+            client.onFirstFlags {
+                client.setEvaluationContext(
+                    EvaluationContext("newer"),
+                    object : EvaluationContextCallback {
+                        override fun onSuccess() = newerApplied.countDown()
+                        override fun onFailure(error: Throwable) = newerApplied.countDown()
+                    }
+                )
+                waited = newerApplied.await(2, TimeUnit.SECONDS)
+                finished.countDown()
+            }
+            server.enqueue(MockResponse().setBody(response(true)))
+            server.enqueue(MockResponse().setBody(response(false)))
+
+            client.setEvaluationContext(EvaluationContext("initial"))
+
+            assertThat(finished.await(10, TimeUnit.SECONDS)).isTrue()
+            assertThat(waited).isTrue()
+        } finally {
+            executors.forEach { it.shutdownNow() }
+        }
+    }
+
+    @Test
+    fun `M deliver pending cached flags off the disk worker W cache wins before network`() {
+        val deliveryExecutor = Executors.newSingleThreadExecutor()
+        whenever(core.createSingleThreadExecutorService(eq(FlagsClient.FLAGS_FIRST_FLAGS_EXECUTOR_NAME)))
+            .thenReturn(deliveryExecutor)
         store.json = cached()
         store.deferRead = true
         val client = FlagsClient.Builder(sdkCore = core).build()
+        val delivered = CountDownLatch(1)
         var deliveryThread: Thread? = null
         var cachedValue: Boolean? = null
         var cachedReason: ResolutionReason? = null
@@ -106,17 +232,20 @@ internal class FirstFlagsIntegrationTest {
             val details = client.resolve("enabled", false)
             cachedValue = details.value
             cachedReason = details.reason
+            delivered.countDown()
         }
         assertThat(events).isEmpty()
-        val executor = Executors.newSingleThreadExecutor()
+        val diskExecutor = Executors.newSingleThreadExecutor()
         try {
-            val worker = executor.submit<Thread> {
+            val diskThread = diskExecutor.submit<Thread> {
                 store.releaseRead()
                 Thread.currentThread()
             }.get(5, TimeUnit.SECONDS)
-            assertThat(deliveryThread).isSameAs(worker)
+            assertThat(delivered.await(5, TimeUnit.SECONDS)).isTrue()
+            assertThat(deliveryThread).isNotNull.isNotSameAs(diskThread)
         } finally {
-            executor.shutdownNow()
+            diskExecutor.shutdownNow()
+            deliveryExecutor.shutdownNow()
         }
         assertThat(cachedValue).isTrue()
         assertThat(cachedReason).isEqualTo(ResolutionReason.CACHED)
@@ -349,7 +478,9 @@ internal class FirstFlagsIntegrationTest {
         val executor = mock<java.util.concurrent.ExecutorService>()
         val work = java.util.ArrayDeque<Runnable>()
         doAnswer { work.add(it.getArgument(0)); null }.whenever(executor).execute(any())
-        whenever(core.createSingleThreadExecutorService(any())).thenReturn(executor)
+        whenever(
+            core.createSingleThreadExecutorService(eq(FlagsClient.FLAGS_NETWORK_EXECUTOR_NAME))
+        ).thenReturn(executor)
         val client = FlagsClient.Builder(sdkCore = core).build()
         client.onFirstFlags { client.setEvaluationContext(EvaluationContext("newer")) }
         server.enqueue(MockResponse().setBody(response(true)))
@@ -398,7 +529,9 @@ internal class FirstFlagsIntegrationTest {
         val executor = mock<java.util.concurrent.ExecutorService>()
         val work = java.util.ArrayDeque<Runnable>()
         doAnswer { work.add(it.getArgument(0)); null }.whenever(executor).execute(any())
-        whenever(core.createSingleThreadExecutorService(any())).thenReturn(executor)
+        whenever(
+            core.createSingleThreadExecutorService(eq(FlagsClient.FLAGS_NETWORK_EXECUTOR_NAME))
+        ).thenReturn(executor)
         val client = FlagsClient.Builder(sdkCore = core).build()
         val callback = mock<EvaluationContextCallback>()
         doAnswer {

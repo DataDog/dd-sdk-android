@@ -23,7 +23,8 @@ internal class DefaultFlagsRepository(
     private val instanceName: String,
     private val dataStore: DataStoreHandler,
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
-    private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS
+    private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS,
+    private val deliverFirstFlags: (Runnable) -> Unit = Runnable::run
 ) : FlagsRepository {
     private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
     private val atomicState = AtomicReference<FlagsState?>(null)
@@ -49,14 +50,13 @@ internal class DefaultFlagsRepository(
             persistenceLoadedLatch.countDown()
         }
         if (installed && persistedState != null) {
-            firstFlags.complete(persistedState.flags.keys)
+            firstFlags.complete(persistedState.flags.keys, deliverFirstFlags)
         }
     }
 
-    override fun waitForFlags(): FirstFlagsLatch = firstFlags
+    override fun firstFlags(): FirstFlagsLatch = firstFlags
 
-    // Preserve storage failures while finishing the accepted installation before notifying listeners.
-    @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
+    @Suppress("TooGenericExceptionCaught") // Storage submission failure must not abort an accepted installation.
     override fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
@@ -67,7 +67,7 @@ internal class DefaultFlagsRepository(
         val firstInstallation = atomicState.getAndSet(newState) == null
         persistenceLoadedLatch.countDown()
 
-        val storageFailure = try {
+        try {
             persistenceManager.saveFlagsState(
                 context = context,
                 flags = flags,
@@ -85,30 +85,26 @@ internal class DefaultFlagsRepository(
                     }
                 }
             )
-            null
         } catch (exception: Exception) {
-            exception
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { ERROR_SAVING_FLAGS_STATE },
+                exception
+            )
         }
 
         try {
             onInstalled()
-        } catch (exception: Exception) {
-            if (storageFailure == null) throw exception
-            if (storageFailure !== exception) {
-                // Both exceptions are non-null and distinct, so addSuppressed cannot reject them.
-                @Suppress("UnsafeThirdPartyFunctionCall")
-                storageFailure.addSuppressed(exception)
-            }
         } finally {
             if (firstInstallation) {
-                firstFlags.complete(flags.keys)
+                firstFlags.complete(flags.keys, deliverFirstFlags)
             }
         }
-        if (storageFailure != null) throw storageFailure
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
-        waitForInstalledFlags()
+        waitForPersistenceLoad()
         val state = atomicState.get()
         if (state != null) {
             return state.flags[key]
@@ -122,7 +118,7 @@ internal class DefaultFlagsRepository(
     }
 
     override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> {
-        waitForInstalledFlags()
+        waitForPersistenceLoad()
         val state = atomicState.get()
         if (state != null) {
             return state.flags
@@ -136,12 +132,12 @@ internal class DefaultFlagsRepository(
     }
 
     override fun getEvaluationContext(): EvaluationContext? {
-        waitForInstalledFlags()
+        waitForPersistenceLoad()
         return atomicState.get()?.context
     }
 
     override fun hasFlags(): Boolean {
-        waitForInstalledFlags()
+        waitForPersistenceLoad()
         return atomicState.get()?.flags?.isNotEmpty() ?: false
     }
 
@@ -152,13 +148,13 @@ internal class DefaultFlagsRepository(
 
     @Suppress("ReturnCount")
     override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? {
-        waitForInstalledFlags()
+        waitForPersistenceLoad()
         val state = atomicState.get() ?: return null
         val flag = state.flags[key] ?: return null
         return flag to state.context
     }
 
-    private fun waitForInstalledFlags() {
+    private fun waitForPersistenceLoad() {
         try {
             persistenceLoadedLatch.await(persistenceLoadTimeoutMs, TimeUnit.MILLISECONDS)
         } catch (e: InterruptedException) {

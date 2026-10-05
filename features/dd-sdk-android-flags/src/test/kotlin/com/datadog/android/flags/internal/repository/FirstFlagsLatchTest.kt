@@ -16,6 +16,44 @@ import java.util.concurrent.TimeUnit
 
 internal class FirstFlagsLatchTest {
     @Test
+    fun `M suppress unclaimed listeners W unsubscribed after dispatch queued`() {
+        val latch = FirstFlagsLatch()
+        val queued = mutableListOf<Runnable>()
+        val events = mutableListOf<List<String>>()
+        val unsubscribe = latch.whenComplete { events.add(it) }
+        latch.complete(listOf("first")) { queued.add(it) }
+        unsubscribe()
+        queued.single().run()
+        assertThat(events).isEmpty()
+        latch.whenComplete { events.add(it) }
+        assertThat(events).containsExactly(listOf("first"))
+    }
+
+    @Test
+    fun `M preserve first snapshot W network updates before queued delivery`() {
+        val latch = FirstFlagsLatch()
+        val queued = mutableListOf<Runnable>()
+        val events = mutableListOf<List<String>>()
+        latch.whenComplete { events.add(it) }
+        latch.complete(listOf("cache")) { queued.add(it) }
+        latch.complete(listOf("network")) { queued.add(it) }
+        assertThat(events).isEmpty()
+        queued.single().run()
+        assertThat(events).containsExactly(listOf("cache"))
+    }
+
+    @Test
+    fun `M skip dispatcher W no pending listeners`() {
+        val latch = FirstFlagsLatch()
+        var dispatched = false
+        latch.complete(emptyList()) { dispatched = true }
+        var replayed = false
+        latch.whenComplete { replayed = true }
+        assertThat(dispatched).isFalse()
+        assertThat(replayed).isTrue()
+    }
+
+    @Test
     fun `M remove only cancelled listener W repeated cancellation`() {
         val latch = FirstFlagsLatch()
         val delivered = mutableListOf<String>()
@@ -113,7 +151,7 @@ internal class FirstFlagsLatchTest {
     @Test
     fun `M remain pending W no op repository`() {
         var delivered = false
-        val registration = NoOpFlagsRepository().waitForFlags().whenComplete { delivered = true }
+        val registration = NoOpFlagsRepository().firstFlags().whenComplete { delivered = true }
         registration()
         assertThat(delivered).isFalse()
     }

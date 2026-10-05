@@ -14,7 +14,7 @@ internal class FirstFlagsLatch {
     private val listeners = mutableListOf<PendingCallback>()
     private var keys: List<String>? = null
 
-    fun complete(installedKeys: Collection<String>) {
+    fun complete(installedKeys: Collection<String>, deliver: (Runnable) -> Unit = Runnable::run) {
         // Both calls reject null inputs; installedKeys and its newly allocated copy are non-null.
         @Suppress("UnsafeThirdPartyFunctionCall")
         val snapshot = Collections.unmodifiableList(ArrayList(installedKeys))
@@ -23,12 +23,17 @@ internal class FirstFlagsLatch {
             keys = snapshot
             listeners.toList().also { listeners.clear() }
         }
-        callbacks.forEach { pending ->
-            val callback = synchronized(lock) {
-                pending.listener.also { pending.listener = null }
+        if (callbacks.isEmpty()) return
+        deliver(
+            Runnable {
+                callbacks.forEach { pending ->
+                    val callback = synchronized(lock) {
+                        pending.listener.also { pending.listener = null }
+                    }
+                    callback?.invoke(snapshot)
+                }
             }
-            callback?.invoke(snapshot)
-        }
+        )
     }
 
     // The private mutable list supports mutation; PendingCallback uses non-throwing identity equality.

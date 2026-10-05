@@ -41,7 +41,6 @@ import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -156,7 +155,7 @@ internal class EvaluationsManagerTest {
     fun `M complete context without first flags W no op repository`() {
         val repository = NoOpFlagsRepository()
         var notified = false
-        repository.waitForFlags().whenComplete { notified = true }
+        repository.firstFlags().whenComplete { notified = true }
         val callback = mock<EvaluationContextCallback>()
         val context = EvaluationContext(fakeTargetingKey)
         val manager = EvaluationsManager(
@@ -1107,16 +1106,15 @@ internal class EvaluationsManagerTest {
         val context = EvaluationContext(fakeTargetingKey)
         val callback = mock<EvaluationContextCallback>()
         var firstFlagsCount = 0
-        repository.waitForFlags().whenComplete {
+        repository.firstFlags().whenComplete {
             firstFlagsCount++
             manager.updateEvaluationsForContext(EvaluationContext("newer"))
         }
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext)).thenReturn("response")
         whenever(mockPrecomputeMapper.map("response")).thenReturn(emptyMap())
         manager.updateEvaluationsForContext(context, callback)
-        val thrown = assertThrows<IllegalStateException> { work.removeFirst().run() }
+        work.removeFirst().run()
         timeout()
-        assertThat(thrown).isSameAs(storageError)
         assertThat(state.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
         assertThat(cancelled).isTrue()
         assertThat(firstFlagsCount).isEqualTo(1)
