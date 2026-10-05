@@ -99,6 +99,31 @@ internal class FirstFlagsIntegrationTest {
     }
 
     @Test
+    fun `M retain installed flags W different context fetch fails or cannot be parsed`() {
+        listOf(false, true).forEach { malformed ->
+            val client = FlagsClient.Builder("retention-$malformed", sdkCore = core).build()
+            val delivered = mutableListOf<FlagsClientEvent>()
+            client.onFirstFlags { delivered.add(it) }
+            server.enqueue(MockResponse().setBody(response(true)))
+            client.setEvaluationContext(EvaluationContext("A"))
+            val persistedA = store.json
+            val firstEvent = delivered.single()
+            val callback = mock<EvaluationContextCallback>()
+            server.enqueue(
+                if (malformed) MockResponse().setBody("invalid JSON") else MockResponse().setResponseCode(500)
+            )
+
+            client.setEvaluationContext(EvaluationContext("B"), callback)
+
+            verify(callback).onFailure(any())
+            assertThat(client.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+            assertThat(client.resolveBooleanValue("enabled", false)).isTrue()
+            assertThat(store.json).isEqualTo(persistedA)
+            assertThat(delivered).containsExactly(firstEvent)
+        }
+    }
+
+    @Test
     fun `M shutdown callback worker W submission accepted or rejected`() {
         listOf(false, true).forEach { rejected ->
             val worker = mock<ExecutorService>()

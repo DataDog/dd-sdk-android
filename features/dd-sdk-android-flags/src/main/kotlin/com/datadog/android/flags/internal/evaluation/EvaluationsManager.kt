@@ -144,8 +144,8 @@ internal class EvaluationsManager(
                         )
 
                         val throwable = NetworkRequestFailedException(message)
-                        // Only use cached flags if they match the requested context to avoid
-                        // serving flags from a different user/context.
+                        // Lifecycle is Stale only when retained flags match the requested context.
+                        // Failed fetches do not replace the installed flags or their context.
                         val completionCallback = synchronized(initializationTerminalLock) {
                             val result = initializationCompletion?.take()?.callback
                                 ?: if (initializationCompletion == null) callback else null
