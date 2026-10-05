@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.replay
 
 import android.content.Context
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
@@ -29,7 +30,7 @@ internal class WebViewReplayFeature(
 
     // region Feature
 
-    override val name: String = WEB_REPLAY_FEATURE_NAME
+    override val name: String = Feature.WEB_SESSION_REPLAY_FEATURE_NAME
 
     override fun onInitialize(appContext: Context) {
         dataWriter = createDataWriter(sdkCore.internalLogger)
@@ -54,7 +55,6 @@ internal class WebViewReplayFeature(
     }
 
     companion object {
-        internal const val WEB_REPLAY_FEATURE_NAME = "web-replay"
 
         /**
          * Storage configuration with the following parameters:

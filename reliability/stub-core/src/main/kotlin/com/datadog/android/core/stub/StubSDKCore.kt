@@ -23,7 +23,10 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.privacy.TrackingConsent
 import fr.xgouchet.elmyr.Forge
+import okhttp3.Call
+import okhttp3.OkHttpClient
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
@@ -171,6 +174,9 @@ class StubSDKCore(
     override val networkInfo: NetworkInfo
         get() = datadogContext.networkInfo
 
+    override val trackingConsent: TrackingConsent
+        get() = datadogContext.trackingConsent
+
     // endregion
 
     // region FeatureSdkCore
@@ -184,6 +190,7 @@ class StubSDKCore(
         override fun getServerOffsetNanos(): Long = 0L
         override fun getServerOffsetMillis(): Long = 0L
         override fun getDeviceElapsedRealtimeMillis(): Long = SystemClock.elapsedRealtime()
+        override fun getDeviceElapsedRealtimeNanos(): Long = SystemClock.elapsedRealtimeNanos()
         override fun getDeviceUptimeMillis(): Long = SystemClock.uptimeMillis()
     }
 
@@ -239,6 +246,10 @@ class StubSDKCore(
 
     override fun createSingleThreadExecutorService(executorContext: String): ExecutorService {
         return StubExecutorService(executorContext)
+    }
+
+    override fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit): Call.Factory {
+        return StubCallFactory()
     }
 
     // endregion

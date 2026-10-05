@@ -39,7 +39,7 @@ internal class TelemetryEventExtTest {
         // we are using the TelemetryDebugEvent.Source here as the source enum for all the events is
         // generated from the same _common-schema.json
         fakeInvalidSource = forge.aStringNotMatchingSet(
-            TelemetryDebugEvent.Source.values()
+            TelemetryDebugEvent.Source.entries
                 .map {
                     it.toJson().asString
                 }.toSet()

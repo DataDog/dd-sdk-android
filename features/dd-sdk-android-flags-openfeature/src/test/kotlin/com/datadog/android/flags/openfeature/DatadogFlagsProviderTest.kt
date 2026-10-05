@@ -13,6 +13,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.ErrorCode
@@ -22,14 +23,19 @@ import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.tools.unit.forge.BaseConfigurator
 import dev.openfeature.kotlin.sdk.ImmutableContext
+import dev.openfeature.kotlin.sdk.OpenFeatureAPI
+import dev.openfeature.kotlin.sdk.OpenFeatureStatus
 import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
+import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -46,6 +52,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -369,6 +376,61 @@ internal class DatadogFlagsProviderTest {
         assertThat(contextCaptor.firstValue).isEqualTo(EvaluationContext.EMPTY)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `M settle with Error status W setProviderAndWait() {initialization times out}`() = runTest {
+        // Given
+        val timeoutMessage = "Flags initialization timed out after 250ms"
+        val stubTimeoutError = mock<FlagsInitializationTimeoutException>()
+        whenever(stubTimeoutError.message).thenReturn(timeoutMessage)
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            val callback = invocation.getArgument<EvaluationContextCallback>(1)
+            callback.onFailure(stubTimeoutError)
+            Unit
+        }
+
+        try {
+            // When
+            OpenFeatureAPI.setProviderAndWait(
+                provider = provider,
+                initialContext = ImmutableContext(targetingKey = "user-123"),
+                dispatcher = UnconfinedTestDispatcher(testScheduler)
+            )
+
+            // Then
+            val status = OpenFeatureAPI.getStatus()
+            assertThat(status).isInstanceOf(OpenFeatureStatus.Error::class.java)
+            val error = (status as OpenFeatureStatus.Error).error
+            assertThat(error).isInstanceOf(OpenFeatureError.GeneralError::class.java)
+            assertThat(error).hasMessage(timeoutMessage)
+        } finally {
+            OpenFeatureAPI.shutdown()
+        }
+    }
+
+    @Test
+    fun `M complete initialization W initialize() {timeout with matching cached assignments}`() = runTest {
+        // Given
+        val fakeTimeoutError = mock<FlagsInitializationTimeoutException>()
+        whenever(mockStateObservable.getCurrentState()).thenReturn(FlagsClientState.Stale)
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            val callback = invocation.getArgument<EvaluationContextCallback>(1)
+            callback.onFailure(fakeTimeoutError)
+            Unit
+        }
+
+        // When
+        var initializationError: OpenFeatureError.GeneralError? = null
+        try {
+            provider.initialize(ImmutableContext(targetingKey = "user-123"))
+        } catch (error: OpenFeatureError.GeneralError) {
+            initializationError = error
+        }
+
+        // Then
+        assertThat(initializationError).isNull()
+    }
+
     @Test
     fun `M delegate to FlagsClient W onContextSet()`() = runTest {
         // Given
@@ -444,10 +506,13 @@ internal class DatadogFlagsProviderTest {
     }
 
     @Test
-    fun `M emit ProviderError event W observe() {state changes to Error}`() = runTest {
+    fun `M emit recoverable ProviderError then ProviderReady W observe() {timeout recovers}`() = runTest {
         // Given
         val events = mutableListOf<OpenFeatureProviderEvents>()
-        val errorState = FlagsClientState.Error(RuntimeException("test error"))
+        val timeoutMessage = "Flags initialization timed out after 250ms"
+        val stubTimeoutError = mock<FlagsInitializationTimeoutException>()
+        whenever(stubTimeoutError.message).thenReturn(timeoutMessage)
+        val errorState = FlagsClientState.Error(stubTimeoutError)
 
         // When
         val job = launch {
@@ -455,12 +520,16 @@ internal class DatadogFlagsProviderTest {
         }
         testScheduler.runCurrent()
         checkNotNull(capturedStateListener).onStateChanged(errorState)
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Ready)
         testScheduler.runCurrent()
         job.cancel()
 
-        // Then - Error state is converted to ProviderError event
-        assertThat(events).hasSize(1)
-        assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderError::class.java)
+        // Then - the timeout is recoverable and a late result restores readiness
+        assertThat(events).hasSize(2)
+        val providerError = events[0] as OpenFeatureProviderEvents.ProviderError
+        assertThat(providerError.error).isInstanceOf(OpenFeatureError.GeneralError::class.java)
+        assertThat(providerError.error).hasMessage(timeoutMessage)
+        assertThat(events[1]).isInstanceOf(OpenFeatureProviderEvents.ProviderReady::class.java)
     }
 
     @Test

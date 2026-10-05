@@ -7,13 +7,13 @@ To propose improvements, feel free to submit a PR or open an Issue.
 
 **Note:** Datadog requires that all commits within this repository must be signed, including those within external contribution PRs. Please ensure you have followed GitHub's [Signing Commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) guide before proposing a contribution. PRs lacking signed commits will not be processed and may be rejected.
 
-## Setup your developer Environment
+## Set up your developer Environment
 
-To setup your environment, make sure you installed [Android Studio](https://developer.android.com/studio).
+To set up your environment, make sure you installed [Android Studio](https://developer.android.com/studio).
 
-**Note**: you can also compile and develop using only the Android SDK and your IDE of choice, e.g.: IntelliJ Idea, Vim, etc.
+**Note**: you can also compile and develop using only the Android SDK and your IDE of choice, e.g.: IntelliJ IDEA, Vim, etc.
 
-In addition, to be able to run the static analysis tools locally, you should run the `local-ci.sh` script locally as follow.
+In addition, to be able to run the static analysis tools locally, you should run the `local-ci.sh` script locally as follows.
 
 ```shell
 ./local_ci.sh --setup
@@ -116,7 +116,7 @@ with the details about what you'd like to see. At a minimum, please provide:
 
  - The goal of the new feature;
  - A description of how it might be used or behave;
- - Links to any important resources (e.g. Github repos, websites, screenshots,
+ - Links to any important resources (e.g. GitHub repos, websites, screenshots,
      specifications, diagrams).
 
 ## Found a bug?
@@ -126,7 +126,7 @@ or UI, contact our support team via https://docs.datadoghq.com/help/ for direct,
 faster assistance.
 
 You may submit bug reports concerning the Datadog SDK for Android by 
-[opening a Github issue](https://github.com/DataDog/dd-sdk-android/issues/new?labels=bug&template=BugReport.yml).
+[opening a GitHub issue](https://github.com/DataDog/dd-sdk-android/issues/new?labels=bug&template=BugReport.yml).
 At a minimum, please provide:
 
  - A description of the problem;
@@ -192,16 +192,26 @@ same feature from a Java source code.
 ### Code quality
 
 Our code uses [Detekt](https://detekt.dev/) static analysis with a shared configuration, slightly
-stricter than the default one. A Detekt check is ran on every on every PR to ensure that all new code
+stricter than the default one. A Detekt check is ran on every PR to ensure that all new code
 follow this rule.
-Current Detekt version: 1.23.8
+
+To execute Detekt check, run:
+
+```shell
+./gradlew detekt
+```
 
 ### Code style
 
 Our coding style is ensured by [KtLint](https://ktlint.github.io/), with the
-default settings. A KtLint check is ran on every PR to ensure that all new code
+settings described in `.editorconfig`. A KtLint check is ran on every PR to ensure that all new code
 follow this rule.
-Current KtLint version: 1.5.0
+
+To format code, run:
+
+```shell
+./gradlew ktlintFormatAll
+```
 
 Classes should group their methods in folding regions named after the declaring
 class. Private methods should be grouped in an `Internal` named folding region. 
@@ -242,17 +252,10 @@ class Foo : Observable(), Runnable {
 
 ```
 
-There is also a command that you can use to automatically format the code following the
-required styling rules (require `ktlint` installed on your machine):
-
-```console
-ktlint -F "**/*.kt" "**/*.kts" '!**/build/generated/**' '!**/build/kspCaches/**'
-```
-
 ### #TestMatters
 
 It is important to be sure that our library work properly in any scenario. All
-non trivial code must be tested. If you're not used to writing tests, you can
+non-trivial code must be tested. If you're not used to writing tests, you can
 take a look at the `test` folder to get some ideas on how we write them at Datadog.
 
 We use a variety of tools to help us write tests easy to read and maintain:
@@ -351,11 +354,11 @@ Here's a test method following those conventions:
 Because we sometimes need to reuse some setup or assertions in our tests, we tend to write utility methods. 
 Those methods should be private (or internal in a dedicated class/file if they need to be shared across tests).
 
-- `fun stubSomething(mock, [args])`: methods setting up a mock (or rarely a fake). These methods must be of Unit type, and only stub responses for the given mock;
+- `fun stubSomething(mock, [args])`: methods setting up a mock (or rarely a fake). These methods must be of `Unit` type, and only stub responses for the given mock;
 - `fun forgeSomething([args]): T`: methods setting up a forgery or an instance of a concrete class. These methods must return the forged instance;
 - `fun assertObjectMatchesCondition(object, [args])`: methods verifying that a given object matches a given condition. These methods must be of Unit type, and only call assertions with the AssertJ framework (or native assertions);
-- `fun verifyMockMatchesState(mock, [args])`: methods verifying that a mock’s interaction. These methods must be of Unit type, and only call verifications with the Mockito framework.
-- `fun setupSomething()`: method to setup a complex test (should only be used in the Given part of a test).
+- `fun verifyMockMatchesState(mock, [args])`: methods verifying that a mock interaction was done. These methods must be of `Unit` type, and only call verifications with the Mockito framework.
+- `fun setupSomething()`: method to set up a complex test (should only be used in the Given part of a test).
 
 #### Clear vs Closed Box testing
 

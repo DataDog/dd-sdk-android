@@ -19,8 +19,14 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.DatadogContextProvider
 import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.SdkFeature
+import com.datadog.android.core.internal.remote.NoOpRemoteConfigFetcher
+import com.datadog.android.core.internal.remote.RemoteConfigFetcher
+import com.datadog.android.core.internal.remote.RemoteConfigLifecycleCallback
+import com.datadog.android.core.internal.remote.RemoteConfigService
+import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
+import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.security.Encryption
@@ -52,7 +58,10 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -77,6 +86,12 @@ internal class DatadogCoreInitializationTest {
     @Mock
     lateinit var mockPersistenceExecutorService: FlushableExecutorService
 
+    @Mock
+    lateinit var mockRemoteConfigService: RemoteConfigService
+
+    private lateinit var mockExecutorServiceFactory: FlushableExecutorService.Factory
+    private lateinit var mockRemoteConfigServiceFactory: RemoteConfigService.Factory
+
     @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
     lateinit var fakeInstanceId: String
 
@@ -93,6 +108,9 @@ internal class DatadogCoreInitializationTest {
         whenever(mockPersistenceExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
+
+        mockExecutorServiceFactory = FlushableExecutorService.Factory { _, _, _, _ -> mockPersistenceExecutorService }
+        mockRemoteConfigServiceFactory = RemoteConfigService.Factory { _, _, _, _, _, _, _ -> mockRemoteConfigService }
     }
 
     @AfterEach
@@ -111,7 +129,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(fakeConfiguration.copy(crashReportsEnabled = crashReportsEnabled))
         }
@@ -128,6 +146,41 @@ internal class DatadogCoreInitializationTest {
                 it.isNull()
             }
         }
+    }
+
+    @Test
+    fun `M not initialize crash reports W initialize() { RC disables crash reports }`(
+        @StringForgery fakeRemoteConfigurationId: String,
+        @StringForgery fakeApplicationId: String
+    ) {
+        // Given
+        whenever(mockRemoteConfigService.getCurrentConfig()) doReturn RemoteConfiguration(
+            rum = RemoteConfiguration.Rum(
+                applicationId = fakeApplicationId,
+                crashReportsEnabled = false
+            )
+        )
+
+        // When
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = mockExecutorServiceFactory,
+            remoteConfigServiceFactory = mockRemoteConfigServiceFactory
+        ).apply {
+            initialize(
+                fakeConfiguration.copy(
+                    crashReportsEnabled = true,
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        remoteConfigurationId = fakeRemoteConfigurationId
+                    )
+                )
+            )
+        }
+
+        // Then
+        assertThat(testedCore.getFeature(CrashReportsFeature.CRASH_FEATURE_NAME)).isNull()
     }
 
     @Test
@@ -187,7 +240,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(fakeConfiguration)
         }
@@ -210,7 +263,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -238,7 +291,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -267,7 +320,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -295,7 +348,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -354,7 +407,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(configuration)
         }
@@ -402,7 +455,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(fakeConfiguration.copy(additionalConfig = mapOf(Datadog.DD_SOURCE_TAG to source)))
         }
@@ -420,7 +473,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(
                 fakeConfiguration.copy(additionalConfig = mapOf(Datadog.DD_SOURCE_TAG to source))
@@ -440,7 +493,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(
                 fakeConfiguration.copy(additionalConfig = mapOf(Datadog.DD_SOURCE_TAG to source))
@@ -460,7 +513,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(fakeConfiguration.copy(additionalConfig = customAttributes.nonNullData))
         }
@@ -478,7 +531,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -500,7 +553,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -522,7 +575,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -544,7 +597,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(fakeConfiguration.copy(additionalConfig = customAttributes.nonNullData))
         }
@@ -562,7 +615,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -584,7 +637,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -609,7 +662,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -634,7 +687,7 @@ internal class DatadogCoreInitializationTest {
             appContext.mockInstance,
             fakeInstanceId,
             fakeInstanceName,
-            executorServiceFactory = { _, _, _, _ -> mockPersistenceExecutorService }
+            executorServiceFactory = mockExecutorServiceFactory
         ).apply {
             initialize(
                 fakeConfiguration.copy(
@@ -645,6 +698,234 @@ internal class DatadogCoreInitializationTest {
 
         // Then
         assertThat(testedCore.coreFeature.packageVersionProvider.version).isEqualTo(appVersion)
+    }
+
+    @Test
+    fun `M create and sync RemoteConfigService W initialize() { remoteConfigurationId set }`(
+        @StringForgery fakeRemoteConfigurationId: String
+    ) {
+        // When
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = mockExecutorServiceFactory,
+            remoteConfigServiceFactory = mockRemoteConfigServiceFactory
+        ).apply {
+            initialize(
+                fakeConfiguration.copy(
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        remoteConfigurationId = fakeRemoteConfigurationId
+                    )
+                )
+            )
+        }
+
+        // Then
+        assertThat(testedCore.remoteConfigService).isSameAs(mockRemoteConfigService)
+        verify(mockRemoteConfigService).syncWithRemote()
+    }
+
+    @Test
+    fun `M not create RemoteConfigService W initialize() { remoteConfigurationId null }`() {
+        // When
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = mockExecutorServiceFactory,
+            remoteConfigServiceFactory = mockRemoteConfigServiceFactory
+        ).apply {
+            initialize(
+                fakeConfiguration.copy(
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        remoteConfigurationId = null
+                    )
+                )
+            )
+        }
+
+        // Then
+        assertThat(testedCore.remoteConfigService).isNull()
+        verify(mockRemoteConfigService, never()).syncWithRemote()
+    }
+
+    @Test
+    fun `M stop RemoteConfigService W stop() { remoteConfigurationId set }`(
+        @StringForgery fakeRemoteConfigurationId: String
+    ) {
+        // Given
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = mockExecutorServiceFactory,
+            remoteConfigServiceFactory = mockRemoteConfigServiceFactory
+        ).apply {
+            initialize(
+                fakeConfiguration.copy(
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        remoteConfigurationId = fakeRemoteConfigurationId
+                    )
+                )
+            )
+        }
+
+        // When
+        testedCore.stop()
+
+        // Then
+        verify(mockRemoteConfigService).stop()
+    }
+
+    @Test
+    fun `M unregister RC lifecycle monitor W stop() { remoteConfigurationId set }`(
+        @StringForgery fakeRemoteConfigurationId: String
+    ) {
+        // Given — crashReportsEnabled=false ensures a stable unregister count:
+        // processLifecycleMonitor (1) + rcLifecycleMonitor (1) = 2 total.
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = mockExecutorServiceFactory,
+            remoteConfigServiceFactory = mockRemoteConfigServiceFactory
+        ).apply {
+            initialize(
+                fakeConfiguration.copy(
+                    crashReportsEnabled = false,
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        remoteConfigurationId = fakeRemoteConfigurationId
+                    )
+                )
+            )
+        }
+
+        // When
+        testedCore.stop()
+
+        // Then — exactly 2 unregister calls: processLifecycleMonitor + rcLifecycleMonitor.
+        // Exactly one wraps a RemoteConfigLifecycleCallback.
+        argumentCaptor<Application.ActivityLifecycleCallbacks> {
+            verify(appContext.mockInstance, times(2))
+                .unregisterActivityLifecycleCallbacks(capture())
+            val rcMonitors = allValues.filterIsInstance<ProcessLifecycleMonitor>()
+                .filter { it.callback is RemoteConfigLifecycleCallback }
+            assertThat(rcMonitors).hasSize(1)
+        }
+    }
+
+    @Test
+    fun `M use NoOpRemoteConfigFetcher W setupRemoteConfiguration() { secondary process }`(
+        @StringForgery fakeRemoteConfigurationId: String
+    ) {
+        // Given — initialize normally (main process), then set isMainProcess=false
+        // and call setupRemoteConfiguration() directly to exercise the secondary process path
+        var capturedFetcher: RemoteConfigFetcher? = null
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = mockExecutorServiceFactory,
+            remoteConfigServiceFactory = { _, _, fetcher, _, _, _, _ ->
+                capturedFetcher = fetcher
+                mockRemoteConfigService
+            }
+        ).apply {
+            initialize(fakeConfiguration)
+            // Simulate secondary process then re-run setupRemoteConfiguration directly
+            coreFeature.isMainProcess = false
+            setupRemoteConfiguration(
+                fakeConfiguration.copy(
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        remoteConfigurationId = fakeRemoteConfigurationId
+                    )
+                )
+            )
+        }
+
+        // Then — secondary process path uses NoOpRemoteConfigFetcher (no network, no OkHttp cache)
+        assertThat(capturedFetcher).isInstanceOf(NoOpRemoteConfigFetcher::class.java)
+    }
+
+    @Test
+    fun `M not register RC lifecycle monitor W setupRemoteConfiguration() { secondary process }`(
+        @StringForgery fakeRemoteConfigurationId: String
+    ) {
+        // Given
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = mockExecutorServiceFactory,
+            remoteConfigServiceFactory = mockRemoteConfigServiceFactory
+        ).apply {
+            initialize(fakeConfiguration)
+            coreFeature.isMainProcess = false
+            setupRemoteConfiguration(
+                fakeConfiguration.copy(
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        remoteConfigurationId = fakeRemoteConfigurationId
+                    )
+                )
+            )
+        }
+
+        // Then — secondary processes should not register a RC lifecycle monitor.
+        // Checked directly on the field to avoid captor ambiguity with calls from initialize().
+        assertThat(testedCore.rcLifecycleMonitor).isNull()
+    }
+
+    @Test
+    fun `M return remoteConfiguration W remoteConfiguration { remoteConfigurationId set }`(
+        @StringForgery fakeRemoteConfigurationId: String,
+        @Forgery fakeRemoteConfiguration: RemoteConfiguration
+    ) {
+        // Given
+        whenever(mockRemoteConfigService.getCurrentConfig()).doReturn(fakeRemoteConfiguration)
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = mockExecutorServiceFactory,
+            remoteConfigServiceFactory = mockRemoteConfigServiceFactory
+        ).apply {
+            initialize(
+                fakeConfiguration.copy(
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        remoteConfigurationId = fakeRemoteConfigurationId
+                    )
+                )
+            )
+        }
+
+        // When / Then
+        assertThat(testedCore.remoteConfiguration).isSameAs(fakeRemoteConfiguration)
+    }
+
+    @Test
+    fun `M return null W remoteConfiguration { remoteConfigurationId null }`() {
+        // Given
+        testedCore = DatadogCore(
+            appContext.mockInstance,
+            fakeInstanceId,
+            fakeInstanceName,
+            executorServiceFactory = mockExecutorServiceFactory,
+            remoteConfigServiceFactory = mockRemoteConfigServiceFactory
+        ).apply {
+            initialize(
+                fakeConfiguration.copy(
+                    coreConfig = fakeConfiguration.coreConfig.copy(
+                        remoteConfigurationId = null
+                    )
+                )
+            )
+        }
+
+        // When / Then
+        // remoteConfigService is null when remoteConfigurationId is null (setupRemoteConfiguration
+        // returns early), so remoteConfiguration delegates to null?.getCurrentConfig() = null.
+        assertThat(testedCore.remoteConfiguration).isNull()
     }
 
     // endregion

@@ -89,7 +89,7 @@ public data class Style(
 
         public companion object {
             @JvmStatic
-            public fun fromJson(jsonString: String?): Color = values().first {
+            public fun fromJson(jsonString: String?): Color = entries.first {
                 it.jsonValue == jsonString
             }
         }

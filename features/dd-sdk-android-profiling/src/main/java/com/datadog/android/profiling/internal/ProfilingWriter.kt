@@ -7,22 +7,23 @@
 package com.datadog.android.profiling.internal
 
 import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface ProfilingWriter {
 
-    fun write(
+    fun writeManualProfile(
         profilingResult: PerfettoResult,
         longTasks: List<ProfilerEvent.RumLongTaskEvent>,
         anrEvents: List<ProfilerEvent.RumAnrEvent>,
         vitalEvents: List<ProfilerEvent.RumVitalEvent>
     )
 
-    /**
-     * Deletes the profiling result file without uploading it. Used when a profile is dropped
-     * before it reaches the write path (e.g. quota denied), so the trace file is not leaked.
-     */
-    fun discard(profilingResult: PerfettoResult)
+    fun writeTriggerProfile(
+        perfettoResult: PerfettoResult,
+        rumErrorId: String,
+        rumContext: ProfilingRumContext
+    )
 }

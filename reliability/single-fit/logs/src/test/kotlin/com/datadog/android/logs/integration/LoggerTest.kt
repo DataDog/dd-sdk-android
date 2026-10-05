@@ -32,7 +32,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assumptions.assumeThat
 import org.assertj.core.data.Offset.offset
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
@@ -1192,15 +1191,11 @@ class LoggerTest {
 
     @RepeatedTest(16)
     fun `M send log with updated custom tag W Logger#addTag() + Logger#removeTag() + Logger#log()`(
-        @StringForgery fakeTagKey: String,
+        @StringForgery(regex = "fake[a-zA-Z0-9]{1,}") fakeTagKey: String,
         @StringForgery fakeTagValue: String,
         @StringForgery fakeMessage: String,
         @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
     ) {
-        assumeThat("env").doesNotEndWith(fakeTagKey.lowercase())
-        assumeThat("version").doesNotEndWith(fakeTagKey.lowercase())
-        assumeThat("variant").doesNotEndWith(fakeTagKey.lowercase())
-
         // Given
         val testedLogger = Logger.Builder(stubSdkCore).build()
 
@@ -1225,16 +1220,12 @@ class LoggerTest {
 
     @RepeatedTest(16)
     fun `M send log with updated custom tag W Logger#addTag() + Logger#removeTagsWithKey() + Logger#log()`(
-        @StringForgery fakeTagKey: String,
+        @StringForgery(regex = "fake[a-zA-Z0-9]{1,}") fakeTagKey: String,
         @StringForgery fakeTagValue: String,
         @StringForgery fakeTagValue2: String,
         @StringForgery fakeMessage: String,
         @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
     ) {
-        assumeThat("env").doesNotEndWith(fakeTagKey.lowercase())
-        assumeThat("version").doesNotEndWith(fakeTagKey.lowercase())
-        assumeThat("variant").doesNotEndWith(fakeTagKey.lowercase())
-
         // Given
         val testedLogger = Logger.Builder(stubSdkCore).build()
 
@@ -1260,15 +1251,11 @@ class LoggerTest {
 
     @RepeatedTest(16)
     fun `M send log with updated custom tag W Logger#addTag() + Logger#removeTag() + Logger#log() {dd format}`(
-        @StringForgery fakeTagKey: String,
+        @StringForgery(regex = "fake[a-zA-Z0-9]{1,}") fakeTagKey: String,
         @StringForgery fakeTagValue: String,
         @StringForgery fakeMessage: String,
         @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
     ) {
-        assumeThat("env").doesNotEndWith(fakeTagKey.lowercase())
-        assumeThat("version").doesNotEndWith(fakeTagKey.lowercase())
-        assumeThat("variant").doesNotEndWith(fakeTagKey.lowercase())
-
         // Given
         val testedLogger = Logger.Builder(stubSdkCore).build()
 
@@ -1293,16 +1280,12 @@ class LoggerTest {
 
     @RepeatedTest(16)
     fun `M send log with both custom tag W Logger#addTag() + Logger#removeTagsWithKey() + Logger#log() {dd format}`(
-        @StringForgery fakeTagKey: String,
+        @StringForgery(regex = "fake[a-zA-Z0-9]{1,}") fakeTagKey: String,
         @StringForgery fakeTagValue: String,
         @StringForgery fakeTagValue2: String,
         @StringForgery fakeMessage: String,
         @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
     ) {
-        assumeThat("env").doesNotEndWith(fakeTagKey.lowercase())
-        assumeThat("version").doesNotEndWith(fakeTagKey.lowercase())
-        assumeThat("variant").doesNotEndWith(fakeTagKey.lowercase())
-
         // Given
         val testedLogger = Logger.Builder(stubSdkCore).build()
 

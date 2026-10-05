@@ -41,7 +41,12 @@ internal class CronetRequestCallback(
         apmNetworkInstrumentation?.onRequest(finalRequestInfo)
             .also(apmTracingStateHolder::set)
 
-        return distributedTracingState ?: RequestTracingState(initialRequestInfo.newBuilder())
+        // Fallback when no APM instrumentation is registered — no span is created so isDefaultTracer
+        // is never consulted (finishRumAware is a no-op on a null span).
+        return distributedTracingState ?: RequestTracingState(
+            requestInfoBuilder = initialRequestInfo.newBuilder(),
+            isDefaultTracer = false
+        )
     }
 
     override fun onRedirectReceived(

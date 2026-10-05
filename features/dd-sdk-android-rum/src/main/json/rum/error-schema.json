@@ -15,7 +15,7 @@
       "$ref": "_view-container-schema.json"
     },
     {
-      "required": ["type", "error"],
+      "required": ["type", "view", "error"],
       "properties": {
         "type": {
           "type": "string",

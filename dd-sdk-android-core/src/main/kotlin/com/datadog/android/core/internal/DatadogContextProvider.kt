@@ -63,6 +63,7 @@ internal class DatadogContextProvider(
             accountInfo = coreFeature.accountInfoProvider.getAccountInfo(),
             trackingConsent = coreFeature.trackingConsentProvider.getConsent(),
             appBuildId = coreFeature.appBuildId,
+            remoteConfigurationId = coreFeature.remoteConfigurationId,
             featuresContext = mutableMapOf<String, Map<String, Any?>>().apply {
                 withFeatureContexts.forEach {
                     val featureContext = featureContextProvider.getFeatureContext(it)

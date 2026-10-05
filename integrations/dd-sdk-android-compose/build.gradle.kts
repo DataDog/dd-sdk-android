@@ -6,6 +6,7 @@
 
 import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     // Build
@@ -79,13 +80,7 @@ unMock {
 }
 
 datadogBuild {
-    applyKotlinConfig(
-        // TODO RUM-18191
-        // Suppress -> generateFunctionKeyMetaClasses is deprecated. It was replaced by emitting annotations on functions
-        // instead. Use generateFunctionKeyMetaAnnotations instead. Seems to Compose <-> Kotlin mismatch.
-        evaluateWarningsAsErrors = false,
-        jvmBytecodeTarget = JvmTarget.JVM_11
-    )
+    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
     applyAndroidLibraryConfig()
     applyJunitConfig()
     applyJavadocConfig()
@@ -95,8 +90,11 @@ datadogBuild {
     )
 }
 
-taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+taskConfig<KotlinCompile> {
     compilerOptions {
         optIn.add("kotlin.RequiresOptIn")
+        // This integration intentionally accesses Kotlin-internal Compose APIs via INVISIBLE_*
+        // suppressions, which KGP 2.2 reports with the ERROR_SUPPRESSION diagnostic.
+        freeCompilerArgs.add("-Xwarning-level=ERROR_SUPPRESSION:disabled")
     }
 }

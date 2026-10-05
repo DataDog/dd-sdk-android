@@ -28,6 +28,8 @@ internal interface MutableTimeProvider : TimeProvider {
 
         override fun getDeviceElapsedRealtimeMillis(): Long = delegate.getDeviceElapsedRealtimeMillis()
 
+        override fun getDeviceElapsedRealtimeNanos(): Long = delegate.getDeviceElapsedRealtimeNanos()
+
         override fun getDeviceUptimeMillis(): Long = delegate.getDeviceUptimeMillis()
     }
 

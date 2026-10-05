@@ -58,6 +58,9 @@ internal class TracingFeatureTest {
     @BoolForgery
     var fakeNetworkInfoEnabled: Boolean = false
 
+    @BoolForgery
+    var fakeClientStatsEnabled: Boolean = false
+
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
@@ -66,7 +69,8 @@ internal class TracingFeatureTest {
             mockSdkCore,
             fakeEndpointUrl,
             mockSpanEventMapper,
-            fakeNetworkInfoEnabled
+            fakeNetworkInfoEnabled,
+            fakeClientStatsEnabled
         )
     }
 
@@ -78,9 +82,10 @@ internal class TracingFeatureTest {
         // Then
         val traceWriter = testedFeature.coreTracerDataWriter as CoreTraceWriter
         val ddSpanToSpanEventMapper = traceWriter.ddSpanToSpanEventMapper
-        assertThat(ddSpanToSpanEventMapper).isInstanceOf(CoreTracerSpanToSpanEventMapper::class.java)
-        assertThat((ddSpanToSpanEventMapper as CoreTracerSpanToSpanEventMapper).networkInfoEnabled)
-            .isEqualTo(fakeNetworkInfoEnabled)
+        assertThat(ddSpanToSpanEventMapper).isInstanceOfSatisfying(CoreTracerSpanToSpanEventMapper::class.java) {
+            assertThat(it.networkInfoEnabled).isEqualTo(fakeNetworkInfoEnabled)
+            assertThat(it.clientSideStatsEnabled).isEqualTo(fakeClientStatsEnabled)
+        }
     }
 
     @Test

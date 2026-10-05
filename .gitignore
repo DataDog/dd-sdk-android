@@ -1,4 +1,3 @@
-
 # IntelliJ
 *.iml
 .idea/**
@@ -33,3 +32,9 @@ config/*
 gh_token
 **/verification-metadata.xml
 !gradle/verification-metadata.xml
+
+# Codex
+.codex
+
+# Claude
+.claude/worktrees/

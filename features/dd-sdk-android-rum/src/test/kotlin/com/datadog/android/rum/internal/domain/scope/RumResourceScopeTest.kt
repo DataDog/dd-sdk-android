@@ -164,7 +164,7 @@ internal class RumResourceScopeTest {
 
         val fakeSource = if (isValidSource) {
             forge.anElementFrom(
-                ErrorEvent.ErrorEventSource.values().map { it.toJson().asString }
+                ErrorEvent.ErrorEventSource.entries.map { it.toJson().asString }
             )
         } else {
             forge.anAlphabeticalString()

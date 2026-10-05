@@ -9,6 +9,8 @@ package com.datadog.android.sdk.integration.rum
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
+import androidx.test.runner.lifecycle.Stage
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.model.TimeseriesCpuEvent
 import com.datadog.android.rum.model.TimeseriesMemoryEvent
@@ -23,18 +25,50 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.RuleChain
+import org.junit.rules.TestRule
 import org.junit.runner.RunWith
+import org.junit.runners.model.Statement
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 internal class TimeseriesCollectionTest {
 
-    @get:Rule
-    val mockServerRule = RumMockServerActivityTestRule(
+    private val mockServerRule = RumMockServerActivityTestRule(
         TimeseriesTrackingPlaygroundActivity::class.java,
         keepRequests = true,
         trackingConsent = TrackingConsent.GRANTED
     )
+
+    // TODO RUM-18601: ProcessLifecycleMonitor's counters desync when it registers after activity already started.
+    // Waiting here, outside mockServerRule, runs before that Activity launches (Rule#before order), so it blocks
+    // the launch until the process is genuinely idle instead of racing it. Real fix will be made in
+    // ProcessLifecycleMonitor itself (identity-based tracking); this only protects this test class.
+    private val quiescentProcessRule = TestRule { base, _ ->
+        object : Statement() {
+            override fun evaluate() {
+                waitForNoForegroundActivities()
+                base.evaluate()
+            }
+        }
+    }
+
+    @get:Rule
+    val ruleChain: RuleChain = RuleChain.outerRule(quiescentProcessRule).around(mockServerRule)
+
+    private fun waitForNoForegroundActivities() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        ConditionWatcher {
+            var isQuiescent = false
+            instrumentation.runOnMainSync {
+                val monitor = ActivityLifecycleMonitorRegistry.getInstance()
+                isQuiescent = Stage.entries
+                    .filter { it != Stage.DESTROYED }
+                    .all { monitor.getActivitiesInStage(it).isEmpty() }
+            }
+            isQuiescent
+        }.doWait(timeoutMs = QUIESCENT_PROCESS_WAIT_MS)
+    }
 
     @Test
     fun verifyCpuAndMemoryTimeseriesAreCollected() {
@@ -111,6 +145,7 @@ internal class TimeseriesCollectionTest {
     }
 
     companion object {
+        private const val QUIESCENT_PROCESS_WAIT_MS = 5000L
         private const val CPU_TIMESERIES_NAME = "cpu"
         private const val MEMORY_TIMESERIES_NAME = "memory"
         private const val TIMESERIES_TYPE = "timeseries"
@@ -129,18 +164,17 @@ internal class TimeseriesCollectionTest {
 
         // Sized so the flush lands in the middle of a sampling interval, leaving half an interval
         // of room on either side before the expected data point count changes.
-        private const val FOREGROUND_COLLECTION_DURATION_MS =
-            SAMPLE_INTERVAL_MS * 3 + SAMPLE_INTERVAL_MS / 2 - FLUSH_DELAY_MS
+        private const val FOREGROUND_COLLECTION_DURATION_MS = SAMPLE_INTERVAL_MS * 3 +
+            SAMPLE_INTERVAL_MS / 2 - FLUSH_DELAY_MS
         private const val UPLOAD_GRACE_PERIOD_MS = 500L
-        private const val BACKGROUND_OBSERVATION_DURATION_MS =
-            SAMPLE_INTERVAL_MS + UPLOAD_GRACE_PERIOD_MS
+        private const val BACKGROUND_OBSERVATION_DURATION_MS = SAMPLE_INTERVAL_MS + UPLOAD_GRACE_PERIOD_MS
 
         private const val EXPECTED_FOREGROUND_MEMORY_DATA_POINTS =
             ((FOREGROUND_COLLECTION_DURATION_MS + FLUSH_DELAY_MS) / SAMPLE_INTERVAL_MS).toInt()
 
         // Sampling shares a single executor with the other vitals on a device the test does not
         // own, so a stalled tick costs a data point and a late flush adds one. Keeps the lower
-        // bound at two points, so the CPU event — which trails memory by one — always exists.
+        // bound at one CPU point, so both timeseries events are always emitted.
         private const val DATA_POINTS_TOLERANCE = 1
 
         private val JsonObject.timeseriesName: String?
@@ -155,22 +189,26 @@ internal class TimeseriesCollectionTest {
             filterByName(MEMORY_TIMESERIES_NAME).map(TimeseriesMemoryEvent::fromJsonObject)
 
         /**
-         * Asserts the data point count of every foreground batch: memory within the tolerance of
-         * the collection window, CPU exactly one point behind memory, because the first CPU read
-         * only establishes the delta baseline and yields no data point.
+         * Asserts the data point count of every foreground batch. CPU and memory use independent
+         * scheduling chains, so their tolerated delays do not necessarily happen on the same tick.
+         * The first CPU read only establishes the delta baseline and yields no data point.
          */
         private fun List<JsonObject>.assertForegroundDataPointCounts(
-            expected: Int,
+            expectedMemory: Int,
             tolerance: Int = DATA_POINTS_TOLERANCE
         ) {
+            val expectedCpu = expectedMemory - 1
             val memoryDataPointCounts = memoryEvents().map { it.timeseries.data.timestamps.size }
             val cpuDataPointCounts = cpuEvents().map { it.timeseries.data.timestamps.size }
 
+            assertThat(memoryDataPointCounts).isNotEmpty()
+            assertThat(cpuDataPointCounts).hasSameSizeAs(memoryDataPointCounts)
             memoryDataPointCounts.forEach { count ->
-                assertThat(count).isBetween(expected - tolerance, expected + tolerance)
+                assertThat(count).isBetween(expectedMemory - tolerance, expectedMemory + tolerance)
             }
-            assertThat(cpuDataPointCounts)
-                .containsExactlyElementsOf(memoryDataPointCounts.map { it - 1 })
+            cpuDataPointCounts.forEach { count ->
+                assertThat(count).isBetween(expectedCpu - tolerance, expectedCpu + tolerance)
+            }
         }
     }
 }

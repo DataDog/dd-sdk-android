@@ -98,34 +98,26 @@ internal class VitalEventAssert(
             .isEqualTo(hasReplay)
     }
 
-    fun hasNullView() = apply {
-        assertThat(actual.view)
-            .overridingErrorMessage(
-                "Expected event data to have view equal to null"
-            )
-            .isNull()
-    }
-
     fun hasViewId(expectedId: String) = apply {
-        assertThat(actual.view?.id)
+        assertThat(actual.view.id)
             .overridingErrorMessage(
-                "Expected event data to have view.id $expectedId but was ${actual.view?.id}"
+                "Expected event data to have view.id $expectedId but was ${actual.view.id}"
             )
             .isEqualTo(expectedId)
     }
 
     fun hasName(expected: String) = apply {
-        assertThat(actual.view?.name)
+        assertThat(actual.view.name)
             .overridingErrorMessage(
-                "Expected event data to have view.name $expected but was ${actual.view?.name}"
+                "Expected event data to have view.name $expected but was ${actual.view.name}"
             )
             .isEqualTo(expected)
     }
 
     fun hasUrl(expected: String) = apply {
-        assertThat(actual.view?.url)
+        assertThat(actual.view.url)
             .overridingErrorMessage(
-                "Expected event data to have view.url $expected but was ${actual.view?.url}"
+                "Expected event data to have view.url $expected but was ${actual.view.url}"
             )
             .isEqualTo(expected)
     }
@@ -375,15 +367,6 @@ internal class VitalEventAssert(
                     " but instead was: ${actual.dd.profiling?.status}"
             )
             .isEqualTo(profilingStatus)
-    }
-
-    fun hasProfilingClockDrift(expected: Number?) = apply {
-        assertThat(actual.dd.profiling?.clockDrift)
-            .overridingErrorMessage(
-                "Expected RUM event to have profiling clock_drift: $expected" +
-                    " but instead was: ${actual.dd.profiling?.clockDrift}"
-            )
-            .isEqualTo(expected)
     }
 
     fun hasNoProfiling() = apply {

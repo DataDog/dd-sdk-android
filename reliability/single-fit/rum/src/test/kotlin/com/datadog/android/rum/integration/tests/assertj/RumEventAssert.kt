@@ -65,8 +65,7 @@ class RumEventAssert(actual: JsonObject) :
     // region View Attribute
 
     fun hasDocumentVersion(version: Int): RumEventAssert {
-        // hack because our first RUM View event will always have document_version set to 2
-        hasField("_dd.document_version", (version + 1))
+        hasField("_dd.document_version", version)
         return this
     }
 

@@ -49,7 +49,7 @@ internal fun LogsHeavyTrafficSettingsScreen(
 
         ExpandedItemView(
             titleText = "Payload Size",
-            items = LogPayloadSize.values().toList(),
+            items = LogPayloadSize.entries.toList(),
             headerText = config.payloadSize.toString(),
             itemTextFactory = { it.toString() },
             onClick = { dispatch(LogsHeavyTrafficScreenAction.SelectPayloadSize(it)) }

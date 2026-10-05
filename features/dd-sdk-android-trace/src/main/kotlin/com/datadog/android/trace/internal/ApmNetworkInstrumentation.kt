@@ -37,6 +37,7 @@ import com.datadog.android.trace.internal.net.finishRumAware
 import com.datadog.android.trace.internal.net.sample
 import java.net.HttpURLConnection
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * For internal usage only.
@@ -58,7 +59,7 @@ import java.util.Locale
  * @param networkingLibraryName the name identifying the network instrumentation (e.g., "OkHttp", "Cronet").
  * @param networkTracingScope Tracing scope for the instrumentation. See [ApmNetworkTracingScope] enum for more details.
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 @InternalApi
 class ApmNetworkInstrumentation internal constructor(
     internal val canSendSpan: Boolean,
@@ -66,13 +67,15 @@ class ApmNetworkInstrumentation internal constructor(
     val traceOrigin: String?,
     internal val tracerProvider: TracerProvider,
     internal val redacted404ResourceName: Boolean,
-    internal val traceSampler: Sampler<DatadogSpan>,
-    internal val injectionType: TraceContextInjection,
+    @Volatile internal var traceSampler: Sampler<DatadogSpan>,
+    @Volatile internal var injectionType: TraceContextInjection,
     internal val tracedRequestListener: NetworkTracedRequestListener,
-    internal val localFirstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
+    @Volatile internal var localFirstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver,
     private val networkingLibraryName: String,
     val networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.ALL
 ) {
+    private val rcApplied = AtomicBoolean(false)
+
     private val rumContextPropagator = RumContextPropagator { internalSdkCore }
     private val internalSdkCore: InternalSdkCore?
         get() = sdkCoreReference.get() as? InternalSdkCore
@@ -83,7 +86,17 @@ class ApmNetworkInstrumentation internal constructor(
 
     /** Reference to the SDK core instance. */
     val sdkCoreReference: SdkReference = SdkReference(sdkInstanceName) {
-        val sdkCore = it as InternalSdkCore
+        onSdkInstanceReady(it as InternalSdkCore)
+    }
+
+    internal fun onSdkInstanceReady(sdkCore: InternalSdkCore) {
+        if (rcApplied.compareAndSet(false, true)) {
+            sdkCore.remoteConfiguration?.trace?.let { trace ->
+                trace.sampleRate?.toFloat()?.let { traceSampler = applyRcSampleRate(traceSampler, it) }
+                trace.toSdkInjection()?.let { injectionType = it }
+                trace.buildRcHostResolver()?.let { localFirstPartyHostHeaderTypeResolver = it }
+            }
+        }
         if (localFirstPartyHostHeaderTypeResolver.isEmpty() && sdkCore.firstPartyHostResolver.isEmpty()) {
             sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN, onlyOnce = true) {
                 WARNING_TRACING_NO_HOSTS.format(Locale.US, networkingLibraryName)
@@ -115,7 +128,7 @@ class ApmNetworkInstrumentation internal constructor(
         }
 
         if (sdkCore == null) {
-            return RequestTracingState(requestInfoBuilder)
+            return RequestTracingState(requestInfoBuilder = requestInfoBuilder, isDefaultTracer = false)
         }
 
         val tracer = tracerProvider.provideTracer(
@@ -125,7 +138,7 @@ class ApmNetworkInstrumentation internal constructor(
         )
 
         if (tracer == null || !request.isTraceable(sdkCore)) {
-            return RequestTracingState(requestInfoBuilder)
+            return RequestTracingState(requestInfoBuilder = requestInfoBuilder, isDefaultTracer = false)
         }
 
         val span = tracer.buildSpan(
@@ -155,7 +168,8 @@ class ApmNetworkInstrumentation internal constructor(
             span = span,
             isSampled = isSampled,
             sampleRate = traceSampler.effectiveSampleRate(span),
-            requestInfoBuilder = tracedRequestInfoBuilder
+            requestInfoBuilder = tracedRequestInfoBuilder,
+            isDefaultTracer = tracer is DatadogTracerAdapter
         )
     }
 
@@ -167,17 +181,19 @@ class ApmNetworkInstrumentation internal constructor(
      * @param response the HTTP response information.
      */
     fun onResponseSucceeded(requestTracingState: RequestTracingState, response: HttpResponseInfo) {
-        if (requestTracingState.isSampled) {
-            requestTracingState.span?.setTag(DatadogTracingConstants.Tags.KEY_HTTP_STATUS, response.statusCode)
-            if (response.statusCode in HttpURLConnection.HTTP_BAD_REQUEST until HttpURLConnection.HTTP_INTERNAL_ERROR) {
-                requestTracingState.span?.isError = true
-            }
-            if (response.statusCode == HttpURLConnection.HTTP_NOT_FOUND && redacted404ResourceName) {
-                requestTracingState.span?.resourceName = RESOURCE_NAME_404
-            }
+        requestTracingState.span?.setTag(DatadogTracingConstants.Tags.KEY_HTTP_STATUS, response.statusCode)
+        if (response.statusCode in HttpURLConnection.HTTP_BAD_REQUEST until HttpURLConnection.HTTP_INTERNAL_ERROR) {
+            requestTracingState.span?.isError = true
+        }
+        if (response.statusCode == HttpURLConnection.HTTP_NOT_FOUND && redacted404ResourceName) {
+            requestTracingState.span?.resourceName = RESOURCE_NAME_404
         }
         requestTracingState.onRequestIntercepted(response, null)
-        requestTracingState.span?.finishRumAware(requestTracingState.isSampled, canSendSpan)
+        requestTracingState.span?.finishRumAware(
+            requestTracingState.isSampled,
+            canSendSpan,
+            requestTracingState.isDefaultTracer
+        )
     }
 
     /**
@@ -188,8 +204,8 @@ class ApmNetworkInstrumentation internal constructor(
      * @param throwable the exception that caused the failure.
      */
     fun onResponseFailed(requestTracingState: RequestTracingState, throwable: Throwable) {
+        requestTracingState.span?.isError = true
         if (requestTracingState.isSampled) {
-            requestTracingState.span?.isError = true
             requestTracingState.span?.setTag(DatadogTracingConstants.Tags.KEY_ERROR_MSG, throwable.message)
             requestTracingState.span?.setTag(DatadogTracingConstants.Tags.KEY_ERROR_TYPE, throwable.javaClass.name)
             requestTracingState.span?.setTag(
@@ -198,7 +214,11 @@ class ApmNetworkInstrumentation internal constructor(
             )
         }
         requestTracingState.onRequestIntercepted(null, throwable)
-        requestTracingState.span?.finishRumAware(requestTracingState.isSampled, canSendSpan)
+        requestTracingState.span?.finishRumAware(
+            requestTracingState.isSampled,
+            canSendSpan,
+            requestTracingState.isDefaultTracer
+        )
     }
 
     /**

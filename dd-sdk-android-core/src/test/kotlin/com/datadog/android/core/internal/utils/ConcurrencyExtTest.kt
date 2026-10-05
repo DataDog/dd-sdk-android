@@ -43,6 +43,7 @@ import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -299,6 +300,53 @@ internal class ConcurrencyExtTest {
 
         // When
         val result = future.getSafe(operationName, mockInternalLogger)
+
+        // Then
+        assertThat(result).isNull()
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            message = "Unable to get result of the $operationName task",
+            throwable = fakeException
+        )
+    }
+
+    @Test
+    fun `M return result W getSafe() { with timeout }`(
+        @StringForgery operationName: String,
+        @LongForgery(min = 1L) fakeTimeout: Long
+    ) {
+        // Given
+        val future = mock<Future<Any>>()
+        val fakeResult = Any()
+        whenever(future.get(fakeTimeout, TimeUnit.SECONDS)) doReturn fakeResult
+
+        // When
+        val result = future.getSafe(operationName, fakeTimeout, TimeUnit.SECONDS, mockInternalLogger)
+
+        // Then
+        assertThat(result).isSameAs(fakeResult)
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M log error W getSafe() { with timeout, exception thrown }`(
+        @StringForgery operationName: String,
+        @LongForgery(min = 1L) fakeTimeout: Long,
+        forge: Forge
+    ) {
+        // Given
+        val future = mock<Future<Any>>()
+        val fakeException = forge.anElementFrom(
+            ExecutionException(forge.aThrowable()),
+            CancellationException(),
+            InterruptedException(),
+            TimeoutException()
+        )
+        whenever(future.get(fakeTimeout, TimeUnit.SECONDS)) doThrow fakeException
+
+        // When
+        val result = future.getSafe(operationName, fakeTimeout, TimeUnit.SECONDS, mockInternalLogger)
 
         // Then
         assertThat(result).isNull()

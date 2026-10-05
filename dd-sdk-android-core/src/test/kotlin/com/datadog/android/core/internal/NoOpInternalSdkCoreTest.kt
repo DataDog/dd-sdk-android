@@ -62,6 +62,15 @@ internal class NoOpInternalSdkCoreTest {
     }
 
     @Test
+    fun `M return null W remoteConfiguration`() {
+        // When
+        val result = NoOpInternalSdkCore.remoteConfiguration
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
     fun `M return null W getFeature()`(@StringForgery fakeFeatureName: String) {
         // When
         val result = NoOpInternalSdkCore.getFeature(fakeFeatureName)

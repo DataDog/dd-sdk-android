@@ -36,7 +36,7 @@ internal class WebViewRumEventConsumer(
                 "type" to "web_view_ingested_notification"
             )
         )
-        sdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
+        sdkCore.getFeature(Feature.WEB_RUM_FEATURE_NAME)
             ?.withWriteContext(
                 withFeatureContexts = setOf(
                     Feature.RUM_FEATURE_NAME,

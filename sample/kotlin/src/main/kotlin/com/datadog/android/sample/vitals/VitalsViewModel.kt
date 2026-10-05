@@ -16,6 +16,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.operations.FailureReason
 import timber.log.Timber
 import java.security.SecureRandom
+import java.util.concurrent.TimeUnit
 
 @Suppress("MagicNumber", "TooManyFunctions")
 internal class VitalsViewModel : ViewModel() {
@@ -58,8 +59,12 @@ internal class VitalsViewModel : ViewModel() {
     }
 
     fun runLongTask() {
-        val duration = rng.nextInt(250) + 100
-        Thread.sleep(duration.toLong())
+        val endTime = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(1000)
+        var result = 0.0
+        while (System.nanoTime() < endTime) {
+            result += Math.sqrt(result + 1.0)
+        }
+        Timber.d("runLongTask finished with result=$result")
     }
 
     fun runFrozenFrame() {

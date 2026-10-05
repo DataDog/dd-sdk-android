@@ -55,6 +55,7 @@ fun Forge.ddTagsString(): String {
 
 fun Forge.useCommonRumFactories() {
     addFactory(ViewEventForgeryFactory())
+    addFactory(ViewUpdateEventForgeryFactory())
     addFactory(ResourceEventForgeryFactory())
     addFactory(ActionEventForgeryFactory())
     addFactory(ErrorEventForgeryFactory())

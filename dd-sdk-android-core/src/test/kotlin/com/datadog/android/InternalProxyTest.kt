@@ -143,4 +143,44 @@ internal class InternalProxyTest {
         // Then
         verify(mockCoreFeature).metricTelemetrySampleRateBypass = fakeSampleRate
     }
+
+    @Test
+    fun `M send flush_and_stop_monitor event to RUM feature W flushAndShutdownExecutors()`() {
+        // Given
+        val mockSdkCore = mock<DatadogCore>()
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        Datadog.registry.register(null, mockSdkCore)
+        val proxy = _InternalProxy(mockSdkCore)
+
+        try {
+            // When
+            proxy.flushAndShutdownExecutors()
+
+            // Then
+            verify(mockRumFeatureScope).sendEvent(mapOf("type" to "flush_and_stop_monitor"))
+        } finally {
+            Datadog.registry.clear()
+        }
+    }
+
+    @Test
+    fun `M send flush_and_stop_stats event to Client Stats feature W flushAndShutdownExecutors()`() {
+        // Given
+        val mockSdkCore = mock<DatadogCore>()
+        val mockStatsFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.TRACING_CLIENT_STATS_FEATURE_NAME)) doReturn mockStatsFeatureScope
+        Datadog.registry.register(null, mockSdkCore)
+        val proxy = _InternalProxy(mockSdkCore)
+
+        try {
+            // When
+            proxy.flushAndShutdownExecutors()
+
+            // Then
+            verify(mockStatsFeatureScope).sendEvent(mapOf("type" to "flush_and_stop_stats"))
+        } finally {
+            Datadog.registry.clear()
+        }
+    }
 }

@@ -11,7 +11,7 @@ internal enum class TLVBlockType(val rawValue: UShort) {
     DATA(0x01u);
 
     companion object {
-        private val map = values().associateBy { it.rawValue }
+        private val map = entries.associateBy { it.rawValue }
 
         fun fromValue(value: UShort): TLVBlockType? {
             return map[value]

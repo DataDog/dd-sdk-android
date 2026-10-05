@@ -84,7 +84,7 @@ dependencies {
 }
 
 datadogBuild {
-    applyKotlinConfig(evaluateWarningsAsErrors = false)
+    applyKotlinConfig()
     applyJunitConfig()
 }
 

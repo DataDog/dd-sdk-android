@@ -14,5 +14,6 @@ data class SampleAppConfig(
     val token: String = "",
     val rumApplicationId: String = "",
     val apiKey: String = "",
-    val applicationKey: String = ""
+    val applicationKey: String = "",
+    val remoteConfigurationId: String = ""
 )

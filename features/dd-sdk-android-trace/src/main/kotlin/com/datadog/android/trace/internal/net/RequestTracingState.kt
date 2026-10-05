@@ -23,13 +23,15 @@ import com.datadog.android.trace.api.span.DatadogSpan
  * @property isSampled whether the request trace was sampled.
  * @property span the trace span created for this request, or null if not sampled or tracing is disabled.
  * @property sampleRate the sample rate used for the sampling decision.
+ * @property isDefaultTracer whether the tracer is the SDK's built-in implementation
  */
 @InternalApi
 data class RequestTracingState(
     val requestInfoBuilder: HttpRequestInfoBuilder,
     val isSampled: Boolean = false,
     val span: DatadogSpan? = null,
-    val sampleRate: Float? = null
+    val sampleRate: Float? = null,
+    val isDefaultTracer: Boolean
 ) {
 
     /**

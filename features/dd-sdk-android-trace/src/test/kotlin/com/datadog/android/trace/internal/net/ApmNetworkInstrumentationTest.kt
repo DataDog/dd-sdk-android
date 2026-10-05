@@ -17,9 +17,11 @@ import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import com.datadog.android.api.instrumentation.network.MutableHttpRequestInfo
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
+import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkTracingScope
+import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.NetworkTracedRequestListener
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
@@ -34,6 +36,7 @@ import com.datadog.android.trace.internal.ApmNetworkInstrumentation
 import com.datadog.android.trace.internal.DatadogPropagationHelper
 import com.datadog.android.trace.internal.ParentContextSource
 import com.datadog.android.trace.internal._TraceInternalProxy
+import com.datadog.android.trace.internal.domain.event.FORCE_DROP_SPAN
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
@@ -148,6 +151,7 @@ internal class ApmNetworkInstrumentationTest {
             on { getFeature(Feature.TRACING_FEATURE_NAME) } doReturn mockTracingFeature
             on { getFeature(Feature.RUM_FEATURE_NAME) } doReturn mockRumFeature
             on { firstPartyHostResolver } doReturn mock()
+            on { remoteConfiguration } doReturn null
         }
         datadogRegistryRegisterMethod.invoke(datadogRegistryField.get(null), null, mockSdkCore)
 
@@ -727,7 +731,12 @@ internal class ApmNetworkInstrumentationTest {
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
             // Then
-            if (fakeIsSampled) verify(mockSpan).finish() else verify(mockSpan).drop()
+            if (fakeIsSampled) {
+                verify(mockSpan, never()).setTag(eq(FORCE_DROP_SPAN), any<Boolean>())
+            } else {
+                verify(mockSpan).setTag(FORCE_DROP_SPAN, true)
+            }
+            verify(mockSpan).finish()
         }
     }
 
@@ -794,7 +803,7 @@ internal class ApmNetworkInstrumentationTest {
     }
 
     @Test
-    fun `M not set error tags W onResponseFailed() {not sampled}`(
+    fun `M set isError but not verbose tags W onResponseFailed() {not sampled}`(
         @Forgery fakeThrowable: Throwable
     ) {
         // Given
@@ -804,8 +813,9 @@ internal class ApmNetworkInstrumentationTest {
             // When
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
-            // Then
-            verify(mockSpan, never()).isError = true
+            // Then — isError must be set so the APM stats counts this as an error,
+            // but verbose payload tags are omitted for unsampled spans
+            verify(mockSpan).isError = true
             verify(mockSpan, never()).setTag(eq(Tags.KEY_ERROR_MSG), any<String>())
             verify(mockSpan, never()).setTag(eq(Tags.KEY_ERROR_TYPE), any<String>())
             verify(mockSpan, never()).setTag(eq(Tags.KEY_ERROR_STACK), any<String>())
@@ -827,7 +837,63 @@ internal class ApmNetworkInstrumentationTest {
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
             // Then
-            if (fakeIsSampled) verify(mockSpan).finish() else verify(mockSpan).drop()
+            if (fakeIsSampled) {
+                verify(mockSpan, never()).setTag(eq(FORCE_DROP_SPAN), any<Boolean>())
+            } else {
+                verify(mockSpan).setTag(FORCE_DROP_SPAN, true)
+            }
+            verify(mockSpan).finish()
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M finish or drop span W onResponseSucceeded() {custom tracer}`(
+        fakeIsSampled: Boolean,
+        @IntForgery(min = 200, max = 299) fakeStatusCode: Int
+    ) {
+        // Given
+        whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
+        val traceState = createTraceState(isSampled = fakeIsSampled, isDefaultTracer = false)
+
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
+
+            // Then — custom tracers must call drop() directly; FORCE_DROP_SPAN is SDK-internal
+            verify(mockSpan, never()).setTag(eq(FORCE_DROP_SPAN), any<Boolean>())
+            if (fakeIsSampled) {
+                verify(mockSpan).finish()
+                verify(mockSpan, never()).drop()
+            } else {
+                verify(mockSpan, never()).finish()
+                verify(mockSpan).drop()
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M finish or drop span W onResponseFailed() {custom tracer}`(
+        fakeIsSampled: Boolean,
+        @Forgery fakeThrowable: Throwable
+    ) {
+        // Given
+        val traceState = createTraceState(isSampled = fakeIsSampled, isDefaultTracer = false)
+
+        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
+            // When
+            testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
+
+            // Then — custom tracers must call drop() directly; FORCE_DROP_SPAN is SDK-internal
+            verify(mockSpan, never()).setTag(eq(FORCE_DROP_SPAN), any<Boolean>())
+            if (fakeIsSampled) {
+                verify(mockSpan).finish()
+                verify(mockSpan, never()).drop()
+            } else {
+                verify(mockSpan, never()).finish()
+                verify(mockSpan).drop()
+            }
         }
     }
 
@@ -854,25 +920,6 @@ internal class ApmNetworkInstrumentationTest {
             // Then
             verify(mockSpan).drop()
             verify(mockSpan, never()).finish()
-        }
-    }
-
-    @Test
-    fun `M finish span W onResponseSucceeded() {APP_LEVEL, canSendSpan=true, RUM enabled, sampled}`(
-        @IntForgery(min = 200, max = 299) fakeStatusCode: Int
-    ) {
-        // Given - canSendSpan=true is set in setUp
-        whenever(mockResponseInfo.statusCode) doReturn fakeStatusCode
-
-        val traceState = createTraceState()
-
-        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
-            // When
-            testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
-
-            // Then
-            verify(mockSpan).finish()
-            verify(mockSpan, never()).drop()
         }
     }
 
@@ -915,23 +962,6 @@ internal class ApmNetworkInstrumentationTest {
             // Then
             verify(mockSpan).drop()
             verify(mockSpan, never()).finish()
-        }
-    }
-
-    @Test
-    fun `M finish span W onResponseFailed() {APP_LEVEL, canSendSpan=true, RUM enabled, sampled}`(
-        @Forgery fakeThrowable: Throwable
-    ) {
-        // Given - canSendSpan=true is set in setUp
-        val traceState = createTraceState()
-
-        _TraceInternalProxy.withMockPropagationHelper(mockPropagationHelper) {
-            // When
-            testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
-
-            // Then
-            verify(mockSpan).finish()
-            verify(mockSpan, never()).drop()
         }
     }
 
@@ -991,7 +1021,12 @@ internal class ApmNetworkInstrumentationTest {
             testedInstrumentation.onResponseSucceeded(traceState, mockResponseInfo)
 
             // Then
-            if (fakeIsSampled) verify(mockSpan).finish() else verify(mockSpan).drop()
+            if (fakeIsSampled) {
+                verify(mockSpan, never()).setTag(eq(FORCE_DROP_SPAN), any<Boolean>())
+            } else {
+                verify(mockSpan).setTag(FORCE_DROP_SPAN, true)
+            }
+            verify(mockSpan).finish()
         }
     }
 
@@ -1010,7 +1045,12 @@ internal class ApmNetworkInstrumentationTest {
             testedInstrumentation.onResponseFailed(traceState, fakeThrowable)
 
             // Then
-            if (fakeIsSampled) verify(mockSpan).finish() else verify(mockSpan).drop()
+            if (fakeIsSampled) {
+                verify(mockSpan, never()).setTag(eq(FORCE_DROP_SPAN), any<Boolean>())
+            } else {
+                verify(mockSpan).setTag(FORCE_DROP_SPAN, true)
+            }
+            verify(mockSpan).finish()
         }
     }
 
@@ -1156,12 +1196,172 @@ internal class ApmNetworkInstrumentationTest {
 
     // endregion
 
-    private fun createTraceState(isSampled: Boolean = true) = RequestTracingState(
+    private fun createTraceState(isSampled: Boolean = true, isDefaultTracer: Boolean = true) = RequestTracingState(
         requestInfoBuilder = mockRequestBuilder,
         isSampled = isSampled,
         span = mockSpan,
-        sampleRate = fakeSampleRate
+        sampleRate = fakeSampleRate,
+        isDefaultTracer = isDefaultTracer
     )
+
+    // region Remote Configuration
+
+    @Test
+    fun `M override traceSampler W onSdkInstanceReady { RC provides sampleRate }`(
+        @FloatForgery(min = 0f, max = 100f) fakeRcSampleRate: Float
+    ) {
+        // Given
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(sampleRate = fakeRcSampleRate)
+        )
+        whenever(mockSdkCore.remoteConfiguration) doReturn fakeRc
+        val instrumentation = createInstrumentation()
+
+        // When
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // Then
+        assertThat(instrumentation.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(instrumentation.traceSampler.getSampleRate()).isEqualTo(fakeRcSampleRate)
+    }
+
+    @Test
+    fun `M preserve SessionRebasedSampler W onSdkInstanceReady { RC provides sampleRate, headerPropagationOnly }`(
+        @FloatForgery(min = 0f, max = 100f) fakeRcSampleRate: Float
+    ) {
+        // Given — headerPropagationOnly wraps sampler in SessionRebasedSampler at construction
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(sampleRate = fakeRcSampleRate)
+        )
+        whenever(mockSdkCore.remoteConfiguration) doReturn fakeRc
+        val instrumentation = _TraceInternalProxy.createApmNetworkInstrumentation(
+            "test",
+            ApmNetworkInstrumentationConfiguration(emptyList<String>())
+                .setHeaderPropagationOnly()
+        )
+
+        // When
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // Then — wrapper preserved, inner rate updated
+        assertThat(instrumentation.traceSampler).isInstanceOf(SessionRebasedSampler::class.java)
+        assertThat(instrumentation.traceSampler.getSampleRate()).isEqualTo(fakeRcSampleRate)
+    }
+
+    @Test
+    fun `M override injectionType W onSdkInstanceReady { RC provides ALL traceContextInjection }`() {
+        // Given
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(
+                traceContextInjection = RemoteConfiguration.TraceContextInjection.ALL
+            )
+        )
+        whenever(mockSdkCore.remoteConfiguration) doReturn fakeRc
+        val instrumentation = createInstrumentation()
+
+        // When
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // Then
+        assertThat(instrumentation.injectionType).isEqualTo(TraceContextInjection.ALL)
+    }
+
+    @Test
+    fun `M replace localFirstPartyHostHeaderTypeResolver W onSdkInstanceReady { RC provides tracedHosts }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeRcHost = forge.aStringMatching("[a-z]+\\.[a-z]{2,3}")
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(
+                tracedHosts = listOf(
+                    RemoteConfiguration.TracedHost(
+                        host = fakeRcHost,
+                        propagatorTypes = listOf(RemoteConfiguration.PropagatorType.DATADOG)
+                    )
+                )
+            )
+        )
+        whenever(mockSdkCore.remoteConfiguration) doReturn fakeRc
+        val instrumentation = createInstrumentation()
+
+        // When
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // Then — RC host is resolvable
+        assertThat(
+            instrumentation.localFirstPartyHostHeaderTypeResolver
+                .headerTypesForUrl("https://$fakeRcHost/path")
+        ).containsExactly(TracingHeaderType.DATADOG)
+    }
+
+    @Test
+    fun `M not apply RC on second onSdkInstanceReady W { called multiple times }`(
+        @FloatForgery(min = 0f, max = 100f) fakeRcSampleRate: Float,
+        @FloatForgery(min = 0f, max = 100f) fakeSecondRcSampleRate: Float
+    ) {
+        // Given — first RC applied
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(sampleRate = fakeRcSampleRate)
+        )
+        whenever(mockSdkCore.remoteConfiguration) doReturn fakeRc
+        val instrumentation = createInstrumentation()
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // When — second call with different RC
+        val fakeSecondRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(sampleRate = fakeSecondRcSampleRate)
+        )
+        whenever(mockSdkCore.remoteConfiguration) doReturn fakeSecondRc
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // Then — rate from first call preserved
+        assertThat(instrumentation.traceSampler.getSampleRate()).isEqualTo(fakeRcSampleRate)
+    }
+
+    @Test
+    fun `M keep in-code values W onSdkInstanceReady { null RC }`() {
+        // Given
+        whenever(mockSdkCore.remoteConfiguration) doReturn null
+        val instrumentation = createInstrumentation()
+        val originalSampler = instrumentation.traceSampler
+        val originalInjection = instrumentation.injectionType
+
+        // When
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // Then
+        assertThat(instrumentation.traceSampler).isSameAs(originalSampler)
+        assertThat(instrumentation.injectionType).isEqualTo(originalInjection)
+    }
+
+    @Test
+    fun `M keep in-code values W onSdkInstanceReady { RC trace namespace present but all fields null }`() {
+        // Given
+        val fakeRc = RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(
+                sampleRate = null,
+                traceContextInjection = null,
+                tracedHosts = null
+            )
+        )
+        whenever(mockSdkCore.remoteConfiguration) doReturn fakeRc
+        val instrumentation = createInstrumentation()
+        val originalSampler = instrumentation.traceSampler
+        val originalInjection = instrumentation.injectionType
+
+        // When
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // Then — all fields preserved
+        assertThat(instrumentation.traceSampler).isSameAs(originalSampler)
+        assertThat(instrumentation.injectionType).isEqualTo(originalInjection)
+        // rcApplied=true so second call is also no-op
+        instrumentation.onSdkInstanceReady(mockSdkCore)
+        assertThat(instrumentation.traceSampler).isSameAs(originalSampler)
+    }
+
+    // endregion
 
     private fun createInstrumentation(
         canSendSpan: Boolean = true,

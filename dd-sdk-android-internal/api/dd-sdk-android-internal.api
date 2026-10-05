@@ -30,8 +30,11 @@ public final class com/datadog/android/heatmaps/HeatmapViewKeyKt {
 public final class com/datadog/android/internal/FeatureContextKeys {
 	public static final field INSTANCE Lcom/datadog/android/internal/FeatureContextKeys;
 	public static final field PROFILER_IS_RUNNING Ljava/lang/String;
+	public static final field PROFILING_ANR_ENABLED Ljava/lang/String;
+	public static final field PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE Ljava/lang/String;
 	public static final field PROFILING_QUOTA_REASON Ljava/lang/String;
 	public static final field PROFILING_QUOTA_SESSION_ID Ljava/lang/String;
+	public static final field PROFILING_SAMPLE_RATE Ljava/lang/String;
 	public static final field RUM_SESSION_ID Ljava/lang/String;
 	public static final field RUM_SESSION_SAMPLE_RATE Ljava/lang/String;
 }
@@ -239,9 +242,11 @@ public final class com/datadog/android/internal/network/HttpSpec$ContentType {
 	public static final field APPLICATION_GRPC_JSON Ljava/lang/String;
 	public static final field APPLICATION_GRPC_PROTO Ljava/lang/String;
 	public static final field APPLICATION_JSON Ljava/lang/String;
+	public static final field APPLICATION_OCTET_STREAM Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/internal/network/HttpSpec$ContentType;
 	public static final field TEXT_EVENT_STREAM Ljava/lang/String;
 	public static final field TEXT_PLAIN Ljava/lang/String;
+	public final fun isBinaryMedia (Ljava/lang/String;)Z
 	public final fun isStream (Ljava/lang/String;)Z
 	public final fun values ()Ljava/util/List;
 }
@@ -711,12 +716,29 @@ public final class com/datadog/android/internal/thread/ThreadUtilsKt {
 	public static final fun isMainThread ()Z
 }
 
+public abstract interface class com/datadog/android/internal/time/AppStartTimeProvider {
+	public abstract fun getAppStartTimeNs ()J
+	public abstract fun getAppUptimeNs ()J
+}
+
 public abstract class com/datadog/android/internal/time/BaseTimeProvider : com/datadog/android/internal/time/TimeProvider {
 	public fun <init> ()V
 	public final fun getDeviceElapsedRealtimeMillis ()J
+	public final fun getDeviceElapsedRealtimeNanos ()J
 	public final fun getDeviceElapsedTimeNanos ()J
 	public final fun getDeviceTimestampMillis ()J
 	public final fun getDeviceUptimeMillis ()J
+}
+
+public final class com/datadog/android/internal/time/DefaultAppStartTimeProvider : com/datadog/android/internal/time/AppStartTimeProvider {
+	public static final field Companion Lcom/datadog/android/internal/time/DefaultAppStartTimeProvider$Companion;
+	public fun <init> (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/internal/system/BuildSdkVersionProvider;)V
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function0;Lcom/datadog/android/internal/system/BuildSdkVersionProvider;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getAppStartTimeNs ()J
+	public fun getAppUptimeNs ()J
+}
+
+public final class com/datadog/android/internal/time/DefaultAppStartTimeProvider$Companion {
 }
 
 public final class com/datadog/android/internal/time/DefaultTimeProvider : com/datadog/android/internal/time/BaseTimeProvider {
@@ -728,6 +750,7 @@ public final class com/datadog/android/internal/time/DefaultTimeProvider : com/d
 
 public abstract interface class com/datadog/android/internal/time/TimeProvider {
 	public abstract fun getDeviceElapsedRealtimeMillis ()J
+	public abstract fun getDeviceElapsedRealtimeNanos ()J
 	public abstract fun getDeviceElapsedTimeNanos ()J
 	public abstract fun getDeviceTimestampMillis ()J
 	public abstract fun getDeviceUptimeMillis ()J
@@ -762,6 +785,20 @@ public abstract interface class com/datadog/android/internal/utils/DDCoreSubscri
 
 public final class com/datadog/android/internal/utils/DDCoreSubscription$Companion {
 	public final fun create ()Lcom/datadog/android/internal/utils/DDCoreSubscription;
+}
+
+public abstract interface class com/datadog/android/internal/utils/DiffBuilder {
+	public abstract fun anythingChanged ()Z
+	public abstract fun diffEquals (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public abstract fun diffList (Lkotlin/jvm/functions/Function1;)Ljava/util/List;
+	public abstract fun diffMap (Lkotlin/jvm/functions/Function1;)Ljava/util/Map;
+	public abstract fun diffMerge (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
+	public abstract fun diffRequired (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+}
+
+public final class com/datadog/android/internal/utils/DiffBuilderKt {
+	public static final fun computeDiffIfChanged (Ljava/lang/Object;Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static final fun computeDiffRequired (Ljava/lang/Object;Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 }
 
 public class com/datadog/android/internal/utils/FixedWindowCallback : android/view/Window$Callback {
@@ -846,6 +883,7 @@ public final class com/datadog/android/internal/utils/ThreadExtKt {
 }
 
 public final class com/datadog/android/internal/utils/ThrowableExtKt {
+	public static final fun loggableMessage (Ljava/lang/Throwable;)Ljava/lang/String;
 	public static final fun loggableStackTrace (Ljava/lang/Throwable;)Ljava/lang/String;
 }
 

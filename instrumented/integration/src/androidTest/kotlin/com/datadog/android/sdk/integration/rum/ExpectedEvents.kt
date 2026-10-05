@@ -44,6 +44,26 @@ internal data class ExpectedApplicationLaunchViewEvent(
     override val rumContext: ExpectedRumContext = resolvedRumContext()
 ) : ExpectedEvent
 
+internal data class ExpectedViewUpdateEvent(
+    val viewUrl: String,
+    val docVersion: Int = 1,
+    val viewArguments: Map<String, Any?> = mapOf(),
+    val extraAttributes: Map<String, Any?> = mapOf(),
+    val extraViewAttributes: Map<String, Any?> = mapOf(),
+    val extraViewAttributesWithPredicate: Map<String, (JsonElement) -> Boolean> = mapOf(),
+    val sessionIsActive: Boolean = true,
+    override val rumContext: ExpectedRumContext = resolvedRumContext()
+) : ExpectedEvent
+
+internal data class ExpectedApplicationLaunchViewUpdateEvent(
+    val docVersion: Int = 0,
+    val viewArguments: Map<String, Any?> = mapOf(),
+    val extraAttributes: Map<String, Any?> = mapOf(),
+    val extraViewAttributes: Map<String, Any?> = mapOf(),
+    val extraViewAttributesWithPredicate: Map<String, (JsonElement) -> Boolean> = mapOf(),
+    override val rumContext: ExpectedRumContext = resolvedRumContext()
+) : ExpectedEvent
+
 internal data class ExpectedResourceEvent(
     val url: String,
     val statusCode: Int,

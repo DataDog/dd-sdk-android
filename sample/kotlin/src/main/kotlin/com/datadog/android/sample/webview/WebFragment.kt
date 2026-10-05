@@ -13,7 +13,7 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProviders
+import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.R
@@ -54,7 +54,7 @@ internal class WebFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val factory = SampleApplication.getViewModelFactory(requireContext())
-        viewModel = ViewModelProviders.of(this, factory).get(WebViewModel::class.java)
+        viewModel = ViewModelProvider(this, factory)[WebViewModel::class.java]
     }
 
     override fun onResume() {

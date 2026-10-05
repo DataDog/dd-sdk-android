@@ -242,6 +242,16 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         return this
     }
 
+    fun hasUseClientSideStats(expected: Boolean?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.useClientSideStats)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.useClientSideStats $expected " +
+                    "but was ${actual.telemetry.configuration.useClientSideStats}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasTracerApi(tracerApi: String?): TelemetryConfigurationEventAssert {
         assertThat(actual.telemetry.configuration.tracerApi)
             .overridingErrorMessage(
@@ -307,6 +317,36 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.traceSampleRate" +
                     " $expected but was ${actual.telemetry.configuration.traceSampleRate}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasProfilingSampleRate(expected: Number?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.profilingSampleRate)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.profilingSampleRate" +
+                    " $expected but was ${actual.telemetry.configuration.profilingSampleRate}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasProfilingApplicationLaunchSampleRate(expected: Number?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.profilingApplicationLaunchSampleRate)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.profilingApplicationLaunchSampleRate" +
+                    " $expected but was ${actual.telemetry.configuration.profilingApplicationLaunchSampleRate}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasProfilingAnrEnabled(expected: Boolean?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.profilingAnrEnabled)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.profilingAnrEnabled" +
+                    " $expected but was ${actual.telemetry.configuration.profilingAnrEnabled}"
             )
             .isEqualTo(expected)
         return this
@@ -453,6 +493,32 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
             "but was ${actual.telemetry.configuration.startRecordingImmediately}"
         assertThat(actual.telemetry.configuration.startRecordingImmediately)
             .overridingErrorMessage(assertErrorMessage)
+            .isEqualTo(expected)
+        return this
+    }
+
+    // endregion
+
+    // region Remote Configuration
+
+    fun hasRemoteConfigurationId(expected: String?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.remoteConfigurationId)
+            .overridingErrorMessage(
+                "Expected telemetry configuration to have remoteConfigurationId $expected but was " +
+                    "${actual.telemetry.configuration.remoteConfigurationId}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasRemoteConfiguration(
+        expected: TelemetryConfigurationEvent.RemoteConfiguration?
+    ): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.remoteConfiguration)
+            .overridingErrorMessage(
+                "Expected telemetry configuration to have remoteConfiguration $expected but was " +
+                    "${actual.telemetry.configuration.remoteConfiguration}"
+            )
             .isEqualTo(expected)
         return this
     }

@@ -25,7 +25,7 @@ internal class OkHttpGraphQLAdapter(
         val attributes = graphQLExtractor.extractGraphQLAttributes(OkHttpRequestInfo(request))
         if (attributes.isEmpty()) return
 
-        GraphQLHeaders.values().forEach { builder.removeHeader(it.headerValue) }
+        GraphQLHeaders.entries.forEach { builder.removeHeader(it.headerValue) }
         @Suppress("UnsafeThirdPartyFunctionCall") // ClassCastException can't happen here.
         builder.tag(GraphQLAttributes::class.java, GraphQLAttributes(attributes))
     }

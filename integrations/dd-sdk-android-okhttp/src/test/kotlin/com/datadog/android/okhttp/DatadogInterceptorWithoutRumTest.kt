@@ -54,6 +54,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
     override fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
         globalTracerProvider: () -> DatadogTracer?,
+        defaultTracerCheck: (DatadogTracer) -> Boolean,
         localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer
     ): TracingInterceptor {
         return DatadogInterceptor(
@@ -65,7 +66,8 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
             traceContextInjection = TraceContextInjection.ALL,
             redacted404ResourceName = fakeRedacted404Resources,
             localTracerFactory = localTracerFactory,
-            globalTracerProvider = globalTracerProvider
+            globalTracerProvider = globalTracerProvider,
+            defaultTracerCheck = defaultTracerCheck
         )
     }
 

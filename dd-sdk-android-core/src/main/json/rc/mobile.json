@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rum-sdk-config-mobile",
+  "description": "Shared definitions for the iOS and Android RUM SDK configs",
+  "$defs": {
+    "rum": {
+      "type": "object",
+      "required": ["applicationId"],
+      "properties": {
+        "applicationId": {
+          "type": "string",
+          "description": "UUID of the RUM application",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+        },
+        "telemetrySampleRate": { "type": "number", "minimum": 0, "maximum": 100 },
+        "trackAnonymousUser": { "type": "boolean" },
+        "trackUserInteractions": { "type": "boolean" },
+        "trackBackgroundEvents": { "type": "boolean" },
+        "trackFrustrations": { "type": "boolean" },
+        "longTask": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "threshold": {
+              "type": "number",
+              "minimum": 100,
+              "description": "Minimum main-thread task duration in milliseconds to report as a long task"
+            }
+          }
+        },
+        "vitalsUpdateFrequency": {
+          "type": "string",
+          "enum": ["frequent", "average", "rare", "never"]
+        },
+        "trackSlowFrames": { "type": "boolean" }
+      }
+    },
+    "sessionReplay": {
+      "type": "object",
+      "properties": {
+        "sampleRate": { "type": "number", "minimum": 0, "maximum": 100 },
+        "textAndInputPrivacy": {
+          "type": "string",
+          "enum": ["mask_sensitive_inputs", "mask_all_inputs", "mask_all"]
+        },
+        "touchPrivacy": {
+          "type": "string",
+          "enum": ["show", "hide"]
+        }
+      }
+    },
+    "profiling": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "continuousSampleRate": { "type": "number", "minimum": 0, "maximum": 100 },
+        "applicationLaunchSampleRate": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "trace": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sampleRate": { "type": "number", "minimum": 0, "maximum": 100 },
+        "traceContextInjection": { "type": "string", "enum": ["all", "sampled"] },
+        "tracedHosts": {
+          "type": "array",
+          "description": "Per-host distributed tracing configuration. Aligns with browser's allowedTracingUrls model (without regex matching).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["host", "propagatorTypes"],
+            "properties": {
+              "host": { "type": "string" },
+              "propagatorTypes": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "enum": ["datadog", "b3", "b3multi", "tracecontext"] }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

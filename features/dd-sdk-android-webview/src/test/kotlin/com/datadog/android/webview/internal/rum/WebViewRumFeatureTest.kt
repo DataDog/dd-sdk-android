@@ -71,7 +71,7 @@ internal class WebViewRumFeatureTest {
     fun `M provide web view RUM feature name W name()`() {
         // When+Then
         assertThat(testedFeature.name)
-            .isEqualTo(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
+            .isEqualTo(Feature.WEB_RUM_FEATURE_NAME)
     }
 
     @Test

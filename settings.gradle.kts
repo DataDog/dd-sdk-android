@@ -13,14 +13,6 @@ pluginManagement {
         gradlePluginPortal()
         google()
         mavenCentral()
-        // `build-logic` pulls the Kotlin grammar parser from Jitpack; its transitive
-        // dependencies are resolved against these repositories when its plugins are applied.
-        maven {
-            setUrl("https://jitpack.io")
-            mavenContent {
-                includeGroupByRegex("com\\.github\\..*")
-            }
-        }
     }
 
     // Build logic (convention plugins + build-time code generators) lives in its own build so that
@@ -36,6 +28,8 @@ include(":dd-sdk-android-internal")
 include(":features:dd-sdk-android-trace-api")
 include(":features:dd-sdk-android-trace-internal")
 include(":features:dd-sdk-android-rum")
+include(":features:dd-sdk-android-rum-internal")
+include(":features:dd-sdk-android-rum-prelaunch")
 include(":features:dd-sdk-android-rum-debug-widget")
 include(":features:dd-sdk-android-logs")
 include(":features:dd-sdk-android-ndk")
@@ -79,6 +73,9 @@ include(":reliability:single-fit:profiling")
 
 // CORE INTEGRATION TESTS
 include(":reliability:core-it")
+
+// BACKEND INTEGRATION TESTS
+include(":reliability:with-backend")
 
 // LEGACY TESTS
 include(":instrumented:integration")

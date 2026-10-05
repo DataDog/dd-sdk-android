@@ -77,6 +77,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig.backpressureStrategy.backpressureMitigation)
             .isEqualTo(BackPressureMitigation.IGNORE_NEWEST)
         assertThat(config.coreConfig.backpressureStrategy.capacity).isEqualTo(1024)
+        assertThat(config.coreConfig.remoteConfigurationId).isNull()
         assertThat(config.crashReportsEnabled).isTrue
         assertThat(config.additionalConfig).isEmpty()
     }
@@ -516,6 +517,23 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(
                 uploadSchedulerStrategy = mockUploadSchedulerStrategy
+            )
+        )
+    }
+
+    @Test
+    fun `M build config with remote configuration id W setRemoteConfigurationId() and build()`(
+        @StringForgery remoteConfigurationId: String
+    ) {
+        // When
+        val config = testedBuilder
+            .setRemoteConfigurationId(remoteConfigurationId)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                remoteConfigurationId = remoteConfigurationId
             )
         )
     }

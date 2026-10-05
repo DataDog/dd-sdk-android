@@ -34,6 +34,12 @@ internal interface Profiler {
 
     fun unregisterProfilingCallback(appContext: Context)
 
+    fun registerProfilerStatusListener(listener: ProfilingStatusListener)
+
+    fun unregisterProfilerStatusListener(listener: ProfilingStatusListener)
+
+    fun setAnrTriggerEnabled(enabled: Boolean)
+
     /**
      * Controls whether an app launch profiling session should extend past the 10-second
      * TTID threshold. Set to `true` when continuous profiling is enabled for the session

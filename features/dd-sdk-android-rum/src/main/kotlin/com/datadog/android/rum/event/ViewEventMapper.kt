@@ -21,7 +21,6 @@ fun interface ViewEventMapper : EventMapper<ViewEvent> {
      * @return the modified event [ViewEvent]. The same object (by reference) should be returned.
      * If the object returned has a different reference than the object which was passed to the
      * function, it will be ignored and the original object will be used.
-     *
      */
     override fun map(event: ViewEvent): ViewEvent
 }

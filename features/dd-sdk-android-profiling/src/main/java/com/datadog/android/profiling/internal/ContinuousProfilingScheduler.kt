@@ -10,12 +10,10 @@ import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.sampling.DeterministicSampler
-import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.sampling.DeterministicSampling
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.time.TimeProvider
@@ -256,9 +254,6 @@ internal class ContinuousProfilingScheduler(
                 additionalAttributes = emptyMap(),
                 durationMs = activeMs.toInt()
             )
-            sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-                context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
-            }
         } else {
             logToUser { LOG_ACTIVE_WINDOW_SKIPPED }
             // Skipped windows behave like cooldown for lifecycle purposes.
