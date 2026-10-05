@@ -14,6 +14,7 @@ import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -24,14 +25,19 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
@@ -261,6 +267,143 @@ internal class DefaultFlagsRepositoryTest {
 
         // Then
         assertThat(result?.variationValue).isEqualTo(flagValue)
+    }
+
+    @Test
+    fun `M mark restored assignments cached W initial disk read completes`(forge: Forge) {
+        val context = forge.getForgery<EvaluationContext>()
+        val flags = forge.aList(size = forge.anInt(min = 1, max = 5)) {
+            anAlphabeticalString() to getForgery<PrecomputedFlag>()
+        }.toMap()
+        val callback = preparePersistenceLoad(forge)
+
+        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong())))
+
+        val snapshot = testedRepository.getFlagsSnapshot()
+        flags.forEach { (key, originalFlag) ->
+            assertThat(snapshot[key]).isEqualTo(originalFlag.copy(reason = ResolutionReason.CACHED.name))
+            assertThat(testedRepository.getPrecomputedFlag(key)).isSameAs(snapshot[key])
+            assertThat(testedRepository.getPrecomputedFlagWithContext(key))
+                .isEqualTo(snapshot[key] to context)
+        }
+        assertThat(testedRepository.getEvaluationContext()).isEqualTo(context)
+        assertThat(flags.values.map { it.reason }).doesNotContain(ResolutionReason.CACHED.name)
+        verify(mockDataStore, never()).setValue<FlagsStateEntry>(
+            key = any(),
+            data = any(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
+    }
+
+    @Test
+    fun `M replace cached assignments with original network reasons W network response arrives`(forge: Forge) {
+        val context = forge.getForgery<EvaluationContext>()
+        val flags = forge.aList(size = forge.anInt(min = 1, max = 5)) {
+            anAlphabeticalString() to getForgery<PrecomputedFlag>()
+        }.toMap()
+        val callback = preparePersistenceLoad(forge)
+        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong())))
+        val cachedSnapshot = testedRepository.getFlagsSnapshot()
+
+        testedRepository.setFlagsAndContext(context, flags)
+
+        assertThat(testedRepository.getFlagsSnapshot()).isSameAs(flags)
+        assertThat(cachedSnapshot.values.map { it.reason }).containsOnly(ResolutionReason.CACHED.name)
+        val entry = argumentCaptor<FlagsStateEntry>()
+        verify(mockDataStore).setValue(
+            key = any(),
+            data = entry.capture(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
+        assertThat(entry.firstValue.flags).isSameAs(flags)
+    }
+
+    @Test
+    fun `M preserve fresh assignments W disk read finishes after network response`(forge: Forge) {
+        val context = forge.getForgery<EvaluationContext>()
+        val flags = forge.aList(size = forge.anInt(min = 1, max = 5)) {
+            anAlphabeticalString() to getForgery<PrecomputedFlag>()
+        }.toMap()
+        val callback = preparePersistenceLoad(forge)
+        val networkContext = forge.getForgery<EvaluationContext>()
+        val networkFlags = mapOf(forge.anAlphabeticalString() to forge.getForgery<PrecomputedFlag>())
+        testedRepository.setFlagsAndContext(networkContext, networkFlags)
+
+        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong())))
+
+        assertThat(testedRepository.getFlagsSnapshot()).isSameAs(networkFlags)
+        assertThat(testedRepository.getEvaluationContext()).isEqualTo(networkContext)
+    }
+
+    @Test
+    fun `M retain installed context W initial disk read completes { empty assignments }`(forge: Forge) {
+        // Given
+        val context = forge.getForgery<EvaluationContext>()
+        val callback = preparePersistenceLoad(forge)
+
+        // When
+        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, emptyMap(), forge.aLong())))
+
+        // Then
+        assertThat(testedRepository.getEvaluationContext()).isEqualTo(context)
+        assertThat(testedRepository.getFlagsSnapshot()).isEmpty()
+        assertThat(testedRepository.hasFlags()).isFalse()
+        verify(mockDataStore, never()).setValue<FlagsStateEntry>(
+            key = any(),
+            data = any(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M retain empty network assignments W disk and network complete`(diskFirst: Boolean, forge: Forge) {
+        // Given
+        val diskContext = forge.getForgery<EvaluationContext>()
+        val networkContext = diskContext.copy(targetingKey = diskContext.targetingKey + "-network")
+        val diskFlags = mapOf(forge.anAlphabeticalString() to forge.getForgery<PrecomputedFlag>())
+        val callback = preparePersistenceLoad(forge)
+        val diskContent = DataStoreContent(forge.anInt(), FlagsStateEntry(diskContext, diskFlags, forge.aLong()))
+
+        // When
+        if (diskFirst) {
+            callback.onSuccess(diskContent)
+        }
+        testedRepository.setFlagsAndContext(networkContext, emptyMap())
+        if (!diskFirst) {
+            callback.onSuccess(diskContent)
+        }
+
+        // Then
+        assertThat(testedRepository.getEvaluationContext()).isEqualTo(networkContext)
+        assertThat(testedRepository.getFlagsSnapshot()).isEmpty()
+        assertThat(testedRepository.getPrecomputedFlag(diskFlags.keys.single())).isNull()
+        val entry = argumentCaptor<FlagsStateEntry>()
+        verify(mockDataStore).setValue(
+            key = any(),
+            data = entry.capture(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
+        assertThat(entry.firstValue.evaluationContext).isEqualTo(networkContext)
+        assertThat(entry.firstValue.flags).isEmpty()
+    }
+
+    private fun preparePersistenceLoad(forge: Forge): DataStoreReadCallback<FlagsStateEntry> {
+        lateinit var callback: DataStoreReadCallback<FlagsStateEntry>
+        doAnswer {
+            callback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        testedRepository = DefaultFlagsRepository(mockFeatureSdkCore, forge.anAlphabeticalString(), mockDataStore)
+        return callback
     }
 
     // region hasFlags
