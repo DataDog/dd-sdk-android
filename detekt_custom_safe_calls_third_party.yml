@@ -601,6 +601,7 @@ datadog:
       - "kotlin.collections.MutableList.add(com.datadog.android.internal.profiling.ProfilerEvent.RumAnrEvent)"
       - "kotlin.collections.MutableList.add(com.datadog.android.internal.profiling.ProfilerEvent.RumLongTaskEvent)"
       - "kotlin.collections.MutableList.add(com.datadog.android.internal.profiling.ProfilerEvent.RumVitalEvent)"
+      - "kotlin.collections.MutableList.add(com.datadog.android.profiling.internal.ProfilingFeature.TriggerProfile)"
       - "kotlin.collections.MutableList.add(com.datadog.android.rum.internal.domain.scope.RumSessionScope)"
       - "kotlin.collections.MutableList.add(com.datadog.android.rum.internal.domain.scope.RumScope)"
       - "kotlin.collections.MutableList.add(com.datadog.android.rum.internal.domain.scope.RumViewScope)"

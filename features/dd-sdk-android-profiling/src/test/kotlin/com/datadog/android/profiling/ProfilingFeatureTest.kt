@@ -48,6 +48,7 @@ import com.datadog.android.profiling.internal.trigger.NoOpPendingTriggerProfiles
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
 import com.datadog.android.profiling.internal.trigger.ProfilingTriggerRegistrar
 import com.datadog.android.profiling.utils.config.MainLooperTestConfiguration
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -77,6 +78,7 @@ import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -86,6 +88,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -193,6 +196,13 @@ internal class ProfilingFeatureTest {
         customEndpointUrl = null,
         applicationLaunchSampleRate = 100f,
         continuousSampleRate = 100f,
+        anrTriggerEnabled = true
+    )
+
+    private val fakeAnrTriggerOnlyConfiguration = ProfilingConfiguration(
+        customEndpointUrl = null,
+        applicationLaunchSampleRate = 0f,
+        continuousSampleRate = 0f,
         anrTriggerEnabled = true
     )
 
@@ -486,7 +496,7 @@ internal class ProfilingFeatureTest {
         val realSessionId = UUID.randomUUID().toString()
         val expectedEffectiveRate =
             (fakeSessionRate * fakeContinuousRate / 100f).coerceIn(0f, 100f)
-        val expectedDecision = DeterministicSampler<String>(
+        val expectedDecision = DeterministicSampler(
             SessionSamplingIdProvider::provideId,
             expectedEffectiveRate
         ).sample(realSessionId)
@@ -900,7 +910,6 @@ internal class ProfilingFeatureTest {
         )
         // Close launch window
         testedFeature.onReceive(fakeTTID)
-        testedFeature.simulateQuotaAllowed()
         callbackCaptor.firstValue.onSuccess(
             PerfettoResult(
                 start = 0L,
@@ -993,7 +1002,6 @@ internal class ProfilingFeatureTest {
         )
         // Close launch window
         testedFeature.onReceive(fakeTTID)
-        testedFeature.simulateQuotaAllowed()
         callbackCaptor.firstValue.onSuccess(
             PerfettoResult(
                 start = 0L,
@@ -1135,7 +1143,6 @@ internal class ProfilingFeatureTest {
         )
         // Close launch window
         testedFeature.onReceive(fakeTTID)
-        testedFeature.simulateQuotaAllowed()
         callbackCaptor.firstValue.onSuccess(
             PerfettoResult(
                 start = 0L,
@@ -1232,6 +1239,7 @@ internal class ProfilingFeatureTest {
             eq(mockContext),
             callbackCaptor.capture()
         )
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
         testedFeature.onReceive(fakeRumLongTaskEvent)
         testedFeature.onReceive(fakeTTID)
         testedFeature.simulateQuotaAllowed()
@@ -1265,9 +1273,10 @@ internal class ProfilingFeatureTest {
             eq(mockContext),
             callbackCaptor.capture()
         )
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
         testedFeature.onReceive(fakeRumLongTaskEvent)
         testedFeature.onReceive(fakeTTID)
-        testedFeature.propagateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
+        testedFeature.simulateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
         val traceFile = File(fakeTempDir, "launch_trace.perfetto-stack-sample").apply { writeText("trace") }
         val launchResult = fakePerfettoResult.copy(
             resultFilePath = traceFile.absolutePath,
@@ -1279,7 +1288,7 @@ internal class ProfilingFeatureTest {
 
         // Then
         assertThat(traceFile.exists()).isFalse
-        verify(mockDataWriter, never()).writeManualProfile(any(), any(), any(), any())
+        verifyNoInteractions(mockDataWriter)
     }
 
     @Test
@@ -1296,6 +1305,7 @@ internal class ProfilingFeatureTest {
             eq(mockContext),
             callbackCaptor.capture()
         )
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
         testedFeature.onReceive(fakeRumAnrEvent)
         testedFeature.onReceive(fakeTTID)
         testedFeature.simulateQuotaAllowed()
@@ -1361,6 +1371,7 @@ internal class ProfilingFeatureTest {
             eq(mockContext),
             callbackCaptor.capture()
         )
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
         testedFeature.onReceive(fakeTTID)
         testedFeature.simulateQuotaAllowed()
         callbackCaptor.firstValue.onSuccess(
@@ -1390,6 +1401,7 @@ internal class ProfilingFeatureTest {
             eq(mockContext),
             callbackCaptor.capture()
         )
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
         testedFeature.onReceive(fakeRumLongTaskEvent)
         testedFeature.onReceive(fakeRumAnrEvent)
         testedFeature.onReceive(fakeTTID)
@@ -1475,19 +1487,16 @@ internal class ProfilingFeatureTest {
 
     @Test
     fun `M write trigger profile W onMatch {ANR, quota allowed}`(
-        @Forgery fakePerfettoResult: PerfettoResult
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @TempDir fakeTempDir: File
     ) {
         // Given
-        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning()) doReturn false
-        testedFeature.onInitialize(mockContext)
-        testedFeature.dataWriter = mockDataWriter
+        initializeAnrTriggerOnlyFeature(currentSessionId = fakeRumAnrEvent.rumContext.sessionId)
         testedFeature.simulateQuotaAllowed()
-        val anrResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.ANR)
+        val anrResult = fakeAnrResult(fakePerfettoResult, fakeTempDir)
 
         // When
-        testedFeature.pendingTriggerProfiles.setRumGatingEvent(fakeRumAnrEvent)
-        testedFeature.pendingTriggerProfiles.setProfilingResult(anrResult)
+        matchAnrTriggerProfile(anrResult)
 
         // Then
         verify(mockDataWriter).writeTriggerProfile(
@@ -1498,19 +1507,23 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M write trigger profile W onMatch {ANR, quota not yet resolved}`(
-        @Forgery fakePerfettoResult: PerfettoResult
+    fun `M check quota then write trigger profile W onMatch {ANR, quota not yet resolved}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @TempDir fakeTempDir: File
     ) {
-        // Given: quota decision has not landed yet (lastQuotaResult is null) — fail open.
-        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning()) doReturn false
-        testedFeature.onInitialize(mockContext)
-        testedFeature.dataWriter = mockDataWriter
-        val anrResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.ANR)
+        // Given
+        initializeAnrTriggerOnlyFeature(currentSessionId = fakeRumAnrEvent.rumContext.sessionId)
+        val anrResult = fakeAnrResult(fakePerfettoResult, fakeTempDir)
 
         // When
-        testedFeature.pendingTriggerProfiles.setRumGatingEvent(fakeRumAnrEvent)
-        testedFeature.pendingTriggerProfiles.setProfilingResult(anrResult)
+        matchAnrTriggerProfile(anrResult)
+
+        // Then
+        verify(mockQuotaChecker).checkAsync(eq(fakeRumAnrEvent.rumContext.sessionId), any())
+        verifyNoInteractions(mockDataWriter)
+
+        // When
+        testedFeature.simulateQuotaAllowed()
 
         // Then
         verify(mockDataWriter).writeTriggerProfile(
@@ -1518,6 +1531,162 @@ internal class ProfilingFeatureTest {
             rumErrorId = fakeRumAnrEvent.id,
             rumContext = fakeRumAnrEvent.rumContext
         )
+    }
+
+    @Test
+    fun `M delete trigger profile file W quota denied after onMatch {ANR}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @TempDir fakeTempDir: File
+    ) {
+        // Given
+        initializeAnrTriggerOnlyFeature(currentSessionId = fakeRumAnrEvent.rumContext.sessionId)
+        val anrResult = fakeAnrResult(fakePerfettoResult, fakeTempDir)
+        matchAnrTriggerProfile(anrResult)
+
+        // When
+        testedFeature.simulateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
+
+        // Then
+        assertThat(File(anrResult.resultFilePath)).doesNotExist()
+        verifyNoInteractions(mockDataWriter)
+    }
+
+    @Test
+    fun `M delete trigger profile file W session renewed before quota decision {ANR}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @StringForgery fakeNewSessionId: String,
+        @TempDir fakeTempDir: File
+    ) {
+        // Given
+        initializeAnrTriggerOnlyFeature(currentSessionId = fakeRumAnrEvent.rumContext.sessionId)
+        val anrResult = fakeAnrResult(fakePerfettoResult, fakeTempDir)
+        matchAnrTriggerProfile(anrResult)
+
+        // When
+        testedFeature.dispatchRumSession("new-$fakeNewSessionId", 100f)
+        testedFeature.simulateQuotaAllowed()
+
+        // Then
+        assertThat(File(anrResult.resultFilePath)).doesNotExist()
+        verifyNoInteractions(mockDataWriter)
+    }
+
+    @Test
+    fun `M not check quota for past session W onMatch {session renewed before context is resolved}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @StringForgery fakeNewSessionId: String,
+        @TempDir fakeTempDir: File
+    ) {
+        // Given
+        initializeAnrTriggerOnlyFeature(currentSessionId = fakeRumAnrEvent.rumContext.sessionId)
+        val pendingContextCallbacks = deferWithContextCallbacks()
+        matchAnrTriggerProfile(fakeAnrResult(fakePerfettoResult, fakeTempDir))
+        testedFeature.dispatchRumSession("new-$fakeNewSessionId", 100f)
+
+        // When
+        pendingContextCallbacks.forEach { it.invoke(fakeDatadogContext) }
+
+        // Then
+        verify(mockQuotaChecker, never()).checkAsync(any(), any())
+    }
+
+    @Test
+    fun `M not check quota for past session W onContextUpdate {session renewed before context is resolved}`(
+        @StringForgery fakeSessionId: String,
+        @StringForgery fakeNewSessionId: String
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(
+            mockSdkCore,
+            fakeAllSampledConfiguration.copy(anrTriggerEnabled = false),
+            mockProfiler
+        )
+        whenever(mockProfiler.isRunning()) doReturn false
+        testedFeature.onInitialize(mockContext)
+        testedFeature.quotaChecker = mockQuotaChecker
+        val pendingContextCallbacks = deferWithContextCallbacks()
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
+        testedFeature.dispatchRumSession("new-$fakeNewSessionId", 0f)
+
+        // When
+        pendingContextCallbacks.forEach { it.invoke(fakeDatadogContext) }
+
+        // Then
+        verify(mockQuotaChecker, never()).checkAsync(any(), any())
+    }
+
+    @Test
+    fun `M discard quota result W propagateQuotaResult {result for past session}`(
+        @StringForgery fakePastSessionId: String
+    ) {
+        // Given
+        val fakeProfilingContext = mutableMapOf<String, Any?>()
+        whenever(
+            mockSdkCore.updateFeatureContext(eq(Feature.PROFILING_FEATURE_NAME), any(), any())
+        ) doAnswer {
+            it.getArgument<(MutableMap<String, Any?>) -> Unit>(2).invoke(fakeProfilingContext)
+        }
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning()) doReturn false
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dispatchRumSession("past-$fakePastSessionId", 100f)
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
+
+        // When
+        testedFeature.propagateQuotaResult("past-$fakePastSessionId", QuotaResult.QUOTA_EXCEEDED)
+
+        // Then
+        assertThat(testedFeature.continuousProfilingScheduler?.lastQuotaResult).isNull()
+        assertThat(fakeProfilingContext).doesNotContainKey(FeatureContextKeys.PROFILING_QUOTA_REASON)
+    }
+
+    @Test
+    fun `M not resolve trigger profile W propagateQuotaResult {result for past session}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @StringForgery fakePastSessionId: String,
+        @TempDir fakeTempDir: File
+    ) {
+        // Given
+        initializeAnrTriggerOnlyFeature(currentSessionId = "past-$fakePastSessionId")
+        testedFeature.dispatchRumSession(fakeRumAnrEvent.rumContext.sessionId, 100f)
+        val anrResult = fakeAnrResult(fakePerfettoResult, fakeTempDir)
+        matchAnrTriggerProfile(anrResult)
+
+        // When
+        testedFeature.propagateQuotaResult("past-$fakePastSessionId", QuotaResult.QUOTA_EXCEEDED)
+
+        // Then
+        assertThat(File(anrResult.resultFilePath)).exists()
+        verifyNoInteractions(mockDataWriter)
+
+        // When
+        testedFeature.simulateQuotaAllowed()
+
+        // Then
+        verify(mockDataWriter).writeTriggerProfile(
+            perfettoResult = anrResult,
+            rumErrorId = fakeRumAnrEvent.id,
+            rumContext = fakeRumAnrEvent.rumContext
+        )
+    }
+
+    @Test
+    fun `M delete trigger profile file W onMatch {ANR from past session, quota not yet resolved}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @StringForgery fakeCurrentSessionId: String,
+        @TempDir fakeTempDir: File
+    ) {
+        // Given
+        initializeAnrTriggerOnlyFeature(currentSessionId = "current-$fakeCurrentSessionId")
+        val anrResult = fakeAnrResult(fakePerfettoResult, fakeTempDir)
+
+        // When
+        matchAnrTriggerProfile(anrResult)
+
+        // Then
+        assertThat(File(anrResult.resultFilePath)).doesNotExist()
+        verify(mockQuotaChecker, never()).checkAsync(any(), any())
+        verifyNoInteractions(mockDataWriter)
     }
 
     @Test
@@ -1526,24 +1695,44 @@ internal class ProfilingFeatureTest {
         @TempDir fakeTempDir: File
     ) {
         // Given
-        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        whenever(mockProfiler.isRunning()) doReturn false
-        testedFeature.onInitialize(mockContext)
-        testedFeature.dataWriter = mockDataWriter
-        testedFeature.propagateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
-        val traceFile = File(fakeTempDir, "anr_trace.perfetto-stack-sample").apply { writeText("trace") }
-        val anrResult = fakePerfettoResult.copy(
-            resultFilePath = traceFile.absolutePath,
-            startReason = ProfilingStartReason.ANR
-        )
+        initializeAnrTriggerOnlyFeature(currentSessionId = fakeRumAnrEvent.rumContext.sessionId)
+        testedFeature.simulateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
+        val anrResult = fakeAnrResult(fakePerfettoResult, fakeTempDir)
 
         // When
-        testedFeature.pendingTriggerProfiles.setRumGatingEvent(fakeRumAnrEvent)
-        testedFeature.pendingTriggerProfiles.setProfilingResult(anrResult)
+        matchAnrTriggerProfile(anrResult)
 
         // Then
-        assertThat(traceFile.exists()).isFalse
-        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+        assertThat(File(anrResult.resultFilePath)).doesNotExist()
+        verifyNoInteractions(mockDataWriter)
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.DEBUG,
+            target = InternalLogger.Target.USER,
+            message = ProfilingFeature.LOG_TRIGGER_PROFILING_DROPPED_QUOTA_DENIED.format(
+                Locale.US,
+                QuotaResult.QUOTA_EXCEEDED.reason.rawValue
+            ),
+            mode = atLeastOnce()
+        )
+    }
+
+    @Test
+    fun `M delete trigger profile file W onMatch {ANR from past session, current session quota allowed}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @StringForgery fakeCurrentSessionId: String,
+        @TempDir fakeTempDir: File
+    ) {
+        // Given
+        initializeAnrTriggerOnlyFeature(currentSessionId = "current-$fakeCurrentSessionId")
+        testedFeature.simulateQuotaAllowed()
+        val anrResult = fakeAnrResult(fakePerfettoResult, fakeTempDir)
+
+        // When
+        matchAnrTriggerProfile(anrResult)
+
+        // Then
+        assertThat(File(anrResult.resultFilePath)).doesNotExist()
+        verifyNoInteractions(mockDataWriter)
     }
 
     @Test
@@ -1579,9 +1768,99 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M fire quota check W onContextUpdate { new session id }`(forge: Forge) {
+    fun `M fire quota check W onContextUpdate {new session sampled for continuous profiling}`(
+        forge: Forge
+    ) {
         // Given
         val fakeNewSessionId = forge.aString()
+        testedFeature = ProfilingFeature(
+            mockSdkCore,
+            fakeAllSampledConfiguration.copy(anrTriggerEnabled = false),
+            mockProfiler
+        )
+        whenever(mockProfiler.isRunning()) doReturn false
+        testedFeature.onInitialize(mockContext)
+        testedFeature.quotaChecker = mockQuotaChecker
+
+        // When
+        testedFeature.dispatchRumSession(fakeNewSessionId, 100f)
+
+        // Then
+        assertThat(testedFeature.continuousProfilingScheduler?.currentSessionSampled).isTrue()
+        inOrder(mockQuotaChecker) {
+            verify(mockQuotaChecker).reset()
+            verify(mockQuotaChecker).checkAsync(eq(fakeNewSessionId), any())
+        }
+    }
+
+    @Test
+    fun `M fire quota check W onContextUpdate {launch profiling active, continuous sampled out}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeNewSessionId = forge.aString()
+        testedFeature = ProfilingFeature(
+            mockSdkCore,
+            fakeAllSampledConfiguration.copy(continuousSampleRate = 0f, anrTriggerEnabled = false),
+            mockProfiler
+        )
+        whenever(mockProfiler.isRunning()) doReturn true
+        testedFeature.onInitialize(mockContext)
+        testedFeature.quotaChecker = mockQuotaChecker
+
+        // When
+        testedFeature.dispatchRumSession(fakeNewSessionId, 100f)
+
+        // Then
+        assertThat(testedFeature.continuousProfilingScheduler?.currentSessionSampled).isFalse()
+        verify(mockQuotaChecker).checkAsync(eq(fakeNewSessionId), any())
+    }
+
+    @Test
+    fun `M not fire quota check W onContextUpdate {ANR trigger enabled, session not sampled}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeNewSessionId = forge.aString()
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAnrTriggerOnlyConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning()) doReturn false
+        testedFeature.onInitialize(mockContext)
+        testedFeature.quotaChecker = mockQuotaChecker
+
+        // When
+        testedFeature.dispatchRumSession(fakeNewSessionId, 100f)
+
+        // Then
+        verify(mockQuotaChecker, never()).checkAsync(any(), any())
+    }
+
+    @Test
+    fun `M not fire quota check W onContextUpdate {RUM session not tracked}`(
+        @StringForgery fakeNewSessionId: String,
+        @StringForgery fakeSessionState: String
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning()) doReturn true
+        testedFeature.onInitialize(mockContext)
+        testedFeature.quotaChecker = mockQuotaChecker
+
+        // When
+        testedFeature.dispatchRumSession(fakeNewSessionId, 100f, sessionState = fakeSessionState)
+
+        // Then
+        verify(mockQuotaChecker, never()).checkAsync(any(), any())
+        verify(mockQuotaChecker).reset()
+    }
+
+    @Test
+    fun `M not fire quota check W onContextUpdate {RUM session state missing}`(
+        @StringForgery fakeNewSessionId: String
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning()) doReturn true
+        testedFeature.onInitialize(mockContext)
         testedFeature.quotaChecker = mockQuotaChecker
 
         // When
@@ -1594,7 +1873,33 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockQuotaChecker).checkAsync(eq(fakeNewSessionId), any())
+        verify(mockQuotaChecker, never()).checkAsync(any(), any())
+    }
+
+    @Test
+    fun `M not fire quota check W onContextUpdate {no launch, continuous sampled out, ANR disabled}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeNewSessionId = forge.aString()
+        testedFeature = ProfilingFeature(
+            mockSdkCore,
+            fakeAllSampledConfiguration.copy(
+                continuousSampleRate = 0f,
+                anrTriggerEnabled = false
+            ),
+            mockProfiler
+        )
+        whenever(mockProfiler.isRunning()) doReturn false
+        testedFeature.onInitialize(mockContext)
+        testedFeature.quotaChecker = mockQuotaChecker
+
+        // When
+        testedFeature.dispatchRumSession(fakeNewSessionId, 100f)
+
+        // Then
+        verify(mockQuotaChecker, never()).checkAsync(any(), any())
+        verify(mockQuotaChecker).reset()
     }
 
     @Test
@@ -1612,9 +1917,9 @@ internal class ProfilingFeatureTest {
         testedFeature.dispatchRumSession(fakeQuotaSessionId, 100f)
 
         // When
-        testedFeature.propagateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
+        testedFeature.simulateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
 
-        // Then — the decision is stamped with the current session in context and fed to the scheduler
+        // Then
         assertThat(fakeProfilingContext[FeatureContextKeys.PROFILING_QUOTA_REASON])
             .isEqualTo(QuotaResult.QUOTA_EXCEEDED.reason.rawValue)
         assertThat(fakeProfilingContext[FeatureContextKeys.PROFILING_QUOTA_SESSION_ID])
@@ -1627,7 +1932,7 @@ internal class ProfilingFeatureTest {
     fun `M clear reason and session id W propagateQuotaResult {allowed for current session}`(
         @StringForgery fakeQuotaSessionId: String
     ) {
-        // Given — a stale denial stamp from a previous session is present
+        // Given
         val fakeProfilingContext = mutableMapOf<String, Any?>(
             FeatureContextKeys.PROFILING_QUOTA_REASON to "stale-reason",
             FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to "stale-session"
@@ -1641,26 +1946,26 @@ internal class ProfilingFeatureTest {
         testedFeature.dispatchRumSession(fakeQuotaSessionId, 100f)
 
         // When
-        testedFeature.propagateQuotaResult(QuotaResult.FAIL_OPEN)
+        testedFeature.simulateQuotaResult(QuotaResult.FAIL_OPEN)
 
-        // Then — both the reason and its session stamp are removed
+        // Then
         assertThat(fakeProfilingContext).doesNotContainKey(FeatureContextKeys.PROFILING_QUOTA_REASON)
         assertThat(fakeProfilingContext).doesNotContainKey(FeatureContextKeys.PROFILING_QUOTA_SESSION_ID)
     }
 
     @Test
     fun `M clear scheduler quota result W onContextUpdate {new session}`() {
-        // Given — the current session was denied
+        // Given
         testedFeature.onInitialize(mockContext)
         testedFeature.dispatchRumSession(fakeSessionId, 100f)
-        testedFeature.propagateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
+        testedFeature.simulateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
         assertThat(testedFeature.continuousProfilingScheduler?.lastQuotaResult)
             .isEqualTo(QuotaResult.QUOTA_EXCEEDED)
 
-        // When — a new session rolls over before its own quota check resolves
+        // When
         testedFeature.dispatchRumSession("new-$fakeSessionId", 100f)
 
-        // Then — the scheduler's decision is cleared until the new session's check resolves
+        // Then
         assertThat(testedFeature.continuousProfilingScheduler?.lastQuotaResult).isNull()
     }
 
@@ -1678,7 +1983,8 @@ internal class ProfilingFeatureTest {
             eq(mockContext),
             callbackCaptor.capture()
         )
-        testedFeature.propagateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
+        testedFeature.simulateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
         testedFeature.onReceive(fakeRumLongTaskEvent)
         testedFeature.onReceive(fakeTTID)
 
@@ -1688,12 +1994,7 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockDataWriter, never()).writeManualProfile(
-            profilingResult = any(),
-            longTasks = any(),
-            anrEvents = any(),
-            vitalEvents = any()
-        )
+        verifyNoInteractions(mockDataWriter)
     }
 
     @Test
@@ -1710,7 +2011,8 @@ internal class ProfilingFeatureTest {
             eq(mockContext),
             callbackCaptor.capture()
         )
-        testedFeature.propagateQuotaResult(QuotaResult(QuotaResult.Decision.ALLOWED, QuotaReason.QUOTA_OK))
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
+        testedFeature.simulateQuotaResult(QuotaResult(QuotaResult.Decision.ALLOWED, QuotaReason.QUOTA_OK))
         testedFeature.onReceive(fakeRumLongTaskEvent)
         testedFeature.onReceive(fakeTTID)
 
@@ -1732,8 +2034,7 @@ internal class ProfilingFeatureTest {
     fun `M buffer launch event then write W quota result arrives after app-launch result`(
         @Forgery fakePerfettoResult: PerfettoResult
     ) {
-        // Given — no quota decision is ever propagated (e.g. the quota check could not be
-        // scheduled). The launch event must still be written (fail open) rather than stalled.
+        // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         whenever(mockProfiler.isRunning()) doReturn true
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
@@ -1743,24 +2044,20 @@ internal class ProfilingFeatureTest {
             eq(mockContext),
             callbackCaptor.capture()
         )
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
         testedFeature.onReceive(fakeRumLongTaskEvent)
         testedFeature.onReceive(fakeTTID)
         callbackCaptor.firstValue.onSuccess(
             fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
         )
 
-        // Then — nothing is written while the quota decision is still pending
-        verify(mockDataWriter, never()).writeManualProfile(
-            profilingResult = any(),
-            longTasks = any(),
-            anrEvents = any(),
-            vitalEvents = any()
-        )
+        // Then
+        verifyNoInteractions(mockDataWriter)
 
-        // When — the quota decision finally lands
+        // When
         testedFeature.simulateQuotaAllowed()
 
-        // Then — the buffered launch event is now written
+        // Then
         verify(mockDataWriter).writeManualProfile(
             profilingResult = fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH),
             longTasks = listOf(fakeRumLongTaskEvent),
@@ -1769,20 +2066,233 @@ internal class ProfilingFeatureTest {
         )
     }
 
+    @Test
+    fun `M drop launch event W app-launch profiling result received {RUM session not tracked}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @StringForgery fakeNotTrackedSessionState: String
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning()) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
+            callbackCaptor.capture()
+        )
+        testedFeature.dispatchRumSession(fakeSessionId, 100f, sessionState = fakeNotTrackedSessionState)
+        testedFeature.onReceive(fakeRumLongTaskEvent)
+        testedFeature.onReceive(fakeTTID)
+
+        // When
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
+        )
+
+        // Then
+        verifyNoInteractions(mockDataWriter)
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.DEBUG,
+            target = InternalLogger.Target.USER,
+            message = ProfilingFeature.LOG_LAUNCH_PROFILING_DROPPED_SESSION_NOT_TRACKED,
+            mode = atLeastOnce()
+        )
+    }
+
+    @Test
+    fun `M write launch event W later RUM session not tracked {launch session allowed}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @StringForgery fakeNotTrackedSessionState: String
+    ) {
+        // Given
+        initializeLaunchProfilingFeature()
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        verify(mockProfiler).registerProfilingCallback(eq(mockContext), callbackCaptor.capture())
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
+        testedFeature.simulateQuotaAllowed()
+        testedFeature.dispatchRumSession("new-$fakeSessionId", 100f, sessionState = fakeNotTrackedSessionState)
+        testedFeature.onReceive(fakeTTID)
+
+        // When
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
+        )
+
+        // Then — judged by its own session, not by the later untracked one
+        verify(mockDataWriter).writeManualProfile(
+            profilingResult = eq(fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)),
+            longTasks = any(),
+            anrEvents = any(),
+            vitalEvents = any()
+        )
+    }
+
+    @Test
+    fun `M drop launch event W launch session ends before quota decision`(
+        @Forgery fakePerfettoResult: PerfettoResult
+    ) {
+        // Given
+        initializeLaunchProfilingFeature()
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        verify(mockProfiler).registerProfilingCallback(eq(mockContext), callbackCaptor.capture())
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
+        testedFeature.onReceive(fakeTTID)
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
+        )
+
+        // When
+        testedFeature.dispatchRumSession("new-$fakeSessionId", 100f)
+        testedFeature.simulateQuotaAllowed()
+
+        // Then
+        verifyNoInteractions(mockDataWriter)
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.DEBUG,
+            target = InternalLogger.Target.USER,
+            message = ProfilingFeature.LOG_LAUNCH_PROFILING_DROPPED_SESSION_ENDED,
+            mode = atLeastOnce()
+        )
+    }
+
+    @Test
+    fun `M drop launch event W launch session not tracked {later session tracked and allowed}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @StringForgery fakeNotTrackedSessionState: String
+    ) {
+        // Given
+        initializeLaunchProfilingFeature()
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        verify(mockProfiler).registerProfilingCallback(eq(mockContext), callbackCaptor.capture())
+        testedFeature.dispatchRumSession(fakeSessionId, 100f, sessionState = fakeNotTrackedSessionState)
+        testedFeature.dispatchRumSession("new-$fakeSessionId", 100f)
+        testedFeature.simulateQuotaAllowed()
+        testedFeature.onReceive(fakeTTID)
+
+        // When
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
+        )
+
+        // Then
+        verifyNoInteractions(mockDataWriter)
+    }
+
+    @Test
+    fun `M not fire quota check W onContextUpdate {launch profile pending, not the launch session}`(
+        @StringForgery fakeNewSessionId: String
+    ) {
+        // Given
+        initializeLaunchProfilingFeature()
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
+
+        // When
+        testedFeature.dispatchRumSession("new-$fakeNewSessionId", 100f)
+
+        // Then
+        verify(mockQuotaChecker).checkAsync(eq(fakeSessionId), any())
+        verify(mockQuotaChecker, never()).checkAsync(eq("new-$fakeNewSessionId"), any())
+    }
+
+    @Test
+    fun `M drop buffered launch event W untracked RUM session arrives after app-launch result`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @StringForgery fakeNotTrackedSessionState: String
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning()) doReturn true
+        val callbackCaptor = argumentCaptor<ProfilerCallback>()
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        verify(mockProfiler).registerProfilingCallback(
+            eq(mockContext),
+            callbackCaptor.capture()
+        )
+        testedFeature.onReceive(fakeTTID)
+        callbackCaptor.firstValue.onSuccess(
+            fakePerfettoResult.copy(startReason = ProfilingStartReason.APPLICATION_LAUNCH)
+        )
+
+        // When
+        testedFeature.dispatchRumSession(fakeSessionId, 100f, sessionState = fakeNotTrackedSessionState)
+        testedFeature.simulateQuotaAllowed()
+
+        // Then
+        verifyNoInteractions(mockDataWriter)
+    }
+
+    private fun initializeAnrTriggerOnlyFeature(currentSessionId: String) {
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAnrTriggerOnlyConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning()) doReturn false
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        testedFeature.quotaChecker = mockQuotaChecker
+        testedFeature.dispatchRumSession(currentSessionId, 100f)
+    }
+
+    private fun fakeAnrResult(fakePerfettoResult: PerfettoResult, dir: File): PerfettoResult {
+        val traceFile = File(dir, "anr_trace.perfetto-stack-sample").apply { writeText("trace") }
+        return fakePerfettoResult.copy(
+            resultFilePath = traceFile.absolutePath,
+            startReason = ProfilingStartReason.ANR
+        )
+    }
+
+    // Launch profiling active, continuous profiling disabled.
+    private fun initializeLaunchProfilingFeature() {
+        testedFeature = ProfilingFeature(
+            mockSdkCore,
+            fakeAllSampledConfiguration.copy(continuousSampleRate = 0f, anrTriggerEnabled = false),
+            mockProfiler
+        )
+        whenever(mockProfiler.isRunning()) doReturn true
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        testedFeature.quotaChecker = mockQuotaChecker
+    }
+
+    // Collects withContext callbacks instead of running them, as the production context executor
+    // runs them asynchronously.
+    private fun deferWithContextCallbacks(): List<(DatadogContext) -> Unit> {
+        val callbacks = mutableListOf<(DatadogContext) -> Unit>()
+        whenever(mockProfilingFeatureScope.withContext(any(), any())) doAnswer {
+            callbacks.add(it.getArgument(1))
+            Unit
+        }
+        return callbacks
+    }
+
+    private fun matchAnrTriggerProfile(anrResult: PerfettoResult) {
+        testedFeature.pendingTriggerProfiles.setRumGatingEvent(fakeRumAnrEvent)
+        testedFeature.pendingTriggerProfiles.setProfilingResult(anrResult)
+    }
+
     // Simulates the asynchronous quota decision landing (in production this is driven by the quota
     // checker's HTTP callback). Launch profiling is held until this arrives, so tests that expect a
     // launch write or a launch->continuous transition must call this before the APPLICATION_LAUNCH
     // result is delivered.
     private fun ProfilingFeature.simulateQuotaAllowed() {
-        propagateQuotaResult(QuotaResult(QuotaResult.Decision.ALLOWED, QuotaReason.QUOTA_OK))
+        simulateQuotaResult(QuotaResult(QuotaResult.Decision.ALLOWED, QuotaReason.QUOTA_OK))
     }
 
-    private fun ProfilingFeature.dispatchRumSession(sessionId: String, sampleRate: Float) {
+    // Delivers a quota decision for the current RUM session.
+    private fun ProfilingFeature.simulateQuotaResult(result: QuotaResult) {
+        propagateQuotaResult(checkNotNull(lastSeenRumSessionId), result)
+    }
+
+    private fun ProfilingFeature.dispatchRumSession(
+        sessionId: String,
+        sampleRate: Float,
+        sessionState: String = RumSessionConstants.TRACKED_SESSION_STATE
+    ) {
         onContextUpdate(
             Feature.RUM_FEATURE_NAME,
             mapOf(
                 FeatureContextKeys.RUM_SESSION_ID to sessionId,
-                FeatureContextKeys.RUM_SESSION_SAMPLE_RATE to sampleRate
+                FeatureContextKeys.RUM_SESSION_SAMPLE_RATE to sampleRate,
+                FeatureContextKeys.RUM_SESSION_STATE to sessionState
             )
         )
     }
