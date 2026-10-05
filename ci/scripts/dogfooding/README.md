@@ -43,7 +43,7 @@ Push your changes to the feature branch and run the same command again. The new 
 ./ci/scripts/dogfooding/sync.sh
 ```
 
-This opens a PR from `sync-dogfooding-<sha>` with develop's latest commits. It does nothing if `dogfooding` already contains `develop`.
+This opens a PR from `sync-dogfooding-<sha>` with `develop`'s latest commits. It does nothing if `dogfooding` already contains `develop`.
 
 If `develop` changed the same code as a dogfooded feature, the PR is opened anyway and GitHub marks it as having conflicts. Resolve them on the sync branch, as described in the PR body: check it out, merge `dogfooding` into it, fix the conflicts, and push to the same branch.
 
@@ -56,7 +56,7 @@ If you changed the feature after dogfooding it (review fixes, a rebase, removed 
 To clean it up:
 
 1. Run `./ci/scripts/dogfooding/sync.sh`. Its PR lists the feature under "Dogfooded features that graduated to develop at a different commit", with the exact command to run afterwards.
-2. Merge that sync PR. If it has conflicts in the feature's code, keep develop's version. Don't run `publish:dogfooding` until step 3 is merged.
+2. Merge that sync PR. If it has conflicts in the feature's code, keep `develop`'s version. Don't run `publish:dogfooding` until step 3 is merged.
 3. Run the command from the PR, for example `./ci/scripts/dogfooding/feature.sh feature/my-feature --at <sha>`, and merge the PR it opens. It removes what's left of the old version, so `dogfooding` matches `develop` for that feature. `--at` is needed because the feature branch is usually deleted after merging into `develop`.
 
 The warning only appears in that sync PR. If nobody follows it, the leftovers stay until the next reset, which also removes them (along with every other dogfooded feature, which then has to be dogfooded again).
@@ -69,10 +69,10 @@ The warning only appears in that sync PR. If nobody follows it, the leftovers st
 
 This opens a PR from `reset-dogfooding-<dogfooding sha>-<develop sha>` whose content is exactly `develop`'s. If the reset would discard anything or there are open dogfood PRs, the script shows the following and asks for confirmation (`--force` skips this). The same lists are always in the PR body:
 
-- what the reset discards;
-- the dogfooded features that aren't in `develop` yet, mentioning their authors, with the `feature.sh` command to bring each one back. Run those commands **after** the reset PR is merged;
-- features whose status it can't determine; check those by hand;
-- open dogfood PRs, which must be closed (deleting their branch) and re-created after the reset.
+- What the reset discards.
+- The dogfooded features that aren't in `develop` yet, mentioning their authors, with the `feature.sh` command to bring each one back. Run those commands **after** the reset PR is merged.
+- Features whose status it can't determine. Check those by hand.
+- Open dogfood PRs, which must be closed (deleting their branch) and re-created after the reset.
 
 While a reset PR is open, `feature.sh` refuses to run. If `dogfooding` already matches `develop`, the script does nothing. A reset never conflicts, since it takes `develop`'s files as they are.
 
@@ -95,15 +95,15 @@ Builds from `dogfooding` are published by the manual `publish:dogfooding` job in
 | Message | What to do |
 |---|---|
 | `... is already open: <url>` | Nothing: a PR for exactly this state already exists. |
-| `origin/<branch> already exists but has no open PR` | A previous PR was closed, or a run failed half-way. Check the branch, delete it with the printed command, and re-run. |
+| `origin/<branch> already exists but has no open PR` | A previous PR was closed, or a run failed halfway. Check the branch, delete it with the printed command, and re-run. |
 | `is based on develop commits that dogfooding doesn't have yet` | Run `sync.sh` (or merge the open sync PR), then re-run. |
 | `A reset of dogfooding is pending` | Wait until the reset PR is merged, then re-run. |
 | `Another dogfood PR for <branch> is still open` | Merge or close it (deleting its branch), then re-run. |
 | `Conflicts while applying <branch> onto dogfooding` | See [Dogfood a feature](#dogfood-a-feature). |
-| `Can't find <sha>, the previously dogfooded tip` | Your clone doesn't have the old tip, usually because someone else force-pushed the branch. Whoever still has it either re-runs the script from their clone, or pushes it (`git push origin <sha>:refs/heads/tmp-recover`); then re-run, and delete `tmp-recover` afterwards. |
+| `Can't find <sha>, the previously dogfooded tip` | Your clone doesn't have the old tip, usually because someone else force-pushed the branch. Whoever still has it either re-runs the script from their clone, or pushes it (`git push origin <sha>:refs/heads/tmp-recover`). Then re-run, and delete `tmp-recover`. |
 | `Branch <branch> not found on origin` | Pass the commit to dogfood with `--at <sha>`. |
 | `Can't find commit <sha> locally or on origin` | Pass the full 40-character SHA to `--at`. |
-| `Nothing to dogfood` | Nothing to do: `dogfooding` already has these changes. |
+| `Nothing to dogfood` | Nothing to do, `dogfooding` already has these changes. |
 | `already dogfooded` | Nothing to do. If its dogfood commit was reverted, re-run with `--full`. |
 
 ## How it works
