@@ -36,7 +36,7 @@ internal class NoOpFlagsClient(
     private val name: String,
     private val reason: String,
     private val logWithPolicy: LogWithPolicy
-) : FlagsClient {
+) : FlagsClient, FlagsEventSource {
 
     override fun onFirstFlags(listener: FlagsClientEventListener): FlagsSubscription {
         // This fallback never installs flags, so there is no first result to deliver.

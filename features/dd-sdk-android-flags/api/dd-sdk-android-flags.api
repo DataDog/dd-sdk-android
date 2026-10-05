@@ -17,7 +17,6 @@ public abstract interface class com/datadog/android/flags/FlagsClient {
 	public static fun get (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsClient;
 	public static fun get (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/flags/FlagsClient;
 	public abstract fun getState ()Lcom/datadog/android/flags/StateObservable;
-	public abstract fun onFirstFlags (Lcom/datadog/android/flags/FlagsClientEventListener;)Lcom/datadog/android/flags/FlagsSubscription;
 	public abstract fun resolve (Ljava/lang/String;Ljava/lang/Object;)Lcom/datadog/android/flags/model/ResolutionDetails;
 	public abstract fun resolveBooleanValue (Ljava/lang/String;Z)Z
 	public abstract fun resolveDoubleValue (Ljava/lang/String;D)D
@@ -49,6 +48,10 @@ public abstract interface class com/datadog/android/flags/FlagsClientEventListen
 	public abstract fun onEvent (Lcom/datadog/android/flags/model/FlagsClientEvent;)V
 }
 
+public final class com/datadog/android/flags/FlagsClientExtKt {
+	public static final fun getEvents (Lcom/datadog/android/flags/FlagsClient;)Lcom/datadog/android/flags/FlagsEvents;
+}
+
 public final class com/datadog/android/flags/FlagsConfiguration {
 	public final fun copy (ZZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;JZZ)Lcom/datadog/android/flags/FlagsConfiguration;
 	public static synthetic fun copy$default (Lcom/datadog/android/flags/FlagsConfiguration;ZZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;JZZILjava/lang/Object;)Lcom/datadog/android/flags/FlagsConfiguration;
@@ -69,6 +72,11 @@ public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public final fun useCustomEvaluationEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun useCustomExposureEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun useCustomFlagEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
+}
+
+public final class com/datadog/android/flags/FlagsEvents {
+	public fun <init> (Lcom/datadog/android/flags/FlagsClient;)V
+	public final fun onFirstFlags (Lcom/datadog/android/flags/FlagsClientEventListener;)Lcom/datadog/android/flags/FlagsSubscription;
 }
 
 public final class com/datadog/android/flags/FlagsInitializationTimeoutException : java/lang/RuntimeException {

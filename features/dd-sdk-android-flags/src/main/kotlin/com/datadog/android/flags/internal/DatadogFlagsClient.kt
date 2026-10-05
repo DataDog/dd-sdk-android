@@ -55,7 +55,7 @@ internal class DatadogFlagsClient(
     private val exposureProcessor: EventsProcessor,
     private val evaluationsFeature: EvaluationsFeature?,
     private val flagStateManager: FlagsStateManager
-) : FlagsClient {
+) : FlagsClient, FlagsEventSource {
 
     private val firstFlagsLock = Any()
     private var firstFlagsEvent: FlagsClientEvent? = null

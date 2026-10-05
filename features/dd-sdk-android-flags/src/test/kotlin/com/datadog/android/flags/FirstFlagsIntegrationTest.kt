@@ -99,11 +99,36 @@ internal class FirstFlagsIntegrationTest {
     }
 
     @Test
+    fun `M share retained result W separate event facades wrap same client`() {
+        store.json = cached()
+        store.deferRead = true
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        val first = FlagsEvents(client)
+        val second = client.events
+        val cancelled = first.onFirstFlags { events.add(it) }
+        second.onFirstFlags { events.add(it) }
+        cancelled.unsubscribe()
+        store.releaseRead()
+        val event = events.single()
+        FlagsEvents(client).onFirstFlags { events.add(it) }
+        assertThat(events).hasSize(2)
+        assertThat(events.last()).isSameAs(event)
+    }
+
+    @Test
+    fun `M reject unsupported client W creating events facade`() {
+        // A third-party implementation remains valid without an onFirstFlags override.
+        val custom = object : FlagsClient by mock<FlagsClient>() {}
+        assertThrows<IllegalArgumentException> { FlagsEvents(custom) }
+        assertThrows<IllegalArgumentException> { custom.events }
+    }
+
+    @Test
     fun `M retain installed flags W different context fetch fails or cannot be parsed`() {
         listOf(false, true).forEach { malformed ->
             val client = FlagsClient.Builder("retention-$malformed", sdkCore = core).build()
             val delivered = mutableListOf<FlagsClientEvent>()
-            client.onFirstFlags { delivered.add(it) }
+            client.events.onFirstFlags { delivered.add(it) }
             server.enqueue(MockResponse().setBody(response(true)))
             client.setEvaluationContext(EvaluationContext("A"))
             val persistedA = store.json
@@ -139,7 +164,7 @@ internal class FirstFlagsIntegrationTest {
             store.deferRead = true
             val client = FlagsClient.Builder("worker-$rejected", sdkCore = core).build()
             var delivered = false
-            client.onFirstFlags { delivered = true }
+            client.events.onFirstFlags { delivered = true }
             store.releaseRead()
             verify(worker).shutdown()
             assertThat(delivered).isEqualTo(!rejected)
@@ -150,7 +175,7 @@ internal class FirstFlagsIntegrationTest {
     fun `M avoid callback worker W no pending listeners`() {
         store.json = cached()
         val client = FlagsClient.Builder(sdkCore = core).build()
-        client.onFirstFlags { events.add(it) }
+        client.events.onFirstFlags { events.add(it) }
         verify(core, never()).createSingleThreadExecutorService(FlagsClient.FLAGS_FIRST_FLAGS_EXECUTOR_NAME)
         assertThat(events).hasSize(1)
     }
@@ -159,14 +184,14 @@ internal class FirstFlagsIntegrationTest {
     fun `M notify empty keys W genuine empty cached configuration`() {
         store.json = JSONObject(cached()).put(JsonKeys.FLAGS.value, JSONObject()).toString()
         val client = FlagsClient.Builder(sdkCore = core).build()
-        client.onFirstFlags { events.add(it) }
+        client.events.onFirstFlags { events.add(it) }
         assertThat(events.single().flagsChanged).isEmpty()
     }
 
     @Test
     fun `M notify empty keys W genuine empty network configuration`() {
         val client = FlagsClient.Builder(sdkCore = core).build()
-        client.onFirstFlags { events.add(it) }
+        client.events.onFirstFlags { events.add(it) }
         val body = JSONObject(response(true)).apply {
             getJSONObject("data").getJSONObject("attributes").put("flags", JSONObject())
         }
@@ -179,7 +204,7 @@ internal class FirstFlagsIntegrationTest {
     fun `M not notify first flags W successful network body is malformed`() {
         val client = FlagsClient.Builder(sdkCore = core).build()
         val callback = mock<EvaluationContextCallback>()
-        client.onFirstFlags { events.add(it) }
+        client.events.onFirstFlags { events.add(it) }
         server.enqueue(MockResponse().setBody("not valid JSON"))
 
         client.setEvaluationContext(EvaluationContext("user"), callback)
@@ -198,7 +223,7 @@ internal class FirstFlagsIntegrationTest {
             getJSONObject(JsonKeys.FLAGS.value).getJSONObject("enabled").remove(JsonKeys.VARIATION_TYPE.value)
         }.toString()
         val client = FlagsClient.Builder(sdkCore = core).build()
-        client.onFirstFlags { events.add(it) }
+        client.events.onFirstFlags { events.add(it) }
         assertThat(events).isEmpty()
         server.enqueue(MockResponse().setBody(response(true)))
         client.setEvaluationContext(EvaluationContext("user"))
@@ -216,7 +241,7 @@ internal class FirstFlagsIntegrationTest {
             val newerApplied = CountDownLatch(1)
             val finished = CountDownLatch(1)
             var waited = false
-            client.onFirstFlags {
+            client.events.onFirstFlags {
                 client.setEvaluationContext(
                     EvaluationContext("newer"),
                     object : EvaluationContextCallback {
@@ -251,7 +276,7 @@ internal class FirstFlagsIntegrationTest {
         var deliveryThread: Thread? = null
         var cachedValue: Boolean? = null
         var cachedReason: ResolutionReason? = null
-        client.onFirstFlags {
+        client.events.onFirstFlags {
             events.add(it)
             deliveryThread = Thread.currentThread()
             val details = client.resolve("enabled", false)
@@ -286,12 +311,12 @@ internal class FirstFlagsIntegrationTest {
         store.json = cached()
         store.deferRead = true
         val client = FlagsClient.Builder(sdkCore = core).build()
-        val registration = client.onFirstFlags { events.add(it) }
+        val registration = client.events.onFirstFlags { events.add(it) }
         registration.unsubscribe()
         registration.unsubscribe()
         store.releaseRead()
         assertThat(events).isEmpty()
-        client.onFirstFlags { events.add(it) }.unsubscribe()
+        client.events.onFirstFlags { events.add(it) }.unsubscribe()
         assertThat(events.single().flagsChanged).containsExactly("enabled")
     }
 
@@ -301,8 +326,8 @@ internal class FirstFlagsIntegrationTest {
         store.deferRead = true
         val client = FlagsClient.Builder(sdkCore = core).build()
         val listener = FlagsClientEventListener { events.add(it) }
-        val first = client.onFirstFlags(listener)
-        client.onFirstFlags(listener)
+        val first = client.events.onFirstFlags(listener)
+        client.events.onFirstFlags(listener)
         first.unsubscribe()
         first.unsubscribe()
         store.releaseRead()
@@ -315,7 +340,7 @@ internal class FirstFlagsIntegrationTest {
         var cachedValue: Boolean? = null
         var initialState: FlagsClientState? = null
         val client = FlagsClient.Builder(sdkCore = core).build().also { client ->
-            client.onFirstFlags {
+            client.events.onFirstFlags {
                 events.add(it)
                 // Another thread must be able to access the registry and evaluate before this callback returns.
                 val reader = Executors.newSingleThreadExecutor()
@@ -340,7 +365,7 @@ internal class FirstFlagsIntegrationTest {
         assertThat(events).hasSize(1)
         // No public reset exists: a newly created client gets its own one-shot callback.
         feature.clearClients()
-        FlagsClient.Builder(sdkCore = core).build().onFirstFlags { events.add(it) }
+        FlagsClient.Builder(sdkCore = core).build().events.onFirstFlags { events.add(it) }
         assertThat(events).hasSize(2)
     }
 
@@ -349,7 +374,7 @@ internal class FirstFlagsIntegrationTest {
         store.json = cached()
         store.deferRead = true
         val client = FlagsClient.Builder(sdkCore = core).build().also { client ->
-            client.onFirstFlags {
+            client.events.onFirstFlags {
                 events.add(it)
                 assertThat(FlagsClient.get(sdkCore = core).resolveBooleanValue("enabled", true)).isFalse()
             }
@@ -370,7 +395,7 @@ internal class FirstFlagsIntegrationTest {
         listOf(null, "not valid JSON").forEachIndexed { index, persisted ->
             store.json = persisted
             val client = FlagsClient.Builder("client-$index", core).build().also { client ->
-                client.onFirstFlags { events.add(it) }
+                client.events.onFirstFlags { events.add(it) }
             }
             assertThat(events).hasSize(index)
             server.enqueue(MockResponse().setResponseCode(500))
@@ -389,7 +414,7 @@ internal class FirstFlagsIntegrationTest {
     fun `M allow context update from callback W network installation`() {
         var callbackValue: Boolean? = null
         val client = FlagsClient.Builder(sdkCore = core).build().also { client ->
-            client.onFirstFlags {
+            client.events.onFirstFlags {
                 events.add(it)
                 val reader = Executors.newSingleThreadExecutor()
                 try {
@@ -420,14 +445,14 @@ internal class FirstFlagsIntegrationTest {
         val client = FlagsClient.Builder(sdkCore = core).build()
         server.enqueue(MockResponse().setBody("""{"data":{"attributes":{"flags":{}}}}"""))
         client.setEvaluationContext(EvaluationContext("user"))
-        client.onFirstFlags { events.add(it) }
+        client.events.onFirstFlags { events.add(it) }
         assertThat(events.single().flagsChanged).containsExactly("enabled")
     }
 
     @Test
     fun `M isolate callback failure W first network installation`() {
         val client = FlagsClient.Builder(sdkCore = core).build().also { client ->
-            client.onFirstFlags {
+            client.events.onFirstFlags {
                 throw IllegalStateException("application failure")
             }
         }
@@ -441,10 +466,10 @@ internal class FirstFlagsIntegrationTest {
     @Test
     fun `M notify each registration W duplicate client`() {
         val first = FlagsClient.Builder(sdkCore = core).build().also { client ->
-            client.onFirstFlags { events.add(it) }
+            client.events.onFirstFlags { events.add(it) }
         }
         val duplicate = FlagsClient.Builder(sdkCore = core).build().also { client ->
-            client.onFirstFlags { events.add(it) }
+            client.events.onFirstFlags { events.add(it) }
         }
         assertThat(duplicate).isSameAs(first)
         server.enqueue(MockResponse().setBody(response(true)))
@@ -458,10 +483,10 @@ internal class FirstFlagsIntegrationTest {
         val client = FlagsClient.Builder(sdkCore = core).build()
         val executor = Executors.newSingleThreadExecutor()
         try {
-            client.onFirstFlags { event ->
+            client.events.onFirstFlags { event ->
                 events.add(event)
                 executor.submit {
-                    client.onFirstFlags { replay -> events.add(replay) }
+                    client.events.onFirstFlags { replay -> events.add(replay) }
                 }.get(5, TimeUnit.SECONDS)
             }
             server.enqueue(MockResponse().setBody(response(true)))
@@ -476,13 +501,13 @@ internal class FirstFlagsIntegrationTest {
     @Test
     fun `M isolate failures and deliver per registration W same handler registered twice`() {
         val client = FlagsClient.Builder(sdkCore = core).build()
-        client.onFirstFlags { error("application failure") }
+        client.events.onFirstFlags { error("application failure") }
         val callback = FlagsClientEventListener { events.add(it) }
-        client.onFirstFlags(callback)
-        client.onFirstFlags(callback)
+        client.events.onFirstFlags(callback)
+        client.events.onFirstFlags(callback)
         server.enqueue(MockResponse().setBody(response(true)))
         client.setEvaluationContext(EvaluationContext("user"))
-        client.onFirstFlags(callback)
+        client.events.onFirstFlags(callback)
         assertThat(events).hasSize(3)
         assertThat(events[1]).isSameAs(events[0])
         assertThat(events[2]).isSameAs(events[0])
@@ -491,7 +516,7 @@ internal class FirstFlagsIntegrationTest {
     @Test
     fun `M preserve newer failure W first callback changes context`() {
         val client = FlagsClient.Builder(sdkCore = core).build()
-        client.onFirstFlags { client.setEvaluationContext(EvaluationContext("newer")) }
+        client.events.onFirstFlags { client.setEvaluationContext(EvaluationContext("newer")) }
         server.enqueue(MockResponse().setBody(response(true)))
         server.enqueue(MockResponse().setResponseCode(500))
         client.setEvaluationContext(EvaluationContext("initial"))
@@ -507,7 +532,7 @@ internal class FirstFlagsIntegrationTest {
             core.createSingleThreadExecutorService(eq(FlagsClient.FLAGS_NETWORK_EXECUTOR_NAME))
         ).thenReturn(executor)
         val client = FlagsClient.Builder(sdkCore = core).build()
-        client.onFirstFlags { client.setEvaluationContext(EvaluationContext("newer")) }
+        client.events.onFirstFlags { client.setEvaluationContext(EvaluationContext("newer")) }
         server.enqueue(MockResponse().setBody(response(true)))
         client.setEvaluationContext(EvaluationContext("initial"))
         work.removeFirst().run()
@@ -525,7 +550,7 @@ internal class FirstFlagsIntegrationTest {
         val callback = mock<EvaluationContextCallback>()
         doAnswer { completed.countDown(); null }.whenever(callback).onSuccess()
         var completionDelivered = false
-        client.onFirstFlags { completionDelivered = completed.await(5, TimeUnit.SECONDS) }
+        client.events.onFirstFlags { completionDelivered = completed.await(5, TimeUnit.SECONDS) }
         server.enqueue(MockResponse().setBody(response(true)))
         client.setEvaluationContext(EvaluationContext("initial"), callback)
         assertThat(completionDelivered).isTrue()
@@ -540,7 +565,7 @@ internal class FirstFlagsIntegrationTest {
             client.setEvaluationContext(EvaluationContext("newer"))
             null
         }.whenever(callback).onSuccess()
-        client.onFirstFlags { events.add(it) }
+        client.events.onFirstFlags { events.add(it) }
         server.enqueue(MockResponse().setBody(response(true)))
         server.enqueue(MockResponse().setResponseCode(500))
         client.setEvaluationContext(EvaluationContext("initial"), callback)
@@ -563,7 +588,7 @@ internal class FirstFlagsIntegrationTest {
             client.setEvaluationContext(EvaluationContext("newer"))
             null
         }.whenever(callback).onSuccess()
-        client.onFirstFlags { events.add(it) }
+        client.events.onFirstFlags { events.add(it) }
         server.enqueue(MockResponse().setBody(response(true)))
         client.setEvaluationContext(EvaluationContext("initial"), callback)
         work.removeFirst().run()
@@ -578,7 +603,7 @@ internal class FirstFlagsIntegrationTest {
         val client = FlagsClient.Builder(sdkCore = core).build()
         val callback = mock<EvaluationContextCallback>()
         doAnswer { error("application completion failure") }.whenever(callback).onSuccess()
-        client.onFirstFlags { events.add(it) }
+        client.events.onFirstFlags { events.add(it) }
         server.enqueue(MockResponse().setBody(response(true)))
         assertThrows<IllegalStateException> {
             client.setEvaluationContext(EvaluationContext("initial"), callback)

@@ -243,15 +243,17 @@ val analyticsClient = FlagsClient.get("analytics")
 
 ### Wait for the first flags
 
-`onFirstFlags` notifies each registration once, when the client installs its first flags from disk
+`client.events.onFirstFlags` notifies each registration once, when the client installs its first flags from disk
 cache or the network. For an Activity that owns a `client` (`render` is your own UI code):
 
 ```kotlin
+import com.datadog.android.flags.events
+
 private var firstFlagsSubscription: FlagsSubscription? = null
 
 override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    firstFlagsSubscription = client.onFirstFlags { event ->
+    firstFlagsSubscription = client.events.onFirstFlags { event ->
         // event.flagsChanged contains the first installed keys, possibly empty.
         val enabled = client.resolveBooleanValue("my-flag-key", false)
         runOnUiThread { render(enabled) }
@@ -274,6 +276,11 @@ override fun onDestroy() {
   claimed for delivery may still run; cancellation does not interrupt it or undo synchronous replay.
 - This is not a readiness signal. Use `client.state` to track readiness.
 - Ordinary callback exceptions are logged and isolated.
+
+Use `FlagsEvents(client)` from Java or Kotlin, or the Kotlin `client.events` extension.
+The facade requires an SDK-created client; custom implementations are rejected with
+`IllegalArgumentException` rather than silently dropping registrations. Multiple facades share the
+same retained event; discarding a facade does not unsubscribe its registrations.
 
 The listener and subscription are Kotlin functional interfaces: `FlagsClientEventListener.onEvent`
 and `FlagsSubscription.unsubscribe`. Trailing-lambda registration is supported.
