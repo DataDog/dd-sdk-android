@@ -105,6 +105,47 @@ internal class FirstFlagsIntegrationTest {
     }
 
     @Test
+    fun `M retain first keys but resolve current values W newer flags install before queued delivery`() {
+        // Given
+        val worker = mock<ExecutorService>()
+        val delivery = ArrayDeque<Runnable>()
+        doAnswer { delivery.add(it.getArgument(0)); null }.whenever(worker).execute(any())
+        whenever(core.createSingleThreadExecutorService(eq(FlagsClient.FLAGS_FIRST_FLAGS_EXECUTOR_NAME)))
+            .thenReturn(worker)
+        val client = FlagsClient.Builder(sdkCore = core).build()
+        var valueInCallback: Boolean? = null
+        client.onFirstFlags { event ->
+            events.add(event)
+            valueInCallback = client.resolve("enabled", true).value
+        }
+        server.enqueue(MockResponse().setBody(response(true)))
+        client.setEvaluationContext(EvaluationContext("first"))
+        assertThat(delivery).hasSize(1)
+        assertThat(events).isEmpty()
+        val newer = JSONObject(response(false)).apply {
+            getJSONObject("data").getJSONObject("attributes").getJSONObject("flags").apply {
+                put("newer-key", getJSONObject("enabled"))
+            }
+        }
+        server.enqueue(MockResponse().setBody(newer.toString()))
+
+        // When
+        client.setEvaluationContext(EvaluationContext("second"))
+
+        // Then
+        assertThat(delivery).hasSize(1)
+        assertThat(events).isEmpty()
+
+        // When
+        delivery.removeFirst().run()
+
+        // Then
+        assertThat(events.single().flagsChanged).containsExactly("enabled")
+        assertThat(valueInCallback).isFalse()
+        assertThat(client.resolveBooleanValue("newer-key", true)).isFalse()
+    }
+
+    @Test
     fun `M share retained result W decorator delegates to SDK client`() {
         // Given
         store.json = cached()
