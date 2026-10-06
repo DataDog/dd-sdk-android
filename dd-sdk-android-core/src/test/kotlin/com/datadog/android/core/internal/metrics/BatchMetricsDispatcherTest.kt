@@ -27,7 +27,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -105,13 +104,15 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
         argumentCaptor<Map<String, Any?>> {
             verify(mockInternalLogger).logMetric(
-                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
+                messageCaptor.capture(),
                 capture(),
                 eq(1.5f),
                 eq(null)
             )
+            assertThat(messageCaptor.firstValue.invoke()).isEqualTo(BatchMetricsDispatcher.BATCH_DELETED_MESSAGE)
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
     }
@@ -146,13 +147,15 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
         argumentCaptor<Map<String, Any?>> {
             verify(mockInternalLogger).logMetric(
-                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
+                messageCaptor.capture(),
                 capture(),
                 eq(1.5f),
                 eq(null)
             )
+            assertThat(messageCaptor.firstValue.invoke()).isEqualTo(BatchMetricsDispatcher.BATCH_DELETED_MESSAGE)
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
     }
@@ -172,13 +175,15 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
         argumentCaptor<Map<String, Any?>> {
             verify(mockInternalLogger).logMetric(
-                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
+                messageCaptor.capture(),
                 capture(),
                 eq(1.5f),
                 eq(null)
             )
+            assertThat(messageCaptor.firstValue.invoke()).isEqualTo(BatchMetricsDispatcher.BATCH_DELETED_MESSAGE)
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
     }
@@ -200,13 +205,15 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
         argumentCaptor<Map<String, Any?>> {
             verify(mockInternalLogger).logMetric(
-                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
+                messageCaptor.capture(),
                 capture(),
                 eq(1.5f),
                 eq(null)
             )
+            assertThat(messageCaptor.firstValue.invoke()).isEqualTo(BatchMetricsDispatcher.BATCH_DELETED_MESSAGE)
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
     }
@@ -227,13 +234,15 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
         argumentCaptor<Map<String, Any?>> {
             verify(mockInternalLogger).logMetric(
-                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
+                messageCaptor.capture(),
                 capture(),
                 eq(1.5f),
                 eq(null)
             )
+            assertThat(messageCaptor.firstValue.invoke()).isEqualTo(BatchMetricsDispatcher.BATCH_DELETED_MESSAGE)
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
     }
@@ -254,13 +263,15 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
         argumentCaptor<Map<String, Any?>> {
             verify(mockInternalLogger).logMetric(
-                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
+                messageCaptor.capture(),
                 capture(),
                 eq(1.5f),
                 eq(null)
             )
+            assertThat(messageCaptor.firstValue.invoke()).isEqualTo(BatchMetricsDispatcher.BATCH_DELETED_MESSAGE)
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
     }
@@ -277,18 +288,20 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.MAINTAINER),
-            argThat {
-                this.invoke() ==
-                    BatchMetricsDispatcher.WRONG_FILE_NAME_MESSAGE_FORMAT
-                        .format(Locale.ENGLISH, fakeFile.name)
-            },
-            eq(null),
-            eq(false),
-            eq(null)
-        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.MAINTAINER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+            assertThat(firstValue.invoke()).isEqualTo(
+                BatchMetricsDispatcher.WRONG_FILE_NAME_MESSAGE_FORMAT
+                    .format(Locale.US, fakeFile.name)
+            )
+        }
         verifyNoMoreInteractions(mockInternalLogger)
     }
 
@@ -334,13 +347,15 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
         argumentCaptor<Map<String, Any?>> {
             verify(mockInternalLogger).logMetric(
-                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE },
+                messageCaptor.capture(),
                 capture(),
                 eq(1.5f),
                 eq(null)
             )
+            assertThat(messageCaptor.firstValue.invoke()).isEqualTo(BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE)
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
     }
@@ -381,13 +396,15 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
         argumentCaptor<Map<String, Any?>> {
             verify(mockInternalLogger).logMetric(
-                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE },
+                messageCaptor.capture(),
                 capture(),
                 eq(1.5f),
                 eq(null)
             )
+            assertThat(messageCaptor.firstValue.invoke()).isEqualTo(BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE)
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
     }
@@ -413,13 +430,15 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
         argumentCaptor<Map<String, Any?>> {
             verify(mockInternalLogger).logMetric(
-                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE },
+                messageCaptor.capture(),
                 capture(),
                 eq(1.5f),
                 eq(null)
             )
+            assertThat(messageCaptor.firstValue.invoke()).isEqualTo(BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE)
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
     }
@@ -445,13 +464,15 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
         argumentCaptor<Map<String, Any?>> {
             verify(mockInternalLogger).logMetric(
-                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE },
+                messageCaptor.capture(),
                 capture(),
                 eq(1.5f),
                 eq(null)
             )
+            assertThat(messageCaptor.firstValue.invoke()).isEqualTo(BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE)
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
     }
@@ -477,13 +498,15 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
         argumentCaptor<Map<String, Any?>> {
             verify(mockInternalLogger).logMetric(
-                argThat { this.invoke() == BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE },
+                messageCaptor.capture(),
                 capture(),
                 eq(1.5f),
                 eq(null)
             )
+            assertThat(messageCaptor.firstValue.invoke()).isEqualTo(BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE)
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
     }
@@ -502,18 +525,20 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.sendBatchClosedMetric(fakeFile, fakeMetadata)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.MAINTAINER),
-            argThat {
-                this.invoke() ==
-                    BatchMetricsDispatcher.WRONG_FILE_NAME_MESSAGE_FORMAT
-                        .format(Locale.ENGLISH, fakeFile.name)
-            },
-            eq(null),
-            eq(false),
-            eq(null)
-        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.MAINTAINER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+            assertThat(firstValue.invoke()).isEqualTo(
+                BatchMetricsDispatcher.WRONG_FILE_NAME_MESSAGE_FORMAT
+                    .format(Locale.US, fakeFile.name)
+            )
+        }
         verifyNoMoreInteractions(mockInternalLogger)
     }
 

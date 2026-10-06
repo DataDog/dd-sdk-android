@@ -46,7 +46,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -318,7 +317,10 @@ internal class EvaluationsManagerTest {
         // Then
         inOrder(mockFlagsStateManager) {
             verify(mockFlagsStateManager).updateState(FlagsClientState.Reconciling)
-            verify(mockFlagsStateManager).updateState(argThat { this is FlagsClientState.Error })
+            argumentCaptor<FlagsClientState> {
+                verify(mockFlagsStateManager).updateState(capture())
+                assertThat(firstValue).isInstanceOf(FlagsClientState.Error::class.java)
+            }
         }
     }
 
@@ -359,7 +361,10 @@ internal class EvaluationsManagerTest {
         // Then
         inOrder(mockFlagsStateManager) {
             verify(mockFlagsStateManager).updateState(FlagsClientState.Reconciling)
-            verify(mockFlagsStateManager).updateState(argThat { this is FlagsClientState.Error })
+            argumentCaptor<FlagsClientState> {
+                verify(mockFlagsStateManager).updateState(capture())
+                assertThat(firstValue).isInstanceOf(FlagsClientState.Error::class.java)
+            }
         }
     }
 
