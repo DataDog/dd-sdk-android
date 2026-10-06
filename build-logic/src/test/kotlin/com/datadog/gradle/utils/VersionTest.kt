@@ -137,7 +137,7 @@ class VersionTest {
         val name = Version(4, 11, 5, Version.Type.Dogfood("a1b2c3d")).name
 
         // Then
-        val expected = "4.11.5-dogfood-a1b2c3d-SNAPSHOT"
+        val expected = "4.11.5-dogfood-a1b2c3d"
         assertThat(name).isEqualTo(expected)
     }
 
