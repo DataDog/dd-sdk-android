@@ -88,7 +88,15 @@ Revert, in one PR against `dogfooding`, every merge of a `dogfood-<branch>-<sha>
 
 ## Publishing
 
-Every build of `dogfooding` is published automatically by the `publish:dogfooding` job in GitLab, once the pipeline on `dogfooding` has passed. The version is `<version>-dogfood-<commit short sha>-SNAPSHOT`, for example `3.15.0-dogfood-1a2b3c4d-SNAPSHOT`, published to the Sonatype snapshots repository. Point Shopist or the Datadog app at that exact version.
+Every build of `dogfooding` is published automatically by the `publish:dogfooding` job in GitLab, once the pipeline on `dogfooding` has passed. The version is `<version>-dogfood-<commit short sha>`, for example `3.15.0-dogfood-1a2b3c4d`, published to `https://binaries.ddbuild.io/dd-sdk-android/dogfood/`, which is only reachable from Datadog's network (VPN on laptops). Add that repository to the consuming app:
+
+```kotlin
+maven("https://binaries.ddbuild.io/dd-sdk-android/dogfood/") {
+    content { includeGroup("com.datadoghq") }
+}
+```
+
+Then point Shopist or the Datadog app at that exact version.
 
 ## When a script stops
 
@@ -115,4 +123,3 @@ Every build of `dogfooding` is published automatically by the `publish:dogfoodin
 ## Known limits
 
 - The scripts run locally. Running sync and reset from CI is planned for later.
-- The `-SNAPSHOT` suffix is temporary, until dogfood builds can be published to an internal repository.

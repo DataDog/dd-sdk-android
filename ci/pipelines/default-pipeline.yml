@@ -684,7 +684,7 @@ publish:dogfooding:
   script:
     - !reference [.snippets, set-publishing-credentials]
     - !reference [.snippets, setup-gradle]
-    - ./gradlew publishToSonatype --stacktrace --no-daemon
+    - ./gradlew publishReleasePublicationToDogfoodRepository --stacktrace --no-daemon
 
 
 # SLACK NOTIFICATIONS
