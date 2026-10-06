@@ -1089,8 +1089,9 @@ internal class EvaluationsManagerTest {
         val request = checkNotNull(mockWebServer.takeRequest(1, TimeUnit.SECONDS))
         assertThat(request.path).isEqualTo("/precompute-assignments")
         val attributes = JSONObject(request.body.readUtf8()).getJSONObject("data").getJSONObject("attributes")
-        assertThat(attributes.getJSONObject("supported_capabilities").getJSONArray("assignment_encodings").getString(0))
-            .isEqualTo("flag-key-sha256-v1")
+        assertThat(request.getHeader("X-DD-FEATURE-FLAGS-CAPABILITIES"))
+            .isEqualTo("assignment-encoding-flag-key-256-v1")
+        assertThat(attributes.has("supported_capabilities")).isFalse()
         mockWebServer.enqueue(MockResponse().setBody(ENCODED_RESPONSE_JSON.replace("flag-key-sha256-v1", "unknown")))
 
         testedManager.updateEvaluationsForContext(context, mockCallback)
@@ -1123,6 +1124,7 @@ internal class EvaluationsManagerTest {
         val request = checkNotNull(mockWebServer.takeRequest(1, TimeUnit.SECONDS))
         val attributes = JSONObject(request.body.readUtf8()).getJSONObject("data").getJSONObject("attributes")
         assertThat(attributes.has("supported_capabilities")).isFalse()
+        assertThat(request.getHeader("X-DD-FEATURE-FLAGS-CAPABILITIES")).isNull()
     }
 
     private fun createIntegrationRepository(): DefaultFlagsRepository {

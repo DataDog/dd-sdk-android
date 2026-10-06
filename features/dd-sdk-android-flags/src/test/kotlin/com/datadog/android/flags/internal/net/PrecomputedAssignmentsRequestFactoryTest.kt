@@ -72,8 +72,9 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         checkNotNull(request.body).writeTo(buffer)
         val attributes = JSONObject(buffer.readUtf8()).getJSONObject("data").getJSONObject("attributes")
 
-        assertThat(attributes.getJSONObject("supported_capabilities").getJSONArray("assignment_encodings").toString())
-            .isEqualTo("[\"flag-key-sha256-v1\"]")
+        assertThat(request.header("X-DD-FEATURE-FLAGS-CAPABILITIES"))
+            .isEqualTo("assignment-encoding-flag-key-256-v1")
+        assertThat(attributes.has("supported_capabilities")).isFalse()
         assertThat(attributes.getJSONObject("source").getString("sdk_version")).isEqualTo(context.sdkVersion)
     }
 
@@ -87,6 +88,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             val attributes = JSONObject(buffer.readUtf8()).getJSONObject("data").getJSONObject("attributes")
 
             assertThat(attributes.has("supported_capabilities")).isFalse()
+            assertThat(request.header("X-DD-FEATURE-FLAGS-CAPABILITIES")).isNull()
         }
     }
 

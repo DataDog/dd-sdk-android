@@ -16,7 +16,6 @@ import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -68,6 +67,14 @@ internal class PrecomputedAssignmentsRequestFactory(
                 .add(HEADER_CLIENT_TOKEN, datadogContext.clientToken)
                 .add(HEADER_CONTENT_TYPE, CONTENT_TYPE_VND_JSON)
 
+            // Bridge SDKs that consume raw snapshots cannot resolve encoded keys yet.
+            if (datadogContext.source == "android") {
+                headersBuilder.add(
+                    "X-DD-FEATURE-FLAGS-CAPABILITIES",
+                    listOf(FlagKeyObfuscation.CAPABILITY).sorted().joinToString(",")
+                )
+            }
+
             datadogContext.rumApplicationId?.let {
                 headersBuilder.add(HEADER_APPLICATION_ID, it)
             }
@@ -96,13 +103,6 @@ internal class PrecomputedAssignmentsRequestFactory(
             .put("env", env)
             .put("source", source)
             .put("subject", subject)
-        // Bridge SDKs that consume raw snapshots cannot resolve encoded keys yet.
-        if (datadogContext.source == "android") {
-            attributes.put(
-                "supported_capabilities",
-                JSONObject().put("assignment_encodings", JSONArray().put(FlagKeyObfuscation.SCHEME))
-            )
-        }
         val data = JSONObject()
             .put("type", "precompute-assignments-request")
             .put("attributes", attributes)

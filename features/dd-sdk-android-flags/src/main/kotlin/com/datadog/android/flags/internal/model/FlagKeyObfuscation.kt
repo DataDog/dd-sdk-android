@@ -29,6 +29,7 @@ internal data class FlagKeyObfuscation private constructor(val salt: String) {
 
     companion object {
         const val SCHEME = "flag-key-sha256-v1"
+        const val CAPABILITY = "assignment-encoding-flag-key-256-v1"
         private const val SALT_BYTES = 16
         private const val HEX_RADIX = 16
         private const val DIGEST_BYTES = 32
