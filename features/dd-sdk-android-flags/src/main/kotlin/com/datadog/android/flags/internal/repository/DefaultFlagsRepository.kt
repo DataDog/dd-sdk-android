@@ -14,6 +14,7 @@ import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.ResolutionReason
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -47,7 +48,8 @@ internal class DefaultFlagsRepository(
     ) { persistedState ->
         try {
             persistedState?.let {
-                val loadedState = FlagsState(it.evaluationContext, it.flags, it.obfuscation)
+                val cachedFlags = it.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) }
+                val loadedState = FlagsState(it.evaluationContext, cachedFlags, it.obfuscation)
                 atomicState.compareAndSet(null, loadedState)
                 discardUnsupportedAssignments()
             }

@@ -11,6 +11,7 @@ import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.forge.Configurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -151,18 +152,55 @@ internal class ProfilingConfigurationExtTest {
 
     // endregion
 
-    // region both fields
+    // region anrTriggerEnabled
+
+    @Test
+    fun `M override anrTriggerEnabled W applyRemoteConfiguration { RC provides value }`(
+        @BoolForgery fakeAnrTriggerEnabled: Boolean
+    ) {
+        // Given
+        val fakeRc = RemoteConfiguration(
+            profiling = RemoteConfiguration.Profiling(anrTriggerEnabled = fakeAnrTriggerEnabled)
+        )
+
+        // When
+        val result = testedConfiguration.applyRemoteConfiguration(fakeRc)
+
+        // Then
+        assertThat(result.anrTriggerEnabled).isEqualTo(fakeAnrTriggerEnabled)
+    }
+
+    @Test
+    fun `M keep existing anrTriggerEnabled W applyRemoteConfiguration { RC omits it }`() {
+        // Given
+        val fakeRc = RemoteConfiguration(
+            profiling = RemoteConfiguration.Profiling(anrTriggerEnabled = null)
+        )
+        val expectedValue = testedConfiguration.anrTriggerEnabled
+
+        // When
+        val result = testedConfiguration.applyRemoteConfiguration(fakeRc)
+
+        // Then
+        assertThat(result.anrTriggerEnabled).isEqualTo(expectedValue)
+    }
+
+    // endregion
+
+    // region all fields
 
     @Test
     fun `M override both fields W applyRemoteConfiguration { RC provides both values }`(
         @FloatForgery(min = 0f, max = 100f) fakeAppLaunchRate: Float,
-        @FloatForgery(min = 0f, max = 100f) fakeContinuousRate: Float
+        @FloatForgery(min = 0f, max = 100f) fakeContinuousRate: Float,
+        @BoolForgery fakeAnrTriggerEnabled: Boolean
     ) {
         // Given
         val fakeRc = RemoteConfiguration(
             profiling = RemoteConfiguration.Profiling(
                 applicationLaunchSampleRate = fakeAppLaunchRate,
-                continuousSampleRate = fakeContinuousRate
+                continuousSampleRate = fakeContinuousRate,
+                anrTriggerEnabled = fakeAnrTriggerEnabled
             )
         )
 
@@ -172,6 +210,7 @@ internal class ProfilingConfigurationExtTest {
         // Then
         assertThat(result.applicationLaunchSampleRate).isEqualTo(fakeAppLaunchRate)
         assertThat(result.continuousSampleRate).isEqualTo(fakeContinuousRate)
+        assertThat(result.anrTriggerEnabled).isEqualTo(fakeAnrTriggerEnabled)
     }
 
     // endregion

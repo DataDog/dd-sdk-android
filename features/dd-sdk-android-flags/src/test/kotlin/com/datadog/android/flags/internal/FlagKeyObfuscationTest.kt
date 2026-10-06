@@ -23,6 +23,7 @@ import com.datadog.android.flags.internal.storage.RecordWriter
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ExposureEvent
+import com.datadog.android.flags.model.ResolutionReason
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
@@ -184,6 +185,7 @@ internal class FlagKeyObfuscationTest {
 
         assertThat(testedRepository.getPrecomputedFlagWithContext("flag")?.second).isEqualTo(fakeContext)
         assertThat(testedRepository.getPrecomputedFlag("flag")?.variationValue).isEqualTo("true")
+        assertThat(testedRepository.getPrecomputedFlag("flag")?.reason).isEqualTo(ResolutionReason.CACHED.name)
         assertThat(testedRepository.getPrecomputedFlag(VECTORS[2].second)).isNull()
     }
 
