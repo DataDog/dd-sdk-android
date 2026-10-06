@@ -672,12 +672,11 @@ publish:release-all:
     paths:
       - "**/verification-metadata.xml"
 
-# Manual publish for dogfood builds
+# Publishes every dogfooding build once its pipeline has passed
 publish:dogfooding:
   tags: [ "arch:amd64" ]
   only:
     - dogfooding
-  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m

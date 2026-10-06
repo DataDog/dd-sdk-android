@@ -134,7 +134,7 @@ Dogfooded features that graduated to develop at a different commit than the one 
 ${GRADUATED%$'\n'}
 
 - On conflicts in these features' code, take develop's side for their hunks.
-- Don't run publish:dogfooding until they're dogfooded again.
+- The build published after merging this PR may still contain code from the old dogfooded version: to test these features, use a build published after they're dogfooded again.
 - This warning won't be shown again after merging: leftovers stay until the feature is dogfooded again or the next reset."
 fi
 if [ -n "$older_prs" ]; then

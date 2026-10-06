@@ -56,7 +56,7 @@ If you changed the feature after dogfooding it (review fixes, a rebase, removed 
 To clean it up:
 
 1. Run `./ci/scripts/dogfooding/sync.sh`. Its PR lists the feature under "Dogfooded features that graduated to develop at a different commit", with the exact command to run afterwards.
-2. Merge that sync PR. If it has conflicts in the feature's code, keep `develop`'s version. Don't run `publish:dogfooding` until step 3 is merged.
+2. Merge that sync PR. If it has conflicts in the feature's code, keep `develop`'s version. The build published after this merge may still contain code from the old version: to test the feature, use the one published after step 3.
 3. Run the command from the PR, for example `./ci/scripts/dogfooding/feature.sh feature/my-feature --at <sha>`, and merge the PR it opens. It removes what's left of the old version, so `dogfooding` matches `develop` for that feature. `--at` is needed because the feature branch is usually deleted after merging into `develop`.
 
 The warning only appears in that sync PR. If nobody follows it, the leftovers stay until the next reset, which also removes them (along with every other dogfooded feature, which then has to be dogfooded again).
@@ -88,7 +88,7 @@ Revert, in one PR against `dogfooding`, every merge of a `dogfood-<branch>-<sha>
 
 ## Publishing
 
-Builds from `dogfooding` are published by the manual `publish:dogfooding` job in GitLab, available once the pipeline on `dogfooding` has passed. The version is `<version>-dogfood-<commit short sha>-SNAPSHOT`, for example `3.15.0-dogfood-1a2b3c4d-SNAPSHOT`, published to the Sonatype snapshots repository. Point Shopist or the Datadog app at that exact version.
+Every build of `dogfooding` is published automatically by the `publish:dogfooding` job in GitLab, once the pipeline on `dogfooding` has passed. The version is `<version>-dogfood-<commit short sha>-SNAPSHOT`, for example `3.15.0-dogfood-1a2b3c4d-SNAPSHOT`, published to the Sonatype snapshots repository. Point Shopist or the Datadog app at that exact version.
 
 ## When a script stops
 
