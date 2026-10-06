@@ -48,7 +48,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
@@ -207,19 +207,19 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.onMenuItemSelected(featureId, menuItem)
 
         // Then
+        val attributesCaptor = argumentCaptor<Map<String, Any?>>()
         inOrder(mockCallback, rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance).addAction(
                 eq(RumActionType.TAP),
                 eq(customTargetName),
-                argThat {
-                    val targetClassName = menuItem.javaClass.canonicalName
-                    this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&
-                        this[RumAttributes.ACTION_TARGET_RESOURCE_ID] == itemResourceName &&
-                        this[RumAttributes.ACTION_TARGET_TITLE] == itemTitle
-                }
+                attributesCaptor.capture()
             )
             verify(mockCallback).onMenuItemSelected(featureId, menuItem)
         }
+        assertThat(attributesCaptor.firstValue)
+            .containsEntry(RumAttributes.ACTION_TARGET_CLASS_NAME, menuItem.javaClass.canonicalName)
+            .containsEntry(RumAttributes.ACTION_TARGET_RESOURCE_ID, itemResourceName)
+            .containsEntry(RumAttributes.ACTION_TARGET_TITLE, itemTitle)
     }
 
     @Test
@@ -251,19 +251,19 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.onMenuItemSelected(featureId, menuItem)
 
         // Then
+        val attributesCaptor = argumentCaptor<Map<String, Any?>>()
         inOrder(mockCallback, rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance).addAction(
                 eq(RumActionType.TAP),
                 eq(""),
-                argThat {
-                    val targetClassName = menuItem.javaClass.canonicalName
-                    this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&
-                        this[RumAttributes.ACTION_TARGET_RESOURCE_ID] == itemResourceName &&
-                        this[RumAttributes.ACTION_TARGET_TITLE] == itemTitle
-                }
+                attributesCaptor.capture()
             )
             verify(mockCallback).onMenuItemSelected(featureId, menuItem)
         }
+        assertThat(attributesCaptor.firstValue)
+            .containsEntry(RumAttributes.ACTION_TARGET_CLASS_NAME, menuItem.javaClass.canonicalName)
+            .containsEntry(RumAttributes.ACTION_TARGET_RESOURCE_ID, itemResourceName)
+            .containsEntry(RumAttributes.ACTION_TARGET_TITLE, itemTitle)
     }
 
     @Test
@@ -295,19 +295,19 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.onMenuItemSelected(featureId, menuItem)
 
         // Then
+        val attributesCaptor = argumentCaptor<Map<String, Any?>>()
         inOrder(mockCallback, rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance).addAction(
                 eq(RumActionType.TAP),
                 eq(""),
-                argThat {
-                    val targetClassName = menuItem.javaClass.canonicalName
-                    this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&
-                        this[RumAttributes.ACTION_TARGET_RESOURCE_ID] == itemResourceName &&
-                        this[RumAttributes.ACTION_TARGET_TITLE] == itemTitle
-                }
+                attributesCaptor.capture()
             )
             verify(mockCallback).onMenuItemSelected(featureId, menuItem)
         }
+        assertThat(attributesCaptor.firstValue)
+            .containsEntry(RumAttributes.ACTION_TARGET_CLASS_NAME, menuItem.javaClass.canonicalName)
+            .containsEntry(RumAttributes.ACTION_TARGET_RESOURCE_ID, itemResourceName)
+            .containsEntry(RumAttributes.ACTION_TARGET_TITLE, itemTitle)
     }
 
     @Test
@@ -717,13 +717,15 @@ internal class WindowCallbackWrapperTest {
 
         // Then
         mockAttributesProviders.forEach {
-            verify(it).extractAttributes(
-                eq(fakeFocusedView),
-                argThat {
-                    this.containsKey(RumAttributes.ACTION_TARGET_CLASS_NAME) &&
-                        this.containsKey(RumAttributes.ACTION_TARGET_RESOURCE_ID)
-                }
-            )
+            argumentCaptor<MutableMap<String, Any?>> {
+                verify(it).extractAttributes(
+                    eq(fakeFocusedView),
+                    capture()
+                )
+                assertThat(firstValue)
+                    .containsKey(RumAttributes.ACTION_TARGET_CLASS_NAME)
+                    .containsKey(RumAttributes.ACTION_TARGET_RESOURCE_ID)
+            }
         }
     }
 
