@@ -24,7 +24,6 @@ import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
-import com.datadog.android.flags.events
 import com.datadog.android.flags.openfeature.asOpenFeatureProvider
 import com.datadog.android.insights.enableRumDebugWidget
 import com.datadog.android.log.Logger
@@ -252,7 +251,7 @@ class SampleApplication : Application() {
         // Create FlagsClient and convert to OpenFeature provider
         val flagsClient = FlagsClient.Builder().build()
         // Application-lifetime callback; lifecycle-scoped callers retain the subscription and call unsubscribe().
-        flagsClient.events.onFirstFlags { event ->
+        flagsClient.onFirstFlags { event ->
             logAndEvaluateFirstFlags(flagsClient, event) { message -> Log.i("FirstFlags", message) }
         }
         val provider = flagsClient.asOpenFeatureProvider()

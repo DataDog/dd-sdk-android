@@ -62,7 +62,7 @@ internal class NoOpFlagsClientTest {
         var delivered = false
 
         // When
-        val subscription = testedClient.events.onFirstFlags { delivered = true }
+        val subscription = testedClient.onFirstFlags { delivered = true }
         subscription.unsubscribe()
         subscription.unsubscribe()
 

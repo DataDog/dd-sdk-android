@@ -98,8 +98,8 @@ internal class EvaluationsManager(
      * Processes a new evaluation context by fetching flags and storing atomically.
      *
      * This method asynchronously fetches precomputed flag evaluations for the given context
-     * and atomically updates both the context and flag data in the repository. Network failures
-     * result in an empty flag set being stored with the context, allowing graceful degradation.
+     * and atomically updates both the context and flag data in the repository. A failed or unreadable
+     * response keeps the last known good flags and their context.
      *
      * The operation is performed on the configured executor service and will not block the
      * calling thread. Errors are logged but do not propagate to the caller.

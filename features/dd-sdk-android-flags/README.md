@@ -243,17 +243,17 @@ val analyticsClient = FlagsClient.get("analytics")
 
 ### Wait for the first flags
 
-`client.events.onFirstFlags` notifies each registration once, when the client installs its first flags from disk
+`client.onFirstFlags` notifies each registration once, when the client installs its first flags from disk
 cache or the network. For an Activity that owns a `client` (`render` is your own UI code):
 
 ```kotlin
-import com.datadog.android.flags.events
+import com.datadog.android.flags.FlagsSubscription
 
 private var firstFlagsSubscription: FlagsSubscription? = null
 
 override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    firstFlagsSubscription = client.events.onFirstFlags { event ->
+    firstFlagsSubscription = client.onFirstFlags { event ->
         // event.flagsChanged contains the first installed keys, possibly empty.
         val enabled = client.resolveBooleanValue("my-flag-key", false)
         runOnUiThread { render(enabled) }
@@ -269,7 +269,8 @@ override fun onDestroy() {
 - An available first result replays synchronously before registration returns. Pending callbacks run
   on a dedicated background thread. Dispatch UI work to the main thread.
 - Every registration receives the retained first result, even after later updates. Evaluations read
-  current flags, which may have changed since the event. Registration order is not guaranteed.
+  current flags, which may have changed since the event. Delivery order across registrations is not
+  guaranteed: a later registration may be notified before an earlier pending one.
 - Missing or unreadable cache and malformed network responses do not trigger the callback. A valid
   empty configuration does trigger it with an empty key list.
 - Unsubscription is thread-safe and idempotent and releases pending captures. A callback already
@@ -277,10 +278,10 @@ override fun onDestroy() {
 - This is not a readiness signal. Use `client.state` to track readiness.
 - Ordinary callback exceptions are logged and isolated.
 
-Use `FlagsEvents(client)` from Java or Kotlin, or the Kotlin `client.events` extension.
-The facade requires an SDK-created client; custom implementations are rejected with
-`IllegalArgumentException` rather than silently dropping registrations. Multiple facades share the
-same retained event; discarding a facade does not unsubscribe its registrations.
+Use `client.onFirstFlags { event -> ... }` from Kotlin or
+`client.onFirstFlags(event -> { ... })` from Java. The client retains the first event;
+evaluations inside the callback read its current flags. Custom `FlagsClient` implementations
+must implement `onFirstFlags`; Kotlin interface delegation forwards it to the delegate.
 
 The listener and subscription are Kotlin functional interfaces: `FlagsClientEventListener.onEvent`
 and `FlagsSubscription.unsubscribe`. Trailing-lambda registration is supported.
