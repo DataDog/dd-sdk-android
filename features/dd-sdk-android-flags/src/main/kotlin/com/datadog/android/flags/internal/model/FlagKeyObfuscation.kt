@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.internal.model
 
+import androidx.collection.LruCache
 import org.json.JSONException
 import org.json.JSONObject
 import java.security.MessageDigest
@@ -13,15 +14,20 @@ import java.security.MessageDigest
 /** The public encoding descriptor travels with its assignment map. */
 @ConsistentCopyVisibility
 internal data class FlagKeyObfuscation private constructor(val salt: String) {
+    @Suppress("UnsafeThirdPartyFunctionCall") // The cache limit is a positive constant.
+    private val lookupKeys = LruCache<String, String>(LOOKUP_CACHE_LIMIT)
+
     @Suppress("UnsafeThirdPartyFunctionCall") // SHA-256 is mandatory on Android; salt and Unicode are validated.
     fun encode(key: String): String? {
         // Reject unpaired surrogates instead of silently replacing their UTF-8 encoding.
         if (!isWellFormedUnicode(key)) return null
-        val digest = MessageDigest.getInstance("SHA-256")
-        digest.update("datadog.feature-flags.flag-key.v1\u0000".toByteArray(Charsets.UTF_8))
-        digest.update(ByteArray(SALT_BYTES) { salt.substring(it * 2, it * 2 + 2).toInt(HEX_RADIX).toByte() })
-        digest.update(key.toByteArray(Charsets.UTF_8))
-        return digest.digest().joinToString("") { "%02x".format(it) }
+        return lookupKeys.get(key) ?: run {
+            val digest = MessageDigest.getInstance("SHA-256")
+            digest.update("datadog.feature-flags.flag-key.v1\u0000".toByteArray(Charsets.UTF_8))
+            digest.update(ByteArray(SALT_BYTES) { salt.substring(it * 2, it * 2 + 2).toInt(HEX_RADIX).toByte() })
+            digest.update(key.toByteArray(Charsets.UTF_8))
+            digest.digest().joinToString("") { "%02x".format(it) }.also { lookupKeys.put(key, it) }
+        }
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Both fields have validated, non-null names and values.
@@ -33,6 +39,7 @@ internal data class FlagKeyObfuscation private constructor(val salt: String) {
         private const val SALT_BYTES = 16
         private const val HEX_RADIX = 16
         private const val DIGEST_BYTES = 32
+        private const val LOOKUP_CACHE_LIMIT = 1024
 
         /** Throws for unsupported or inconsistent descriptors, including explicit JSON null. */
         // JSON errors propagate to the response or cache parser, where they are caught.

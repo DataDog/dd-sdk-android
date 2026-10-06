@@ -77,7 +77,7 @@ internal class FlagKeyObfuscationTest {
 
     @ParameterizedTest
     @MethodSource("vectors")
-    fun `M resolve original key W evaluation { shared edge hash vectors }`(vector: Pair<String, String>) {
+    fun `M resolve original key W resolve() { shared edge hash vectors }`(vector: Pair<String, String>) {
         val (key, digest) = vector
         val encoding = checkNotNull(FlagKeyObfuscation.read(metadata()))
         assertThat(encoding.encode(key)).isEqualTo(digest)
@@ -100,7 +100,20 @@ internal class FlagKeyObfuscationTest {
     }
 
     @Test
-    fun `M preserve results and defaults W evaluation { encoded types and errors }`() {
+    fun `M cache bounded lookup hashes W encode() { descriptors keep separate caches }`() {
+        val encoding = checkNotNull(FlagKeyObfuscation.read(metadata()))
+        val other = checkNotNull(FlagKeyObfuscation.read(metadata("f".repeat(32))))
+        val first = checkNotNull(encoding.encode("flag"))
+        assertThat(encoding.encode("flag")).isSameAs(first)
+        assertThat(other.encode("flag")).isNotEqualTo(first)
+        assertThat(encoding.encode("flag")).isSameAs(first)
+        assertThat(encoding.encode("café")).isNotEqualTo(encoding.encode("cafe\u0301"))
+        repeat(1024) { encoding.encode("flag-$it") }
+        assertThat(encoding.encode("flag")).isEqualTo(first).isNotSameAs(first)
+    }
+
+    @Test
+    fun `M preserve results and defaults W resolve() { encoded types and errors }`() {
         val encoding = checkNotNull(FlagKeyObfuscation.read(metadata()))
         val flags = JSONObject()
         listOf(
@@ -126,7 +139,7 @@ internal class FlagKeyObfuscationTest {
     }
 
     @Test
-    fun `M retain lookup and deduplicate exposure W refresh { salt changes and cache round trip }`() {
+    fun `M retain lookup and deduplicate exposure W setFlagsAndContext() { salt changes and cache round trip }`() {
         for (salt in listOf(SALT, "f".repeat(32), SALT)) {
             val descriptor = metadata(salt)
             val encoding = checkNotNull(FlagKeyObfuscation.read(descriptor))
@@ -147,6 +160,44 @@ internal class FlagKeyObfuscationTest {
         }
         verify(mockWriter, times(1)).write(any<ExposureEvent>())
         verify(mockRumLogger, times(3)).logEvaluation("flag", "variation-456")
+    }
+
+    @Test
+    fun `M accept new flags and isolate unknown types W resolve() { forward compatible response }`() {
+        val encoding = checkNotNull(FlagKeyObfuscation.read(metadata()))
+        val flags = JSONObject()
+            .put(checkNotNull(encoding.encode("flag")), assignment())
+            .put(checkNotNull(encoding.encode("new-flag")), assignment().put("future-field", true))
+            .put(checkNotNull(encoding.encode("future")), assignment("future-type", true))
+        val attributes = metadata().put("flags", flags).put("future-field", true)
+        install(JSONObject().put("data", JSONObject().put("attributes", attributes)).toString())
+
+        assertThat(testedClient.resolveBooleanValue("flag", false)).isTrue()
+        assertThat(testedClient.resolveBooleanValue("new-flag", false)).isTrue()
+        assertThat(testedClient.resolve("future", false).value).isFalse()
+    }
+
+    @Test
+    fun `M restore latest salt and value W init { after multiple writes }`() {
+        for ((salt, value) in listOf(SALT to true, "f".repeat(32) to false)) {
+            val encoding = checkNotNull(FlagKeyObfuscation.read(metadata(salt)))
+            val flags = JSONObject().put(checkNotNull(encoding.encode("flag")), assignment("boolean", value))
+            val attributes = metadata(salt).put("flags", flags)
+            install(JSONObject().put("data", JSONObject().put("attributes", attributes)).toString())
+            assertThat(testedClient.resolveBooleanValue("flag", !value)).isEqualTo(value)
+        }
+        val written = argumentCaptor<FlagsStateEntry>()
+        verify(mockDataStore, times(2)).setValue(any(), written.capture(), any(), anyOrNull(), any())
+        val serialized = FlagsStateSerializer(mockInternalLogger).serialize(written.lastValue)
+        val restored = checkNotNull(FlagsStateDeserializer(mockInternalLogger).deserialize(serialized))
+        assertThat(restored.obfuscation?.salt).isEqualTo("f".repeat(32))
+        doAnswer {
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(DataStoreContent(0, restored))
+        }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        testedRepository = DefaultFlagsRepository(mockSdkCore, "obfuscation", mockDataStore)
+        testedClient = createClient()
+        assertThat(testedClient.resolveBooleanValue("flag", true)).isFalse()
+        verifyNoInteractions(mockEvaluationsManager)
     }
 
     @Test
@@ -178,7 +229,7 @@ internal class FlagKeyObfuscationTest {
     }
 
     @Test
-    fun `M restore encoded cache W constructor { native consumer }`() {
+    fun `M restore encoded cache W init { native consumer }`() {
         val decoded = checkNotNull(testedMapper.map(payload(VECTORS[2].second)))
         val entry = FlagsStateEntry(fakeContext, decoded.flags, 1234L, decoded.obfuscation)
         doAnswer { it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(DataStoreContent(0, entry)) }
@@ -240,7 +291,7 @@ internal class FlagKeyObfuscationTest {
     }
 
     @Test
-    fun `M reject invalid Unicode W evaluation { no replacement alias }`() {
+    fun `M reject invalid Unicode W resolve() { no replacement alias }`() {
         install(payload(VECTORS[2].second))
         for (key in listOf("\ud800", "\udc00", "a\ud800b")) {
             assertThat(testedClient.resolve(key, false).errorCode).isEqualTo(ErrorCode.FLAG_NOT_FOUND)
@@ -249,7 +300,7 @@ internal class FlagKeyObfuscationTest {
 
     @ParameterizedTest
     @MethodSource("invalidMetadata")
-    fun `M reject response and cache W decode { invalid descriptor }`(json: String) {
+    fun `M reject response and cache W map() and deserialize() { invalid descriptor }`(json: String) {
         val attrs = JSONObject(json).put("flags", JSONObject())
         assertThat(
             testedMapper.map(JSONObject().put("data", JSONObject().put("attributes", attrs)).toString())
@@ -261,14 +312,14 @@ internal class FlagKeyObfuscationTest {
     }
 
     @Test
-    fun `M reject malformed map keys W decode { encoded payload }`() {
+    fun `M reject malformed map keys W map() { encoded payload }`() {
         for (key in listOf("plaintext", "a".repeat(63), "a".repeat(65), "A".repeat(64), "a".repeat(63) + "\n")) {
             assertThat(testedMapper.map(payload(key))).isNull()
         }
     }
 
     @Test
-    fun `M accept legacy descriptors W decode { absent or false }`() {
+    fun `M accept legacy descriptors W map() { absent or false }`() {
         for (attrs in listOf(JSONObject(), JSONObject().put("obfuscated", false))) {
             attrs.put("flags", JSONObject().put("flag", assignment()))
             install(JSONObject().put("data", JSONObject().put("attributes", attrs)).toString())
