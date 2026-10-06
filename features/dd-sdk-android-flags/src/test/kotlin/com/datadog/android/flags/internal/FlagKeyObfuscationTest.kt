@@ -7,6 +7,9 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
@@ -29,6 +32,7 @@ import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -38,11 +42,15 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 
 internal class FlagKeyObfuscationTest {
     private val mockInternalLogger: InternalLogger = mock()
     private val mockSdkCore: FeatureSdkCore = mock()
+    private val mockFeatureScope: FeatureScope = mock()
+    private val mockDatadogContext: DatadogContext = mock()
+    private val mockEvaluationsManager: EvaluationsManager = mock()
     private val mockDataStore: DataStoreHandler = mock()
     private val mockWriter: RecordWriter = mock()
     private val mockRumLogger: RumEvaluationLogger = mock()
@@ -56,20 +64,15 @@ internal class FlagKeyObfuscationTest {
     fun setUp() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.timeProvider) doReturn mock()
+        whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)) doReturn mockFeatureScope
+        whenever(mockDatadogContext.source) doReturn "android"
+        doAnswer { it.getArgument<(DatadogContext) -> Unit>(1).invoke(mockDatadogContext) }
+            .whenever(mockFeatureScope).withContext(any(), any())
         doAnswer {
             it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onFailure()
         }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
         testedRepository = DefaultFlagsRepository(mockSdkCore, "obfuscation", mockDataStore)
-        testedClient = DatadogFlagsClient(
-            featureSdkCore = mockSdkCore,
-            evaluationsManager = mock<EvaluationsManager>(),
-            flagsRepository = testedRepository,
-            flagsConfiguration = FlagsConfiguration.Builder().build(),
-            rumEvaluationLogger = mockRumLogger,
-            exposureProcessor = ExposureEventsProcessor(mockWriter, mockSdkCore.timeProvider),
-            evaluationsFeature = mockEvaluationsFeature,
-            flagStateManager = mock()
-        )
+        testedClient = createClient()
     }
 
     @ParameterizedTest
@@ -147,7 +150,7 @@ internal class FlagKeyObfuscationTest {
     }
 
     @Test
-    fun `M hide encoded snapshots and discard cache W bridge reads { legacy consumer }`() {
+    fun `M hide encoded assignments W setObfuscationSupported() { legacy consumer }`() {
         install(payload(VECTORS[2].second))
         assertThat(testedRepository.getFlagsSnapshot()).isEmpty()
         testedRepository.setObfuscationSupported(false)
@@ -187,6 +190,53 @@ internal class FlagKeyObfuscationTest {
         assertThat(testedRepository.getPrecomputedFlag("flag")?.variationValue).isEqualTo("true")
         assertThat(testedRepository.getPrecomputedFlag("flag")?.reason).isEqualTo(ResolutionReason.CACHED.name)
         assertThat(testedRepository.getPrecomputedFlag(VECTORS[2].second)).isNull()
+    }
+
+    @ParameterizedTest
+    @MethodSource("cacheInitializations")
+    fun `M gate cached assignments W resolveBooleanValue() { delayed source or disk without network }`(
+        source: String,
+        diskFirst: Boolean,
+        encoded: Boolean
+    ) {
+        // Given
+        var sourceCallback: ((DatadogContext) -> Unit)? = null
+        var diskCallback: DataStoreReadCallback<FlagsStateEntry>? = null
+        doAnswer { sourceCallback = it.getArgument(1) }
+            .whenever(mockFeatureScope).withContext(any(), any())
+        doAnswer { diskCallback = it.getArgument(2) }
+            .whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        whenever(mockDatadogContext.source) doReturn source
+        val decoded = checkNotNull(testedMapper.map(payload(if (encoded) VECTORS[2].second else "flag", encoded)))
+        val entry = FlagsStateEntry(fakeContext, decoded.flags, 1234L, decoded.obfuscation)
+        testedRepository = DefaultFlagsRepository(mockSdkCore, "deferred-cache", mockDataStore)
+        testedClient = createClient()
+
+        // When
+        if (diskFirst) {
+            checkNotNull(diskCallback).onSuccess(DataStoreContent(0, entry))
+            assertThat(testedClient.resolveBooleanValue("flag", false)).isEqualTo(!encoded)
+            assertThat(testedRepository.hasFlags()).isEqualTo(!encoded)
+            assertThat(testedRepository.hasLoadedFlagsForContext(fakeContext)).isEqualTo(!encoded)
+            assertThat(testedRepository.getEvaluationContext()).isEqualTo(if (encoded) null else fakeContext)
+            assertThat(testedRepository.getPrecomputedFlag("flag") != null).isEqualTo(!encoded)
+            assertThat(testedRepository.getPrecomputedFlagWithContext("flag") != null).isEqualTo(!encoded)
+        }
+        checkNotNull(sourceCallback).invoke(mockDatadogContext)
+        if (!diskFirst) {
+            checkNotNull(diskCallback).onSuccess(DataStoreContent(0, entry))
+        }
+
+        // Then
+        val readable = !encoded || source == "android"
+        assertThat(testedClient.resolveBooleanValue("flag", false)).isEqualTo(readable)
+        assertThat(testedRepository.hasFlags()).isEqualTo(readable)
+        assertThat(testedRepository.hasLoadedFlagsForContext(fakeContext)).isEqualTo(readable)
+        assertThat(testedRepository.getEvaluationContext()).isEqualTo(if (readable) fakeContext else null)
+        assertThat(testedRepository.getPrecomputedFlag("flag") != null).isEqualTo(readable)
+        assertThat(testedRepository.getPrecomputedFlagWithContext("flag") != null).isEqualTo(readable)
+        assertThat(testedRepository.getFlagsSnapshot().isEmpty()).isEqualTo(encoded)
+        verifyNoInteractions(mockEvaluationsManager)
     }
 
     @Test
@@ -231,6 +281,17 @@ internal class FlagKeyObfuscationTest {
         testedRepository.setFlagsAndContext(fakeContext, assignments.flags, assignments.obfuscation)
     }
 
+    private fun createClient(): DatadogFlagsClient = DatadogFlagsClient(
+        featureSdkCore = mockSdkCore,
+        evaluationsManager = mockEvaluationsManager,
+        flagsRepository = testedRepository,
+        flagsConfiguration = FlagsConfiguration.Builder().build(),
+        rumEvaluationLogger = mockRumLogger,
+        exposureProcessor = ExposureEventsProcessor(mockWriter, mockSdkCore.timeProvider),
+        evaluationsFeature = mockEvaluationsFeature,
+        flagStateManager = mock()
+    )
+
     companion object {
         private const val SALT = "000102030405060708090a0b0c0d0e0f"
         private val VECTORS = listOf(
@@ -247,6 +308,14 @@ internal class FlagKeyObfuscationTest {
 
         @JvmStatic
         fun vectors(): List<Pair<String, String>> = VECTORS
+
+        @JvmStatic
+        fun cacheInitializations(): List<Arguments> =
+            listOf("android", "react-native", "future-bridge").flatMap { source ->
+                listOf(true, false).flatMap { diskFirst ->
+                    listOf(true, false).map { encoded -> Arguments.of(source, diskFirst, encoded) }
+                }
+            }
 
         @JvmStatic
         fun invalidMetadata(): List<String> = listOf(

@@ -117,6 +117,8 @@ internal class EvaluationsManager(
 
         sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
             ?.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) { datadogContext ->
+                val supportsObfuscation = datadogContext.source == "android"
+                flagsRepository.setObfuscationSupported(supportsObfuscation)
                 executorService.executeSafe(
                     operationName = FETCH_AND_STORE_OPERATION_NAME,
                     internalLogger = internalLogger
@@ -127,8 +129,6 @@ internal class EvaluationsManager(
                         { "Processing evaluation context: ${context.targetingKey}" }
                     )
 
-                    val supportsObfuscation = datadogContext.source == "android"
-                    flagsRepository.setObfuscationSupported(supportsObfuscation)
                     val hadFlags = flagsRepository.hasFlags()
                     matchingCachedAssignments.set(
                         hadFlags && flagsRepository.getEvaluationContext() == context

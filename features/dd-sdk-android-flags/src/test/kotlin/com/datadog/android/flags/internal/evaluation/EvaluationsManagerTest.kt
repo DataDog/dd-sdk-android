@@ -46,6 +46,8 @@ import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -60,6 +62,7 @@ import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
@@ -146,6 +149,22 @@ internal class EvaluationsManagerTest {
     @AfterEach
     fun tearDown() {
         mockWebServer.shutdown()
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["android", "react-native"])
+    fun `M set encoding support W updateEvaluationsForContext() { network executor delayed }`(source: String) {
+        // Given
+        fakeDatadogContext = fakeDatadogContext.copy(source = source)
+        doAnswer { null }.whenever(mockExecutorService).execute(any())
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(EvaluationContext(fakeTargetingKey, emptyMap()))
+
+        // Then
+        verify(mockFlagsRepository).setObfuscationSupported(source == "android")
+        verify(mockExecutorService).execute(any())
+        verifyNoInteractions(mockAssignmentsDownloader)
     }
 
     @Test

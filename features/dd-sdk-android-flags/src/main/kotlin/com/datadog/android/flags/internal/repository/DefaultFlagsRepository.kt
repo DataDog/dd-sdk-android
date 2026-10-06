@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal.repository
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
@@ -36,7 +37,11 @@ internal class DefaultFlagsRepository(
             if (obfuscation == null) flags[key] else obfuscation.encode(key)?.let { flags[it] }
     }
     private val atomicState = AtomicReference<FlagsState?>(null)
-    private val obfuscationSupported = AtomicBoolean(true)
+    private val obfuscationSupported = AtomicBoolean(false)
+
+    // Preserve encoded cache data while source detection is pending, but do not expose it.
+    private val readableState: FlagsState?
+        get() = atomicState.get()?.takeIf { it.obfuscation == null || obfuscationSupported.get() }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Safe: count is positive constant (1)
     private val persistenceLoadedLatch = CountDownLatch(1)
@@ -51,10 +56,15 @@ internal class DefaultFlagsRepository(
                 val cachedFlags = it.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) }
                 val loadedState = FlagsState(it.evaluationContext, cachedFlags, it.obfuscation)
                 atomicState.compareAndSet(null, loadedState)
-                discardUnsupportedAssignments()
             }
         } finally {
             persistenceLoadedLatch.countDown()
+        }
+    }
+
+    init {
+        featureSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)?.withContext { context ->
+            setObfuscationSupported(context.source == "android")
         }
     }
 
@@ -89,19 +99,11 @@ internal class DefaultFlagsRepository(
 
     override fun setObfuscationSupported(supported: Boolean) {
         obfuscationSupported.set(supported)
-        discardUnsupportedAssignments()
-    }
-
-    private fun discardUnsupportedAssignments() {
-        while (!obfuscationSupported.get()) {
-            val state = atomicState.get() ?: return
-            if (state.obfuscation == null || atomicState.compareAndSet(state, null)) return
-        }
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
         waitForPersistenceLoad()
-        val state = atomicState.get()
+        val state = readableState
         if (state != null) {
             return state.get(key)
         }
@@ -115,7 +117,7 @@ internal class DefaultFlagsRepository(
 
     override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> {
         waitForPersistenceLoad()
-        val state = atomicState.get()
+        val state = readableState
         if (state != null) {
             // The React Native bridge consumes original keys and cannot decode this representation.
             return if (state.obfuscation == null) state.flags else emptyMap()
@@ -130,23 +132,23 @@ internal class DefaultFlagsRepository(
 
     override fun getEvaluationContext(): EvaluationContext? {
         waitForPersistenceLoad()
-        return atomicState.get()?.context
+        return readableState?.context
     }
 
     override fun hasFlags(): Boolean {
         waitForPersistenceLoad()
-        return atomicState.get()?.flags?.isNotEmpty() ?: false
+        return readableState?.flags?.isNotEmpty() ?: false
     }
 
     override fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean {
-        val state = atomicState.get()
+        val state = readableState
         return state?.context == context && state.flags.isNotEmpty()
     }
 
     @Suppress("ReturnCount")
     override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? {
         waitForPersistenceLoad()
-        val state = atomicState.get() ?: return null
+        val state = readableState ?: return null
         val flag = state.get(key) ?: return null
         return flag to state.context
     }
