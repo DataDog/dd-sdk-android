@@ -137,6 +137,8 @@ internal class FlagKeyObfuscationTest {
             testedRepository.setFlagsAndContext(restored.evaluationContext, restored.flags, restored.obfuscation)
             assertThat(testedClient.resolveBooleanValue("flag", false)).isTrue()
             assertThat(testedRepository.getPrecomputedFlag("flag")).isNotNull()
+            assertThat(testedRepository.getPrecomputedFlag("flag")?.variationKey).isEqualTo("variation-456")
+            assertThat(testedRepository.getPrecomputedFlag("flag")?.serialId).isEqualTo(123L)
             assertThat(testedRepository.getPrecomputedFlag(checkNotNull(encoding.encode("flag")))).isNull()
         }
         verify(mockWriter, times(1)).write(any<ExposureEvent>())
