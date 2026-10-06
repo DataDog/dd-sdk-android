@@ -83,3 +83,18 @@ data class Version(
         internal const val MAX_MAJOR = 100
     }
 }
+
+/**
+ * @return this version with a [Version.Type.Dogfood] type when building the `dogfooding` branch on CI,
+ * or this version unchanged otherwise.
+ */
+internal fun Version.forCi(
+    ciBranch: String? = System.getenv("CI_COMMIT_BRANCH"),
+    ciShortSha: String? = System.getenv("CI_COMMIT_SHORT_SHA")
+): Version {
+    return if (ciBranch == "dogfooding" && !ciShortSha.isNullOrBlank()) {
+        copy(type = Version.Type.Dogfood(ciShortSha))
+    } else {
+        this
+    }
+}

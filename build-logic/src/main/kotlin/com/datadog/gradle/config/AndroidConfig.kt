@@ -9,6 +9,7 @@ package com.datadog.gradle.config
 import com.android.build.api.dsl.CompileOptions
 import com.android.build.api.dsl.LibraryExtension
 import com.datadog.gradle.utils.Version
+import com.datadog.gradle.utils.forCi
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 
@@ -20,21 +21,6 @@ object AndroidConfig {
     const val BUILD_TOOLS_VERSION = "36.0.0"
 
     val VERSION = Version(3, 15, 0, Version.Type.Snapshot).forCi()
-}
-
-/**
- * @return this version with a [Version.Type.Dogfood] type when building the `dogfooding` branch on CI,
- * or this version unchanged otherwise.
- */
-internal fun Version.forCi(
-    ciBranch: String? = System.getenv("CI_COMMIT_BRANCH"),
-    ciShortSha: String? = System.getenv("CI_COMMIT_SHORT_SHA")
-): Version {
-    return if (ciBranch == "dogfooding" && !ciShortSha.isNullOrBlank()) {
-        copy(type = Version.Type.Dogfood(ciShortSha))
-    } else {
-        this
-    }
 }
 
 // TODO RUM-628 Switch to Java 17 bytecode

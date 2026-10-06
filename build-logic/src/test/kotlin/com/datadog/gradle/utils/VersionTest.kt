@@ -140,4 +140,53 @@ class VersionTest {
         val expected = "4.11.5-dogfood-a1b2c3d-SNAPSHOT"
         assertThat(name).isEqualTo(expected)
     }
+
+    @Test
+    fun forCiReturnsDogfoodVersionOnDogfoodingBranch() {
+        // When
+        val version = baseVersion.forCi(ciBranch = "dogfooding", ciShortSha = "a1b2c3d")
+
+        // Then
+        assertThat(version).isEqualTo(Version(4, 11, 5, Version.Type.Dogfood("a1b2c3d")))
+    }
+
+    @Test
+    fun forCiKeepsVersionOnOtherBranch() {
+        // When
+        val version = baseVersion.forCi(ciBranch = "develop", ciShortSha = "a1b2c3d")
+
+        // Then
+        assertThat(version).isEqualTo(baseVersion)
+    }
+
+    @Test
+    fun forCiKeepsVersionWithoutBranch() {
+        // When
+        val version = baseVersion.forCi(ciBranch = null, ciShortSha = "a1b2c3d")
+
+        // Then
+        assertThat(version).isEqualTo(baseVersion)
+    }
+
+    @Test
+    fun forCiKeepsVersionOnDogfoodingBranchWithoutSha() {
+        // When
+        val version = baseVersion.forCi(ciBranch = "dogfooding", ciShortSha = null)
+
+        // Then
+        assertThat(version).isEqualTo(baseVersion)
+    }
+
+    @Test
+    fun forCiKeepsVersionOnDogfoodingBranchWithBlankSha() {
+        // When
+        val version = baseVersion.forCi(ciBranch = "dogfooding", ciShortSha = "   ")
+
+        // Then
+        assertThat(version).isEqualTo(baseVersion)
+    }
+
+    private companion object {
+        val baseVersion = Version(4, 11, 5, Version.Type.Snapshot)
+    }
 }
