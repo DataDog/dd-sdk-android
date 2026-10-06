@@ -37,6 +37,7 @@ public final class com/datadog/android/internal/FeatureContextKeys {
 	public static final field PROFILING_SAMPLE_RATE Ljava/lang/String;
 	public static final field RUM_SESSION_ID Ljava/lang/String;
 	public static final field RUM_SESSION_SAMPLE_RATE Ljava/lang/String;
+	public static final field RUM_SESSION_STATE Ljava/lang/String;
 }
 
 public abstract interface class com/datadog/android/internal/attributes/LocalAttribute {
@@ -477,6 +478,7 @@ public final class com/datadog/android/internal/profiling/ProfilingThreadDump {
 public final class com/datadog/android/internal/rum/RumSessionConstants {
 	public static final field EMPTY_RUM_SESSION_ID Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/internal/rum/RumSessionConstants;
+	public static final field TRACKED_SESSION_STATE Ljava/lang/String;
 }
 
 public final class com/datadog/android/internal/sampling/DeterministicSampling {
