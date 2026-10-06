@@ -12,12 +12,12 @@ import java.util.Collections
  * Immutable description of a Flags client event.
  *
  * This value does not emit events or change client state. Key order and duplicates are preserved.
- * Custom client implementations and test doubles can construct events for their listeners.
+ * Events are constructed internally by the SDK and supplied to registered listeners.
  *
  * @property type the event kind.
  * @param flagsChanged optional supplied keys; null means absent and an empty list means explicitly empty.
  */
-class FlagsClientEvent @JvmOverloads constructor(
+class FlagsClientEvent internal constructor(
     val type: FlagsClientEventType,
     flagsChanged: List<String>? = null
 ) {

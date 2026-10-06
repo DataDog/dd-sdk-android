@@ -57,7 +57,6 @@ data class com.datadog.android.flags.model.EvaluationContext
   companion object 
     val EMPTY: EvaluationContext
 class com.datadog.android.flags.model.FlagsClientEvent
-  constructor(FlagsClientEventType, List<String>? = null)
   val flagsChanged: List<String>?
   override fun toString(): String
 enum com.datadog.android.flags.model.FlagsClientEventType

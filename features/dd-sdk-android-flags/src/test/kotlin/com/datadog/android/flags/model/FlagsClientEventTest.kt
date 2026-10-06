@@ -55,19 +55,16 @@ internal class FlagsClientEventTest {
     }
 
     @Test
-    fun `M expose two immutable fields and Java overload W public API`() {
+    fun `M expose two immutable fields W event received`() {
         // Given
-        val eventClass = FlagsClientEvent::class.java
-        assertThat(eventClass.declaredFields.filterNot { it.isSynthetic }.map { it.name })
-            .containsExactlyInAnyOrder("type", "flagsChanged")
-        assertThat(eventClass.declaredFields.filterNot { it.isSynthetic })
-            .allMatch { java.lang.reflect.Modifier.isFinal(it.modifiers) }
+        val tested = FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED)
 
         // When
-        val javaConstructor = eventClass.getConstructor(FlagsClientEventType::class.java)
-        val tested = javaConstructor.newInstance(FlagsClientEventType.CONFIGURATION_CHANGED)
+        val fields = tested.javaClass.declaredFields.filterNot { it.isSynthetic }
 
         // Then
+        assertThat(fields.map { it.name }).containsExactlyInAnyOrder("type", "flagsChanged")
+        assertThat(fields).allMatch { java.lang.reflect.Modifier.isFinal(it.modifiers) }
         assertThat(tested.flagsChanged).isNull()
     }
 }

@@ -289,7 +289,8 @@ must implement `onFirstFlags`; Kotlin interface delegation forwards it to the de
 
 The listener and subscription are Kotlin functional interfaces: `FlagsClientEventListener.onEvent`
 and `FlagsSubscription.unsubscribe`.
-`FlagsClientEvent` snapshots its key list and currently supports `CONFIGURATION_CHANGED`.
+`FlagsClientEvent` is constructed internally by the SDK, snapshots its key list, and currently supports
+`CONFIGURATION_CHANGED`. Applications receive events through the listener.
 
 The [Kotlin sample](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/SampleApplication.kt)
 registers an application-lifetime callback, logs keys, and evaluates `"my-flag-key"` with default `false`.
