@@ -52,7 +52,11 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
-/** Real native client graph and HTTP transport; only SDK host services and storage I/O are substituted. */
+/**
+ * JVM contract tests for the native client graph and local HTTP transport.
+ * Module-internal host/storage hooks allow deterministic installation and callback scheduling;
+ * SDK-level integration belongs in the reliability suite.
+ */
 internal class FirstFlagsIntegrationTest {
     private val core = mock<FeatureSdkCore>()
     private val logger = mock<InternalLogger>()

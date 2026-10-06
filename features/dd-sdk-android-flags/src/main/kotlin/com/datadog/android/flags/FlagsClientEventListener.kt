@@ -11,7 +11,8 @@ import com.datadog.android.flags.model.FlagsClientEvent
 /** Receives a flag client event. */
 fun interface FlagsClientEventListener {
     /**
-     * Handles [event]. Delivery threading is defined by the registration method.
+     * Handles [event]. [FlagsClient.onFirstFlags] replays an available event on the registering
+     * thread; pending delivery runs on an SDK background worker.
      * Dispatch UI work to the appropriate thread.
      */
     fun onEvent(event: FlagsClientEvent)

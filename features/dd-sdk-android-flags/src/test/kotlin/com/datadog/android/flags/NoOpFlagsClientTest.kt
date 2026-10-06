@@ -64,6 +64,7 @@ internal class NoOpFlagsClientTest {
         // When
         val subscription = testedClient.onFirstFlags { delivered = true }
         subscription.unsubscribe()
+        // Unsubscription is idempotent, including for the no-op client.
         subscription.unsubscribe()
 
         // Then

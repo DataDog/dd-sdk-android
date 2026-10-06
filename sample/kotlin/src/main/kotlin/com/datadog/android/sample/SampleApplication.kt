@@ -252,7 +252,7 @@ class SampleApplication : Application() {
         val flagsClient = FlagsClient.Builder().build()
         // Application-lifetime callback; lifecycle-scoped callers retain the subscription and call unsubscribe().
         flagsClient.onFirstFlags { event ->
-            logAndEvaluateFirstFlags(flagsClient, event) { message -> Log.i("FirstFlags", message) }
+            logAndEvaluateFirstFlags(flagsClient, event) { message -> Timber.i(message) }
         }
         val provider = flagsClient.asOpenFeatureProvider()
 

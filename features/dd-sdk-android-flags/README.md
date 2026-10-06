@@ -244,17 +244,20 @@ val analyticsClient = FlagsClient.get("analytics")
 ### Wait for the first flags
 
 `client.onFirstFlags` notifies each registration once, when the client installs its first flags from disk
-cache or the network. For an Activity that owns a `client` (`render` is your own UI code):
+cache or the network. This is one notification per registration, containing all keys in that first
+accepted configuration (possibly empty), not one callback per flag or an inventory of all server-side flags.
+For an Activity that owns a `client` (`render` is your own UI code):
 
 ```kotlin
 import com.datadog.android.flags.FlagsSubscription
+import timber.log.Timber
 
 private var firstFlagsSubscription: FlagsSubscription? = null
 
 override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     firstFlagsSubscription = client.onFirstFlags { event ->
-        // event.flagsChanged contains the first installed keys, possibly empty.
+        Timber.i("First installed flag keys: %s", event.flagsChanged)
         val enabled = client.resolveBooleanValue("my-flag-key", false)
         runOnUiThread { render(enabled) }
     }
@@ -266,7 +269,8 @@ override fun onDestroy() {
 }
 ```
 
-- An available first result replays synchronously before registration returns. Pending callbacks run
+- An available first result replays from retained memory without I/O, synchronously before registration
+  returns. Pending callbacks run
   on a dedicated background thread. Dispatch UI work to the main thread.
 - Every registration receives the retained first result, even after later updates. Evaluations read
   current flags, which may have changed since the event. Delivery order across registrations is not
@@ -284,7 +288,7 @@ evaluations inside the callback read its current flags. Custom `FlagsClient` imp
 must implement `onFirstFlags`; Kotlin interface delegation forwards it to the delegate.
 
 The listener and subscription are Kotlin functional interfaces: `FlagsClientEventListener.onEvent`
-and `FlagsSubscription.unsubscribe`. Trailing-lambda registration is supported.
+and `FlagsSubscription.unsubscribe`.
 `FlagsClientEvent` snapshots its key list and currently supports `CONFIGURATION_CHANGED`.
 
 The [Kotlin sample](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/SampleApplication.kt)

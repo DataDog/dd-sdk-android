@@ -31,7 +31,7 @@ internal class DefaultFlagsRepository(
 
     @Suppress("UnsafeThirdPartyFunctionCall") // CountDownLatch rejects negative counts; 1 is valid.
     private val persistenceLoadedLatch = CountDownLatch(1)
-    private val firstFlags = FirstFlagsLatch()
+    override val firstFlags = FirstFlagsLatch()
 
     private val persistenceManager = FlagsPersistenceManager(
         dataStore = dataStore,
@@ -54,9 +54,6 @@ internal class DefaultFlagsRepository(
         }
     }
 
-    override fun firstFlags(): FirstFlagsLatch = firstFlags
-
-    @Suppress("TooGenericExceptionCaught") // Storage submission failure must not abort an accepted installation.
     override fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
@@ -85,7 +82,11 @@ internal class DefaultFlagsRepository(
                     }
                 }
             )
-        } catch (exception: Exception) {
+        } catch (
+            // Storage submission failure must not abort an accepted installation.
+            @Suppress("TooGenericExceptionCaught")
+            exception: Exception
+        ) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),

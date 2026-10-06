@@ -12,6 +12,7 @@ import java.util.Collections
  * Immutable description of a Flags client event.
  *
  * This value does not emit events or change client state. Key order and duplicates are preserved.
+ * Custom client implementations and test doubles can construct events for their listeners.
  *
  * @property type the event kind.
  * @param flagsChanged optional supplied keys; null means absent and an empty list means explicitly empty.
@@ -21,6 +22,7 @@ class FlagsClientEvent @JvmOverloads constructor(
     flagsChanged: List<String>? = null
 ) {
     /** Snapshot of supplied keys, or null when keys were not supplied. */
+    // Kotlin List is read-only, but Java callers and casts can still mutate an ordinary copy.
     // ArrayList and unmodifiableList reject null inputs; let supplies non-null keys and the copy is non-null.
     @Suppress("UnsafeThirdPartyFunctionCall")
     val flagsChanged: List<String>? = flagsChanged?.let { Collections.unmodifiableList(ArrayList(it)) }

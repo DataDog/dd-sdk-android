@@ -62,9 +62,8 @@ internal class DatadogFlagsClient(
 
     override val state: StateObservable = flagStateManager
 
-    @Suppress("TooGenericExceptionCaught") // Callbacks must not break other registrations or the delivering thread.
     override fun onFirstFlags(listener: FlagsClientEventListener): FlagsSubscription {
-        val unsubscribe = flagsRepository.firstFlags().whenComplete { keys ->
+        val unsubscribe = flagsRepository.firstFlags.whenComplete { keys ->
             val event = synchronized(firstFlagsLock) {
                 firstFlagsEvent ?: FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED, keys).also {
                     firstFlagsEvent = it
@@ -72,7 +71,11 @@ internal class DatadogFlagsClient(
             }
             try {
                 listener.onEvent(event)
-            } catch (exception: Exception) {
+            } catch (
+                // Callbacks must not break other registrations or the delivering thread.
+                @Suppress("TooGenericExceptionCaught")
+                exception: Exception
+            ) {
                 featureSdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,

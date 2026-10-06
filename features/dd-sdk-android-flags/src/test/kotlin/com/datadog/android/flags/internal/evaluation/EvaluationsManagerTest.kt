@@ -153,9 +153,10 @@ internal class EvaluationsManagerTest {
 
     @Test
     fun `M complete context without first flags W no op repository`() {
+        // Given
         val repository = NoOpFlagsRepository()
         var notified = false
-        repository.firstFlags().whenComplete { notified = true }
+        repository.firstFlags.whenComplete { notified = true }
         val callback = mock<EvaluationContextCallback>()
         val context = EvaluationContext(fakeTargetingKey)
         val manager = EvaluationsManager(
@@ -171,7 +172,11 @@ internal class EvaluationsManagerTest {
         )
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext)).thenReturn("response")
         whenever(mockPrecomputeMapper.map("response")).thenReturn(emptyMap())
+
+        // When
         manager.updateEvaluationsForContext(context, callback)
+
+        // Then
         verify(callback).onSuccess()
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
         assertThat(notified).isFalse()
@@ -1114,7 +1119,7 @@ internal class EvaluationsManagerTest {
         val context = EvaluationContext(fakeTargetingKey)
         val callback = mock<EvaluationContextCallback>()
         var firstFlagsCount = 0
-        repository.firstFlags().whenComplete {
+        repository.firstFlags.whenComplete {
             firstFlagsCount++
             manager.updateEvaluationsForContext(EvaluationContext("newer"))
         }

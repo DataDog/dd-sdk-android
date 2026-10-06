@@ -15,6 +15,7 @@ internal class FirstFlagsLatch {
     private var keys: List<String>? = null
 
     fun complete(installedKeys: Collection<String>, deliver: (Runnable) -> Unit = Runnable::run) {
+        // Keep retained keys immutable even to Java callers or a MutableList cast.
         // Both calls reject null inputs; installedKeys and its newly allocated copy are non-null.
         @Suppress("UnsafeThirdPartyFunctionCall")
         val snapshot = Collections.unmodifiableList(ArrayList(installedKeys))

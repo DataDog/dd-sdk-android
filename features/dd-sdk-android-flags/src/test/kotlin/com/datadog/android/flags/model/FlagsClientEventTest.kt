@@ -13,9 +13,12 @@ import org.junit.jupiter.api.assertThrows
 internal class FlagsClientEventTest {
     @Test
     fun `M preserve absent versus empty keys W construction`() {
+        // When
         val absent = FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED)
         val explicitNull = FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED, null)
         val empty = FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED, emptyList())
+
+        // Then
         assertThat(absent.flagsChanged).isNull()
         assertThat(empty.flagsChanged).isEmpty()
         assertThat(explicitNull.flagsChanged).isNull()
@@ -24,9 +27,14 @@ internal class FlagsClientEventTest {
     @Test
     @Suppress("DontDowncastCollectionTypes") // Exercise mutation attempts against the actual returned list.
     fun `M snapshot keys and prevent mutation W caller mutates source or result`() {
+        // Given
         val keys = mutableListOf("b", "a", "b")
         val tested = FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED, keys)
+
+        // When
         keys.clear()
+
+        // Then
         assertThat(tested.flagsChanged).containsExactly("b", "a", "b")
         assertThrows<UnsupportedOperationException> {
             (tested.flagsChanged as MutableList<String>).add("later")
@@ -36,7 +44,11 @@ internal class FlagsClientEventTest {
 
     @Test
     fun `M expose only configuration changed W enum mapping`() {
-        assertThat(FlagsClientEventType.entries.map { it.name }).containsExactly("CONFIGURATION_CHANGED")
+        // When
+        val eventNames = FlagsClientEventType.entries.map { it.name }
+
+        // Then
+        assertThat(eventNames).containsExactly("CONFIGURATION_CHANGED")
         FlagsClientEventType.entries.forEach { type ->
             assertThat(FlagsClientEvent(type).type).isEqualTo(type)
         }
@@ -44,13 +56,18 @@ internal class FlagsClientEventTest {
 
     @Test
     fun `M expose two immutable fields and Java overload W public API`() {
+        // Given
         val eventClass = FlagsClientEvent::class.java
         assertThat(eventClass.declaredFields.filterNot { it.isSynthetic }.map { it.name })
             .containsExactlyInAnyOrder("type", "flagsChanged")
         assertThat(eventClass.declaredFields.filterNot { it.isSynthetic })
             .allMatch { java.lang.reflect.Modifier.isFinal(it.modifiers) }
+
+        // When
         val javaConstructor = eventClass.getConstructor(FlagsClientEventType::class.java)
         val tested = javaConstructor.newInstance(FlagsClientEventType.CONFIGURATION_CHANGED)
+
+        // Then
         assertThat(tested.flagsChanged).isNull()
     }
 }
