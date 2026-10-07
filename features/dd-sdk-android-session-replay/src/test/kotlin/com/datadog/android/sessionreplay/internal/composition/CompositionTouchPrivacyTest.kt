@@ -123,6 +123,33 @@ internal class CompositionTouchPrivacyTest {
         assertThat(fixture.touchPrivacyManager.getNextOverrideAreas()).isEmpty()
     }
 
+    @ParameterizedTest
+    @ValueSource(longs = [0L, 9L, 10L, 20L, 89L, 90L])
+    fun `M resume real traversal within generation deadline W continuation waits in queue`(fakeQueueDelayNs: Long) {
+        // Given: the real producer/traversal consumed a full slice visiting the root, with a child remaining.
+        val fixture = Fixture()
+        fixture.startCapture()
+        assertThat(fixture.nowNs).isEqualTo(SLICE_BUDGET_NS)
+        assertThat(fixture.consumed).isEmpty()
+        var resumedViews = 0
+        fixture.onMap = { resumedViews++ }
+
+        // When: a wait of 90 ns reaches the 100 ns generation deadline; all shorter waits are admissible.
+        fixture.nowNs += fakeQueueDelayNs
+        fixture.mainThreadExecutor.runNext()
+
+        // Then: even a wait longer than the slice budget permits progress, but never extends the deadline.
+        if (fixture.nowNs < GENERATION_BUDGET_NS) {
+            assertThat(resumedViews).isEqualTo(1)
+            assertThat(fixture.consumed).hasSize(1)
+            assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isTrue()
+        } else {
+            assertThat(resumedViews).isZero()
+            assertThat(fixture.consumed).isEmpty()
+            assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
+        }
+    }
+
     @Test
     fun `M clear committed overrides W no windows remain`() {
         // Given

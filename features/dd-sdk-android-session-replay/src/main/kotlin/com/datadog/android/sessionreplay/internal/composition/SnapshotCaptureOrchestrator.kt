@@ -134,8 +134,7 @@ internal class SnapshotCaptureOrchestrator(
         }
         if (!active.trackOrCancel(lock, { activeGeneration }, expiration) { it.expiration = expiration }) return
 
-        active.generation.sliceClock.markStart()
-        runCaptureSlice(active) { producer.capture(active.generation) }
+        runCaptureSlice(active, admissionAlreadyGranted = true) { producer.capture(active.generation) }
     }
 
     /**
@@ -146,18 +145,27 @@ internal class SnapshotCaptureOrchestrator(
      * how many slices this takes: [CaptureGenerationContext.runMainThreadCaptureUnit] checks it
      * before every slice, including a resume, so a generation that outlives its deadline between
      * slices is interrupted without even running the next one, let alone acting on its result.
+     * Only the initial slice reuses beginCapture's time-bank admission. Every continuation must
+     * recheck the bank at dispatch time, accounting for both earlier charges and replenishment.
      */
     @MainThread
-    private fun runCaptureSlice(active: ActiveGeneration, step: () -> CaptureStep<CapturedFullSnapshot?>) {
-        val captureResult = active.generation.runMainThreadCaptureUnit(admissionAlreadyGranted = true) {
+    private fun runCaptureSlice(
+        active: ActiveGeneration,
+        admissionAlreadyGranted: Boolean,
+        step: () -> CaptureStep<CapturedFullSnapshot?>
+    ) {
+        val captureResult = active.generation.runMainThreadCaptureUnit(admissionAlreadyGranted) {
+            // Queue wait counts toward the generation deadline, not this slice's execution budget.
+            active.generation.sliceClock.markStart()
             safeCaptureStep(internalLogger, step)
         }
         when (captureResult) {
             is MainThreadCaptureResult.Completed -> when (val stepResult = captureResult.value) {
                 is CaptureStep.Done -> finishCapture(active, stepResult.value)
                 is CaptureStep.Yielded -> {
-                    active.generation.sliceClock.markStart()
-                    val continuation = mainThreadExecutor.execute { runCaptureSlice(active, stepResult.resume) }
+                    val continuation = mainThreadExecutor.execute {
+                        runCaptureSlice(active, admissionAlreadyGranted = false, step = stepResult.resume)
+                    }
                     active.generation.track(continuation)
                 }
             }

@@ -18,6 +18,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -781,6 +783,180 @@ internal class SnapshotCaptureOrchestratorTest {
 
         // Then - two separate charges, one per slice, neither inflated by the wait in between
         assertThat(fakeTimeBudget.consumedDurations).containsExactly(fakeSliceExecutionNs, fakeSliceExecutionNs)
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = [0L, 9L, 10L, 25L])
+    fun `M give every slice its full execution budget W dispatch is delayed`(
+        fakeQueueDelayNs: Long,
+        forge: Forge
+    ) {
+        // Given: four slices, each spending its entire 10 ns budget doing work.
+        val fakeSliceBudgetNs = 10L
+        val fakeTimeBudget = FakeTimeBudget(canStart = true)
+        val fakeMainThreadExecutor = FakeMainThreadExecutor(autoRun = false)
+        lateinit var fixture: Fixture
+        fixture = Fixture(
+            forge,
+            mainThreadExecutor = fakeMainThreadExecutor,
+            timeBudget = fakeTimeBudget,
+            yieldsBeforeCompletion = 3,
+            fakeSliceBudgetNs = fakeSliceBudgetNs,
+            fakeGenerationBudgetNs = 1_000L,
+            onProducerCapture = {
+                val clock = fixture.producerGenerations.last().sliceClock
+                assertThat(clock.shouldYield()).isFalse()
+                fixture.fakeClock.nowNs += fakeSliceBudgetNs - 1L
+                assertThat(clock.shouldYield()).isFalse()
+                fixture.fakeClock.nowNs++
+                assertThat(clock.shouldYield()).isTrue()
+            }
+        )
+        fixture.testedOrchestrator.start()
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeMainThreadExecutor.runNext()
+
+        // When: each continuation waits before the main thread dispatches it.
+        repeat(3) {
+            fixture.fakeClock.nowNs += fakeQueueDelayNs
+            fakeMainThreadExecutor.runNext()
+        }
+        fixture.fakeProcessor.pending.single().complete()
+
+        // Then: queue time neither shortens a slice nor gets charged to the recording bank.
+        assertThat(fixture.producerCaptures).isEqualTo(4)
+        assertThat(fixture.consumedCaptures.single().snapshot).isSameAs(fixture.fakeSnapshot)
+        assertThat(fakeTimeBudget.consumedDurations).containsExactly(
+            fakeSliceBudgetNs,
+            fakeSliceBudgetNs,
+            fakeSliceBudgetNs,
+            fakeSliceBudgetNs
+        )
+        assertThat(fakeTimeBudget.startChecks).containsExactlyElementsOf(
+            (0L..3L).map { fixture.fakeStartNs + it * (fakeSliceBudgetNs + fakeQueueDelayNs) }
+        )
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = [0, 1, 3])
+    fun `M discard incomplete capture W time bank denies a resumed slice`(
+        fakeAllowedResumes: Int,
+        forge: Forge
+    ) {
+        // Given
+        val fakeTimeBudget = FakeTimeBudget(canStart = true)
+        val fakeMainThreadExecutor = FakeMainThreadExecutor(autoRun = false)
+        val fixture = Fixture(
+            forge,
+            mainThreadExecutor = fakeMainThreadExecutor,
+            timeBudget = fakeTimeBudget,
+            yieldsBeforeCompletion = fakeAllowedResumes + 1,
+            producerExecutionNs = 1L
+        )
+        fixture.testedOrchestrator.start()
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeMainThreadExecutor.runNext()
+        // beginCapture already admitted the initial slice; it must not query the bank twice.
+        assertThat(fakeTimeBudget.startChecks).containsExactly(fixture.fakeStartNs)
+        repeat(fakeAllowedResumes) { fakeMainThreadExecutor.runNext() }
+        val deniedAtNs = fixture.fakeClock.nowNs
+        val generation = fixture.producerGenerations.first()
+        assertThat(generation.isActive()).isTrue()
+
+        // When
+        fakeTimeBudget.canStart = false
+        fakeMainThreadExecutor.runNext()
+
+        // Then: no execution, charge, processing, or delivery for the denied continuation.
+        assertThat(fixture.producerCaptures).isEqualTo(fakeAllowedResumes + 1)
+        assertThat(fakeTimeBudget.consumedDurations).hasSize(fakeAllowedResumes + 1)
+        assertThat(fakeTimeBudget.startChecks).hasSize(fakeAllowedResumes + 2)
+        assertThat(fakeTimeBudget.startChecks.last()).isEqualTo(deniedAtNs)
+        assertThat(fixture.fakeProcessor.pending).isEmpty()
+        assertThat(fixture.consumedCaptures).isEmpty()
+        assertThat(generation.isActive()).isFalse()
+        assertThat(fixture.expiryTask().cancelled).isTrue()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M check current bank balance W slice overshoots its remaining allowance`(
+        fakeReplenishBeforeResume: Boolean,
+        forge: Forge
+    ) {
+        // Given: 1 ms left in a real 100 ms/s bank, followed by an 8 ms capture slice.
+        val fakeTimeBank = RecordingTimeBank(maxTimeBalancePerSecondInMs = 100L)
+        fakeTimeBank.consume(TimeUnit.MILLISECONDS.toNanos(99L))
+        val fakeMainThreadExecutor = FakeMainThreadExecutor(autoRun = false)
+        val fixture = Fixture(
+            forge,
+            mainThreadExecutor = fakeMainThreadExecutor,
+            timeBudget = TimeBankCaptureTimeBudget(fakeTimeBank),
+            yieldsBeforeCompletion = 1,
+            producerExecutionNs = TimeUnit.MILLISECONDS.toNanos(8L),
+            fakeStartNs = 0L,
+            fakeGenerationBudgetNs = DEFAULT_GENERATION_BUDGET_NS
+        )
+        fixture.testedOrchestrator.start()
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeMainThreadExecutor.runNext()
+        assertThat(fixture.producerCaptures).isEqualTo(1)
+        assertThat(fixture.fakeProcessor.pending).isEmpty()
+        if (fakeReplenishBeforeResume) {
+            // At 80 ms the bank has earned 8 ms back; finishing the next slice at 88 ms is in time.
+            fixture.fakeClock.nowNs = TimeUnit.MILLISECONDS.toNanos(80L)
+        }
+
+        // When
+        fakeMainThreadExecutor.runNext()
+
+        // Then: use the balance at dispatch time, not the stale admission or balance at yield time.
+        if (fakeReplenishBeforeResume) {
+            assertThat(fixture.producerCaptures).isEqualTo(2)
+            fixture.fakeProcessor.pending.single().complete()
+            assertThat(fixture.consumedCaptures.single().snapshot).isSameAs(fixture.fakeSnapshot)
+        } else {
+            assertThat(fixture.producerCaptures).isEqualTo(1)
+            assertThat(fixture.fakeProcessor.pending).isEmpty()
+            assertThat(fixture.consumedCaptures).isEmpty()
+            assertThat(fixture.producerGenerations.single().isActive()).isFalse()
+        }
+    }
+
+    @Test
+    fun `M capture pending request after recovery W previous generation is denied on resume`(forge: Forge) {
+        // Given
+        val fakeTimeBudget = FakeTimeBudget(canStart = true)
+        val fakeMainThreadExecutor = FakeMainThreadExecutor(autoRun = false)
+        val fixture = Fixture(
+            forge,
+            mainThreadExecutor = fakeMainThreadExecutor,
+            timeBudget = fakeTimeBudget,
+            yieldsBeforeCompletion = 1
+        )
+        fixture.testedOrchestrator.start()
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeMainThreadExecutor.runNext()
+        fixture.testedOrchestrator.requestCapture()
+        fakeTimeBudget.canStart = false
+        fakeMainThreadExecutor.runNext()
+        assertThat(fixture.producerGenerations.single().isActive()).isFalse()
+        assertThat(fixture.fakeProcessor.pending).isEmpty()
+
+        // When: a fresh generation takes over after the bank recovers.
+        fakeTimeBudget.canStart = true
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeMainThreadExecutor.runNext()
+        fakeMainThreadExecutor.runNext()
+        fixture.fakeProcessor.pending.single().complete()
+
+        // Then: the cancelled generation is never resumed or delivered.
+        assertThat(fixture.producerGenerations.map { it.id }).containsExactly(1L, 2L, 2L)
+        assertThat(fixture.consumedCaptures.single().generation.id).isEqualTo(2L)
     }
 
     // endregion
