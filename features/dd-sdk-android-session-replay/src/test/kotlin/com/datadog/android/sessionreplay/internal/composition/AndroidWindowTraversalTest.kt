@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay.internal.composition
 import android.content.res.Resources
 import android.graphics.Color
 import android.graphics.Rect
-import android.graphics.drawable.Drawable
+import android.graphics.drawable.ColorDrawable
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewGroup
@@ -42,6 +42,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -116,6 +118,10 @@ internal class AndroidWindowTraversalTest {
 
     private fun stubDefaults(view: View, bounds: GlobalBounds) {
         whenever(view.isShown).thenReturn(true)
+        whenever(view.scaleX).thenReturn(1f)
+        whenever(view.scaleY).thenReturn(1f)
+        whenever(view.left).thenReturn(bounds.x.toInt())
+        whenever(view.top).thenReturn(bounds.y.toInt())
         whenever(view.width).thenReturn(bounds.width.toInt().coerceAtLeast(1))
         whenever(view.height).thenReturn(bounds.height.toInt().coerceAtLeast(1))
         whenever(view.getTag(any())).thenReturn(null)
@@ -145,7 +151,7 @@ internal class AndroidWindowTraversalTest {
     /** A view whose bounds fully cover whatever it's stacked on top of, painted with opaque black. */
     private fun mockOpaqueCoveringView(bounds: GlobalBounds): View {
         val view = mockView(bounds)
-        val drawable: Drawable = mock()
+        val drawable: ColorDrawable = mock()
         whenever(view.alpha).thenReturn(1f)
         whenever(view.scaleX).thenReturn(1f)
         whenever(view.scaleY).thenReturn(1f)
@@ -685,6 +691,79 @@ internal class AndroidWindowTraversalTest {
     // endregion
 
     // region yield/resume tests
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M capture a reparented view once W hierarchy changes between slices`(fakeMoveAfterVisit: Boolean) {
+        // Given: a view starts under the first group and moves under the second while yielded.
+        val fakeBounds = GlobalBounds(0, 0, 100, 100)
+        val mockRoot = mockViewGroup(fakeBounds)
+        val mockFirstParent = mockViewGroup(fakeBounds)
+        val mockSecondParent = mockViewGroup(fakeBounds)
+        val mockChild = mockView(fakeBounds)
+        whenever(mockRoot.childCount).thenReturn(2)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockFirstParent)
+        whenever(mockRoot.getChildAt(1)).thenReturn(mockSecondParent)
+        whenever(mockFirstParent.parent).thenReturn(mockRoot)
+        whenever(mockSecondParent.parent).thenReturn(mockRoot)
+        whenever(mockFirstParent.childCount).thenReturn(1)
+        whenever(mockFirstParent.getChildAt(0)).thenReturn(mockChild)
+        whenever(mockChild.parent).thenReturn(mockFirstParent)
+        val fakeVisited = mutableListOf<View>()
+        val fakePauseAfter = if (fakeMoveAfterVisit) mockChild else mockFirstParent
+        var fakeNowNs = 0L
+        val fakeYieldingContext = CaptureGenerationContext(
+            1L,
+            0L,
+            100L,
+            CaptureTimeProvider { fakeNowNs },
+            sliceBudgetNs = 10L
+        )
+        val testedTraversal = traversal(
+            fallback = CapturedViewMapper { view, context ->
+                fakeVisited += view
+                if (view === fakePauseAfter) fakeNowNs = 10L
+                markerMapper.map(view, context)
+            }
+        )
+        val fakeWindowIdentity = identityFactory.window("window")
+        val first = testedTraversal.traverseWindow(mockRoot, fakeWindowIdentity, identityFactory, fakeYieldingContext)
+        assertThat(first).isInstanceOf(CaptureStep.Yielded::class.java)
+
+        // When
+        whenever(mockFirstParent.childCount).thenReturn(0)
+        whenever(mockSecondParent.childCount).thenReturn(1)
+        whenever(mockSecondParent.getChildAt(0)).thenReturn(mockChild)
+        whenever(mockChild.parent).thenReturn(mockSecondParent)
+        val result = driveToCompletion(first, fakeYieldingContext.sliceClock::markStart) as WindowWalkResult.Present
+
+        // Then: already captured views retain their first parent; stale queued visits are skipped.
+        assertThat(fakeVisited.count { it === mockChild }).isEqualTo(1)
+        val fakeChildIdentity = identityFactory.view(
+            fakeWindowIdentity,
+            mockViewIdentifierResolver.resolveViewId(mockChild).toString()
+        )
+        val fakeExpectedParent = if (fakeMoveAfterVisit) mockFirstParent else mockSecondParent
+        val fakeParentIdentity = identityFactory.view(
+            fakeWindowIdentity,
+            mockViewIdentifierResolver.resolveViewId(fakeExpectedParent).toString()
+        )
+        assertThat(result.layers.single { it.identity == fakeParentIdentity }.children)
+            .contains(CapturedChild.Layer(fakeChildIdentity))
+        val fakeSnapshot = CapturedFullSnapshot(
+            timestamp = 0L,
+            scope = fakeWindowIdentity.scope,
+            root = CapturedLayer(
+                identityFactory.screenRoot(),
+                CapturedLayerKind.SYNTHETIC_SCREEN_ROOT,
+                result.rootLayer.bounds,
+                listOf(CapturedChild.Layer(fakeWindowIdentity))
+            ),
+            layers = result.layers,
+            wireframes = result.wireframes
+        )
+        assertThat(CapturedSnapshotValidation(fakeSnapshot).validate()).isEqualTo(CaptureValidationResult.Valid)
+    }
 
     /**
      * Drives a possibly-yielding walk to completion, resetting [resetSlice] before every resume -

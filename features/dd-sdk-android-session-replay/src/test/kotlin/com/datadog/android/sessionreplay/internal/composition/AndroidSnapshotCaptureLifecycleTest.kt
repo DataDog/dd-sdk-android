@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import android.app.Application
 import android.os.Handler
+import android.view.Display
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
@@ -20,6 +21,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -428,6 +431,60 @@ internal class AndroidSnapshotCaptureLifecycleTest {
 
         // Then
         verify(mockTouchInterceptor).intercept(listOf(mockActivityWindow, mockDialogWindow))
+    }
+
+    @ParameterizedTest
+    @CsvSource("0, true", "-1, true", "none, true", "1, false", "7, false", nullValues = ["none"])
+    fun `M apply traversal display policy to both interceptors W start`(
+        fakeDisplayId: Int?,
+        fakeSupported: Boolean
+    ) {
+        // Given: a tracked activity missing from global discovery, an untracked dialog, and a default-display window.
+        val stubDisplay = fakeDisplayId?.let { id ->
+            mock<Display>().also { whenever(it.displayId).thenReturn(id) }
+        }
+        val mockActivityRoot: View = mock()
+        val mockDialogRoot: View = mock()
+        whenever(mockActivityRoot.display).thenReturn(stubDisplay)
+        whenever(mockDialogRoot.display).thenReturn(stubDisplay)
+        val mockActivity = activityShowing(mockActivityRoot)
+        val mockDialogWindow: Window = mock()
+        val mockDefaultRoot: View = mock()
+        val stubDefaultDisplay: Display = mock()
+        whenever(stubDefaultDisplay.displayId).thenReturn(Display.DEFAULT_DISPLAY)
+        whenever(mockDefaultRoot.display).thenReturn(stubDefaultDisplay)
+        val mockDefaultWindow: Window = mock()
+        val fakeUntrackedWindows = mapOf(mockDialogRoot to mockDialogWindow, mockDefaultRoot to mockDefaultWindow)
+        val mockDrawInterceptor: CompositionViewOnDrawInterceptor = mock()
+        val mockTouchInterceptor: CompositionWindowTouchInterceptor = mock()
+        val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mock(),
+            interceptor = mockDrawInterceptor,
+            touchInterceptor = mockTouchInterceptor,
+            internalLogger = mock(),
+            currentActivity = mockActivity,
+            uiHandler = immediateHandler(),
+            windowProvider = { fakeUntrackedWindows.keys.toList() },
+            windowFromDecorView = { fakeUntrackedWindows[it] },
+            isMainThreadWindow = { true }
+        )
+
+        // When
+        testedLifecycle.start()
+
+        // Then: secondary-display windows reach neither draw nor touch interception.
+        val fakeExpectedRoots = if (fakeSupported) {
+            listOf(mockActivityRoot, mockDialogRoot, mockDefaultRoot)
+        } else {
+            listOf(mockDefaultRoot)
+        }
+        val fakeExpectedWindows = if (fakeSupported) {
+            listOf(mockActivity.window, mockDialogWindow, mockDefaultWindow)
+        } else {
+            listOf(mockDefaultWindow)
+        }
+        verify(mockDrawInterceptor).intercept(fakeExpectedRoots)
+        verify(mockTouchInterceptor).intercept(fakeExpectedWindows)
     }
 
     @Test

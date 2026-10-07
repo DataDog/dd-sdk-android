@@ -11,8 +11,8 @@ import android.view.View
 
 /**
  * Composition capture is confined to the main looper. Until an attached root reports that owner,
- * do not inspect its hierarchy or install draw/touch interception. Detached roots are retried by
- * the lifecycle's periodic window refresh; a null handler never implies main-thread ownership.
+ * do not inspect its hierarchy or install draw/touch interception. Tracked detached roots are
+ * retried on attachment; a null handler never implies main-thread ownership.
  */
 internal fun isAttachedToMainLooper(view: View): Boolean {
     val ownerLooper = view.handler?.looper ?: return false

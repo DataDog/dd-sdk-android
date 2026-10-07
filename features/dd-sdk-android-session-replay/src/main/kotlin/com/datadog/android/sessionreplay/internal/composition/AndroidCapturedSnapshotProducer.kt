@@ -40,7 +40,12 @@ internal class AndroidCapturedSnapshotProducer(
     @MainThread
     @Suppress("ReturnCount")
     override fun capture(context: CaptureGenerationContext): CaptureStep<CapturedFullSnapshot?> {
-        val rumViewScope = scopeProvider.currentScope() ?: return CaptureStep.Done(null)
+        val rumViewScope = scopeProvider.currentScope()
+        if (rumViewScope == null) {
+            // A previous screen's overrides must not remain active during a gap between RUM views.
+            if (context.shouldContinue()) touchPrivacyManager.replaceCurrentTouchOverrideAreas(emptyMap())
+            return CaptureStep.Done(null)
+        }
         val identityFactory = DefaultCapturedIdentityFactory(rumViewScope.scope)
         // Sources can outlive attachment or be updated independently of lifecycle interception.
         val windows = windowSource.currentWindows().filter(isMainThreadWindow)
@@ -71,7 +76,7 @@ internal class AndroidCapturedSnapshotProducer(
             val snapshot = accumulation.buildSnapshot(identityFactory, timeProvider, rumViewScope)
             // Publish only a complete traversal. Yielded/aborted captures never put partial areas in
             // TouchPrivacyManager's thread-local staging state, even when their continuation never resumes.
-            return if (context.shouldContinue()) {
+            return if (canContinueCapture(context, rumViewScope)) {
                 touchPrivacyManager.replaceCurrentTouchOverrideAreas(accumulation.touchOverrideAreas)
                 CaptureStep.Done(snapshot)
             } else {
@@ -80,7 +85,7 @@ internal class AndroidCapturedSnapshotProducer(
         }
         val window = windows[index]
         // A previous window's mapper may have detached this root after the initial filter.
-        if (!isMainThreadWindow(window)) return CaptureStep.Done(null)
+        if (!canContinueCapture(context, rumViewScope) || !isMainThreadWindow(window)) return CaptureStep.Done(null)
         val windowIdentity = identityFactory.window(viewIdentifierResolver.resolveViewId(window).toString())
         return continueWindow(
             traversal.traverseWindow(window, windowIdentity, identityFactory, context),
@@ -104,9 +109,9 @@ internal class AndroidCapturedSnapshotProducer(
         rumViewScope: CapturedRumViewScope
     ): CaptureStep<CapturedFullSnapshot?> = when (step) {
         is CaptureStep.Yielded -> CaptureStep.Yielded {
-            // A yielded root can detach or move to another looper while its continuation is queued.
-            // Discard the entire partial capture, including its uncommitted touch overrides.
-            if (isMainThreadWindow(windows[index])) {
+            // Navigation or lost window ownership invalidates the entire partial capture,
+            // including its uncommitted touch overrides, before touching the hierarchy again.
+            if (canContinueCapture(context, rumViewScope) && isMainThreadWindow(windows[index])) {
                 continueWindow(step.resume(), windows, index, identityFactory, context, accumulation, rumViewScope)
             } else {
                 CaptureStep.Done(null)
@@ -128,6 +133,9 @@ internal class AndroidCapturedSnapshotProducer(
             WindowWalkResult.Aborted -> CaptureStep.Done(null)
         }
     }
+
+    private fun canContinueCapture(context: CaptureGenerationContext, rumViewScope: CapturedRumViewScope): Boolean =
+        context.shouldContinue() && scopeProvider.currentScope()?.scope == rumViewScope.scope
 
     private class WindowsWalkAccumulation {
         private val windowLayers = mutableListOf<CapturedLayer>()

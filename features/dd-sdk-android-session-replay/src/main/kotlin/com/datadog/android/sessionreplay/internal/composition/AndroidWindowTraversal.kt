@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.composition
 import android.graphics.Rect
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewParent
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.R
@@ -25,6 +26,7 @@ import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
+import java.util.IdentityHashMap
 import java.util.Locale
 import kotlin.math.max
 import kotlin.math.min
@@ -74,7 +76,6 @@ internal class AndroidWindowTraversal(
 ) {
 
     private val occlusionDetector = ViewOcclusionDetector(
-        viewBoundsResolver = viewBoundsResolver,
         drawableToColorMapper = drawableToColorMapper,
         viewUtilsInternal = viewUtilsInternal,
         internalLogger = internalLogger
@@ -161,7 +162,7 @@ internal class AndroidWindowTraversal(
         context: CaptureGenerationContext
     ): Boolean {
         val view = item.view
-        if (isFiltered(view)) return false
+        if (!tryVisit(view, item.expectedParent, state)) return false
 
         collectTouchOverrideArea(view, state)
 
@@ -236,7 +237,7 @@ internal class AndroidWindowTraversal(
         val clipChildren = viewGroup.clipChildren
         // A covered child rectangle does not imply its overflowing subtree is covered.
         val occludedIndices = if (clipChildren) {
-            occlusionDetector.occludedChildIndices(drawingOrder, screenDensity)
+            occlusionDetector.occludedChildIndices(drawingOrder)
         } else {
             emptySet()
         }
@@ -274,10 +275,12 @@ internal class AndroidWindowTraversal(
         }
     }
 
-    private fun isFiltered(view: View): Boolean =
-        viewUtilsInternal.isNotVisible(view) ||
-            viewUtilsInternal.isSystemNoise(view) ||
-            viewUtilsInternal.isOnSecondaryDisplay(view)
+    @UiThread
+    private fun tryVisit(view: View, expectedParent: ViewParent?, state: TraversalState): Boolean =
+        !viewUtilsInternal.isNotVisible(view) &&
+            !viewUtilsInternal.isSystemNoise(view) &&
+            !viewUtilsInternal.isOnSecondaryDisplay(view) &&
+            state.tryVisit(view, expectedParent)
 
     /**
      * A visually occluded view contributes nothing to the final image, so it's never mapped or
@@ -293,7 +296,7 @@ internal class AndroidWindowTraversal(
         state: TraversalState
     ) {
         val view = item.view
-        if (isFiltered(view)) return
+        if (!tryVisit(view, item.expectedParent, state)) return
         collectTouchOverrideArea(view, state)
         if (view !is ViewGroup) return
         val children = drawingOrderResolver.resolve(view).children
@@ -328,10 +331,10 @@ internal class AndroidWindowTraversal(
         val x = locationOnScreen[0]
         val y = locationOnScreen[1]
         val viewArea = Rect(
-            x - view.paddingLeft,
-            y - view.paddingTop,
-            x + view.width + view.paddingRight,
-            y + view.height + view.paddingBottom
+            x,
+            y,
+            x + view.width,
+            y + view.height
         )
 
         try {
@@ -356,7 +359,8 @@ internal class AndroidWindowTraversal(
             val identityFactory: CapturedIdentityFactory,
             val ancestorClip: ClipBounds?,
             val clipToBounds: Boolean,
-            val sink: ResultSink
+            val sink: ResultSink,
+            val expectedParent: ViewParent? = view.parent
         ) : WorkItem
 
         /**
@@ -366,7 +370,8 @@ internal class AndroidWindowTraversal(
         data class VisitOccluded(
             val view: View,
             val windowIdentity: CapturedIdentity,
-            val identityFactory: CapturedIdentityFactory
+            val identityFactory: CapturedIdentityFactory,
+            val expectedParent: ViewParent? = view.parent
         ) : WorkItem
 
         data class Finish(
@@ -391,6 +396,14 @@ internal class AndroidWindowTraversal(
 
         // Owned by this walk's continuation. Cancellation can drop it without touching another capture.
         val touchOverrideAreas = mutableMapOf<Rect, TouchPrivacy>()
+        private val visitedViews = IdentityHashMap<View, Boolean>()
+
+        // The hierarchy may change while yielded. Skip stale work and never define a view twice,
+        // including when it moves after its first visit or was previously visited for touch tags only.
+        @UiThread
+        @Suppress("UnsafeThirdPartyFunctionCall") // The identity map is owned by this main-thread walk.
+        fun tryVisit(view: View, expectedParent: ViewParent?): Boolean =
+            view.parent === expectedParent && visitedViews.put(view, true) == null
     }
 }
 

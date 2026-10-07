@@ -20,14 +20,17 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.MockedStatic
 import org.mockito.Mockito.mockStatic
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -101,11 +104,14 @@ internal class CompositionWindowThreadTest {
         // When
         testedLifecycle.start()
 
-        // Then: reject the root before reflection, listener registration or callback wrapping.
+        // Then: reject the root before reflection, draw interception or callback wrapping.
         verify(mockDrawInterceptor).intercept(listOf(first, last))
         verify(mockTouchInterceptor).intercept(listOf(firstWindow, lastWindow))
         verify(mockWindowResolver, never()).invoke(unsupported)
         verify(unsupported, atLeastOnce()).handler
+        if (fakeTracked && fakeOwner == Owner.DETACHED) {
+            verify(unsupported).addOnAttachStateChangeListener(any())
+        }
         verifyNoMoreInteractions(unsupported)
     }
 
@@ -152,6 +158,112 @@ internal class CompositionWindowThreadTest {
             verify(mockTouchInterceptor, times(2)).intercept(emptyList())
             verify(mockWindowResolver, never()).invoke(any())
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M intercept before polling W tracked activity root attaches`(fakeAlreadyResumed: Boolean) {
+        // Given: cover both an existing activity at start and a newly resumed activity.
+        val fixture = AttachmentFixture(fakeAlreadyResumed)
+        fixture.start()
+        val listener = fixture.attachmentListener()
+        clearInvocations(fixture.handler, fixture.mockDrawInterceptor, fixture.mockTouchInterceptor)
+
+        // When: the framework attaches the decor view, without any timer or later lifecycle event.
+        setOwner(fixture.root, Owner.MAIN)
+        listener.onViewAttachedToWindow(fixture.root)
+
+        // Then
+        verify(fixture.mockDrawInterceptor).intercept(listOf(fixture.root))
+        verify(fixture.mockTouchInterceptor).intercept(listOf(fixture.window))
+        verify(fixture.root).removeOnAttachStateChangeListener(listener)
+        verify(fixture.root).addOnAttachStateChangeListener(any())
+        verify(fixture.handler, never()).post(any())
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M remove attachment listener W pending activity pauses or recording stops`(fakeStop: Boolean) {
+        // Given
+        val fixture = AttachmentFixture()
+        fixture.start()
+        val listener = fixture.attachmentListener()
+
+        // When
+        if (fakeStop) fixture.lifecycle.stop() else fixture.callbacks.onActivityPaused(fixture.activity)
+
+        // Then: even an already-dispatched callback must not revive the removed registration.
+        verify(fixture.root).removeOnAttachStateChangeListener(listener)
+        clearInvocations(fixture.mockDrawInterceptor, fixture.mockTouchInterceptor)
+        setOwner(fixture.root, Owner.MAIN)
+        listener.onViewAttachedToWindow(fixture.root)
+        verify(fixture.mockDrawInterceptor, never()).intercept(any())
+        verify(fixture.mockTouchInterceptor, never()).intercept(any())
+    }
+
+    @Test
+    fun `M keep one attachment listener W detached activity is refreshed repeatedly`() {
+        // Given
+        val fixture = AttachmentFixture()
+        fixture.start()
+
+        // When
+        fixture.callbacks.onActivityResumed(fixture.activity)
+        val scheduled = argumentCaptor<Runnable>()
+        verify(fixture.handler).postDelayed(scheduled.capture(), any())
+        scheduled.firstValue.run()
+
+        // Then
+        verify(fixture.root).addOnAttachStateChangeListener(any())
+        verify(fixture.root, never()).removeOnAttachStateChangeListener(any())
+    }
+
+    @Test
+    fun `M reject secondary owner W tracked root attaches off main thread`() {
+        // Given: defer posted work so we can distinguish the owner's callback from main-thread cleanup.
+        val fixture = AttachmentFixture()
+        fixture.start()
+        val listener = fixture.attachmentListener()
+        doAnswer { true }.whenever(fixture.handler).post(any())
+        clearInvocations(fixture.handler, fixture.mockDrawInterceptor, fixture.mockTouchInterceptor)
+
+        // When
+        setOwner(fixture.root, Owner.SECONDARY)
+        listener.onViewAttachedToWindow(fixture.root)
+
+        // Then: unregister on the owning thread, but never inspect or intercept its hierarchy.
+        verify(fixture.root).removeOnAttachStateChangeListener(listener)
+        verify(fixture.mockDrawInterceptor, never()).intercept(any())
+        verify(fixture.mockTouchInterceptor, never()).intercept(any())
+        val posted = argumentCaptor<Runnable>()
+        verify(fixture.handler).post(posted.capture())
+        posted.firstValue.run()
+        verify(fixture.mockDrawInterceptor).intercept(emptyList())
+        verify(fixture.mockTouchInterceptor).intercept(emptyList())
+        verify(fixture.root, never()).viewTreeObserver
+    }
+
+    @Test
+    fun `M ignore old attachment callback W recording restarts before late callback`() {
+        // Given
+        val fixture = AttachmentFixture()
+        fixture.start()
+        val oldListener = fixture.attachmentListener()
+        fixture.lifecycle.stop()
+        fixture.lifecycle.start()
+        val registrations = argumentCaptor<View.OnAttachStateChangeListener>()
+        verify(fixture.root, times(2)).addOnAttachStateChangeListener(registrations.capture())
+        clearInvocations(fixture.mockDrawInterceptor, fixture.mockTouchInterceptor)
+
+        // When: a stale callback must not remove the new listener's registration.
+        setOwner(fixture.root, Owner.MAIN)
+        oldListener.onViewAttachedToWindow(fixture.root)
+        verify(fixture.mockDrawInterceptor, never()).intercept(any())
+        registrations.lastValue.onViewAttachedToWindow(fixture.root)
+
+        // Then
+        verify(fixture.mockDrawInterceptor).intercept(listOf(fixture.root))
+        verify(fixture.mockTouchInterceptor).intercept(listOf(fixture.window))
     }
 
     @ParameterizedTest
@@ -287,6 +399,42 @@ internal class CompositionWindowThreadTest {
             true
         }.whenever(handler).post(any())
         whenever(handler.postDelayed(any<Runnable>(), any())).thenReturn(true)
+    }
+
+    private inner class AttachmentFixture(private val alreadyResumed: Boolean = true) {
+        val root = root(Owner.DETACHED)
+        val window = window(root)
+        val activity = activity(window)
+        val handler = immediateHandler()
+        val mockApplication: Application = mock()
+        val mockDrawInterceptor: CompositionViewOnDrawInterceptor = mock()
+        val mockTouchInterceptor: CompositionWindowTouchInterceptor = mock()
+        lateinit var callbacks: Application.ActivityLifecycleCallbacks
+        val lifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mockApplication,
+            interceptor = mockDrawInterceptor,
+            touchInterceptor = mockTouchInterceptor,
+            internalLogger = mock(),
+            currentActivity = if (alreadyResumed) activity else null,
+            uiHandler = handler,
+            windowProvider = { emptyList() },
+            windowFromDecorView = { null }
+        )
+
+        fun start() {
+            lifecycle.registerCallbacks()
+            val registered = argumentCaptor<Application.ActivityLifecycleCallbacks>()
+            verify(mockApplication).registerActivityLifecycleCallbacks(registered.capture())
+            callbacks = registered.firstValue
+            lifecycle.start()
+            if (!alreadyResumed) callbacks.onActivityResumed(activity)
+        }
+
+        fun attachmentListener(): View.OnAttachStateChangeListener {
+            val registered = argumentCaptor<View.OnAttachStateChangeListener>()
+            verify(root).addOnAttachStateChangeListener(registered.capture())
+            return registered.firstValue
+        }
     }
 
     private class CaptureFixture(private val windows: List<View>) {

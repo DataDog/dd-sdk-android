@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay.internal.composition
 import android.content.res.Resources
 import android.graphics.Color
 import android.graphics.Rect
-import android.graphics.drawable.Drawable
+import android.graphics.drawable.ColorDrawable
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewGroup
@@ -413,6 +413,8 @@ internal class CompositionClippingTest {
             bounds[view] = fakeBounds
             viewIds[view] = bounds.size.toLong()
             whenever(view.isShown).thenReturn(true)
+            whenever(view.scaleX).thenReturn(1f)
+            whenever(view.scaleY).thenReturn(1f)
             whenever(view.alpha).thenReturn(1f)
             whenever(view.getLocationOnScreen(any())).thenAnswer {
                 val coordinates = it.getArgument<IntArray>(0)
@@ -420,6 +422,8 @@ internal class CompositionClippingTest {
                 coordinates[1] = (fakeBounds.y * DENSITY).toInt()
                 null
             }
+            whenever(view.left).thenReturn((fakeBounds.x * DENSITY).toInt())
+            whenever(view.top).thenReturn((fakeBounds.y * DENSITY).toInt())
             whenever(view.width).thenReturn((fakeBounds.width * DENSITY).toInt())
             whenever(view.height).thenReturn((fakeBounds.height * DENSITY).toInt())
             val resources: Resources = mock()
@@ -454,7 +458,7 @@ internal class CompositionClippingTest {
         }
 
         fun makeOpaque(view: View) {
-            whenever(view.background).thenReturn(mock<Drawable>())
+            whenever(view.background).thenReturn(mock<ColorDrawable>())
             whenever(view.alpha).thenReturn(1f)
             whenever(view.scaleX).thenReturn(1f)
             whenever(view.scaleY).thenReturn(1f)

@@ -38,7 +38,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -143,7 +142,7 @@ internal class AndroidCapturedSnapshotProducerTest {
 
         // Then
         assertThat(snapshot).isNull()
-        verify(mockTouchPrivacyManager, never()).replaceCurrentTouchOverrideAreas(any())
+        verify(mockTouchPrivacyManager).replaceCurrentTouchOverrideAreas(emptyMap())
     }
 
     @Test

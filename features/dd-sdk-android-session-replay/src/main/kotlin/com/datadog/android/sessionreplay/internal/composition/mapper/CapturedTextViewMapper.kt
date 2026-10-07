@@ -10,6 +10,7 @@ import android.graphics.Typeface
 import android.text.TextUtils
 import android.view.Gravity
 import android.widget.TextView
+import androidx.core.text.TextDirectionHeuristicsCompat
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.internal.composition.CapturedAlignment
@@ -31,8 +32,8 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
  * The flagship semantic wireframe for this workstream: a real, unmasked text capture. Text/input
  * privacy masking is explicitly out of scope here - it is owned by the pixel-fallback/privacy
  * workstream, which applies masking policy uniformly across text and images before anything is
- * uploadable. Font-family bucketing, truncation-mode mapping, and padding/alignment resolution are
- * pure functions over a [TextView] ported verbatim from legacy `TextViewMapper`.
+ * uploadable. Styling follows legacy `TextViewMapper`; relative alignment is resolved using the
+ * rendered paragraph direction for text alignment and layout direction for view alignment.
  */
 internal class CapturedTextViewMapper(
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
@@ -65,9 +66,6 @@ internal class CapturedTextViewMapper(
 
         return CapturedViewMapperResult.Wireframes(wireframes)
     }
-
-    private fun resolveLayoutText(textView: TextView): String =
-        (textView.layout?.text ?: textView.text)?.toString().orEmpty()
 
     private fun resolveTextStyle(textView: TextView, pixelsDensity: Float): CapturedTextStyle {
         return CapturedTextStyle(
@@ -127,52 +125,71 @@ internal class CapturedTextViewMapper(
             CapturedPadding(
                 top = textView.totalPaddingTop.densityNormalized(pixelsDensity).toLong(),
                 bottom = textView.totalPaddingBottom.densityNormalized(pixelsDensity).toLong(),
-                left = textView.totalPaddingStart.densityNormalized(pixelsDensity).toLong(),
-                right = textView.totalPaddingEnd.densityNormalized(pixelsDensity).toLong()
+                left = textView.totalPaddingLeft.densityNormalized(pixelsDensity).toLong(),
+                right = textView.totalPaddingRight.densityNormalized(pixelsDensity).toLong()
             )
         } else {
             CapturedPadding(
                 top = textView.paddingTop.densityNormalized(pixelsDensity).toLong(),
                 bottom = textView.paddingBottom.densityNormalized(pixelsDensity).toLong(),
-                left = textView.paddingStart.densityNormalized(pixelsDensity).toLong(),
-                right = textView.paddingEnd.densityNormalized(pixelsDensity).toLong()
+                left = textView.paddingLeft.densityNormalized(pixelsDensity).toLong(),
+                right = textView.paddingRight.densityNormalized(pixelsDensity).toLong()
             )
         }
     }
 
     private fun resolveAlignment(textView: TextView): CapturedAlignment {
-        return when (textView.textAlignment) {
-            TextView.TEXT_ALIGNMENT_CENTER -> CapturedAlignment(
-                horizontal = CapturedHorizontalAlignment.CENTER,
-                vertical = CapturedVerticalAlignment.CENTER
+        val horizontal = when (textView.textAlignment) {
+            TextView.TEXT_ALIGNMENT_CENTER -> CapturedHorizontalAlignment.CENTER
+            TextView.TEXT_ALIGNMENT_TEXT_START -> relativeAlignment(isParagraphRtl(textView), isEnd = false)
+            TextView.TEXT_ALIGNMENT_TEXT_END -> relativeAlignment(isParagraphRtl(textView), isEnd = true)
+            TextView.TEXT_ALIGNMENT_VIEW_START -> relativeAlignment(
+                textView.layoutDirection == TextView.LAYOUT_DIRECTION_RTL,
+                isEnd = false
             )
-
-            TextView.TEXT_ALIGNMENT_TEXT_END,
-            TextView.TEXT_ALIGNMENT_VIEW_END -> CapturedAlignment(
-                horizontal = CapturedHorizontalAlignment.RIGHT,
-                vertical = CapturedVerticalAlignment.CENTER
+            TextView.TEXT_ALIGNMENT_VIEW_END -> relativeAlignment(
+                textView.layoutDirection == TextView.LAYOUT_DIRECTION_RTL,
+                isEnd = true
             )
-
-            TextView.TEXT_ALIGNMENT_TEXT_START,
-            TextView.TEXT_ALIGNMENT_VIEW_START -> CapturedAlignment(
-                horizontal = CapturedHorizontalAlignment.LEFT,
-                vertical = CapturedVerticalAlignment.CENTER
-            )
-
-            TextView.TEXT_ALIGNMENT_GRAVITY -> resolveAlignmentFromGravity(textView)
-            else -> CapturedAlignment(
-                horizontal = CapturedHorizontalAlignment.LEFT,
-                vertical = CapturedVerticalAlignment.CENTER
-            )
+            TextView.TEXT_ALIGNMENT_GRAVITY -> return resolveAlignmentFromGravity(textView)
+            else -> CapturedHorizontalAlignment.LEFT
         }
+        // Total padding already carries gravity offsets once the text has a layout.
+        val vertical = if (textView.layout == null) {
+            resolveVerticalAlignment(textView.gravity)
+        } else {
+            CapturedVerticalAlignment.CENTER
+        }
+        return CapturedAlignment(horizontal, vertical)
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // First line exists; heuristic range covers a captured string.
+    private fun isParagraphRtl(textView: TextView): Boolean {
+        val layout = textView.layout
+        if (layout != null && layout.lineCount > 0) return layout.getParagraphDirection(0) < 0
+
+        val heuristic = when (textView.textDirection) {
+            TextView.TEXT_DIRECTION_LTR -> TextDirectionHeuristicsCompat.LTR
+            TextView.TEXT_DIRECTION_RTL -> TextDirectionHeuristicsCompat.RTL
+            TextView.TEXT_DIRECTION_ANY_RTL -> TextDirectionHeuristicsCompat.ANYRTL_LTR
+            TextView.TEXT_DIRECTION_LOCALE -> TextDirectionHeuristicsCompat.LOCALE
+            TextView.TEXT_DIRECTION_FIRST_STRONG_LTR -> TextDirectionHeuristicsCompat.FIRSTSTRONG_LTR
+            TextView.TEXT_DIRECTION_FIRST_STRONG_RTL -> TextDirectionHeuristicsCompat.FIRSTSTRONG_RTL
+            else -> if (textView.layoutDirection == TextView.LAYOUT_DIRECTION_RTL) {
+                TextDirectionHeuristicsCompat.FIRSTSTRONG_RTL
+            } else {
+                TextDirectionHeuristicsCompat.FIRSTSTRONG_LTR
+            }
+        }
+        val text = resolveLayoutText(textView)
+        return heuristic.isRtl(text, 0, text.length)
     }
 
     private fun resolveAlignmentFromGravity(textView: TextView): CapturedAlignment {
-        val horizontalAlignment = when (textView.gravity.and(Gravity.HORIZONTAL_GRAVITY_MASK)) {
-            Gravity.START,
+        val horizontalAlignment = when (textView.gravity.and(Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK)) {
+            Gravity.START -> relativeAlignment(isParagraphRtl(textView), isEnd = false)
+            Gravity.END -> relativeAlignment(isParagraphRtl(textView), isEnd = true)
             Gravity.LEFT -> CapturedHorizontalAlignment.LEFT
-
-            Gravity.END,
             Gravity.RIGHT -> CapturedHorizontalAlignment.RIGHT
 
             Gravity.CENTER,
@@ -180,15 +197,7 @@ internal class CapturedTextViewMapper(
 
             else -> CapturedHorizontalAlignment.LEFT
         }
-        val verticalAlignment = when (textView.gravity.and(Gravity.VERTICAL_GRAVITY_MASK)) {
-            Gravity.TOP -> CapturedVerticalAlignment.TOP
-            Gravity.BOTTOM -> CapturedVerticalAlignment.BOTTOM
-            Gravity.CENTER_VERTICAL,
-            Gravity.CENTER -> CapturedVerticalAlignment.CENTER
-
-            else -> CapturedVerticalAlignment.CENTER
-        }
-        return CapturedAlignment(horizontalAlignment, verticalAlignment)
+        return CapturedAlignment(horizontalAlignment, resolveVerticalAlignment(textView.gravity))
     }
 
     private companion object {
@@ -197,3 +206,16 @@ internal class CapturedTextViewMapper(
         const val MONOSPACE_FAMILY_NAME = "monospace"
     }
 }
+
+private fun relativeAlignment(isRtl: Boolean, isEnd: Boolean): CapturedHorizontalAlignment =
+    if (isRtl != isEnd) CapturedHorizontalAlignment.RIGHT else CapturedHorizontalAlignment.LEFT
+
+private fun resolveVerticalAlignment(gravity: Int): CapturedVerticalAlignment =
+    when (gravity.and(Gravity.VERTICAL_GRAVITY_MASK)) {
+        Gravity.TOP -> CapturedVerticalAlignment.TOP
+        Gravity.BOTTOM -> CapturedVerticalAlignment.BOTTOM
+        else -> CapturedVerticalAlignment.CENTER
+    }
+
+private fun resolveLayoutText(textView: TextView): String =
+    (textView.layout?.text ?: textView.text)?.toString().orEmpty()

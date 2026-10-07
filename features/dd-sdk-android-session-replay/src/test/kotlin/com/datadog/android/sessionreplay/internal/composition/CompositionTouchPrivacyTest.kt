@@ -24,6 +24,7 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.any
@@ -102,6 +103,64 @@ internal class CompositionTouchPrivacyTest {
         assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isFalse()
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M discard stale capture W RUM scope changes before resume`(fakeMissingScope: Boolean) {
+        // Given: screen A yields after collecting a SHOW override.
+        val fixture = Fixture()
+        fixture.startCapture()
+        var resumedViews = 0
+        fixture.onMap = { resumedViews++ }
+        fixture.rumViewScope = if (fakeMissingScope) null else CapturedRumViewScope(RumViewIdentityScope("new"), 0L)
+        val fakeCurrentArea = Rect(200, 200, 300, 300)
+        fixture.touchPrivacyManager.replaceCurrentTouchOverrideAreas(mapOf(fakeCurrentArea to TouchPrivacy.SHOW))
+
+        // When
+        fixture.mainThreadExecutor.runNext()
+
+        // Then: stale work neither resumes nor overwrites the current screen's committed overrides.
+        assertThat(resumedViews).isZero()
+        assertThat(fixture.consumed).isEmpty()
+        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas())
+            .containsExactlyEntriesOf(mapOf(fakeCurrentArea to TouchPrivacy.SHOW))
+        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isFalse()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M discard stale overrides W RUM scope changes in final capture slice`(fakeMissingScope: Boolean) {
+        // Given: the final child changes RUM scope while the traversal is completing.
+        val fixture = Fixture()
+        fixture.startCapture()
+        fixture.onMap = {
+            fixture.rumViewScope = if (fakeMissingScope) null else CapturedRumViewScope(RumViewIdentityScope("new"), 0L)
+        }
+
+        // When
+        fixture.mainThreadExecutor.runNext()
+
+        // Then: successful traversal alone is insufficient to publish the previous screen's SHOW area.
+        assertThat(fixture.consumed).isEmpty()
+        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
+        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isFalse()
+    }
+
+    @Test
+    fun `M complete capture W time offset changes within same RUM view`() {
+        // Given
+        val fixture = Fixture()
+        fixture.startCapture()
+        fixture.rumViewScope = fixture.rumViewScope?.copy(viewTimeOffsetMs = 100L)
+        fixture.onMap = {}
+
+        // When
+        fixture.mainThreadExecutor.runNext()
+
+        // Then: identity determines the scope, independently of clock synchronization.
+        assertThat(fixture.consumed).hasSize(1)
+        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isTrue()
+    }
+
     @Test
     fun `M publish overrides from every window W yielded capture completes`() {
         // Given: the first window completes, then the second window yields with another override.
@@ -167,8 +226,53 @@ internal class CompositionTouchPrivacyTest {
         assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isFalse()
     }
 
+    @Test
+    fun `M clear previous screen overrides W capture has no RUM scope`() {
+        // Given
+        val fixture = Fixture()
+        fixture.onMap = {}
+        fixture.startCapture()
+        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).isNotEmpty()
+
+        // When
+        fixture.rumViewScope = null
+        fixture.startCapture()
+
+        // Then: the previous screen's SHOW area no longer overrides global HIDE.
+        assertThat(fixture.consumed).hasSize(1)
+        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
+        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point())).isFalse()
+    }
+
+    @ParameterizedTest
+    @CsvSource("199, 50, false", "300, 50, false", "250, -1, false", "250, 100, false", "200, 0, true", "299, 99, true")
+    fun `M constrain SHOW override to outer bounds W tagged view has padding`(
+        fakeX: Int,
+        fakeY: Int,
+        fakeExpectedRecord: Boolean
+    ) {
+        // Given: the view occupies [200, 0, 300, 100], including all of its padding.
+        val fixture = Fixture()
+        val fakeWindow = fixture.window(200)
+        whenever(fakeWindow.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
+        whenever(fakeWindow.paddingLeft).thenReturn(20)
+        whenever(fakeWindow.paddingTop).thenReturn(30)
+        whenever(fakeWindow.paddingRight).thenReturn(40)
+        whenever(fakeWindow.paddingBottom).thenReturn(50)
+        fixture.windowSource.update(listOf(fakeWindow))
+        fixture.onMap = {}
+        val fakePoint = Point().apply { x = fakeX; y = fakeY }
+
+        // When
+        fixture.startCapture()
+
+        // Then
+        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(fakePoint)).isEqualTo(fakeExpectedRecord)
+    }
+
     private class Fixture {
         var nowNs = 0L
+        var rumViewScope: CapturedRumViewScope? = CapturedRumViewScope(RumViewIdentityScope("view"), 0L)
         val touchPrivacyManager = TouchPrivacyManager(TouchPrivacy.HIDE)
         val captureScheduler = TaskQueue()
         val expiryScheduler = TaskQueue()
@@ -190,7 +294,7 @@ internal class CompositionTouchPrivacyTest {
 
         private val producer = AndroidCapturedSnapshotProducer(
             windowSource = windowSource,
-            scopeProvider = RumViewScopeProvider { CapturedRumViewScope(RumViewIdentityScope("view"), 0L) },
+            scopeProvider = RumViewScopeProvider { rumViewScope },
             timeProvider = mock(),
             traversal = AndroidWindowTraversal(
                 mapperRegistry = CapturedViewMapperRegistry(

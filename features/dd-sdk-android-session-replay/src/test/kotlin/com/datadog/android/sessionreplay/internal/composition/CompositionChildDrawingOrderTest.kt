@@ -10,7 +10,12 @@ import android.content.Context
 import android.content.res.Resources
 import android.graphics.Color
 import android.graphics.Rect
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.InsetDrawable
+import android.graphics.drawable.LayerDrawable
+import android.graphics.drawable.ShapeDrawable
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewGroup
@@ -26,10 +31,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 
 internal class CompositionChildDrawingOrderTest {
@@ -135,6 +142,67 @@ internal class CompositionChildDrawingOrderTest {
         // Then
         assertThat(result.rootLayer.children.map { it.identity.localId }).containsExactly("2")
         assertThat(fixture.visited).containsExactly(fixture.root, covering)
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        classes = [
+            InsetDrawable::class, ShapeDrawable::class, GradientDrawable::class, LayerDrawable::class, Drawable::class
+        ]
+    )
+    fun `M retain visible sibling W traverseWindow { background color does not prove coverage }`(
+        fakeDrawableClass: Class<out Drawable>
+    ) {
+        // Given: the color mapper reports opaque black even for an inset, shaped or unknown background.
+        val fixture = Fixture(childCount = 2)
+        val covering = fixture.children[1]
+        fixture.makeOpaque(covering)
+        val stubBackground = Mockito.mock(fakeDrawableClass)
+        whenever(covering.background).thenReturn(stubBackground)
+
+        // When
+        val result = fixture.traverse()
+
+        // Then: potentially visible content remains beneath backgrounds with uncertain coverage.
+        assertThat(result.rootLayer.children.map { it.identity.localId }).containsExactly("1", "2")
+        assertThat(fixture.visited).containsExactly(fixture.root, fixture.children[0], covering)
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "30, 0, 0, 1, 1",
+        "0, 30, 0, 1, 1",
+        "0, 0, 30, 1, 1",
+        "0, 0, 0, 2, 1",
+        "0, 0, 0, 1, 2",
+        "0, 0, 0, -1, 1",
+        "0, 0, 0, 1, 0.5"
+    )
+    fun `M retain siblings W traverseWindow { either sibling has scale or rotation }`(
+        fakeRotation: Float,
+        fakeRotationX: Float,
+        fakeRotationY: Float,
+        fakeScaleX: Float,
+        fakeScaleY: Float
+    ) {
+        for (fakeTransformedIndex in 0..1) {
+            // Given: the computed rectangles overlap completely, but transformed drawing may not.
+            val fixture = Fixture(childCount = 2)
+            fixture.children.forEach(fixture::makeOpaque)
+            val mockTransformedChild = fixture.children[fakeTransformedIndex]
+            whenever(mockTransformedChild.rotation).thenReturn(fakeRotation)
+            whenever(mockTransformedChild.rotationX).thenReturn(fakeRotationX)
+            whenever(mockTransformedChild.rotationY).thenReturn(fakeRotationY)
+            whenever(mockTransformedChild.scaleX).thenReturn(fakeScaleX)
+            whenever(mockTransformedChild.scaleY).thenReturn(fakeScaleY)
+
+            // When
+            val result = fixture.traverse()
+
+            // Then: a transformed view is neither culled nor allowed to cull another view.
+            assertThat(result.rootLayer.children.map { it.identity.localId }).containsExactly("1", "2")
+            assertThat(fixture.visited).containsExactly(fixture.root, fixture.children[0], fixture.children[1])
+        }
     }
 
     @Test
@@ -323,11 +391,109 @@ internal class CompositionChildDrawingOrderTest {
         assertThat(result.rootLayer.children.map { it.identity.localId }).containsExactly("1", "2")
     }
 
+    @ParameterizedTest
+    @CsvSource("0.5, 0, 50, 25", "1, 180, -25, 25")
+    fun `M retain visible sibling W parent transform changes screen origin`(
+        fakeParentScale: Float,
+        fakeParentRotation: Float,
+        fakeLeft: Int,
+        fakeScreenX: Long
+    ) {
+        // Given: screen origins include the parent's transform but view width/height do not.
+        val fixture = Fixture(childCount = 2)
+        val lower = fixture.children[0]
+        val upper = fixture.children[1]
+        whenever(fixture.root.scaleX).thenReturn(fakeParentScale)
+        whenever(fixture.root.rotation).thenReturn(fakeParentRotation)
+        whenever(lower.left).thenReturn(fakeLeft)
+        whenever(lower.width).thenReturn(20)
+        whenever(lower.height).thenReturn(20)
+        whenever(upper.width).thenReturn(50)
+        whenever(upper.height).thenReturn(50)
+        whenever(fixture.boundsResolver.resolveViewGlobalBounds(lower, 1f))
+            .thenReturn(GlobalBounds(fakeScreenX, 0, 20, 20))
+        whenever(fixture.boundsResolver.resolveViewGlobalBounds(upper, 1f))
+            .thenReturn(GlobalBounds(0, 0, 50, 50))
+        fixture.makeOpaque(upper)
+
+        // When
+        val result = fixture.traverse()
+
+        // Then: the lower view extends outside the upper in their shared parent coordinates.
+        assertThat(result.rootLayer.children.map { it.identity.localId }).containsExactly("1", "2")
+        assertThat(fixture.visited).containsExactly(fixture.root, lower, upper)
+    }
+
+    @ParameterizedTest
+    @CsvSource("0.25, 0", "-0.25, 0", "0, 0.25", "0, -0.25")
+    fun `M retain fractional overflow W sibling is translated`(fakeTranslationX: Float, fakeTranslationY: Float) {
+        // Given: density-rounded screen bounds are identical, but a fraction of a pixel remains visible.
+        val fixture = Fixture(childCount = 2, screenDensity = 3f)
+        whenever(fixture.children[0].translationX).thenReturn(fakeTranslationX)
+        whenever(fixture.children[0].translationY).thenReturn(fakeTranslationY)
+        fixture.makeOpaque(fixture.children[1])
+
+        // When
+        val result = fixture.traverse()
+
+        // Then
+        assertThat(result.rootLayer.children.map { it.identity.localId }).containsExactly("1", "2")
+    }
+
+    @Test
+    fun `M cull covered sibling W siblings share fractional translation and transformed parent`() {
+        // Given: a common transform does not change containment between siblings.
+        val fixture = Fixture(childCount = 2, screenDensity = 3f)
+        whenever(fixture.root.scaleX).thenReturn(0.5f)
+        whenever(fixture.root.rotation).thenReturn(30f)
+        fixture.children.forEach {
+            whenever(it.translationX).thenReturn(0.25f)
+            whenever(it.translationY).thenReturn(-0.25f)
+        }
+        fixture.makeOpaque(fixture.children[1])
+
+        // When
+        val result = fixture.traverse()
+
+        // Then
+        assertThat(result.rootLayer.children.map { it.identity.localId }).containsExactly("2")
+        assertThat(fixture.visited).containsExactly(fixture.root, fixture.children[1])
+    }
+
+    @Test
+    fun `M retain all children W sibling group exceeds occlusion limit`() {
+        // Given: every child would otherwise be occluded by the last opaque sibling.
+        val fixture = Fixture(childCount = 65)
+        fixture.children.forEach(fixture::makeOpaque)
+
+        // When
+        val result = fixture.traverse()
+
+        // Then
+        assertThat(result.rootLayer.children).hasSize(65)
+        assertThat(fixture.visited).containsExactlyElementsOf(listOf(fixture.root) + fixture.children)
+    }
+
+    @Test
+    fun `M skip geometry and drawable reads W group is too large for occlusion preprocessing`() {
+        // Given
+        val mockColorMapper: DrawableToColorMapper = mock()
+        val testedDetector = ViewOcclusionDetector(mockColorMapper, mock(), mock())
+        val fakeChildren = List(65) { mock<View>() }
+
+        // When
+        val result = testedDetector.occludedChildIndices(ViewGroupDrawingOrder(fakeChildren, true))
+
+        // Then: the optional quadratic pass does no per-child work above the limit.
+        assertThat(result).isEmpty()
+        verifyNoInteractions(mockColorMapper, *fakeChildren.toTypedArray())
+    }
+
     private class Fixture(childCount: Int = 3, private val sdkInt: Int = 28, screenDensity: Float = 1f) {
         val root: CustomOrderViewGroup = mock()
         val children = List(childCount) { mock<View>() }
         val visited = mutableListOf<View>()
-        private val boundsResolver: ViewBoundsResolver = mock()
+        val boundsResolver: ViewBoundsResolver = mock()
         private val identifierResolver: ViewIdentifierResolver = mock()
         private val drawableToColorMapper: DrawableToColorMapper = mock()
 
@@ -339,6 +505,8 @@ internal class CompositionChildDrawingOrderTest {
             whenever(root.clipChildren).thenReturn(true)
             (listOf(root) + children).forEachIndexed { index, view ->
                 whenever(view.isShown).thenReturn(true)
+                whenever(view.scaleX).thenReturn(1f)
+                whenever(view.scaleY).thenReturn(1f)
                 whenever(view.width).thenReturn(100)
                 whenever(view.height).thenReturn(100)
                 whenever(identifierResolver.resolveViewId(view)).thenReturn(index.toLong())
@@ -358,7 +526,7 @@ internal class CompositionChildDrawingOrderTest {
         }
 
         fun makeOpaque(view: View) {
-            val drawable: Drawable = mock()
+            val drawable: ColorDrawable = mock()
             whenever(view.background).thenReturn(drawable)
             whenever(view.alpha).thenReturn(1f)
             whenever(view.scaleX).thenReturn(1f)

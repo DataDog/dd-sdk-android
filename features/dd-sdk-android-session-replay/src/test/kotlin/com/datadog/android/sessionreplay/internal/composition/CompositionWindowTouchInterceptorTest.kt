@@ -8,16 +8,21 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import android.app.Application
 import android.content.res.Resources
+import android.graphics.Point
+import android.graphics.Rect
 import android.util.DisplayMetrics
 import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.recorder.callback.NoOpWindowCallback
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.clearInvocations
@@ -172,7 +177,31 @@ internal class CompositionWindowTouchInterceptorTest {
         verify(mockWindowB).callback = null
     }
 
-    private fun buildInterceptor() = CompositionWindowTouchInterceptor(
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M discard previous screen overrides W stop and resume`(fakeHasWindow: Boolean) {
+        // Given: a previously published SHOW area overrides the global HIDE policy.
+        val fakePrivacyManager = TouchPrivacyManager(TouchPrivacy.HIDE)
+        val stubArea: Rect = mock()
+        whenever(stubArea.contains(any<Int>(), any<Int>())).thenReturn(true)
+        fakePrivacyManager.replaceCurrentTouchOverrideAreas(mapOf(stubArea to TouchPrivacy.SHOW))
+        val testedInterceptor = buildInterceptor(fakePrivacyManager)
+        val fakeWindows = if (fakeHasWindow) listOf(mock<Window>()) else emptyList()
+        testedInterceptor.intercept(fakeWindows)
+        assertThat(fakePrivacyManager.shouldRecordTouch(Point())).isTrue()
+
+        // When: interception resumes before a new snapshot has published any overrides.
+        testedInterceptor.stop()
+        testedInterceptor.intercept(fakeWindows)
+
+        // Then: old SHOW regions no longer apply, but fresh overrides can still be published.
+        assertThat(fakePrivacyManager.getCurrentOverrideAreas()).isEmpty()
+        assertThat(fakePrivacyManager.shouldRecordTouch(Point())).isFalse()
+        fakePrivacyManager.replaceCurrentTouchOverrideAreas(mapOf(stubArea to TouchPrivacy.SHOW))
+        assertThat(fakePrivacyManager.shouldRecordTouch(Point())).isTrue()
+    }
+
+    private fun buildInterceptor(touchPrivacyManager: TouchPrivacyManager = mock()) = CompositionWindowTouchInterceptor(
         appContext = mock<Application> { mockApplication ->
             val mockResources = mock<Resources> {
                 whenever(it.displayMetrics).thenReturn(DisplayMetrics())
@@ -182,7 +211,7 @@ internal class CompositionWindowTouchInterceptorTest {
         recordWriter = mock<RecordWriter>(),
         timeProvider = mock<TimeProvider>(),
         rumContextProvider = mock<RumContextProvider>(),
-        touchPrivacyManager = mock<TouchPrivacyManager>(),
+        touchPrivacyManager = touchPrivacyManager,
         internalLogger = mock<InternalLogger>()
     )
 }
