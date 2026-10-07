@@ -26,12 +26,14 @@ internal class DefaultFlagsRepository(
     private val instanceName: String,
     private val dataStore: DataStoreHandler,
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
-    private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS
+    private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS,
+    private val deliverFirstFlags: (Runnable) -> Unit = Runnable::run
 ) : FlagsRepository {
     private data class FlagsState(
         val context: EvaluationContext,
         val flags: Map<String, PrecomputedFlag>,
-        val obfuscation: FlagKeyObfuscation?
+        val obfuscation: FlagKeyObfuscation?,
+        val restoredFromCache: Boolean = false
     ) {
         fun get(key: String): PrecomputedFlag? =
             if (obfuscation == null) flags[key] else obfuscation.encode(key)?.let { flags[it] }
@@ -43,22 +45,29 @@ internal class DefaultFlagsRepository(
     private val readableState: FlagsState?
         get() = atomicState.get()?.takeIf { it.obfuscation == null || obfuscationSupported.get() }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // Safe: count is positive constant (1)
+    @Suppress("UnsafeThirdPartyFunctionCall") // CountDownLatch rejects negative counts; 1 is valid.
     private val persistenceLoadedLatch = CountDownLatch(1)
+    override val firstFlags = FirstFlagsLatch()
 
     private val persistenceManager = FlagsPersistenceManager(
         dataStore = dataStore,
         instanceName = instanceName,
         internalLogger = internalLogger
     ) { persistedState ->
-        try {
+        val cachedState = try {
             persistedState?.let {
-                val cachedFlags = it.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) }
-                val loadedState = FlagsState(it.evaluationContext, cachedFlags, it.obfuscation)
-                atomicState.compareAndSet(null, loadedState)
+                FlagsState(
+                    it.evaluationContext,
+                    it.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) },
+                    it.obfuscation,
+                    restoredFromCache = true
+                ).takeIf { state -> atomicState.compareAndSet(null, state) }
             }
         } finally {
             persistenceLoadedLatch.countDown()
+        }
+        if (cachedState != null && persistedState != null) {
+            publishFirstFlags(cachedState, persistedState.flags.keys)
         }
     }
 
@@ -71,34 +80,68 @@ internal class DefaultFlagsRepository(
     override fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
-        obfuscation: FlagKeyObfuscation?
+        obfuscation: FlagKeyObfuscation?,
+        onInstalled: () -> Unit
     ) {
         val newState = FlagsState(context, flags, obfuscation)
-        atomicState.set(newState)
+
+        val previousState = atomicState.getAndSet(newState)
+        val firstInstallation = previousState == null ||
+            (previousState.obfuscation != null && !obfuscationSupported.get())
         persistenceLoadedLatch.countDown()
 
-        persistenceManager.saveFlagsState(
-            context = context,
-            flags = flags,
-            currentTimestamp = featureSdkCore.timeProvider.getDeviceTimestampMillis(),
-            callback = object : DataStoreWriteCallback {
-                override fun onSuccess() {
-                }
+        try {
+            persistenceManager.saveFlagsState(
+                context = context,
+                flags = flags,
+                currentTimestamp = featureSdkCore.timeProvider.getDeviceTimestampMillis(),
+                callback = object : DataStoreWriteCallback {
+                    override fun onSuccess() {
+                    }
 
-                override fun onFailure() {
-                    internalLogger.log(
-                        target = InternalLogger.Target.MAINTAINER,
-                        level = InternalLogger.Level.WARN,
-                        messageBuilder = { ERROR_SAVING_FLAGS_STATE }
-                    )
-                }
-            },
-            obfuscation = obfuscation
-        )
+                    override fun onFailure() {
+                        internalLogger.log(
+                            target = InternalLogger.Target.MAINTAINER,
+                            level = InternalLogger.Level.WARN,
+                            messageBuilder = { ERROR_SAVING_FLAGS_STATE }
+                        )
+                    }
+                },
+                obfuscation = obfuscation
+            )
+        } catch (
+            // Storage submission failure must not abort an accepted installation.
+            @Suppress("TooGenericExceptionCaught")
+            exception: Exception
+        ) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { ERROR_SAVING_FLAGS_STATE },
+                exception
+            )
+        }
+
+        try {
+            onInstalled()
+        } finally {
+            if (firstInstallation) {
+                publishFirstFlags(newState, flags.keys)
+            }
+        }
     }
 
     override fun setObfuscationSupported(supported: Boolean) {
         obfuscationSupported.set(supported)
+        readableState?.takeIf { it.restoredFromCache }?.let { publishFirstFlags(it, it.flags.keys) }
+    }
+
+    private fun publishFirstFlags(state: FlagsState, installedKeys: Collection<String>) {
+        if (state.obfuscation == null || obfuscationSupported.get()) {
+            // Encoded responses cannot enumerate the original application keys.
+            val keys = if (state.obfuscation == null) installedKeys else emptySet()
+            firstFlags.complete(keys, deliverFirstFlags)
+        }
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {

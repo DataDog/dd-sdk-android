@@ -41,7 +41,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -147,12 +147,15 @@ internal class ViewEndedMetricDispatcherTest {
         dispatcherUnderTest.sendViewEnded(fakeInvState, fakeTnsState)
 
         // Then
-        verify(mockInternalLogger).logMetric(
-            messageBuilder = argThat { invoke() == VIEW_ENDED_MESSAGE },
-            additionalProperties = eq(expectedAttributes()),
-            samplingRate = eq(fakeSampleRate),
-            creationSampleRate = eq(null)
-        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).logMetric(
+                messageBuilder = capture(),
+                additionalProperties = eq(expectedAttributes()),
+                samplingRate = eq(fakeSampleRate),
+                creationSampleRate = eq(null)
+            )
+            assertThat(firstValue.invoke()).isEqualTo(VIEW_ENDED_MESSAGE)
+        }
     }
 
     @Test
@@ -246,12 +249,15 @@ internal class ViewEndedMetricDispatcherTest {
         dispatcher.sendViewEnded(fakeInvState, fakeTnsState)
 
         // Then
-        verify(mockInternalLogger).logMetric(
-            messageBuilder = argThat { invoke() == VIEW_ENDED_MESSAGE },
-            additionalProperties = eq(expectedAttributes(instrumentationType = "cross_platform_navigator")),
-            samplingRate = eq(fakeSampleRate),
-            creationSampleRate = eq(null)
-        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).logMetric(
+                messageBuilder = capture(),
+                additionalProperties = eq(expectedAttributes(instrumentationType = "cross_platform_navigator")),
+                samplingRate = eq(fakeSampleRate),
+                creationSampleRate = eq(null)
+            )
+            assertThat(firstValue.invoke()).isEqualTo(VIEW_ENDED_MESSAGE)
+        }
     }
 
     @Test
@@ -270,12 +276,15 @@ internal class ViewEndedMetricDispatcherTest {
         dispatcher.sendViewEnded(fakeInvState, fakeTnsState)
 
         // Then
-        verify(mockInternalLogger).logMetric(
-            messageBuilder = argThat { invoke() == VIEW_ENDED_MESSAGE },
-            additionalProperties = eq(expectedAttributes(instrumentationType = "manual")),
-            samplingRate = eq(fakeSampleRate),
-            creationSampleRate = eq(null)
-        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).logMetric(
+                messageBuilder = capture(),
+                additionalProperties = eq(expectedAttributes(instrumentationType = "manual")),
+                samplingRate = eq(fakeSampleRate),
+                creationSampleRate = eq(null)
+            )
+            assertThat(firstValue.invoke()).isEqualTo(VIEW_ENDED_MESSAGE)
+        }
     }
 
     private fun expectedAttributes(

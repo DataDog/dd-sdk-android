@@ -65,6 +65,7 @@ internal class QuotaCheckerTest {
     private val executor = FakeSameThreadExecutorService()
 
     private val capturedResults = mutableListOf<QuotaResult>()
+    private val capturedSessionIds = mutableListOf<String>()
 
     private lateinit var testedChecker: QuotaChecker
 
@@ -76,7 +77,10 @@ internal class QuotaCheckerTest {
             callFactory = mockCallFactory,
             executor = executor,
             internalLogger = mockInternalLogger,
-            onResult = { capturedResults.add(it) }
+            onResult = { sessionId, result ->
+                capturedSessionIds.add(sessionId)
+                capturedResults.add(result)
+            }
         )
     }
 
@@ -193,6 +197,7 @@ internal class QuotaCheckerTest {
         // Then
         assertThat(capturedResults).hasSize(1)
         assertThat(capturedResults[0].decision).isEqualTo(QuotaResult.Decision.ALLOWED)
+        assertThat(capturedSessionIds).containsExactly(fakeSessionId)
     }
 
     // endregion

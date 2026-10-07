@@ -9,19 +9,24 @@ package com.datadog.android.flags.internal.repository
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.tools.annotation.NoOpImplementation
 
-@NoOpImplementation
 internal interface FlagsRepository {
     fun getPrecomputedFlag(key: String): PrecomputedFlag?
     fun getEvaluationContext(): EvaluationContext?
+
+    /**
+     * Runs [onInstalled] after attempting storage submission, including when submission fails.
+     * For the first installation, it runs before publishing the first-flags result to listeners.
+     */
     fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
-        obfuscation: FlagKeyObfuscation? = null
+        obfuscation: FlagKeyObfuscation? = null,
+        onInstalled: () -> Unit = {}
     )
     fun setObfuscationSupported(supported: Boolean)
     fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>?
+    val firstFlags: FirstFlagsLatch
     fun hasFlags(): Boolean
     fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean
     fun getFlagsSnapshot(): Map<String, PrecomputedFlag>

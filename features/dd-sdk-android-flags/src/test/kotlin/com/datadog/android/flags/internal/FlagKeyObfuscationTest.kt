@@ -178,7 +178,7 @@ internal class FlagKeyObfuscationTest {
     }
 
     @Test
-    fun `M restore latest salt and value W init { after multiple writes }`() {
+    fun `M restore latest salt and value W DefaultFlagsRepository() { after multiple writes }`() {
         for ((salt, value) in listOf(SALT to true, "f".repeat(32) to false)) {
             val encoding = checkNotNull(FlagKeyObfuscation.read(metadata(salt)))
             val flags = JSONObject().put(checkNotNull(encoding.encode("flag")), assignment("boolean", value))
@@ -229,7 +229,7 @@ internal class FlagKeyObfuscationTest {
     }
 
     @Test
-    fun `M restore encoded cache W init { native consumer }`() {
+    fun `M restore encoded cache W DefaultFlagsRepository() { native consumer }`() {
         val decoded = checkNotNull(testedMapper.map(payload(VECTORS[2].second)))
         val entry = FlagsStateEntry(fakeContext, decoded.flags, 1234L, decoded.obfuscation)
         doAnswer { it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(DataStoreContent(0, entry)) }
@@ -262,6 +262,8 @@ internal class FlagKeyObfuscationTest {
         val entry = FlagsStateEntry(fakeContext, decoded.flags, 1234L, decoded.obfuscation)
         testedRepository = DefaultFlagsRepository(mockSdkCore, "deferred-cache", mockDataStore)
         testedClient = createClient()
+        val firstFlags = mutableListOf<List<String>>()
+        testedRepository.firstFlags.whenComplete { firstFlags.add(it) }
 
         // When
         if (diskFirst) {
@@ -272,6 +274,7 @@ internal class FlagKeyObfuscationTest {
             assertThat(testedRepository.getEvaluationContext()).isEqualTo(if (encoded) null else fakeContext)
             assertThat(testedRepository.getPrecomputedFlag("flag") != null).isEqualTo(!encoded)
             assertThat(testedRepository.getPrecomputedFlagWithContext("flag") != null).isEqualTo(!encoded)
+            assertThat(firstFlags).hasSize(if (encoded) 0 else 1)
         }
         checkNotNull(sourceCallback).invoke(mockDatadogContext)
         if (!diskFirst) {
@@ -287,7 +290,47 @@ internal class FlagKeyObfuscationTest {
         assertThat(testedRepository.getPrecomputedFlag("flag") != null).isEqualTo(readable)
         assertThat(testedRepository.getPrecomputedFlagWithContext("flag") != null).isEqualTo(readable)
         assertThat(testedRepository.getFlagsSnapshot().isEmpty()).isEqualTo(encoded)
+        assertThat(firstFlags).hasSize(if (readable) 1 else 0)
+        if (readable) {
+            assertThat(firstFlags.single()).isEqualTo(if (encoded) emptyList<String>() else listOf("flag"))
+        }
         verifyNoInteractions(mockEvaluationsManager)
+    }
+
+    @Test
+    fun `M notify first flags W setFlagsAndContext() { encoded network response }`() {
+        // Given
+        val firstFlags = mutableListOf<List<String>>()
+        testedRepository.firstFlags.whenComplete { firstFlags.add(it) }
+
+        // When
+        install(payload(VECTORS[2].second))
+        install(payload(VECTORS[2].second))
+
+        // Then
+        assertThat(firstFlags).containsExactly(emptyList<String>())
+        assertThat(testedClient.resolveBooleanValue("flag", false)).isTrue()
+    }
+
+    @Test
+    fun `M notify first readable flags W setFlagsAndContext() { wrapper replaces encoded cache }`() {
+        // Given
+        val decoded = checkNotNull(testedMapper.map(payload(VECTORS[2].second)))
+        val entry = FlagsStateEntry(fakeContext, decoded.flags, 1234L, decoded.obfuscation)
+        whenever(mockDatadogContext.source) doReturn "react-native"
+        doAnswer { it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(DataStoreContent(0, entry)) }
+            .whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        testedRepository = DefaultFlagsRepository(mockSdkCore, "wrapper-cache", mockDataStore)
+        val firstFlags = mutableListOf<List<String>>()
+        testedRepository.firstFlags.whenComplete { firstFlags.add(it) }
+        assertThat(firstFlags).isEmpty()
+
+        // When
+        install(payload("flag", encoded = false))
+
+        // Then
+        assertThat(firstFlags).containsExactly(listOf("flag"))
+        assertThat(testedRepository.getFlagsSnapshot()).containsOnlyKeys("flag")
     }
 
     @Test

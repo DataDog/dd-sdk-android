@@ -8,7 +8,6 @@ package com.datadog.android.profiling.internal.trigger
 
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
-import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles.Companion.EXPIRY_TIMEOUT_MS
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**

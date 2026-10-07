@@ -35,12 +35,17 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
         @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
         val timestamp = json.getLong(JsonKeys.LAST_UPDATE_TIMESTAMP.value)
 
-        FlagsStateEntry(
-            evaluationContext = evaluationContext,
-            flags = flags,
-            lastUpdateTimestamp = timestamp,
-            obfuscation = obfuscation
-        )
+        // A nonempty cache with no readable flags is not a valid empty configuration.
+        if (flags.isEmpty() && flagsJson.length() > 0) {
+            null
+        } else {
+            FlagsStateEntry(
+                evaluationContext = evaluationContext,
+                flags = flags,
+                lastUpdateTimestamp = timestamp,
+                obfuscation = obfuscation
+            )
+        }
     } catch (e: JSONException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
