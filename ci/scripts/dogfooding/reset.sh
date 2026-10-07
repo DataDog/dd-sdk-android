@@ -84,7 +84,7 @@ fi
 
 # The branch exists without an open PR (its PR was closed, or a previous run failed before
 # opening one). Never overwrite it: someone may have pushed to it.
-if git ls-remote --exit-code --heads origin "$RESET_BRANCH" >/dev/null; then
+if git ls-remote --exit-code --heads origin "refs/heads/$RESET_BRANCH" >/dev/null; then
   echo "origin/$RESET_BRANCH already exists but has no open PR (its PR was closed, or a previous run failed before opening one)." >&2
   echo "Inspect it, delete it with 'git push origin --delete $RESET_BRANCH', then re-run." >&2
   exit 1
@@ -131,7 +131,7 @@ while IFS=$'\t' read -r source author; do
   seen="$seen$branch "
   unknown_entry="- $branch (dogfooded at ${sha:0:12}) ${author:-}
 "
-  if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+  if git ls-remote --exit-code --heads origin "refs/heads/$branch" >/dev/null 2>&1; then
     command="./ci/scripts/dogfooding/feature.sh $branch"
     needs_sha=false
   else

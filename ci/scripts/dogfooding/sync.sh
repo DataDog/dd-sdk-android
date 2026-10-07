@@ -64,7 +64,7 @@ fi
 
 # The branch exists without an open PR (its PR was closed, or a previous run failed before
 # opening one). Never overwrite it: someone may have pushed conflict fixes to it.
-if git ls-remote --exit-code --heads origin "$SYNC_BRANCH" >/dev/null; then
+if git ls-remote --exit-code --heads origin "refs/heads/$SYNC_BRANCH" >/dev/null; then
   echo "origin/$SYNC_BRANCH already exists but has no open PR (its PR was closed, or a previous run failed before opening one)." >&2
   echo "Inspect it, delete it with 'git push origin --delete $SYNC_BRANCH', then re-run." >&2
   exit 1

@@ -126,7 +126,7 @@ fi
 
 # 3. The branch exists without an open PR (its PR was closed, or a previous run failed before
 # opening one). Never overwrite it: someone may have pushed to it.
-if git ls-remote --exit-code --heads origin "$DOGFOOD_BRANCH" >/dev/null; then
+if git ls-remote --exit-code --heads origin "refs/heads/$DOGFOOD_BRANCH" >/dev/null; then
   echo "origin/$DOGFOOD_BRANCH already exists but has no open PR (its PR was closed, or a previous run failed before opening one)." >&2
   echo "Inspect it, delete it with 'git push origin --delete $DOGFOOD_BRANCH', then re-run." >&2
   exit 1
