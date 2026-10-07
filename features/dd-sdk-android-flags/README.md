@@ -283,8 +283,9 @@ override fun onDestroy() {
 - Ordinary callback exceptions are logged and isolated.
 
 Use `client.onFirstFlags { event -> ... }` from Kotlin or
-`client.onFirstFlags(event -> { ... })` from Java. The client retains the first event;
-evaluations inside the callback read its current flags. Custom `FlagsClient` implementations
+`client.onFirstFlags(event -> { ... })` from Java. The client retains the first installed keys
+and creates a separate event with a key-list copy for each delivery. Evaluations inside the callback
+read its current flags. Custom `FlagsClient` implementations
 must implement `onFirstFlags`; Kotlin interface delegation forwards it to the delegate.
 
 The listener and subscription are Kotlin functional interfaces: `FlagsClientEventListener.onEvent`
