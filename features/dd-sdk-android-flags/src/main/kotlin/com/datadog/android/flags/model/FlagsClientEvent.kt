@@ -6,10 +6,8 @@
 
 package com.datadog.android.flags.model
 
-import java.util.Collections
-
 /**
- * Immutable description of a Flags client event.
+ * Read-only description of a Flags client event.
  *
  * This value does not emit events or change client state. Key order and duplicates are preserved.
  * Events are constructed internally by the SDK and supplied to registered listeners.
@@ -22,10 +20,7 @@ class FlagsClientEvent internal constructor(
     flagsChanged: List<String>? = null
 ) {
     /** Snapshot of supplied keys, or null when keys were not supplied. */
-    // Kotlin List is read-only, but Java callers and casts can still mutate an ordinary copy.
-    // ArrayList and unmodifiableList reject null inputs; let supplies non-null keys and the copy is non-null.
-    @Suppress("UnsafeThirdPartyFunctionCall")
-    val flagsChanged: List<String>? = flagsChanged?.let { Collections.unmodifiableList(ArrayList(it)) }
+    val flagsChanged: List<String>? = flagsChanged?.toList()
 
     override fun toString(): String =
         "FlagsClientEvent(type=$type, flagsChanged=$flagsChanged)"

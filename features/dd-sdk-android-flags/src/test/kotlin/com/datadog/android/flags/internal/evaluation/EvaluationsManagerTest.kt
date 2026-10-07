@@ -47,14 +47,15 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -293,11 +294,11 @@ internal class EvaluationsManagerTest {
         evaluationsManager.updateEvaluationsForContext(context, callback)
 
         // Then
-        verify(mockFlagsRepository, times(0)).setFlagsAndContext(any(), any(), any())
-        verify(mockFlagsStateManager).updateState(argThat { this is FlagsClientState.Error })
-        verify(mockFlagsStateManager, times(0)).updateState(FlagsClientState.Ready)
+        verify(mockFlagsRepository, never()).setFlagsAndContext(any(), any(), any())
+        verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
+        verify(mockFlagsStateManager, never()).updateState(FlagsClientState.Ready)
         verify(callback).onFailure(any())
-        verify(callback, times(0)).onSuccess()
+        verify(callback, never()).onSuccess()
     }
 
     @Test
@@ -364,7 +365,7 @@ internal class EvaluationsManagerTest {
         // Then
         inOrder(mockFlagsStateManager) {
             verify(mockFlagsStateManager).updateState(FlagsClientState.Reconciling)
-            verify(mockFlagsStateManager).updateState(argThat { this is FlagsClientState.Error })
+            verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
         }
     }
 
@@ -405,7 +406,7 @@ internal class EvaluationsManagerTest {
         // Then
         inOrder(mockFlagsStateManager) {
             verify(mockFlagsStateManager).updateState(FlagsClientState.Reconciling)
-            verify(mockFlagsStateManager).updateState(argThat { this is FlagsClientState.Error })
+            verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
         }
     }
 
@@ -426,7 +427,7 @@ internal class EvaluationsManagerTest {
 
         // Then
         verify(mockCallback).onSuccess()
-        verify(mockCallback, times(0)).onFailure(any())
+        verify(mockCallback, never()).onFailure(any())
         verify(mockFlagsRepository).setFlagsAndContext(eq(publicContext), eq(emptyMap()), any())
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
     }
@@ -522,14 +523,14 @@ internal class EvaluationsManagerTest {
             assertThat(firstValue.message).isEqualTo("Flags initialization timed out after 2500ms")
             verify(mockFlagsStateManager).updateState(FlagsClientState.Error(firstValue))
         }
-        verify(mockCallback, times(0)).onSuccess()
+        verify(mockCallback, never()).onSuccess()
 
         // When
         checkNotNull(operation).run()
 
         // Then
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
-        verify(mockCallback, times(0)).onSuccess()
+        verify(mockCallback, never()).onSuccess()
         verify(mockCallback, times(1)).onFailure(any())
     }
 
@@ -751,7 +752,7 @@ internal class EvaluationsManagerTest {
 
         // Then
         verify(mockFirstCallback).onFailure(any<FlagsInitializationTimeoutException>())
-        verify(mockNestedCallback, times(0)).onFailure(any())
+        verify(mockNestedCallback, never()).onFailure(any())
     }
 
     @Test
@@ -842,7 +843,7 @@ internal class EvaluationsManagerTest {
         // Then
         assertThat(cancellationCount).isEqualTo(1)
         verify(mockCallback).onSuccess()
-        verify(mockCallback, times(0)).onFailure(any())
+        verify(mockCallback, never()).onFailure(any())
     }
 
     @Test
@@ -870,7 +871,7 @@ internal class EvaluationsManagerTest {
 
         // Then
         verify(mockCallback).onFailure(any<FlagsInitializationTimeoutException>())
-        verify(mockCallback, times(0)).onSuccess()
+        verify(mockCallback, never()).onSuccess()
         verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(emptyMap()), any())
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
     }
@@ -990,7 +991,7 @@ internal class EvaluationsManagerTest {
 
         // Then
         verify(mockCallback).onSuccess()
-        verify(mockCallback, times(0)).onFailure(any())
+        verify(mockCallback, never()).onFailure(any())
         assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
     }
 
@@ -1127,7 +1128,7 @@ internal class EvaluationsManagerTest {
         assertThat(firstKeys).isEmpty()
         assertThat(state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
         verify(callback).onFailure(any<FlagsInitializationTimeoutException>())
-        verify(callback, times(0)).onSuccess()
+        verify(callback, never()).onSuccess()
 
         // When
         work.removeFirst().run()

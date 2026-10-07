@@ -6,10 +6,13 @@
 
 package com.datadog.android.flags.model
 
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 
+@ExtendWith(ForgeExtension::class)
 internal class FlagsClientEventTest {
     @Test
     fun `M preserve absent versus empty keys W construction`() {
@@ -25,21 +28,19 @@ internal class FlagsClientEventTest {
     }
 
     @Test
-    @Suppress("DontDowncastCollectionTypes") // Exercise mutation attempts against the actual returned list.
-    fun `M snapshot keys and prevent mutation W caller mutates source or result`() {
+    fun `M snapshot keys W caller mutates source`(
+        @StringForgery fakeFirstKey: String,
+        @StringForgery fakeSecondKey: String
+    ) {
         // Given
-        val keys = mutableListOf("b", "a", "b")
+        val keys = mutableListOf(fakeFirstKey, fakeSecondKey, fakeFirstKey)
         val tested = FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED, keys)
 
         // When
         keys.clear()
 
         // Then
-        assertThat(tested.flagsChanged).containsExactly("b", "a", "b")
-        assertThrows<UnsupportedOperationException> {
-            (tested.flagsChanged as MutableList<String>).add("later")
-        }
-        assertThat(tested.flagsChanged).containsExactly("b", "a", "b")
+        assertThat(tested.flagsChanged).containsExactly(fakeFirstKey, fakeSecondKey, fakeFirstKey)
     }
 
     @Test
@@ -55,7 +56,7 @@ internal class FlagsClientEventTest {
     }
 
     @Test
-    fun `M expose two immutable fields W event received`() {
+    fun `M expose two final fields W event received`() {
         // Given
         val tested = FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED)
 

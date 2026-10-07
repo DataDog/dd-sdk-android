@@ -8,7 +8,6 @@ package com.datadog.android.flags.internal.repository
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -146,7 +145,7 @@ internal class FirstFlagsLatchTest {
     }
 
     @Test
-    fun `M retain immutable first keys W completed before subscription`() {
+    fun `M retain copied first keys W completed before subscription`() {
         // Given
         val latch = FirstFlagsLatch()
         val input = mutableListOf("first")
@@ -160,9 +159,6 @@ internal class FirstFlagsLatchTest {
 
         // Then
         assertThat(delivered).containsExactly("first")
-        @Suppress("DontDowncastCollectionTypes") // Verify the returned Java collection cannot be mutated.
-        val mutableView = delivered as MutableList
-        assertThrows<UnsupportedOperationException> { mutableView.clear() }
     }
 
     @Test

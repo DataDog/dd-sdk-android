@@ -6,8 +6,6 @@
 
 package com.datadog.android.flags.internal.repository
 
-import java.util.Collections
-
 /** Retains the first installed flag keys for cancellable, one-shot listeners. */
 internal class FirstFlagsLatch {
     private val lock = Any()
@@ -15,10 +13,7 @@ internal class FirstFlagsLatch {
     private var keys: List<String>? = null
 
     fun complete(installedKeys: Collection<String>, deliver: (Runnable) -> Unit = Runnable::run) {
-        // Keep retained keys immutable even to Java callers or a MutableList cast.
-        // Both calls reject null inputs; installedKeys and its newly allocated copy are non-null.
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        val snapshot = Collections.unmodifiableList(ArrayList(installedKeys))
+        val snapshot = installedKeys.toList()
         val callbacks = synchronized(lock) {
             if (keys != null) return
             keys = snapshot
@@ -37,19 +32,24 @@ internal class FirstFlagsLatch {
         )
     }
 
-    // The private mutable list supports mutation; PendingCallback uses non-throwing identity equality.
-    @Suppress("UnsafeThirdPartyFunctionCall")
     fun whenComplete(listener: (List<String>) -> Unit): () -> Unit {
         val pending = PendingCallback(listener)
         val snapshot = synchronized(lock) {
             keys.also { snapshot ->
-                if (snapshot == null) listeners.add(pending) else pending.listener = null
+                if (snapshot == null) {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // Mutable list; pending is non-null.
+                    listeners.add(pending)
+                } else {
+                    pending.listener = null
+                }
             }
         }
         snapshot?.let(listener)
         return {
             synchronized(lock) {
                 pending.listener = null
+                // Mutable list; pending is non-null and uses identity equality.
+                @Suppress("UnsafeThirdPartyFunctionCall")
                 listeners.remove(pending)
             }
         }
