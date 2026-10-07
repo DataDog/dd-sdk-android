@@ -130,7 +130,15 @@ internal class AndroidWindowTraversal(
                 }
                 is WorkItem.VisitOccluded -> visitOccluded(item, stack, state)
                 is WorkItem.Finish ->
-                    completeLayer(item.ownIdentity, item.ownKind, item.bounds, item.children, item.sink, state)
+                    completeLayer(
+                        item.ownIdentity,
+                        item.ownKind,
+                        item.bounds,
+                        item.children,
+                        item.sink,
+                        state,
+                        item.alpha
+                    )
             }
         }
         // The root Visit is the only one with a Root sink and always completes a layer, setting
@@ -168,16 +176,19 @@ internal class AndroidWindowTraversal(
             ?: (if (isHidden) hiddenViewMapper else mapperRegistry.resolve(view)).map(view, mappingContext)
         // clipChildren belongs to the containing ViewGroup: it clips this View's entire drawing
         // (including descendants) to this View's bounds. A window root is always bounded by its surface.
-        val clip = if (item.clipToBounds) item.ancestorClip.intersectWith(bounds) else item.ancestorClip
+        val inheritedClip = if (item.clipToBounds) item.ancestorClip.intersectWith(bounds) else item.ancestorClip
+        val clip = view.clipBoundsOnScreen(state.screenDensity)?.let { inheritedClip.intersectWith(it) }
+            ?: inheritedClip
+        val alpha = view.alpha.toDouble()
         addWireframes(mapped, clip, children, state)
 
         val isTerminalMapping = (mapped as? CapturedViewMapperResult.Wireframes)?.isTerminal == true
         val canHaveChildren = !isHidden && interopResult == null && !isTerminalMapping
         if (canHaveChildren && view is ViewGroup && view.childCount > 0) {
-            stack.push(WorkItem.Finish(item.ownIdentity, item.ownKind, bounds, children, item.sink))
+            stack.push(WorkItem.Finish(item.ownIdentity, item.ownKind, bounds, children, item.sink, alpha))
             pushChildren(view, item, state.screenDensity, clip, children, stack)
         } else {
-            completeLayer(item.ownIdentity, item.ownKind, bounds, children, item.sink, state)
+            completeLayer(item.ownIdentity, item.ownKind, bounds, children, item.sink, state, alpha)
         }
         return false
     }
@@ -188,9 +199,17 @@ internal class AndroidWindowTraversal(
         bounds: CapturedBounds,
         children: MutableList<CapturedChild>,
         sink: ResultSink,
-        state: TraversalState
+        state: TraversalState,
+        alpha: Double
     ) {
-        val layer = CapturedLayer(identity = identity, kind = kind, bounds = bounds, children = children)
+        @Suppress("UnsafeThirdPartyFunctionCall") // listOf wraps an already captured opacity value.
+        val layer = CapturedLayer(
+            identity = identity,
+            kind = kind,
+            bounds = bounds,
+            children = children,
+            modifiers = if (alpha == 1.0) emptyList() else listOf(CapturedModifier.Opacity(alpha))
+        )
         state.layers.add(layer)
         when (sink) {
             is ResultSink.ChildOf -> sink.list.add(CapturedChild.Layer(identity))
@@ -355,7 +374,8 @@ internal class AndroidWindowTraversal(
             val ownKind: CapturedLayerKind,
             val bounds: CapturedBounds,
             val children: MutableList<CapturedChild>,
-            val sink: ResultSink
+            val sink: ResultSink,
+            val alpha: Double
         ) : WorkItem
     }
 
@@ -404,6 +424,21 @@ private fun CapturedWireframe.withClip(clip: CapturedClip?): CapturedWireframe =
     is CapturedWireframe.WebView -> copy(clip = clip)
     is CapturedWireframe.Pixel -> copy(clip = clip)
     is CapturedWireframe.PrivacyPlaceholder -> copy(clip = clip)
+}
+
+/** Explicit view clips apply to the view and its whole subtree, regardless of clipChildren. */
+@UiThread
+private fun View.clipBoundsOnScreen(screenDensity: Float): CapturedBounds? {
+    val clip = clipBounds ?: return null
+    val location = IntArray(2)
+    @Suppress("UnsafeThirdPartyFunctionCall") // The coordinate array always has two entries.
+    getLocationOnScreen(location)
+    val inverseDensity = if (screenDensity == 0f) 1f else 1f / screenDensity
+    val left = ((location[0].toLong() + clip.left) * inverseDensity).toLong()
+    val top = ((location[1].toLong() + clip.top) * inverseDensity).toLong()
+    val right = ((location[0].toLong() + clip.right) * inverseDensity).toLong()
+    val bottom = ((location[1].toLong() + clip.bottom) * inverseDensity).toLong()
+    return CapturedBounds(left, top, right - left, bottom - top)
 }
 
 // Android applies clipToPadding only when at least one padding edge is non-zero.

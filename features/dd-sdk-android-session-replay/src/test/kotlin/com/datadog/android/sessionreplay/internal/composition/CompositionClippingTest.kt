@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import android.content.res.Resources
 import android.graphics.Color
+import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
 import android.view.View
@@ -276,6 +277,109 @@ internal class CompositionClippingTest {
         assertThat(fixture.resumes > 0).isEqualTo(fakeYield)
     }
 
+    @Test
+    fun `M apply local clip bounds W leaf has explicit clip`() {
+        // Given: clipBounds uses local physical pixels; output uses density-normalized screen coordinates.
+        val fixture = Fixture()
+        fixture.clip(fixture.child, 20, 40, 300, 280)
+
+        // When
+        val result = fixture.capture()
+
+        // Then
+        assertThat(result.wireframe(fixture.identities.getValue(fixture.child)).clip)
+            .isEqualTo(CapturedClip(top = 20, bottom = 20, left = 10, right = 10))
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M propagate explicit clip to descendants W group has clip bounds`(fakeYield: Boolean) {
+        // Given: neither group clips children or padding, but the explicit view clip still applies.
+        val fixture = Fixture()
+        fixture.clip(fixture.parent, 20, 40, 100, 120)
+        if (fakeYield) fixture.onMapped = { fixture.nowNs += 10 }
+
+        // When
+        val result = fixture.capture()
+
+        // Then
+        assertThat(result.wireframe(fixture.identities.getValue(fixture.parent)).clip)
+            .isEqualTo(CapturedClip(top = 20, bottom = 20, left = 10, right = 30))
+        assertThat(result.wireframe(fixture.identities.getValue(fixture.child)).clip)
+            .isEqualTo(CapturedClip(top = 40, bottom = 80, left = 30, right = 90))
+        assertThat(fixture.resumes > 0).isEqualTo(fakeYield)
+    }
+
+    @Test
+    fun `M preserve empty explicit clip W group has empty clip bounds`() {
+        // Given
+        val fixture = Fixture()
+        fixture.clip(fixture.parent, 0, 0, 0, 0)
+
+        // When
+        val result = fixture.capture()
+
+        // Then
+        assertThat(result.wireframe(fixture.identities.getValue(fixture.child)).clip)
+            .isEqualTo(CapturedClip(top = 20, bottom = 140, left = 20, right = 140))
+    }
+
+    @Test
+    fun `M intersect explicit and ancestor clips W local clip exceeds parent bounds`() {
+        // Given
+        val fixture = Fixture()
+        whenever(fixture.root.clipChildren).thenReturn(true)
+        fixture.clip(fixture.child, 80, 80, 400, 400)
+
+        // When
+        val result = fixture.capture()
+
+        // Then: the local clip supplies top/left, while the clipping ancestor limits right/bottom.
+        assertThat(result.wireframe(fixture.identities.getValue(fixture.child)).clip)
+            .isEqualTo(CapturedClip(top = 40, bottom = 60, left = 40, right = 60))
+    }
+
+    @Test
+    fun `M keep explicit clips independent W siblings follow clipped subtree`() {
+        // Given
+        val fixture = Fixture()
+        fixture.clip(fixture.parent, 0, 0, 40, 40)
+        val fakeSibling = fixture.view(GlobalBounds(180, 180, 80, 80))
+        fixture.children(fixture.root, fixture.parent, fakeSibling)
+
+        // When
+        val result = fixture.capture()
+
+        // Then
+        assertThat(result.wireframe(fixture.identities.getValue(fakeSibling)).clip).isNull()
+    }
+
+    @ParameterizedTest
+    @CsvSource("0.0, false", "0.5, false", "0.5, true", "1.0, true")
+    fun `M capture subtree opacity once W view group has alpha`(fakeAlpha: Float, fakeYield: Boolean) {
+        // Given
+        val fixture = Fixture()
+        whenever(fixture.parent.alpha).thenReturn(fakeAlpha)
+        whenever(fixture.child.alpha).thenReturn(0.25f)
+        if (fakeYield) fixture.onMapped = { fixture.nowNs += 10 }
+
+        // When
+        val result = fixture.capture()
+        val parentLayer = result.layers.single { it.bounds == CapturedBounds(80, 80, 80, 80) }
+        val childLayer = result.layers.single { it.bounds == CapturedBounds(60, 60, 160, 160) }
+
+        // Then: the nested layers each carry their own alpha; the renderer composes them once.
+        assertThat(parentLayer.modifiers).isEqualTo(
+            if (fakeAlpha == 1f) {
+                emptyList<CapturedModifier>()
+            } else {
+                listOf(CapturedModifier.Opacity(fakeAlpha.toDouble()))
+            }
+        )
+        assertThat(childLayer.modifiers).containsExactly(CapturedModifier.Opacity(0.25))
+        assertThat(fixture.resumes > 0).isEqualTo(fakeYield)
+    }
+
     private class Fixture {
         private val mockBoundsResolver: ViewBoundsResolver = mock()
         private val mockIdentifierResolver: ViewIdentifierResolver = mock()
@@ -309,6 +413,13 @@ internal class CompositionClippingTest {
             bounds[view] = fakeBounds
             viewIds[view] = bounds.size.toLong()
             whenever(view.isShown).thenReturn(true)
+            whenever(view.alpha).thenReturn(1f)
+            whenever(view.getLocationOnScreen(any())).thenAnswer {
+                val coordinates = it.getArgument<IntArray>(0)
+                coordinates[0] = (fakeBounds.x * DENSITY).toInt()
+                coordinates[1] = (fakeBounds.y * DENSITY).toInt()
+                null
+            }
             whenever(view.width).thenReturn((fakeBounds.width * DENSITY).toInt())
             whenever(view.height).thenReturn((fakeBounds.height * DENSITY).toInt())
             val resources: Resources = mock()
@@ -330,6 +441,16 @@ internal class CompositionClippingTest {
             whenever(mockBoundsResolver.resolveViewPaddedBounds(view, DENSITY)).thenReturn(
                 GlobalBounds(area.x + left, area.y + top, area.width - left - right, area.height - top - bottom)
             )
+        }
+
+        fun clip(view: View, left: Int, top: Int, right: Int, bottom: Int) {
+            val fakeClip = Rect().also {
+                it.left = left
+                it.top = top
+                it.right = right
+                it.bottom = bottom
+            }
+            whenever(view.clipBounds).thenReturn(fakeClip)
         }
 
         fun makeOpaque(view: View) {

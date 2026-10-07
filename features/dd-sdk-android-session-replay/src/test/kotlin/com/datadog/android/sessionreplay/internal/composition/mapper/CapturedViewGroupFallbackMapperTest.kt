@@ -100,7 +100,7 @@ internal class CapturedViewGroupFallbackMapperTest {
         // Then
         val wireframe = result.wireframes.single() as CapturedWireframe.Shape
         assertThat(wireframe.style?.backgroundColor).isEqualTo(fakeColorHexString)
-        assertThat(wireframe.style?.opacity).isEqualTo(fakeAlpha)
+        assertThat(wireframe.style?.opacity).isNull()
         assertThat(wireframe.bounds.x).isEqualTo(fakeBounds.x)
     }
 }

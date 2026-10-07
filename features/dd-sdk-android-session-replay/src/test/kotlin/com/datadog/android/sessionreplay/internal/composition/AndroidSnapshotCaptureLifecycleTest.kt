@@ -431,6 +431,39 @@ internal class AndroidSnapshotCaptureLifecycleTest {
     }
 
     @Test
+    fun `M preserve global order W tracked and untracked windows are interleaved`() {
+        // Given: lifecycle notifications arrive in the opposite order to global window discovery.
+        val mockApplication = mock<Application>()
+        val fakeRoots = List(4) { mock<View>() }
+        val fakeActivities = fakeRoots.map(::activityShowing)
+        val fakeWindows = fakeActivities.map { it.window }
+        val mockDrawInterceptor = mock<CompositionViewOnDrawInterceptor>()
+        val mockTouchInterceptor = mock<CompositionWindowTouchInterceptor>()
+        val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mockApplication,
+            interceptor = mockDrawInterceptor,
+            touchInterceptor = mockTouchInterceptor,
+            internalLogger = mock(),
+            uiHandler = immediateHandler(),
+            windowProvider = { fakeRoots },
+            windowFromDecorView = { fakeWindows[fakeRoots.indexOf(it)] },
+            isMainThreadWindow = { true }
+        )
+        testedLifecycle.registerCallbacks()
+        val fakeCallbacks = argumentCaptor<Application.ActivityLifecycleCallbacks>()
+        verify(mockApplication).registerActivityLifecycleCallbacks(fakeCallbacks.capture())
+        fakeCallbacks.firstValue.onActivityResumed(fakeActivities[3])
+        fakeCallbacks.firstValue.onActivityResumed(fakeActivities[1])
+
+        // When
+        testedLifecycle.start()
+
+        // Then: both tracked and untracked roots stay in global order, without duplication.
+        verify(mockDrawInterceptor).intercept(fakeRoots)
+        verify(mockTouchInterceptor).intercept(fakeWindows)
+    }
+
+    @Test
     fun `M skip an untracked window W start touch { window cannot be resolved }`() {
         // Given
         val mockDialogDecorView = mock<View>()

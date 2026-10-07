@@ -27,8 +27,8 @@ internal class CapturedBackgroundShapeStyleResolver(
         val color = view.background?.let { drawableToColorMapper.mapDrawableToColor(it, internalLogger) }
             ?: return null
         return CapturedShapeStyle(
-            backgroundColor = colorStringFormatter.formatColorAsHexString(color),
-            opacity = view.alpha
+            // View alpha belongs to the owning layer so text and descendants share it exactly once.
+            backgroundColor = colorStringFormatter.formatColorAsHexString(color)
         )
     }
 }

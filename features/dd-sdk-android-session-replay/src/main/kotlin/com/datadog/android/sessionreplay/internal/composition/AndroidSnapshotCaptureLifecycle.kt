@@ -132,14 +132,17 @@ internal class AndroidSnapshotCaptureLifecycle(
         // around indefinitely would leak view references and could wrongly exclude an unrelated
         // future view, if the same identity were ever reused.
         excludedDecorViews.retainAll(allDecorViews.toSet())
-        val untrackedDecorViews = allDecorViews
-            .filterNot { it in trackedDecorViews || it in excludedDecorViews }
+        // Preserve global discovery order across both sources. Tracked roots missing from that
+        // list are a fallback during attachment; lifecycle/WeakHashMap order must not reorder known roots.
+        val fallbackDecorViews = trackedDecorViews.filterNot { it in allDecorViews }
+        val orderedDecorViews = (fallbackDecorViews + allDecorViews).distinct()
+            .filter { it in trackedDecorViews || it !in excludedDecorViews }
             .filter(isMainThreadWindow)
-        val untrackedWindows = untrackedDecorViews.mapNotNull(windowFromDecorView)
-        return ResolvedWindows(
-            decorViews = trackedDecorViews + untrackedDecorViews,
-            windows = supportedTrackedWindows + untrackedWindows
-        )
+        val trackedByDecorView = supportedTrackedWindows.associateBy { it.peekDecorView() }
+        val orderedWindows = orderedDecorViews.mapNotNull { root ->
+            trackedByDecorView[root] ?: windowFromDecorView(root)
+        }
+        return ResolvedWindows(decorViews = orderedDecorViews, windows = orderedWindows)
     }
 
     // Kept as a single instance (rather than a fresh lambda per call) so stop() can cancel a
