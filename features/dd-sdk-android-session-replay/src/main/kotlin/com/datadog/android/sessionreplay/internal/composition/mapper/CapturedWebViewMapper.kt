@@ -30,13 +30,14 @@ internal class CapturedWebViewMapper(
         val slotId = viewIdentifierResolver.resolveViewId(view)
         val identity = mappingContext.identityFactory.webViewWireframe(mappingContext.ownerIdentity, slotId)
         return CapturedViewMapperResult.Wireframes(
-            listOf(
+            wireframes = listOf(
                 CapturedWireframe.WebView(
                     identity = identity,
                     bounds = bounds.toCaptured(),
                     isVisible = true
                 )
-            )
+            ),
+            isTerminal = true
         )
     }
 }

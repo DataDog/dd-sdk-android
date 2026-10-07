@@ -22,7 +22,14 @@ internal data class CapturedMappingContext(
 )
 
 internal sealed interface CapturedViewMapperResult {
-    data class Wireframes(val wireframes: List<CapturedWireframe>) : CapturedViewMapperResult
+    /**
+     * [isTerminal] is true when the result represents the whole native subtree (for example a
+     * WebView slot). Traversal must not also capture that view's native children independently.
+     */
+    data class Wireframes(
+        val wireframes: List<CapturedWireframe>,
+        val isTerminal: Boolean = false
+    ) : CapturedViewMapperResult
     object None : CapturedViewMapperResult
 }
 

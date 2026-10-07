@@ -60,6 +60,7 @@ internal class CapturedWebViewMapperTest {
         val result = testedMapper.map(mockWebView, mappingContext) as CapturedViewMapperResult.Wireframes
 
         // Then
+        assertThat(result.isTerminal).isTrue()
         val wireframe = result.wireframes.single() as CapturedWireframe.WebView
         assertThat(wireframe.identity.wireId).isEqualTo(fakeSlotId)
         assertThat(wireframe.isVisible).isTrue()

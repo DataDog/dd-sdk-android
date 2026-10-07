@@ -171,7 +171,8 @@ internal class AndroidWindowTraversal(
         val clip = if (item.clipToBounds) item.ancestorClip.intersectWith(bounds) else item.ancestorClip
         addWireframes(mapped, clip, children, state)
 
-        val canHaveChildren = !isHidden && interopResult == null
+        val isTerminalMapping = (mapped as? CapturedViewMapperResult.Wireframes)?.isTerminal == true
+        val canHaveChildren = !isHidden && interopResult == null && !isTerminalMapping
         if (canHaveChildren && view is ViewGroup && view.childCount > 0) {
             stack.push(WorkItem.Finish(item.ownIdentity, item.ownKind, bounds, children, item.sink))
             pushChildren(view, item, state.screenDensity, clip, children, stack)

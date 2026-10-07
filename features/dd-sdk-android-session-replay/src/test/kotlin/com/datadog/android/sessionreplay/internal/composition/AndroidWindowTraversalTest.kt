@@ -14,6 +14,7 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewStub
+import android.webkit.WebView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TouchPrivacy
@@ -22,6 +23,7 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMap
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedWebViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -46,6 +48,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -222,6 +225,133 @@ internal class AndroidWindowTraversalTest {
         assertThat(placeholder.label).isEqualTo("Hidden")
         // No layer was created for grandChild since the hidden view's children are never visited.
         assertThat(present.layers).hasSize(2) // root + hiddenGroup only
+    }
+
+    @Test
+    fun `M stop at WebView slot and continue siblings W visit { WebView has native descendants }`(
+        @Forgery fakeBounds: GlobalBounds
+    ) {
+        // Given
+        val root = mockViewGroup(fakeBounds)
+        val mockWebView: WebView = mock()
+        stubDefaults(mockWebView, fakeBounds)
+        val implementationChild = mockViewGroup(fakeBounds)
+        val implementationGrandchild = mockView(fakeBounds)
+        whenever(mockWebView.childCount).thenReturn(1)
+        whenever(mockWebView.getChildAt(0)).thenReturn(implementationChild)
+        whenever(implementationChild.childCount).thenReturn(1)
+        whenever(implementationChild.getChildAt(0)).thenReturn(implementationGrandchild)
+        val sibling = mockViewGroup(fakeBounds)
+        val siblingChild = mockView(fakeBounds)
+        whenever(sibling.childCount).thenReturn(1)
+        whenever(sibling.getChildAt(0)).thenReturn(siblingChild)
+        whenever(root.childCount).thenReturn(2)
+        whenever(root.getChildAt(0)).thenReturn(mockWebView)
+        whenever(root.getChildAt(1)).thenReturn(sibling)
+        val slotId = mockViewIdentifierResolver.resolveViewId(mockWebView)
+        val testedTraversal = traversal(
+            fallback = markerMapper,
+            typedMappers = listOf(
+                CapturedMapperTypeWrapper(
+                    WebView::class.java,
+                    CapturedWebViewMapper(mockViewIdentifierResolver, mockViewBoundsResolver)
+                )
+            )
+        )
+
+        // When
+        val present = testedTraversal.traverseWindow(
+            root,
+            identityFactory.window("window"),
+            identityFactory,
+            fakeContext
+        ).doneValue() as WindowWalkResult.Present
+
+        // Then: root, the WebView slot, and the ordinary sibling subtree only.
+        val slot = present.wireframes.filterIsInstance<CapturedWireframe.WebView>().single()
+        assertThat(slot.identity.wireId).isEqualTo(slotId)
+        assertThat(present.layers).hasSize(4)
+        assertThat(present.wireframes).hasSize(4)
+        val webViewLayer = present.layers.single { it.identity.localId == slotId.toString() }
+        assertThat(webViewLayer.children).containsExactly(CapturedChild.Wireframe(slot.identity))
+        verify(mockWebView, never()).getChildAt(any())
+        verify(mockViewIdentifierResolver, never()).resolveViewId(implementationChild)
+        verify(mockViewIdentifierResolver, never()).resolveViewId(implementationGrandchild)
+        verify(mockViewIdentifierResolver).resolveViewId(siblingChild)
+    }
+
+    @Test
+    fun `M hide WebView before mapping slot W visit { WebView has hidden tag and native child }`(
+        @Forgery fakeBounds: GlobalBounds
+    ) {
+        // Given
+        val root = mockViewGroup(fakeBounds)
+        val mockWebView: WebView = mock()
+        stubDefaults(mockWebView, fakeBounds)
+        whenever(mockWebView.getTag(R.id.datadog_hidden)).thenReturn(true)
+        val implementationChild = mockView(fakeBounds)
+        whenever(mockWebView.childCount).thenReturn(1)
+        whenever(mockWebView.getChildAt(0)).thenReturn(implementationChild)
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(mockWebView)
+        val testedTraversal = traversal(
+            typedMappers = listOf(
+                CapturedMapperTypeWrapper(
+                    WebView::class.java,
+                    CapturedWebViewMapper(mockViewIdentifierResolver, mockViewBoundsResolver)
+                )
+            )
+        )
+
+        // When
+        val present = testedTraversal.traverseWindow(
+            root,
+            identityFactory.window("window"),
+            identityFactory,
+            fakeContext
+        ).doneValue() as WindowWalkResult.Present
+
+        // Then
+        assertThat(present.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
+        assertThat(present.layers).hasSize(2)
+        verify(mockWebView, never()).getChildAt(any())
+        verify(mockViewIdentifierResolver, never()).resolveViewId(implementationChild)
+    }
+
+    @Test
+    fun `M traverse mapped container children W visit { dedicated mapper only describes own view }`(
+        @Forgery fakeBounds: GlobalBounds
+    ) {
+        // Given
+        val root = mockViewGroup(fakeBounds)
+        val child = mockViewGroup(fakeBounds)
+        val grandchild = mockView(fakeBounds)
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(child)
+        whenever(child.childCount).thenReturn(1)
+        whenever(child.getChildAt(0)).thenReturn(grandchild)
+        val testedTraversal = traversal(
+            fallback = markerMapper,
+            typedMappers = listOf(
+                CapturedMapperTypeWrapper(
+                    ViewGroup::class.java,
+                    CapturedViewMapper<ViewGroup> { view, context -> markerMapper.map(view, context) }
+                )
+            )
+        )
+
+        // When
+        val present = testedTraversal.traverseWindow(
+            root,
+            identityFactory.window("window"),
+            identityFactory,
+            fakeContext
+        ).doneValue() as WindowWalkResult.Present
+
+        // Then
+        assertThat(present.layers).hasSize(3)
+        assertThat(present.wireframes).hasSize(3)
+        verify(mockViewIdentifierResolver).resolveViewId(grandchild)
     }
 
     @Test
