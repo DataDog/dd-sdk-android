@@ -43,7 +43,6 @@ internal class DefaultCompositionPipelineFactory(
             timeProvider = sdkCore.timeProvider,
             traversal = AndroidWindowTraversal(
                 mapperRegistry = builtInCapturedMappers(sdkCore.internalLogger),
-                touchPrivacyManager = touchPrivacyManager,
                 internalLogger = sdkCore.internalLogger
             ),
             touchPrivacyManager = touchPrivacyManager

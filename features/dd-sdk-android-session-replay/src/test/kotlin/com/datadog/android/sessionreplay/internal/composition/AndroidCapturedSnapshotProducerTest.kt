@@ -98,7 +98,6 @@ internal class AndroidCapturedSnapshotProducerTest {
             fallbackMapper = CapturedViewGroupFallbackMapper(internalLogger = mock()),
             internalLogger = mock()
         ),
-        touchPrivacyManager = mockTouchPrivacyManager,
         internalLogger = mock(),
         viewIdentifierResolver = mockViewIdentifierResolver,
         viewBoundsResolver = mockViewBoundsResolver,
@@ -143,7 +142,7 @@ internal class AndroidCapturedSnapshotProducerTest {
 
         // Then
         assertThat(snapshot).isNull()
-        verify(mockTouchPrivacyManager, never()).updateCurrentTouchOverrideAreas()
+        verify(mockTouchPrivacyManager, never()).replaceCurrentTouchOverrideAreas(any())
     }
 
     @Test
@@ -186,7 +185,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         // Then
         assertThat(snapshot?.timestamp).isEqualTo(fakeTimestamp + fakeOffset)
         assertThat(snapshot?.scope).isEqualTo(RumViewIdentityScope(fakeViewId))
-        verify(mockTouchPrivacyManager).updateCurrentTouchOverrideAreas()
+        verify(mockTouchPrivacyManager).replaceCurrentTouchOverrideAreas(emptyMap())
     }
 
     @Test

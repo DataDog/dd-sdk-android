@@ -18,7 +18,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
@@ -47,7 +46,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -63,7 +61,6 @@ internal class AndroidWindowTraversalTest {
 
     private val mockViewBoundsResolver: ViewBoundsResolver = mock()
     private val mockViewIdentifierResolver: ViewIdentifierResolver = mock()
-    private val mockTouchPrivacyManager: TouchPrivacyManager = mock()
     private val mockDrawableToColorMapper: DrawableToColorMapper = mock()
     private lateinit var nextViewId: AtomicLong
     private lateinit var identityFactory: DefaultCapturedIdentityFactory
@@ -131,7 +128,6 @@ internal class AndroidWindowTraversalTest {
         typedMappers: List<CapturedMapperTypeWrapper<*>> = emptyList()
     ) = AndroidWindowTraversal(
         mapperRegistry = CapturedViewMapperRegistry(typedMappers, fallback, mock()),
-        touchPrivacyManager = mockTouchPrivacyManager,
         internalLogger = mock(),
         viewIdentifierResolver = mockViewIdentifierResolver,
         viewBoundsResolver = mockViewBoundsResolver,
@@ -173,7 +169,7 @@ internal class AndroidWindowTraversalTest {
         val present = result.doneValue() as WindowWalkResult.Present
         assertThat(present.rootLayer.children).isEmpty()
         assertThat(present.layers).hasSize(1) // only the window root itself
-        verify(mockTouchPrivacyManager, never()).addTouchOverrideArea(any(), any())
+        assertThat((result.doneValue() as WindowWalkResult.Present).touchOverrideAreas).isEmpty()
     }
 
     @Test
@@ -310,7 +306,6 @@ internal class AndroidWindowTraversalTest {
         )
         val testedTraversal = AndroidWindowTraversal(
             mapperRegistry = CapturedViewMapperRegistry(emptyList(), noOpFallback, mock()),
-            touchPrivacyManager = mockTouchPrivacyManager,
             internalLogger = mock(),
             viewIdentifierResolver = mockViewIdentifierResolver,
             viewBoundsResolver = mockViewBoundsResolver,
@@ -347,7 +342,6 @@ internal class AndroidWindowTraversalTest {
         )
         val testedTraversal = AndroidWindowTraversal(
             mapperRegistry = CapturedViewMapperRegistry(emptyList(), noOpFallback, mock()),
-            touchPrivacyManager = mockTouchPrivacyManager,
             internalLogger = mock(),
             viewIdentifierResolver = mockViewIdentifierResolver,
             viewBoundsResolver = mockViewBoundsResolver,
@@ -390,7 +384,7 @@ internal class AndroidWindowTraversalTest {
         val windowIdentity = identityFactory.window("window")
 
         // When
-        traversal().traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+        val result = traversal().traverseWindow(root, windowIdentity, identityFactory, fakeContext)
 
         // Then
         val expectedArea = Rect(
@@ -399,7 +393,8 @@ internal class AndroidWindowTraversalTest {
             fakeLocationX + child.width,
             fakeLocationY + child.height
         )
-        verify(mockTouchPrivacyManager).addTouchOverrideArea(expectedArea, TouchPrivacy.HIDE)
+        assertThat((result.doneValue() as WindowWalkResult.Present).touchOverrideAreas)
+            .containsEntry(expectedArea, TouchPrivacy.HIDE)
     }
 
     @Test
@@ -415,10 +410,10 @@ internal class AndroidWindowTraversalTest {
         val windowIdentity = identityFactory.window("window")
 
         // When
-        traversal().traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+        val result = traversal().traverseWindow(root, windowIdentity, identityFactory, fakeContext)
 
         // Then
-        verify(mockTouchPrivacyManager, never()).addTouchOverrideArea(any(), any())
+        assertThat((result.doneValue() as WindowWalkResult.Present).touchOverrideAreas).isEmpty()
     }
 
     @Test
@@ -437,7 +432,6 @@ internal class AndroidWindowTraversalTest {
         val mockInternalLogger: InternalLogger = mock()
         val testedTraversal = AndroidWindowTraversal(
             mapperRegistry = CapturedViewMapperRegistry(emptyList(), noOpFallback, mock()),
-            touchPrivacyManager = mockTouchPrivacyManager,
             internalLogger = mockInternalLogger,
             viewIdentifierResolver = mockViewIdentifierResolver,
             viewBoundsResolver = mockViewBoundsResolver,
@@ -445,10 +439,10 @@ internal class AndroidWindowTraversalTest {
         )
 
         // When
-        testedTraversal.traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+        val result = testedTraversal.traverseWindow(root, windowIdentity, identityFactory, fakeContext)
 
         // Then
-        verify(mockTouchPrivacyManager, never()).addTouchOverrideArea(any(), any())
+        assertThat((result.doneValue() as WindowWalkResult.Present).touchOverrideAreas).isEmpty()
         verify(mockInternalLogger).log(
             level = eq(InternalLogger.Level.ERROR),
             targets = eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
@@ -502,7 +496,8 @@ internal class AndroidWindowTraversalTest {
             fakeLocationX + victim.width,
             fakeLocationY + victim.height
         )
-        verify(mockTouchPrivacyManager).addTouchOverrideArea(expectedArea, TouchPrivacy.HIDE)
+        assertThat((result.doneValue() as WindowWalkResult.Present).touchOverrideAreas)
+            .containsEntry(expectedArea, TouchPrivacy.HIDE)
     }
 
     @Test
@@ -661,7 +656,7 @@ internal class AndroidWindowTraversalTest {
 
         // When
         val firstStep = traversal().traverseWindow(root, windowIdentity, identityFactory, yieldingContext)
-        driveToCompletion(firstStep) { calls = 0 }
+        val result = driveToCompletion(firstStep) { calls = 0 } as WindowWalkResult.Present
 
         // Then
         val expectedArea = Rect(
@@ -670,7 +665,8 @@ internal class AndroidWindowTraversalTest {
             fakeLocationX + secondChild.width,
             fakeLocationY + secondChild.height
         )
-        verify(mockTouchPrivacyManager).addTouchOverrideArea(expectedArea, TouchPrivacy.HIDE)
+        assertThat(result.touchOverrideAreas)
+            .containsEntry(expectedArea, TouchPrivacy.HIDE)
     }
 
     @Test

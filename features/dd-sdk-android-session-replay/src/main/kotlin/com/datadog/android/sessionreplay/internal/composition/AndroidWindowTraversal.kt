@@ -13,7 +13,6 @@ import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TouchPrivacy
-import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedHiddenViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
@@ -33,7 +32,8 @@ internal sealed interface WindowWalkResult {
     data class Present(
         val rootLayer: CapturedLayer,
         val layers: List<CapturedLayer>,
-        val wireframes: List<CapturedWireframe>
+        val wireframes: List<CapturedWireframe>,
+        val touchOverrideAreas: Map<Rect, TouchPrivacy>
     ) : WindowWalkResult
 
     /** The window (e.g. not shown, or on a secondary display) contributes nothing - skip it. */
@@ -62,7 +62,6 @@ internal sealed interface WindowWalkResult {
  */
 internal class AndroidWindowTraversal(
     private val mapperRegistry: CapturedViewMapperRegistry,
-    private val touchPrivacyManager: TouchPrivacyManager,
     private val internalLogger: InternalLogger,
     private val hiddenViewMapper: CapturedViewMapper<View> = CapturedHiddenViewMapper(),
     private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver,
@@ -126,7 +125,7 @@ internal class AndroidWindowTraversal(
                     val aborted = visitItem(item, stack, state, context)
                     if (aborted) return CaptureStep.Done(WindowWalkResult.Aborted)
                 }
-                is WorkItem.VisitOccluded -> visitOccluded(item, stack)
+                is WorkItem.VisitOccluded -> visitOccluded(item, stack, state)
                 is WorkItem.Finish ->
                     completeLayer(item.ownIdentity, item.ownKind, item.bounds, item.children, item.sink, state)
             }
@@ -134,7 +133,9 @@ internal class AndroidWindowTraversal(
         // The root Visit is the only one with a Root sink and always completes a layer, setting
         // rootLayer, unless filtered - the only other way this loop empties without it.
         return CaptureStep.Done(
-            state.rootLayer?.let { WindowWalkResult.Present(it, state.layers, state.wireframes) }
+            state.rootLayer?.let {
+                WindowWalkResult.Present(it, state.layers, state.wireframes, state.touchOverrideAreas)
+            }
                 ?: WindowWalkResult.Filtered
         )
     }
@@ -151,7 +152,7 @@ internal class AndroidWindowTraversal(
         val view = item.view
         if (isFiltered(view)) return false
 
-        updateTouchOverrideArea(view)
+        collectTouchOverrideArea(view, state)
 
         val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, state.screenDensity).toCaptured()
         val mappingContext = CapturedMappingContext(item.identityFactory, item.ownIdentity, state.screenDensity)
@@ -246,10 +247,14 @@ internal class AndroidWindowTraversal(
      * it - so this still visits the whole subtree to collect touch-privacy tags.
      */
     @UiThread
-    private fun visitOccluded(item: WorkItem.VisitOccluded, stack: ArrayDeque<WorkItem>) {
+    private fun visitOccluded(
+        item: WorkItem.VisitOccluded,
+        stack: ArrayDeque<WorkItem>,
+        state: TraversalState
+    ) {
         val view = item.view
         if (isFiltered(view)) return
-        updateTouchOverrideArea(view)
+        collectTouchOverrideArea(view, state)
         if (view !is ViewGroup) return
         for (i in view.childCount - 1 downTo 0) {
             val child = view.getChildAt(i)
@@ -297,7 +302,7 @@ internal class AndroidWindowTraversal(
     // MotionEvents report raw screen pixels, so the override area must come from the view's actual
     // on-screen geometry rather than the density-scaled CapturedBounds used for wireframes.
     @UiThread
-    private fun updateTouchOverrideArea(view: View) {
+    private fun collectTouchOverrideArea(view: View, state: TraversalState) {
         val touchPrivacyTag = view.getTag(R.id.datadog_touch_privacy) ?: return
         val locationOnScreen = IntArray(2)
         @Suppress("UnsafeThirdPartyFunctionCall") // this will always have size >= 2
@@ -313,7 +318,7 @@ internal class AndroidWindowTraversal(
 
         try {
             val privacyLevel = TouchPrivacy.valueOf(touchPrivacyTag.toString().uppercase(Locale.US))
-            touchPrivacyManager.addTouchOverrideArea(viewArea, privacyLevel)
+            state.touchOverrideAreas[viewArea] = privacyLevel
         } catch (e: IllegalArgumentException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -363,6 +368,9 @@ internal class AndroidWindowTraversal(
         var rootLayer: CapturedLayer? = null
         val layers = mutableListOf<CapturedLayer>()
         val wireframes = mutableListOf<CapturedWireframe>()
+
+        // Owned by this walk's continuation. Cancellation can drop it without touching another capture.
+        val touchOverrideAreas = mutableMapOf<Rect, TouchPrivacy>()
     }
 }
 

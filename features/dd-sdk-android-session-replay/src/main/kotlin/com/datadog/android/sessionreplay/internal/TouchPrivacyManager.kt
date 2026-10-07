@@ -57,13 +57,19 @@ class TouchPrivacyManager(
     @UiThread
     internal fun updateCurrentTouchOverrideAreas() {
         val builtByThisPass = currentPass()
+        replaceCurrentTouchOverrideAreas(builtByThisPass)
+        builtByThisPass.clear()
+    }
+
+    /** Publishes a completed composition traversal without using the legacy thread-local staging map. */
+    @UiThread
+    internal fun replaceCurrentTouchOverrideAreas(areas: Map<Rect, TouchPrivacy>) {
         synchronized(lock) {
             currentOverrideAreas.clear()
             // NPE cannot happen here
             @Suppress("UnsafeThirdPartyFunctionCall")
-            currentOverrideAreas.putAll(builtByThisPass)
+            currentOverrideAreas.putAll(areas)
         }
-        builtByThisPass.clear()
     }
 
     @UiThread
