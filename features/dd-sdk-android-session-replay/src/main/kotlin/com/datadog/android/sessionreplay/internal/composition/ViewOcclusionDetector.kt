@@ -18,7 +18,7 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
  * pixel-fallback [View.draw] capture, would be wasted work.
  *
  * Conservative by construction: only a single sibling's rect is checked per child (no rect-union
- * covering), and candidates with rotation, scale or restrictive clip bounds are excluded.
+ * covering), and candidates with rotation, scale, outline clipping or restrictive clip bounds are excluded.
  * Missing a real occlusion only costs performance; uncertain coverage must preserve potentially
  * visible views.
  */
@@ -65,6 +65,8 @@ internal class ViewOcclusionDetector(
             view.alpha == 1f &&
             view.rotation == 0f && view.rotationX == 0f && view.rotationY == 0f &&
             view.scaleX == 1f && view.scaleY == 1f &&
+            // An outline may leave corners or other parts of the rectangular bounds uncovered.
+            !view.clipToOutline &&
             !hasRestrictiveClipBounds(view)
     }
 

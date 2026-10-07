@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition
 
 /**
  * The outcome of one bounded main-thread slice of a [CapturedSnapshotProducer]. A producer that
- * can't finish within one slice - see [CaptureGenerationContext.shouldYield] - returns [Yielded]
+ * can't finish within one slice - see [SliceYieldClock.shouldYield] - returns [Yielded]
  * instead of blocking through to completion, so the orchestrator can hand the main thread back to
  * the Looper between slices rather than holding it for the whole generation in one continuous run.
  */

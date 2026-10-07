@@ -11,12 +11,9 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMap
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
 
 /**
- * The seam a future Compose semantics-tree walker (not yet built) can call into when it hits an
- * embedded native `AndroidView`, to reuse this module's native mapper registry - mirroring legacy's
- * one-directional `InteropViewCallback`. No reverse (native-calls-into-Compose) callback exists yet
- * since nothing needs it: a bare `ComposeView` encountered during native traversal falls through to
- * the generic [com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewGroupFallbackMapper],
- * matching current production behavior.
+ * Maps a view at the native/Compose boundary. [AndroidWindowTraversal] uses an optional callback
+ * to hand Compose hosts to a Compose mapper without traversing their native implementation children.
+ * A Compose walker can also use this interface to map embedded native AndroidViews.
  */
 internal fun interface CapturedInteropViewCallback {
     fun map(view: View, mappingContext: CapturedMappingContext): CapturedViewMapperResult

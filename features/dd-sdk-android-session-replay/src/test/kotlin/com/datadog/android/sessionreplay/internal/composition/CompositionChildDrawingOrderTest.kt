@@ -138,6 +138,42 @@ internal class CompositionChildDrawingOrderTest {
     }
 
     @Test
+    fun `M retain visible sibling W traverseWindow { opaque sibling clips to outline }`() {
+        // Given: even without clipBounds, an outline can expose the sibling at rounded corners.
+        val fixture = Fixture(childCount = 2)
+        val covering = fixture.children[1]
+        fixture.makeOpaque(covering)
+        whenever(covering.clipToOutline).thenReturn(true)
+        whenever(covering.clipBounds).thenReturn(null)
+
+        // When
+        val result = fixture.traverse()
+
+        // Then
+        assertThat(result.rootLayer.children.map { it.identity.localId }).containsExactly("1", "2")
+        assertThat(fixture.visited).containsExactly(fixture.root, fixture.children[0], covering)
+    }
+
+    @Test
+    fun `M resume culling W traverseWindow { outline clipping disabled between captures }`() {
+        // Given
+        val fixture = Fixture(childCount = 2)
+        val covering = fixture.children[1]
+        fixture.makeOpaque(covering)
+        whenever(covering.clipToOutline).thenReturn(true)
+        assertThat(fixture.traverse().rootLayer.children.map { it.identity.localId }).containsExactly("1", "2")
+        fixture.visited.clear()
+
+        // When
+        whenever(covering.clipToOutline).thenReturn(false)
+        val result = fixture.traverse()
+
+        // Then
+        assertThat(result.rootLayer.children.map { it.identity.localId }).containsExactly("2")
+        assertThat(fixture.visited).containsExactly(fixture.root, covering)
+    }
+
+    @Test
     fun `M resume culling W traverseWindow { restrictive clip removed between captures }`() {
         // Given
         val fixture = Fixture(childCount = 2, screenDensity = 2f)
