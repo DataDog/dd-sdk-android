@@ -20,9 +20,11 @@ import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
+import com.datadog.android.flags.internal.repository.FirstFlagsLatch
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientEvent
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -35,6 +37,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -138,6 +142,38 @@ internal class DatadogFlagsClientTest {
             evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager
         )
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M isolate event keys W subscriber mutates delivered list`(completeBeforeRegistration: Boolean) {
+        // Given
+        val latch = FirstFlagsLatch()
+        whenever(mockFlagsRepository.firstFlags) doReturn latch
+        val fakeKeys = listOf(fakeDefaultValue, fakeJsonKey, fakeDefaultValue)
+        val events = mutableListOf<FlagsClientEvent>()
+        if (completeBeforeRegistration) latch.complete(fakeKeys)
+
+        // When
+        testedClient.onFirstFlags { event ->
+            events.add(event)
+            // Simulate Java or cast-based mutation of a delivered multi-key list.
+            @Suppress("DontDowncastCollectionTypes")
+            val mutableKeys = event.flagsChanged as MutableList<String>
+            mutableKeys.clear()
+        }
+        testedClient.onFirstFlags { events.add(it) }
+        if (!completeBeforeRegistration) latch.complete(fakeKeys)
+        testedClient.onFirstFlags { events.add(it) }
+
+        // Then
+        assertThat(events).hasSize(3)
+        assertThat(events[0].flagsChanged).isEmpty()
+        assertThat(events[1].flagsChanged).containsExactlyElementsOf(fakeKeys)
+        assertThat(events[2].flagsChanged).containsExactlyElementsOf(fakeKeys)
+        assertThat(events[1]).isNotSameAs(events[0])
+        assertThat(events[2]).isNotSameAs(events[1])
+        verifyNoInteractions(mockInternalLogger)
     }
 
     // region resolveBooleanValue()
