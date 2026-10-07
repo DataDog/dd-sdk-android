@@ -104,6 +104,7 @@ Then point Shopist or the Datadog app at that exact version.
 |---|---|
 | `... is already open: <url>` | Nothing: a PR for exactly this state already exists. |
 | `origin/<branch> already exists but has no open PR` | A previous PR was closed, or a run failed halfway. Check the branch, delete it with the printed command, and re-run. |
+| `Couldn't list the PRs merged from <branch> into develop` | GitHub couldn't be queried (rate limit, network, authentication). Nothing was pushed: re-run once `gh` works. |
 | `is based on develop commits that dogfooding doesn't have yet` | Run `sync.sh` (or merge the open sync PR), then re-run. |
 | `A reset of dogfooding is pending` | Wait until the reset PR is merged, then re-run. |
 | `Another dogfood PR for <branch> is still open` | Merge or close it (deleting its branch), then re-run. |

@@ -85,7 +85,6 @@ else
   SINCE_RESET=("origin/develop..origin/$DOGFOODING_BRANCH")
 fi
 GRADUATED=""
-graduation_check_failed=false
 seen=" "
 while IFS=$'\t' read -r source author; do
   [ -n "$source" ] || continue
@@ -94,9 +93,9 @@ while IFS=$'\t' read -r source author; do
   case "$seen" in *" $branch "*) continue ;; esac
   seen="$seen$branch "
   if ! merged=$(gh pr list --repo "$REPO" --head "$branch" --base develop --state merged \
-    --json mergeCommit,headRefOid --limit 100 -q '.[] | "\(.mergeCommit.oid)\t\(.headRefOid)"' 2>/dev/null); then
-    graduation_check_failed=true
-    continue
+    --json mergeCommit,headRefOid --limit 100 -q '.[] | "\(.mergeCommit.oid)\t\(.headRefOid)"'); then
+    echo "Couldn't list the PRs merged from $branch into develop (gh failed). Nothing was pushed: re-run once gh works." >&2
+    exit 1
   fi
   while IFS=$'\t' read -r merge head; do
     [ -n "$merge" ] || continue
@@ -118,9 +117,6 @@ if [ -n "$GRADUATED" ]; then
   echo ""
   echo "⚠️  Dogfooded features that graduated to develop at a different commit than the one dogfooded:"
   echo "$GRADUATED"
-fi
-if [ "$graduation_check_failed" = true ]; then
-  echo "⚠️  Graduation check skipped for some features: gh couldn't list their PRs into develop."
 fi
 
 echo "Pushing origin/develop as $SYNC_BRANCH..."

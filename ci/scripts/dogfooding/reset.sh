@@ -143,17 +143,21 @@ while IFS=$'\t' read -r source author; do
   # unrelated to it (the branch was rebased before merging). A merged head that is a strict
   # ancestor of the dogfooded commit only brought in part of it: an older PR that reused the
   # branch name, or the branch kept going after an earlier PR merged, so it doesn't count.
-  # If gh fails, fall back to commit ancestry. Both checks need the dogfooded commit; without
-  # merged PRs it's only needed for the --at command.
-  gh_ok=true
-  merged_heads=$(gh pr list --repo "$REPO" --head "$branch" --base develop --state merged \
-    --json headRefOid --limit 100 -q '.[].headRefOid' 2>/dev/null) || gh_ok=false
-  if [ "$gh_ok" = true ] && [ -z "$merged_heads" ]; then
+  # If gh fails, stop: without the merged PRs there's no reliable way to tell whether the feature
+  # graduated (its branch may have been rebased before merging), and nothing has been pushed yet.
+  # Comparing the merged heads needs the dogfooded commit; without merged PRs it's only needed
+  # for the --at command.
+  if ! merged_heads=$(gh pr list --repo "$REPO" --head "$branch" --base develop --state merged \
+    --json headRefOid --limit 100 -q '.[].headRefOid'); then
+    echo "Couldn't list the PRs merged from $branch into develop (gh failed). Nothing was pushed: re-run once gh works." >&2
+    exit 1
+  fi
+  if [ -z "$merged_heads" ]; then
     graduated=false
   elif ! ensure_commit "$sha"; then
     UNKNOWN="$UNKNOWN$unknown_entry"
     continue
-  elif [ "$gh_ok" = true ]; then
+  else
     graduated=false
     while read -r head; do
       [ -n "$head" ] || continue
@@ -161,10 +165,6 @@ while IFS=$'\t' read -r source author; do
         graduated=true
       fi
     done <<< "$merged_heads"
-  elif git merge-base --is-ancestor "$sha" origin/develop; then
-    graduated=true
-  else
-    graduated=false
   fi
   [ "$graduated" = false ] || continue
   if [ "$needs_sha" = true ] && ! ensure_commit "$sha"; then
