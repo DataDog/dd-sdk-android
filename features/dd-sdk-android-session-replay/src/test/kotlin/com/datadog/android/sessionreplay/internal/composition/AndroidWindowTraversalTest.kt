@@ -106,6 +106,7 @@ internal class AndroidWindowTraversalTest {
 
     private fun mockViewGroup(bounds: GlobalBounds): ViewGroup {
         val view: ViewGroup = mock()
+        whenever(view.clipChildren).thenReturn(true)
         stubDefaults(view, bounds)
         return view
     }

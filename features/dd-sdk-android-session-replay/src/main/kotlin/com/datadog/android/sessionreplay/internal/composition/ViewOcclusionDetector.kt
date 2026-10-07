@@ -7,21 +7,20 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import android.view.View
-import android.view.ViewGroup
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 
 /**
- * Finds children of a [ViewGroup] that are fully painted over by a later (higher z-order) opaque
+ * Finds children in a resolved drawing order that are fully painted over by a later (higher z-order) opaque
  * sibling and therefore contribute nothing to the final image - mapping them, including any
  * pixel-fallback [View.draw] capture, would be wasted work.
  *
  * Conservative by construction: only a single sibling's rect is checked per child (no rect-union
- * covering), and a sibling only counts as covering when it has no rotation/scale, so its
- * axis-aligned bounds always match what it actually paints. Missing a real occlusion just costs
- * performance; the opposite - wrongly culling a still-visible view - never happens.
+ * covering), and candidates with rotation, scale or restrictive clip bounds are excluded.
+ * Missing a real occlusion only costs performance; uncertain coverage must preserve potentially
+ * visible views.
  */
 internal class ViewOcclusionDetector(
     private val viewBoundsResolver: ViewBoundsResolver,
@@ -30,13 +29,14 @@ internal class ViewOcclusionDetector(
     private val internalLogger: InternalLogger
 ) {
 
-    fun occludedChildIndices(viewGroup: ViewGroup, screenDensity: Float): Set<Int> {
-        val childCount = viewGroup.childCount
-        if (childCount < 2) return emptySet()
+    fun occludedChildIndices(drawingOrder: ViewGroupDrawingOrder, screenDensity: Float): Set<Int> {
+        val children = drawingOrder.children
+        val childCount = children.size
+        if (childCount < 2 || !drawingOrder.isReliable) return emptySet()
         val occluded = mutableSetOf<Int>()
         val coveringBoundsAbove = mutableListOf<CapturedBounds>()
         for (i in childCount - 1 downTo 0) {
-            val child = viewGroup.getChildAt(i) ?: continue
+            val child = children[i]
             val childBounds = viewBoundsResolver.resolveViewGlobalBounds(child, screenDensity).toCaptured()
             if (coveringBoundsAbove.any { it.fullyCovers(childBounds) }) {
                 @Suppress("UnsafeThirdPartyFunctionCall") // plain HashSet-backed add, cannot throw
@@ -64,7 +64,17 @@ internal class ViewOcclusionDetector(
             !viewUtilsInternal.isNotVisible(view) &&
             view.alpha == 1f &&
             view.rotation == 0f && view.rotationX == 0f && view.rotationY == 0f &&
-            view.scaleX == 1f && view.scaleY == 1f
+            view.scaleX == 1f && view.scaleY == 1f &&
+            !hasRestrictiveClipBounds(view)
+    }
+
+    private fun hasRestrictiveClipBounds(view: View): Boolean {
+        val clip = view.clipBounds ?: return false
+        // clipBounds is local and in pixels, just like width/height. A partial (or empty) clip
+        // means the opaque background cannot guarantee coverage of the full global rectangle.
+        val clipsHorizontally = clip.left > 0 || clip.right < view.width
+        val clipsVertically = clip.top > 0 || clip.bottom < view.height
+        return clipsHorizontally || clipsVertically
     }
 
     private companion object {

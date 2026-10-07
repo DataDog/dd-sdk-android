@@ -27,6 +27,7 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import java.util.Locale
 import kotlin.math.max
+import kotlin.math.min
 
 internal sealed interface WindowWalkResult {
     data class Present(
@@ -46,7 +47,7 @@ internal sealed interface WindowWalkResult {
 /**
  * Walks one window's native View hierarchy into a [CapturedLayer] tree, combining legacy
  * `TreeViewTraversal` (per-view decisions) and `SnapshotProducer` (recursion) into a single pass,
- * with clip computed inline via a threaded ancestor-bounds list instead of a separate flatten step.
+ * with clip computed inline from an accumulated ancestor intersection instead of a separate flatten step.
  *
  * Every visited [View] becomes exactly one [CapturedLayer] (kind [CapturedLayerKind.NATIVE_VIEW],
  * or [CapturedLayerKind.WINDOW_ROOT] for the window's own root). Its identity is always created via
@@ -68,7 +69,8 @@ internal class AndroidWindowTraversal(
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
     private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault(),
     private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
-    private val composeHostCallback: CapturedInteropViewCallback? = null
+    private val composeHostCallback: CapturedInteropViewCallback? = null,
+    private val drawingOrderResolver: ViewGroupDrawingOrderResolver = ViewGroupDrawingOrderResolver(internalLogger)
 ) {
 
     private val occlusionDetector = ViewOcclusionDetector(
@@ -94,7 +96,8 @@ internal class AndroidWindowTraversal(
                 ownKind = CapturedLayerKind.WINDOW_ROOT,
                 windowIdentity = windowIdentity,
                 identityFactory = identityFactory,
-                ancestorBounds = emptyList(),
+                ancestorClip = null,
+                clipToBounds = true,
                 sink = ResultSink.Root
             )
         )
@@ -163,12 +166,15 @@ internal class AndroidWindowTraversal(
         if (interopResult != null && !context.shouldContinue()) return true
         val mapped = interopResult
             ?: (if (isHidden) hiddenViewMapper else mapperRegistry.resolve(view)).map(view, mappingContext)
-        addWireframes(mapped, item.ancestorBounds, children, state)
+        // clipChildren belongs to the containing ViewGroup: it clips this View's entire drawing
+        // (including descendants) to this View's bounds. A window root is always bounded by its surface.
+        val clip = if (item.clipToBounds) item.ancestorClip.intersectWith(bounds) else item.ancestorClip
+        addWireframes(mapped, clip, children, state)
 
         val canHaveChildren = !isHidden && interopResult == null
         if (canHaveChildren && view is ViewGroup && view.childCount > 0) {
             stack.push(WorkItem.Finish(item.ownIdentity, item.ownKind, bounds, children, item.sink))
-            pushChildren(view, item, state.screenDensity, item.ancestorBounds + bounds, children, stack)
+            pushChildren(view, item, state.screenDensity, clip, children, stack)
         } else {
             completeLayer(item.ownIdentity, item.ownKind, bounds, children, item.sink, state)
         }
@@ -195,21 +201,34 @@ internal class AndroidWindowTraversal(
      * A Compose host's interior is Compose's own node tree, not further Android child Views - its
      * content is fully described by whatever `composeHostCallback` returned in [visitItem], which
      * is why that case never reaches here. Pushed in reverse child order so the stack (LIFO) pops
-     * them back out in the View hierarchy's own forward order.
+     * them back out in effective painting order (custom order, then stable Z ordering).
      */
     @UiThread
     private fun pushChildren(
         viewGroup: ViewGroup,
         parent: WorkItem.Visit,
         screenDensity: Float,
-        ancestorBounds: List<CapturedBounds>,
+        ancestorClip: ClipBounds?,
         appendTo: MutableList<CapturedChild>,
         stack: ArrayDeque<WorkItem>
     ) {
-        val occludedIndices = occlusionDetector.occludedChildIndices(viewGroup, screenDensity)
-        for (i in viewGroup.childCount - 1 downTo 0) {
-            val child = viewGroup.getChildAt(i)
-            if (child == null) continue
+        val drawingOrder = drawingOrderResolver.resolve(viewGroup)
+        val clipChildren = viewGroup.clipChildren
+        // A covered child rectangle does not imply its overflowing subtree is covered.
+        val occludedIndices = if (clipChildren) {
+            occlusionDetector.occludedChildIndices(drawingOrder, screenDensity)
+        } else {
+            emptySet()
+        }
+        val childClip = if (viewGroup.clipToPadding && viewGroup.hasNonZeroPadding()) {
+            ancestorClip.intersectWith(
+                viewBoundsResolver.resolveViewPaddedBounds(viewGroup, screenDensity).toCaptured()
+            )
+        } else {
+            ancestorClip
+        }
+        for (i in drawingOrder.children.indices.reversed()) {
+            val child = drawingOrder.children[i]
             if (i in occludedIndices) {
                 // No identity is minted here: an occluded child's identity is never read, since it
                 // never reaches completeLayer() - see visitOccluded().
@@ -226,7 +245,8 @@ internal class AndroidWindowTraversal(
                         ownKind = CapturedLayerKind.NATIVE_VIEW,
                         windowIdentity = parent.windowIdentity,
                         identityFactory = parent.identityFactory,
-                        ancestorBounds = ancestorBounds,
+                        ancestorClip = childClip,
+                        clipToBounds = clipChildren,
                         sink = ResultSink.ChildOf(appendTo)
                     )
                 )
@@ -256,47 +276,25 @@ internal class AndroidWindowTraversal(
         if (isFiltered(view)) return
         collectTouchOverrideArea(view, state)
         if (view !is ViewGroup) return
-        for (i in view.childCount - 1 downTo 0) {
-            val child = view.getChildAt(i)
-            if (child != null) stack.push(WorkItem.VisitOccluded(child, item.windowIdentity, item.identityFactory))
+        val children = drawingOrderResolver.resolve(view).children
+        for (i in children.indices.reversed()) {
+            val child = children[i]
+            stack.push(WorkItem.VisitOccluded(child, item.windowIdentity, item.identityFactory))
         }
     }
 
     private fun addWireframes(
         result: CapturedViewMapperResult,
-        ancestorBounds: List<CapturedBounds>,
+        ancestorClip: ClipBounds?,
         children: MutableList<CapturedChild>,
         state: TraversalState
     ) {
         if (result !is CapturedViewMapperResult.Wireframes) return
         for (wireframe in result.wireframes) {
-            val clipped = wireframe.withClip(computeClip(wireframe.bounds, ancestorBounds))
+            val clipped = wireframe.withClip(ancestorClip?.clip(wireframe.bounds))
             state.wireframes.add(clipped)
             children.add(CapturedChild.Wireframe(clipped.identity))
         }
-    }
-
-    private fun computeClip(bounds: CapturedBounds, ancestorBounds: List<CapturedBounds>): CapturedClip? {
-        var clipTop = 0L
-        var clipBottom = 0L
-        var clipLeft = 0L
-        var clipRight = 0L
-        val bottom = bounds.y + bounds.height
-        val right = bounds.x + bounds.width
-        for (ancestor in ancestorBounds) {
-            clipTop = max(ancestor.y - bounds.y, clipTop)
-            clipBottom = max(bottom - (ancestor.y + ancestor.height), clipBottom)
-            clipLeft = max(ancestor.x - bounds.x, clipLeft)
-            clipRight = max(right - (ancestor.x + ancestor.width), clipRight)
-        }
-        val hasNoClip = listOf(clipTop, clipBottom, clipLeft, clipRight).all { it <= 0 }
-        if (hasNoClip) return null
-        return CapturedClip(
-            top = clipTop.takeIf { it > 0 },
-            bottom = clipBottom.takeIf { it > 0 },
-            left = clipLeft.takeIf { it > 0 },
-            right = clipRight.takeIf { it > 0 }
-        )
     }
 
     // MotionEvents report raw screen pixels, so the override area must come from the view's actual
@@ -336,7 +334,8 @@ internal class AndroidWindowTraversal(
             val ownKind: CapturedLayerKind,
             val windowIdentity: CapturedIdentity,
             val identityFactory: CapturedIdentityFactory,
-            val ancestorBounds: List<CapturedBounds>,
+            val ancestorClip: ClipBounds?,
+            val clipToBounds: Boolean,
             val sink: ResultSink
         ) : WorkItem
 
@@ -405,3 +404,55 @@ private fun CapturedWireframe.withClip(clip: CapturedClip?): CapturedWireframe =
     is CapturedWireframe.Pixel -> copy(clip = clip)
     is CapturedWireframe.PrivacyPlaceholder -> copy(clip = clip)
 }
+
+// Android applies clipToPadding only when at least one padding edge is non-zero.
+private fun ViewGroup.hasNonZeroPadding(): Boolean =
+    paddingLeft != 0 || paddingTop != 0 || paddingRight != 0 || paddingBottom != 0
+
+/**
+ * Immutable intersection of all inherited rectangular clipping constraints. Four edges replace
+ * depth-sized ancestor lists, so adding a constraint and clipping a wireframe are both O(1).
+ * Right/bottom may be at or before left/top: keeping those inverted edges preserves empty clips
+ * through further intersections. Null in a work item means unbounded, never empty.
+ */
+private class ClipBounds private constructor(
+    private val left: Long,
+    private val top: Long,
+    private val right: Long,
+    private val bottom: Long
+) {
+    constructor(bounds: CapturedBounds) : this(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height)
+
+    fun intersect(bounds: CapturedBounds): ClipBounds {
+        val left = max(this.left, bounds.x)
+        val top = max(this.top, bounds.y)
+        val right = min(this.right, bounds.x + bounds.width)
+        val bottom = min(this.bottom, bounds.y + bounds.height)
+        val hasSameHorizontalBounds = left == this.left && right == this.right
+        val hasSameVerticalBounds = top == this.top && bottom == this.bottom
+        return if (hasSameHorizontalBounds && hasSameVerticalBounds) {
+            this
+        } else {
+            ClipBounds(left, top, right, bottom)
+        }
+    }
+
+    fun clip(bounds: CapturedBounds): CapturedClip? {
+        val clipTop = top - bounds.y
+        val clipBottom = bounds.y + bounds.height - bottom
+        val clipLeft = left - bounds.x
+        val clipRight = bounds.x + bounds.width - right
+        val hasHorizontalClip = clipLeft > 0 || clipRight > 0
+        val hasVerticalClip = clipTop > 0 || clipBottom > 0
+        if (!hasHorizontalClip && !hasVerticalClip) return null
+        return CapturedClip(
+            top = clipTop.takeIf { it > 0 },
+            bottom = clipBottom.takeIf { it > 0 },
+            left = clipLeft.takeIf { it > 0 },
+            right = clipRight.takeIf { it > 0 }
+        )
+    }
+}
+
+private fun ClipBounds?.intersectWith(bounds: CapturedBounds): ClipBounds =
+    this?.intersect(bounds) ?: ClipBounds(bounds)
