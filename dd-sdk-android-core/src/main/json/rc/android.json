@@ -38,7 +38,22 @@
       ],
       "unevaluatedProperties": false
     },
-    "profiling": { "$ref": "mobile.json#/$defs/profiling" },
+    "profiling": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "mobile.json#/$defs/profiling" },
+        {
+          "type": "object",
+          "properties": {
+            "anrTriggerEnabled": {
+              "type": "boolean",
+              "description": "Whether a profile is collected when an ANR occurs"
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
     "trace": { "$ref": "mobile.json#/$defs/trace" }
   }
 }

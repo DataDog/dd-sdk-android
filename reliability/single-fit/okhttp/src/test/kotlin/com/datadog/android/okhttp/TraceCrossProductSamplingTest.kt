@@ -3,7 +3,6 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 
 package com.datadog.android.okhttp
 
@@ -439,7 +438,7 @@ class TraceCrossProductSamplingTest {
         return kept.toFloat() / SAMPLES_PER_CASE.toFloat()
     }
 
-    /** Restarts [mockServer] pre-loaded with [SAMPLES_PER_CASE] empty responses. */
+    /** Restarts [mockServer] preloaded with [SAMPLES_PER_CASE] empty responses. */
     private fun prepareMockServer() {
         mockServer.shutdown()
         mockServer = MockWebServer()

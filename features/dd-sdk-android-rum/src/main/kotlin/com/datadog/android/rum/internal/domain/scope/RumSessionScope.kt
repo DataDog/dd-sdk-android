@@ -16,9 +16,10 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
+import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
@@ -66,7 +67,7 @@ internal class RumSessionScope(
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
     private val viewEventMapper: ViewEventMapper,
-    private val rumViewEventWriteConfig: RumViewEventWriteConfig,
+    private val viewEventWriteConfig: ViewEventWriteConfig,
     heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
     private val timeseriesCollector: TimeseriesCollector = NoOpTimeseriesCollector()
 ) : RumScope {
@@ -107,7 +108,7 @@ internal class RumSessionScope(
         displayInfoProvider = displayInfoProvider,
         insightsCollector = insightsCollector,
         viewEventMapper = viewEventMapper,
-        rumViewEventWriteConfig = rumViewEventWriteConfig,
+        viewEventWriteConfig = viewEventWriteConfig,
         heatmapIdentifierRegistry = heatmapIdentifierRegistry
     )
 
@@ -120,7 +121,7 @@ internal class RumSessionScope(
 
     enum class State(val asString: String) {
         NOT_TRACKED("NOT_TRACKED"),
-        TRACKED("TRACKED"),
+        TRACKED(RumSessionConstants.TRACKED_SESSION_STATE),
         EXPIRED("EXPIRED");
 
         companion object {

@@ -5,8 +5,12 @@ interface com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
 fun heatmapViewKey(android.view.View): Long
 object com.datadog.android.internal.FeatureContextKeys
   const val PROFILER_IS_RUNNING: String
+  const val PROFILING_SAMPLE_RATE: String
+  const val PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE: String
+  const val PROFILING_ANR_ENABLED: String
   const val RUM_SESSION_ID: String
   const val RUM_SESSION_SAMPLE_RATE: String
+  const val RUM_SESSION_STATE: String
   const val PROFILING_QUOTA_REASON: String
   const val PROFILING_QUOTA_SESSION_ID: String
 interface com.datadog.android.internal.attributes.LocalAttribute
@@ -201,6 +205,7 @@ data class com.datadog.android.internal.profiling.ProfilingThreadDump
   constructor(String, Thread.State, String)
 object com.datadog.android.internal.rum.RumSessionConstants
   const val EMPTY_RUM_SESSION_ID: String
+  const val TRACKED_SESSION_STATE: String
 object com.datadog.android.internal.sampling.DeterministicSampling
   fun combinedSampleRate(Float, Float): Float
 object com.datadog.android.internal.sampling.SessionSamplingIdProvider

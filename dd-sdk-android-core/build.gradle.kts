@@ -8,6 +8,7 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.BuildConfigPropertiesKeys
 import com.datadog.gradle.config.GradlePropertiesKeys
+import com.datadog.gradle.utils.GitHashValueSource
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -79,9 +80,8 @@ android {
         buildConfigField(
             "String",
             "SDK_COMMIT_SHA1",
-            "\"${providers.exec {
-                commandLine("git", "rev-parse", "HEAD")
-            }.standardOutput.asText.get().trim()}\""
+            // make it more friendly to configuration cache
+            "\"${providers.of(GitHashValueSource::class) { }.get()}\""
         )
     }
 

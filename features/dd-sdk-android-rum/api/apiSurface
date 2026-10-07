@@ -91,6 +91,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun trackAnonymousUser(Boolean): Builder
     fun setAppStartupActivityPredicate(com.datadog.android.rum.startup.AppStartupActivityPredicate): Builder
     fun setTimeseriesConfiguration(com.datadog.android.rum.timeseries.TimeseriesConfiguration): Builder
+    fun setViewEventWriteConfig(com.datadog.android.rum.configuration.ViewEventWriteConfig): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
   - NETWORK
@@ -191,18 +192,17 @@ class com.datadog.android.rum._RumInternalProxy
     fun setInsightsCollector(com.datadog.android.rum.RumConfiguration.Builder, com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector): com.datadog.android.rum.RumConfiguration.Builder
     fun createRumNetworkInstrumentation(String, com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType, com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration)
     fun toResourceAttributes(com.datadog.android.rum.resource.ResourceHeadersExtractor, Map<String, List<String>>, Map<String, List<String>>, com.datadog.android.api.InternalLogger)
-    fun setRumViewEventWriteConfig(com.datadog.android.rum.RumConfiguration.Builder, com.datadog.android.rum.configuration.RumViewEventWriteConfig): com.datadog.android.rum.RumConfiguration.Builder
 class com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
   fun setSdkInstanceName(String)
   fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider)
   fun trackResourceHeaders(com.datadog.android.rum.resource.ResourceHeadersExtractor = ResourceHeadersExtractor.Builder().build())
-sealed interface com.datadog.android.rum.configuration.RumViewEventWriteConfig
-  object AlwaysFullView : RumViewEventWriteConfig
-  object FullViewOnlyAtStart : RumViewEventWriteConfig
 data class com.datadog.android.rum.configuration.SlowFramesConfiguration
   constructor(Int = DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT, Long = DEFAULT_FROZEN_FRAME_THRESHOLD_NS, Long = DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS, Long = DEFAULT_FREEZE_DURATION_NS, Long = DEFAULT_VIEW_LIFETIME_THRESHOLD_NS)
   companion object 
     val DEFAULT: SlowFramesConfiguration
+sealed interface com.datadog.android.rum.configuration.ViewEventWriteConfig
+  object AlwaysFullView : ViewEventWriteConfig
+  object FullViewOnlyAtStart : ViewEventWriteConfig
 enum com.datadog.android.rum.configuration.VitalsUpdateFrequency
   constructor(Long)
   - FREQUENT
@@ -863,7 +863,7 @@ data class com.datadog.android.rum.model.ErrorEvent
       fun fromJson(kotlin.String): Configuration
       fun fromJsonObject(com.google.gson.JsonObject): Configuration
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null, kotlin.Number? = null)
+    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
@@ -1250,7 +1250,7 @@ data class com.datadog.android.rum.model.LongTaskEvent
       fun fromJson(kotlin.String): Configuration
       fun fromJsonObject(com.google.gson.JsonObject): Configuration
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null, kotlin.Number? = null)
+    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
@@ -2487,7 +2487,7 @@ data class com.datadog.android.rum.model.ViewEvent
       fun fromJson(kotlin.String): DdCls
       fun fromJsonObject(com.google.gson.JsonObject): DdCls
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null, kotlin.Number? = null)
+    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
@@ -2918,7 +2918,7 @@ data class com.datadog.android.rum.model.ViewUpdateEvent
       fun fromJson(kotlin.String): Configuration
       fun fromJsonObject(com.google.gson.JsonObject): Configuration
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null, kotlin.Number? = null)
+    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
@@ -3260,7 +3260,7 @@ data class com.datadog.android.rum.model.VitalAppLaunchEvent
       fun fromJson(kotlin.String): Configuration
       fun fromJsonObject(com.google.gson.JsonObject): Configuration
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null, kotlin.Number? = null)
+    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
@@ -3525,7 +3525,7 @@ data class com.datadog.android.rum.model.VitalOperationStepEvent
       fun fromJson(kotlin.String): Configuration
       fun fromJsonObject(com.google.gson.JsonObject): Configuration
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null, kotlin.Number? = null)
+    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
@@ -3714,7 +3714,7 @@ data class com.datadog.android.telemetry.model.TelemetryConfigurationEvent
       fun fromJson(kotlin.String): Os
       fun fromJsonObject(com.google.gson.JsonObject): Os
   data class Configuration
-    constructor(kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, TraceContextInjection? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, TrackingConsent? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, SessionPersistence? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.collections.List<SelectedTracingPropagator>? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.Boolean? = null, ViewTrackingStrategy? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.collections.List<Plugin>? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.collections.List<TrackFeatureFlagsForEvent>? = null, kotlin.Boolean? = true, kotlin.Boolean? = false, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null, RemoteConfiguration? = null, kotlin.Number? = null, kotlin.Boolean? = null, TrackResourceHeaders? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null)
+    constructor(kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, TraceContextInjection? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, TrackingConsent? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, SessionPersistence? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.collections.List<SelectedTracingPropagator>? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.Boolean? = null, ViewTrackingStrategy? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.collections.List<Plugin>? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.collections.List<TrackFeatureFlagsForEvent>? = null, kotlin.Boolean? = true, kotlin.Boolean? = false, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null, RemoteConfiguration? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, TrackResourceHeaders? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Configuration

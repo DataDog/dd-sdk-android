@@ -34,6 +34,7 @@ import com.datadog.android.profiling.internal.quota.QuotaResult
 import com.datadog.android.profiling.internal.trigger.NoOpPendingTriggerProfiles
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfileStorage
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
+import com.datadog.android.profiling.internal.utils.fileDeleteSafe
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -42,14 +43,26 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 @OptIn(ExperimentalProfilingApi::class)
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+@Suppress("TooManyFunctions")
 internal class ProfilingFeature(
     private val sdkCore: FeatureSdkCore,
     private val configuration: ProfilingConfiguration,
     private val profiler: Profiler
-) : StorageBackedFeature, FeatureEventReceiver, FeatureContextUpdateReceiver, ProfilerCallback {
+) : StorageBackedFeature,
+    FeatureEventReceiver,
+    FeatureContextUpdateReceiver,
+    ProfilerCallback,
+    ProfilingStatusListener {
 
     @Volatile
     internal var lastSeenRumSessionId: String? = null
+
+    // RUM session the app launch profile belongs to: the first session seen while it is recorded.
+    // Null until that session is seen. Its state and quota decision are kept apart from later
+    // sessions so the launch profile is judged by its own session only. Guarded by quotaSessionLock.
+    private var launchSessionId: String? = null
+    private var isLaunchSessionTracked: Boolean = false
+    private var launchSessionQuotaResult: QuotaResult? = null
 
     internal var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
@@ -83,6 +96,13 @@ internal class ProfilingFeature(
     @Volatile
     private var lastQuotaResult: QuotaResult? = null
 
+    // Trigger profiles matched before a quota decision exists for their session.
+    private val triggerProfilesAwaitingQuota = mutableListOf<TriggerProfile>()
+
+    // Guards [lastSeenRumSessionId] updates against the quota check and trigger profile queueing
+    // that depend on it being the current session.
+    private val quotaSessionLock = Any()
+
     override val requestFactory: RequestFactory = ProfilingRequestFactory(
         customEndpointUrl = configuration.customEndpointUrl,
         internalLogger = sdkCore.internalLogger
@@ -108,6 +128,7 @@ internal class ProfilingFeature(
             this.internalLogger = sdkCore.internalLogger
             setAnrTriggerEnabled(configuration.anrTriggerEnabled)
             registerProfilingCallback(appContext, this@ProfilingFeature)
+            registerProfilerStatusListener(this@ProfilingFeature)
         }
         ProfilingStorage.setSampleRate(appContext, configuration.applicationLaunchSampleRate)
         // Set the profiling flag in SharedPreferences to profile for the next app launch
@@ -115,7 +136,10 @@ internal class ProfilingFeature(
         isLaunchProfilingActive = profiler.isRunning()
         sdkCore.setEventReceiver(name, this)
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
+            context[FeatureContextKeys.PROFILING_SAMPLE_RATE] = configuration.continuousSampleRate
+            context[FeatureContextKeys.PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE] =
+                configuration.applicationLaunchSampleRate
+            context[FeatureContextKeys.PROFILING_ANR_ENABLED] = configuration.anrTriggerEnabled
         }
 
         val quotaCallFactory = sdkCore.createOkHttpCallFactory {
@@ -160,6 +184,7 @@ internal class ProfilingFeature(
         profiler.apply {
             stop()
             unregisterProfilingCallback(appContext)
+            unregisterProfilerStatusListener(this@ProfilingFeature)
         }
         sdkCore.removeEventReceiver(name)
         sdkCore.removeContextUpdateReceiver(this)
@@ -169,8 +194,14 @@ internal class ProfilingFeature(
         quotaExecutor = null
         pendingTriggerProfiles.stop()
         pendingTriggerProfiles = NoOpPendingTriggerProfiles()
-        lastQuotaResult = null
-        lastSeenRumSessionId = null
+        synchronized(quotaSessionLock) {
+            lastQuotaResult = null
+            lastSeenRumSessionId = null
+            launchSessionId = null
+            isLaunchSessionTracked = false
+            launchSessionQuotaResult = null
+        }
+        dropTriggerProfilesAwaitingQuota()
         pendingRumEvents.clear()
     }
 
@@ -217,9 +248,6 @@ internal class ProfilingFeature(
     override fun onSuccess(result: PerfettoResult) {
         perfettoResult = result
         tryWriteProfilingEvent()
-        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
-        }
     }
 
     override fun onFailure(startReason: ProfilingStartReason) {
@@ -231,9 +259,6 @@ internal class ProfilingFeature(
             continuousProfilingScheduler?.onAppLaunchProfilingComplete()
         } else if (startReason == ProfilingStartReason.CONTINUOUS) {
             continuousProfilingScheduler?.onActiveWindowEnded()
-        }
-        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            context[FeatureContextKeys.PROFILER_IS_RUNNING] = profiler.isRunning()
         }
     }
 
@@ -265,57 +290,51 @@ internal class ProfilingFeature(
         ) {
             return
         }
-        this.lastQuotaResult = null
-        continuousProfilingScheduler?.lastQuotaResult = null
         val sampleRate = (context[FeatureContextKeys.RUM_SESSION_SAMPLE_RATE] as? Number)?.toFloat()
             ?: DEFAULT_RUM_SESSION_SAMPLE_RATE
-        lastSeenRumSessionId = sessionId
-        sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.withContext { datadogContext ->
-            quotaChecker.checkAsync(sessionId, datadogContext)
+        val isTracked =
+            (context[FeatureContextKeys.RUM_SESSION_STATE] as? String) == RumSessionConstants.TRACKED_SESSION_STATE
+        // Publish the new session and retire the previous session's quota check and queued trigger
+        // profiles atomically: a trigger profile of the new session can't be queued, nor its quota
+        // check started, until the previous session's state is gone.
+        val (isLaunchSession, previousSessionTriggerProfiles) = synchronized(quotaSessionLock) {
+            lastSeenRumSessionId = sessionId
+            quotaChecker.reset()
+            lastQuotaResult = null
+            continuousProfilingScheduler?.lastQuotaResult = null
+            if (launchSessionId == null && isLaunchProfilingActive) {
+                launchSessionId = sessionId
+                isLaunchSessionTracked = isTracked
+            }
+            (launchSessionId == sessionId) to drainTriggerProfilesAwaitingQuota()
         }
         continuousProfilingScheduler?.onRumSessionRenewed(
             sessionId = sessionId,
             rumSessionSampleRate = sampleRate
         )
+        previousSessionTriggerProfiles.forEach {
+            dropTriggerProfile(it, LOG_TRIGGER_PROFILING_DROPPED_SESSION_ENDED)
+        }
+        // Only spend a quota check on tracked sessions sampled for continuous profiling or owning the
+        // app launch profile. Trigger profiles request their own check when they are matched.
+        if (isTracked && (continuousProfilingScheduler?.currentSessionSampled == true || isLaunchSession)) {
+            checkQuotaIfCurrentSession(sessionId)
+        }
+        // A held launch profile can be decided now: its session is untracked, or has just ended.
+        tryWritePendingLaunchProfile()
+    }
+
+    override fun onProfilingStatusChange(isRunning: Boolean) {
+        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+            context[FeatureContextKeys.PROFILER_IS_RUNNING] = isRunning
+        }
     }
 
     @Suppress("ReturnCount")
     private fun tryWriteProfilingEvent() {
         val result = perfettoResult ?: return
         when (result.startReason) {
-            ProfilingStartReason.APPLICATION_LAUNCH -> {
-                // Wait until both the TTID event and the quota decision have been received before
-                // proceeding — the profiler result, the TTID event and the quota result are all
-                // required. If the quota decision has not arrived yet, hold the buffered result and
-                // return; the quota callback (or the timeout fallback) will re-trigger this write
-                // once it lands. Capture the result once to avoid a re-read race with a concurrent
-                // session renewal resetting it to null.
-                val quotaResult = this.lastQuotaResult ?: return
-                if (isTtidVitalReceived.get() && !isTtidProfileSent.getAndSet(true)) {
-                    isLaunchProfilingActive = false
-                    if (quotaResult.decision == QuotaResult.Decision.DENIED) {
-                        logToUser(
-                            LOG_LAUNCH_PROFILING_DROPPED_QUOTA_DENIED.format(
-                                Locale.US,
-                                quotaResult.reason.rawValue
-                            )
-                        )
-                        dataWriter.discard(result)
-                        pendingRumEvents.clear()
-                    } else {
-                        val (longTasks, anrEvents, vitalEvents) = pendingRumEvents.drain()
-                        dataWriter.writeManualProfile(
-                            profilingResult = result,
-                            longTasks = longTasks,
-                            anrEvents = anrEvents,
-                            vitalEvents = vitalEvents
-                        )
-                    }
-                    // Clear the consumed result so a later quota callback can't re-trigger a write.
-                    perfettoResult = null
-                    continuousProfilingScheduler?.onAppLaunchProfilingComplete()
-                }
-            }
+            ProfilingStartReason.APPLICATION_LAUNCH -> tryWriteLaunchProfile(result)
 
             ProfilingStartReason.CONTINUOUS -> {
                 val scheduler = continuousProfilingScheduler ?: return
@@ -347,6 +366,52 @@ internal class ProfilingFeature(
         }
     }
 
+    private fun tryWritePendingLaunchProfile() {
+        perfettoResult
+            ?.takeIf { it.startReason == ProfilingStartReason.APPLICATION_LAUNCH }
+            ?.let(::tryWriteLaunchProfile)
+    }
+
+    private fun tryWriteLaunchProfile(result: PerfettoResult) {
+        // The launch profile is judged by its own RUM session only: it waits for that session and
+        // its quota decision (re-triggered by the session renewal or the quota callback), and is
+        // dropped if the session is untracked or ends before the decision lands. The TTID event is
+        // required as well.
+        val dropMessage = synchronized(quotaSessionLock) {
+            val quotaResult = launchSessionQuotaResult
+            when {
+                launchSessionId == null -> return
+                !isLaunchSessionTracked -> LOG_LAUNCH_PROFILING_DROPPED_SESSION_NOT_TRACKED
+                quotaResult != null -> if (quotaResult.decision == QuotaResult.Decision.DENIED) {
+                    LOG_LAUNCH_PROFILING_DROPPED_QUOTA_DENIED.format(Locale.US, quotaResult.reason.rawValue)
+                } else {
+                    null
+                }
+                launchSessionId != lastSeenRumSessionId -> LOG_LAUNCH_PROFILING_DROPPED_SESSION_ENDED
+                else -> return
+            }
+        }
+        if (isTtidVitalReceived.get() && !isTtidProfileSent.getAndSet(true)) {
+            isLaunchProfilingActive = false
+            if (dropMessage != null) {
+                logToUser(dropMessage)
+                fileDeleteSafe(result.resultFilePath, sdkCore.internalLogger)
+                pendingRumEvents.clear()
+            } else {
+                val (longTasks, anrEvents, vitalEvents) = pendingRumEvents.drain()
+                dataWriter.writeManualProfile(
+                    profilingResult = result,
+                    longTasks = longTasks,
+                    anrEvents = anrEvents,
+                    vitalEvents = vitalEvents
+                )
+            }
+            // Clear the consumed result so a later quota callback can't re-trigger a write.
+            perfettoResult = null
+            continuousProfilingScheduler?.onAppLaunchProfilingComplete()
+        }
+    }
+
     private fun logToUser(message: String) {
         sdkCore.internalLogger.log(
             level = InternalLogger.Level.DEBUG,
@@ -366,24 +431,9 @@ internal class ProfilingFeature(
             internalLogger = sdkCore.internalLogger,
             onMatch = { perfettoResult, profilerEvent ->
                 when (profilerEvent) {
-                    is ProfilerEvent.RumAnrEvent -> {
-                        val quotaResult = lastQuotaResult
-                        if (quotaResult?.decision == QuotaResult.Decision.DENIED) {
-                            logToUser(
-                                LOG_TRIGGER_PROFILING_DROPPED_QUOTA_DENIED.format(
-                                    Locale.US,
-                                    quotaResult.reason.rawValue
-                                )
-                            )
-                            dataWriter.discard(perfettoResult)
-                        } else {
-                            dataWriter.writeTriggerProfile(
-                                perfettoResult = perfettoResult,
-                                rumErrorId = profilerEvent.id,
-                                rumContext = profilerEvent.rumContext
-                            )
-                        }
-                    }
+                    is ProfilerEvent.RumAnrEvent -> onTriggerProfileMatched(
+                        TriggerProfile(perfettoResult, profilerEvent)
+                    )
 
                     else -> {
                         // Not a currently supported trigger-match type: nothing to write.
@@ -393,24 +443,113 @@ internal class ProfilingFeature(
         )
     }
 
-    internal fun propagateQuotaResult(result: QuotaResult) {
-        this.lastQuotaResult = result
-        continuousProfilingScheduler?.lastQuotaResult = result
+    internal fun propagateQuotaResult(sessionId: String, result: QuotaResult) {
+        // The session check, storing the result and taking the trigger profiles waiting for it happen
+        // atomically: a result for a past session is discarded, and a session renewal can't slip in
+        // between and have its own profiles resolved with this result.
+        val triggerProfiles = synchronized(quotaSessionLock) {
+            if (sessionId != lastSeenRumSessionId) return
+            lastQuotaResult = result
+            continuousProfilingScheduler?.lastQuotaResult = result
+            if (sessionId == launchSessionId) {
+                launchSessionQuotaResult = result
+            }
+            drainTriggerProfilesAwaitingQuota()
+        }
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
             if (result.decision == QuotaResult.Decision.DENIED) {
                 context[FeatureContextKeys.PROFILING_QUOTA_REASON] = result.reason.rawValue
-                context[FeatureContextKeys.PROFILING_QUOTA_SESSION_ID] = lastSeenRumSessionId
+                context[FeatureContextKeys.PROFILING_QUOTA_SESSION_ID] = sessionId
             } else {
                 context.remove(FeatureContextKeys.PROFILING_QUOTA_REASON)
                 context.remove(FeatureContextKeys.PROFILING_QUOTA_SESSION_ID)
             }
         }
-        tryWriteProfilingEvent()
+        tryWritePendingLaunchProfile()
+        triggerProfiles.forEach { writeOrDropTriggerProfile(it, result) }
+    }
+
+    private fun onTriggerProfileMatched(triggerProfile: TriggerProfile) {
+        val sessionId = triggerProfile.event.rumContext.sessionId
+        // Read under the lock so the session and its quota decision belong together and a session
+        // renewal can't slip in before the profile is queued: the queue only ever holds profiles of
+        // the current session.
+        val (isCurrentSession, quotaResult) = synchronized(quotaSessionLock) {
+            val isCurrent = sessionId == lastSeenRumSessionId
+            val result = lastQuotaResult
+            if (isCurrent && result == null) {
+                triggerProfilesAwaitingQuota.add(triggerProfile)
+            }
+            isCurrent to result
+        }
+        when {
+            // The current session's decision doesn't apply to a past session's profile, and
+            // checking the past session would cancel the current session's check.
+            !isCurrentSession -> dropTriggerProfile(triggerProfile, LOG_TRIGGER_PROFILING_DROPPED_SESSION_ENDED)
+
+            quotaResult != null -> writeOrDropTriggerProfile(triggerProfile, quotaResult)
+
+            else -> {
+                // The profile is resolved when the decision lands: it was queued while the decision
+                // was missing, under the same lock propagateQuotaResult takes it from the queue.
+                checkQuotaIfCurrentSession(sessionId)
+            }
+        }
+    }
+
+    private fun checkQuotaIfCurrentSession(sessionId: String) {
+        sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.withContext { datadogContext ->
+            // withContext runs asynchronously: the session may have been renewed in the meantime,
+            // and checking a past session would cancel the current session's check or leak its
+            // result into the current session.
+            synchronized(quotaSessionLock) {
+                if (sessionId == lastSeenRumSessionId) {
+                    quotaChecker.checkAsync(sessionId, datadogContext)
+                }
+            }
+        }
+    }
+
+    private fun dropTriggerProfilesAwaitingQuota() {
+        drainTriggerProfilesAwaitingQuota().forEach {
+            dropTriggerProfile(it, LOG_TRIGGER_PROFILING_DROPPED_SESSION_ENDED)
+        }
+    }
+
+    private fun drainTriggerProfilesAwaitingQuota(): List<TriggerProfile> {
+        return synchronized(quotaSessionLock) {
+            triggerProfilesAwaitingQuota.toList().also { triggerProfilesAwaitingQuota.clear() }
+        }
+    }
+
+    private fun writeOrDropTriggerProfile(triggerProfile: TriggerProfile, quotaResult: QuotaResult) {
+        if (quotaResult.decision == QuotaResult.Decision.DENIED) {
+            dropTriggerProfile(
+                triggerProfile,
+                LOG_TRIGGER_PROFILING_DROPPED_QUOTA_DENIED.format(Locale.US, quotaResult.reason.rawValue)
+            )
+        } else {
+            dataWriter.writeTriggerProfile(
+                perfettoResult = triggerProfile.result,
+                rumErrorId = triggerProfile.event.id,
+                rumContext = triggerProfile.event.rumContext
+            )
+        }
+    }
+
+    private fun dropTriggerProfile(triggerProfile: TriggerProfile, message: String) {
+        logToUser(message)
+        fileDeleteSafe(triggerProfile.result.resultFilePath, sdkCore.internalLogger)
     }
 
     private fun isRecordingProfile(): Boolean {
         return isLaunchProfilingActive || continuousProfilingScheduler?.isActive == true
     }
+
+    private data class TriggerProfile(
+        val result: PerfettoResult,
+        val event: ProfilerEvent.RumAnrEvent
+    )
 
     companion object {
 
@@ -427,7 +566,13 @@ internal class ProfilingFeature(
         private const val QUOTA_EXECUTOR_CONTEXT = "profiling-quota"
         internal const val LOG_LAUNCH_PROFILING_DROPPED_QUOTA_DENIED =
             "Launch profiling dropped: quota denied (reason=%s)."
+        internal const val LOG_LAUNCH_PROFILING_DROPPED_SESSION_NOT_TRACKED =
+            "Launch profiling dropped: RUM session not tracked."
+        internal const val LOG_LAUNCH_PROFILING_DROPPED_SESSION_ENDED =
+            "Launch profiling dropped: RUM session ended before quota decision."
         internal const val LOG_TRIGGER_PROFILING_DROPPED_QUOTA_DENIED =
             "ANR trigger profile dropped: quota denied (reason=%s)."
+        internal const val LOG_TRIGGER_PROFILING_DROPPED_SESSION_ENDED =
+            "ANR trigger profile dropped: RUM session ended before quota decision."
     }
 }

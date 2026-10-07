@@ -18,7 +18,7 @@ import com.datadog.android.profiling.ProfilingConfiguration
  * section of the remote configuration is consumed here; other sections (rum, sessionReplay, trace)
  * are handled by their respective feature modules.
  */
-@ExperimentalProfilingApi
+@OptIn(ExperimentalProfilingApi::class)
 internal fun ProfilingConfiguration.applyRemoteConfiguration(
     rc: RemoteConfiguration?
 ): ProfilingConfiguration {
@@ -27,6 +27,7 @@ internal fun ProfilingConfiguration.applyRemoteConfiguration(
         applicationLaunchSampleRate = profiling.applicationLaunchSampleRate?.toFloat()
             ?: applicationLaunchSampleRate,
         continuousSampleRate = profiling.continuousSampleRate?.toFloat()
-            ?: continuousSampleRate
+            ?: continuousSampleRate,
+        anrTriggerEnabled = profiling.anrTriggerEnabled ?: anrTriggerEnabled
     )
 }

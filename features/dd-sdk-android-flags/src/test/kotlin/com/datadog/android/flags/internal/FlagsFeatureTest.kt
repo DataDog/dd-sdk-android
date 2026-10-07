@@ -27,7 +27,7 @@ import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
@@ -277,14 +277,17 @@ internal class FlagsFeatureTest {
         testedFeature.logErrorWithPolicy("test message", InternalLogger.Level.ERROR)
 
         // Then
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            argThat { invoke() == "[Datadog Flags] test message" },
-            eq(null),
-            eq(false),
-            eq(null)
-        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+            assertThat(firstValue()).isEqualTo("[Datadog Flags] test message")
+        }
     }
 
     @Test
@@ -303,14 +306,17 @@ internal class FlagsFeatureTest {
         testedFeature.logErrorWithPolicy("test message", InternalLogger.Level.ERROR)
 
         // Then - should still use graceful policy, not crash
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            argThat { invoke() == "[Datadog Flags] test message" },
-            eq(null),
-            eq(false),
-            eq(null)
-        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+            assertThat(firstValue()).isEqualTo("[Datadog Flags] test message")
+        }
     }
 
     @Test

@@ -20,7 +20,7 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
@@ -61,7 +61,7 @@ internal class RumApplicationScope(
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     private val insightsCollector: InsightsCollector,
     private val viewEventMapper: ViewEventMapper,
-    private val rumViewEventWriteConfig: RumViewEventWriteConfig,
+    private val viewEventWriteConfig: ViewEventWriteConfig,
     private val heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
     private val timeseriesCollector: TimeseriesCollector
 ) : RumScope, RumViewChangedListener {
@@ -95,7 +95,7 @@ internal class RumApplicationScope(
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
             insightsCollector = insightsCollector,
             viewEventMapper = viewEventMapper,
-            rumViewEventWriteConfig = rumViewEventWriteConfig,
+            viewEventWriteConfig = viewEventWriteConfig,
             heatmapIdentifierRegistry = heatmapIdentifierRegistry,
             timeseriesCollector = timeseriesCollector
         )
@@ -221,7 +221,7 @@ internal class RumApplicationScope(
             rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory,
             insightsCollector = insightsCollector,
             viewEventMapper = viewEventMapper,
-            rumViewEventWriteConfig = rumViewEventWriteConfig,
+            viewEventWriteConfig = viewEventWriteConfig,
             heatmapIdentifierRegistry = heatmapIdentifierRegistry,
             timeseriesCollector = timeseriesCollector
         )

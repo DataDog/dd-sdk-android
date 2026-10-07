@@ -1142,6 +1142,7 @@ internal class EvaluationsManagerTest {
 
     @Test
     fun `M disarm old timeout before first flags W storage throws and callback changes context`() {
+        // Given
         val store = mock<DataStoreHandler>()
         val storageError = IllegalStateException("storage unavailable")
         whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
@@ -1152,7 +1153,7 @@ internal class EvaluationsManagerTest {
         val state = FlagsStateManager(
             DDCoreStateHolder.create(FlagsClientState.NotReady, FlagsStateListener::onStateChanged)
         )
-        val work = java.util.ArrayDeque<Runnable>()
+        val work = ArrayDeque<Runnable>()
         doAnswer { work.add(it.getArgument(0)); null }.whenever(mockExecutorService).execute(any())
         lateinit var timeout: () -> Unit
         var cancelled = false
@@ -1170,9 +1171,13 @@ internal class EvaluationsManagerTest {
         }
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext)).thenReturn("response")
         whenever(mockPrecomputeMapper.map("response")).thenReturn(emptyMap())
+
+        // When
         manager.updateEvaluationsForContext(context, callback)
         work.removeFirst().run()
         timeout()
+
+        // Then
         assertThat(state.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
         assertThat(cancelled).isTrue()
         assertThat(firstFlagsCount).isEqualTo(1)

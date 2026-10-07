@@ -23,7 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -69,10 +69,10 @@ internal class NoOpFlagsClientTest {
 
         // Then
         assertThat(delivered).isFalse()
-        verify(mockLogWithPolicy).invoke(
-            argThat { startsWith("onFirstFlags called on NoOpFlagsClient for client '$fakeClientName'") },
-            eq(InternalLogger.Level.WARN)
-        )
+        argumentCaptor<String> {
+            verify(mockLogWithPolicy).invoke(capture(), eq(InternalLogger.Level.WARN))
+            assertThat(firstValue).startsWith("onFirstFlags called on NoOpFlagsClient for client '$fakeClientName'")
+        }
     }
 
     @Test
@@ -103,14 +103,12 @@ internal class NoOpFlagsClientTest {
 
         // Then
 
-        verify(mockLogWithPolicy).invoke(
-            argThat {
-                startsWith(
-                    "setEvaluationContext called on NoOpFlagsClient for client '$fakeClientName'"
-                )
-            },
-            eq(InternalLogger.Level.WARN)
-        )
+        argumentCaptor<String> {
+            verify(mockLogWithPolicy).invoke(capture(), eq(InternalLogger.Level.WARN))
+            assertThat(firstValue).startsWith(
+                "setEvaluationContext called on NoOpFlagsClient for client '$fakeClientName'"
+            )
+        }
     }
 
     @Test
@@ -167,14 +165,12 @@ internal class NoOpFlagsClientTest {
         testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
-        verify(mockLogWithPolicy).invoke(
-            argThat {
-                startsWith(
-                    "resolveBooleanValue for flag '$fakeFlagKey' called on NoOpFlagsClient for client '$fakeClientName'"
-                )
-            },
-            eq(InternalLogger.Level.WARN)
-        )
+        argumentCaptor<String> {
+            verify(mockLogWithPolicy).invoke(capture(), eq(InternalLogger.Level.WARN))
+            assertThat(firstValue).startsWith(
+                "resolveBooleanValue for flag '$fakeFlagKey' called on NoOpFlagsClient for client '$fakeClientName'"
+            )
+        }
     }
 
     // endregion
@@ -217,14 +213,12 @@ internal class NoOpFlagsClientTest {
         testedClient.resolveStringValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
-        verify(mockLogWithPolicy).invoke(
-            argThat {
-                startsWith(
-                    "resolveStringValue for flag '$fakeFlagKey' called on NoOpFlagsClient for client '$fakeClientName'"
-                )
-            },
-            eq(InternalLogger.Level.WARN)
-        )
+        argumentCaptor<String> {
+            verify(mockLogWithPolicy).invoke(capture(), eq(InternalLogger.Level.WARN))
+            assertThat(firstValue).startsWith(
+                "resolveStringValue for flag '$fakeFlagKey' called on NoOpFlagsClient for client '$fakeClientName'"
+            )
+        }
     }
 
     // endregion
@@ -280,14 +274,12 @@ internal class NoOpFlagsClientTest {
         testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
-        verify(mockLogWithPolicy).invoke(
-            argThat {
-                startsWith(
-                    "resolveDoubleValue for flag '$fakeFlagKey' called on NoOpFlagsClient for client '$fakeClientName'"
-                )
-            },
-            eq(InternalLogger.Level.WARN)
-        )
+        argumentCaptor<String> {
+            verify(mockLogWithPolicy).invoke(capture(), eq(InternalLogger.Level.WARN))
+            assertThat(firstValue).startsWith(
+                "resolveDoubleValue for flag '$fakeFlagKey' called on NoOpFlagsClient for client '$fakeClientName'"
+            )
+        }
     }
 
     // endregion
@@ -343,14 +335,12 @@ internal class NoOpFlagsClientTest {
         testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
-        verify(mockLogWithPolicy).invoke(
-            argThat {
-                startsWith(
-                    "resolveIntValue for flag '$fakeFlagKey' called on NoOpFlagsClient for client '$fakeClientName'"
-                )
-            },
-            eq(InternalLogger.Level.WARN)
-        )
+        argumentCaptor<String> {
+            verify(mockLogWithPolicy).invoke(capture(), eq(InternalLogger.Level.WARN))
+            assertThat(firstValue).startsWith(
+                "resolveIntValue for flag '$fakeFlagKey' called on NoOpFlagsClient for client '$fakeClientName'"
+            )
+        }
     }
 
     // endregion
@@ -394,14 +384,12 @@ internal class NoOpFlagsClientTest {
         testedClient.resolve(fakeFlagKey, fakeDefaultValue)
 
         // Then
-        verify(mockLogWithPolicy).invoke(
-            argThat {
-                startsWith(
-                    "resolve for flag '$fakeFlagKey' called on NoOpFlagsClient for client '$fakeClientName'"
-                )
-            },
-            eq(InternalLogger.Level.WARN)
-        )
+        argumentCaptor<String> {
+            verify(mockLogWithPolicy).invoke(capture(), eq(InternalLogger.Level.WARN))
+            assertThat(firstValue).startsWith(
+                "resolve for flag '$fakeFlagKey' called on NoOpFlagsClient for client '$fakeClientName'"
+            )
+        }
     }
 
     // endregion
@@ -448,15 +436,13 @@ internal class NoOpFlagsClientTest {
         testedClient.resolveStructureValue(fakeFlagKey, JSONObject())
 
         // Then
-        verify(mockLogWithPolicy).invoke(
-            argThat {
-                startsWith(
-                    "resolveStructureValue for flag '$fakeFlagKey' " +
-                        "called on NoOpFlagsClient for client '$fakeClientName'"
-                )
-            },
-            eq(InternalLogger.Level.WARN)
-        )
+        argumentCaptor<String> {
+            verify(mockLogWithPolicy).invoke(capture(), eq(InternalLogger.Level.WARN))
+            assertThat(firstValue).startsWith(
+                "resolveStructureValue for flag '$fakeFlagKey' " +
+                    "called on NoOpFlagsClient for client '$fakeClientName'"
+            )
+        }
     }
 
     // endregion

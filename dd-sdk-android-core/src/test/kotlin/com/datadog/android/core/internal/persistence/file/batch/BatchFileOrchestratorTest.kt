@@ -31,7 +31,6 @@ import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -266,11 +265,14 @@ internal class BatchFileOrchestratorTest {
         assertThat(oldFile).doesNotExist()
         assertThat(oldFileMeta).doesNotExist()
         assertThat(youngFile).exists()
-        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
-            eq(oldFile),
-            argThat { this is RemovalReason.Obsolete },
-            eq(fakePendingBatches)
-        )
+        argumentCaptor<RemovalReason> {
+            verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+                eq(oldFile),
+                capture(),
+                eq(fakePendingBatches)
+            )
+            assertThat(firstValue).isInstanceOf(RemovalReason.Obsolete::class.java)
+        }
         verifyNoMoreInteractions(mockMetricsDispatcher)
     }
 
@@ -308,11 +310,14 @@ internal class BatchFileOrchestratorTest {
         assertThat(oldFileMeta).doesNotExist()
         assertThat(youngFile).exists()
         assertThat(evenOlderFile).exists()
-        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
-            eq(oldFile),
-            argThat { this is RemovalReason.Obsolete },
-            eq(fakePendingBatches)
-        )
+        argumentCaptor<RemovalReason> {
+            verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+                eq(oldFile),
+                capture(),
+                eq(fakePendingBatches)
+            )
+            assertThat(firstValue).isInstanceOf(RemovalReason.Obsolete::class.java)
+        }
     }
 
     @Test
@@ -344,16 +349,22 @@ internal class BatchFileOrchestratorTest {
         assertThat(oldFile).doesNotExist()
         assertThat(oldFileMeta).doesNotExist()
         assertThat(evenOlderFile).doesNotExist()
-        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
-            eq(evenOlderFile),
-            argThat { this is RemovalReason.Obsolete },
-            eq(fakePendingBatches)
-        )
-        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
-            eq(oldFile),
-            argThat { this is RemovalReason.Obsolete },
-            eq(fakePendingBatches)
-        )
+        argumentCaptor<RemovalReason> {
+            verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+                eq(evenOlderFile),
+                capture(),
+                eq(fakePendingBatches)
+            )
+            assertThat(firstValue).isInstanceOf(RemovalReason.Obsolete::class.java)
+        }
+        argumentCaptor<RemovalReason> {
+            verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+                eq(oldFile),
+                capture(),
+                eq(fakePendingBatches)
+            )
+            assertThat(firstValue).isInstanceOf(RemovalReason.Obsolete::class.java)
+        }
         argumentCaptor<BatchClosedMetadata> {
             verify(mockMetricsDispatcher).sendBatchClosedMetric(
                 eq(result),

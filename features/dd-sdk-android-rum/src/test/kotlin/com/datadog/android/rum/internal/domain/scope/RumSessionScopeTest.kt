@@ -24,7 +24,7 @@ import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
@@ -2247,7 +2247,7 @@ internal class RumSessionScopeTest {
             rumSessionScopeStartupManagerFactory = { mockRumSessionScopeStartupManager },
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             heatmapIdentifierRegistry = null,
             timeseriesCollector = timeseriesCollector
         )

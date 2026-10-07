@@ -440,16 +440,6 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
-    fun hasProfilingClockDrift(expected: Number?): LongTaskEventAssert {
-        assertThat(actual.dd.profiling?.clockDrift)
-            .overridingErrorMessage(
-                "Expected RUM event to have profiling clock_drift: $expected" +
-                    " but instead was: ${actual.dd.profiling?.clockDrift}"
-            )
-            .isEqualTo(expected)
-        return this
-    }
-
     fun hasNoProfiling(): LongTaskEventAssert {
         assertThat(actual.dd.profiling)
             .overridingErrorMessage(

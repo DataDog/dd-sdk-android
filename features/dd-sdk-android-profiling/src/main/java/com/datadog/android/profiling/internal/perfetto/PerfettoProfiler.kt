@@ -20,6 +20,7 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilerCallback
 import com.datadog.android.profiling.internal.ProfilingStartReason
+import com.datadog.android.profiling.internal.ProfilingStatusListener
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
@@ -114,6 +115,9 @@ internal class PerfettoProfiler(
     @Volatile
     private var callback: ProfilerCallback? = null
 
+    private val statusLock = Any()
+    private var statusListener: ProfilingStatusListener = NoOpProfilingStatusListener
+
     init {
         resultCallback = Consumer<ProfilingResult> { result ->
             val resultCallbackTime = timeProvider.getDeviceTimestampMillis()
@@ -137,7 +141,8 @@ internal class PerfettoProfiler(
                                 start = profilingStartTime,
                                 startReason = startReason,
                                 end = resultCallbackTime,
-                                resultFilePath = it
+                                resultFilePath = it,
+                                profileTypes = listOf(ProfileType.STACK_SAMPLING)
                             )
                         )
                     }
@@ -145,7 +150,7 @@ internal class PerfettoProfiler(
             } else {
                 notifyCallbacks { onFailure(startReason) }
             }
-            isRunning.set(false)
+            updateRunningStatus(false)
             profilingTelemetry.report(
                 ProfilingTelemetryEvent.SessionEnd(
                     startReason = profilingStartReason.value,
@@ -155,7 +160,6 @@ internal class PerfettoProfiler(
                     fileSize = fileSizeSafe(result.resultFilePath, internalLogger),
                     durationMs = duration,
                     resultCallbackDelayMs = resultCallbackDelayMs,
-                    clientClockDriftMs = timeProvider.getServerOffsetMillis(),
                     stopReason = resolveStopReason(result.errorCode),
                     bufferSizeKb = BUFFER_SIZE_KB,
                     samplingFrequencyHz = profilingSamplingRateHz
@@ -212,7 +216,7 @@ internal class PerfettoProfiler(
             return
         }
         // profiling will be launched when no session is currently running.
-        if (isRunning.compareAndSet(false, true)) {
+        if (updateRunningStatus(true)) {
             profilingStartTime = timeProvider.getDeviceTimestampMillis()
             profilingStartElapsedMs = timeProvider.getDeviceElapsedRealtimeMillis()
             profilingStopElapsedMs = 0L
@@ -279,6 +283,35 @@ internal class PerfettoProfiler(
         }
     }
 
+    override fun registerProfilerStatusListener(listener: ProfilingStatusListener) {
+        synchronized(statusLock) {
+            if (statusListener === NoOpProfilingStatusListener) {
+                statusListener = listener
+                listener.onProfilingStatusChange(isRunning.get())
+            }
+        }
+    }
+
+    override fun unregisterProfilerStatusListener(listener: ProfilingStatusListener) {
+        synchronized(statusLock) {
+            if (statusListener === listener) {
+                statusListener = NoOpProfilingStatusListener
+            }
+        }
+    }
+
+    private fun updateRunningStatus(newStatus: Boolean): Boolean {
+        // Deliver the initial snapshot and later transitions in the same order, even
+        // when registration and completion happen on different threads.
+        return synchronized(statusLock) {
+            val changed = isRunning.compareAndSet(!newStatus, newStatus)
+            if (changed) {
+                statusListener.onProfilingStatusChange(newStatus)
+            }
+            changed
+        }
+    }
+
     override fun setExtendLaunchSession(extend: Boolean) {
         this.extendLaunchSession = extend
     }
@@ -334,6 +367,10 @@ internal class PerfettoProfiler(
         } else {
             PROFILING_MAX_DURATION_MS_CONTINUOUS
         }
+    }
+
+    private object NoOpProfilingStatusListener : ProfilingStatusListener {
+        override fun onProfilingStatusChange(isRunning: Boolean) = Unit
     }
 
     companion object {

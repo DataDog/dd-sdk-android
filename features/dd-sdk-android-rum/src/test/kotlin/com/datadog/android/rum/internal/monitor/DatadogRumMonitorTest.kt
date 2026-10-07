@@ -33,7 +33,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
@@ -96,7 +96,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -330,7 +329,7 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
             timeseriesCollector = NoOpTimeseriesCollector()
@@ -367,7 +366,7 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
             timeseriesCollector = NoOpTimeseriesCollector()
@@ -447,7 +446,7 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
             timeseriesCollector = NoOpTimeseriesCollector()
@@ -495,7 +494,7 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
             timeseriesCollector = NoOpTimeseriesCollector()
@@ -2316,7 +2315,7 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
             timeseriesCollector = NoOpTimeseriesCollector()
@@ -2361,7 +2360,7 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
             timeseriesCollector = NoOpTimeseriesCollector()
@@ -2407,7 +2406,7 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
             timeseriesCollector = NoOpTimeseriesCollector()
@@ -2635,7 +2634,7 @@ internal class DatadogRumMonitorTest {
             rumSessionScopeStartupManagerFactory = mock(),
             insightsCollector = mockInsightsCollector,
             viewEventMapper = mockViewEventMapper,
-            rumViewEventWriteConfig = RumViewEventWriteConfig.FullViewOnlyAtStart,
+            viewEventWriteConfig = ViewEventWriteConfig.FullViewOnlyAtStart,
             appPackageName = fakeApplicationPackageName,
             heatmapIdentifierRegistry = null,
             timeseriesCollector = NoOpTimeseriesCollector()
@@ -2656,12 +2655,15 @@ internal class DatadogRumMonitorTest {
         testedMonitor.sendWebViewEvent()
 
         // Then
-        verify(mockApplicationScope).handleEvent(
-            argThat { this is RumRawEvent.WebViewEvent },
-            same(fakeDatadogContext),
-            same(mockEventWriteScope),
-            same(mockWriter)
-        )
+        argumentCaptor<RumRawEvent> {
+            verify(mockApplicationScope).handleEvent(
+                capture(),
+                same(fakeDatadogContext),
+                same(mockEventWriteScope),
+                same(mockWriter)
+            )
+            assertThat(firstValue).isInstanceOf(RumRawEvent.WebViewEvent::class.java)
+        }
         verifyNoMoreInteractions(mockWriter)
     }
 

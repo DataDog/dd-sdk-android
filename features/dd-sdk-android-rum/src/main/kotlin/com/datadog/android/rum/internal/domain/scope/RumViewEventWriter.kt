@@ -12,7 +12,7 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.model.diffViewEvent
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
@@ -44,7 +44,7 @@ internal interface RumViewEventWriter {
 
     companion object {
         fun create(
-            config: RumViewEventWriteConfig,
+            config: ViewEventWriteConfig,
             viewEventMapper: ViewEventMapper,
             sdkCore: InternalSdkCore
         ): RumViewEventWriter {
@@ -58,7 +58,7 @@ internal interface RumViewEventWriter {
 }
 
 internal class RumViewEventWriterImpl(
-    private val config: RumViewEventWriteConfig,
+    private val config: ViewEventWriteConfig,
     private val viewEventMapper: ViewEventMapper,
     private val sdkCore: InternalSdkCore
 ) : RumViewEventWriter {
@@ -110,8 +110,8 @@ internal class RumViewEventWriterImpl(
                 val prev = prevViewEvent
 
                 when (config) {
-                    RumViewEventWriteConfig.AlwaysFullView -> MappedViewEvent(safeMapped)
-                    RumViewEventWriteConfig.FullViewOnlyAtStart -> {
+                    ViewEventWriteConfig.AlwaysFullView -> MappedViewEvent(safeMapped)
+                    ViewEventWriteConfig.FullViewOnlyAtStart -> {
                         if (prev == null) {
                             MappedViewEvent(safeMapped)
                         } else if (shouldWriteFullView(safeMapped.dd.documentVersion, safeMapped.view.isActive)) {

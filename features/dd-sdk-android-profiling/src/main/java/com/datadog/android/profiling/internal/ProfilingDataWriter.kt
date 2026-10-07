@@ -6,7 +6,6 @@
 
 package com.datadog.android.profiling.internal
 
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -19,7 +18,9 @@ import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.internal.domain.ProfilingBatchMetadata
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.perfetto.ProfileType
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
+import com.datadog.android.profiling.internal.utils.fileDeleteSafe
 import com.datadog.android.profiling.model.ProfileEvent
 import com.datadog.android.profiling.model.RumMetadataEvent
 import com.google.gson.JsonArray
@@ -38,7 +39,7 @@ internal class ProfilingDataWriter(
     ) {
         val feature = sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
         if (feature == null) {
-            safeDelete(profilingResult.resultFilePath)
+            fileDeleteSafe(profilingResult.resultFilePath, sdkCore.internalLogger)
             return
         }
         feature.withWriteContext { context, writeScope ->
@@ -57,14 +58,10 @@ internal class ProfilingDataWriter(
                             eventType = EventType.DEFAULT
                         )
                     }
-                    safeDelete(profilingResult.resultFilePath)
+                    fileDeleteSafe(profilingResult.resultFilePath, sdkCore.internalLogger)
                 }
             }
         }
-    }
-
-    override fun discard(profilingResult: PerfettoResult) {
-        safeDelete(profilingResult.resultFilePath)
     }
 
     override fun writeTriggerProfile(
@@ -77,7 +74,7 @@ internal class ProfilingDataWriter(
         val detectedAtMs = perfettoResult.start
         val feature = sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
         if (feature == null) {
-            safeDelete(resultFilePath)
+            fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
             return
         }
         feature.withWriteContext { context, writeScope ->
@@ -91,7 +88,7 @@ internal class ProfilingDataWriter(
                             startReason = operation,
                             hasRumErrorId = rumErrorId.isNotEmpty()
                         )
-                        safeDelete(resultFilePath)
+                        fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
                         return@synchronized
                     }
                     val profileEvent = ProfileEvent(
@@ -101,7 +98,7 @@ internal class ProfilingDataWriter(
                         family = ProfileEvent.Family.ANDROID,
                         runtime = ProfileEvent.Family.ANDROID,
                         version = VERSION_NUMBER,
-                        tagsProfiler = buildTags(context, operation),
+                        tagsProfiler = buildTags(context, operation, perfettoResult.profileTypes),
                         application = ProfileEvent.Application(id = rumContext.applicationId),
                         session = ProfileEvent.Session(id = rumContext.sessionId),
                         view = ProfileEvent.View(
@@ -125,7 +122,7 @@ internal class ProfilingDataWriter(
                         batchMetadata = null,
                         eventType = EventType.DEFAULT
                     )
-                    safeDelete(resultFilePath)
+                    fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
                 }
             }
         }
@@ -293,7 +290,7 @@ internal class ProfilingDataWriter(
             family = ProfileEvent.Family.ANDROID,
             runtime = ProfileEvent.Family.ANDROID,
             version = VERSION_NUMBER,
-            tagsProfiler = buildTags(context, profilingResult.startReason.value),
+            tagsProfiler = buildTags(context, profilingResult.startReason.value, profilingResult.profileTypes),
             application = ProfileEvent.Application(id = rumContext.applicationId),
             session = ProfileEvent.Session(id = rumContext.sessionId),
             longTask = ProfileEvent.LongTask(id = longTaskIds.toList()),
@@ -374,7 +371,11 @@ internal class ProfilingDataWriter(
         }.toString().toByteArray(Charsets.UTF_8)
     }
 
-    private fun buildTags(context: DatadogContext, operation: String): String = buildString {
+    private fun buildTags(
+        context: DatadogContext,
+        operation: String,
+        profileTypes: List<ProfileType>
+    ): String = buildString {
         append("$TAG_KEY_SERVICE:${context.service}")
         append(",")
         append("$TAG_KEY_ENV:${context.env}")
@@ -392,6 +393,10 @@ internal class ProfilingDataWriter(
             append(",")
             append("$TAG_KEY_BUILD_ID:$buildId")
         }
+        profileTypes.forEach {
+            append(",")
+            append("$TAG_KEY_PROFILE_TYPE:${it.value}")
+        }
     }
 
     private fun readProfilingData(profilingPath: String): ByteArray? {
@@ -400,29 +405,7 @@ internal class ProfilingDataWriter(
         return File(profilingPath).readBytesSafe(internalLogger = sdkCore.internalLogger)
     }
 
-    private fun safeDelete(path: String) {
-        try {
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            val deleted = File(path).delete()
-            if (!deleted) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.MAINTAINER,
-                    { LOG_FILE_DELETE_FAILED.format(path) }
-                )
-            }
-        } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { LOG_FILE_DELETE_FAILED.format(path) },
-                t
-            )
-        }
-    }
-
     companion object {
-        private const val LOG_FILE_DELETE_FAILED = "Failed to delete Perfetto trace file: %s"
 
         internal const val METRIC_TYPE_PROFILING_WRITE = "profiling write"
         internal const val KEY_PROFILING_WRITE = "profiling_write"
@@ -444,6 +427,7 @@ internal class ProfilingDataWriter(
         private const val TAG_KEY_RUNTIME_VERSION = "runtime_version"
         private const val TAG_KEY_ENV = "env"
         private const val TAG_KEY_OPERATION = "operation"
+        private const val TAG_KEY_PROFILE_TYPE = "profile_type"
         internal const val PERFETTO_ATTACHMENT_NAME = "perfetto.proto"
         internal const val RUM_MOBILE_EVENTS_ATTACHMENT_NAME = "rum-mobile-events.json"
 

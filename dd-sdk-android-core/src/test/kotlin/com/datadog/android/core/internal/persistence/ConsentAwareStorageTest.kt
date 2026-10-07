@@ -41,7 +41,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doReturnConsecutively
@@ -541,20 +540,22 @@ internal class ConsentAwareStorageTest {
         verify(mockFileMover).delete(mockGrantedMetaFile)
         verify(mockFileMover).delete(pendingFile)
         verify(mockFileMover).delete(mockPendingMetaFile)
-        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
-            eq(grantedFile),
-            argThat {
-                this is RemovalReason.Flushed
-            },
-            eq(fakePendingBatches - 1)
-        )
-        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
-            eq(pendingFile),
-            argThat {
-                this is RemovalReason.Flushed
-            },
-            eq(fakePendingBatches - 1)
-        )
+        argumentCaptor<RemovalReason> {
+            verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+                eq(grantedFile),
+                capture(),
+                eq(fakePendingBatches - 1)
+            )
+            assertThat(firstValue).isInstanceOf(RemovalReason.Flushed::class.java)
+        }
+        argumentCaptor<RemovalReason> {
+            verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+                eq(pendingFile),
+                capture(),
+                eq(fakePendingBatches - 1)
+            )
+            assertThat(firstValue).isInstanceOf(RemovalReason.Flushed::class.java)
+        }
     }
 
     @Test
@@ -603,13 +604,14 @@ internal class ConsentAwareStorageTest {
         files.forEachIndexed { index, file ->
             verify(mockFileMover).delete(file)
             verify(mockFileMover).delete(mockMetaFiles[index])
-            verify(mockMetricsDispatcher).sendBatchDeletedMetric(
-                eq(file),
-                argThat {
-                    this is RemovalReason.Flushed
-                },
-                eq(fakePendingBatches - 1)
-            )
+            argumentCaptor<RemovalReason> {
+                verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+                    eq(file),
+                    capture(),
+                    eq(fakePendingBatches - 1)
+                )
+                assertThat(firstValue).isInstanceOf(RemovalReason.Flushed::class.java)
+            }
         }
     }
 

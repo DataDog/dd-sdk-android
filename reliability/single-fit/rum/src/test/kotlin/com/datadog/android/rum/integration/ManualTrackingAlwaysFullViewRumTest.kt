@@ -16,8 +16,7 @@ import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
-import com.datadog.android.rum._RumInternalProxy
-import com.datadog.android.rum.configuration.RumViewEventWriteConfig
+import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.integration.tests.assertj.hasRumEvent
 import com.datadog.android.rum.integration.tests.elmyr.RumIntegrationForgeConfigurator
 import com.datadog.android.rum.integration.tests.utils.MainLooperTestConfiguration
@@ -64,18 +63,14 @@ class ManualTrackingAlwaysFullViewRumTest {
     @StringForgery
     private lateinit var fakeApplicationId: String
 
+    @OptIn(ExperimentalRumApi::class)
     @BeforeEach
     fun `set up`(forge: Forge) {
         stubSdkCore = StubSDKCore(forge)
 
         val fakeRumConfiguration = RumConfiguration.Builder(fakeApplicationId)
             .trackNonFatalAnrs(false)
-            .apply {
-                _RumInternalProxy.setRumViewEventWriteConfig(
-                    builder = this@apply,
-                    config = RumViewEventWriteConfig.AlwaysFullView
-                )
-            }
+            .setViewEventWriteConfig(ViewEventWriteConfig.AlwaysFullView)
             .build()
         Rum.enable(fakeRumConfiguration, stubSdkCore)
     }
