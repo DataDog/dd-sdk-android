@@ -46,6 +46,18 @@ class _SessionReplayInternalProxy(private val builder: SessionReplayConfiguratio
         return builder.setInternalCallback(internalCallback)
     }
 
+    /**
+     * Enables adaptive capture scheduling.
+     * Captures run after drawing and retain one pending update while the time budget recovers.
+     * Off by default. The capture budget is applied when dynamic optimization is enabled.
+     *
+     * @param enabled whether the experimental capture scheduler should be active.
+     * @return [SessionReplayConfiguration.Builder] instance.
+     */
+    fun setAdaptiveCaptureSchedulingEnabled(enabled: Boolean): SessionReplayConfiguration.Builder {
+        return builder.setAdaptiveCaptureSchedulingEnabled(enabled)
+    }
+
     companion object {
         /**
          * Identifies [view] as a host slot for embedded Session Replay content.

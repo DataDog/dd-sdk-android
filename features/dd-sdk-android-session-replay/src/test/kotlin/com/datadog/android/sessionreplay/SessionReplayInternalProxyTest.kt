@@ -23,6 +23,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.argumentCaptor
@@ -85,6 +87,22 @@ internal class SessionReplayInternalProxyTest {
         // Then
         assertThat(result).isEqualTo(testedBuilder)
         assertThat(sessionReplayConfiguration.internalCallback).isEqualTo(mockInternalCallback)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M configure opt in W setAdaptiveCaptureSchedulingEnabled()`(fakeEnabled: Boolean) {
+        // Given
+        testedBuilder = SessionReplayConfiguration.Builder(fakeSampleRate)
+            .setAdaptiveCaptureSchedulingEnabled(!fakeEnabled)
+        testedProxy = _SessionReplayInternalProxy(testedBuilder)
+
+        // When
+        val result = testedProxy.setAdaptiveCaptureSchedulingEnabled(fakeEnabled)
+
+        // Then
+        assertThat(result).isSameAs(testedBuilder)
+        assertThat(result.build().adaptiveCaptureSchedulingEnabled).isEqualTo(fakeEnabled)
     }
 
     @Test

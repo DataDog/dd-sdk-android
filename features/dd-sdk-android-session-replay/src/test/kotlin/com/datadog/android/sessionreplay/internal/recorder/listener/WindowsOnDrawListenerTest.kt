@@ -10,20 +10,29 @@ import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.content.res.Resources.Theme
+import android.os.Handler
 import android.view.View
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider
+import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_APPLICATION_ID_CONTEXT_KEY
+import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_SESSION_ID_CONTEXT_KEY
+import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_VIEW_ID_CONTEXT_KEY
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
+import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.Node
+import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
@@ -57,6 +66,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.UUID
+import java.util.concurrent.ConcurrentLinkedQueue
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -67,6 +78,7 @@ import org.mockito.quality.Strictness
 internal class WindowsOnDrawListenerTest {
 
     private lateinit var testedListener: WindowsOnDrawListener
+    private var fakeCaptureAllowed = true
 
     @Mock
     lateinit var mockDecorView: View
@@ -174,7 +186,7 @@ internal class WindowsOnDrawListenerTest {
         }
         whenever(mockContext.resources).thenReturn(mockResources)
 
-        whenever(mockDebouncer.debounce(any())).then { (it.arguments[0] as Runnable).run() }
+        whenever(mockDebouncer.debounce(any(), any())).then { it.getArgument<Runnable>(0).run() }
 
         testedListener = WindowsOnDrawListener(
             zOrderedDecorViews = fakeMockedDecorViews,
@@ -188,8 +200,130 @@ internal class WindowsOnDrawListenerTest {
             methodCallSamplingRate = fakeMethodCallSamplingRate,
             dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled,
             touchPrivacyManager = mockTouchPrivacyManager,
-            rumContextProvider = mockRumContextProvider
+            rumContextProvider = mockRumContextProvider,
+            isCaptureAllowed = { fakeCaptureAllowed }
         )
+    }
+
+    @Test
+    fun `M resume without polling W context update {active RUM view disappears and returns}`() {
+        // Given: use the real context, queue and scheduler to exercise failed snapshot attempts.
+        val mockHandler = mock<Handler>()
+        val mockTimeProvider = mock<TimeProvider>()
+        var fakeClockMs = 0L
+        var fakeDueMs = 0L
+        var fakePendingCapture: Runnable? = null
+        whenever(mockSdkCore.timeProvider).thenReturn(mockTimeProvider)
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer { fakeClockMs * 1_000_000L }
+        whenever(mockHandler.postDelayed(any(), any())).thenAnswer {
+            assertThat(fakePendingCapture).isNull()
+            fakePendingCapture = it.getArgument(0)
+            fakeDueMs = fakeClockMs + it.getArgument<Long>(1)
+            true
+        }
+        doAnswer { fakePendingCapture = null; null }.whenever(mockHandler).removeCallbacksAndMessages(null)
+        fun advanceTo(targetMs: Long) {
+            while (fakePendingCapture != null && fakeDueMs <= targetMs) {
+                fakeClockMs = fakeDueMs
+                val fakeCallback = checkNotNull(fakePendingCapture)
+                fakePendingCapture = null
+                fakeCallback.run()
+            }
+            fakeClockMs = targetMs
+        }
+        val fakeRumContextProvider = SessionReplayRumContextProvider(adaptiveCaptureSchedulingEnabled = true) {
+            testedListener.scheduleCapture()
+        }
+        val fakeQueueHandler = RecordedDataQueueHandler(
+            processor = mock(),
+            rumContextDataHandler = RumContextDataHandler(fakeRumContextProvider, mockTimeProvider, mockInternalLogger),
+            internalLogger = mockInternalLogger,
+            executorService = mock(),
+            recordedDataQueue = ConcurrentLinkedQueue(),
+            timeProvider = mockTimeProvider
+        )
+        testedListener = WindowsOnDrawListener(
+            zOrderedDecorViews = fakeMockedDecorViews,
+            recordedDataQueueHandler = fakeQueueHandler,
+            snapshotProducer = mockSnapshotProducer,
+            textAndInputPrivacy = fakeTextAndInputPrivacy,
+            imagePrivacy = fakeImagePrivacy,
+            miscUtils = mockMiscUtils,
+            sdkCore = mockSdkCore,
+            dynamicOptimizationEnabled = true,
+            adaptiveCaptureSchedulingEnabled = true,
+            touchPrivacyManager = mockTouchPrivacyManager,
+            debouncer = Debouncer(
+                handler = mockHandler,
+                sdkCore = mockSdkCore,
+                timeBank = RecordingTimeBank(50),
+                dynamicOptimizationEnabled = true,
+                adaptiveCaptureSchedulingEnabled = true
+            ),
+            methodCallSamplingRate = 0f,
+            rumContextProvider = fakeRumContextProvider
+        )
+        val fakeViewId = UUID.randomUUID().toString()
+        val fakeContext = mutableMapOf<String, Any?>(
+            RUM_APPLICATION_ID_CONTEXT_KEY to UUID.randomUUID().toString(),
+            RUM_SESSION_ID_CONTEXT_KEY to UUID.randomUUID().toString(),
+            RUM_VIEW_ID_CONTEXT_KEY to fakeViewId
+        )
+        fakeRumContextProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
+        advanceTo(0L)
+        assertThat(fakeQueueHandler.recordedDataQueue).hasSize(1)
+
+        // When: a draw occurs between RUM views, then the UI remains idle.
+        fakeContext.remove(RUM_VIEW_ID_CONTEXT_KEY)
+        fakeRumContextProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
+        testedListener.onDraw()
+        advanceTo(1_000L)
+
+        // Then: only one failed attempt, with no polling or traversal while context is invalid.
+        verify(mockMiscUtils, times(2)).resolveSystemInformation(mockContext)
+        verify(mockSnapshotProducer).beginSnapshot()
+        assertThat(fakePendingCapture).isNull()
+        assertThat(fakeQueueHandler.recordedDataQueue).hasSize(1)
+
+        // Restoring even the same view resumes capture from the notification alone.
+        fakeContext[RUM_VIEW_ID_CONTEXT_KEY] = fakeViewId
+        fakeRumContextProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
+        advanceTo(1_000L)
+        verify(mockSnapshotProducer, times(2)).beginSnapshot()
+        assertThat(fakeQueueHandler.recordedDataQueue).hasSize(2)
+        assertThat(fakePendingCapture).isNull()
+    }
+
+    @Test
+    fun `M reject dispatched snapshot W recording stops before callback runs`() {
+        // Given
+        val fakePendingCallbacks = mutableListOf<Runnable>()
+        whenever(mockDebouncer.debounce(any(), any())).thenAnswer {
+            fakePendingCallbacks.add(it.getArgument(0))
+        }
+        testedListener.onDraw()
+
+        // When
+        fakeCaptureAllowed = false
+        fakePendingCallbacks.single().run()
+
+        // Then
+        verifyNoInteractions(mockSnapshotProducer, mockRecordedDataQueueHandler)
+    }
+
+    @Test
+    fun `M reject explicit and draw captures W recording stopped before listener cleanup`() {
+        // Given
+        fakeCaptureAllowed = false
+
+        // When
+        testedListener.onDraw()
+        val captured = testedListener.captureNow()
+
+        // Then
+        assertThat(captured).isFalse()
+        verify(mockDebouncer).cancel()
+        verifyNoInteractions(mockSnapshotProducer, mockRecordedDataQueueHandler)
     }
 
     @Test
@@ -222,7 +356,25 @@ internal class WindowsOnDrawListenerTest {
     }
 
     @Test
-    fun `M report no capture W captureNow() { queue refused the item }`() {
+    fun `M cancel pending work W cancelPendingCapture()`() {
+        // When
+        testedListener.cancelPendingCapture()
+
+        // Then
+        verify(mockDebouncer).cancel()
+    }
+
+    @Test
+    fun `M schedule without budget delay W scheduleCapture()`() {
+        // When
+        testedListener.scheduleCapture()
+
+        // Then
+        verify(mockDebouncer).debounce(any(), eq(true))
+    }
+
+    @Test
+    fun `M report no capture W captureNow() { no valid RUM context }`() {
         // Given
         whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
             .thenReturn(null)
@@ -351,8 +503,9 @@ internal class WindowsOnDrawListenerTest {
                 "Capture Record"
             )
         ).thenReturn(mockPerformanceMetric)
-        whenever(mockDebouncer.debounce(any())) doAnswer {
-            (it.arguments[0] as Runnable).run()
+        whenever(mockDebouncer.debounce(any(), any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+            Unit
         }
         whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
             .thenReturn(fakeSnapshotQueueItem)

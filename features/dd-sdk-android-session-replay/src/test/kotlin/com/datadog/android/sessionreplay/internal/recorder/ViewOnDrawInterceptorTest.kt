@@ -85,6 +85,7 @@ internal class ViewOnDrawInterceptorTest {
         testedInterceptor = ViewOnDrawInterceptor(
             internalLogger = mockInternalLogger,
             onDrawListenerProducer = mockOnDrawListenerProducer,
+            adaptiveCaptureSchedulingEnabled = true,
             touchPrivacyManager = mockTouchPrivacyManager
         )
     }
@@ -132,8 +133,9 @@ internal class ViewOnDrawInterceptorTest {
         val mockOnDrawListener = mock<OnDemandCaptureListener>()
         testedInterceptor = ViewOnDrawInterceptor(
             internalLogger = mockInternalLogger,
-            touchPrivacyManager = mockTouchPrivacyManager
-        ) { _, _, _, _ -> mockOnDrawListener }
+            touchPrivacyManager = mockTouchPrivacyManager,
+            onDrawListenerProducer = { _, _, _, _ -> mockOnDrawListener }
+        )
 
         // When
         testedInterceptor.intercept(fakeDecorViews, fakeTextAndInputPrivacy, fakeImagePrivacy)
@@ -190,6 +192,96 @@ internal class ViewOnDrawInterceptorTest {
 
         // Then
         assertThat(result).isEqualTo(ViewOnDrawInterceptor.CaptureRequestResult.NOT_CAPTURED)
+    }
+
+    @Test
+    fun `M cancel old captures W stopIntercepting()`() {
+        // Given
+        testedInterceptor.intercept(fakeDecorViews, fakeTextAndInputPrivacy, fakeImagePrivacy)
+        clearInvocations(mockOnDrawListener)
+
+        // When
+        testedInterceptor.stopIntercepting()
+
+        // Then
+        verify(mockOnDrawListener).cancelPendingCapture()
+    }
+
+    @Test
+    fun `M retain other windows W intercept {opt-in omitted}`() {
+        // Given
+        testedInterceptor = ViewOnDrawInterceptor(
+            internalLogger = mockInternalLogger,
+            onDrawListenerProducer = mockOnDrawListenerProducer,
+            touchPrivacyManager = mockTouchPrivacyManager
+        )
+        testedInterceptor.intercept(fakeDecorViews, fakeTextAndInputPrivacy, fakeImagePrivacy)
+        clearInvocations(mockOnDrawListener)
+        val fakeUpdatedViews = listOf(fakeDecorViews.first())
+        val mockReplacementListener = mock<OnDemandCaptureListener>()
+        whenever(
+            mockOnDrawListenerProducer.create(
+                fakeUpdatedViews,
+                fakeTextAndInputPrivacy,
+                fakeImagePrivacy,
+                mockTouchPrivacyManager
+            )
+        ).thenReturn(mockReplacementListener)
+
+        // When
+        testedInterceptor.intercept(fakeUpdatedViews, fakeTextAndInputPrivacy, fakeImagePrivacy)
+
+        // Then
+        verify(fakeDecorViews.first().viewTreeObserver).removeOnDrawListener(mockOnDrawListener)
+        verify(fakeDecorViews.last().viewTreeObserver, never()).removeOnDrawListener(any())
+        verify(mockOnDrawListener, never()).cancelPendingCapture()
+        assertThat(testedInterceptor.decorOnDrawListeners)
+            .containsEntry(fakeDecorViews.first(), mockReplacementListener)
+            .containsEntry(fakeDecorViews.last(), mockOnDrawListener)
+    }
+
+    @Test
+    fun `M cancel replaced listener W intercept { new window set }`() {
+        // Given
+        testedInterceptor.intercept(fakeDecorViews, fakeTextAndInputPrivacy, fakeImagePrivacy)
+        clearInvocations(mockOnDrawListener)
+
+        whenever(
+            mockOnDrawListenerProducer.create(
+                emptyList(),
+                fakeTextAndInputPrivacy,
+                fakeImagePrivacy,
+                mockTouchPrivacyManager
+            )
+        ).thenReturn(mockOnDrawListener)
+
+        // When
+        testedInterceptor.intercept(emptyList(), fakeTextAndInputPrivacy, fakeImagePrivacy)
+
+        // Then
+        verify(mockOnDrawListener).cancelPendingCapture()
+        assertThat(testedInterceptor.decorOnDrawListeners).isEmpty()
+    }
+
+    @Test
+    fun `M schedule every distinct listener W scheduleCapture()`() {
+        // Given
+        testedInterceptor.intercept(fakeDecorViews, fakeTextAndInputPrivacy, fakeImagePrivacy)
+        clearInvocations(mockOnDrawListener)
+
+        // When
+        testedInterceptor.scheduleCapture()
+
+        // Then - the same listener instance is registered for every decor view, so the dedup via
+        // decorOnDrawListeners.values.toSet() schedules it once for all decor views.
+        verify(mockOnDrawListener).scheduleCapture()
+    }
+
+    @Test
+    fun `M do nothing W scheduleCapture { nothing intercepted }`() {
+        // When/Then - safe to call before intercept() is ever invoked
+        testedInterceptor.scheduleCapture()
+        verifyNoInteractions(mockOnDrawListener)
     }
 
     @Test

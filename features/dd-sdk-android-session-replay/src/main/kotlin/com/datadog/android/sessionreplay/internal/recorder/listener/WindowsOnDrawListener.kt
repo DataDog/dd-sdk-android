@@ -18,6 +18,7 @@ import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.OnDemandCaptureListener
+import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.withinSRBenchmarkSpan
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
@@ -33,29 +34,48 @@ internal class WindowsOnDrawListener(
     private val miscUtils: MiscUtils = MiscUtils,
     private val sdkCore: FeatureSdkCore,
     dynamicOptimizationEnabled: Boolean,
+    adaptiveCaptureSchedulingEnabled: Boolean = false,
     private val touchPrivacyManager: TouchPrivacyManager,
     private val debouncer: Debouncer = Debouncer(
         sdkCore = sdkCore,
-        dynamicOptimizationEnabled = dynamicOptimizationEnabled
+        dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+        adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled,
+        timeBank = if (adaptiveCaptureSchedulingEnabled) {
+            RecordingTimeBank(CAPTURE_BUDGET_MS_PER_SECOND)
+        } else {
+            RecordingTimeBank()
+        }
     ),
     private val methodCallSamplingRate: Float,
-    private val rumContextProvider: RumContextProvider
+    private val rumContextProvider: RumContextProvider,
+    private val isCaptureAllowed: () -> Boolean = { true }
 ) : OnDemandCaptureListener {
 
     internal val weakReferencedDecorViews: List<WeakReference<View>> = zOrderedDecorViews.map { WeakReference(it) }
 
     @MainThread
     override fun onDraw() {
-        debouncer.debounce(snapshotRunnable)
+        if (isCaptureAllowed()) {
+            debouncer.debounce(snapshotRunnable)
+        }
     }
 
     @MainThread
     override fun captureNow(): Boolean = takeSnapshot()
 
-    // Note: we declare the anonymous object explicitly to annotate the run method as @UiThread
+    @MainThread
+    override fun scheduleCapture() {
+        if (isCaptureAllowed()) debouncer.debounce(snapshotRunnable, force = true)
+    }
+
+    @MainThread
+    override fun cancelPendingCapture() {
+        debouncer.cancel()
+    }
+
+    // Explicit object keeps the UI-thread annotation on the callback.
     @Suppress("ObjectLiteralToLambda")
     private val snapshotRunnable: Runnable = object : Runnable {
-
         @UiThread
         override fun run() {
             takeSnapshot()
@@ -64,15 +84,23 @@ internal class WindowsOnDrawListener(
 
     /**
      * @return whether a snapshot item was in fact queued: there may be no window left to traverse,
-     * or the queue may have refused the item.
+     * or there may be no valid RUM context.
      */
     @UiThread
     @Suppress("ReturnCount")
     private fun takeSnapshot(): Boolean {
+        if (!isCaptureAllowed()) {
+            debouncer.cancel()
+            return false
+        }
         val rootViews = weakReferencedDecorViews.mapNotNull { it.get() }
 
         // is is very important to have the windows sorted by their z-order
-        val context = rootViews.firstOrNull()?.context ?: return false
+        val context = rootViews.firstOrNull()?.context
+        if (context == null) {
+            debouncer.cancel()
+            return false
+        }
         val systemInformation = miscUtils.resolveSystemInformation(context)
         val item = recordedDataQueueHandler.addSnapshotItem(systemInformation) ?: return false
 
@@ -120,6 +148,8 @@ internal class WindowsOnDrawListener(
     }
 
     companion object {
+        private const val CAPTURE_BUDGET_MS_PER_SECOND = 50L
+
         private const val METHOD_CALL_CAPTURE_RECORD: String = "Capture Record"
 
         private const val BENCHMARK_SPAN_SNAPSHOT_PRODUCER = "SnapshotProducer"

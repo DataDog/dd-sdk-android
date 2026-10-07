@@ -20,5 +20,10 @@ internal interface Recorder {
 
     fun requestCapture(slotIds: Set<String>)
 
+    /**
+     * Schedules a snapshot on a RUM view change, bypassing the previous screen's capture debt.
+     */
+    fun onViewTransition()
+
     fun stopRecorders()
 }

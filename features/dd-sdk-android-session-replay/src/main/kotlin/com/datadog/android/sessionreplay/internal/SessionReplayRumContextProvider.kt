@@ -13,6 +13,7 @@ import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import java.util.UUID
 
 internal class SessionReplayRumContextProvider(
+    private val adaptiveCaptureSchedulingEnabled: Boolean = false,
     private val onRumViewChanged: () -> Unit = {}
 ) : RumContextProvider, FeatureContextUpdateReceiver {
 
@@ -36,7 +37,9 @@ internal class SessionReplayRumContextProvider(
         if (featureName == Feature.RUM_FEATURE_NAME) {
             val previousViewId = rumContext[RUM_VIEW_ID_CONTEXT_KEY] as? String
             val newViewId = context[RUM_VIEW_ID_CONTEXT_KEY] as? String
-            rumContext = context
+            // Core mutates and reuses this map. Snapshot it for the opt-in scheduler so the
+            // previous view ID survives the next update and readers see a complete context.
+            rumContext = if (adaptiveCaptureSchedulingEnabled) context.toMap() else context
             if (newViewId != null && newViewId != NULL_UUID && newViewId != previousViewId) {
                 onRumViewChanged()
             }

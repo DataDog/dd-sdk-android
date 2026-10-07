@@ -29,7 +29,9 @@ internal fun SessionReplayConfiguration.applyRemoteConfiguration(
         textAndInputPrivacy = sr.textAndInputPrivacy?.toSdkPrivacy() ?: textAndInputPrivacy,
         imagePrivacy = sr.imagePrivacy?.toSdkPrivacy() ?: imagePrivacy,
         touchPrivacy = sr.touchPrivacy?.toSdkPrivacy() ?: touchPrivacy
-    )
+    ).also {
+        it.adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled
+    }
 }
 
 private fun RemoteConfiguration.TextAndInputPrivacy.toSdkPrivacy(): TextAndInputPrivacy =
