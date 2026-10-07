@@ -57,18 +57,11 @@ internal class DatadogFlagsClient(
     private val flagStateManager: FlagsStateManager
 ) : FlagsClient {
 
-    private val firstFlagsLock = Any()
-    private var firstFlagsEvent: FlagsClientEvent? = null
-
     override val state: StateObservable = flagStateManager
 
     override fun onFirstFlags(listener: FlagsClientEventListener): FlagsSubscription {
         val unsubscribe = flagsRepository.firstFlags.whenComplete { keys ->
-            val event = synchronized(firstFlagsLock) {
-                firstFlagsEvent ?: FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED, keys).also {
-                    firstFlagsEvent = it
-                }
-            }
+            val event = FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED, keys)
             try {
                 listener.onEvent(event)
             } catch (
