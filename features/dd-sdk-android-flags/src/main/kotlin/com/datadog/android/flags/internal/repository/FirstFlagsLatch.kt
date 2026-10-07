@@ -37,7 +37,7 @@ internal class FirstFlagsLatch {
         val snapshot = synchronized(lock) {
             keys.also { snapshot ->
                 if (snapshot == null) {
-                    @Suppress("UnsafeThirdPartyFunctionCall") // Mutable list; pending is non-null.
+                    @Suppress("UnsafeThirdPartyFunctionCall") // List created with mutableListOf().
                     listeners.add(pending)
                 } else {
                     pending.listener = null
@@ -48,7 +48,7 @@ internal class FirstFlagsLatch {
         return {
             synchronized(lock) {
                 pending.listener = null
-                // Mutable list; pending is non-null and uses identity equality.
+                // List created with mutableListOf(); PendingCallback uses identity equality.
                 @Suppress("UnsafeThirdPartyFunctionCall")
                 listeners.remove(pending)
             }
