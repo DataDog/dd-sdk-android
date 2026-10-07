@@ -206,7 +206,8 @@ internal class CompositionTouchPrivacyTest {
                 viewBoundsResolver = viewBoundsResolver
             ),
             touchPrivacyManager = touchPrivacyManager,
-            viewIdentifierResolver = viewIdentifierResolver
+            viewIdentifierResolver = viewIdentifierResolver,
+            isMainThreadWindow = { true }
         )
         val orchestrator = SnapshotCaptureOrchestrator(
             producer = producer,

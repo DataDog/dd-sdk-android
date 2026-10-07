@@ -20,7 +20,7 @@ import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
  * implementation of the extension point [SnapshotCaptureOrchestrator] drives every generation.
  * Builds a fresh [CapturedIdentityFactory] per call (this workstream only produces full snapshots;
  * an identity factory persisting across generations for incremental diffing is a later workstream's
- * concern), walks every currently active window via [AndroidWindowTraversal], and assembles them
+ * concern), walks active main-thread-owned windows via [AndroidWindowTraversal], and assembles them
  * under one synthetic screen root in [ActiveWindowSource.currentWindows] order (already z-ordered).
  *
  * Windows are walked one at a time via [AndroidWindowTraversal.traverseWindow], which can itself
@@ -33,7 +33,8 @@ internal class AndroidCapturedSnapshotProducer(
     private val timeProvider: TimeProvider,
     private val traversal: AndroidWindowTraversal,
     private val touchPrivacyManager: TouchPrivacyManager,
-    private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
+    private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver,
+    private val isMainThreadWindow: (View) -> Boolean = ::isAttachedToMainLooper
 ) : CapturedSnapshotProducer {
 
     @MainThread
@@ -41,7 +42,8 @@ internal class AndroidCapturedSnapshotProducer(
     override fun capture(context: CaptureGenerationContext): CaptureStep<CapturedFullSnapshot?> {
         val rumViewScope = scopeProvider.currentScope() ?: return CaptureStep.Done(null)
         val identityFactory = DefaultCapturedIdentityFactory(rumViewScope.scope)
-        val windows = windowSource.currentWindows()
+        // Sources can outlive attachment or be updated independently of lifecycle interception.
+        val windows = windowSource.currentWindows().filter(isMainThreadWindow)
         if (windows.isEmpty()) {
             if (context.shouldContinue()) touchPrivacyManager.replaceCurrentTouchOverrideAreas(emptyMap())
             return CaptureStep.Done(null)
@@ -56,6 +58,7 @@ internal class AndroidCapturedSnapshotProducer(
      * itself does in [capture].
      */
     @MainThread
+    @Suppress("ReturnCount") // Reject lost ownership before resolving identity or reading the hierarchy.
     private fun walkFrom(
         windows: List<View>,
         index: Int,
@@ -76,6 +79,8 @@ internal class AndroidCapturedSnapshotProducer(
             }
         }
         val window = windows[index]
+        // A previous window's mapper may have detached this root after the initial filter.
+        if (!isMainThreadWindow(window)) return CaptureStep.Done(null)
         val windowIdentity = identityFactory.window(viewIdentifierResolver.resolveViewId(window).toString())
         return continueWindow(
             traversal.traverseWindow(window, windowIdentity, identityFactory, context),
@@ -99,7 +104,13 @@ internal class AndroidCapturedSnapshotProducer(
         rumViewScope: CapturedRumViewScope
     ): CaptureStep<CapturedFullSnapshot?> = when (step) {
         is CaptureStep.Yielded -> CaptureStep.Yielded {
-            continueWindow(step.resume(), windows, index, identityFactory, context, accumulation, rumViewScope)
+            // A yielded root can detach or move to another looper while its continuation is queued.
+            // Discard the entire partial capture, including its uncommitted touch overrides.
+            if (isMainThreadWindow(windows[index])) {
+                continueWindow(step.resume(), windows, index, identityFactory, context, accumulation, rumViewScope)
+            } else {
+                CaptureStep.Done(null)
+            }
         }
         is CaptureStep.Done -> when (val result = step.value) {
             is WindowWalkResult.Present -> {

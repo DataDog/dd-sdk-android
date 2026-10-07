@@ -17,7 +17,7 @@ internal class CompositionViewOnDrawInterceptor(
     private val internalLogger: InternalLogger
 ) {
     private val lock = Any()
-    private val interceptedViews = WeakHashMap<View, ViewTreeObserver.OnDrawListener>()
+    private val interceptedViews = WeakHashMap<View, ListenerRegistration>()
 
     fun intercept(decorViews: List<View>) {
         val staleViews = synchronized(lock) { interceptedViews.keys.filterNot(decorViews::contains) }
@@ -55,7 +55,7 @@ internal class CompositionViewOnDrawInterceptor(
             if (interceptedViews.containsKey(view)) {
                 false
             } else {
-                interceptedViews[view] = listener
+                interceptedViews[view] = ListenerRegistration(observer, listener)
                 true
             }
         }
@@ -69,15 +69,21 @@ internal class CompositionViewOnDrawInterceptor(
     }
 
     private fun removeListener(view: View) {
-        val listener = synchronized(lock) { interceptedViews.remove(view) } ?: return
-        val observer = view.viewTreeObserver
+        val registration = synchronized(lock) { interceptedViews.remove(view) } ?: return
+        // Cleanup uses the original observer; the view may no longer belong to the main looper.
+        val observer = registration.observer
         if (!observer.isAlive) return
         try {
-            observer.removeOnDrawListener(listener)
+            observer.removeOnDrawListener(registration.listener)
         } catch (e: IllegalStateException) {
             logListenerFailure("remove", e)
         }
     }
+
+    private class ListenerRegistration(
+        val observer: ViewTreeObserver,
+        val listener: ViewTreeObserver.OnDrawListener
+    )
 
     private fun logListenerFailure(operation: String, error: IllegalStateException) {
         internalLogger.log(

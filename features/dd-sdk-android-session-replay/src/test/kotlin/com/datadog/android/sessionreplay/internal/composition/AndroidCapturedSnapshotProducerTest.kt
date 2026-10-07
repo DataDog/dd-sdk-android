@@ -121,7 +121,8 @@ internal class AndroidCapturedSnapshotProducerTest {
             timeProvider = timeProvider,
             traversal = traversal(),
             touchPrivacyManager = mockTouchPrivacyManager,
-            viewIdentifierResolver = mockViewIdentifierResolver
+            viewIdentifierResolver = mockViewIdentifierResolver,
+            isMainThreadWindow = { true }
         )
     }
 

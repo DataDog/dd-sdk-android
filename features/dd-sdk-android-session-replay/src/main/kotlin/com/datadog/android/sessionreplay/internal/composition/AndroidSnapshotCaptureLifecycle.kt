@@ -31,7 +31,8 @@ internal class AndroidSnapshotCaptureLifecycle(
     },
     private val windowFromDecorView: (View) -> Window? = {
         WindowReflectionUtils.getWindowFromDecorView(it, internalLogger)
-    }
+    },
+    private val isMainThreadWindow: (View) -> Boolean = ::isAttachedToMainLooper
 ) : CompositionCaptureLifecycle, OnWindowRefreshedCallback {
     private val lifecycleCallback = SessionReplayLifecycleCallback(this)
     private var isRunning = false
@@ -107,7 +108,8 @@ internal class AndroidSnapshotCaptureLifecycle(
      * ActivityThread adds an activity's decor view to the window manager *after* dispatching
      * onActivityResumed, so at the moment this callback runs the window manager does not know about
      * the window yet and [windowProvider] alone reports nothing. The tracked windows are the
-     * authoritative source for activity windows; the window manager still contributes the ones no
+     * authoritative source for activity windows, admitted once attached to the main looper. A
+     * detached root is deferred until a later refresh. The window manager contributes the ones no
      * lifecycle callback reports, such as dialogs and popups. [windowFromDecorView] resolves those
      * untracked decor views back to a [Window], which touch interception needs but draw
      * interception does not.
@@ -119,17 +121,24 @@ internal class AndroidSnapshotCaptureLifecycle(
      */
     @MainThread
     private fun resolveWindows(trackedWindows: List<Window>): ResolvedWindows {
-        val trackedDecorViews = trackedWindows.mapNotNull { it.peekDecorView() }
+        // Handler ownership must be established before reflection, observers or window callbacks.
+        // Detached activity roots stay tracked and are reconsidered by the periodic refresh.
+        val supportedTrackedWindows = trackedWindows.filter { window ->
+            window.peekDecorView()?.let(isMainThreadWindow) == true
+        }
+        val trackedDecorViews = supportedTrackedWindows.mapNotNull { it.peekDecorView() }
         val allDecorViews = windowProvider()
         // Prune entries that have actually disappeared from the window manager - keeping them
         // around indefinitely would leak view references and could wrongly exclude an unrelated
         // future view, if the same identity were ever reused.
         excludedDecorViews.retainAll(allDecorViews.toSet())
-        val untrackedDecorViews = allDecorViews.filterNot { it in trackedDecorViews || it in excludedDecorViews }
+        val untrackedDecorViews = allDecorViews
+            .filterNot { it in trackedDecorViews || it in excludedDecorViews }
+            .filter(isMainThreadWindow)
         val untrackedWindows = untrackedDecorViews.mapNotNull(windowFromDecorView)
         return ResolvedWindows(
             decorViews = trackedDecorViews + untrackedDecorViews,
-            windows = trackedWindows + untrackedWindows
+            windows = supportedTrackedWindows + untrackedWindows
         )
     }
 
