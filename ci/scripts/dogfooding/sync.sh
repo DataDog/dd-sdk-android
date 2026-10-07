@@ -97,18 +97,26 @@ while IFS=$'\t' read -r source author; do
     echo "Couldn't list the PRs merged from $branch into develop (gh failed). Nothing was pushed: re-run once gh works." >&2
     exit 1
   fi
+  latest_merge=""
+  latest_head=""
   while IFS=$'\t' read -r merge head; do
     [ -n "$merge" ] || continue
-    # Only the PR merged as part of this sync counts (not an older PR with the same name).
+    # Only PRs merged as part of this sync count (not an older PR with the same name).
     git merge-base --is-ancestor "$merge" origin/develop 2>/dev/null || continue
     ! git merge-base --is-ancestor "$merge" "origin/$DOGFOODING_BRANCH" 2>/dev/null || continue
-    [ "$head" != "$sha" ] || continue
-    # The merged head only brought in part of what was dogfooded (the branch kept going after
-    # it): dogfooding already has everything develop now brings, so there's nothing left over.
-    ! git merge-base --is-ancestor "$head" "$sha" 2>/dev/null || continue
-    GRADUATED="$GRADUATED- $branch ${author:-}: dogfooded at ${sha:0:12}, graduated at ${head:0:12}. After merging this sync, run ./ci/scripts/dogfooding/feature.sh $branch --at $head
-"
+    # Several PRs from this branch merged in this sync: develop now has the last one's version.
+    if [ -z "$latest_merge" ] || git merge-base --is-ancestor "$latest_merge" "$merge"; then
+      latest_merge=$merge
+      latest_head=$head
+    fi
   done <<< "$merged"
+  [ -n "$latest_head" ] || continue
+  [ "$latest_head" != "$sha" ] || continue
+  # The merged head only brought in part of what was dogfooded (the branch kept going after
+  # it): dogfooding already has everything develop now brings, so there's nothing left over.
+  ! git merge-base --is-ancestor "$latest_head" "$sha" 2>/dev/null || continue
+  GRADUATED="$GRADUATED- $branch ${author:-}: dogfooded at ${sha:0:12}, graduated at ${latest_head:0:12}. After merging this sync, run ./ci/scripts/dogfooding/feature.sh $branch --at $latest_head
+"
 done <<< "$(git log --no-merges --topo-order \
   --format='%(trailers:key=Dogfood-Source,valueonly,separator=%x2C)%x09%(trailers:key=Dogfood-Author,valueonly,separator=%x2C)' \
   "${SINCE_RESET[@]}")"
