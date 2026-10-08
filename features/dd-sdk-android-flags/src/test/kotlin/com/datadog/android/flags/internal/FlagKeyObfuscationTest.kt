@@ -27,43 +27,75 @@ import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ExposureEvent
 import com.datadog.android.flags.model.ResolutionReason
+import com.datadog.android.internal.time.TimeProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 
+@ExtendWith(MockitoExtension::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class FlagKeyObfuscationTest {
-    private val mockInternalLogger: InternalLogger = mock()
-    private val mockSdkCore: FeatureSdkCore = mock()
-    private val mockFeatureScope: FeatureScope = mock()
-    private val mockDatadogContext: DatadogContext = mock()
-    private val mockEvaluationsManager: EvaluationsManager = mock()
-    private val mockDataStore: DataStoreHandler = mock()
-    private val mockWriter: RecordWriter = mock()
-    private val mockRumLogger: RumEvaluationLogger = mock()
-    private val mockEvaluationsFeature: EvaluationsFeature = mock()
-    private val fakeContext = EvaluationContext("athlete-123", mapOf("team" to "cycling"))
-    private val testedMapper = PrecomputeMapper(mockInternalLogger)
+    private lateinit var testedMapper: PrecomputeMapper
     private lateinit var testedRepository: DefaultFlagsRepository
     private lateinit var testedClient: DatadogFlagsClient
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
+    lateinit var mockSdkCore: FeatureSdkCore
+
+    @Mock
+    lateinit var mockFeatureScope: FeatureScope
+
+    @Mock
+    lateinit var mockDatadogContext: DatadogContext
+
+    @Mock
+    lateinit var mockEvaluationsManager: EvaluationsManager
+
+    @Mock
+    lateinit var mockDataStore: DataStoreHandler
+
+    @Mock
+    lateinit var mockWriter: RecordWriter
+
+    @Mock
+    lateinit var mockRumLogger: RumEvaluationLogger
+
+    @Mock
+    lateinit var mockEvaluationsFeature: EvaluationsFeature
+
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
+    @Mock
+    lateinit var mockFlagStateManager: FlagsStateManager
+
+    private val fakeContext = EvaluationContext("athlete-123", mapOf("team" to "cycling"))
 
     @BeforeEach
     fun setUp() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
-        whenever(mockSdkCore.timeProvider) doReturn mock()
+        whenever(mockSdkCore.timeProvider) doReturn mockTimeProvider
         whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)) doReturn mockFeatureScope
         whenever(mockDatadogContext.source) doReturn "android"
         doAnswer { it.getArgument<(DatadogContext) -> Unit>(1).invoke(mockDatadogContext) }
@@ -71,6 +103,7 @@ internal class FlagKeyObfuscationTest {
         doAnswer {
             it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onFailure()
         }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        testedMapper = PrecomputeMapper(mockInternalLogger)
         testedRepository = DefaultFlagsRepository(mockSdkCore, "obfuscation", mockDataStore)
         testedClient = createClient()
     }
@@ -467,7 +500,7 @@ internal class FlagKeyObfuscationTest {
         rumEvaluationLogger = mockRumLogger,
         exposureProcessor = ExposureEventsProcessor(mockWriter, mockSdkCore.timeProvider),
         evaluationsFeature = mockEvaluationsFeature,
-        flagStateManager = mock()
+        flagStateManager = mockFlagStateManager
     )
 
     companion object {
