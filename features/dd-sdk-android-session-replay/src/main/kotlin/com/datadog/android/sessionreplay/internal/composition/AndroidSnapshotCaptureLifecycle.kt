@@ -19,6 +19,8 @@ import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
 import com.datadog.android.sessionreplay.internal.recorder.WindowReflectionUtils
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
+import java.util.Collections
+import java.util.WeakHashMap
 
 internal class AndroidSnapshotCaptureLifecycle(
     private val application: Application,
@@ -45,7 +47,10 @@ internal class AndroidSnapshotCaptureLifecycle(
     // multi-window/split-screen, where a paused activity's window stays fully attached and visible.
     // Kept out of untracked re-classification in resolveWindows() until they're either tracked
     // again (onWindowsAdded) or genuinely disappear from windowProvider()'s result.
-    private val excludedDecorViews = mutableSetOf<View>()
+    // Lifecycle callbacks also arrive while recording is stopped, when there is no refresh to
+    // prune this set. Exclusion must not keep a removed window or its Activity alive until restart.
+    @Suppress("UnsafeThirdPartyFunctionCall") // newSetFromMap receives an empty map.
+    private val excludedDecorViews = Collections.newSetFromMap(WeakHashMap<View, Boolean>())
 
     init {
         currentActivity?.let {
