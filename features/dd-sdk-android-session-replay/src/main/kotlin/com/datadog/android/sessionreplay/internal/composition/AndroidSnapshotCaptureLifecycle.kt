@@ -15,6 +15,7 @@ import android.view.Window
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
+import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
 import com.datadog.android.sessionreplay.internal.recorder.WindowReflectionUtils
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
@@ -31,10 +32,13 @@ internal class AndroidSnapshotCaptureLifecycle(
     },
     private val windowFromDecorView: (View) -> Window? = {
         WindowReflectionUtils.getWindowFromDecorView(it, internalLogger)
-    }
+    },
+    private val isMainThreadWindow: (View) -> Boolean = ::isAttachedToMainLooper
 ) : CompositionCaptureLifecycle, OnWindowRefreshedCallback {
     private val lifecycleCallback = SessionReplayLifecycleCallback(this)
+    private val viewUtilsInternal = ViewUtilsInternal()
     private var isRunning = false
+    private val pendingAttachmentListeners = mutableMapOf<View, View.OnAttachStateChangeListener>()
 
     // Decor views whose Window was just removed via lifecycle callback (e.g. onActivityPaused),
     // before Android necessarily detached them from the window manager - persistently so in
@@ -72,6 +76,7 @@ internal class AndroidSnapshotCaptureLifecycle(
         uiHandler.post {
             isRunning = false
             uiHandler.removeCallbacks(untrackedWindowRefreshRunnable)
+            pendingAttachmentListeners.keys.toList().forEach(::removeAttachmentListener)
             interceptor.stop()
             touchInterceptor.stop()
             excludedDecorViews.clear()
@@ -98,17 +103,66 @@ internal class AndroidSnapshotCaptureLifecycle(
 
     @MainThread
     private fun refreshInterceptors() {
-        val resolved = resolveWindows(lifecycleCallback.getCurrentWindows())
+        val trackedWindows = lifecycleCallback.getCurrentWindows()
+        updatePendingAttachments(trackedWindows)
+        val resolved = resolveWindows(trackedWindows)
         interceptor.intercept(resolved.decorViews)
         touchInterceptor.intercept(resolved.windows)
+    }
+
+    @MainThread
+    private fun updatePendingAttachments(trackedWindows: List<Window>) {
+        val detachedRoots = trackedWindows.mapNotNull { it.peekDecorView() }
+            .filter { !isMainThreadWindow(it) && it.handler == null }.toSet()
+        pendingAttachmentListeners.keys.filterNot(detachedRoots::contains).forEach(::removeAttachmentListener)
+        @Suppress("UnsafeThirdPartyFunctionCall") // Snapshot iteration with a plain map membership check.
+        detachedRoots.filterNot(pendingAttachmentListeners::containsKey).forEach(::awaitAttachment)
+    }
+
+    @MainThread
+    @Suppress("ThreadSafety") // Unsupported owners post cleanup to main; main-owned attach callbacks run inline.
+    private fun awaitAttachment(root: View) {
+        val listener = object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(view: View) {
+                // Remove on the attaching thread before handing lifecycle state back to main.
+                view.removeOnAttachStateChangeListener(this)
+                if (isMainThreadWindow(view)) {
+                    onTrackedRootAttached(view, this)
+                } else {
+                    uiHandler.post { onTrackedRootAttached(view, this) }
+                }
+            }
+
+            override fun onViewDetachedFromWindow(view: View) = Unit
+        }
+        pendingAttachmentListeners[root] = listener
+        root.addOnAttachStateChangeListener(listener)
+    }
+
+    @MainThread
+    private fun onTrackedRootAttached(root: View, listener: View.OnAttachStateChangeListener) {
+        // A callback queued before pause or stop must not replace a later registration.
+        if (pendingAttachmentListeners[root] === listener) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // Private mutable map supports removal of any key.
+            pendingAttachmentListeners.remove(root)
+            refreshWindows()
+        }
+    }
+
+    @MainThread
+    private fun removeAttachmentListener(root: View) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // Private mutable map supports removal of any key.
+        val listener = pendingAttachmentListeners.remove(root)
+        listener?.let(root::removeOnAttachStateChangeListener)
     }
 
     /**
      * ActivityThread adds an activity's decor view to the window manager *after* dispatching
      * onActivityResumed, so at the moment this callback runs the window manager does not know about
      * the window yet and [windowProvider] alone reports nothing. The tracked windows are the
-     * authoritative source for activity windows; the window manager still contributes the ones no
-     * lifecycle callback reports, such as dialogs and popups. [windowFromDecorView] resolves those
+     * authoritative source for activity windows, admitted once attached to the main looper. A
+     * detached tracked root triggers a refresh as soon as it attaches. The window manager contributes
+     * windows no lifecycle callback reports, such as dialogs and popups. [windowFromDecorView] resolves those
      * untracked decor views back to a [Window], which touch interception needs but draw
      * interception does not.
      *
@@ -119,18 +173,30 @@ internal class AndroidSnapshotCaptureLifecycle(
      */
     @MainThread
     private fun resolveWindows(trackedWindows: List<Window>): ResolvedWindows {
-        val trackedDecorViews = trackedWindows.mapNotNull { it.peekDecorView() }
+        // Handler ownership must be established before reflection, observers or window callbacks.
+        // Detached activity roots stay tracked and refresh interception on attachment.
+        val supportedTrackedWindows = trackedWindows.filter { window ->
+            window.peekDecorView()?.let(isMainThreadWindow) == true
+        }
+        val trackedDecorViews = supportedTrackedWindows.mapNotNull { it.peekDecorView() }
         val allDecorViews = windowProvider()
         // Prune entries that have actually disappeared from the window manager - keeping them
         // around indefinitely would leak view references and could wrongly exclude an unrelated
         // future view, if the same identity were ever reused.
         excludedDecorViews.retainAll(allDecorViews.toSet())
-        val untrackedDecorViews = allDecorViews.filterNot { it in trackedDecorViews || it in excludedDecorViews }
-        val untrackedWindows = untrackedDecorViews.mapNotNull(windowFromDecorView)
-        return ResolvedWindows(
-            decorViews = trackedDecorViews + untrackedDecorViews,
-            windows = trackedWindows + untrackedWindows
-        )
+        // Preserve global discovery order across both sources. Tracked roots missing from that
+        // list are a fallback during attachment; lifecycle/WeakHashMap order must not reorder known roots.
+        val fallbackDecorViews = trackedDecorViews.filterNot { it in allDecorViews }
+        val orderedDecorViews = (fallbackDecorViews + allDecorViews).distinct()
+            .filter { it in trackedDecorViews || it !in excludedDecorViews }
+            .filter(isMainThreadWindow)
+            // Traversal skips secondary displays, including their touch-privacy overrides.
+            .filterNot(viewUtilsInternal::isOnSecondaryDisplay)
+        val trackedByDecorView = supportedTrackedWindows.associateBy { it.peekDecorView() }
+        val orderedWindows = orderedDecorViews.mapNotNull { root ->
+            trackedByDecorView[root] ?: windowFromDecorView(root)
+        }
+        return ResolvedWindows(decorViews = orderedDecorViews, windows = orderedWindows)
     }
 
     // Kept as a single instance (rather than a fresh lambda per call) so stop() can cancel a
