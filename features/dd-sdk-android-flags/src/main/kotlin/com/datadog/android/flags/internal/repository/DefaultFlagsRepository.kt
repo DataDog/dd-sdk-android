@@ -136,14 +136,6 @@ internal class DefaultFlagsRepository(
         readableState?.takeIf { it.restoredFromCache }?.let { publishFirstFlags(it, it.flags.keys) }
     }
 
-    private fun publishFirstFlags(state: FlagsState, installedKeys: Collection<String>) {
-        if (state.obfuscation == null || obfuscationSupported.get()) {
-            // Encoded responses cannot enumerate the original application keys.
-            val keys = if (state.obfuscation == null) installedKeys else emptySet()
-            firstFlags.complete(keys, deliverFirstFlags)
-        }
-    }
-
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
         waitForPersistenceLoad()
         val state = readableState
@@ -194,6 +186,14 @@ internal class DefaultFlagsRepository(
         val state = readableState ?: return null
         val flag = state.get(key) ?: return null
         return flag to state.context
+    }
+
+    private fun publishFirstFlags(state: FlagsState, installedKeys: Collection<String>) {
+        if (state.obfuscation == null || obfuscationSupported.get()) {
+            // Encoded responses cannot enumerate the original application keys.
+            val keys = if (state.obfuscation == null) installedKeys else emptySet()
+            firstFlags.complete(keys, deliverFirstFlags)
+        }
     }
 
     private fun waitForPersistenceLoad() {

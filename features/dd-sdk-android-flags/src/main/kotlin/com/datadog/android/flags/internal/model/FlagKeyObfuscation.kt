@@ -11,6 +11,7 @@ import com.datadog.android.flags.internal.model.generated.Obfuscation
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import java.security.MessageDigest
+import java.util.Locale
 
 /** Encoding metadata validated by read(). */
 // Keep copy() private so callers cannot bypass salt validation.
@@ -33,8 +34,7 @@ internal data class FlagKeyObfuscation private constructor(val salt: String) {
             digest.update(saltBytes)
             digest.update(key.toByteArray(Charsets.UTF_8))
             digest.digest().joinToString("") {
-                @Suppress("UnsafeThirdPartyFunctionCall") // The constant format accepts a byte.
-                "%02x".format(it)
+                "%02x".format(Locale.US, it)
             }.also {
                 @Suppress("UnsafeThirdPartyFunctionCall") // The key and encoded value are non-null.
                 lookupKeys.put(key, it)
@@ -42,7 +42,7 @@ internal data class FlagKeyObfuscation private constructor(val salt: String) {
         }
     }
 
-    companion object {
+    internal companion object {
         const val SCHEME = "flag-key-sha256-v1"
         const val CAPABILITY = "assignment-encoding-flag-key-256-v1"
         private const val SALT_BYTES = 16

@@ -41,6 +41,7 @@ import com.datadog.gradle.plugin.jsonschema.UserMerged
 import com.datadog.gradle.plugin.jsonschema.Version
 import com.datadog.gradle.plugin.jsonschema.Video
 import com.datadog.gradle.plugin.jsonschema.WeirdCombo
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
@@ -61,7 +62,7 @@ class FileGeneratorTest {
 
         // Then
         val generated = File(tempDir, "com/example/internal/model/Person.kt").readText()
-        org.junit.jupiter.api.Assertions.assertTrue(generated.contains("internal data class Person("))
+        assertTrue(generated.contains("internal data class Person("))
     }
 
     @ParameterizedTest
