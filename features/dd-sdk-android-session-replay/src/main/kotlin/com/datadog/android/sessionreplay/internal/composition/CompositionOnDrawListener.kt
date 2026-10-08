@@ -9,14 +9,22 @@ package com.datadog.android.sessionreplay.internal.composition
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.annotation.MainThread
+import java.lang.ref.WeakReference
 
 /** Identifies the decor view it was registered on, since [ViewTreeObserver.OnDrawListener.onDraw] carries no source. */
 internal class CompositionOnDrawListener(
-    private val view: View,
+    view: View,
     private val onWindowsChanged: CompositionChangeListener
 ) : ViewTreeObserver.OnDrawListener {
-    // listOf throws only for a null element; `view` is a non-null Kotlin type.
+    // The interceptor owns this listener as a map value; retaining its weak key here would
+    // keep the decor view (and its Activity) alive until explicit lifecycle cleanup.
+    private val viewReference = WeakReference(view)
+
+    // listOf receives the non-null result of dereferencing the source view.
     @Suppress("UnsafeThirdPartyFunctionCall")
     @MainThread
-    override fun onDraw() = onWindowsChanged.onWindowsChanged(listOf(view))
+    override fun onDraw() {
+        val view = viewReference.get() ?: return
+        onWindowsChanged.onWindowsChanged(listOf(view))
+    }
 }
