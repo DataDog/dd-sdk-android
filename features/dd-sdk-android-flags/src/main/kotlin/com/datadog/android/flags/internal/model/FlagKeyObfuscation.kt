@@ -55,6 +55,7 @@ internal data class FlagKeyObfuscation private constructor(val salt: String) {
 
         /** Throws for unsupported or inconsistent descriptors, including explicit JSON null. */
         // JSON errors propagate to the response or cache parser, where they are caught.
+        @Throws(JSONException::class)
         @Suppress("ThrowsCount")
         fun read(json: JSONObject): FlagKeyObfuscation? {
             val obfuscated = json.opt("obfuscated")
@@ -78,6 +79,7 @@ internal data class FlagKeyObfuscation private constructor(val salt: String) {
         }
 
         // Caught by the response or cache parser.
+        @Throws(JSONException::class)
         fun validateKeys(keys: Iterator<String>) {
             keys.forEach {
                 if (!isLowercaseHex(it, DIGEST_BYTES)) {
