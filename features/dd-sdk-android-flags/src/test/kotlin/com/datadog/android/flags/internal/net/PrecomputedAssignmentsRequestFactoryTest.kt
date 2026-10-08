@@ -66,12 +66,16 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
 
     @Test
     fun `M advertise encoding capability W create() { native source }`() {
+        // Given
         val context = fakeDatadogContext.copy(source = "android", sdkVersion = "overridden-core-version")
+
+        // When
         val request = checkNotNull(testedFactory.create(EvaluationContext("subject", emptyMap()), context))
         val buffer = Buffer()
         checkNotNull(request.body).writeTo(buffer)
         val attributes = JSONObject(buffer.readUtf8()).getJSONObject("data").getJSONObject("attributes")
 
+        // Then
         assertThat(request.header("X-DD-FEATURE-FLAGS-CAPABILITIES"))
             .isEqualTo("assignment-encoding-flag-key-256-v1")
         assertThat(attributes.has("supported_capabilities")).isFalse()
@@ -81,12 +85,16 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     @Test
     fun `M omit encoding capability W create() { bridge sources }`() {
         for (source in listOf("react-native", "flutter", "unknown")) {
+            // Given
             val context = fakeDatadogContext.copy(source = source)
+
+            // When
             val request = checkNotNull(testedFactory.create(EvaluationContext("subject", emptyMap()), context))
             val buffer = Buffer()
             checkNotNull(request.body).writeTo(buffer)
             val attributes = JSONObject(buffer.readUtf8()).getJSONObject("data").getJSONObject("attributes")
 
+            // Then
             assertThat(attributes.has("supported_capabilities")).isFalse()
             assertThat(request.header("X-DD-FEATURE-FLAGS-CAPABILITIES")).isNull()
         }

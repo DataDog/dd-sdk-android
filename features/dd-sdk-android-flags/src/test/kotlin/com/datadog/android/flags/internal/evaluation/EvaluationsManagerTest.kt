@@ -1216,6 +1216,7 @@ internal class EvaluationsManagerTest {
 
     @Test
     fun `M retain matching assignments on invalid encoding W updateEvaluationsForContext() { HTTP integration }`() {
+        // Given
         fakeDatadogContext = fakeDatadogContext.copy(source = "android")
         val context = EvaluationContext("athlete-123", emptyMap())
         val testedRepository = createIntegrationRepository()
@@ -1223,8 +1224,10 @@ internal class EvaluationsManagerTest {
         val mockCallback = mock<EvaluationContextCallback>()
         mockWebServer.enqueue(MockResponse().setBody(ENCODED_RESPONSE_JSON))
 
+        // When
         testedManager.updateEvaluationsForContext(context, mockCallback)
 
+        // Then
         assertThat(testedRepository.getPrecomputedFlag("flag")?.variationValue).isEqualTo("true")
         verify(mockCallback).onSuccess()
         val request = checkNotNull(mockWebServer.takeRequest(1, TimeUnit.SECONDS))
@@ -1233,23 +1236,32 @@ internal class EvaluationsManagerTest {
         assertThat(request.getHeader("X-DD-FEATURE-FLAGS-CAPABILITIES"))
             .isEqualTo("assignment-encoding-flag-key-256-v1")
         assertThat(attributes.has("supported_capabilities")).isFalse()
+
+        // Given
         mockWebServer.enqueue(MockResponse().setBody(ENCODED_RESPONSE_JSON.replace("flag-key-sha256-v1", "unknown")))
 
+        // When
         testedManager.updateEvaluationsForContext(context, mockCallback)
 
+        // Then
         verify(mockFlagsStateManager).updateState(FlagsClientState.Stale)
         verify(mockCallback).onFailure(any<NetworkRequestFailedException>())
         assertThat(testedRepository.getPrecomputedFlag("flag")?.variationValue).isEqualTo("true")
+
+        // Given
         mockWebServer.enqueue(MockResponse().setBody(ENCODED_RESPONSE_JSON.replace("flag-key-sha256-v1", "unknown")))
 
+        // When
         testedManager.updateEvaluationsForContext(EvaluationContext("other-user", emptyMap()), mockCallback)
 
+        // Then
         verify(mockFlagsStateManager).updateState(any<FlagsClientState.Error>())
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(context)
     }
 
     @Test
     fun `M reject unsolicited encoding W updateEvaluationsForContext() { React Native HTTP integration }`() {
+        // Given
         fakeDatadogContext = fakeDatadogContext.copy(source = "react-native")
         val context = EvaluationContext("athlete-123", emptyMap())
         val testedRepository = createIntegrationRepository()
@@ -1257,8 +1269,10 @@ internal class EvaluationsManagerTest {
         val mockCallback = mock<EvaluationContextCallback>()
         mockWebServer.enqueue(MockResponse().setBody(ENCODED_RESPONSE_JSON))
 
+        // When
         testedManager.updateEvaluationsForContext(context, mockCallback)
 
+        // Then
         verify(mockCallback).onFailure(any<NetworkRequestFailedException>())
         assertThat(testedRepository.hasFlags()).isFalse()
         assertThat(testedRepository.getFlagsSnapshot()).isEmpty()
