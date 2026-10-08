@@ -27,7 +27,13 @@ import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ExposureEvent
 import com.datadog.android.flags.model.ResolutionReason
+import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.time.TimeProvider
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
@@ -50,7 +56,8 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
-@ExtendWith(MockitoExtension::class)
+@ExtendWith(MockitoExtension::class, ForgeExtension::class)
+@ForgeConfiguration(ForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class FlagKeyObfuscationTest {
     private lateinit var testedMapper: PrecomputeMapper
@@ -90,7 +97,23 @@ internal class FlagKeyObfuscationTest {
     @Mock
     lateinit var mockFlagStateManager: FlagsStateManager
 
-    private val fakeContext = EvaluationContext("athlete-123", mapOf("team" to "cycling"))
+    @Forgery
+    lateinit var fakeContext: EvaluationContext
+
+    @StringForgery
+    lateinit var fakeInstanceName: String
+
+    @StringForgery
+    lateinit var fakeAllocationKey: String
+
+    @StringForgery
+    lateinit var fakeVariationKey: String
+
+    @LongForgery(min = 1L)
+    var fakeSerialId = 0L
+
+    @LongForgery(min = 0L)
+    var fakeTimestamp = 0L
 
     @BeforeEach
     fun setUp() {
@@ -104,7 +127,7 @@ internal class FlagKeyObfuscationTest {
             it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onFailure()
         }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
         testedMapper = PrecomputeMapper(mockInternalLogger)
-        testedRepository = DefaultFlagsRepository(mockSdkCore, "obfuscation", mockDataStore)
+        testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore)
         testedClient = createClient()
     }
 
@@ -124,15 +147,15 @@ internal class FlagKeyObfuscationTest {
         // Then
         assertThat(testedClient.resolve(key, false)).isEqualTo(plain)
         assertThat(testedClient.resolveBooleanValue(key, false)).isTrue()
-        verify(mockRumLogger, times(3)).logEvaluation(key, "variation-456")
+        verify(mockRumLogger, times(3)).logEvaluation(key, fakeVariationKey)
         verify(
             mockEvaluationsFeature,
             times(3)
-        ).processEvaluation(key, fakeContext, "variation-456", "allocation-123", null, null)
+        ).processEvaluation(key, fakeContext, fakeVariationKey, fakeAllocationKey, null, null)
         val exposure = argumentCaptor<ExposureEvent>()
         verify(mockWriter).write(exposure.capture())
         assertThat(exposure.firstValue.flag.key).isEqualTo(key)
-        assertThat(exposure.firstValue.serialId).isEqualTo(123L)
+        assertThat(exposure.firstValue.serialId).isEqualTo(fakeSerialId)
     }
 
     @Test
@@ -194,7 +217,7 @@ internal class FlagKeyObfuscationTest {
             val descriptor = metadata(salt)
             val encoding = checkNotNull(FlagKeyObfuscation.read(descriptor))
             val decoded = checkNotNull(testedMapper.map(payload(checkNotNull(encoding.encode("flag")), salt = salt)))
-            val entry = FlagsStateEntry(fakeContext, decoded.flags, 1234L, decoded.obfuscation)
+            val entry = FlagsStateEntry(fakeContext, decoded.flags, fakeTimestamp, decoded.obfuscation)
 
             // When
             val serialized = FlagsStateSerializer(mockInternalLogger).serialize(entry)
@@ -216,14 +239,14 @@ internal class FlagKeyObfuscationTest {
             // Then
             assertThat(testedClient.resolveBooleanValue("flag", false)).isTrue()
             assertThat(testedRepository.getPrecomputedFlag("flag")).isNotNull()
-            assertThat(testedRepository.getPrecomputedFlag("flag")?.variationKey).isEqualTo("variation-456")
-            assertThat(testedRepository.getPrecomputedFlag("flag")?.serialId).isEqualTo(123L)
+            assertThat(testedRepository.getPrecomputedFlag("flag")?.variationKey).isEqualTo(fakeVariationKey)
+            assertThat(testedRepository.getPrecomputedFlag("flag")?.serialId).isEqualTo(fakeSerialId)
             assertThat(testedRepository.getPrecomputedFlag(checkNotNull(encoding.encode("flag")))).isNull()
         }
 
         // Then
         verify(mockWriter, times(1)).write(any<ExposureEvent>())
-        verify(mockRumLogger, times(3)).logEvaluation("flag", "variation-456")
+        verify(mockRumLogger, times(3)).logEvaluation("flag", fakeVariationKey)
     }
 
     @Test
@@ -265,7 +288,7 @@ internal class FlagKeyObfuscationTest {
         }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
 
         // When
-        testedRepository = DefaultFlagsRepository(mockSdkCore, "obfuscation", mockDataStore)
+        testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore)
         testedClient = createClient()
 
         // Then
@@ -299,10 +322,10 @@ internal class FlagKeyObfuscationTest {
         var cacheCallback: DataStoreReadCallback<FlagsStateEntry>? = null
         doAnswer { cacheCallback = it.getArgument(2) }
             .whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
-        val testedRepository = DefaultFlagsRepository(mockSdkCore, "late-cache", mockDataStore)
+        val testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore)
         testedRepository.setObfuscationSupported(false)
         val decoded = checkNotNull(testedMapper.map(payload(VECTORS[2].second)))
-        val entry = FlagsStateEntry(fakeContext, decoded.flags, 1234L, decoded.obfuscation)
+        val entry = FlagsStateEntry(fakeContext, decoded.flags, fakeTimestamp, decoded.obfuscation)
 
         // When
         checkNotNull(cacheCallback).onSuccess(DataStoreContent(0, entry))
@@ -317,12 +340,12 @@ internal class FlagKeyObfuscationTest {
     fun `M restore encoded cache W DefaultFlagsRepository() { native consumer }`() {
         // Given
         val decoded = checkNotNull(testedMapper.map(payload(VECTORS[2].second)))
-        val entry = FlagsStateEntry(fakeContext, decoded.flags, 1234L, decoded.obfuscation)
+        val entry = FlagsStateEntry(fakeContext, decoded.flags, fakeTimestamp, decoded.obfuscation)
         doAnswer { it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(DataStoreContent(0, entry)) }
             .whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
 
         // When
-        val testedRepository = DefaultFlagsRepository(mockSdkCore, "restored-cache", mockDataStore)
+        val testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore)
 
         // Then
         assertThat(testedRepository.getPrecomputedFlagWithContext("flag")?.second).isEqualTo(fakeContext)
@@ -347,8 +370,8 @@ internal class FlagKeyObfuscationTest {
             .whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
         whenever(mockDatadogContext.source) doReturn source
         val decoded = checkNotNull(testedMapper.map(payload(if (encoded) VECTORS[2].second else "flag", encoded)))
-        val entry = FlagsStateEntry(fakeContext, decoded.flags, 1234L, decoded.obfuscation)
-        testedRepository = DefaultFlagsRepository(mockSdkCore, "deferred-cache", mockDataStore)
+        val entry = FlagsStateEntry(fakeContext, decoded.flags, fakeTimestamp, decoded.obfuscation)
+        testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore)
         testedClient = createClient()
         val firstFlags = mutableListOf<List<String>>()
         testedRepository.firstFlags.whenComplete { firstFlags.add(it) }
@@ -404,11 +427,11 @@ internal class FlagKeyObfuscationTest {
     fun `M notify first readable flags W setFlagsAndContext() { wrapper replaces encoded cache }`() {
         // Given
         val decoded = checkNotNull(testedMapper.map(payload(VECTORS[2].second)))
-        val entry = FlagsStateEntry(fakeContext, decoded.flags, 1234L, decoded.obfuscation)
+        val entry = FlagsStateEntry(fakeContext, decoded.flags, fakeTimestamp, decoded.obfuscation)
         whenever(mockDatadogContext.source) doReturn "react-native"
         doAnswer { it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(DataStoreContent(0, entry)) }
             .whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
-        testedRepository = DefaultFlagsRepository(mockSdkCore, "wrapper-cache", mockDataStore)
+        testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore)
         val firstFlags = mutableListOf<List<String>>()
         testedRepository.firstFlags.whenComplete { firstFlags.add(it) }
         assertThat(firstFlags).isEmpty()
@@ -448,7 +471,7 @@ internal class FlagKeyObfuscationTest {
         assertThat(assignments).isNull()
 
         // Given
-        val entry = FlagsStateEntry(fakeContext, emptyMap(), 1234L)
+        val entry = FlagsStateEntry(fakeContext, emptyMap(), fakeTimestamp)
         val cache = JSONObject(FlagsStateSerializer(mockInternalLogger).serialize(entry))
         JSONObject(json).keys().forEach { cache.put(it, JSONObject(json).get(it)) }
 
@@ -503,7 +526,19 @@ internal class FlagKeyObfuscationTest {
         flagStateManager = mockFlagStateManager
     )
 
+    private fun assignment(type: String = "boolean", value: Any = true): JSONObject = JSONObject()
+        .put("variationType", type).put("variationValue", value).put("allocationKey", fakeAllocationKey)
+        .put("variationKey", fakeVariationKey).put("doLog", true).put("serialId", fakeSerialId)
+        .put("reason", "TARGETING_MATCH").put("extraLogging", JSONObject().put("test", "metadata"))
+
+    private fun payload(key: String, encoded: Boolean = true, salt: String = SALT): String {
+        val attrs = if (encoded) metadata(salt) else JSONObject()
+        attrs.put("flags", JSONObject().put(key, assignment()))
+        return JSONObject().put("data", JSONObject().put("attributes", attrs)).toString()
+    }
+
     companion object {
+        // Keep these shared protocol vectors fixed; generate unrelated fixture values above.
         private const val SALT = "000102030405060708090a0b0c0d0e0f"
         private val VECTORS = listOf(
             "new-route-planner" to "a60479237ef2f69175bbe0bd581966d1583766941815dc1d414c883767795190",
@@ -544,16 +579,5 @@ internal class FlagKeyObfuscationTest {
         private fun metadata(salt: String = SALT): JSONObject = JSONObject()
             .put("obfuscated", true)
             .put("obfuscation", JSONObject().put("scheme", FlagKeyObfuscation.SCHEME).put("salt", salt))
-
-        private fun assignment(type: String = "boolean", value: Any = true): JSONObject = JSONObject()
-            .put("variationType", type).put("variationValue", value).put("allocationKey", "allocation-123")
-            .put("variationKey", "variation-456").put("doLog", true).put("serialId", 123L)
-            .put("reason", "TARGETING_MATCH").put("extraLogging", JSONObject().put("test", "metadata"))
-
-        private fun payload(key: String, encoded: Boolean = true, salt: String = SALT): String {
-            val attrs = if (encoded) metadata(salt) else JSONObject()
-            attrs.put("flags", JSONObject().put(key, assignment()))
-            return JSONObject().put("data", JSONObject().put("attributes", attrs)).toString()
-        }
     }
 }

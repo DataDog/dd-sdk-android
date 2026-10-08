@@ -65,12 +65,14 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     // region create() - Success cases
 
     @Test
-    fun `M advertise encoding capability W create() { native source }`() {
+    fun `M advertise encoding capability W create() { native source }`(
+        @Forgery fakeEvaluationContext: EvaluationContext
+    ) {
         // Given
-        val context = fakeDatadogContext.copy(source = "android", sdkVersion = "overridden-core-version")
+        val context = fakeDatadogContext.copy(source = "android")
 
         // When
-        val request = checkNotNull(testedFactory.create(EvaluationContext("subject", emptyMap()), context))
+        val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context))
         val buffer = Buffer()
         checkNotNull(request.body).writeTo(buffer)
         val attributes = JSONObject(buffer.readUtf8()).getJSONObject("data").getJSONObject("attributes")
@@ -83,13 +85,15 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     }
 
     @Test
-    fun `M omit encoding capability W create() { bridge sources }`() {
+    fun `M omit encoding capability W create() { bridge sources }`(
+        @Forgery fakeEvaluationContext: EvaluationContext
+    ) {
         for (source in listOf("react-native", "flutter", "unknown")) {
             // Given
             val context = fakeDatadogContext.copy(source = source)
 
             // When
-            val request = checkNotNull(testedFactory.create(EvaluationContext("subject", emptyMap()), context))
+            val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context))
             val buffer = Buffer()
             checkNotNull(request.body).writeTo(buffer)
             val attributes = JSONObject(buffer.readUtf8()).getJSONObject("data").getJSONObject("attributes")

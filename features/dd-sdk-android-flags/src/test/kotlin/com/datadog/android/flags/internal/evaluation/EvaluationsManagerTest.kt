@@ -1218,7 +1218,7 @@ internal class EvaluationsManagerTest {
     fun `M retain matching assignments on invalid encoding W updateEvaluationsForContext() { HTTP integration }`() {
         // Given
         fakeDatadogContext = fakeDatadogContext.copy(source = "android")
-        val context = EvaluationContext("athlete-123", emptyMap())
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
         val testedRepository = createIntegrationRepository()
         val testedManager = createIntegrationManager(testedRepository)
         val mockCallback = mock<EvaluationContextCallback>()
@@ -1252,7 +1252,10 @@ internal class EvaluationsManagerTest {
         mockWebServer.enqueue(MockResponse().setBody(ENCODED_RESPONSE_JSON.replace("flag-key-sha256-v1", "unknown")))
 
         // When
-        testedManager.updateEvaluationsForContext(EvaluationContext("other-user", emptyMap()), mockCallback)
+        testedManager.updateEvaluationsForContext(
+            EvaluationContext("$fakeTargetingKey-other", emptyMap()),
+            mockCallback
+        )
 
         // Then
         verify(mockFlagsStateManager).updateState(any<FlagsClientState.Error>())
@@ -1263,7 +1266,7 @@ internal class EvaluationsManagerTest {
     fun `M reject unsolicited encoding W updateEvaluationsForContext() { React Native HTTP integration }`() {
         // Given
         fakeDatadogContext = fakeDatadogContext.copy(source = "react-native")
-        val context = EvaluationContext("athlete-123", emptyMap())
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
         val testedRepository = createIntegrationRepository()
         val testedManager = createIntegrationManager(testedRepository)
         val mockCallback = mock<EvaluationContextCallback>()
