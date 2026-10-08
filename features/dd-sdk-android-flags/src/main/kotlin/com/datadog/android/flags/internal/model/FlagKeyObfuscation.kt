@@ -12,7 +12,8 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import java.security.MessageDigest
 
-/** The public encoding descriptor travels with its assignment map. */
+/** Encoding metadata validated by read(). */
+// Keep copy() private so callers cannot bypass salt validation.
 @ConsistentCopyVisibility
 internal data class FlagKeyObfuscation private constructor(val salt: String) {
     @Suppress("UnsafeThirdPartyFunctionCall") // The cache limit is a positive constant.
