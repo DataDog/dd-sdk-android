@@ -129,11 +129,14 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
-    fun `M store generated assignments W setFlagsAndContext()`(forge: Forge) {
+    fun `M store generated assignments W setFlagsAndContext() { forged assignments }`(forge: Forge) {
+        // Given
         val assignments = forge.getForgery<PrecomputedAssignments>()
 
+        // When
         testedRepository.setFlagsAndContext(testContext, assignments.flags, assignments.obfuscation)
 
+        // Then
         assertThat(testedRepository.getFlagsSnapshot()).isEqualTo(assignments.flags)
     }
 
