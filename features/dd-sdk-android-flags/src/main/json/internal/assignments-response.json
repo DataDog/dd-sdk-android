@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "AssignmentsResponse",
+  "type": "object",
+  "properties": {
+    "data": {
+      "type": "object",
+      "properties": {
+        "attributes": {
+          "type": "object",
+          "properties": {
+            "flags": { "type": "object", "additionalProperties": true }
+          },
+          "required": ["flags"],
+          "additionalProperties": true
+        }
+      },
+      "required": ["attributes"]
+    }
+  },
+  "required": ["data"]
+}

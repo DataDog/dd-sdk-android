@@ -41,6 +41,7 @@ import com.datadog.gradle.plugin.jsonschema.UserMerged
 import com.datadog.gradle.plugin.jsonschema.Version
 import com.datadog.gradle.plugin.jsonschema.Video
 import com.datadog.gradle.plugin.jsonschema.WeirdCombo
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
@@ -49,6 +50,19 @@ import java.nio.file.Files
 import java.nio.file.Paths
 
 class FileGeneratorTest {
+
+    @Test
+    fun `M generate internal model W generate() { internal package }`(@TempDir tempDir: File) {
+        // Given
+        val testedGenerator = FileGenerator(tempDir, "com.example.internal.model", NoOpLogger(), internalModels = true)
+
+        // When
+        testedGenerator.generate(Person)
+
+        // Then
+        val generated = File(tempDir, "com/example/internal/model/Person.kt").readText()
+        org.junit.jupiter.api.Assertions.assertTrue(generated.contains("internal data class Person("))
+    }
 
     @ParameterizedTest
     @MethodSource("data")

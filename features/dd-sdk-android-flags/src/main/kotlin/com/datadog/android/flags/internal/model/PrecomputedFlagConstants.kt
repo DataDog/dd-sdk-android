@@ -6,27 +6,6 @@
 
 package com.datadog.android.flags.internal.model
 
-internal enum class JsonKeys(val value: String) {
-    // EvaluationContext keys
-    EVALUATION_CONTEXT("evaluationContext"),
-    TARGETING_KEY("targetingKey"),
-    ATTRIBUTES("attributes"),
-
-    // FlagsStateEntry keys
-    FLAGS("flags"),
-    LAST_UPDATE_TIMESTAMP("lastUpdateTimestamp"),
-
-    // PrecomputedFlag keys
-    VARIATION_TYPE("variationType"),
-    VARIATION_VALUE("variationValue"),
-    DO_LOG("doLog"),
-    ALLOCATION_KEY("allocationKey"),
-    VARIATION_KEY("variationKey"),
-    EXTRA_LOGGING("extraLogging"),
-    REASON("reason"),
-    SERIAL_ID("serialId")
-}
-
 internal enum class VariationType(val value: String) {
     BOOLEAN("boolean"),
     STRING("string"),

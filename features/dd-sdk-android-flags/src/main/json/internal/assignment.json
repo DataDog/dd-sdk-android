@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "Assignment",
+  "description": "An assignment after conversion of its value to the SDK string representation.",
+  "type": "object",
+  "properties": {
+    "variationType": { "type": "string" },
+    "variationValue": { "type": "string" },
+    "doLog": { "type": "boolean" },
+    "allocationKey": { "type": "string" },
+    "variationKey": { "type": "string" },
+    "extraLogging": { "type": "object", "additionalProperties": true },
+    "reason": { "type": "string" },
+    "serialId": { "type": "integer" }
+  },
+  "required": ["variationType", "variationValue", "doLog", "allocationKey", "variationKey", "extraLogging", "reason"]
+}

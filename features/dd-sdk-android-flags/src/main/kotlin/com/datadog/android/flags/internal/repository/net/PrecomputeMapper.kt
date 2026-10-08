@@ -8,55 +8,33 @@ package com.datadog.android.flags.internal.repository.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
-import com.datadog.android.flags.internal.model.JsonKeys
 import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.model.PrecomputedFlag
-import org.json.JSONException
-import org.json.JSONObject
+import com.datadog.android.flags.internal.model.PrecomputedFlagJson
+import com.datadog.android.flags.internal.model.generated.AssignmentsResponse
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import com.google.gson.JsonParseException
 
 /**
  * Responsible for parsing network response to [PrecomputedFlag] objects.
  */
 internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
-    // JSONObject methods accept non-null String parameters despite Detekt's incorrect nullable interpretation
-    // All getJsonObject calls are wrapped in try-catch for JSONException which is the actual exception thrown
-    @Suppress("UnsafeThirdPartyFunctionCall")
     internal fun map(rawJson: String): PrecomputedAssignments? = try {
-        val jsonResponse = JSONObject(rawJson)
-        val data = jsonResponse.getJSONObject("data")
-        val attributes = data.getJSONObject("attributes")
-        val flags = attributes.getJSONObject("flags")
-        val obfuscation = FlagKeyObfuscation.read(attributes)
-        if (obfuscation != null) FlagKeyObfuscation.validateKeys(flags.keys())
-
-        val flagsMap = mutableMapOf<String, PrecomputedFlag>()
-
-        val flagKeys = flags.keys()
-        while (flagKeys.hasNext()) {
-            val flagKey = flagKeys.next()
-            val flagData = flags.getJSONObject(flagKey)
-
-            val precomputedFlag = PrecomputedFlag(
-                variationType = flagData.getString(JsonKeys.VARIATION_TYPE.value),
-                variationValue = when (val value = flagData.get(JsonKeys.VARIATION_VALUE.value)) {
-                    is Boolean -> value.toString()
-                    is String -> value
-                    is Number -> value.toString()
-                    else -> value.toString()
-                },
-                doLog = flagData.getBoolean(JsonKeys.DO_LOG.value),
-                allocationKey = flagData.getString(JsonKeys.ALLOCATION_KEY.value),
-                variationKey = flagData.getString(JsonKeys.VARIATION_KEY.value),
-                extraLogging = flagData.getJSONObject(JsonKeys.EXTRA_LOGGING.value),
-                reason = flagData.getString(JsonKeys.REASON.value),
-                serialId = (flagData.opt(JsonKeys.SERIAL_ID.value) as? Number)?.toLong()
-            )
-
-            flagsMap[flagKey] = precomputedFlag
+        val attributes = AssignmentsResponse.fromJson(rawJson).data.attributes
+        val metadata = JsonObject().apply {
+            attributes.additionalProperties.forEach { (key, value) ->
+                add(key, value as? JsonElement)
+            }
         }
-
-        PrecomputedAssignments(flagsMap, obfuscation)
-    } catch (e: JSONException) {
+        val obfuscation = FlagKeyObfuscation.read(metadata)
+        val flags = attributes.flags.additionalProperties
+        if (obfuscation != null) FlagKeyObfuscation.validateKeys(flags.keys.iterator())
+        PrecomputedAssignments(
+            flags.mapValues { PrecomputedFlagJson.read(PrecomputedFlagJson.objectValue(it.value)) },
+            obfuscation
+        )
+    } catch (e: JsonParseException) {
         internalLogger.log(
             level = InternalLogger.Level.WARN,
             target = InternalLogger.Target.MAINTAINER,

@@ -29,6 +29,8 @@ import com.datadog.android.flags.model.ExposureEvent
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.time.TimeProvider
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -136,7 +138,7 @@ internal class FlagKeyObfuscationTest {
     fun `M resolve original key W resolve() { shared edge hash vectors }`(vector: Pair<String, String>) {
         // Given
         val (key, digest) = vector
-        val encoding = checkNotNull(FlagKeyObfuscation.read(metadata()))
+        val encoding = checkNotNull(FlagKeyObfuscation.read(metadataJson()))
         assertThat(encoding.encode(key)).isEqualTo(digest)
         install(payload(key, encoded = false))
         val plain = testedClient.resolve(key, false)
@@ -161,8 +163,8 @@ internal class FlagKeyObfuscationTest {
     @Test
     fun `M cache bounded lookup hashes W encode() { descriptors keep separate caches }`() {
         // Given
-        val encoding = checkNotNull(FlagKeyObfuscation.read(metadata()))
-        val other = checkNotNull(FlagKeyObfuscation.read(metadata("f".repeat(32))))
+        val encoding = checkNotNull(FlagKeyObfuscation.read(metadataJson()))
+        val other = checkNotNull(FlagKeyObfuscation.read(metadataJson("f".repeat(32))))
 
         // When
         val first = checkNotNull(encoding.encode("flag"))
@@ -183,7 +185,7 @@ internal class FlagKeyObfuscationTest {
     @Test
     fun `M preserve results and defaults W resolve() { encoded types and errors }`() {
         // Given
-        val encoding = checkNotNull(FlagKeyObfuscation.read(metadata()))
+        val encoding = checkNotNull(FlagKeyObfuscation.read(metadataJson()))
         val flags = JSONObject()
         listOf(
             "string" to "visible",
@@ -214,7 +216,7 @@ internal class FlagKeyObfuscationTest {
     fun `M retain lookup and deduplicate exposure W setFlagsAndContext() { salt changes and cache round trip }`() {
         for (salt in listOf(SALT, "f".repeat(32), SALT)) {
             // Given
-            val descriptor = metadata(salt)
+            val descriptor = metadataJson(salt)
             val encoding = checkNotNull(FlagKeyObfuscation.read(descriptor))
             val decoded = checkNotNull(testedMapper.map(payload(checkNotNull(encoding.encode("flag")), salt = salt)))
             val entry = FlagsStateEntry(fakeContext, decoded.flags, fakeTimestamp, decoded.obfuscation)
@@ -252,7 +254,7 @@ internal class FlagKeyObfuscationTest {
     @Test
     fun `M accept new flags and isolate unknown types W resolve() { forward compatible response }`() {
         // Given
-        val encoding = checkNotNull(FlagKeyObfuscation.read(metadata()))
+        val encoding = checkNotNull(FlagKeyObfuscation.read(metadataJson()))
         val flags = JSONObject()
             .put(checkNotNull(encoding.encode("flag")), assignment())
             .put(checkNotNull(encoding.encode("new-flag")), assignment().put("future-field", true))
@@ -272,7 +274,7 @@ internal class FlagKeyObfuscationTest {
     fun `M restore latest salt and value W DefaultFlagsRepository() { after multiple writes }`() {
         // Given
         for ((salt, value) in listOf(SALT to true, "f".repeat(32) to false)) {
-            val encoding = checkNotNull(FlagKeyObfuscation.read(metadata(salt)))
+            val encoding = checkNotNull(FlagKeyObfuscation.read(metadataJson(salt)))
             val flags = JSONObject().put(checkNotNull(encoding.encode("flag")), assignment("boolean", value))
             val attributes = metadata(salt).put("flags", flags)
             install(JSONObject().put("data", JSONObject().put("attributes", attributes)).toString())
@@ -579,5 +581,8 @@ internal class FlagKeyObfuscationTest {
         private fun metadata(salt: String = SALT): JSONObject = JSONObject()
             .put("obfuscated", true)
             .put("obfuscation", JSONObject().put("scheme", FlagKeyObfuscation.SCHEME).put("salt", salt))
+
+        private fun metadataJson(salt: String = SALT): JsonObject =
+            JsonParser.parseString(metadata(salt).toString()).asJsonObject
     }
 }

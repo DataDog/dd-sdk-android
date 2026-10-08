@@ -7,8 +7,9 @@
 package com.datadog.android.flags.internal.model
 
 import androidx.collection.LruCache
-import org.json.JSONException
-import org.json.JSONObject
+import com.datadog.android.flags.internal.model.generated.Obfuscation
+import com.google.gson.JsonObject
+import com.google.gson.JsonParseException
 import java.security.MessageDigest
 
 /** The public encoding descriptor travels with its assignment map. */
@@ -40,11 +41,6 @@ internal data class FlagKeyObfuscation private constructor(val salt: String) {
         }
     }
 
-    fun toJson(): JSONObject {
-        @Suppress("UnsafeThirdPartyFunctionCall") // Both fields have validated, non-null names and string values.
-        return JSONObject().put("scheme", SCHEME).put("salt", salt)
-    }
-
     companion object {
         const val SCHEME = "flag-key-sha256-v1"
         const val CAPABILITY = "assignment-encoding-flag-key-256-v1"
@@ -55,36 +51,40 @@ internal data class FlagKeyObfuscation private constructor(val salt: String) {
 
         /** Throws for unsupported or inconsistent descriptors, including explicit JSON null. */
         // JSON errors propagate to the response or cache parser, where they are caught.
-        @Throws(JSONException::class)
+        @Throws(JsonParseException::class)
         @Suppress("ThrowsCount")
-        fun read(json: JSONObject): FlagKeyObfuscation? {
-            val obfuscated = json.opt("obfuscated")
-            if ((obfuscated == null || obfuscated == false) && !json.has("obfuscation")) return null
-            if (obfuscated != true) {
+        fun read(json: JsonObject): FlagKeyObfuscation? {
+            val obfuscated = json.get("obfuscated")
+            val isBoolean = obfuscated?.isJsonPrimitive == true && obfuscated.asJsonPrimitive.isBoolean
+            val isPlaintext = obfuscated == null || (isBoolean && !obfuscated.asBoolean)
+            if (isPlaintext && !json.has("obfuscation")) return null
+            if (!isBoolean || !obfuscated.asBoolean) {
                 @Suppress("ThrowingInternalException") // Caught by the response or cache parser.
-                throw JSONException("Invalid flag-key obfuscation metadata")
+                throw JsonParseException("Invalid flag-key obfuscation metadata")
             }
-            @Suppress("UnsafeThirdPartyFunctionCall") // JSON errors are caught by the response or cache parser.
-            val descriptor = json.getJSONObject("obfuscation")
-            if (descriptor.opt("scheme") != SCHEME) {
+            val descriptor = PrecomputedFlagJson.objectValue(json.get("obfuscation"))
+            val scheme = descriptor.get("scheme")
+            if (scheme?.isJsonPrimitive != true || !scheme.asJsonPrimitive.isString || scheme.asString != SCHEME) {
                 @Suppress("ThrowingInternalException") // Caught by the response or cache parser.
-                throw JSONException("Unsupported flag-key obfuscation scheme")
+                throw JsonParseException("Unsupported flag-key obfuscation scheme")
             }
-            val salt = descriptor.opt("salt")
-            if (salt !is String || !isLowercaseHex(salt, SALT_BYTES)) {
+            val salt = descriptor.get("salt")
+            if (salt?.isJsonPrimitive != true || !salt.asJsonPrimitive.isString ||
+                !isLowercaseHex(salt.asString, SALT_BYTES)
+            ) {
                 @Suppress("ThrowingInternalException") // Caught by the response or cache parser.
-                throw JSONException("Flag-key salt must contain 32 lowercase hexadecimal characters")
+                throw JsonParseException("Flag-key salt must contain 32 lowercase hexadecimal characters")
             }
-            return FlagKeyObfuscation(salt)
+            return FlagKeyObfuscation(Obfuscation.fromJsonObject(descriptor).salt)
         }
 
         // Caught by the response or cache parser.
-        @Throws(JSONException::class)
+        @Throws(JsonParseException::class)
         fun validateKeys(keys: Iterator<String>) {
             keys.forEach {
                 if (!isLowercaseHex(it, DIGEST_BYTES)) {
                     @Suppress("ThrowingInternalException") // Caught by the response or cache parser.
-                    throw JSONException("Invalid encoded flag key")
+                    throw JsonParseException("Invalid encoded flag key")
                 }
             }
         }

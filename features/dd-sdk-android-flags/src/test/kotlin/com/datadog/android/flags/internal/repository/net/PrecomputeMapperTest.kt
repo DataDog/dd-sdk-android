@@ -22,6 +22,8 @@ import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
@@ -69,6 +71,57 @@ internal class PrecomputeMapperTest {
     }
 
     // region Valid JSON Parsing
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            "null", "[]", "true", "0", "\"text\"",
+            "{\"data\":null}", "{\"data\":[]}",
+            "{\"data\":{\"attributes\":null}}", "{\"data\":{\"attributes\":[]}}",
+            "{\"data\":{\"attributes\":{\"flags\":null}}}",
+            "{\"data\":{\"attributes\":{\"flags\":[]}}}"
+        ]
+    )
+    fun `M reject malformed structure W map() { generated model }`(json: String) {
+        // Given
+        // The response is supplied by the test case.
+        // When
+        val result = testedMapper.map(json)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["null", "[]", "{}", "0", "\"invalid\""])
+    fun `M reject invalid logging control W map() { generated model }`(value: String) {
+        // Given
+        val flag = buildFlagJson(VariationType.BOOLEAN.value, true)
+        flag.put("doLog", JSONObject("{\"value\":$value}").get("value"))
+        val json = buildValidJson(mapOf(fakeFlagKey to flag))
+
+        // When
+        val result = testedMapper.map(json)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["null", "[]", "{}", "true", "\"123\""])
+    fun `M ignore nonnumeric serial id W map() { generated model }`(value: String) {
+        // Given
+        val flag = buildFlagJson(VariationType.BOOLEAN.value, true)
+        flag.put("serialId", JSONObject("{\"value\":$value}").get("value"))
+        val json = buildValidJson(mapOf(fakeFlagKey to flag))
+
+        // When
+        val result = checkNotNull(testedMapper.map(json)).flags.getValue(fakeFlagKey)
+
+        // Then
+        assertThat(result.serialId).isNull()
+        assertThat(result.variationValue).isEqualTo("true")
+    }
 
     @Test
     fun `M parse single flag with string variation W map() { valid JSON }`() {
