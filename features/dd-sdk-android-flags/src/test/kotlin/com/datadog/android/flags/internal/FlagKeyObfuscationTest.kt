@@ -57,6 +57,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.Locale
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -240,14 +241,17 @@ internal class FlagKeyObfuscationTest {
 
             // Then
             assertThat(testedClient.resolveBooleanValue("flag", false)).isTrue()
-            assertThat(testedRepository.getPrecomputedFlag("flag")).isNotNull()
-            assertThat(testedRepository.getPrecomputedFlag("flag")?.variationKey).isEqualTo(fakeVariationKey)
-            assertThat(testedRepository.getPrecomputedFlag("flag")?.serialId).isEqualTo(fakeSerialId)
+            val flag = checkNotNull(testedRepository.getPrecomputedFlag("flag"))
+            assertThat(flag.variationKey).isEqualTo(fakeVariationKey)
+            assertThat(flag.serialId).isEqualTo(fakeSerialId)
             assertThat(testedRepository.getPrecomputedFlag(checkNotNull(encoding.encode("flag")))).isNull()
         }
 
         // Then
-        verify(mockWriter, times(1)).write(any<ExposureEvent>())
+        val exposure = argumentCaptor<ExposureEvent>()
+        verify(mockWriter).write(exposure.capture())
+        assertThat(exposure.firstValue.flag.key).isEqualTo("flag")
+        assertThat(exposure.firstValue.serialId).isEqualTo(fakeSerialId)
         verify(mockRumLogger, times(3)).logEvaluation("flag", fakeVariationKey)
     }
 
@@ -284,7 +288,7 @@ internal class FlagKeyObfuscationTest {
         verify(mockDataStore, times(2)).setValue(any(), written.capture(), any(), anyOrNull(), any())
         val serialized = FlagsStateSerializer(mockInternalLogger).serialize(written.lastValue)
         val restored = checkNotNull(FlagsStateDeserializer(mockInternalLogger).deserialize(serialized))
-        assertThat(restored.obfuscation?.salt).isEqualTo("f".repeat(32))
+        assertThat(checkNotNull(restored.obfuscation).salt).isEqualTo("f".repeat(32))
         doAnswer {
             it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(DataStoreContent(0, restored))
         }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
@@ -350,9 +354,10 @@ internal class FlagKeyObfuscationTest {
         val testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore)
 
         // Then
-        assertThat(testedRepository.getPrecomputedFlagWithContext("flag")?.second).isEqualTo(fakeContext)
-        assertThat(testedRepository.getPrecomputedFlag("flag")?.variationValue).isEqualTo("true")
-        assertThat(testedRepository.getPrecomputedFlag("flag")?.reason).isEqualTo(ResolutionReason.CACHED.name)
+        val (flag, context) = checkNotNull(testedRepository.getPrecomputedFlagWithContext("flag"))
+        assertThat(context).isEqualTo(fakeContext)
+        assertThat(flag.variationValue).isEqualTo("true")
+        assertThat(flag.reason).isEqualTo(ResolutionReason.CACHED.name)
         assertThat(testedRepository.getPrecomputedFlag(VECTORS[2].second)).isNull()
     }
 
@@ -575,8 +580,17 @@ internal class FlagKeyObfuscationTest {
             metadata().put("obfuscated", false).toString(),
             metadata().apply { remove("obfuscated") }.toString(),
             metadata().apply { getJSONObject("obfuscation").put("scheme", "unknown") }.toString()
-        ) + listOf("", "0".repeat(30), "0".repeat(34), "G".repeat(32), SALT.uppercase(), "0".repeat(31) + "\n", 42)
-            .map { metadata().apply { getJSONObject("obfuscation").put("salt", it) }.toString() }
+        ) +
+            listOf(
+                "",
+                "0".repeat(30),
+                "0".repeat(34),
+                "G".repeat(32),
+                SALT.uppercase(Locale.US),
+                "0".repeat(31) + "\n",
+                42
+            )
+                .map { metadata().apply { getJSONObject("obfuscation").put("salt", it) }.toString() }
 
         private fun metadata(salt: String = SALT): JSONObject = JSONObject()
             .put("obfuscated", true)
