@@ -180,7 +180,7 @@ dependencies {
     // Sample Vendor Library
     implementation(project(":sample:vendor-lib"))
 
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     // Android dependencies
     implementation(libs.cronetPlayServices)

@@ -89,7 +89,7 @@ datadog {
 
 dependencies {
 
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     // Android dependencies
     implementation(libs.adapterDelegatesViewBinding)

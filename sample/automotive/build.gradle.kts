@@ -70,7 +70,7 @@ dependencies {
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-rum"))
 
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     // Android dependencies
     implementation(libs.androidXCoreKtx)

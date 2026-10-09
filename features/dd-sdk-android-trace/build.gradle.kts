@@ -59,7 +59,7 @@ dependencies {
     api(project(":features:dd-sdk-android-trace-api"))
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-trace-internal"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
     implementation(libs.bundles.traceCore)
@@ -86,7 +86,7 @@ dependencies {
 
     // Test Fixtures
     testFixturesImplementation(libs.gson)
-    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.kotlinRuntime)
     testFixturesImplementation(libs.okHttp)
     testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.bundles.testTools)

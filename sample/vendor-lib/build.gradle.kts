@@ -77,7 +77,7 @@ dependencies {
     implementation(project(":features:dd-sdk-android-trace-otel"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
 
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     // Ktor (local web server)
     implementation(libs.bundles.ktor)

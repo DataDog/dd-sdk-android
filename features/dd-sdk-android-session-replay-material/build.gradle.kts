@@ -48,7 +48,7 @@ android {
 
 dependencies {
     api(project(":features:dd-sdk-android-session-replay"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.gson)
     implementation(libs.googleMaterial)
 

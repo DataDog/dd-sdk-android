@@ -64,7 +64,7 @@ dependencies {
     api(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum-internal"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.gson)
     implementation(libs.okHttp)
 
@@ -105,7 +105,7 @@ dependencies {
             )
         }
     }
-    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.kotlinRuntime)
     testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.okHttp)
     testFixturesImplementation(libs.bundles.testTools)

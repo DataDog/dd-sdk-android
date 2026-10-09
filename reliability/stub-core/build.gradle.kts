@@ -31,7 +31,7 @@ android {
 dependencies {
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":dd-sdk-android-core"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     // Testing
     implementation(project(":tools:unit")) {

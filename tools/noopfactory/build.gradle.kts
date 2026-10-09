@@ -5,6 +5,7 @@
  */
 
 import com.datadog.gradle.config.taskConfig
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -17,8 +18,7 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.kotlin)
-    implementation(libs.kotlinReflect)
+    implementation(libs.kotlinBuildscript)
     implementation(libs.kotlinSP)
     implementation(libs.kotlinPoet)
     implementation(libs.kotlinPoetKsp)
@@ -29,7 +29,10 @@ dependencies {
 }
 
 datadogBuild {
-    applyKotlinConfig()
+    applyKotlinConfig(
+        kotlinApiVersion = KotlinVersion.KOTLIN_2_2,
+        kotlinLanguageVersion = KotlinVersion.KOTLIN_2_2
+    )
     applyJunitConfig()
 }
 

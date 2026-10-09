@@ -44,7 +44,7 @@ android {
 
 dependencies {
     implementation(project(":features:dd-sdk-android-rum"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.okHttp)
     implementation(libs.bundles.fresco)
 

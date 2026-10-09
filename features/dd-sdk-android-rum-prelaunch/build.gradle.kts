@@ -43,7 +43,7 @@ android {
 
 dependencies {
     implementation(project(":features:dd-sdk-android-rum-internal"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     testImplementation(project(":tools:unit")) {
         attributes {
