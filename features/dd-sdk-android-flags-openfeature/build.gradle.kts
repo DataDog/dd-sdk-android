@@ -52,7 +52,7 @@ dependencies {
     // OpenFeature SDK
     api(libs.openFeatureKotlinSdk)
 
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.coroutinesCore)
     implementation(libs.androidXAnnotation)
 

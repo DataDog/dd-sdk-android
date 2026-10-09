@@ -14,8 +14,8 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.kotlin)
-    implementation(libs.kotlinReflect)
+    // pin it temporarily to Kotlin Runtime, because Detekt 1.23.8 is not capable processing Kotlin 2.2 stdlib
+    implementation(libs.kotlinRuntime)
     implementation(libs.androidXAnnotation)
     compileOnly(libs.detektApi)
 

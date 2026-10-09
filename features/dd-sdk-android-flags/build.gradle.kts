@@ -56,7 +56,7 @@ dependencies {
     implementation(project(":dd-sdk-android-internal"))
 
     implementation(libs.gson)
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.okHttp)
     implementation(libs.androidXAnnotation)
     implementation(libs.androidXCollection)

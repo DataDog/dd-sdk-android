@@ -42,7 +42,7 @@ android {
 }
 
 dependencies {
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.coroutinesCore)
     implementation(project(":features:dd-sdk-android-trace"))
 

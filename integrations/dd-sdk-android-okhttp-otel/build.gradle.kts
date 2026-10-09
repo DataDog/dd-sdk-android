@@ -44,7 +44,7 @@ android {
 
 dependencies {
     implementation(libs.okHttp)
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))

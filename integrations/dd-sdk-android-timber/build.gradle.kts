@@ -44,7 +44,7 @@ android {
 
 dependencies {
     implementation(project(":features:dd-sdk-android-logs"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.timber)
 
     testImplementation(project(":tools:unit")) {

@@ -45,7 +45,7 @@ android {
 dependencies {
     implementation(project(":dd-sdk-android-internal"))
     implementation(libs.apolloRuntime)
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.okHttp)
 
     testImplementation(project(":tools:unit")) {
