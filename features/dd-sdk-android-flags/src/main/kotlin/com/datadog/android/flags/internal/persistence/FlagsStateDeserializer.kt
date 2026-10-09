@@ -8,41 +8,63 @@ package com.datadog.android.flags.internal.persistence
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsStateEntry
-import com.datadog.android.flags.internal.model.JsonKeys
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.PrecomputedFlagJson
+import com.datadog.android.flags.internal.model.generated.FlagsState
 import com.datadog.android.flags.model.EvaluationContext
-import org.json.JSONException
-import org.json.JSONObject
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import com.google.gson.JsonParseException
+import com.google.gson.JsonParser
 
 internal class FlagsStateDeserializer(private val internalLogger: InternalLogger) :
     Deserializer<String, FlagsStateEntry> {
 
     override fun deserialize(model: String): FlagsStateEntry? = try {
-        val json = JSONObject(model)
-
-        @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-        val contextJson = json.getJSONObject(JsonKeys.EVALUATION_CONTEXT.value)
-        val evaluationContext = deserializeEvaluationContext(contextJson)
-
-        @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-        val flagsJson = json.getJSONObject(JsonKeys.FLAGS.value)
-        val flags = deserializeFlags(flagsJson)
-
-        @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-        val timestamp = json.getLong(JsonKeys.LAST_UPDATE_TIMESTAMP.value)
+        val json = PrecomputedFlagJson.objectValue(JsonParser.parseString(model))
+        val obfuscation = FlagKeyObfuscation.read(json)
+        // As before, only the map selected by the encoding descriptor is read.
+        json.remove(if (obfuscation == null) "encodedFlags" else "flags")
+        val contextJson = PrecomputedFlagJson.objectValue(json.get("evaluationContext"))
+        if (contextJson.get("attributes") !is JsonObject) contextJson.remove("attributes")
+        contextJson.get("targetingKey")?.let {
+            contextJson.addProperty("targetingKey", PrecomputedFlagJson.stringValue(it))
+        }
+        if (json.get("lastUpdateTimestamp")?.isJsonPrimitive != true) {
+            @Suppress("ThrowingInternalException") // Caught below and reported as an invalid cache.
+            throw JsonParseException("Invalid persisted flag timestamp")
+        }
+        val state = FlagsState.fromJsonObject(json)
+        val assignments = (if (obfuscation == null) state.flags else state.encodedFlags)?.additionalProperties
+        if (assignments == null) {
+            @Suppress("ThrowingInternalException") // Caught below and reported as an invalid cache.
+            throw JsonParseException("Missing persisted assignments")
+        }
+        if (obfuscation != null) FlagKeyObfuscation.validateKeys(assignments.keys.iterator())
+        val flags = assignments.mapNotNull { (key, value) ->
+            // A malformed object can be skipped; a non-object entry invalidates the cache, as before.
+            deserializePrecomputedFlag(PrecomputedFlagJson.objectValue(value))?.let { key to it }
+        }.toMap()
 
         // A nonempty cache with no readable flags is not a valid empty configuration.
-        if (flags.isEmpty() && flagsJson.length() > 0) {
+        if (flags.isEmpty() && assignments.isNotEmpty()) {
             null
         } else {
             FlagsStateEntry(
-                evaluationContext = evaluationContext,
+                evaluationContext = EvaluationContext(
+                    state.evaluationContext.targetingKey,
+                    state.evaluationContext.attributes?.additionalProperties.orEmpty().mapValues {
+                        PrecomputedFlagJson.stringValue(it.value as JsonElement)
+                    }
+                ),
                 flags = flags,
-                lastUpdateTimestamp = timestamp
+                lastUpdateTimestamp = state.lastUpdateTimestamp,
+                obfuscation = obfuscation
             )
         }
-    } catch (e: JSONException) {
+    } catch (e: JsonParseException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
@@ -61,63 +83,9 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
         null
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-    private fun deserializeEvaluationContext(contextJson: JSONObject): EvaluationContext {
-        val targetingKey = contextJson.getString(JsonKeys.TARGETING_KEY.value)
-
-        val attributes = try {
-            deserializeAttributes(contextJson.getJSONObject(JsonKeys.ATTRIBUTES.value))
-        } catch (_: JSONException) {
-            emptyMap()
-        }
-
-        return EvaluationContext(targetingKey, attributes)
-    }
-
-    @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-    private fun deserializeAttributes(attributesJson: JSONObject): Map<String, String> {
-        val attributes = mutableMapOf<String, String>()
-        val keys = attributesJson.keys()
-
-        while (keys.hasNext()) {
-            val key = keys.next()
-            val value = attributesJson.get(key).toString()
-            attributes[key] = value
-        }
-
-        return attributes
-    }
-
-    @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-    private fun deserializeFlags(flagsJson: JSONObject): Map<String, PrecomputedFlag> {
-        val flags = mutableMapOf<String, PrecomputedFlag>()
-        val keys = flagsJson.keys()
-
-        while (keys.hasNext()) {
-            val key = keys.next()
-            val flagJson = flagsJson.getJSONObject(key)
-            val flag = deserializePrecomputedFlag(flagJson)
-            if (flag != null) {
-                flags[key] = flag
-            }
-        }
-
-        return flags
-    }
-
-    @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-    private fun deserializePrecomputedFlag(flagJson: JSONObject): PrecomputedFlag? = try {
-        PrecomputedFlag(
-            variationType = flagJson.getString(JsonKeys.VARIATION_TYPE.value),
-            variationValue = flagJson.getString(JsonKeys.VARIATION_VALUE.value),
-            doLog = flagJson.getBoolean(JsonKeys.DO_LOG.value),
-            allocationKey = flagJson.getString(JsonKeys.ALLOCATION_KEY.value),
-            variationKey = flagJson.getString(JsonKeys.VARIATION_KEY.value),
-            extraLogging = flagJson.getJSONObject(JsonKeys.EXTRA_LOGGING.value),
-            reason = flagJson.getString(JsonKeys.REASON.value),
-            serialId = (flagJson.opt(JsonKeys.SERIAL_ID.value) as? Number)?.toLong()
-        )
-    } catch (e: JSONException) {
+    private fun deserializePrecomputedFlag(flagJson: JsonObject): PrecomputedFlag? = try {
+        PrecomputedFlagJson.read(flagJson)
+    } catch (e: JsonParseException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,

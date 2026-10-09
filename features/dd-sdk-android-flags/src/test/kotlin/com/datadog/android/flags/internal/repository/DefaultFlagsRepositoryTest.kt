@@ -12,6 +12,7 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.internal.model.FlagsStateEntry
+import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
@@ -125,6 +126,18 @@ internal class DefaultFlagsRepositoryTest {
                 reason = "TARGETING_MATCH"
             )
         )
+    }
+
+    @Test
+    fun `M store generated assignments W setFlagsAndContext() { forged assignments }`(forge: Forge) {
+        // Given
+        val assignments = forge.getForgery<PrecomputedAssignments>()
+
+        // When
+        testedRepository.setFlagsAndContext(testContext, assignments.flags, assignments.obfuscation)
+
+        // Then
+        assertThat(testedRepository.getFlagsSnapshot()).isEqualTo(assignments.flags)
     }
 
     @Test

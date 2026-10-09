@@ -13,7 +13,7 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.internal.FlagsStateManager
-import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
@@ -98,7 +98,7 @@ internal class EvaluationsManager(
      * Processes a new evaluation context by fetching flags and storing atomically.
      *
      * This method asynchronously fetches precomputed flag evaluations for the given context
-     * and atomically updates both the context and flag data in the repository. A failed or unreadable
+     * and atomically updates the context, flag data, and encoding descriptor in the repository. A failed or unreadable
      * response keeps the last known good flags and their context.
      *
      * The operation is performed on the configured executor service and will not block the
@@ -117,6 +117,8 @@ internal class EvaluationsManager(
 
         sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
             ?.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) { datadogContext ->
+                val supportsObfuscation = datadogContext.source == "android"
+                flagsRepository.setObfuscationSupported(supportsObfuscation)
                 executorService.executeSafe(
                     operationName = FETCH_AND_STORE_OPERATION_NAME,
                     internalLogger = internalLogger
@@ -132,9 +134,10 @@ internal class EvaluationsManager(
                         hadFlags && flagsRepository.getEvaluationContext() == context
                     )
                     val response = assignmentsReader.readPrecomputedFlags(context, datadogContext)
-                    val flagsMap = response?.let { precomputeMapper.map(it) }
-                    if (flagsMap != null) {
-                        installFlags(context, flagsMap, initializationCompletion, callback)
+                    val assignments = response?.let { precomputeMapper.map(it) }
+                        ?.takeIf { it.obfuscation == null || supportsObfuscation }
+                    if (assignments != null) {
+                        installFlags(context, assignments, initializationCompletion, callback)
                     } else {
                         val message = if (response == null) NETWORK_REQUEST_FAILED_MESSAGE else INVALID_RESPONSE_MESSAGE
                         internalLogger.log(
@@ -164,11 +167,11 @@ internal class EvaluationsManager(
 
     private fun installFlags(
         context: EvaluationContext,
-        flagsMap: Map<String, PrecomputedFlag>,
+        assignments: PrecomputedAssignments,
         initializationCompletion: InitializationCompletion?,
         callback: EvaluationContextCallback?
     ) {
-        flagsRepository.setFlagsAndContext(context, flagsMap) {
+        flagsRepository.setFlagsAndContext(context, assignments.flags, assignments.obfuscation) {
             val completionCallback = synchronized(initializationTerminalLock) {
                 val result = initializationCompletion?.take()?.callback
                     ?: if (initializationCompletion == null) callback else null
@@ -180,7 +183,7 @@ internal class EvaluationsManager(
         internalLogger.log(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.MAINTAINER,
-            { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
+            { "Successfully processed context ${context.targetingKey} with ${assignments.flags.size} flags" }
         )
     }
 

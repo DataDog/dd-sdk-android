@@ -44,6 +44,12 @@ createJsonModelsGenerationTask("generateFlagsModelsFromJson") {
     targetPackageName = "com.datadog.android.flags.model"
 }
 
+createJsonModelsGenerationTask("generateFlagsInternalModelsFromJson") {
+    inputDirPath = "src/main/json/internal"
+    targetPackageName = "com.datadog.android.flags.internal.model.generated"
+    internalModels.set(true)
+}
+
 // TODO RUM-18189 Support new AGP DSL
 @Suppress("DEPRECATION")
 android {
