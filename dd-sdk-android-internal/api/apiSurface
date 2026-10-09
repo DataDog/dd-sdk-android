@@ -214,7 +214,7 @@ enum com.datadog.android.internal.profiling.quota.QuotaReason
   - TIMEOUT
   - API_ERROR
 data class com.datadog.android.internal.rum.RumContext
-  constructor(String = NULL_UUID, String = NULL_UUID, Boolean = false, String? = null, String? = null, String? = null, String? = null, RumSessionState = RumSessionState.NOT_TRACKED, RumSessionStartReason = RumSessionStartReason.USER_APP_LAUNCH, RumViewType = RumViewType.NONE, String? = null, String? = null, Long = 0L, Long = 0L, Boolean = false, Boolean = false, Float = SAMPLE_ALL_RATE)
+  constructor(String, String? = null, Boolean = false, String? = null, String? = null, String? = null, String? = null, RumSessionState? = null, RumSessionStartReason? = null, RumViewType = RumViewType.NONE, String? = null, String? = null, Long = 0L, Long = 0L, Boolean = false, Boolean = false, Float = SAMPLE_ALL_RATE)
   companion object 
     const val NULL_UUID: String
     const val SAMPLE_ALL_RATE: Float

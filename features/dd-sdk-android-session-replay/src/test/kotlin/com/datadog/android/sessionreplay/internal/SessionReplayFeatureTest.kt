@@ -43,6 +43,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -86,6 +87,9 @@ import java.util.stream.Stream
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class SessionReplayFeatureTest {
+
+    @StringForgery
+    private lateinit var fakeApplicationId: String
 
     private lateinit var testedFeature: SessionReplayFeature
 
@@ -202,14 +206,20 @@ internal class SessionReplayFeatureTest {
         }.firstValue
         contextReceiver.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(viewId = UUID.randomUUID().toString()))
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(applicationId = fakeApplicationId, viewId = UUID.randomUUID().toString())
+            )
         )
         testedFeature.startRecording()
 
         // When
         contextReceiver.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(viewId = UUID.randomUUID().toString()))
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(applicationId = fakeApplicationId, viewId = UUID.randomUUID().toString())
+            )
         )
 
         // Then
@@ -233,7 +243,10 @@ internal class SessionReplayFeatureTest {
         // When
         contextReceiver.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(viewId = UUID.randomUUID().toString()))
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(applicationId = fakeApplicationId, viewId = UUID.randomUUID().toString())
+            )
         )
 
         // Then
@@ -256,7 +269,10 @@ internal class SessionReplayFeatureTest {
         // When
         contextReceiver.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(viewId = UUID.randomUUID().toString()))
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(applicationId = fakeApplicationId, viewId = UUID.randomUUID().toString())
+            )
         )
 
         // Then

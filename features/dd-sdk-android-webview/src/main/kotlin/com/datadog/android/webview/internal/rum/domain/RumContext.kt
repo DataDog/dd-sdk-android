@@ -10,8 +10,8 @@ import com.datadog.android.internal.rum.RumSessionConstants
 
 internal data class RumContext(
     val applicationId: String,
-    val sessionId: String,
-    val sessionState: String,
+    val sessionId: String?,
+    val sessionState: String?,
     val hasTimeseries: Boolean
 ) {
 

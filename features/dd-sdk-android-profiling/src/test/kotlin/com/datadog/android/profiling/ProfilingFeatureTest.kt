@@ -105,6 +105,9 @@ import java.util.concurrent.ScheduledExecutorService
 @ForgeConfiguration(Configurator::class)
 internal class ProfilingFeatureTest {
 
+    @StringForgery
+    private lateinit var fakeApplicationId: String
+
     private lateinit var testedFeature: ProfilingFeature
 
     @Mock
@@ -562,8 +565,29 @@ internal class ProfilingFeatureTest {
             fakeOtherFeatureName,
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
-                    RumContext(sessionId = UUID.randomUUID().toString(), sessionSampleRate = fakeSessionRate)
+                    RumContext(
+                        applicationId = fakeApplicationId,
+                        sessionId = UUID.randomUUID().toString(),
+                        sessionSampleRate = fakeSessionRate
+                    )
             )
+        )
+
+        // Then
+        assertThat(testedFeature.lastSeenRumSessionId).isNull()
+    }
+
+    @Test
+    fun `M ignore context update W onContextUpdate() {application-only RUM context}`(
+        @StringForgery fakeApplicationId: String
+    ) {
+        // Given
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(applicationId = fakeApplicationId))
         )
 
         // Then
@@ -583,6 +607,7 @@ internal class ProfilingFeatureTest {
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
                     RumContext(
+                        applicationId = fakeApplicationId,
                         sessionId = RumSessionConstants.EMPTY_RUM_SESSION_ID,
                         sessionSampleRate = fakeSessionRate
                     )
@@ -604,7 +629,10 @@ internal class ProfilingFeatureTest {
         // When
         testedFeature.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(sessionId = sessionId, sessionSampleRate = 0f))
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(applicationId = fakeApplicationId, sessionId = sessionId, sessionSampleRate = 0f)
+            )
         )
 
         // Then
@@ -1888,7 +1916,14 @@ internal class ProfilingFeatureTest {
         // When
         testedFeature.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(sessionId = fakeNewSessionId, sessionSampleRate = 100f))
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(
+                        applicationId = fakeApplicationId,
+                        sessionId = fakeNewSessionId,
+                        sessionSampleRate = 100f
+                    )
+            )
         )
 
         // Then
@@ -2306,7 +2341,12 @@ internal class ProfilingFeatureTest {
             Feature.RUM_FEATURE_NAME,
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
-                    RumContext(sessionId = sessionId, sessionSampleRate = sampleRate, sessionState = sessionState)
+                    RumContext(
+                        applicationId = fakeApplicationId,
+                        sessionId = sessionId,
+                        sessionSampleRate = sampleRate,
+                        sessionState = sessionState
+                    )
             )
         )
     }

@@ -51,13 +51,13 @@ internal class VitalOperationStepEventAssert(
             .containsExactlyInAnyOrderEntriesOf(expected)
     }
 
-    fun hasStartReason(reason: RumSessionStartReason) = apply {
+    fun hasStartReason(reason: RumSessionStartReason?) = apply {
         assertThat(actual.dd.session?.sessionPrecondition)
             .overridingErrorMessage(
-                "Expected event to have a session sessionPrecondition of ${reason.name} " +
+                "Expected event to have a session sessionPrecondition of ${reason?.name} " +
                     "but was ${actual.dd.session?.sessionPrecondition}"
             )
-            .isEqualTo(reason.toVitalOperationStepSessionPrecondition())
+            .isEqualTo(reason?.toVitalOperationStepSessionPrecondition())
     }
 
     fun hasSampleRate(sampleRate: Float?) = apply {
@@ -69,7 +69,7 @@ internal class VitalOperationStepEventAssert(
             .isEqualTo(sampleRate)
     }
 
-    fun hasSessionId(expected: String) = apply {
+    fun hasSessionId(expected: String?) = apply {
         assertThat(actual.session.id)
             .overridingErrorMessage(
                 "Expected event to have session.id $expected but was ${actual.session.id}"

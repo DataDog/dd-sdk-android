@@ -204,7 +204,7 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
-    fun hasSessionId(expected: String): LongTaskEventAssert {
+    fun hasSessionId(expected: String?): LongTaskEventAssert {
         assertThat(actual.session.id)
             .overridingErrorMessage(
                 "Expected event to have session.id $expected but was ${actual.session.id}"
@@ -282,13 +282,13 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
-    fun hasStartReason(reason: RumSessionStartReason): LongTaskEventAssert {
+    fun hasStartReason(reason: RumSessionStartReason?): LongTaskEventAssert {
         assertThat(actual.dd.session?.sessionPrecondition)
             .overridingErrorMessage(
-                "Expected event to have a session sessionPrecondition of ${reason.name} " +
+                "Expected event to have a session sessionPrecondition of ${reason?.name} " +
                     "but was ${actual.dd.session?.sessionPrecondition}"
             )
-            .isEqualTo(reason.toLongTaskSessionPrecondition())
+            .isEqualTo(reason?.toLongTaskSessionPrecondition())
         return this
     }
 

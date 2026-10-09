@@ -28,7 +28,8 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verifyNoInteractions
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -86,38 +87,69 @@ internal class WebViewRumEventContextProviderTest {
     }
 
     @ParameterizedTest
-    @EnumSource(InvalidContext::class)
-    fun `M return null and warn once W getRumContext {invalid context}`(invalidContext: InvalidContext) {
+    @EnumSource(UnavailableContext::class)
+    fun `M recover correlation W getRumContext {context becomes available again}`(
+        unavailableContext: UnavailableContext,
+        @Forgery fakeSessionState: RumSessionState
+    ) {
         // Given
-        val fakeRumContext = when (invalidContext) {
-            InvalidContext.NO_SNAPSHOT -> null
-            InvalidContext.NO_APPLICATION -> RumContext(sessionId = fakeSessionId)
-            InvalidContext.NO_SESSION -> RumContext(applicationId = fakeApplicationId)
-        }
-        val fakeContext = fakeDatadogContext.copy(
+        val originalRumContext = RumContext(
+            applicationId = fakeApplicationId,
+            sessionId = fakeSessionId,
+            sessionState = fakeSessionState
+        )
+        val originalContext = fakeDatadogContext.copy(
             featuresContext = mapOf(
-                Feature.RUM_FEATURE_NAME to mapOf(FeatureContextKeys.RUM_CONTEXT to fakeRumContext)
+                Feature.RUM_FEATURE_NAME to mapOf(FeatureContextKeys.RUM_CONTEXT to originalRumContext)
             )
         )
+        val partialRumContext = when (unavailableContext) {
+            UnavailableContext.NO_SNAPSHOT -> null
+            UnavailableContext.ZERO_APPLICATION -> originalRumContext.copy(applicationId = RumContext.NULL_UUID)
+            UnavailableContext.APPLICATION_ONLY -> RumContext(applicationId = fakeApplicationId)
+            UnavailableContext.NO_STATE -> originalRumContext.copy(sessionState = null)
+        }
+        val partialContext = originalContext.copy(
+            featuresContext = mapOf(
+                Feature.RUM_FEATURE_NAME to mapOf(FeatureContextKeys.RUM_CONTEXT to partialRumContext)
+            )
+        )
+        val original = testedContextProvider.getRumContext(originalContext)
 
         // When
-        val firstContext = testedContextProvider.getRumContext(fakeContext)
-        val secondContext = testedContextProvider.getRumContext(fakeContext)
+        val unavailable = testedContextProvider.getRumContext(partialContext)
+        val repeated = testedContextProvider.getRumContext(partialContext)
+        val restored = testedContextProvider.getRumContext(originalContext)
 
         // Then
-        assertThat(firstContext).isNull()
-        assertThat(secondContext).isNull()
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
-        )
-        verifyNoMoreInteractions(mockInternalLogger)
+        assertThat(restored).isEqualTo(original)
+        assertThat(repeated).isEqualTo(unavailable)
+        if (unavailableContext == UnavailableContext.NO_SNAPSHOT ||
+            unavailableContext == UnavailableContext.ZERO_APPLICATION
+        ) {
+            assertThat(unavailable).isNull()
+            mockInternalLogger.verifyLog(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE,
+                onlyOnce = true,
+                mode = times(2)
+            )
+        } else {
+            val context = checkNotNull(unavailable)
+            assertThat(context.applicationId).isEqualTo(fakeApplicationId)
+            assertThat(context.sessionId).isEqualTo(
+                fakeSessionId.takeIf { unavailableContext == UnavailableContext.NO_STATE }
+            )
+            assertThat(context.sessionState).isNull()
+            verifyNoInteractions(mockInternalLogger)
+        }
     }
 
-    enum class InvalidContext {
+    enum class UnavailableContext {
         NO_SNAPSHOT,
-        NO_APPLICATION,
-        NO_SESSION
+        ZERO_APPLICATION,
+        APPLICATION_ONLY,
+        NO_STATE
     }
 }

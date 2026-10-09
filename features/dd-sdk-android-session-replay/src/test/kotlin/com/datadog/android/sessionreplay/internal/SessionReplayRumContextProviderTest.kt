@@ -24,6 +24,9 @@ import org.junit.jupiter.api.extension.ExtendWith
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class SessionReplayRumContextProviderTest {
 
+    @StringForgery
+    private lateinit var fakeApplicationId: String
+
     @Test
     fun `M preserve snapshot and notify each new view W onContextUpdate {core reuses mutable map}`(
         @StringForgery fakeFirstViewId: String,
@@ -36,13 +39,14 @@ internal class SessionReplayRumContextProviderTest {
             fakeNotifications.add(testedProvider.getRumContext().viewId)
         }
         val fakeContext = mutableMapOf<String, Any?>(
-            FeatureContextKeys.RUM_CONTEXT to RumContext(viewId = fakeFirstViewId)
+            FeatureContextKeys.RUM_CONTEXT to RumContext(applicationId = fakeApplicationId, viewId = fakeFirstViewId)
         )
         testedProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
 
         // When
         fakeContext.clear()
-        fakeContext[FeatureContextKeys.RUM_CONTEXT] = RumContext(viewId = fakeSecondViewId)
+        fakeContext[FeatureContextKeys.RUM_CONTEXT] =
+            RumContext(applicationId = fakeApplicationId, viewId = fakeSecondViewId)
 
         // Then
         assertThat(testedProvider.getRumContext().viewId).isEqualTo(fakeFirstViewId)
@@ -61,7 +65,10 @@ internal class SessionReplayRumContextProviderTest {
         // When
         testedProvider.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(viewId = RumContext.NULL_UUID))
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(applicationId = fakeApplicationId, viewId = RumContext.NULL_UUID)
+            )
         )
         testedProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, emptyMap())
 
@@ -101,7 +108,9 @@ internal class SessionReplayRumContextProviderTest {
     fun `M ignore unrelated feature W onContextUpdate`(@StringForgery fakeFeatureName: String) {
         // Given
         val testedProvider = SessionReplayRumContextProvider()
-        val fakeContext = mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(viewId = fakeFeatureName))
+        val fakeContext = mapOf(
+            FeatureContextKeys.RUM_CONTEXT to RumContext(applicationId = fakeApplicationId, viewId = fakeFeatureName)
+        )
 
         // When
         testedProvider.onContextUpdate(fakeFeatureName, fakeContext)
@@ -118,7 +127,7 @@ internal class SessionReplayRumContextProviderTest {
         val testedProvider = SessionReplayRumContextProvider()
         testedProvider.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(viewId = fakeViewId))
+            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(applicationId = fakeApplicationId, viewId = fakeViewId))
         )
 
         // When
@@ -128,5 +137,24 @@ internal class SessionReplayRumContextProviderTest {
         assertThat(testedProvider.getRumContext()).isEqualTo(
             SessionReplayRumContext(RumContext.NULL_UUID, RumContext.NULL_UUID, RumContext.NULL_UUID, 0L)
         )
+    }
+
+    @Test
+    fun `M retain application without recording context W getRumContext {no session}`() {
+        // Given
+        val testedProvider = SessionReplayRumContextProvider()
+        testedProvider.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(applicationId = fakeApplicationId))
+        )
+
+        // When
+        val context = testedProvider.getRumContext()
+
+        // Then
+        assertThat(context.applicationId).isEqualTo(fakeApplicationId)
+        assertThat(context.sessionId).isEqualTo(RumContext.NULL_UUID)
+        assertThat(context.viewId).isEqualTo(RumContext.NULL_UUID)
+        assertThat(context.isValid()).isFalse()
     }
 }

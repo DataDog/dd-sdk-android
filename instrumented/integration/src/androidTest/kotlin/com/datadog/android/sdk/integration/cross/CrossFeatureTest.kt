@@ -37,7 +37,6 @@ import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.tools.unit.ConditionWatcher
-import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
@@ -461,7 +460,7 @@ class CrossFeatureTest {
                     "Expected log event to not have" +
                         " RUM View ID, but was $actualViewId."
                 )
-                .isInstanceOf(JsonNull::class.java)
+                .isNull()
             return this
         }
 
@@ -483,7 +482,7 @@ class CrossFeatureTest {
                     "Expected log event to not have" +
                         " RUM Action ID, but was $actualActionId."
                 )
-                .isInstanceOf(JsonNull::class.java)
+                .isNull()
             return this
         }
 

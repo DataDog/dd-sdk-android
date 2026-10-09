@@ -20,6 +20,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
+import com.google.gson.JsonPrimitive
 
 /**
  *  Maps a batch to a Pair<MobileSegment, SerializedMobileSegment> for uploading.
@@ -163,10 +164,15 @@ internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogge
     }
 
     private fun JsonObject.rumContext(): SessionReplayRumContext? {
-        val applicationId = get(EnrichedRecord.APPLICATION_ID_KEY)?.asString
-        val sessionId = get(EnrichedRecord.SESSION_ID_KEY)?.asString
-        val viewId = get(EnrichedRecord.VIEW_ID_KEY)?.asString
-        if (applicationId == null || sessionId == null || viewId == null) {
+        val applicationId = contextId(EnrichedRecord.APPLICATION_ID_KEY)
+        val sessionId = contextId(EnrichedRecord.SESSION_ID_KEY)
+        val viewId = contextId(EnrichedRecord.VIEW_ID_KEY)
+        val context = if (applicationId != null && sessionId != null && viewId != null) {
+            SessionReplayRumContext(applicationId, sessionId, viewId)
+        } else {
+            null
+        }
+        if (context == null || context.isNotValid()) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.TELEMETRY,
@@ -176,11 +182,12 @@ internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogge
             )
             return null
         }
-        return SessionReplayRumContext(
-            applicationId = applicationId,
-            sessionId = sessionId,
-            viewId = viewId
-        )
+        return context
+    }
+
+    private fun JsonObject.contextId(key: String): String? {
+        val value = get(key) as? JsonPrimitive ?: return null
+        return if (value.isString) value.asString.takeUnless { it.isBlank() } else null
     }
 
     // endregion
@@ -196,6 +203,6 @@ internal class BatchesToSegmentsMapper(private val internalLogger: InternalLogge
         internal const val UNABLE_TO_DESERIALIZE_ENRICHED_RECORD_ERROR_MESSAGE =
             "SR BatchesToSegmentMapper: unable to deserialize EnrichedRecord"
         internal const val ILLEGAL_STATE_ENRICHED_RECORD_ERROR_MESSAGE =
-            "SR BatchesToSegmentMapper: Enriched record was missing the context information"
+            "SR BatchesToSegmentMapper: Enriched record contained missing or invalid context information"
     }
 }

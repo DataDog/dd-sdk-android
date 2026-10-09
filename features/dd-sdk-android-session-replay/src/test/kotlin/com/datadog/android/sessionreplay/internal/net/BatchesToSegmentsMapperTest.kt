@@ -13,6 +13,9 @@ import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.utils.verifyLog
+import com.google.gson.JsonArray
+import com.google.gson.JsonNull
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.Forge
@@ -25,6 +28,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -317,272 +323,57 @@ internal class BatchesToSegmentsMapperTest {
         assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
     }
 
-    @Test
-    fun `M return empty list W map { enriched record with missing application id key }`(
+    @ParameterizedTest
+    @MethodSource("invalidContextParameters")
+    fun `M drop invalid context W map {all enriched records invalid}`(
+        contextKey: String,
+        invalidValue: InvalidContextValue,
+        @Forgery fakeEnrichedRecord: EnrichedRecord,
         forge: Forge
     ) {
         // Given
-        val rumContext: SessionReplayRumContext = forge.getForgery()
-        val fakeRecordsSize = forge.anInt(min = 10, max = 20)
-        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
-            forge.getForgery()
-        }
-        val fakeEnrichedRecords = fakeRecords
-            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
-            .map {
-                EnrichedRecord(
-                    rumContext.applicationId,
-                    rumContext.sessionId,
-                    rumContext.sessionId,
-                    it
-                )
-            }
-        val fakeBatchData = fakeEnrichedRecords
-            .asSequence()
-            .map { JsonParser.parseString(it.toJson()).asJsonObject }
-            .onEach {
-                it.remove(EnrichedRecord.APPLICATION_ID_KEY)
-            }
-            .map { it.toString().toByteArray() }
-            .toList()
+        val fakeBrokenRecord = fakeEnrichedRecord.withInvalidContext(contextKey, invalidValue, forge)
+
         // When
-        assertThat(testedMapper.map(datadogContext, fakeBatchData)).isEmpty()
+        val mappedSegments = testedMapper.map(datadogContext, listOf(fakeBrokenRecord))
+
+        // Then
+        assertThat(mappedSegments).isEmpty()
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
             BatchesToSegmentsMapper.ILLEGAL_STATE_ENRICHED_RECORD_ERROR_MESSAGE,
-            onlyOnce = true,
-            mode = times(fakeBatchData.size)
+            onlyOnce = true
         )
     }
 
-    @Test
-    fun `M drop the broken records W map { some enriched records with missing application key }`(
+    @ParameterizedTest
+    @MethodSource("invalidContextParameters")
+    fun `M preserve valid records W map {mixed valid and invalid contexts}`(
+        contextKey: String,
+        invalidValue: InvalidContextValue,
+        @Forgery fakeEnrichedRecord: EnrichedRecord,
         forge: Forge
     ) {
         // Given
-        val rumContext: SessionReplayRumContext = forge.getForgery()
-        val fakeRecordsSize = forge.anInt(min = 20, max = 50)
-        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
-            forge.getForgery()
-        }
-        val fakeEnrichedRecords = fakeRecords
-            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
-            .map {
-                EnrichedRecord(
-                    rumContext.applicationId,
-                    rumContext.sessionId,
-                    rumContext.sessionId,
-                    it
-                )
-            }
-        var removedRecords = 0
-        val fakeBatchData = fakeEnrichedRecords
-            .asSequence()
-            .map { JsonParser.parseString(it.toJson()).asJsonObject }
-            .mapIndexed { index, jsonObject ->
-                if (index == 0) {
-                    val records = jsonObject.get(EnrichedRecord.RECORDS_KEY)
-                        .asJsonArray
-                    removedRecords = records.size()
-                    jsonObject.remove(EnrichedRecord.APPLICATION_ID_KEY)
-                    jsonObject
-                } else {
-                    jsonObject
-                }
-            }
-            .map { it.toString().toByteArray() }
-            .toList()
+        val fakeSortedRecord = fakeEnrichedRecord.copy(records = fakeEnrichedRecord.records.sortedBy { it.timestamp() })
+        val fakeBrokenRecord = fakeSortedRecord.withInvalidContext(contextKey, invalidValue, forge)
+        val fakeValidRecord = fakeSortedRecord.toJson().toByteArray()
+        val fakeExpectedSegment = fakeSortedRecord.toSegment()
 
         // When
-        val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
-        assertThat(mappedSegments.size).isEqualTo(1)
-        val expectedRecordsSize = fakeRecords.size - removedRecords
-        assertThat(mappedSegments[0].first.recordsCount.toInt()).isEqualTo(expectedRecordsSize)
-        val recordsAsJsonArray = mappedSegments[0].second.getAsJsonArray(
-            BatchesToSegmentsMapper.RECORDS_KEY
-        )
-        assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
-    }
+        val mappedSegments = testedMapper.map(datadogContext, listOf(fakeBrokenRecord, fakeValidRecord))
 
-    @Test
-    fun `M return empty list W map { enriched records with missing session id key }`(
-        forge: Forge
-    ) {
-        // Given
-        val rumContext: SessionReplayRumContext = forge.getForgery()
-        val fakeRecordsSize = forge.anInt(min = 10, max = 20)
-        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
-            forge.getForgery()
-        }
-        val fakeEnrichedRecords = fakeRecords
-            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
-            .map {
-                EnrichedRecord(
-                    rumContext.applicationId,
-                    rumContext.sessionId,
-                    rumContext.sessionId,
-                    it
-                )
-            }
-        val fakeBatchData = fakeEnrichedRecords
-            .asSequence()
-            .map { JsonParser.parseString(it.toJson()).asJsonObject }
-            .onEach {
-                it.remove(EnrichedRecord.SESSION_ID_KEY)
-            }
-            .map { it.toString().toByteArray() }
-            .toList()
-
-        // When
-        assertThat(testedMapper.map(datadogContext, fakeBatchData)).isEmpty()
+        // Then
+        assertThat(mappedSegments).hasSize(1)
+        assertThat(mappedSegments.single().first).isEqualTo(fakeExpectedSegment.copy(records = emptyList()))
+        assertThat(mappedSegments.single().second.toString()).isEqualTo(fakeExpectedSegment.toJson().toString())
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
             BatchesToSegmentsMapper.ILLEGAL_STATE_ENRICHED_RECORD_ERROR_MESSAGE,
-            onlyOnce = true,
-            mode = times(fakeBatchData.size)
+            onlyOnce = true
         )
-    }
-
-    @Test
-    fun `M drop the broken records W map { some enriched records with missing session key }`(
-        forge: Forge
-    ) {
-        // Given
-        val rumContext: SessionReplayRumContext = forge.getForgery()
-        val fakeRecordsSize = forge.anInt(min = 20, max = 50)
-        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
-            forge.getForgery()
-        }
-        val fakeEnrichedRecords = fakeRecords
-            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
-            .map {
-                EnrichedRecord(
-                    rumContext.applicationId,
-                    rumContext.sessionId,
-                    rumContext.sessionId,
-                    it
-                )
-            }
-        var removedRecords = 0
-        val fakeBatchData = fakeEnrichedRecords
-            .asSequence()
-            .map { JsonParser.parseString(it.toJson()).asJsonObject }
-            .mapIndexed { index, jsonObject ->
-                if (index == 0) {
-                    val records = jsonObject.get(EnrichedRecord.RECORDS_KEY)
-                        .asJsonArray
-                    removedRecords = records.size()
-                    jsonObject.remove(EnrichedRecord.SESSION_ID_KEY)
-                    jsonObject
-                } else {
-                    jsonObject
-                }
-            }
-            .map { it.toString().toByteArray() }
-            .toList()
-
-        // When
-        val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
-
-        // Then
-        val expectedRecordsSize = fakeRecords.size - removedRecords
-        assertThat(mappedSegments.size).isEqualTo(1)
-        assertThat(mappedSegments[0].first.recordsCount.toInt()).isEqualTo(expectedRecordsSize)
-        val recordsAsJsonArray = mappedSegments[0].second
-            .getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
-        assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
-    }
-
-    @Test
-    fun `M return empty list W map {  enriched records with missing view id key }`(
-        forge: Forge
-    ) {
-        // Given
-        val rumContext: SessionReplayRumContext = forge.getForgery()
-        val fakeRecordsSize = forge.anInt(min = 10, max = 20)
-        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
-            forge.getForgery()
-        }
-        val fakeEnrichedRecords = fakeRecords
-            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
-            .map {
-                EnrichedRecord(
-                    rumContext.applicationId,
-                    rumContext.sessionId,
-                    rumContext.sessionId,
-                    it
-                )
-            }
-        val fakeBatchData = fakeEnrichedRecords
-            .asSequence()
-            .map { JsonParser.parseString(it.toJson()).asJsonObject }
-            .onEach {
-                it.remove(EnrichedRecord.VIEW_ID_KEY)
-            }
-            .map { it.toString().toByteArray() }
-            .toList()
-
-        // Then
-        assertThat(testedMapper.map(datadogContext, fakeBatchData)).isEmpty()
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.TELEMETRY,
-            BatchesToSegmentsMapper.ILLEGAL_STATE_ENRICHED_RECORD_ERROR_MESSAGE,
-            onlyOnce = true,
-            mode = times(fakeBatchData.size)
-        )
-    }
-
-    @Test
-    fun `M drop the broken records W map { some enriched records with missing view id key }`(
-        forge: Forge
-    ) {
-        // Given
-        val rumContext: SessionReplayRumContext = forge.getForgery()
-        val fakeRecordsSize = forge.anInt(min = 20, max = 50)
-        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
-            forge.getForgery()
-        }
-        val fakeEnrichedRecords = fakeRecords
-            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
-            .map {
-                EnrichedRecord(
-                    rumContext.applicationId,
-                    rumContext.sessionId,
-                    rumContext.sessionId,
-                    it
-                )
-            }
-        var removedRecords = 0
-        val fakeBatchData = fakeEnrichedRecords
-            .asSequence()
-            .map { JsonParser.parseString(it.toJson()).asJsonObject }
-            .mapIndexed { index, jsonObject ->
-                if (index == 0) {
-                    val records = jsonObject.get(EnrichedRecord.RECORDS_KEY)
-                        .asJsonArray
-                    removedRecords = records.size()
-                    jsonObject.remove(EnrichedRecord.VIEW_ID_KEY)
-                    jsonObject
-                } else {
-                    jsonObject
-                }
-            }
-            .map { it.toString().toByteArray() }
-            .toList()
-
-        // When
-        val mappedSegments = testedMapper.map(datadogContext, fakeBatchData)
-
-        // Then
-        val expectedRecordsSize = fakeRecords.size - removedRecords
-        assertThat(mappedSegments.size).isEqualTo(1)
-        assertThat(mappedSegments[0].first.recordsCount.toInt()).isEqualTo(expectedRecordsSize)
-        val recordsAsJsonArray = mappedSegments[0].second
-            .getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
-        assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
     }
 
     @Test
@@ -692,6 +483,26 @@ internal class BatchesToSegmentsMapperTest {
 
     // region Internal
 
+    private fun EnrichedRecord.withInvalidContext(
+        contextKey: String,
+        invalidValue: InvalidContextValue,
+        forge: Forge
+    ): ByteArray {
+        val json = JsonParser.parseString(toJson()).asJsonObject
+        when (invalidValue) {
+            InvalidContextValue.MISSING -> json.remove(contextKey)
+            InvalidContextValue.NULL -> json.add(contextKey, JsonNull.INSTANCE)
+            InvalidContextValue.NUMBER -> json.addProperty(contextKey, forge.aLong())
+            InvalidContextValue.BOOLEAN -> json.addProperty(contextKey, forge.aBool())
+            InvalidContextValue.OBJECT -> json.add(contextKey, JsonObject())
+            InvalidContextValue.ARRAY -> json.add(contextKey, JsonArray().apply { add(json.get(contextKey)) })
+            InvalidContextValue.EMPTY -> json.addProperty(contextKey, "")
+            InvalidContextValue.BLANK -> json.addProperty(contextKey, " ")
+            InvalidContextValue.ZERO_UUID -> json.addProperty(contextKey, "00000000-0000-0000-0000-000000000000")
+        }
+        return json.toString().toByteArray()
+    }
+
     private fun EnrichedRecord.toSegment(): MobileSegment {
         return MobileSegment(
             application = MobileSegment.Application(applicationId),
@@ -748,4 +559,27 @@ internal class BatchesToSegmentsMapperTest {
     }
 
     // endregion
+
+    enum class InvalidContextValue {
+        MISSING,
+        NULL,
+        NUMBER,
+        BOOLEAN,
+        OBJECT,
+        ARRAY,
+        EMPTY,
+        BLANK,
+        ZERO_UUID
+    }
+
+    companion object {
+        @JvmStatic
+        fun invalidContextParameters(): List<Arguments> = listOf(
+            EnrichedRecord.APPLICATION_ID_KEY,
+            EnrichedRecord.SESSION_ID_KEY,
+            EnrichedRecord.VIEW_ID_KEY
+        ).flatMap { contextKey ->
+            InvalidContextValue.entries.map { Arguments.of(contextKey, it) }
+        }
+    }
 }

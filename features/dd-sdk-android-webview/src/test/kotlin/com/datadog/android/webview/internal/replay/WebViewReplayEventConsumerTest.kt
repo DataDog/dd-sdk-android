@@ -31,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -233,12 +234,13 @@ internal class WebViewReplayEventConsumerTest {
         verifyNoInteractions(mockDataWriter)
     }
 
-    @Test
-    fun `M do nothing W consume() { rumContext not there }`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M do nothing W consume() {session absent}`(hasApplication: Boolean) {
         // Given
         whenever(
             mockRumContextProvider.getRumContext(fakeDatadogContext)
-        ) doReturn null
+        ) doReturn if (hasApplication) fakeRumContext.copy(sessionId = null) else null
 
         // When
         testedConsumer.consume(fakeValidBrowserEvent)

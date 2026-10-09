@@ -26,6 +26,8 @@ import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.rum.RumViewType
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.tests.stub.StubTimeProvider
+import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.configuration.ViewEventWriteConfig
@@ -55,6 +57,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -270,6 +273,58 @@ internal class RumSessionScopeTest {
         initializeTestedScope()
     }
 
+    @Test
+    fun `M complete startup resource W stopResource() {before first session}`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeUrl: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeStartResource = RumRawEvent.StartResource(
+            fakeKey,
+            fakeUrl,
+            forge.aValueFrom(RumResourceMethod::class.java),
+            emptyMap(),
+            currentFakeTime()
+        )
+        val fakeStopResource = RumRawEvent.StopResource(
+            fakeKey,
+            forge.aLong(min = 200L, max = 300L),
+            null,
+            forge.aValueFrom(RumResourceKind::class.java),
+            emptyMap(),
+            currentFakeTime()
+        )
+        initializeTestedScope(withMockChildScope = false, backgroundTrackingEnabled = false)
+        testedScope.handleEvent(
+            RumRawEvent.ApplicationStarted(forge.aLong(min = 0L, max = TimeUnit.SECONDS.toNanos(1)), currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        val fakeView = checkNotNull(testedScope.childScope).childrenScopes.single()
+        assertThat(testedScope.sessionId).isNull()
+        testedScope.handleEvent(
+            fakeStartResource,
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        assertThat(fakeView.activeResourceScopes).containsKey(fakeStartResource.key)
+
+        // When
+        testedScope.handleEvent(
+            fakeStopResource,
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        assertThat(fakeView.activeResourceScopes).isEmpty()
+        verifyNoInteractions(mockWriter)
+    }
+
     // region childScope
 
     @Test
@@ -462,9 +517,9 @@ internal class RumSessionScopeTest {
         val context = testedScope.getRumContext()
 
         // Then
-        assertThat(context.sessionId).isEqualTo(RumContext.NULL_UUID)
-        assertThat(context.sessionState).isEqualTo(RumSessionState.NOT_TRACKED)
-        assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.USER_APP_LAUNCH)
+        assertThat(context.sessionId).isNull()
+        assertThat(context.sessionState).isNull()
+        assertThat(context.sessionStartReason).isNull()
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
     }
@@ -484,7 +539,7 @@ internal class RumSessionScopeTest {
 
         // Then
         assertThat(result).isSameAs(testedScope)
-        assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionId).isNotNull()
         assertThat(context.sessionState).isEqualTo(RumSessionState.TRACKED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.USER_APP_LAUNCH)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
@@ -506,7 +561,7 @@ internal class RumSessionScopeTest {
 
         // Then
         assertThat(result).isSameAs(testedScope)
-        assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionId).isNotNull()
         assertThat(context.sessionState).isEqualTo(RumSessionState.NOT_TRACKED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.USER_APP_LAUNCH)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
@@ -595,7 +650,7 @@ internal class RumSessionScopeTest {
 
         // Then
         assertThat(result).isSameAs(testedScope)
-        assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionId).isNotNull()
         assertThat(context.sessionState).isEqualTo(RumSessionState.TRACKED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.USER_APP_LAUNCH)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
@@ -621,7 +676,7 @@ internal class RumSessionScopeTest {
 
         // Then
         assertThat(result).isSameAs(testedScope)
-        assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionId).isNotNull()
         assertThat(context.sessionState).isEqualTo(RumSessionState.TRACKED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.BACKGROUND_LAUNCH)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
@@ -647,9 +702,9 @@ internal class RumSessionScopeTest {
 
         // Then
         assertThat(result).isSameAs(testedScope)
-        assertThat(context.sessionId).isEqualTo(RumContext.NULL_UUID)
-        assertThat(context.sessionState).isEqualTo(RumSessionState.EXPIRED)
-        assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.USER_APP_LAUNCH)
+        assertThat(context.sessionId).isNull()
+        assertThat(context.sessionState).isNull()
+        assertThat(context.sessionStartReason).isNull()
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
     }
@@ -773,7 +828,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
             .isNotEqualTo(initialContext.sessionId)
-            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotNull()
         assertThat(context.sessionState).isEqualTo(RumSessionState.TRACKED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.INACTIVITY_TIMEOUT)
     }
@@ -796,7 +851,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
             .isNotEqualTo(initialContext.sessionId)
-            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotNull()
         assertThat(context.sessionState).isEqualTo(RumSessionState.TRACKED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.INACTIVITY_TIMEOUT)
     }
@@ -820,7 +875,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
             .isNotEqualTo(initialContext.sessionId)
-            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotNull()
         assertThat(context.sessionState).isEqualTo(RumSessionState.TRACKED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.BACKGROUND_LAUNCH)
     }
@@ -843,7 +898,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
             .isNotEqualTo(initialContext.sessionId)
-            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotNull()
         assertThat(context.sessionState).isEqualTo(RumSessionState.TRACKED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.BACKGROUND_LAUNCH)
     }
@@ -923,7 +978,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
             .isNotEqualTo(initialContext.sessionId)
-            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotNull()
         assertThat(context.sessionState).isEqualTo(RumSessionState.TRACKED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.MAX_DURATION)
     }
@@ -965,7 +1020,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
             .isNotEqualTo(initialContext.sessionId)
-            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotNull()
         assertThat(context.sessionState).isEqualTo(RumSessionState.TRACKED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.MAX_DURATION)
     }
@@ -1007,7 +1062,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
             .isNotEqualTo(initialContext.sessionId)
-            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotNull()
         assertThat(context.sessionState).isEqualTo(RumSessionState.TRACKED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.MAX_DURATION)
     }
@@ -1061,7 +1116,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
             .isNotEqualTo(initialContext.sessionId)
-            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotNull()
         assertThat(context.sessionState).isEqualTo(RumSessionState.TRACKED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.MAX_DURATION)
     }
@@ -1097,7 +1152,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
             .isNotEqualTo(initialContext.sessionId)
-            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotNull()
         assertThat(context.sessionState).isEqualTo(RumSessionState.TRACKED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.INACTIVITY_TIMEOUT)
     }
@@ -1124,7 +1179,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
             .isNotEqualTo(initialContext.sessionId)
-            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotNull()
         assertThat(context.sessionState).isEqualTo(RumSessionState.TRACKED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.EXPLICIT_STOP)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
@@ -1212,11 +1267,11 @@ internal class RumSessionScopeTest {
         // Then
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
-            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotNull()
             .isNotEqualTo(initialContext.sessionId)
         verify(mockChildScope).renewViewScopes(eventTime = newEvent.eventTime)
-        verify(mockSessionListener).onSessionStarted(initialContext.sessionId, false)
-        verify(mockSessionListener).onSessionStarted(context.sessionId, false)
+        verify(mockSessionListener).onSessionStarted(checkNotNull(initialContext.sessionId), false)
+        verify(mockSessionListener).onSessionStarted(checkNotNull(context.sessionId), false)
     }
 
     @Test
@@ -1236,11 +1291,11 @@ internal class RumSessionScopeTest {
         // Then
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
-            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotNull()
             .isNotEqualTo(initialContext.sessionId)
         verify(mockChildScope).renewViewScopes(eventTime = newEvent.eventTime)
-        verify(mockSessionListener).onSessionStarted(initialContext.sessionId, false)
-        verify(mockSessionListener).onSessionStarted(context.sessionId, false)
+        verify(mockSessionListener).onSessionStarted(checkNotNull(initialContext.sessionId), false)
+        verify(mockSessionListener).onSessionStarted(checkNotNull(context.sessionId), false)
     }
 
     @Test
@@ -1260,11 +1315,11 @@ internal class RumSessionScopeTest {
         // Then
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
-            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotNull()
             .isNotEqualTo(initialContext.sessionId)
         verify(mockChildScope).renewViewScopes(eventTime = resetEvent.eventTime)
-        verify(mockSessionListener).onSessionStarted(initialContext.sessionId, false)
-        verify(mockSessionListener).onSessionStarted(context.sessionId, false)
+        verify(mockSessionListener).onSessionStarted(checkNotNull(initialContext.sessionId), false)
+        verify(mockSessionListener).onSessionStarted(checkNotNull(context.sessionId), false)
     }
 
     @Test
@@ -1291,11 +1346,11 @@ internal class RumSessionScopeTest {
         // Then
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
-            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotNull()
             .isNotEqualTo(initialContext.sessionId)
         verify(mockChildScope).renewViewScopes(eventTime = newEvent.eventTime)
-        verify(mockSessionListener).onSessionStarted(initialContext.sessionId, true)
-        verify(mockSessionListener).onSessionStarted(context.sessionId, true)
+        verify(mockSessionListener).onSessionStarted(checkNotNull(initialContext.sessionId), true)
+        verify(mockSessionListener).onSessionStarted(checkNotNull(context.sessionId), true)
     }
 
     @Test
@@ -1317,11 +1372,11 @@ internal class RumSessionScopeTest {
         // Then
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
-            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotNull()
             .isNotEqualTo(initialContext.sessionId)
         verify(mockChildScope).renewViewScopes(eventTime = newEvent.eventTime)
-        verify(mockSessionListener).onSessionStarted(initialContext.sessionId, true)
-        verify(mockSessionListener).onSessionStarted(context.sessionId, true)
+        verify(mockSessionListener).onSessionStarted(checkNotNull(initialContext.sessionId), true)
+        verify(mockSessionListener).onSessionStarted(checkNotNull(context.sessionId), true)
     }
 
     @Test
@@ -1348,10 +1403,10 @@ internal class RumSessionScopeTest {
         // Then
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
-            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotNull()
             .isNotEqualTo(initialContext.sessionId)
-        verify(mockSessionListener).onSessionStarted(initialContext.sessionId, true)
-        verify(mockSessionListener).onSessionStarted(context.sessionId, true)
+        verify(mockSessionListener).onSessionStarted(checkNotNull(initialContext.sessionId), true)
+        verify(mockSessionListener).onSessionStarted(checkNotNull(context.sessionId), true)
     }
 
     // endregion
@@ -1397,52 +1452,18 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `M notify Session Replay feature W new non-interaction event received`(
-        forge: Forge
+    fun `M not notify Session Replay W handleEvent() {session absent}`(
+        @Forgery fakeEvent: RumRawEvent.AddError
     ) {
         // Given
         initializeTestedScope(backgroundTrackingEnabled = false)
-        val fakeNonInteractionEvent1 = forge.anyRumEvent(
-            excluding = listOf(
-                RumRawEvent.StartView::class,
-                RumRawEvent.StartAction::class
-            )
-        )
-        val fakeNonInteractionEvent2 = forge.anyRumEvent(
-            excluding = listOf(
-                RumRawEvent.StartView::class,
-                RumRawEvent.StartAction::class
-            )
-        )
-        testedScope.handleEvent(fakeNonInteractionEvent1, fakeDatadogContext, mockEventWriteScope, mockWriter)
-        testedScope.handleEvent(fakeNonInteractionEvent2, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        val argumentCaptor = argumentCaptor<Any>()
-        verify(mockSessionReplayFeatureScope, times(2))
-            .sendEvent(argumentCaptor.capture())
-        assertThat(argumentCaptor.firstValue).isEqualTo(
-            mapOf(
-                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
-                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
-                    testedScope.getRumContext().sessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
-                    (testedScope.sessionState == RumSessionState.TRACKED)
-            )
-        )
-        assertThat(argumentCaptor.secondValue).isEqualTo(
-            mapOf(
-                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
-                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
-                RumSessionScope.RUM_SESSION_ID_BUS_MESSAGE_KEY to
-                    testedScope.getRumContext().sessionId,
-                RumSessionScope.RUM_SESSION_SAMPLE_RATE_BUS_MESSAGE_KEY to testedScope.sessionSampleRate,
-                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
-                    (testedScope.sessionState == RumSessionState.TRACKED)
-            )
-        )
+        assertThat(testedScope.sessionId).isNull()
+        verifyNoInteractions(mockSessionReplayFeatureScope)
     }
 
     @Test
@@ -1965,7 +1986,8 @@ internal class RumSessionScopeTest {
         // Given
         initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
-        whenever(mockTimeseriesCollector.isTimeseriesCollected(testedScope.sessionId)) doReturn fakeHasTimeseries
+        whenever(mockTimeseriesCollector.isTimeseriesCollected(checkNotNull(testedScope.sessionId))) doReturn
+            fakeHasTimeseries
 
         // When
         val context = testedScope.getRumContext()
@@ -1975,11 +1997,26 @@ internal class RumSessionScopeTest {
     }
 
     @Test
+    fun `M report no timeseries W getRumContext() {no session}`() {
+        // Given
+        fakeParentContext = fakeParentContext.copy(hasTimeseries = true)
+        initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
+
+        // When
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(context.sessionId).isNull()
+        assertThat(context.hasTimeseries).isFalse()
+        verify(mockTimeseriesCollector, never()).isTimeseriesCollected(any())
+    }
+
+    @Test
     fun `M not inherit hasTimeseries W getRumContext() { session expired, renewed by interaction }`(forge: Forge) {
         // Given
         initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
-        val expiredSessionId = testedScope.sessionId
+        val expiredSessionId = checkNotNull(testedScope.sessionId)
         whenever(mockTimeseriesCollector.isTimeseriesCollected(expiredSessionId)) doReturn true
         advanceTimeByMs(TEST_INACTIVITY_MS)
         testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2006,7 +2043,7 @@ internal class RumSessionScopeTest {
         )
 
         // Then
-        verify(mockTimeseriesCollector).onSessionStart(eq(testedScope.sessionId), any())
+        verify(mockTimeseriesCollector).onSessionStart(eq(checkNotNull(testedScope.sessionId)), any())
     }
 
     @ParameterizedTest
@@ -2070,7 +2107,7 @@ internal class RumSessionScopeTest {
 
         // Then
         verify(mockTimeseriesCollector, times(2)).onSessionStart(any(), any())
-        verify(mockTimeseriesCollector, times(2)).onSessionStop(any())
+        verify(mockTimeseriesCollector).onSessionStop(any())
         verify(mockTimeseriesCollector, atLeastOnce()).onRumContextUpdate(fakeViewContext)
     }
 
@@ -2094,7 +2131,7 @@ internal class RumSessionScopeTest {
 
         // Then
         assertThat(testedScope.sessionState).isEqualTo(RumSessionState.EXPIRED)
-        verify(mockTimeseriesCollector, times(2)).onSessionStop(any())
+        verify(mockTimeseriesCollector).onSessionStop(any())
     }
 
     @Test
@@ -2116,8 +2153,8 @@ internal class RumSessionScopeTest {
         // Then
         assertThat(testedScope.sessionState).isEqualTo(RumSessionState.EXPIRED)
         assertThat(testedScope.sessionId).isEqualTo(sessionId)
-        verify(mockTimeseriesCollector).onSessionStop(sessionId)
-        verify(mockTimeseriesCollector).onSessionStart(eq(sessionId), any())
+        verify(mockTimeseriesCollector).onSessionStop(checkNotNull(sessionId))
+        verify(mockTimeseriesCollector).onSessionStart(eq(checkNotNull(sessionId)), any())
     }
 
     @Test
@@ -2178,8 +2215,8 @@ internal class RumSessionScopeTest {
         assertThat(context.sessionId).isNotEqualTo(initialSessionId)
         assertThat(context.sessionState).isEqualTo(RumSessionState.TRACKED)
         assertThat(context.sessionStartReason).isEqualTo(RumSessionStartReason.MAX_DURATION)
-        verify(mockTimeseriesCollector).onSessionStop(initialSessionId)
-        verify(mockTimeseriesCollector).onSessionStart(eq(context.sessionId), any())
+        verify(mockTimeseriesCollector).onSessionStop(checkNotNull(initialSessionId))
+        verify(mockTimeseriesCollector).onSessionStart(eq(checkNotNull(context.sessionId)), any())
     }
 
     @Test
@@ -2216,7 +2253,7 @@ internal class RumSessionScopeTest {
         )
 
         // Then
-        verify(mockTimeseriesCollector, times(2)).onSessionStop(any())
+        verify(mockTimeseriesCollector).onSessionStop(any())
     }
 
     @Test
@@ -2296,12 +2333,12 @@ internal class RumSessionScopeTest {
         )
 
         // Then
-        verify(mockTimeseriesCollector, times(2)).onSessionStop(any())
+        verify(mockTimeseriesCollector).onSessionStop(any())
         verify(mockTimeseriesCollector, times(2)).onSessionStart(any(), any())
     }
 
     @Test
-    fun `M stop timeseries W handleEvent() { StopSession, no tracked session }`() {
+    fun `M ignore timeseries W handleEvent() { StopSession, no session }`() {
         // Given
         initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
 
@@ -2314,9 +2351,7 @@ internal class RumSessionScopeTest {
         )
 
         // Then
-        verify(mockTimeseriesCollector, never()).onSessionStart(any(), any())
-        verify(mockTimeseriesCollector, times(2)).onSessionStop(any())
-        verify(mockTimeseriesCollector, never()).onRumContextUpdate(any())
+        verifyNoInteractions(mockTimeseriesCollector)
     }
 
     // endregion

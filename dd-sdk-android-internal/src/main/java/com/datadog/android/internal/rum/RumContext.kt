@@ -14,15 +14,15 @@ import com.datadog.android.internal.FeatureContextKeys
  * Public for access across SDK modules. The data-class contract preserves the copying and
  * equality semantics used by RUM scopes; it is an SDK-internal API.
  *
- * @property applicationId RUM application identifier, or [NULL_UUID] when unavailable.
- * @property sessionId RUM session identifier, or [NULL_UUID] before a session is created.
+ * @property applicationId Configured RUM application identifier.
+ * @property sessionId RUM session identifier, or null when no session is available.
  * @property isSessionActive Whether the session scope is active.
  * @property viewId Identifier of the associated view, if any.
  * @property viewName Name of the associated view, if any.
  * @property viewUrl URL of the associated view, if any.
  * @property actionId Identifier of the associated action, if any.
- * @property sessionState Tracking state of the session.
- * @property sessionStartReason Trigger that created the session.
+ * @property sessionState Tracking state of the session, if any.
+ * @property sessionStartReason Trigger that created the session, if any.
  * @property viewType Category of the associated view, or [RumViewType.NONE] when unavailable.
  * @property syntheticsTestId Identifier of the Synthetics test, if any.
  * @property syntheticsResultId Identifier of the Synthetics test result, if any.
@@ -33,15 +33,15 @@ import com.datadog.android.internal.FeatureContextKeys
  * @property sessionSampleRate Session sampling rate as a percentage, from 0 to 100.
  */
 data class RumContext(
-    val applicationId: String = NULL_UUID,
-    val sessionId: String = NULL_UUID,
+    val applicationId: String,
+    val sessionId: String? = null,
     val isSessionActive: Boolean = false,
     val viewId: String? = null,
     val viewName: String? = null,
     val viewUrl: String? = null,
     val actionId: String? = null,
-    val sessionState: RumSessionState = RumSessionState.NOT_TRACKED,
-    val sessionStartReason: RumSessionStartReason = RumSessionStartReason.USER_APP_LAUNCH,
+    val sessionState: RumSessionState? = null,
+    val sessionStartReason: RumSessionStartReason? = null,
     val viewType: RumViewType = RumViewType.NONE,
     val syntheticsTestId: String? = null,
     val syntheticsResultId: String? = null,
@@ -53,7 +53,7 @@ data class RumContext(
 ) {
 
     companion object {
-        /** Sentinel used when an application or session identifier is unavailable. */
+        /** Legacy sentinel used at boundaries that require an identifier. */
         const val NULL_UUID: String = RumSessionConstants.EMPTY_RUM_SESSION_ID
 
         /** Sampling percentage that keeps every session. */

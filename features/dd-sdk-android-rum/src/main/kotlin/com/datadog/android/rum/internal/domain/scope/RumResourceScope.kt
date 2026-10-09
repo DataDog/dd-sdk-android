@@ -16,6 +16,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.utils.loggableStackTrace
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -27,6 +28,7 @@ import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toResource
@@ -231,6 +233,15 @@ internal class RumResourceScope(
         val rulePsr = resourceAttributes.remove(RumAttributes.RULE_PSR) as? Number
 
         val rumContext = getRumContext()
+        val sessionId = rumContext.sessionId
+        if (sessionId == null) {
+            (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.eventDropped(
+                rumContext.viewId.orEmpty(),
+                StorageEvent.Resource(resourceId, eventTime.nanoTime)
+            )
+            sent = true
+            return
+        }
         val hasTimeseries = resolveHasTimeseries(rumContext)
         val syntheticsTestId = rumContext.syntheticsTestId
         val syntheticsResultId = rumContext.syntheticsResultId
@@ -348,7 +359,7 @@ internal class RumResourceScope(
                     currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
                 ),
                 session = ResourceEvent.ResourceEventSession(
-                    id = rumContext.sessionId,
+                    id = sessionId,
                     type = sessionType,
                     hasReplay = hasReplay,
                     isMainProcess = datadogContext.processInfo.isMainProcess,
@@ -382,7 +393,7 @@ internal class RumResourceScope(
                     spanId = spanId,
                     rulePsr = rulePsr,
                     session = ResourceEvent.DdSession(
-                        sessionPrecondition = rumContext.sessionStartReason.toResourceSessionPrecondition()
+                        sessionPrecondition = rumContext.sessionStartReason?.toResourceSessionPrecondition()
                     ),
                     configuration = ResourceEvent.Configuration(sessionSampleRate = sampleRate)
                 ),
@@ -444,6 +455,15 @@ internal class RumResourceScope(
     ) {
         val errorFingerprint = resourceAttributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
         val rumContext = getRumContext()
+        val sessionId = rumContext.sessionId
+        if (sessionId == null) {
+            (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.eventDropped(
+                rumContext.viewId.orEmpty(),
+                StorageEvent.Error(resourceId, resourceStopTimestampInNanos)
+            )
+            sent = true
+            return
+        }
         val hasTimeseries = resolveHasTimeseries(rumContext)
 
         val syntheticsTestId = rumContext.syntheticsTestId
@@ -519,7 +539,7 @@ internal class RumResourceScope(
                 connectivity = networkInfo.toErrorConnectivity(),
                 application = ErrorEvent.Application(rumContext.applicationId),
                 session = ErrorEvent.ErrorEventSession(
-                    id = rumContext.sessionId,
+                    id = sessionId,
                     type = sessionType,
                     hasReplay = hasReplay,
                     isMainProcess = datadogContext.processInfo.isMainProcess,
@@ -548,7 +568,7 @@ internal class RumResourceScope(
                 context = ErrorEvent.Context(additionalProperties = getCustomAttributes().toMutableMap()),
                 dd = ErrorEvent.Dd(
                     session = ErrorEvent.DdSession(
-                        sessionPrecondition = rumContext.sessionStartReason.toErrorSessionPrecondition()
+                        sessionPrecondition = rumContext.sessionStartReason?.toErrorSessionPrecondition()
                     ),
                     configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
                 ),

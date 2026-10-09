@@ -252,8 +252,12 @@ internal class DatadogCore(
             feature.featureContextLock.writeLock().safeTryWithLock(1, TimeUnit.SECONDS, internalLogger) {
                 val currentContext = feature.featureContext
                 updateCallback(currentContext)
-                featureContextUpdateReceivers.forEach {
-                    it.onContextUpdate(featureName, currentContext)
+                if (featureContextUpdateReceivers.isNotEmpty()) {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // currentContext is non-null
+                    val contextSnapshot = HashMap(currentContext)
+                    featureContextUpdateReceivers.forEach {
+                        it.onContextUpdate(featureName, contextSnapshot)
+                    }
                 }
             }
         }

@@ -86,7 +86,7 @@ internal class RumSessionScopeStartupManagerImpl(
         appStartCount++
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "ReturnCount")
     override fun onTTIDEvent(
         event: RumRawEvent.AppStartTTIDEvent,
         isSessionTracked: Boolean,
@@ -96,7 +96,8 @@ internal class RumSessionScopeStartupManagerImpl(
         rumContext: RumContext,
         customAttributes: Map<String, Any?>
     ) {
-        if (!isSessionTracked) {
+        val sessionId = rumContext.sessionId
+        if (!isSessionTracked || sessionId == null) {
             sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
                 ProfilerEvent.TTIDNotTracked
             )
@@ -115,7 +116,7 @@ internal class RumSessionScopeStartupManagerImpl(
 
         ttidSentForSession = true
 
-        val profilingStatus = datadogContext.getProfilingStatus(rumContext.sessionId)
+        val profilingStatus = datadogContext.getProfilingStatus(sessionId)
         val ttidEvent = rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
             timestampMs = event.info.scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
             datadogContext = datadogContext,
@@ -134,7 +135,7 @@ internal class RumSessionScopeStartupManagerImpl(
             } else {
                 null
             }
-        )
+        ) ?: return
 
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
             // startMs is different for different scenarios. For Cold, it will be process start, for Warm
@@ -142,7 +143,7 @@ internal class RumSessionScopeStartupManagerImpl(
             ProfilerEvent.RumVitalEvent(
                 rumContext = ProfilingRumContext(
                     applicationId = rumContext.applicationId,
-                    sessionId = rumContext.sessionId,
+                    sessionId = sessionId,
                     viewId = rumContext.viewId,
                     viewName = rumContext.viewName
                 ),
@@ -236,6 +237,7 @@ internal class RumSessionScopeStartupManagerImpl(
         )
     }
 
+    @Suppress("ReturnCount")
     private fun sendTTFDEvent(
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
@@ -245,6 +247,7 @@ internal class RumSessionScopeStartupManagerImpl(
         durationNs: Long,
         scenario: RumStartupScenario
     ) {
+        val sessionId = rumContext.sessionId ?: return
         if (durationNs > MAX_TTFD_DURATION_NS) {
             sdkCore.internalLogger.log(
                 level = InternalLogger.Level.WARN,
@@ -259,7 +262,7 @@ internal class RumSessionScopeStartupManagerImpl(
             return
         }
 
-        val profilingStatus = datadogContext.getProfilingStatus(rumContext.sessionId)
+        val profilingStatus = datadogContext.getProfilingStatus(sessionId)
         val ttfdEvent = rumVitalAppLaunchEventHelper.newVitalAppLaunchEvent(
             timestampMs = scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
             datadogContext = datadogContext,
@@ -278,13 +281,13 @@ internal class RumSessionScopeStartupManagerImpl(
             } else {
                 null
             }
-        )
+        ) ?: return
 
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
             ProfilerEvent.RumVitalEvent(
                 rumContext = ProfilingRumContext(
                     applicationId = rumContext.applicationId,
-                    sessionId = rumContext.sessionId,
+                    sessionId = sessionId,
                     viewId = rumContext.viewId,
                     viewName = rumContext.viewName
                 ),
