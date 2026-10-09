@@ -674,6 +674,8 @@ publish:release-all:
 
 # Publishes every dogfooding build once its pipeline has passed
 publish:dogfooding:
+  extends:
+    - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   only:
     - dogfooding
