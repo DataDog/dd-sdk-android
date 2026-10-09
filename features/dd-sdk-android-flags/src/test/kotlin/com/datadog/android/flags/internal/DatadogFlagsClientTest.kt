@@ -9,15 +9,22 @@ package com.datadog.android.flags.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.model.VariationType
+import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
+import com.datadog.android.flags.internal.repository.FirstFlagsLatch
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientEvent
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -30,12 +37,15 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -134,7 +144,88 @@ internal class DatadogFlagsClientTest {
         )
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M isolate event keys W subscriber mutates delivered list`(completeBeforeRegistration: Boolean) {
+        // Given
+        val latch = FirstFlagsLatch()
+        whenever(mockFlagsRepository.firstFlags) doReturn latch
+        val fakeKeys = listOf(fakeDefaultValue, fakeJsonKey, fakeDefaultValue)
+        val events = mutableListOf<FlagsClientEvent>()
+        if (completeBeforeRegistration) latch.complete(fakeKeys)
+
+        // When
+        testedClient.onFirstFlags { event ->
+            events.add(event)
+            // Simulate Java or cast-based mutation of a delivered multi-key list.
+            @Suppress("DontDowncastCollectionTypes")
+            val mutableKeys = event.flagsChanged as MutableList<String>
+            mutableKeys.clear()
+        }
+        testedClient.onFirstFlags { events.add(it) }
+        if (!completeBeforeRegistration) latch.complete(fakeKeys)
+        testedClient.onFirstFlags { events.add(it) }
+
+        // Then
+        assertThat(events).hasSize(3)
+        assertThat(events[0].flagsChanged).isEmpty()
+        assertThat(events[1].flagsChanged).containsExactlyElementsOf(fakeKeys)
+        assertThat(events[2].flagsChanged).containsExactlyElementsOf(fakeKeys)
+        assertThat(events[1]).isNotSameAs(events[0])
+        assertThat(events[2]).isNotSameAs(events[1])
+        verifyNoInteractions(mockInternalLogger)
+    }
+
     // region resolveBooleanValue()
+
+    @Test
+    fun `M expose cached reason in details W resolving a restored assignment`(forge: Forge) {
+        // Given
+        val context = forge.getForgery<EvaluationContext>()
+        val flagKey = forge.anAlphabeticalString()
+        val flagValue = forge.aBool()
+        val originalReason = forge.aValueFrom(ResolutionReason::class.java, exclude = listOf(ResolutionReason.CACHED))
+        val flag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = flagValue.toString(),
+            doLog = true,
+            reason = originalReason.name
+        )
+        val dataStore = mock<DataStoreHandler>()
+        doAnswer {
+            it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(
+                DataStoreContent(
+                    forge.anInt(),
+                    FlagsStateEntry(context, mapOf(flagKey to flag), forge.aLong())
+                )
+            )
+            null
+        }.whenever(dataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        val repository = DefaultFlagsRepository(mockFeatureSdkCore, forge.anAlphabeticalString(), dataStore)
+        testedClient = DatadogFlagsClient(
+            featureSdkCore = mockFeatureSdkCore,
+            evaluationsManager = mockEvaluationsManager,
+            flagsRepository = repository,
+            flagsConfiguration = forge.getForgery<FlagsConfiguration>().copy(
+                trackExposures = true,
+                rumIntegrationEnabled = true
+            ),
+            rumEvaluationLogger = mockRumEvaluationLogger,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = null,
+            flagStateManager = mockFlagsStateManager
+        )
+
+        // When
+        val details = testedClient.resolve(flagKey, !flagValue)
+
+        // Then
+        assertThat(details.value).isEqualTo(flagValue)
+        assertThat(details.reason).isEqualTo(ResolutionReason.CACHED)
+        assertThat(details.variant).isEqualTo(flag.variationKey)
+        assertThat(details.errorCode).isNull()
+        verify(mockProcessor).processEvent(flagKey, context, flag.copy(reason = ResolutionReason.CACHED.name))
+    }
 
     @Test
     fun `M return flag value W resolveBooleanValue() { flag exists with string boolean value }`(forge: Forge) {

@@ -49,6 +49,13 @@ object FeatureContextKeys {
     const val RUM_SESSION_SAMPLE_RATE: String = "session_sample_rate"
 
     /**
+     * State of the current RUM session (see [com.datadog.android.internal.rum.RumSessionConstants]).
+     * Written by the RUM feature into its own feature context; read by other features that need
+     * to know whether the session is tracked (sampled in).
+     */
+    const val RUM_SESSION_STATE: String = "session_state"
+
+    /**
      * Reason profiling was denied by the quota API for the current RUM session.
      * Written by the profiling feature; read by RUM to include in event attributes.
      * Absent when profiling is allowed or no quota check has been performed.

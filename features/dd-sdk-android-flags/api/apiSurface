@@ -4,6 +4,7 @@ interface com.datadog.android.flags.EvaluationContextCallback
 object com.datadog.android.flags.Flags
   fun enable(FlagsConfiguration = FlagsConfiguration.default, com.datadog.android.api.SdkCore = Datadog.getInstance())
 interface com.datadog.android.flags.FlagsClient
+  fun onFirstFlags(FlagsClientEventListener): FlagsSubscription
   fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext, EvaluationContextCallback? = null)
   fun resolveBooleanValue(String, Boolean): Boolean
   fun resolveStringValue(String, String): String
@@ -18,6 +19,8 @@ interface com.datadog.android.flags.FlagsClient
     fun build(): FlagsClient
   companion object 
     fun get(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
+interface com.datadog.android.flags.FlagsClientEventListener
+  fun onEvent(com.datadog.android.flags.model.FlagsClientEvent)
 data class com.datadog.android.flags.FlagsConfiguration
   fun copy(Boolean = this.trackExposures, Boolean = this.trackEvaluations, String? = this.customExposureEndpoint, String? = this.customEvaluationEndpoint, String? = this.customFlagEndpoint, Long = this.evaluationFlushIntervalMs, Boolean = this.rumIntegrationEnabled, Boolean = this.gracefulModeEnabled): FlagsConfiguration
   class Builder
@@ -34,6 +37,8 @@ data class com.datadog.android.flags.FlagsConfiguration
 class com.datadog.android.flags.FlagsInitializationTimeoutException : RuntimeException
 interface com.datadog.android.flags.FlagsStateListener
   fun onStateChanged(com.datadog.android.flags.model.FlagsClientState)
+interface com.datadog.android.flags.FlagsSubscription
+  fun unsubscribe()
 interface com.datadog.android.flags.StateObservable
   fun getCurrentState(): com.datadog.android.flags.model.FlagsClientState
   fun addListener(FlagsStateListener)
@@ -51,6 +56,11 @@ data class com.datadog.android.flags.model.EvaluationContext
   constructor(String, Map<String, String> = emptyMap())
   companion object 
     val EMPTY: EvaluationContext
+class com.datadog.android.flags.model.FlagsClientEvent
+  val flagsChanged: List<String>?
+  override fun toString(): String
+enum com.datadog.android.flags.model.FlagsClientEventType
+  - CONFIGURATION_CHANGED
 sealed class com.datadog.android.flags.model.FlagsClientState
   object NotReady : FlagsClientState
   object Ready : FlagsClientState
@@ -68,6 +78,7 @@ enum com.datadog.android.flags.model.ResolutionReason
   - RULE_MATCH
   - PREREQUISITE_FAILED
   - ERROR
+  - CACHED
 interface com.datadog.android.flags.model.UnparsedFlag
   val variationType: String
   val variationValue: String

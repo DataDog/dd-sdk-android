@@ -13,6 +13,7 @@ import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.ResolutionReason
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -22,51 +23,85 @@ internal class DefaultFlagsRepository(
     private val instanceName: String,
     private val dataStore: DataStoreHandler,
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
-    private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS
+    private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS,
+    private val deliverFirstFlags: (Runnable) -> Unit = Runnable::run
 ) : FlagsRepository {
     private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
     private val atomicState = AtomicReference<FlagsState?>(null)
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // Safe: count is positive constant (1)
+    @Suppress("UnsafeThirdPartyFunctionCall") // CountDownLatch rejects negative counts; 1 is valid.
     private val persistenceLoadedLatch = CountDownLatch(1)
+    override val firstFlags = FirstFlagsLatch()
 
     private val persistenceManager = FlagsPersistenceManager(
         dataStore = dataStore,
         instanceName = instanceName,
         internalLogger = internalLogger
     ) { persistedState ->
-        try {
-            persistedState?.let {
-                val loadedState = FlagsState(it.evaluationContext, it.flags)
-                atomicState.compareAndSet(null, loadedState)
-            }
+        val installed = try {
+            persistedState != null && atomicState.compareAndSet(
+                null,
+                FlagsState(
+                    persistedState.evaluationContext,
+                    persistedState.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) }
+                )
+            )
         } finally {
             persistenceLoadedLatch.countDown()
         }
+        if (installed && persistedState != null) {
+            firstFlags.complete(persistedState.flags.keys, deliverFirstFlags)
+        }
     }
 
-    override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
+    override fun setFlagsAndContext(
+        context: EvaluationContext,
+        flags: Map<String, PrecomputedFlag>,
+        onInstalled: () -> Unit
+    ) {
         val newState = FlagsState(context, flags)
-        atomicState.set(newState)
+
+        val firstInstallation = atomicState.getAndSet(newState) == null
         persistenceLoadedLatch.countDown()
 
-        persistenceManager.saveFlagsState(
-            context = context,
-            flags = flags,
-            currentTimestamp = featureSdkCore.timeProvider.getDeviceTimestampMillis(),
-            object : DataStoreWriteCallback {
-                override fun onSuccess() {
-                }
+        try {
+            persistenceManager.saveFlagsState(
+                context = context,
+                flags = flags,
+                currentTimestamp = featureSdkCore.timeProvider.getDeviceTimestampMillis(),
+                object : DataStoreWriteCallback {
+                    override fun onSuccess() {
+                    }
 
-                override fun onFailure() {
-                    internalLogger.log(
-                        target = InternalLogger.Target.MAINTAINER,
-                        level = InternalLogger.Level.WARN,
-                        messageBuilder = { ERROR_SAVING_FLAGS_STATE }
-                    )
+                    override fun onFailure() {
+                        internalLogger.log(
+                            target = InternalLogger.Target.MAINTAINER,
+                            level = InternalLogger.Level.WARN,
+                            messageBuilder = { ERROR_SAVING_FLAGS_STATE }
+                        )
+                    }
                 }
+            )
+        } catch (
+            // Storage submission failure must not abort an accepted installation.
+            @Suppress("TooGenericExceptionCaught")
+            exception: Exception
+        ) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { ERROR_SAVING_FLAGS_STATE },
+                exception
+            )
+        }
+
+        try {
+            onInstalled()
+        } finally {
+            if (firstInstallation) {
+                firstFlags.complete(flags.keys, deliverFirstFlags)
             }
-        )
+        }
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {

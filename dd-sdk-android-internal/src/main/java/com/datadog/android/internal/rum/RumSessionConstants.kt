@@ -16,4 +16,9 @@ object RumSessionConstants {
      * ID equals this value.
      */
     const val EMPTY_RUM_SESSION_ID: String = "00000000-0000-0000-0000-000000000000"
+
+    /**
+     * Value the RUM session state takes when the session is tracked (sampled in).
+     */
+    const val TRACKED_SESSION_STATE: String = "TRACKED"
 }

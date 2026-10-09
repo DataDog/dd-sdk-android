@@ -20,7 +20,7 @@ object AndroidConfig {
     const val MIN_SDK_FOR_AUTO = 29
     const val BUILD_TOOLS_VERSION = "36.0.0"
 
-    val VERSION = Version(3, 15, 0, Version.Type.Snapshot).forCi()
+    val VERSION = Version(3, 16, 0, Version.Type.Snapshot).forCi()
 }
 
 // TODO RUM-628 Switch to Java 17 bytecode

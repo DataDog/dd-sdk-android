@@ -1,3 +1,41 @@
+# 3.15.0 / 2026-10-08
+
+* [FEATURE] RUM: Add the `dd-sdk-android-rum-prelaunch` module to capture TTID before the SDK is initialized. This module is intended for internal use by Datadog cross-platform SDKs only. See [#3635](https://github.com/DataDog/dd-sdk-android/pull/3635)
+* [FEATURE] RUM: Use Partial View Updates by default and make `ViewEventWriteConfig` public, configurable with the experimental `RumConfiguration.Builder.setViewEventWriteConfig` API. See [#3900](https://github.com/DataDog/dd-sdk-android/pull/3900)
+* [FEATURE] OkHttp: Make the new OkHttp instrumentation available with `ExperimentalRumApi` and `ExperimentalTraceApi`. See [#3898](https://github.com/DataDog/dd-sdk-android/pull/3898)
+* [FEATURE] Flags: Add a first-flags callback to the Android Flags client:
+  - Add the first-flags callback. See [#3945](https://github.com/DataDog/dd-sdk-android/pull/3945)
+  - Isolate first-flags events per subscriber. See [#3965](https://github.com/DataDog/dd-sdk-android/pull/3965)
+* [FEATURE] Profiling: ANR-triggered profiling controls:
+  - Add the `enableAnrTrigger` opt-out API. See [#3729](https://github.com/DataDog/dd-sdk-android/pull/3729)
+  - Support `anrTriggerEnabled` from Remote Configuration. See [#3939](https://github.com/DataDog/dd-sdk-android/pull/3939)
+* [IMPROVEMENT] Profiling: Improve trigger-based profiling and profiling events:
+  - Implement the `PendingTriggerProfiles` buffer and matching logic. See [#3831](https://github.com/DataDog/dd-sdk-android/pull/3831)
+  - Rename pending trigger profile storage APIs. See [#3866](https://github.com/DataDog/dd-sdk-android/pull/3866)
+  - Add the `boot_ntp` field to the profile event schema. See [#3836](https://github.com/DataDog/dd-sdk-android/pull/3836)
+  - Remove `clock_drift` from the profiling internal context schema. See [#3908](https://github.com/DataDog/dd-sdk-android/pull/3908)
+  - Add the `profile_type` tag (`stack_sampling`/`system_trace`) to profiling events. See [#3930](https://github.com/DataDog/dd-sdk-android/pull/3930)
+  - Report the profiling configuration in telemetry. See [#3905](https://github.com/DataDog/dd-sdk-android/pull/3905)
+  - Reuse `fileDeleteSafe` for all profiling file deletions. See [#3909](https://github.com/DataDog/dd-sdk-android/pull/3909)
+  - Check the profiling quota only for RUM sessions sampled for profiling. See [#3960](https://github.com/DataDog/dd-sdk-android/pull/3960)
+* [IMPROVEMENT] RUM: Replace the per-session timeseries collector with a process-lifecycle-aware singleton:
+  - Add timeseries collector primitives (`Debouncer`, `Gate`, `Looper`). See [#3870](https://github.com/DataDog/dd-sdk-android/pull/3870)
+  - Use a process-lifecycle-aware singleton collector. See [#3871](https://github.com/DataDog/dd-sdk-android/pull/3871)
+* [IMPROVEMENT] Core: Add batch metrics telemetry for recent features. See [#3899](https://github.com/DataDog/dd-sdk-android/pull/3899)
+* [IMPROVEMENT] Core: Honor the internal cleartext opt-in for feature HTTP clients. See [#3926](https://github.com/DataDog/dd-sdk-android/pull/3926)
+* [IMPROVEMENT] OkHttp: Cap the body-peek size and skip it for binary media. See [#3857](https://github.com/DataDog/dd-sdk-android/pull/3857)
+* [IMPROVEMENT] Flags: Mark initially restored flag assignments as cached. See [#3903](https://github.com/DataDog/dd-sdk-android/pull/3903)
+* [BUGFIX] Core: Make `DataUploadTask` resilient to uncaught exceptions. See [#3887](https://github.com/DataDog/dd-sdk-android/pull/3887)
+* [BUGFIX] Core: Guard against a corrupted negative block size in `PlainBatchFileReaderWriter`. See [#3890](https://github.com/DataDog/dd-sdk-android/pull/3890)
+* [BUGFIX] Logs: Use the safe stacktrace util when generating the stacktrace for `generateLog`. See [#3864](https://github.com/DataDog/dd-sdk-android/pull/3864)
+* [BUGFIX] RUM: Fix a crash when unmarshalling synthetics intent extras. See [#3885](https://github.com/DataDog/dd-sdk-android/pull/3885)
+* [BUGFIX] Profiling: Fix a stale profiling status in the RUM context. See [#3927](https://github.com/DataDog/dd-sdk-android/pull/3927)
+* [BUGFIX] Profiling: Fix the annotation for `ProfilingConfiguration.applyRemoteConfiguration`. See [#3959](https://github.com/DataDog/dd-sdk-android/pull/3959)
+* [BUGFIX] WebView: Only advertise WebView records when Session Replay is enabled. See [#3938](https://github.com/DataDog/dd-sdk-android/pull/3938)
+* [BUGFIX] Session Replay: Keep the Compose `BackgroundElement` and `TextStringSimpleElement` classes. See [#3964](https://github.com/DataDog/dd-sdk-android/pull/3964)
+* [MAINTENANCE] Make the git hash computation for `BuildConfig` configuration-cache friendly. See [#3922](https://github.com/DataDog/dd-sdk-android/pull/3922)
+* [MAINTENANCE] Configure the merge-back Git identity before the merge. See [#3856](https://github.com/DataDog/dd-sdk-android/pull/3856)
+
 # 3.14.1 / 2026-09-21
 
 * [IMPROVEMENT] Remote Configuration: Propagate `crashReportingEnabled` to the `DatadogCore` configuration. See [#3865](https://github.com/DataDog/dd-sdk-android/pull/3865)
