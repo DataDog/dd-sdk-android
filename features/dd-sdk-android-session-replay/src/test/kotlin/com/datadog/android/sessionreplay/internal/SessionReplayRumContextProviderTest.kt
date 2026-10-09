@@ -26,6 +26,8 @@ import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import java.util.UUID
 
 @Extensions(
@@ -35,6 +37,35 @@ import java.util.UUID
 internal class SessionReplayRumContextProviderTest {
 
     private val testedSessionReplayContextProvider = SessionReplayRumContextProvider()
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M preserve previous view W onContextUpdate {core reuses mutable map}`(fakeSchedulingEnabled: Boolean) {
+        // Given
+        val fakeFirstViewId = UUID.randomUUID().toString()
+        val fakeSecondViewId = UUID.randomUUID().toString()
+        val fakeNotifications = mutableListOf<String>()
+        lateinit var testedProvider: SessionReplayRumContextProvider
+        testedProvider = SessionReplayRumContextProvider(fakeSchedulingEnabled) {
+            fakeNotifications.add(testedProvider.getRumContext().viewId)
+        }
+        val fakeContext = mutableMapOf<String, Any?>(RUM_VIEW_ID_CONTEXT_KEY to fakeFirstViewId)
+        testedProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
+
+        // When: core changes the same map before notifying receivers.
+        fakeContext.clear()
+        fakeContext[RUM_VIEW_ID_CONTEXT_KEY] = fakeSecondViewId
+
+        // Then: only the opt-in path isolates reads from mutations before notification.
+        assertThat(testedProvider.getRumContext().viewId)
+            .isEqualTo(if (fakeSchedulingEnabled) fakeFirstViewId else fakeSecondViewId)
+        testedProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
+        testedProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
+        assertThat(fakeNotifications).containsExactlyElementsOf(
+            if (fakeSchedulingEnabled) listOf(fakeFirstViewId, fakeSecondViewId) else listOf(fakeFirstViewId)
+        )
+        assertThat(testedProvider.getRumContext().viewId).isEqualTo(fakeSecondViewId)
+    }
 
     @Test
     fun `M notify first view W onContextUpdate { new valid RUM view }`() {

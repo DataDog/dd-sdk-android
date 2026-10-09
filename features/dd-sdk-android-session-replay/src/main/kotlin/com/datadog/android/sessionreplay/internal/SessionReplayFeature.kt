@@ -65,6 +65,7 @@ internal class SessionReplayFeature(
     internal val imagePrivacy: ImagePrivacy,
     private val configuredSampleRate: Float,
     private val startRecordingImmediately: Boolean,
+    private val adaptiveCaptureSchedulingEnabled: Boolean = false,
     private val recorderProvider: RecorderProvider
 ) : StorageBackedFeature, FeatureEventReceiver {
 
@@ -86,6 +87,7 @@ internal class SessionReplayFeature(
         sampleRate: Float,
         startRecordingImmediately: Boolean,
         dynamicOptimizationEnabled: Boolean,
+        adaptiveCaptureSchedulingEnabled: Boolean,
         internalCallback: SessionReplayInternalCallback,
         heatmapsEnabled: Boolean
     ) : this(
@@ -97,6 +99,7 @@ internal class SessionReplayFeature(
         imagePrivacy,
         configuredSampleRate = sampleRate,
         startRecordingImmediately,
+        adaptiveCaptureSchedulingEnabled,
         DefaultRecorderProvider(
             sdkCore,
             textAndInputPrivacy,
@@ -106,6 +109,7 @@ internal class SessionReplayFeature(
             customOptionSelectorDetectors,
             customDrawableMappers,
             dynamicOptimizationEnabled,
+            adaptiveCaptureSchedulingEnabled,
             internalCallback,
             heatmapsEnabled
         )
@@ -134,7 +138,7 @@ internal class SessionReplayFeature(
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
     internal val initialized = AtomicBoolean(false)
 
-    private val rumContextProvider = SessionReplayRumContextProvider {
+    private val rumContextProvider = SessionReplayRumContextProvider(adaptiveCaptureSchedulingEnabled) {
         onRumViewChanged()
     }
     private var resourceProcessor: ResourceProcessor = NoOpResourceProcessor()
@@ -267,17 +271,33 @@ internal class SessionReplayFeature(
 
     // endregion
 
+    private inline fun withAdaptiveRecordingLock(block: () -> Unit) {
+        if (adaptiveCaptureSchedulingEnabled) synchronized(this, block) else block()
+    }
+
     // region Manual Recording
 
-    internal fun manuallyStopRecording() {
+    internal fun manuallyStopRecording() = withAdaptiveRecordingLock {
         if (userIntentToRecord.compareAndSet(true, false)) {
             userIntentToRecordChanged.set(true)
         }
+        // Stop at the API boundary, even if the app emits no more RUM events. Serialize this
+        // with handleRumSession so a sampling decision cannot restart the recorder after stop.
+        if (adaptiveCaptureSchedulingEnabled) {
+            shouldRecord.set(false)
+            stopRecording()
+        }
     }
 
-    internal fun manuallyStartRecording() {
+    internal fun manuallyStartRecording() = withAdaptiveRecordingLock {
         if (userIntentToRecord.compareAndSet(false, true)) {
             userIntentToRecordChanged.set(true)
+        }
+        // Reuse the current session's sampling decision so an API stop/start pair does not
+        // need another RUM event to resume recording.
+        if (adaptiveCaptureSchedulingEnabled && initialized.get() && isSessionSampledIn.get()) {
+            shouldRecord.set(true)
+            startRecording()
         }
     }
 
@@ -285,7 +305,7 @@ internal class SessionReplayFeature(
 
     // region Internal
 
-    private fun handleRumSession(sessionMetadata: Map<*, *>) {
+    private fun handleRumSession(sessionMetadata: Map<*, *>) = withAdaptiveRecordingLock {
         if (sessionMetadata[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY] ==
             RUM_SESSION_RENEWED_BUS_MESSAGE
         ) {
@@ -412,7 +432,7 @@ internal class SessionReplayFeature(
     /**
      * Resumes the replay recorder.
      */
-    internal fun startRecording() {
+    internal fun startRecording() = withAdaptiveRecordingLock {
         // Check initialization again so we don't forget to do it when this method is made public
         if (checkIfInitialized() && !isRecording.getAndSet(true)) {
             sdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME) {
@@ -436,7 +456,7 @@ internal class SessionReplayFeature(
     /**
      * Stops the replay recorder.
      */
-    internal fun stopRecording() {
+    internal fun stopRecording() = withAdaptiveRecordingLock {
         if (isRecording.getAndSet(false)) {
             sdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME) {
                 it[SESSION_REPLAY_ENABLED_KEY] = false
@@ -449,6 +469,7 @@ internal class SessionReplayFeature(
         if (!isRecording.get()) {
             return
         }
+        if (adaptiveCaptureSchedulingEnabled) sessionReplayRecorder.onViewTransition()
         val activeSlotIds = embeddedContentSlotRegistry.activeSlotIds()
         if (activeSlotIds.isNotEmpty()) {
             sessionReplayRecorder.requestCapture(activeSlotIds)

@@ -78,6 +78,7 @@ enum com.datadog.android.sessionreplay.TouchPrivacy : PrivacyLevel
 class com.datadog.android.sessionreplay._SessionReplayInternalProxy
   constructor(SessionReplayConfiguration.Builder)
   fun setInternalCallback(SessionReplayInternalCallback): SessionReplayConfiguration.Builder
+  fun setAdaptiveCaptureSchedulingEnabled(Boolean): SessionReplayConfiguration.Builder
   companion object 
     fun setEmbeddedContentSlotId(android.view.View, String?)
     fun addEmbeddedContentRecords(List<Map<String, Any?>>, String, String, com.datadog.android.api.SdkCore = Datadog.getInstance())

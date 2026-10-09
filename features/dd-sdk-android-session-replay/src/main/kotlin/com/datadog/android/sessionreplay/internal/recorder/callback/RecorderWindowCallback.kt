@@ -106,6 +106,7 @@ internal class RecorderWindowCallback(
         }
     }
 
+    @MainThread
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         val rootViews = windowInspector.getGlobalWindowViews(internalLogger)
         if (rootViews.isNotEmpty()) {
