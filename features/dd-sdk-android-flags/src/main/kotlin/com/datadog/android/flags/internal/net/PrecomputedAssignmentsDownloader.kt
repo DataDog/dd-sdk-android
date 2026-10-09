@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.net
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.flags.internal.diagnostics.StartupTrace
 import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Call
 import okhttp3.Request
@@ -36,7 +37,8 @@ internal class PrecomputedAssignmentsDownloader(
 
     @Suppress("TooGenericExceptionCaught")
     private fun executeDownloadRequest(request: Request): String? = try {
-        val response = callFactory.newCall(request).execute()
+        val response = StartupTrace.span("network.http") { callFactory.newCall(request).execute() }
+        StartupTrace.event("network.status") { mapOf("status" to response.code.toString()) }
         handleResponse(response)
     } catch (e: Throwable) {
         internalLogger.log(
@@ -50,7 +52,7 @@ internal class PrecomputedAssignmentsDownloader(
 
     private fun handleResponse(response: Response): String? = if (response.isSuccessful) {
         @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in outer try-catch
-        response.body?.use { it.string() }
+        StartupTrace.span("network.body") { response.body?.use { it.string() } }
     } else {
         internalLogger.log(
             InternalLogger.Level.ERROR,

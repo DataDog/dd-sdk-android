@@ -23,6 +23,7 @@ import com.datadog.android.flags.internal.LogWithPolicy
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.NoOpRumEvaluationLogger
 import com.datadog.android.flags.internal.RumEvaluationLogger
+import com.datadog.android.flags.internal.diagnostics.StartupTrace
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
@@ -414,6 +415,19 @@ interface FlagsClient {
             flagsFeature: FlagsFeature,
             evaluationsFeature: EvaluationsFeature?,
             name: String
+        ): FlagsClient = StartupTrace.span("client.construct", { mapOf("sdk" to StartupTrace.id(featureSdkCore)) }) {
+            createInternalUntraced(configuration, featureSdkCore, flagsFeature, evaluationsFeature, name).also {
+                StartupTrace.event("client.created") { mapOf("client" to StartupTrace.id(it)) }
+            }
+        }
+
+        @Suppress("LongMethod")
+        private fun createInternalUntraced(
+            configuration: FlagsConfiguration,
+            featureSdkCore: FeatureSdkCore,
+            flagsFeature: FlagsFeature,
+            evaluationsFeature: EvaluationsFeature?,
+            name: String
         ): FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
@@ -421,19 +435,27 @@ interface FlagsClient {
             val datastore = featureSdkCore.getFeature(FLAGS_FEATURE_NAME)
                 ?.dataStore
             val flagsRepository = if (datastore != null) {
-                DefaultFlagsRepository(
-                    featureSdkCore = featureSdkCore,
-                    dataStore = datastore,
-                    instanceName = name,
-                    deliverFirstFlags = { delivery ->
-                        val worker = featureSdkCore.createSingleThreadExecutorService(FLAGS_FIRST_FLAGS_EXECUTOR_NAME)
-                        try {
-                            worker.executeSafe("Deliver first flags", featureSdkCore.internalLogger, delivery)
-                        } finally {
-                            worker.shutdown()
+                StartupTrace.span("repository.construct") {
+                    DefaultFlagsRepository(
+                        featureSdkCore = featureSdkCore,
+                        dataStore = datastore,
+                        instanceName = name,
+                        deliverFirstFlags = { delivery ->
+                            val worker = featureSdkCore.createSingleThreadExecutorService(
+                                FLAGS_FIRST_FLAGS_EXECUTOR_NAME
+                            )
+                            try {
+                                worker.executeSafe("Deliver first flags", featureSdkCore.internalLogger, delivery)
+                            } finally {
+                                worker.shutdown()
+                            }
                         }
+                    )
+                }.also { repository ->
+                    StartupTrace.event("repository.created") {
+                        mapOf("repository" to StartupTrace.id(repository), "sdk" to StartupTrace.id(featureSdkCore))
                     }
-                )
+                }
             } else {
                 NoOpFlagsRepository()
             }

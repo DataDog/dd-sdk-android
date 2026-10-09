@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.internal.FlagsStateManager
+import com.datadog.android.flags.internal.diagnostics.StartupTrace
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
@@ -109,6 +110,8 @@ internal class EvaluationsManager(
      * @param callback Optional callback invoked when the context is set and the flags have been fetched successfully or not.
      */
     fun updateEvaluationsForContext(context: EvaluationContext, callback: EvaluationContextCallback? = null) {
+        val operation = StartupTrace.nextId()
+        traceNetworkRequest(operation)
         val matchingCachedAssignments = AtomicBoolean(false)
         val initializationCompletion = startInitializationTimeout(context, callback, matchingCachedAssignments) {
             flagStateManager.updateState(FlagsClientState.Reconciling)
@@ -117,49 +120,72 @@ internal class EvaluationsManager(
 
         sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
             ?.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) { datadogContext ->
+                StartupTrace.event("network.submit") { mapOf(StartupTrace.OPERATION to operation.toString()) }
                 executorService.executeSafe(
                     operationName = FETCH_AND_STORE_OPERATION_NAME,
                     internalLogger = internalLogger
                 ) {
-                    internalLogger.log(
-                        InternalLogger.Level.DEBUG,
-                        InternalLogger.Target.MAINTAINER,
-                        { "Processing evaluation context: ${context.targetingKey}" }
-                    )
-
-                    val hadFlags = flagsRepository.hasFlags()
-                    matchingCachedAssignments.set(
-                        hadFlags && flagsRepository.getEvaluationContext() == context
-                    )
-                    val response = assignmentsReader.readPrecomputedFlags(context, datadogContext)
-                    val flagsMap = response?.let { precomputeMapper.map(it) }
-                    if (flagsMap != null) {
-                        installFlags(context, flagsMap, initializationCompletion, callback)
-                    } else {
-                        val message = if (response == null) NETWORK_REQUEST_FAILED_MESSAGE else INVALID_RESPONSE_MESSAGE
+                    StartupTrace.span("network.execute", { mapOf(StartupTrace.OPERATION to operation.toString()) }) {
                         internalLogger.log(
-                            InternalLogger.Level.WARN,
-                            InternalLogger.Target.USER,
-                            { message }
+                            InternalLogger.Level.DEBUG,
+                            InternalLogger.Target.MAINTAINER,
+                            { "Processing evaluation context: ${context.targetingKey}" }
                         )
 
-                        val throwable = NetworkRequestFailedException(message)
-                        // Lifecycle is Stale only when retained flags match the requested context.
-                        // Failed fetches do not replace the installed flags or their context.
-                        val completionCallback = synchronized(initializationTerminalLock) {
-                            val result = initializationCompletion?.take()?.callback
-                                ?: if (initializationCompletion == null) callback else null
-                            if (matchingCachedAssignments.get()) {
-                                flagStateManager.updateState(FlagsClientState.Stale)
-                            } else {
-                                flagStateManager.updateState(FlagsClientState.Error(throwable))
-                            }
-                            result
+                        val hadFlags = flagsRepository.hasFlags()
+                        matchingCachedAssignments.set(
+                            hadFlags && flagsRepository.getEvaluationContext() == context
+                        )
+                        val response = StartupTrace.span("network.fetch") {
+                            assignmentsReader.readPrecomputedFlags(context, datadogContext)
                         }
-                        completionCallback?.onFailure(throwable)
+                        val flagsMap = response?.let { StartupTrace.span("network.map") { precomputeMapper.map(it) } }
+                        traceNetworkResult(flagsMap)
+                        if (flagsMap != null) {
+                            installFlags(context, flagsMap, initializationCompletion, callback)
+                        } else {
+                            val message = response?.let { INVALID_RESPONSE_MESSAGE }
+                                ?: NETWORK_REQUEST_FAILED_MESSAGE
+                            internalLogger.log(
+                                InternalLogger.Level.WARN,
+                                InternalLogger.Target.USER,
+                                { message }
+                            )
+
+                            val throwable = NetworkRequestFailedException(message)
+                            // Lifecycle is Stale only when retained flags match the requested context.
+                            // Failed fetches do not replace the installed flags or their context.
+                            val completionCallback = synchronized(initializationTerminalLock) {
+                                val result = initializationCompletion?.take()?.callback
+                                    ?: if (initializationCompletion == null) callback else null
+                                if (matchingCachedAssignments.get()) {
+                                    flagStateManager.updateState(FlagsClientState.Stale)
+                                } else {
+                                    flagStateManager.updateState(FlagsClientState.Error(throwable))
+                                }
+                                result
+                            }
+                            StartupTrace.span("network.callback_failure") { completionCallback?.onFailure(throwable) }
+                        }
                     }
                 }
             }
+    }
+
+    private fun traceNetworkRequest(operation: Long) {
+        StartupTrace.event("network.request") {
+            mapOf(
+                StartupTrace.OPERATION to operation.toString(),
+                "repository" to StartupTrace.id(flagsRepository),
+                StartupTrace.SDK to StartupTrace.id(sdkCore)
+            )
+        }
+    }
+
+    private fun traceNetworkResult(flags: Map<String, PrecomputedFlag>?) {
+        StartupTrace.event("network.result") {
+            mapOf("success" to (flags != null).toString(), "count" to (flags?.size ?: 0).toString())
+        }
     }
 
     private fun installFlags(
@@ -175,7 +201,7 @@ internal class EvaluationsManager(
                 flagStateManager.updateState(FlagsClientState.Ready)
                 result
             }
-            completionCallback?.onSuccess()
+            StartupTrace.span("network.callback_success") { completionCallback?.onSuccess() }
         }
         internalLogger.log(
             InternalLogger.Level.DEBUG,

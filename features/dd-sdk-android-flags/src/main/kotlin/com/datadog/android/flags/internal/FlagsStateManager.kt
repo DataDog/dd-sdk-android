@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal
 
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
+import com.datadog.android.flags.internal.diagnostics.StartupTrace
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.internal.utils.DDCoreStateHolder
 
@@ -44,7 +45,9 @@ internal class FlagsStateManager(
      * @param newState The new state to transition to.
      */
     internal fun updateState(newState: FlagsClientState) {
-        stateHolder.updateState(newState)
+        StartupTrace.span("lifecycle.notify", { mapOf("state_type" to newState.javaClass.simpleName) }) {
+            stateHolder.updateState(newState)
+        }
     }
 
     override fun addListener(listener: FlagsStateListener) {

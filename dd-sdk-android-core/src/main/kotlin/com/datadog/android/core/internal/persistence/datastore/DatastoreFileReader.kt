@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.persistence.datastore
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.core.internal.diagnostics.StartupTrace
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlock
@@ -42,6 +43,7 @@ internal class DatastoreFileReader(
         )
 
         if (!datastoreFile.existsSafe(internalLogger)) {
+            StartupTrace.event("cache.missing")
             callback.onSuccess(null)
             return
         }
@@ -58,13 +60,17 @@ internal class DatastoreFileReader(
         callback: DataStoreReadCallback<T>,
         telemetryContext: TelemetryContext
     ) {
-        val tlvBlocks = tlvBlockFileReader.read(datastoreFile, telemetryContext)
+        val tlvBlocks = StartupTrace.span("cache.file_tlv_read") {
+            tlvBlockFileReader.read(datastoreFile, telemetryContext)
+        }
+        StartupTrace.event("cache.blocks") { mapOf("count" to tlvBlocks.size.toString()) }
 
         // there should be as many blocks read as there are block types
         val numberBlocksFound = tlvBlocks.size
         val numberBlocksExpected = TLVBlockType.entries.size
         if (numberBlocksFound != numberBlocksExpected) {
             logInvalidNumberOfBlocksError(numberBlocksFound, numberBlocksExpected)
+            StartupTrace.event("cache.read_failure")
             callback.onFailure()
             return
         }
@@ -72,6 +78,7 @@ internal class DatastoreFileReader(
         val dataStoreContent = mapToDataStoreContents(deserializer, tlvBlocks)
 
         if (dataStoreContent == null) {
+            StartupTrace.event("cache.read_failure")
             callback.onFailure()
             return
         }
@@ -99,9 +106,12 @@ internal class DatastoreFileReader(
         val versionCodeBlock = tlvBlocks[0]
         val dataBlock = tlvBlocks[1]
 
+        val decoded = StartupTrace.span("cache.decode", { mapOf("bytes" to dataBlock.data.size.toString()) }) {
+            String(dataBlock.data)
+        }
         return DataStoreContent(
             versionCode = versionCodeBlock.data.toInt(),
-            data = deserializer.deserialize(String(dataBlock.data))
+            data = deserializer.deserialize(decoded)
         )
     }
 

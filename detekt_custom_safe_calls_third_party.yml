@@ -173,6 +173,9 @@ datadog:
       - "java.util.stream.IntStream.forEach(java.util.function.IntConsumer?)"
       # endregion
       # region Java Concurrency
+      - "java.lang.ThreadLocal.constructor()"
+      - "java.lang.ThreadLocal.set(com.datadog.android.internal.profiler.BenchmarkSpan?)"
+      - "java.lang.ThreadLocal.remove()"
       - "java.lang.Runnable(kotlin.Function0)"
       - "java.lang.Thread.activeCount()"
       - "java.lang.Thread.State.asString()"
@@ -231,6 +234,7 @@ datadog:
       - "java.util.concurrent.ScheduledThreadPoolExecutor.shutdownNow()"
       - "java.util.concurrent.SynchronousQueue.constructor()"
       - "java.util.concurrent.ThreadPoolExecutor.afterExecute(java.lang.Runnable?, kotlin.Throwable?)"
+      - "java.util.concurrent.ThreadPoolExecutor.beforeExecute(java.lang.Thread?, java.lang.Runnable?)"
       - "java.util.concurrent.ThreadPoolExecutor.newTaskFor(java.lang.Runnable?, kotlin.Any?)"
       - "java.util.concurrent.ThreadPoolExecutor.newTaskFor(java.util.concurrent.Callable?)"
       - "java.util.concurrent.ThreadPoolExecutor.shutdownNow()"

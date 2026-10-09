@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
+import com.datadog.android.core.internal.diagnostics.StartupTrace
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.persistence.Serializer
@@ -32,7 +33,9 @@ internal class DataStoreFileHandler(
         serializer: Serializer<T>
     ) {
         executorService.executeSafe("dataStoreWrite", internalLogger) {
-            datastoreFileWriter.write(key, data, serializer, callback, version, TelemetryContext(featureName))
+            StartupTrace.span("cache.write", { mapOf("store" to StartupTrace.id(this)) }) {
+                datastoreFileWriter.write(key, data, serializer, callback, version, TelemetryContext(featureName))
+            }
         }
     }
 
@@ -54,8 +57,14 @@ internal class DataStoreFileHandler(
         callback: DataStoreReadCallback<T>,
         deserializer: Deserializer<String, T>
     ) {
+        val request = StartupTrace.nextId()
+        StartupTrace.event("cache.enqueue") {
+            mapOf("request" to request.toString(), "store" to StartupTrace.id(this))
+        }
         executorService.executeSafe("dataStoreRead", internalLogger) {
-            dataStoreFileReader.read(key, deserializer, version, callback, TelemetryContext(featureName))
+            StartupTrace.span("cache.execute", { mapOf("request" to request.toString()) }) {
+                dataStoreFileReader.read(key, deserializer, version, callback, TelemetryContext(featureName))
+            }
         }
     }
 }

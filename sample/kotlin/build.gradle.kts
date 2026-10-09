@@ -146,6 +146,7 @@ datadog {
 }
 
 dependencies {
+    implementation(project(":dd-sdk-android-internal"))
     // Datadog Libraries
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-flags"))
@@ -250,3 +251,6 @@ taskConfig<KotlinCompile> {
         optIn.add("kotlin.RequiresOptIn")
     }
 }
+
+// Local diagnostic adapter: compiled into the sample and fixture tests, never into the SDK.
+kotlin.sourceSets.getByName("main").kotlin.srcDir(rootProject.file("tools/diagnostics/flags-startup/src/main/kotlin"))

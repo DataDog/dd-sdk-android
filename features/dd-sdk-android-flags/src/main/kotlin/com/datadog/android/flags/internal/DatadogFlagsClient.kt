@@ -14,6 +14,7 @@ import com.datadog.android.flags.FlagsClientEventListener
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsSubscription
 import com.datadog.android.flags.StateObservable
+import com.datadog.android.flags.internal.diagnostics.StartupTrace
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.repository.FlagsRepository
@@ -63,7 +64,12 @@ internal class DatadogFlagsClient(
         val unsubscribe = flagsRepository.firstFlags.whenComplete { keys ->
             val event = FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED, keys)
             try {
-                listener.onEvent(event)
+                StartupTrace.span("first_flags.notify", {
+                    mapOf(
+                        StartupTrace.CLIENT to StartupTrace.id(this),
+                        StartupTrace.REPOSITORY to StartupTrace.id(flagsRepository)
+                    )
+                }) { listener.onEvent(event) }
             } catch (
                 // Callbacks must not break other registrations or the delivering thread.
                 @Suppress("TooGenericExceptionCaught")
@@ -184,17 +190,27 @@ internal class DatadogFlagsClient(
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return [ResolutionDetails] with either the parsed value and metadata, or an error.
      */
-    override fun <T : Any> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T> {
+    override fun <T : Any> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T> =
+        StartupTrace.span("resolution", {
+            mapOf(
+                StartupTrace.CLIENT to StartupTrace.id(this),
+                StartupTrace.SDK to StartupTrace.id(featureSdkCore)
+            )
+        }) {
+            resolveUntraced(flagKey, defaultValue)
+        }
+
+    private fun <T : Any> resolveUntraced(flagKey: String, defaultValue: T): ResolutionDetails<T> {
         val resolution = readAndParseAssignment(flagKey, defaultValue)
 
         return when (resolution) {
             is InternalResolution.Success -> {
-                trackResolution(resolution)
+                StartupTrace.span(StartupTrace.TRACKING) { trackResolution(resolution) }
                 createSuccessResolution(resolution.flag, resolution.value)
             }
 
             is InternalResolution.Error -> {
-                trackErrorResolution(resolution)
+                StartupTrace.span(StartupTrace.TRACKING) { trackErrorResolution(resolution) }
                 createErrorResolution(
                     flagKey = flagKey,
                     defaultValue = resolution.defaultValue,
@@ -221,7 +237,14 @@ internal class DatadogFlagsClient(
      * @return The resolved value or the default value
      */
     private fun <T : Any> resolveValue(flagKey: String, defaultValue: T): T =
-        resolveTracked(readAndParseAssignment(flagKey, defaultValue))
+        StartupTrace.span("resolution", {
+            mapOf(
+                StartupTrace.CLIENT to StartupTrace.id(this),
+                StartupTrace.SDK to StartupTrace.id(featureSdkCore)
+            )
+        }) {
+            resolveTracked(readAndParseAssignment(flagKey, defaultValue))
+        }
 
     private fun writeExposureEvent(name: String, data: UnparsedFlag, context: EvaluationContext) {
         exposureProcessor.processEvent(
@@ -309,7 +332,23 @@ internal class DatadogFlagsClient(
     private fun <T : Any> readAndParseAssignment(
         flagKey: String,
         defaultValue: T
-    ): InternalResolution<T> {
+    ): InternalResolution<T> = StartupTrace.span("resolution.lookup") {
+        readAndParseAssignmentUntraced(flagKey, defaultValue).also { result ->
+            StartupTrace.event("resolution.result") {
+                when (result) {
+                    is InternalResolution.Success -> mapOf(
+                        "outcome" to "success",
+                        "reason" to
+                            (ResolutionReason.entries.firstOrNull { it.name == result.flag.reason }?.name ?: "unknown")
+                    )
+                    is InternalResolution.Error -> mapOf("outcome" to "fallback", "error" to result.errorCode.name)
+                }
+            }
+        }
+    }
+
+    @Suppress("ReturnCount")
+    private fun <T : Any> readAndParseAssignmentUntraced(flagKey: String, defaultValue: T): InternalResolution<T> {
         checkProviderReady(flagKey, defaultValue)?.let { return it }
         val flagAndContext = flagsRepository.getPrecomputedFlagWithContext(flagKey)
         if (flagAndContext == null) {
@@ -390,7 +429,7 @@ internal class DatadogFlagsClient(
      */
     private fun <T : Any> resolveTracked(resolution: InternalResolution<T>): T = when (resolution) {
         is InternalResolution.Success -> {
-            trackResolution(resolution)
+            StartupTrace.span(StartupTrace.TRACKING) { trackResolution(resolution) }
             resolution.value
         }
 
@@ -406,7 +445,7 @@ internal class DatadogFlagsClient(
             }
 
             // Log evaluation events for errors
-            trackErrorResolution(resolution)
+            StartupTrace.span(StartupTrace.TRACKING) { trackErrorResolution(resolution) }
 
             resolution.defaultValue
         }

@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
+import com.datadog.android.flags.internal.diagnostics.StartupTrace
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.model.EvaluationContext
@@ -26,7 +27,12 @@ internal class DefaultFlagsRepository(
     private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS,
     private val deliverFirstFlags: (Runnable) -> Unit = Runnable::run
 ) : FlagsRepository {
-    private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
+    private data class FlagsState(
+        val context: EvaluationContext,
+        val flags: Map<String, PrecomputedFlag>,
+        val source: String,
+        val diagnosticId: Long = StartupTrace.nextId()
+    )
     private val atomicState = AtomicReference<FlagsState?>(null)
 
     @Suppress("UnsafeThirdPartyFunctionCall") // CountDownLatch rejects negative counts; 1 is valid.
@@ -39,15 +45,25 @@ internal class DefaultFlagsRepository(
         internalLogger = internalLogger
     ) { persistedState ->
         val installed = try {
-            persistedState != null && atomicState.compareAndSet(
-                null,
+            val candidate = persistedState?.let {
                 FlagsState(
                     persistedState.evaluationContext,
-                    persistedState.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) }
+                    persistedState.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) },
+                    "disk"
                 )
-            )
+            }
+            val accepted = candidate != null && StartupTrace.span("state.cache_cas", { stateProperties(candidate) }) {
+                atomicState.compareAndSet(null, candidate)
+            }
+            StartupTrace.event("state.install") {
+                stateProperties(candidate) + (INSTALLED to accepted.toString())
+            }
+            accepted
         } finally {
-            persistenceLoadedLatch.countDown()
+            releasePersistence("disk_callback")
+        }
+        StartupTrace.event("cache.install_result") {
+            mapOf(StartupTrace.REPOSITORY to StartupTrace.id(this), "installed" to installed.toString())
         }
         if (installed && persistedState != null) {
             firstFlags.complete(persistedState.flags.keys, deliverFirstFlags)
@@ -59,10 +75,19 @@ internal class DefaultFlagsRepository(
         flags: Map<String, PrecomputedFlag>,
         onInstalled: () -> Unit
     ) {
-        val newState = FlagsState(context, flags)
+        val newState = FlagsState(context, flags, "network")
 
-        val firstInstallation = atomicState.getAndSet(newState) == null
-        persistenceLoadedLatch.countDown()
+        val previousState = StartupTrace.span("state.network_swap", { stateProperties(newState) }) {
+            atomicState.getAndSet(newState)
+        }
+        val firstInstallation = previousState == null
+        StartupTrace.event("state.install") {
+            stateProperties(newState) + mapOf(
+                INSTALLED to "true",
+                "previous_state" to (previousState?.diagnosticId ?: 0L).toString()
+            )
+        }
+        releasePersistence("network_installation")
 
         try {
             persistenceManager.saveFlagsState(
@@ -96,7 +121,7 @@ internal class DefaultFlagsRepository(
         }
 
         try {
-            onInstalled()
+            StartupTrace.span("network.notify", { stateProperties(newState) }) { onInstalled() }
         } finally {
             if (firstInstallation) {
                 firstFlags.complete(flags.keys, deliverFirstFlags)
@@ -105,8 +130,12 @@ internal class DefaultFlagsRepository(
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
-        waitForPersistenceLoad()
+        waitForPersistenceLoad("getPrecomputedFlag")
         val state = atomicState.get()
+        StartupTrace.event(StartupTrace.STATE_READ) {
+            stateProperties(state) +
+                (StartupTrace.CALLER to "getPrecomputedFlag")
+        }
         if (state != null) {
             return state.flags[key]
         }
@@ -119,8 +148,12 @@ internal class DefaultFlagsRepository(
     }
 
     override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> {
-        waitForPersistenceLoad()
+        waitForPersistenceLoad("getFlagsSnapshot")
         val state = atomicState.get()
+        StartupTrace.event(StartupTrace.STATE_READ) {
+            stateProperties(state) +
+                (StartupTrace.CALLER to "getFlagsSnapshot")
+        }
         if (state != null) {
             return state.flags
         }
@@ -133,13 +166,20 @@ internal class DefaultFlagsRepository(
     }
 
     override fun getEvaluationContext(): EvaluationContext? {
-        waitForPersistenceLoad()
-        return atomicState.get()?.context
+        waitForPersistenceLoad("getEvaluationContext")
+        val state = atomicState.get()
+        StartupTrace.event(StartupTrace.STATE_READ) {
+            stateProperties(state) +
+                (StartupTrace.CALLER to "getEvaluationContext")
+        }
+        return state?.context
     }
 
     override fun hasFlags(): Boolean {
-        waitForPersistenceLoad()
-        return atomicState.get()?.flags?.isNotEmpty() ?: false
+        waitForPersistenceLoad("hasFlags")
+        val state = atomicState.get()
+        StartupTrace.event(StartupTrace.STATE_READ) { stateProperties(state) + (StartupTrace.CALLER to "hasFlags") }
+        return state?.flags?.isNotEmpty() ?: false
     }
 
     override fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean {
@@ -149,22 +189,50 @@ internal class DefaultFlagsRepository(
 
     @Suppress("ReturnCount")
     override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? {
-        waitForPersistenceLoad()
-        val state = atomicState.get() ?: return null
+        waitForPersistenceLoad("getPrecomputedFlagWithContext")
+        val state = atomicState.get()
+        StartupTrace.event(StartupTrace.STATE_READ) {
+            stateProperties(state) +
+                (StartupTrace.CALLER to "getPrecomputedFlagWithContext")
+        }
+        if (state == null) return null
         val flag = state.flags[key] ?: return null
         return flag to state.context
     }
 
-    private fun waitForPersistenceLoad() {
+    private fun stateProperties(state: FlagsState?): Map<String, String> = mapOf(
+        StartupTrace.REPOSITORY to StartupTrace.id(this),
+        "state" to (state?.diagnosticId ?: 0L).toString(),
+        "source" to (state?.source ?: "none"),
+        "count" to (state?.flags?.size ?: 0).toString()
+    )
+
+    private fun releasePersistence(source: String) {
+        StartupTrace.span("latch.release", {
+            mapOf(StartupTrace.REPOSITORY to StartupTrace.id(this), "source" to source)
+        }) {
+            persistenceLoadedLatch.countDown()
+        }
+    }
+
+    private fun waitForPersistenceLoad(caller: String) {
+        val span = StartupTrace.begin("latch.wait") {
+            mapOf(StartupTrace.REPOSITORY to StartupTrace.id(this), StartupTrace.CALLER to caller)
+        }
         try {
-            persistenceLoadedLatch.await(persistenceLoadTimeoutMs, TimeUnit.MILLISECONDS)
+            val completed = persistenceLoadedLatch.await(persistenceLoadTimeoutMs, TimeUnit.MILLISECONDS)
+            StartupTrace.event("latch.result") { mapOf("outcome" to if (completed) "completed" else "timeout") }
         } catch (e: InterruptedException) {
+            StartupTrace.event("latch.result") { mapOf("outcome" to "interrupted") }
             @Suppress("UnsafeThirdPartyFunctionCall") // Safe: self-interruption is always permitted
             Thread.currentThread().interrupt()
+        } finally {
+            StartupTrace.end(span)
         }
     }
 
     companion object {
+        private const val INSTALLED = "accepted"
         const val WARN_CONTEXT_NOT_SET = "You must call FlagsClientManager.get().setEvaluationContext " +
             "in order to have flags available"
         const val ERROR_SAVING_FLAGS_STATE = "Failed to save flags state to persistent storage"

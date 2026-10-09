@@ -8,7 +8,9 @@ package com.datadog.android.core.internal.thread
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.BackPressureStrategy
+import com.datadog.android.core.internal.diagnostics.StartupTrace
 import com.datadog.android.core.thread.FlushableExecutorService
+import com.datadog.android.internal.profiler.BenchmarkSpan
 import com.datadog.android.internal.thread.NamedExecutionUnit
 import com.datadog.android.internal.time.TimeProvider
 import java.util.concurrent.Callable
@@ -34,6 +36,28 @@ internal class BackPressureExecutorService(
 ),
     FlushableExecutorService {
 
+    private val diagnosticSpan = if (StartupTrace.enabled()) ThreadLocal<BenchmarkSpan>() else null
+    private val diagnosticExecutorContext = executorContext
+
+    override fun execute(command: Runnable) {
+        StartupTrace.event("executor.enqueue") { taskProperties(command) }
+        // Preserve execute's existing rejection contract; executeSafe callers already handle rejection.
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        super.execute(command)
+    }
+
+    override fun beforeExecute(t: Thread?, r: Runnable?) {
+        super.beforeExecute(t, r)
+        if (StartupTrace.enabled()) diagnosticSpan?.set(StartupTrace.begin("executor.start") { taskProperties(r) })
+    }
+
+    private fun taskProperties(task: Runnable?): Map<String, String> = mapOf(
+        "executor" to StartupTrace.id(this),
+        "executor_kind" to diagnosticExecutorContext,
+        "task" to StartupTrace.id(task),
+        "task_name" to ((task as? NamedExecutionUnit)?.name ?: "unnamed")
+    )
+
     // region ThreadPoolExecutor
 
     override fun <T> newTaskFor(callable: Callable<T>): RunnableFuture<T> {
@@ -47,6 +71,12 @@ internal class BackPressureExecutorService(
     }
 
     override fun afterExecute(r: Runnable?, t: Throwable?) {
+        StartupTrace.event("executor.end") { taskProperties(r) + ("outcome" to if (t == null) "returned" else "threw") }
+        // This plain ThreadLocal uses the non-throwing default initialValue, with no application override.
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        val span = diagnosticSpan?.get()
+        StartupTrace.end(span)
+        diagnosticSpan?.remove()
         super.afterExecute(r, t)
         loggingAfterExecute(r, t, logger)
     }

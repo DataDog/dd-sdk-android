@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal.persistence
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.flags.internal.diagnostics.StartupTrace
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.JsonKeys
 import com.datadog.android.flags.internal.model.PrecomputedFlag
@@ -18,7 +19,24 @@ import org.json.JSONObject
 internal class FlagsStateDeserializer(private val internalLogger: InternalLogger) :
     Deserializer<String, FlagsStateEntry> {
 
-    override fun deserialize(model: String): FlagsStateEntry? = try {
+    override fun deserialize(model: String): FlagsStateEntry? = StartupTrace.span("cache.json_parse", { emptyMap() }) {
+        deserializeUntraced(model).also { result ->
+            StartupTrace.event("cache.parse_result") {
+                mapOf(
+                    "outcome" to if (result ==
+                        null
+                    ) {
+                        "invalid"
+                    } else {
+                        "success"
+                    },
+                    "count" to (result?.flags?.size ?: 0).toString()
+                )
+            }
+        }
+    }
+
+    private fun deserializeUntraced(model: String): FlagsStateEntry? = try {
         val json = JSONObject(model)
 
         @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch

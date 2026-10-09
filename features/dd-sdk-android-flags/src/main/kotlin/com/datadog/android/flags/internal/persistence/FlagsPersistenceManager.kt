@@ -11,6 +11,7 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.flags.internal.diagnostics.StartupTrace
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
@@ -26,7 +27,9 @@ internal class FlagsPersistenceManager(
     private val flagsStateKey: String = "$FLAGS_STATE_KEY_PREFIX-$instanceName"
 
     init {
-        loadFlagsState(onStateLoaded)
+        StartupTrace.span("cache.request", { mapOf("store" to StartupTrace.id(dataStore)) }) {
+            loadFlagsState(onStateLoaded)
+        }
     }
 
     internal fun saveFlagsState(
@@ -56,7 +59,9 @@ internal class FlagsPersistenceManager(
             callback = object : DataStoreReadCallback<FlagsStateEntry> {
                 override fun onSuccess(dataStoreContent: DataStoreContent<FlagsStateEntry>?) {
                     val loadedState = dataStoreContent?.data
-                    onStateLoaded(loadedState)
+                    StartupTrace.span("cache.callback", {
+                        mapOf("outcome" to if (loadedState == null) "empty_or_invalid" else "present")
+                    }) { onStateLoaded(loadedState) }
                 }
 
                 override fun onFailure() {
@@ -65,7 +70,7 @@ internal class FlagsPersistenceManager(
                         InternalLogger.Target.MAINTAINER,
                         { "No persisted flags state found or failed to load" }
                     )
-                    onStateLoaded(null)
+                    StartupTrace.span("cache.callback", { mapOf("outcome" to "failure") }) { onStateLoaded(null) }
                 }
             }
         )
