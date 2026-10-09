@@ -27,6 +27,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.core.internal.diagnostics.FlagsStartupCapture
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
@@ -463,6 +464,7 @@ internal class DatadogCore(
         }
 
         val isDebug = isAppDebuggable(appContext)
+        FlagsStartupCapture.installIfEnabled(isDebug, internalLogger)
 
         var mutableConfig = configuration
         if (isDebug and configuration.coreConfig.enableDeveloperModeWhenDebuggable) {

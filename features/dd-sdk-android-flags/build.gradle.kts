@@ -92,6 +92,3 @@ datadogBuild {
             "library for Android applications."
     )
 }
-
-// Local diagnostic adapter: compiled into the sample and fixture tests, never into the SDK.
-kotlin.sourceSets.getByName("test").kotlin.srcDir(rootProject.file("tools/diagnostics/flags-startup/src/main/kotlin"))

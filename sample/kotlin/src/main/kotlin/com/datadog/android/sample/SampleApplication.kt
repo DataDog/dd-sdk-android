@@ -19,7 +19,6 @@ import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
-import com.datadog.android.diagnostics.FlagsStartupCapture
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
@@ -127,7 +126,6 @@ class SampleApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        FlagsStartupCapture.installIfEnabled(BuildConfig.DEBUG)
         Stetho.initializeWithDefaults(this)
         initializeDatadog()
 

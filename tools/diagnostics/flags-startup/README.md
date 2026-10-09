@@ -1,6 +1,6 @@
 # Diagnose flags startup from Logcat
 
-Use this branch in a non-minified diagnostic build of your existing app. It adds startup timing and state-provenance observations without changing the SDK's timeouts, scheduling, cache eligibility, encryption or tracking settings. Output goes directly to Logcat, outside Datadog's persistence/upload queues. No capture script is required.
+Use this branch in a debuggable diagnostic build of your existing app. It adds startup timing and state-provenance observations without changing the SDK's timeouts, scheduling, cache eligibility, encryption or tracking settings. Output goes directly to Logcat, outside Datadog's persistence/upload queues. No capture script is required.
 
 ## 1. Build this branch for your app
 
@@ -35,13 +35,12 @@ dependencyResolutionManagement {
 }
 ```
 
-In the app module, replace the core/flags versions with this branch's version and add the internal module needed by the app-local diagnostic adapter:
+In the app module, replace the core/flags versions with this branch's version:
 
 ```kotlin
 dependencies {
     implementation("com.datadoghq:dd-sdk-android-core:3.16.0-SNAPSHOT")
     implementation("com.datadoghq:dd-sdk-android-flags:3.16.0-SNAPSHOT")
-    implementation("com.datadoghq:dd-sdk-android-internal:3.16.0-SNAPSHOT")
 }
 ```
 
@@ -54,22 +53,17 @@ Merge these entries into your existing configuration. Keep your other SDK config
 
 Use your actual module and variant names if different. Confirm core, internal and flags all resolve to the local `3.16.0-SNAPSHOT` artifacts. This branch is based on develop `39ccdf81843e5ab2089575200707b6045e3e89c4`; it includes later CACHED/first-flags behaviour and is not an exact reproduction of a released 3.14.0 binary combination.
 
-## 2. Register the diagnostic adapter
+## 2. Enable SDK Logcat output
 
-Copy `src/main/kotlin/com/datadog/android/diagnostics/FlagsStartupCapture.kt` from this directory into the app's `src/main/kotlin/com/datadog/android/diagnostics/` directory. It remains an app-local class, not a new SDK API.
-
-Call it before your existing Datadog initialization, so executor and cache submission events are captured:
+Before your existing `Datadog.initialize(...)` call, enable informational SDK logs:
 
 ```kotlin
-import com.datadog.android.diagnostics.FlagsStartupCapture
-
-// In Application.onCreate(), before Datadog.initialize(...):
-FlagsStartupCapture.installIfEnabled(BuildConfig.DEBUG)
-
-// Continue with your existing Datadog, Flags and client initialization.
+Datadog.setVerbosity(android.util.Log.INFO)
 ```
 
-Use the app's `BuildConfig.DEBUG`. Keeping the file in `src/main` lets both app variants compile; this call enables registration only in a debug build. Do not rename `FlagsStartupCapture` or minify the diagnostic build: the SDK helpers recognise that explicit adapter name. Do not add extra resolutions, listeners or a flag-enumeration loop just to produce a trace.
+The SDK registers its internal capture before creating the core executors when the app is debuggable and the `DDFlagsStartup` Android log property is set to `DEBUG`. No adapter, extra app source file or direct internal-module dependency is required. Keep your existing flags initialization and resolutions unchanged.
+
+Records use `InternalLogger.Target.USER`, which writes directly to the `Datadog` Logcat tag, with a `DDFlagsStartup` message prefix. They are not sent as RUM telemetry or through SDK persistence/upload queues. The verbosity setting also enables other informational SDK messages.
 
 ## 3. Enable and collect Logcat
 
@@ -80,10 +74,10 @@ APP_ID=com.example.yourapp
 adb shell setprop log.tag.DDFlagsStartup DEBUG
 adb shell am force-stop "$APP_ID"
 adb shell monkey -p "$APP_ID" -c android.intent.category.LAUNCHER 1
-adb logcat --pid="$(adb shell pidof -s "$APP_ID")" -v raw 'DDFlagsStartup:I' '*:S' > flags-startup.log
+adb logcat --pid="$(adb shell pidof -s "$APP_ID")" -v raw 'Datadog:I' '*:S' > flags-startup.log
 ```
 
-Stop Logcat with Ctrl-C after startup. It includes buffered records for that process, so launching immediately before collection retains the early initialization events. Do not clear app data or Logcat between runs.
+Stop Logcat with Ctrl-C after startup. Within the file, look for messages containing `DDFlagsStartup`; each contains a JSON record after the prefix. It includes buffered records for that process, so launching immediately before collection retains the early initialization events. Do not clear app data or Logcat between runs.
 
 Capture stops after 60 seconds or 20,000 records, whichever is reached first. Expiry is checked on the next diagnostic observation; there is no timer or extra thread. `capture_stopped` means later work and missing span endings are outside the capture. Each app restart creates a fresh capture while the tag remains enabled.
 
@@ -95,7 +89,7 @@ adb shell am force-stop "$APP_ID"
 adb shell monkey -p "$APP_ID" -c android.intent.category.LAUNCHER 1
 ```
 
-Changing the tag alone does not cancel a capture already registered in the running process. After the investigation, remove the adapter/registration and restore the app's normal dependencies and repository configuration.
+Changing the tag alone does not cancel a capture already registered in the running process. After the investigation, restore the app's normal verbosity, dependencies and repository configuration.
 
 ## 4. Compare startup conditions
 
@@ -126,4 +120,4 @@ Records contain monotonic `ns`, process/thread IDs, span `id`, synchronous `pare
 
 A roughly 100 ms latch wait does **not** establish that disk reading took 100 ms. The trace separates queueing, file reading, parsing and the wait itself. Logcat formatting adds observer overhead, so compare phases and provenance rather than treating these durations as benchmark measurements.
 
-The diagnostic tag includes IDs, timings, counts and outcomes, not flag keys/values, evaluation contexts, request bodies, tokens or exception messages. Other app/SDK Logcat tags are outside this capture.
+The diagnostic records include IDs, timings, counts and outcomes, not flag keys/values, evaluation contexts, request bodies, tokens or exception messages. Other app/SDK Logcat tags are outside this capture.

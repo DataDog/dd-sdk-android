@@ -183,6 +183,7 @@ object com.datadog.android.internal.profiler.GlobalBenchmark
   fun register(BenchmarkProfiler)
   fun register(BenchmarkSdkUploads)
   fun getProfiler(): BenchmarkProfiler
+  fun isProfilerEnabled(): Boolean
   fun getBenchmarkSdkUploads(): BenchmarkSdkUploads
   fun createExecutionTimer(String, com.datadog.android.internal.time.TimeProvider): ExecutionTimer
 sealed class com.datadog.android.internal.profiling.ProfilerEvent

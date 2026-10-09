@@ -40,6 +40,9 @@ object GlobalBenchmark {
         return benchmarkProfiler
     }
 
+    /** Returns whether a profiler is registered for internal benchmarking. */
+    fun isProfilerEnabled(): Boolean = benchmarkProfiler !is NoOpBenchmarkProfiler
+
     /**
      * Returns the [BenchmarkSdkUploads] registered.
      */

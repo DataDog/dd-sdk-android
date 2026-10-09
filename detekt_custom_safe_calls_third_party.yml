@@ -2,6 +2,10 @@ datadog:
   UnsafeThirdPartyFunctionCall:
     knownSafeThirdPartyCalls:
       # region Apollo Kotlin
+      - "java.util.concurrent.atomic.AtomicBoolean.constructor()"
+      - "java.util.concurrent.atomic.AtomicLong.constructor()"
+      - "java.util.concurrent.atomic.AtomicLong.incrementAndGet()"
+      - "android.os.Process.myTid()"
       - "com.apollographql.apollo.api.json.buildJsonString(kotlin.String?, kotlin.Function1)"
       - "com.apollographql.apollo.api.ApolloRequest.newBuilder()"
       - "com.apollographql.apollo.api.ApolloRequest.Builder.addHttpHeader(kotlin.String, kotlin.String)"

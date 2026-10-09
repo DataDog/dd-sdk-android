@@ -10,7 +10,7 @@ import com.datadog.android.internal.profiler.BenchmarkSpan
 import com.datadog.android.internal.profiler.GlobalBenchmark
 import java.util.concurrent.atomic.AtomicLong
 
-// Local diagnostics only. The explicitly registered adapter bounds capture and writes outside SDK queues.
+// Diagnostic builds register a bounded USER Logcat capture during core initialization.
 internal object StartupTrace {
     const val REPOSITORY = "repository"
     const val TRACKING = "resolution.tracking"
@@ -22,7 +22,7 @@ internal object StartupTrace {
 
     private val sequence = AtomicLong(1L)
 
-    fun enabled(): Boolean = GlobalBenchmark.getProfiler().javaClass.simpleName == "FlagsStartupCapture"
+    fun enabled(): Boolean = GlobalBenchmark.isProfilerEnabled()
 
     fun nextId(): Long = if (enabled()) sequence.getAndIncrement() else 0L
 
@@ -45,7 +45,7 @@ internal object StartupTrace {
         try {
             span?.stop()
         } catch (_: Throwable) {
-            // Deliberately do not log through Datadog's persistence queue.
+            // Diagnostic failures must not affect SDK operations.
         }
     }
 

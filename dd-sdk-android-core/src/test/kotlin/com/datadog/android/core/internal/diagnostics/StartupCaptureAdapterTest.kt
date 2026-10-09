@@ -4,14 +4,19 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.flags.internal.diagnostics
+package com.datadog.android.core.internal.diagnostics
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.profiler.GlobalBenchmark
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
-import com.datadog.android.diagnostics.FlagsStartupCapture as CaptureAdapter
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import com.datadog.android.core.internal.diagnostics.FlagsStartupCapture as CaptureAdapter
 
 internal class StartupCaptureAdapterTest {
     private val previous = GlobalBenchmark.getProfiler()
@@ -20,9 +25,31 @@ internal class StartupCaptureAdapterTest {
     fun tearDown() { GlobalBenchmark.register(previous) }
 
     @Test
+    fun `M send diagnostic records only to USER W capture`() {
+        // Given
+        val logger = mock<InternalLogger>()
+        val capture = CaptureAdapter(logger = logger, clock = { 10L })
+        // When
+        capture.getTracer("flags-startup").spanBuilder("test", emptyMap()).startSpan()
+        // Then
+        val message = argumentCaptor<() -> String>()
+        verify(
+            logger
+        ).log(
+            eq(InternalLogger.Level.INFO),
+            eq(InternalLogger.Target.USER),
+            message.capture(),
+            eq(null),
+            eq(false),
+            eq(null)
+        )
+        assertThat(message.firstValue()).startsWith("DDFlagsStartup ").contains("test")
+    }
+
+    @Test
     fun `M correlate nested spans and stop at record cap W capture`() {
         val lines = mutableListOf<String>()
-        val capture = CaptureAdapter(maxRecords = 4, clock = { 10L }, sink = { lines.add(it) })
+        val capture = CaptureAdapter(logger = mock(), maxRecords = 4, clock = { 10L }, sink = { lines.add(it) })
         GlobalBenchmark.register(capture)
         StartupTrace.span("outer") { StartupTrace.event("inner") }
         StartupTrace.event("over_limit")
@@ -41,7 +68,11 @@ internal class StartupCaptureAdapterTest {
     fun `M bound capture by monotonic time W duration expires`() {
         var time = 10L
         val lines = mutableListOf<String>()
-        GlobalBenchmark.register(CaptureAdapter(durationNs = 5, clock = { time }, sink = { lines.add(it) }))
+        GlobalBenchmark.register(
+            CaptureAdapter(logger = mock(), durationNs = 5, clock = {
+                time
+            }, sink = { lines.add(it) })
+        )
         StartupTrace.event("before")
         time = 16L
         StartupTrace.event("after")
@@ -51,7 +82,7 @@ internal class StartupCaptureAdapterTest {
 
     @Test
     fun `M preserve result and parent cleanup W sink throws`() {
-        GlobalBenchmark.register(CaptureAdapter(sink = { error("local sink failure") }))
+        GlobalBenchmark.register(CaptureAdapter(logger = mock(), sink = { error("local sink failure") }))
         assertThat(StartupTrace.span("outer") { StartupTrace.span("inner") { 42 } }).isEqualTo(42)
     }
 }
