@@ -84,7 +84,7 @@ internal class OkHttpGraphQLAdapterTest {
         val builder = request.newBuilder()
 
         // When
-        testedHelper.convertHeadersToTag(request, builder)
+        testedHelper.convertHeadersToTag(request, builder, mockInternalLogger)
         val result = builder.build()
 
         // Then
@@ -107,7 +107,7 @@ internal class OkHttpGraphQLAdapterTest {
         val builder = request.newBuilder()
 
         // When
-        testedHelper.convertHeadersToTag(request, builder)
+        testedHelper.convertHeadersToTag(request, builder, mockInternalLogger)
         val result = builder.build()
 
         // Then

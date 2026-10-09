@@ -19,6 +19,8 @@ import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.okhttp.internal.RumResourceAttributesProviderCompatibilityAdapter
 import com.datadog.android.okhttp.internal.buildResourceId
 import com.datadog.android.okhttp.internal.graphql.OkHttpGraphQLAdapter
+import com.datadog.android.okhttp.internal.isStreaming
+import com.datadog.android.okhttp.internal.mimeType
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRumMonitor
@@ -122,6 +124,7 @@ open class DatadogInterceptor internal constructor(
     @WorkerThread
     override fun intercept(chain: Interceptor.Chain): Response {
         val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
+        val internalLogger = sdkCore?.internalLogger ?: InternalLogger.UNBOUND
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
 
         val originalRequest = chain.request()
@@ -129,13 +132,13 @@ open class DatadogInterceptor internal constructor(
             .apply {
                 @Suppress("UnsafeThirdPartyFunctionCall") // ClassCastException can't happen here.
                 tag(UUID::class.java, UUID.randomUUID())
-                okHttpGraphQLAdapter.convertHeadersToTag(originalRequest, this)
+                okHttpGraphQLAdapter.convertHeadersToTag(originalRequest, this, internalLogger)
             }
             .safeBuild() ?: originalRequest
 
         if (rumFeature != null) {
             val url = request.url.toString()
-            val method = toHttpMethod(request.method, sdkCore.internalLogger)
+            val method = toHttpMethod(request.method, internalLogger)
 
             @Suppress("DEPRECATION")
             val requestId = request.buildResourceId(generateUuid = false)
@@ -147,7 +150,7 @@ open class DatadogInterceptor internal constructor(
             } else {
                 "SDK instance with name=$sdkInstanceName"
             }
-            (sdkCore?.internalLogger ?: InternalLogger.UNBOUND).log(
+            internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 { WARN_RUM_DISABLED.format(Locale.US, prefix) }
@@ -292,13 +295,8 @@ open class DatadogInterceptor internal constructor(
     private fun getBodyLength(response: Response, internalLogger: InternalLogger): Long? {
         return try {
             val body = response.body
-            val contentType = body?.contentType()?.let {
-                // manually rebuild the mimetype as `toString()` can also include the charsets
-                it.type + "/" + it.subtype
-            }
-            val isStream = HttpSpec.ContentType.isStream(contentType)
-            val isWebSocket = !response.header(HttpSpec.Header.WEBSOCKET_ACCEPT_HEADER, null).isNullOrBlank()
-            if (body == null || isStream || isWebSocket) {
+            val contentType = body?.contentType()?.mimeType()
+            if (body == null || response.isStreaming(contentType)) {
                 return null
             }
             // if there is a Content-Length available, we can read it directly

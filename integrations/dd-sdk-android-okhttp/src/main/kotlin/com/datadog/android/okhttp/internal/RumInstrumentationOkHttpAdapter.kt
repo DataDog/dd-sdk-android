@@ -37,9 +37,10 @@ internal class RumInstrumentationOkHttpAdapter(
         }
 
         val distributedTracingInstrumentation = distributedTracingInstrumentation
-        val distributedTracingState = distributedTracingInstrumentation?.onRequest(okHttpRequest.toHttpRequestInfo())
+        val distributedTracingState =
+            distributedTracingInstrumentation?.onRequest(okHttpRequest.toHttpRequestInfo(internalLogger))
         val finalOkHttpRequest = distributedTracingState?.createRequestInfo()?.toOkHttpRequest() ?: okHttpRequest
-        val requestInfo = finalOkHttpRequest.toHttpRequestInfo()
+        val requestInfo = finalOkHttpRequest.toHttpRequestInfo(internalLogger)
 
         return try {
             rumNetworkInstrumentation.startResource(requestInfo)
