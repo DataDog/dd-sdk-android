@@ -248,8 +248,9 @@ internal class DatadogCore(
             feature.featureContextLock.writeLock().safeTryWithLock(1, TimeUnit.SECONDS, internalLogger) {
                 val currentContext = feature.featureContext
                 updateCallback(currentContext)
+                val contextSnapshot = currentContext.toMap()
                 featureContextUpdateReceivers.forEach {
-                    it.onContextUpdate(featureName, currentContext)
+                    it.onContextUpdate(featureName, contextSnapshot)
                 }
             }
         }

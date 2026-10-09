@@ -197,6 +197,7 @@ object Rum {
         sessionEndedMetricDispatcher: SessionEndedMetricDispatcher
     ) = TelemetryEventHandler(
         sdkCore = sdkCore,
+        applicationId = rumFeature.applicationId,
         eventSampler = RateBasedSampler(rumFeature.telemetrySampleRate),
         sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
         configurationExtraSampler = RateBasedSampler(

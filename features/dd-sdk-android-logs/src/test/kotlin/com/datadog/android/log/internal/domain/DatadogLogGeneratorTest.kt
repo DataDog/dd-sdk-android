@@ -31,6 +31,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -1213,6 +1215,58 @@ internal class DatadogLogGeneratorTest {
                 LogAttributes.RUM_ACTION_ID to fakeRumActionId
             )
         )
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M retain application attribution W generateLog() {application-only RUM context}`(
+        hasCustomerCorrelation: Boolean
+    ) {
+        // Given
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = mapOf(
+                Feature.RUM_FEATURE_NAME to mapOf("application_id" to fakeRumApplicationId)
+            )
+        )
+
+        val fakeCorrelation =
+            if (hasCustomerCorrelation) {
+                mapOf(
+                    LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
+                    LogAttributes.RUM_VIEW_ID to fakeRumViewId,
+                    LogAttributes.RUM_ACTION_ID to fakeRumActionId
+                )
+            } else {
+                emptyMap()
+            }
+
+        // When
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes + fakeCorrelation,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
+        )
+
+        // Then
+        assertThat(log.additionalProperties).containsEntry(
+            LogAttributes.RUM_APPLICATION_ID,
+            fakeRumApplicationId
+        )
+            .containsAllEntriesOf(fakeCorrelation)
+        if (!hasCustomerCorrelation) {
+            assertThat(log.additionalProperties).doesNotContainKeys(
+                LogAttributes.RUM_SESSION_ID,
+                LogAttributes.RUM_VIEW_ID,
+                LogAttributes.RUM_ACTION_ID
+            )
+        }
     }
 
     @Test

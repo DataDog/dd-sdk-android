@@ -69,6 +69,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
@@ -420,6 +421,42 @@ internal class DatadogCoreTest {
         // Then
         assertThat(mockFeature.featureContext).isEqualTo(fakeContext)
         verify(mockFeatureContextUpdateListener).onContextUpdate(feature, fakeContext)
+    }
+
+    @Test
+    fun `M publish independent snapshots W updateFeatureContext()`(
+        @StringForgery fakeFeatureName: String,
+        @StringForgery fakeKey: String,
+        @StringForgery fakeFirstValue: String,
+        @StringForgery fakeSecondValue: String
+    ) {
+        // Given
+        val mockFeature =
+            mock<SdkFeature>().apply {
+                whenever(featureContextLock) doReturn ReentrantReadWriteLock()
+                whenever(featureContext) doReturn mutableMapOf<String, Any?>()
+            }
+        testedCore.features[fakeFeatureName] = mockFeature
+        val mockReceiver = mock<FeatureContextUpdateReceiver>()
+        testedCore.setContextUpdateReceiver(mockReceiver)
+
+        // When
+        testedCore.updateFeatureContext(fakeFeatureName, useContextThread = false) {
+            it[fakeKey] = fakeFirstValue
+        }
+        testedCore.updateFeatureContext(fakeFeatureName, useContextThread = false) {
+            it.clear()
+            it[fakeKey] = fakeSecondValue
+        }
+
+        // Then
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockReceiver, times(2)).onContextUpdate(eq(fakeFeatureName), capture())
+            assertThat(firstValue).isEqualTo(mapOf(fakeKey to fakeFirstValue))
+            assertThat(secondValue).isEqualTo(mapOf(fakeKey to fakeSecondValue))
+            assertThat(firstValue).isNotSameAs(mockFeature.featureContext)
+            assertThat(secondValue).isNotSameAs(mockFeature.featureContext)
+        }
     }
 
     @Test

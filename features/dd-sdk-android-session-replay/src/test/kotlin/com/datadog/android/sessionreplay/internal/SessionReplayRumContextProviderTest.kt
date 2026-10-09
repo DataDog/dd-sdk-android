@@ -132,6 +132,41 @@ internal class SessionReplayRumContextProviderTest {
     }
 
     @Test
+    fun `M invalidate recording context W onContextUpdate() {only application id remains}`(
+        @Forgery fakeApplicationId: UUID,
+        @Forgery fakeSessionId: UUID,
+        @Forgery fakeViewId: UUID
+    ) {
+        // Given
+        val fakeActiveContext = mapOf(
+            RUM_APPLICATION_ID_CONTEXT_KEY to fakeApplicationId.toString(),
+            RUM_SESSION_ID_CONTEXT_KEY to fakeSessionId.toString(),
+            RUM_VIEW_ID_CONTEXT_KEY to fakeViewId.toString()
+        )
+        testedSessionReplayContextProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeActiveContext)
+
+        // When
+        testedSessionReplayContextProvider.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_APPLICATION_ID_CONTEXT_KEY to fakeApplicationId.toString())
+        )
+
+        // Then
+        val context = testedSessionReplayContextProvider.getRumContext()
+        assertThat(context.applicationId).isEqualTo(fakeApplicationId.toString())
+        assertThat(context.sessionId).isEqualTo(NULL_UUID)
+        assertThat(context.viewId).isEqualTo(NULL_UUID)
+        assertThat(context.isValid()).isFalse()
+        assertThat(context.hasValidApplicationAndSession()).isFalse()
+
+        // When
+        testedSessionReplayContextProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeActiveContext)
+
+        // Then
+        assertThat(testedSessionReplayContextProvider.getRumContext().isValid()).isTrue()
+    }
+
+    @Test
     fun `M provide a valid Rum context W getRumContext()`(
         @Forgery fakeApplicationId: UUID,
         @Forgery fakeSessionId: UUID,
