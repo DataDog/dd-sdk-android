@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.flags.BuildConfig
 import com.datadog.android.flags.internal.getFlagsEndpoint
 import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Headers
@@ -18,12 +19,19 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONException
 import org.json.JSONObject
 
+internal data class WrapperSdkSource(
+    val sdkName: String,
+    val sdkVersion: String,
+    val nativeBridgeVersion: String
+)
+
 /**
  * Factory for creating HTTP requests to fetch precomputed flag assignments.
  */
 internal class PrecomputedAssignmentsRequestFactory(
     private val internalLogger: InternalLogger,
-    private val customFlagEndpoint: String?
+    private val customFlagEndpoint: String?,
+    private val wrapperSource: WrapperSdkSource? = null
 ) {
 
     /**
@@ -129,10 +137,22 @@ internal class PrecomputedAssignmentsRequestFactory(
             .put("dd_env", datadogContext.env)
 
     @Suppress("UnsafeThirdPartyFunctionCall") // call wrapped in try/catch
-    private fun buildSourcePayload(datadogContext: DatadogContext): JSONObject =
-        JSONObject()
+    private fun buildSourcePayload(context: DatadogContext): JSONObject {
+        val nativeSource = JSONObject()
             .put("sdk_name", SDK_NAME)
-            .put("sdk_version", datadogContext.sdkVersion)
+            .put("sdk_version", BuildConfig.SDK_VERSION_NAME)
+        val wrapper = wrapperSource ?: if (context.source == "react-native") {
+            // Older bridges cannot identify the loaded JavaScript reader.
+            WrapperSdkSource("dd-sdk-reactnative", "unknown", "unknown")
+        } else {
+            return nativeSource
+        }
+        return JSONObject()
+            .put("sdk_name", wrapper.sdkName)
+            .put("sdk_version", wrapper.sdkVersion)
+            .put("native_bridge_version", wrapper.nativeBridgeVersion)
+            .put("native_sdk", nativeSource)
+    }
 
     private val DatadogContext.rumApplicationId: String?
         get() = featuresContext.get(Feature.RUM_FEATURE_NAME)
