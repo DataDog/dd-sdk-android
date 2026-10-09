@@ -12,7 +12,24 @@ import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface TimeseriesCollector {
+    /** Called when a RUM session becomes the active one. */
     fun onSessionStart(sessionId: String, sessionType: RumSessionType)
+
+    /** Called when the active RUM session stops, expires, or is renewed. */
     fun onSessionStop(sessionId: String)
+
+    /** Called for every RUM event, with the resulting [RumContext]. */
     fun onRumContextUpdate(newRumContext: RumContext)
+
+    /**
+     * Called when the process has at least one started, and therefore visible, Activity.
+     * This is the app visibility state, which is independent of the RUM session state.
+     */
+    fun onUiVisible()
+
+    /**
+     * Called when the process has no started Activity left, so nothing is visible.
+     * This is the app visibility state, which is independent of the RUM session state.
+     */
+    fun onUiHidden()
 }
