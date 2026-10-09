@@ -672,6 +672,22 @@ publish:release-all:
     paths:
       - "**/verification-metadata.xml"
 
+# Publishes every dogfooding build once its pipeline has passed
+publish:dogfooding:
+  extends:
+    - .cpu-memory-intensive-job
+  tags: [ "arch:amd64" ]
+  only:
+    - dogfooding
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  interruptible: false
+  script:
+    - !reference [.snippets, set-publishing-credentials]
+    - !reference [.snippets, setup-gradle]
+    - ./gradlew publishReleasePublicationToDogfoodRepository --stacktrace --no-daemon
+
 
 # SLACK NOTIFICATIONS
 

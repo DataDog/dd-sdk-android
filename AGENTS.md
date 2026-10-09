@@ -240,3 +240,7 @@ To inspect the events the SDK emits from the sample app, use the `android-sdk-ev
 - Keep PRs focused. Don't include unrelated refactors, formatting churn, debug leftovers, stray files or "may be needed later" code (unused properties, schemas, files).
 - Don't edit `CHANGELOG.md` in feature PRs. It is updated only in release preparation PRs.
 - When preparing a release changelog: tags reflect customer impact, not change size. Internal-only changes are `[MAINTENANCE]`, not `[IMPROVEMENT]`. Follow the existing entry format: `* [TAG] Description. See [#N](link)`.
+
+# Dogfooding Branch
+
+`dogfooding` is managed only through the scripts in `ci/scripts/dogfooding/`; read `ci/scripts/dogfooding/README.md` before helping with it. Never push to `dogfooding`, open a PR from a feature branch into it, or merge into it with squash or rebase: use `feature.sh`, `sync.sh` and `reset.sh`, which open the PRs. The only change made by hand is reverting a feature's dogfood merges, as described in the README's "Remove a single feature". Show the command and ask before running the scripts, since they push branches and open PRs.
