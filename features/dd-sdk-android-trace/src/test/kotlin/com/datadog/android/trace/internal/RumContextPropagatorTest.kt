@@ -335,6 +335,46 @@ class RumContextPropagatorTest {
     }
 
     @Test
+    fun `M retain application attribution W extractRumContext() {DatadogSpan, application-only context}`(forge: Forge) {
+        // Given
+        val fakeApplicationId = fakeRumContext[RUM_CONTEXT_APPLICATION_ID]
+        val fakeContext = forge.aDatadogContextWithRumContext(
+            mapOf(RUM_CONTEXT_APPLICATION_ID to fakeApplicationId)
+        )
+        val mockSpan = newDatadogSpanWithLazyDatadogContext(completedFutureMock(fakeContext))
+
+        // When
+        mockSpan.extractRumContext(testedRumContextPropagator)
+
+        // Then
+        verify(mockSpan).setTag(LogAttributes.RUM_APPLICATION_ID, fakeApplicationId)
+        verify(mockSpan).setTag(LogAttributes.RUM_SESSION_ID, null as Any?)
+        verify(mockSpan).setTag(LogAttributes.RUM_VIEW_ID, null as Any?)
+        verify(mockSpan).setTag(LogAttributes.RUM_ACTION_ID, null as Any?)
+        verify(mockSpan).setTag(LogAttributes.RUM_SESSION_SAMPLE_RATE, null as Any?)
+    }
+
+    @Test
+    fun `M retain application attribution W extractRumContext() {DDSpan, application-only context}`(forge: Forge) {
+        // Given
+        val fakeApplicationId = fakeRumContext[RUM_CONTEXT_APPLICATION_ID]
+        val fakeContext = forge.aDatadogContextWithRumContext(
+            mapOf(RUM_CONTEXT_APPLICATION_ID to fakeApplicationId)
+        )
+        val mockSpan = newDDSpanWithLazyDatadogContext(completedFutureMock(fakeContext))
+
+        // When
+        mockSpan.extractRumContext(testedRumContextPropagator)
+
+        // Then
+        verify(mockSpan).setTag(LogAttributes.RUM_APPLICATION_ID, fakeApplicationId)
+        verify(mockSpan).setTag(LogAttributes.RUM_SESSION_ID, null as Any?)
+        verify(mockSpan).setTag(LogAttributes.RUM_VIEW_ID, null as Any?)
+        verify(mockSpan).setTag(LogAttributes.RUM_ACTION_ID, null as Any?)
+        verify(mockSpan).setTag(LogAttributes.RUM_SESSION_SAMPLE_RATE, null as Any?)
+    }
+
+    @Test
     fun `M set null RUM tags W extractRumContext { DatadogSpan, rum context is empty }`(forge: Forge) {
         // Given
         val futureMock = completedFutureMock(forge.aDatadogContextWithRumContext(emptyMap()))

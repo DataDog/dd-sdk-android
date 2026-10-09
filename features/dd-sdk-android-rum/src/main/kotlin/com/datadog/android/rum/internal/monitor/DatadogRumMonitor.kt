@@ -87,7 +87,7 @@ import com.datadog.android.rum.featureoperations.FailureReason as DeprecatedFail
 
 @Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
 internal class DatadogRumMonitor(
-    applicationId: String,
+    private val applicationId: String,
     private val sdkCore: InternalSdkCore,
     internal val appPackageName: String,
     internal val sessionSampler: Sampler<String>,
@@ -119,6 +119,8 @@ internal class DatadogRumMonitor(
 ) : RumMonitor, AdvancedRumMonitor {
 
     @Volatile private var cachedViewUrl: String? = null
+
+    private val applicationContext = RumContext(applicationId = applicationId)
 
     internal var rootScope = RumApplicationScope(
         applicationId = applicationId,
@@ -171,16 +173,10 @@ internal class DatadogRumMonitor(
         ) {
             val activeSessionId = rootScope.activeSession
                 ?.getRumContext()
-                ?.let {
-                    val sessionId = it.sessionId
-                    if (it.sessionState == RumSessionScope.State.NOT_TRACKED ||
-                        sessionId == RumContext.NULL_UUID
-                    ) {
-                        null
-                    } else {
-                        sessionId
-                    }
+                ?.takeIf {
+                    it.sessionState != RumSessionScope.State.NOT_TRACKED
                 }
+                ?.sessionId
             callback(activeSessionId)
         }
     }
@@ -972,10 +968,7 @@ internal class DatadogRumMonitor(
                         @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
                         rootScope.handleEvent(event, datadogContext, eventWriteScope, writer)
                         val rumContext = currentRumContext()
-                        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
-                            it.clear()
-                            rumContext?.toMap()?.let(it::putAll)
-                        }
+                        publishRumContext(rumContext.toMap())
                     }
                 }
             if (handled != true) {
@@ -1010,19 +1003,23 @@ internal class DatadogRumMonitor(
                                     notifyDebugListenerWithState()
                                     val context = currentRumContext()
                                     updateCachedViewUrl(context)
-                                    sessionExpirationChecker.onEventHandled(context?.sessionState)
-                                    context
+                                    sessionExpirationChecker.onEventHandled(context.sessionState)
+                                    context.toMap()
                                 }
                             }
-                        )
-                        val rumContext = future?.getSafe("Rum get context", sdkCore.internalLogger)
-                        // we are on the context thread already, so useContextThread=false
-                        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
-                            it.clear()
-                            rumContext?.toMap()?.let(it::putAll)
-                        }
+                        ) ?: return@withWriteContext
+                        val rumContext = future.getSafe("Rum get context", sdkCore.internalLogger)
+                            ?: applicationContext.toMap()
+                        publishRumContext(rumContext)
                     }
                 }
+        }
+    }
+
+    private fun publishRumContext(rumContext: Map<String, Any?>) {
+        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
+            it.clear()
+            it.putAll(rumContext)
         }
     }
 
@@ -1067,16 +1064,15 @@ internal class DatadogRumMonitor(
 
     override fun getCurrentViewUrl(): String? = cachedViewUrl
 
-    private fun updateCachedViewUrl(context: RumContext?) {
-        val newUrl = context?.viewUrl
+    private fun updateCachedViewUrl(context: RumContext) {
+        val newUrl = context.viewUrl
         if (cachedViewUrl != newUrl) cachedViewUrl = newUrl
     }
 
-    private fun currentRumContext(): RumContext? {
-        val activeSession = rootScope.activeSession ?: return null
-        val context = activeSession.activeView?.getRumContext()
-            ?: activeSession.getRumContext()
-        return if (context.sessionId == RumContext.NULL_UUID) null else context
+    private fun currentRumContext(): RumContext {
+        val session = rootScope.activeSession ?: return applicationContext
+        return (session.activeView?.getRumContext() ?: session.getRumContext())
+            .takeIf { it.sessionId != null } ?: applicationContext
     }
 
     internal fun notifyDebugListenerWithState() {

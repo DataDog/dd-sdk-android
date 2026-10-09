@@ -569,6 +569,23 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M ignore context update W onContextUpdate() {application-only RUM context}`(
+        @StringForgery fakeApplicationId: String
+    ) {
+        // Given
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf("application_id" to fakeApplicationId)
+        )
+
+        // Then
+        assertThat(testedFeature.lastSeenRumSessionId).isNull()
+    }
+
+    @Test
     fun `M ignore context update W onContextUpdate {session id is NULL_UUID sentinel}`(
         @FloatForgery(min = 0f, max = 100f) fakeSessionRate: Float
     ) {

@@ -54,9 +54,15 @@ internal class WebViewLogEventConsumer(
         addDdTags(event, datadogContext)
         correctDate(event, datadogContext)
         addAnonymousId(event, datadogContext)
-        if (rumContext != null) {
-            event.addProperty(LogAttributes.RUM_APPLICATION_ID, rumContext.applicationId)
-            event.addProperty(LogAttributes.RUM_SESSION_ID, rumContext.sessionId)
+        val applicationId = rumContext?.applicationId
+        if (applicationId != null && applicationId != RumContext.NULL_UUID) {
+            event.addProperty(LogAttributes.RUM_APPLICATION_ID, applicationId)
+            val sessionId = rumContext.sessionId
+            if (sessionId != null) {
+                event.addProperty(LogAttributes.RUM_SESSION_ID, sessionId)
+            } else {
+                event.remove(LogAttributes.RUM_SESSION_ID)
+            }
         }
         return event
     }

@@ -4276,7 +4276,7 @@ internal class RumViewScopeTest {
             assertThat(firstValue.rumContext).isEqualTo(
                 ProfilingRumContext(
                     applicationId = fakeParentContext.applicationId,
-                    sessionId = fakeParentContext.sessionId,
+                    sessionId = checkNotNull(fakeParentContext.sessionId),
                     viewId = testedScope.viewId,
                     viewName = fakeKey.name
                 )
@@ -6266,7 +6266,7 @@ internal class RumViewScopeTest {
             assertThat(firstValue.rumContext).isEqualTo(
                 ProfilingRumContext(
                     applicationId = fakeParentContext.applicationId,
-                    sessionId = fakeParentContext.sessionId,
+                    sessionId = checkNotNull(fakeParentContext.sessionId),
                     viewId = testedScope.viewId,
                     viewName = fakeKey.name
                 )
@@ -10730,7 +10730,7 @@ internal class RumViewScopeTest {
         assertThat(capturedProfilerEvent.rumContext).isEqualTo(
             ProfilingRumContext(
                 applicationId = fakeParentContext.applicationId,
-                sessionId = fakeParentContext.sessionId,
+                sessionId = checkNotNull(fakeParentContext.sessionId),
                 viewId = testedScope.viewId,
                 viewName = fakeKey.name
             )
@@ -10774,7 +10774,7 @@ internal class RumViewScopeTest {
         assertThat(capturedProfilerEvent.rumContext).isEqualTo(
             ProfilingRumContext(
                 applicationId = fakeParentContext.applicationId,
-                sessionId = fakeParentContext.sessionId,
+                sessionId = checkNotNull(fakeParentContext.sessionId),
                 viewId = testedScope.viewId,
                 viewName = fakeKey.name
             )
