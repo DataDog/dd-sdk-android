@@ -139,8 +139,11 @@ internal class DefaultTimeseriesCollectorTest {
 
     private fun fakeRumContextOf(
         viewType: RumViewType,
-        sessionId: String = fakeRumContext.sessionId
-    ) = fakeRumContext.copy(viewType = viewType, sessionId = sessionId)
+        sessionId: String = checkNotNull(fakeRumContext.session?.id)
+    ) = fakeRumContext.copy(
+        session = checkNotNull(fakeRumContext.session).copy(id = sessionId),
+        viewType = viewType
+    )
 
     private fun createTimeseries(
         pipelines: List<Pipeline<*>> = listOf(
@@ -181,7 +184,7 @@ internal class DefaultTimeseriesCollectorTest {
     }
 
     private fun DefaultTimeseriesCollector.startSession(
-        sessionId: String = fakeRumContext.sessionId,
+        sessionId: String = checkNotNull(fakeRumContext.session?.id),
         sessionType: RumSessionType = fakeSessionType,
         viewType: RumViewType = RumViewType.FOREGROUND
     ) {
@@ -283,6 +286,23 @@ internal class DefaultTimeseriesCollectorTest {
     }
 
     @Test
+    fun `M wait for session context W onSessionStart() {application-only context received}`() {
+        // Given
+        val collector = createTimeseries()
+        collector.startInForeground()
+        collector.onRumContextUpdate(fakeRumContext.copy(session = null))
+
+        // When
+        collector.onSessionStart(checkNotNull(fakeRumContext.session?.id), fakeSessionType)
+
+        // Then
+        verifyNoInteractions(mockExecutor)
+        collector.onRumContextUpdate(fakeRumContext)
+        verify(mockExecutor).schedule(any<Runnable>(), eq(fakeIntervalAMs), eq(TimeUnit.MILLISECONDS))
+        verify(mockExecutor).schedule(any<Runnable>(), eq(fakeIntervalBMs), eq(TimeUnit.MILLISECONDS))
+    }
+
+    @Test
     fun `M flush previous pipelines W onSessionStart() { session already active }`() {
         // Given
         val mockPreviousPipeline = mock<Pipeline<Double>>()
@@ -293,7 +313,7 @@ internal class DefaultTimeseriesCollectorTest {
         val collector = createCollector(mockPipelinesFactory)
         collector.startInForeground()
         collector.startSession()
-        val fakeNextSessionId = "${fakeRumContext.sessionId}-next"
+        val fakeNextSessionId = "${fakeRumContext.session?.id}-next"
 
         // When — another session starts before this one was explicitly stopped
         // (see RumApplicationScope's MULTIPLE_ACTIVE_SESSIONS_ERROR)
@@ -307,7 +327,7 @@ internal class DefaultTimeseriesCollectorTest {
     @Test
     fun `M keep current session active W onSessionStop() { obsolete session }`() {
         // Given
-        val fakePreviousSessionId = fakeRumContext.sessionId
+        val fakePreviousSessionId = checkNotNull(fakeRumContext.session?.id)
         val fakeCurrentSessionId = "$fakePreviousSessionId-current"
         val mockPreviousPipeline = mock<Pipeline<Double>>()
         val mockCurrentPipeline = mock<Pipeline<Double>>()
@@ -333,7 +353,7 @@ internal class DefaultTimeseriesCollectorTest {
     @Test
     fun `M keep current context W onRumContextUpdate() { obsolete session }`(forge: Forge) {
         // Given
-        val fakePreviousSessionId = fakeRumContext.sessionId
+        val fakePreviousSessionId = checkNotNull(fakeRumContext.session?.id)
         val fakeCurrentSessionId = "$fakePreviousSessionId-current"
         val fakeCurrentContext = fakeRumContextOf(RumViewType.FOREGROUND, fakeCurrentSessionId)
         val fakeObsoleteContext = fakeRumContextOf(RumViewType.FOREGROUND, fakePreviousSessionId).copy(
@@ -360,7 +380,7 @@ internal class DefaultTimeseriesCollectorTest {
     @Test
     fun `M wait for current context W onSessionStart() { previous context is cached }`() {
         // Given
-        val fakeCurrentSessionId = "${fakeRumContext.sessionId}-current"
+        val fakeCurrentSessionId = "${fakeRumContext.session?.id}-current"
         testedTimeseriesCollector.startSession()
 
         // When
@@ -385,7 +405,7 @@ internal class DefaultTimeseriesCollectorTest {
     @Test
     fun `M do nothing W onSessionStop() { session never started }`() {
         // When
-        assertDoesNotThrow { testedTimeseriesCollector.onSessionStop(fakeRumContext.sessionId) }
+        assertDoesNotThrow { testedTimeseriesCollector.onSessionStop(checkNotNull(fakeRumContext.session?.id)) }
 
         // Then
         verifyNoInteractions(mockDataWriter)
@@ -399,7 +419,7 @@ internal class DefaultTimeseriesCollectorTest {
         testedTimeseriesCollector.startSession()
 
         // When
-        testedTimeseriesCollector.onSessionStop(fakeRumContext.sessionId)
+        testedTimeseriesCollector.onSessionStop(checkNotNull(fakeRumContext.session?.id))
 
         // Then
         verify(mockExecutor, never()).shutdown()
@@ -432,7 +452,7 @@ internal class DefaultTimeseriesCollectorTest {
         captureScheduledRunnableForInterval(fakeIntervalBMs).run()
 
         // When
-        testedTimeseriesCollector.onSessionStop(fakeRumContext.sessionId)
+        testedTimeseriesCollector.onSessionStop(checkNotNull(fakeRumContext.session?.id))
 
         // Then
         mockInternalLogger.verifyLog(
@@ -456,7 +476,7 @@ internal class DefaultTimeseriesCollectorTest {
         runnableA.run()
 
         // When
-        testedTimeseriesCollector.onSessionStop(fakeRumContext.sessionId)
+        testedTimeseriesCollector.onSessionStop(checkNotNull(fakeRumContext.session?.id))
 
         // Then
         verify(mockEventFactoryA).create(any(), any(), any())
@@ -624,7 +644,7 @@ internal class DefaultTimeseriesCollectorTest {
     @Test
     fun `M flush outgoing pipelines with outgoing context W suspend fires { session renewed while stopped }`() {
         // Given
-        val fakePreviousSessionId = fakeRumContext.sessionId
+        val fakePreviousSessionId = checkNotNull(fakeRumContext.session?.id)
         val fakeNextSessionId = "$fakePreviousSessionId-next"
         val fakePreviousContext = fakeRumContextOf(RumViewType.FOREGROUND, fakePreviousSessionId)
         val mockPreviousPipeline = mock<Pipeline<Double>>()
@@ -661,7 +681,7 @@ internal class DefaultTimeseriesCollectorTest {
         testedTimeseriesCollector.onUiHidden()
 
         // When
-        testedTimeseriesCollector.onSessionStop(fakeRumContext.sessionId)
+        testedTimeseriesCollector.onSessionStop(checkNotNull(fakeRumContext.session?.id))
 
         // Then
         verify(mockEventFactoryA).create(
@@ -700,7 +720,7 @@ internal class DefaultTimeseriesCollectorTest {
         testedTimeseriesCollector.startInForeground()
         testedTimeseriesCollector.startSession()
         testedTimeseriesCollector.onUiHidden()
-        testedTimeseriesCollector.onSessionStop(fakeRumContext.sessionId)
+        testedTimeseriesCollector.onSessionStop(checkNotNull(fakeRumContext.session?.id))
 
         // When
         runScheduledSuspend()
@@ -721,7 +741,7 @@ internal class DefaultTimeseriesCollectorTest {
         // When — onSessionStop closes the gate (sessionActive: true -> false) right away, so by the
         // time the debounced suspend runs, setForeground(false) is no longer an open -> closed
         // transition and Gate.setForeground's onUpdated callback is never invoked
-        testedCollector.onSessionStop(fakeRumContext.sessionId)
+        testedCollector.onSessionStop(checkNotNull(fakeRumContext.session?.id))
         verify(mockPipeline, times(1)).flush(fakeRumContextOf(RumViewType.FOREGROUND))
         runScheduledSuspend()
 

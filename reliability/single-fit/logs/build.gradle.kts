@@ -35,6 +35,7 @@ dependencies {
 
     // Testing
     testImplementation(project(":dd-sdk-android-internal"))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(

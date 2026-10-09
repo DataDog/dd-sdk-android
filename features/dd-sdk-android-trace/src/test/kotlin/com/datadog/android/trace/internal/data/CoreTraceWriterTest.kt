@@ -181,7 +181,7 @@ internal class CoreTraceWriterTest {
         // THEN
         val expectedTags = mapOf<String, Any?>(
             LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-            LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+            LogAttributes.RUM_SESSION_ID to fakeRumContext.session?.id,
             LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
             LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId,
             RumContextPropagator.DATADOG_INITIAL_CONTEXT to null

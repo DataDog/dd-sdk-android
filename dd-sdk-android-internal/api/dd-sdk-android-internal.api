@@ -494,37 +494,27 @@ public final class com/datadog/android/internal/rum/RumContext {
 	public static final field Companion Lcom/datadog/android/internal/rum/RumContext$Companion;
 	public static final field NULL_UUID Ljava/lang/String;
 	public static final field SAMPLE_ALL_RATE F
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/internal/rum/RumSessionState;Lcom/datadog/android/internal/rum/RumSessionStartReason;Lcom/datadog/android/internal/rum/RumViewType;Ljava/lang/String;Ljava/lang/String;JJZZF)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/internal/rum/RumSessionState;Lcom/datadog/android/internal/rum/RumSessionStartReason;Lcom/datadog/android/internal/rum/RumViewType;Ljava/lang/String;Ljava/lang/String;JJZZFILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/internal/rum/RumSessionContext;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/internal/rum/RumViewType;Ljava/lang/String;Ljava/lang/String;JJZ)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/internal/rum/RumSessionContext;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/internal/rum/RumViewType;Ljava/lang/String;Ljava/lang/String;JJZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Lcom/datadog/android/internal/rum/RumViewType;
-	public final fun component11 ()Ljava/lang/String;
-	public final fun component12 ()Ljava/lang/String;
-	public final fun component13 ()J
-	public final fun component14 ()J
-	public final fun component15 ()Z
-	public final fun component16 ()Z
-	public final fun component17 ()F
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Z
+	public final fun component10 ()J
+	public final fun component11 ()J
+	public final fun component12 ()Z
+	public final fun component2 ()Lcom/datadog/android/internal/rum/RumSessionContext;
+	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
 	public final fun component5 ()Ljava/lang/String;
 	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun component8 ()Lcom/datadog/android/internal/rum/RumSessionState;
-	public final fun component9 ()Lcom/datadog/android/internal/rum/RumSessionStartReason;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/internal/rum/RumSessionState;Lcom/datadog/android/internal/rum/RumSessionStartReason;Lcom/datadog/android/internal/rum/RumViewType;Ljava/lang/String;Ljava/lang/String;JJZZF)Lcom/datadog/android/internal/rum/RumContext;
-	public static synthetic fun copy$default (Lcom/datadog/android/internal/rum/RumContext;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/internal/rum/RumSessionState;Lcom/datadog/android/internal/rum/RumSessionStartReason;Lcom/datadog/android/internal/rum/RumViewType;Ljava/lang/String;Ljava/lang/String;JJZZFILjava/lang/Object;)Lcom/datadog/android/internal/rum/RumContext;
+	public final fun component7 ()Lcom/datadog/android/internal/rum/RumViewType;
+	public final fun component8 ()Ljava/lang/String;
+	public final fun component9 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/internal/rum/RumSessionContext;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/internal/rum/RumViewType;Ljava/lang/String;Ljava/lang/String;JJZ)Lcom/datadog/android/internal/rum/RumContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/rum/RumContext;Ljava/lang/String;Lcom/datadog/android/internal/rum/RumSessionContext;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/internal/rum/RumViewType;Ljava/lang/String;Ljava/lang/String;JJZILjava/lang/Object;)Lcom/datadog/android/internal/rum/RumContext;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getActionId ()Ljava/lang/String;
 	public final fun getApplicationId ()Ljava/lang/String;
 	public final fun getHasReplay ()Z
-	public final fun getHasTimeseries ()Z
-	public final fun getSessionId ()Ljava/lang/String;
-	public final fun getSessionSampleRate ()F
-	public final fun getSessionStartReason ()Lcom/datadog/android/internal/rum/RumSessionStartReason;
-	public final fun getSessionState ()Lcom/datadog/android/internal/rum/RumSessionState;
+	public final fun getSession ()Lcom/datadog/android/internal/rum/RumSessionContext;
 	public final fun getSyntheticsResultId ()Ljava/lang/String;
 	public final fun getSyntheticsTestId ()Ljava/lang/String;
 	public final fun getViewId ()Ljava/lang/String;
@@ -534,7 +524,6 @@ public final class com/datadog/android/internal/rum/RumContext {
 	public final fun getViewType ()Lcom/datadog/android/internal/rum/RumViewType;
 	public final fun getViewUrl ()Ljava/lang/String;
 	public fun hashCode ()I
-	public final fun isSessionActive ()Z
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -548,7 +537,27 @@ public final class com/datadog/android/internal/rum/RumContextKt {
 public final class com/datadog/android/internal/rum/RumSessionConstants {
 	public static final field EMPTY_RUM_SESSION_ID Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/internal/rum/RumSessionConstants;
-	public static final field TRACKED_SESSION_STATE Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/rum/RumSessionContext {
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/internal/rum/RumSessionState;Lcom/datadog/android/internal/rum/RumSessionStartReason;ZFZ)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/datadog/android/internal/rum/RumSessionState;
+	public final fun component3 ()Lcom/datadog/android/internal/rum/RumSessionStartReason;
+	public final fun component4 ()Z
+	public final fun component5 ()F
+	public final fun component6 ()Z
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/internal/rum/RumSessionState;Lcom/datadog/android/internal/rum/RumSessionStartReason;ZFZ)Lcom/datadog/android/internal/rum/RumSessionContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/rum/RumSessionContext;Ljava/lang/String;Lcom/datadog/android/internal/rum/RumSessionState;Lcom/datadog/android/internal/rum/RumSessionStartReason;ZFZILjava/lang/Object;)Lcom/datadog/android/internal/rum/RumSessionContext;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHasTimeseries ()Z
+	public final fun getId ()Ljava/lang/String;
+	public final fun getSampleRate ()F
+	public final fun getStartReason ()Lcom/datadog/android/internal/rum/RumSessionStartReason;
+	public final fun getState ()Lcom/datadog/android/internal/rum/RumSessionState;
+	public fun hashCode ()I
+	public final fun isActive ()Z
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/datadog/android/internal/rum/RumSessionStartReason : java/lang/Enum {

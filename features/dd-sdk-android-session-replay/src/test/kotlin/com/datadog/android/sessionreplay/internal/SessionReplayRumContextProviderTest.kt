@@ -26,6 +26,9 @@ import java.util.UUID
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class SessionReplayRumContextProviderTest {
 
+    @StringForgery
+    private lateinit var fakeApplicationId: String
+
     @Test
     fun `M preserve snapshot and notify each new view W onContextUpdate {core reuses mutable map}`(
         @Forgery fakeRumContext: RumContext,
@@ -125,7 +128,7 @@ internal class SessionReplayRumContextProviderTest {
         assertThat(context).isEqualTo(
             SessionReplayRumContext(
                 applicationId = fakeSnapshot.applicationId,
-                sessionId = fakeSnapshot.sessionId,
+                sessionId = fakeSnapshot.session?.id ?: RumContext.NULL_UUID,
                 viewId = fakeSnapshot.viewId ?: RumContext.NULL_UUID,
                 viewTimeOffsetMs = fakeViewTimestampOffset,
                 viewUrl = fakeSnapshot.viewUrl
@@ -167,5 +170,24 @@ internal class SessionReplayRumContextProviderTest {
         assertThat(testedProvider.getRumContext()).isEqualTo(
             SessionReplayRumContext(RumContext.NULL_UUID, RumContext.NULL_UUID, RumContext.NULL_UUID, 0L)
         )
+    }
+
+    @Test
+    fun `M retain application without recording context W getRumContext {no session}`() {
+        // Given
+        val testedProvider = SessionReplayRumContextProvider()
+        testedProvider.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(applicationId = fakeApplicationId))
+        )
+
+        // When
+        val context = testedProvider.getRumContext()
+
+        // Then
+        assertThat(context.applicationId).isEqualTo(fakeApplicationId)
+        assertThat(context.sessionId).isEqualTo(RumContext.NULL_UUID)
+        assertThat(context.viewId).isEqualTo(RumContext.NULL_UUID)
+        assertThat(context.isValid()).isFalse()
     }
 }

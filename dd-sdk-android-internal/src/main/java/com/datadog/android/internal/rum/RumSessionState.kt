@@ -16,7 +16,7 @@ enum class RumSessionState(val asString: String) {
     NOT_TRACKED("NOT_TRACKED"),
 
     /** Session is sampled for RUM event collection. */
-    TRACKED(RumSessionConstants.TRACKED_SESSION_STATE),
+    TRACKED("TRACKED"),
 
     /** Session has expired due to inactivity. */
     EXPIRED("EXPIRED")

@@ -379,10 +379,14 @@ internal class DatadogLogGenerator(
         if (bundleWithRum) {
             datadogContext.featuresContext[Feature.RUM_FEATURE_NAME]?.let {
                 val rumContext = it.rumContext()
-                combinedAttributes[LogAttributes.RUM_APPLICATION_ID] = rumContext?.applicationId
-                combinedAttributes[LogAttributes.RUM_SESSION_ID] = rumContext?.sessionId
-                combinedAttributes[LogAttributes.RUM_VIEW_ID] = rumContext?.viewId
-                combinedAttributes[LogAttributes.RUM_ACTION_ID] = rumContext?.actionId
+                combinedAttributes.remove(LogAttributes.RUM_APPLICATION_ID)
+                combinedAttributes.remove(LogAttributes.RUM_SESSION_ID)
+                combinedAttributes.remove(LogAttributes.RUM_VIEW_ID)
+                combinedAttributes.remove(LogAttributes.RUM_ACTION_ID)
+                rumContext?.applicationId?.let { value -> combinedAttributes[LogAttributes.RUM_APPLICATION_ID] = value }
+                rumContext?.session?.let { session -> combinedAttributes[LogAttributes.RUM_SESSION_ID] = session.id }
+                rumContext?.viewId?.let { value -> combinedAttributes[LogAttributes.RUM_VIEW_ID] = value }
+                rumContext?.actionId?.let { value -> combinedAttributes[LogAttributes.RUM_ACTION_ID] = value }
             }
         }
         return combinedAttributes

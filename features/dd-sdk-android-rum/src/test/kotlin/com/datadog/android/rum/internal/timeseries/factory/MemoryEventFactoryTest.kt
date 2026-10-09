@@ -100,7 +100,10 @@ internal class MemoryEventFactoryTest {
     lateinit var fakeRumContext: RumContext
 
     private val fakeSerializedRumContext: RumContext
-        get() = fakeRumContext.copy(applicationId = fakeApplicationId, sessionId = fakeSessionId)
+        get() = fakeRumContext.copy(
+            session = checkNotNull(fakeRumContext.session).copy(id = fakeSessionId),
+            applicationId = fakeApplicationId
+        )
 
     private val oneSample = listOf(DataPoint(1L, 1.0))
 
@@ -129,6 +132,18 @@ internal class MemoryEventFactoryTest {
         displayInfoProvider = stubDisplayInfoProvider,
         internalLogger = mockInternalLogger
     )
+
+    @Test
+    fun `M return null W create() {session absent}`() {
+        // Given
+        val context = fakeSerializedRumContext.copy(session = null)
+
+        // When
+        val result = testedFactory().create(fakeDatadogContext, context, oneSample)
+
+        // Then
+        assertThat(result).isNull()
+    }
 
     @Test
     fun `M return null W create() { empty input }`() {
@@ -301,8 +316,10 @@ internal class MemoryEventFactoryTest {
     ) {
         // Given
         val rumContext = fakeSerializedRumContext.copy(
-            sessionStartReason = RumSessionStartReason.INACTIVITY_TIMEOUT,
-            sessionSampleRate = fakeSampleRate.toFloat()
+            session = checkNotNull(fakeSerializedRumContext.session).copy(
+                startReason = RumSessionStartReason.INACTIVITY_TIMEOUT,
+                sampleRate = fakeSampleRate.toFloat()
+            )
         )
 
         // When

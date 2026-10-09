@@ -53,7 +53,7 @@ internal class WebViewReplayEventMapper(
     ): JsonObject {
         return JsonObject().apply {
             addProperty(ENRICHED_RECORD_APPLICATION_ID_KEY, rumContext.applicationId)
-            addProperty(ENRICHED_RECORD_SESSION_ID_KEY, rumContext.sessionId)
+            addProperty(ENRICHED_RECORD_SESSION_ID_KEY, rumContext.session?.id)
             addProperty(ENRICHED_RECORD_VIEW_ID_KEY, browserViewId)
             add(RECORDS_KEY, JsonArray().apply { add(record) })
         }

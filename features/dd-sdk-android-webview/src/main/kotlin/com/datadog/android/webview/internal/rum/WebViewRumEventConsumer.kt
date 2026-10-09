@@ -46,7 +46,7 @@ internal class WebViewRumEventConsumer(
                 )
             ) { datadogContext, writeScope ->
                 val rumContext = contextProvider.getRumContext(datadogContext)
-                if (rumContext != null && rumContext.sessionState == RumSessionState.TRACKED) {
+                if (rumContext?.session?.state == RumSessionState.TRACKED) {
                     val sessionReplayFeatureContext = datadogContext.featuresContext[
                         Feature.SESSION_REPLAY_FEATURE_NAME
                     ]

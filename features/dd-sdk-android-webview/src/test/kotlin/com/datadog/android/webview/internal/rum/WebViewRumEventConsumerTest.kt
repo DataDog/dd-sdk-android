@@ -41,6 +41,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -119,7 +120,8 @@ internal class WebViewRumEventConsumerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeRumContext = fakeRumContext.copy(sessionState = RumSessionState.TRACKED)
+        fakeRumContext =
+            fakeRumContext.copy(session = checkNotNull(fakeRumContext.session).copy(state = RumSessionState.TRACKED))
         fakeTags = if (forge.aBool()) {
             forge.aMap {
                 forge.anAlphabeticalString() to forge.anAlphaNumericalString()
@@ -245,10 +247,15 @@ internal class WebViewRumEventConsumerTest {
         verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedViewEvent, EventType.DEFAULT)
     }
 
-    @Test
-    fun `M not write the mapped event W consume(){ no RUM context, view event }`(forge: Forge) {
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M not write the mapped event W consume(){ no session, view event }`(
+        hasApplication: Boolean,
+        forge: Forge
+    ) {
         // Given
-        whenever(mockRumContextProvider.getRumContext(fakeDatadogContext)) doReturn null
+        whenever(mockRumContextProvider.getRumContext(fakeDatadogContext)) doReturn
+            if (hasApplication) fakeRumContext.copy(session = null) else null
         val fakeViewEvent: ViewEvent = forge.getForgery()
         val fakeViewEventAsJson = fakeViewEvent.toJson().asJsonObject
         whenever(

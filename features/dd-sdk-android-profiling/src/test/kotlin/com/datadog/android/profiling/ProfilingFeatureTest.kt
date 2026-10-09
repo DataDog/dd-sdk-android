@@ -105,6 +105,9 @@ import java.util.concurrent.ScheduledExecutorService
 @ForgeConfiguration(Configurator::class)
 internal class ProfilingFeatureTest {
 
+    @StringForgery
+    private lateinit var fakeApplicationId: String
+
     private lateinit var testedFeature: ProfilingFeature
 
     @Mock
@@ -571,6 +574,23 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M ignore context update W onContextUpdate() {application-only RUM context}`(
+        @StringForgery fakeApplicationId: String
+    ) {
+        // Given
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(applicationId = fakeApplicationId))
+        )
+
+        // Then
+        assertThat(testedFeature.lastSeenRumSessionId).isNull()
+    }
+
+    @Test
     fun `M ignore context update W onContextUpdate {session id is NULL_UUID sentinel}`(
         @Forgery fakeRumContext: RumContext
     ) {
@@ -582,7 +602,11 @@ internal class ProfilingFeatureTest {
             Feature.RUM_FEATURE_NAME,
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
-                    fakeRumContext.copy(sessionId = RumSessionConstants.EMPTY_RUM_SESSION_ID)
+                    fakeRumContext.copy(
+                        session = checkNotNull(fakeRumContext.session).copy(
+                            id = RumSessionConstants.EMPTY_RUM_SESSION_ID
+                        )
+                    )
             )
         )
 
@@ -602,14 +626,19 @@ internal class ProfilingFeatureTest {
             Feature.RUM_FEATURE_NAME,
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
-                    fakeRumContext.copy(sessionSampleRate = 0f, sessionState = RumSessionState.TRACKED)
+                    fakeRumContext.copy(
+                        session = checkNotNull(fakeRumContext.session).copy(
+                            sampleRate = 0f,
+                            state = RumSessionState.TRACKED
+                        )
+                    )
             )
         )
 
         // Then
         val scheduler = checkNotNull(testedFeature.continuousProfilingScheduler)
-        assertThat(testedFeature.lastSeenRumSessionId).isEqualTo(fakeRumContext.sessionId)
-        assertThat(scheduler.currentSessionId).isEqualTo(fakeRumContext.sessionId)
+        assertThat(testedFeature.lastSeenRumSessionId).isEqualTo(fakeRumContext.session?.id)
+        assertThat(scheduler.currentSessionId).isEqualTo(fakeRumContext.session?.id)
         assertThat(scheduler.currentSessionSampled).isFalse()
     }
 
@@ -1875,9 +1904,7 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M not fire quota check W onContextUpdate {RUM session state defaults to not tracked}`(
-        @StringForgery fakeNewSessionId: String
-    ) {
+    fun `M not fire quota check W onContextUpdate {no session}`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         whenever(mockProfiler.isRunning()) doReturn true
@@ -1887,7 +1914,10 @@ internal class ProfilingFeatureTest {
         // When
         testedFeature.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(sessionId = fakeNewSessionId, sessionSampleRate = 100f))
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(applicationId = fakeApplicationId)
+            )
         )
 
         // Then
@@ -2306,9 +2336,11 @@ internal class ProfilingFeatureTest {
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
                     fakeSessionContext.copy(
-                        sessionId = sessionId,
-                        sessionSampleRate = sampleRate,
-                        sessionState = sessionState
+                        session = checkNotNull(fakeSessionContext.session).copy(
+                            id = sessionId,
+                            sampleRate = sampleRate,
+                            state = sessionState
+                        )
                     )
             )
         )

@@ -41,7 +41,9 @@ internal class RumVitalAppLaunchEventHelper(
         appLaunchMetric: VitalAppLaunchEvent.AppLaunchMetric,
         profilingStatus: VitalAppLaunchEvent.ProfilingStatus?,
         profilingQuotaReason: QuotaReason? = null
-    ): VitalAppLaunchEvent {
+    ): VitalAppLaunchEvent? {
+        val session = rumContext.session ?: return null
+        val sessionId = session.id
         val syntheticsTestId = rumContext.syntheticsTestId
         val syntheticsResultId = rumContext.syntheticsResultId
         val syntheticsAttribute = if (
@@ -82,7 +84,7 @@ internal class RumVitalAppLaunchEventHelper(
             ),
             dd = VitalAppLaunchEvent.Dd(
                 session = VitalAppLaunchEvent.DdSession(
-                    sessionPrecondition = rumContext.sessionStartReason.toVitalAppLaunchSessionPrecondition()
+                    sessionPrecondition = session.startReason.toVitalAppLaunchSessionPrecondition()
                 ),
                 configuration = VitalAppLaunchEvent.Configuration(sessionSampleRate = sampleRate),
                 profiling = VitalAppLaunchEvent.Profiling(
@@ -96,11 +98,11 @@ internal class RumVitalAppLaunchEventHelper(
             ),
             synthetics = syntheticsAttribute,
             session = VitalAppLaunchEvent.VitalAppLaunchEventSession(
-                id = rumContext.sessionId,
+                id = sessionId,
                 type = sessionType,
                 hasReplay = hasReplay,
                 isMainProcess = datadogContext.processInfo.isMainProcess,
-                hasTimeseries = rumContext.hasTimeseries
+                hasTimeseries = session.hasTimeseries
             ),
             view = view,
             source = VitalAppLaunchEvent.VitalAppLaunchEventSource.tryFromSource(

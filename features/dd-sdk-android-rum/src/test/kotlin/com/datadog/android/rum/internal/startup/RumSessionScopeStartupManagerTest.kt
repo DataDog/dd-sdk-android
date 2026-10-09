@@ -269,7 +269,7 @@ internal class RumSessionScopeStartupManagerTest {
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to true,
                         FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
-                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.sessionId
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.session?.id
                     )
                 )
             }
@@ -316,7 +316,7 @@ internal class RumSessionScopeStartupManagerTest {
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to false,
                         FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
-                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.sessionId
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.session?.id
                     )
                 )
             }
@@ -411,7 +411,7 @@ internal class RumSessionScopeStartupManagerTest {
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to false,
                         FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
-                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.sessionId
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.session?.id
                     )
                 )
             }
@@ -466,7 +466,7 @@ internal class RumSessionScopeStartupManagerTest {
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to true,
                         FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
-                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.sessionId
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.session?.id
                     )
                 )
             }
@@ -606,7 +606,7 @@ internal class RumSessionScopeStartupManagerTest {
                 ProfilerEvent.RumVitalEvent(
                     rumContext = ProfilingRumContext(
                         applicationId = rumContext.applicationId,
-                        sessionId = rumContext.sessionId,
+                        sessionId = checkNotNull(rumContext.session?.id),
                         viewId = rumContext.viewId,
                         viewName = rumContext.viewName
                     ),
@@ -671,7 +671,7 @@ internal class RumSessionScopeStartupManagerTest {
                 ProfilerEvent.RumVitalEvent(
                     rumContext = ProfilingRumContext(
                         applicationId = rumContext.applicationId,
-                        sessionId = rumContext.sessionId,
+                        sessionId = checkNotNull(rumContext.session?.id),
                         viewId = rumContext.viewId,
                         viewName = rumContext.viewName
                     ),
@@ -1123,12 +1123,12 @@ internal class RumSessionScopeStartupManagerTest {
             hasDate(info.scenario.initialTime.timestamp + fakeTimeInfo.serverTimeOffsetMs)
             hasApplicationId(rumContext.applicationId)
             containsExactlyContextAttributes(fakeParentAttributes)
-            hasStartReason(rumContext.sessionStartReason)
+            hasStartReason(rumContext.session?.startReason)
             hasSampleRate(fakeSampleRate)
             hasNoSyntheticsTest()
-            hasSessionId(rumContext.sessionId)
+            hasSessionId(rumContext.session?.id)
             hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
-            hasSessionTimeseries(rumContext.hasTimeseries)
+            hasSessionTimeseries(rumContext.session?.hasTimeseries)
             hasSessionType(
                 fakeRumSessionType?.toVitalAppLaunch()
                     ?: VitalAppLaunchEvent.VitalAppLaunchEventSessionType.USER
@@ -1193,12 +1193,12 @@ internal class RumSessionScopeStartupManagerTest {
             hasDate(scenario.initialTime.timestamp + fakeTimeInfo.serverTimeOffsetMs)
             hasApplicationId(rumContext.applicationId)
             containsExactlyContextAttributes(fakeParentAttributes)
-            hasStartReason(rumContext.sessionStartReason)
+            hasStartReason(rumContext.session?.startReason)
             hasSampleRate(fakeSampleRate)
             hasNoSyntheticsTest()
-            hasSessionId(rumContext.sessionId)
+            hasSessionId(rumContext.session?.id)
             hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
-            hasSessionTimeseries(rumContext.hasTimeseries)
+            hasSessionTimeseries(rumContext.session?.hasTimeseries)
             hasSessionType(
                 fakeRumSessionType?.toVitalAppLaunch()
                     ?: VitalAppLaunchEvent.VitalAppLaunchEventSessionType.USER

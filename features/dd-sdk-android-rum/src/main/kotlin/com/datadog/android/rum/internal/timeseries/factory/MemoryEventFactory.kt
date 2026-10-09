@@ -46,7 +46,9 @@ internal class MemoryEventFactory(
         rumContext: RumContext,
         dataPoints: List<DataPoint<Double>>
     ): TimeseriesMemoryEvent? {
-        if (totalRamBytes <= 0L || dataPoints.isEmpty()) return null
+        val session = rumContext.session
+        if (session == null || totalRamBytes <= 0L || dataPoints.isEmpty()) return null
+        val sessionId = session.id
 
         val deviceInfo = datadogContext.deviceInfo
         val syntheticsTestId = rumContext.syntheticsTestId
@@ -66,10 +68,10 @@ internal class MemoryEventFactory(
         return TimeseriesMemoryEvent(
             dd = TimeseriesMemoryEvent.Dd(
                 session = TimeseriesMemoryEvent.DdSession(
-                    sessionPrecondition = rumContext.sessionStartReason.toTimeseriesMemorySessionPrecondition()
+                    sessionPrecondition = session.startReason.toTimeseriesMemorySessionPrecondition()
                 ),
                 configuration = TimeseriesMemoryEvent.Configuration(
-                    sessionSampleRate = rumContext.sessionSampleRate,
+                    sessionSampleRate = session.sampleRate,
                     sessionReplaySampleRate = datadogContext.resolveSessionReplaySampleRate(),
                     traceSampleRate = datadogContext.resolveTraceSampleRate()
                 )
@@ -79,7 +81,7 @@ internal class MemoryEventFactory(
                 currentLocale = deviceInfo.localeInfo.currentLocale
             ),
             session = TimeseriesMemoryEvent.TimeseriesMemoryEventSession(
-                id = rumContext.sessionId,
+                id = sessionId,
                 type = sessionType.toTimeseriesMemorySessionType(),
                 hasReplay = featuresContextResolver.resolveViewHasReplay(
                     datadogContext,

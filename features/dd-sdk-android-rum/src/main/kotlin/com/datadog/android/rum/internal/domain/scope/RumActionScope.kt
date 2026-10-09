@@ -239,6 +239,12 @@ internal class RumActionScope(
 
         val actualType = type
         val rumContext = getRumContext()
+        val session = rumContext.session
+        if (session == null) {
+            sent = true
+            return
+        }
+        val sessionId = session.id
 
         // make a copy so that closure captures at the state as of now
         // normally not needed, because it should be only single event for this scope, but
@@ -309,11 +315,11 @@ internal class RumActionScope(
                     currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
                 ),
                 session = ActionEvent.ActionEventSession(
-                    id = rumContext.sessionId,
+                    id = sessionId,
                     type = sessionType,
                     hasReplay = hasReplay,
                     isMainProcess = datadogContext.processInfo.isMainProcess,
-                    hasTimeseries = rumContext.hasTimeseries
+                    hasTimeseries = session.hasTimeseries
                 ),
                 synthetics = syntheticsAttribute,
                 source = ActionEvent.ActionEventSource.tryFromSource(
@@ -358,7 +364,7 @@ internal class RumActionScope(
                 context = ActionEvent.Context(additionalProperties = getCustomAttributes().toMutableMap()),
                 dd = ActionEvent.Dd(
                     session = ActionEvent.DdSession(
-                        sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()
+                        sessionPrecondition = session.startReason.toActionSessionPrecondition()
                     ),
                     configuration = ActionEvent.Configuration(sessionSampleRate = sampleRate),
                     action = heatmapResolver?.resolve(rumContext.viewUrl.orEmpty())
