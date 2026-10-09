@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain
 
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -24,10 +25,12 @@ internal class RumFeatureContextTest {
     @Test
     fun `M publish typed snapshot and preserve legacy fields W setRumContext()`(
         @Forgery fakeRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext,
         forge: Forge
     ) {
         // Given
         val context = fakeRumContext.copy(
+            session = fakeSession,
             viewTimestamp = forge.aLong(),
             viewTimestampOffset = forge.aLong(),
             hasReplay = forge.aBool()
@@ -43,10 +46,10 @@ internal class RumFeatureContextTest {
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to context,
                 "application_id" to context.applicationId,
-                "session_id" to context.sessionId,
-                "session_active" to context.isSessionActive,
-                "session_state" to context.sessionState.asString,
-                "session_start_reason" to context.sessionStartReason.asString,
+                "session_id" to fakeSession.id,
+                "session_active" to fakeSession.isActive,
+                "session_state" to fakeSession.state.asString,
+                "session_start_reason" to fakeSession.startReason.asString,
                 "view_id" to context.viewId,
                 "view_name" to context.viewName,
                 "view_url" to context.viewUrl,
@@ -57,24 +60,44 @@ internal class RumFeatureContextTest {
                 "view_timestamp" to context.viewTimestamp,
                 "view_timestamp_offset" to context.viewTimestampOffset,
                 "view_has_replay" to context.hasReplay,
-                "session_has_timeseries" to context.hasTimeseries,
-                "session_sample_rate" to context.sessionSampleRate
+                "session_has_timeseries" to fakeSession.hasTimeseries,
+                "session_sample_rate" to fakeSession.sampleRate
             )
         )
     }
 
     @Test
     fun `M clear the previous snapshot and legacy fields W setRumContext() {no context}`(
-        @Forgery fakeRumContext: RumContext
+        @Forgery fakeRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext
     ) {
         // Given
         val featureContext = mutableMapOf<String, Any?>()
-        featureContext.setRumContext(fakeRumContext)
+        featureContext.setRumContext(fakeRumContext.copy(session = fakeSession))
 
         // When
         featureContext.setRumContext(null)
 
         // Then
         assertThat(featureContext).isEmpty()
+    }
+
+    @Test
+    fun `M clear stale legacy correlation W setRumContext() {application only}`(
+        @Forgery fakeRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext
+    ) {
+        // Given
+        val featureContext = mutableMapOf<String, Any?>()
+        featureContext.setRumContext(fakeRumContext.copy(session = fakeSession))
+        val context = RumContext(applicationId = fakeRumContext.applicationId)
+
+        // When
+        featureContext.setRumContext(context)
+
+        // Then
+        assertThat(featureContext).isEqualTo(
+            mapOf(FeatureContextKeys.RUM_CONTEXT to context, "application_id" to context.applicationId)
+        )
     }
 }

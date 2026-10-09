@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.replay
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.webview.internal.rum.TimestampOffsetProvider
 import com.google.gson.JsonObject
@@ -47,6 +48,9 @@ internal class WebViewReplayEventMapperTest {
     lateinit var fakeRumContext: RumContext
 
     @Forgery
+    private lateinit var fakeSession: RumSessionContext
+
+    @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
     @StringForgery(regex = "^[a-z0-9]{32}$")
@@ -60,6 +64,7 @@ internal class WebViewReplayEventMapperTest {
 
     @BeforeEach
     fun `set up`() {
+        fakeRumContext = fakeRumContext.copy(session = fakeSession)
         testedWebViewReplayEventMapper = WebViewReplayEventMapper(fakeWebViewId, mockOffsetProvider)
     }
 
@@ -163,7 +168,7 @@ internal class WebViewReplayEventMapperTest {
         assertThat(result.get(WebViewReplayEventMapper.ENRICHED_RECORD_APPLICATION_ID_KEY).asString)
             .isEqualTo(fakeRumContext.applicationId)
         assertThat(result.get(WebViewReplayEventMapper.ENRICHED_RECORD_SESSION_ID_KEY).asString)
-            .isEqualTo(fakeRumContext.sessionId)
+            .isEqualTo(fakeRumContext.session?.id)
         assertThat(result.get(WebViewReplayEventMapper.ENRICHED_RECORD_VIEW_ID_KEY).asString)
             .isEqualTo(fakeBrowserRumViewId)
     }

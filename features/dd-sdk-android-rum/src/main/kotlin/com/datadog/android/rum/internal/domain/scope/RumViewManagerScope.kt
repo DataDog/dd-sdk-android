@@ -269,9 +269,11 @@ internal class RumViewManagerScope(
             }
         }
 
+        val sessionId = parentScope.getRumContext().session?.id ?: return
+
         // Track the orphan event both in foreground and background.
         SessionEndedMetric.MissedEventType.fromRawEvent(rawEvent = event)?.let {
-            sessionEndedMetricDispatcher.onMissedEventTracked(sessionId = parentScope.getRumContext().sessionId, it)
+            sessionEndedMetricDispatcher.onMissedEventTracked(sessionId = sessionId, it)
         } ?: sdkCore.internalLogger.log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.MAINTAINER,

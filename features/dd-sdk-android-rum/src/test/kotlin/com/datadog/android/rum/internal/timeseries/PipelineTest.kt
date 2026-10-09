@@ -17,6 +17,7 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.timeseries.factory.EventFactory
@@ -68,6 +69,9 @@ internal class PipelineTest {
     @Forgery
     lateinit var fakeRumContext: RumContext
 
+    @Forgery
+    private lateinit var fakeSession: RumSessionContext
+
     @Mock
     lateinit var mockReader: DataPointsReader<Double>
 
@@ -109,6 +113,7 @@ internal class PipelineTest {
 
     @BeforeEach
     fun `set up`() {
+        fakeRumContext = fakeRumContext.copy(session = fakeSession)
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
@@ -156,7 +161,20 @@ internal class PipelineTest {
 
         // Then
         assertThat(buffer.drain()).containsExactly(fakePoint)
-        verify(mockCollectedSessionsRegistry).setTimeseriesCollected(fakeRumContext.sessionId)
+        verify(mockCollectedSessionsRegistry).setTimeseriesCollected(fakeSession.id)
+    }
+
+    @Test
+    fun `M skip sampling W execute() {no session}`() {
+        // Given
+        val fakeApplicationContext = fakeRumContext.copy(session = null)
+
+        // When
+        testedPipeline.execute(fakeApplicationContext)
+
+        // Then
+        assertThat(buffer.drain()).isEmpty()
+        verifyNoInteractions(mockReader, mockCollectedSessionsRegistry, mockEventFactory, mockDataWriter)
     }
 
     @Test

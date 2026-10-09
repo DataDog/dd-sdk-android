@@ -17,6 +17,7 @@ import com.datadog.android.core.sampling.DeterministicSampler.Companion.MAX_ID
 import com.datadog.android.core.sampling.DeterministicSampler.Companion.SAMPLER_HASHER
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.okhttp.RumContextPropagationTest.Companion.SAMPLING_THRESHOLD
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
 import com.datadog.android.okhttp.tests.utils.unregisterGlobalRumMonitor
@@ -86,12 +87,18 @@ class RumContextPropagationTest {
     @Test
     fun `M send rum sessionId in baggage header W call is made`(
         @Forgery fakeRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext,
         forge: Forge
     ) {
         // Given
+        val rumContext = fakeRumContext.copy(
+            session = fakeSession.copy(
+                id = UUID(0, forge.anElementFrom(SAMPLED_IDS)).toString()
+            )
+        )
         val accountInfo = forge.getForgery<AccountInfo>()
         val userInfo = forge.getForgery<UserInfo>()
-        val datadogContext = forge.aDatadogContextWithRumContext(fakeRumContext, accountInfo, userInfo)
+        val datadogContext = forge.aDatadogContextWithRumContext(rumContext, accountInfo, userInfo)
         stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
         testedClient = prepareClient(stubSdkCore)
@@ -106,7 +113,7 @@ class RumContextPropagationTest {
                 listOfNotNull(
                     "account.id=${accountInfo.id}",
                     userInfo.id?.let { "user.id=$it" },
-                    "session.id=${fakeRumContext.sessionId}"
+                    "session.id=${rumContext.session?.id}"
                 )
             )
         }
@@ -117,10 +124,15 @@ class RumContextPropagationTest {
     @Test
     fun `M set header x-datadog-sampling-priority=1 W call is made { sessionId sampled }`(
         @Forgery fakeRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext,
         forge: Forge
     ) {
         // Given
-        val rumContext = fakeRumContext.copy(sessionId = UUID(0, forge.anElementFrom(SAMPLED_IDS)).toString())
+        val rumContext = fakeRumContext.copy(
+            session = fakeSession.copy(
+                id = UUID(0, forge.anElementFrom(SAMPLED_IDS)).toString()
+            )
+        )
         val datadogContext = forge.aDatadogContextWithRumContext(rumContext)
         stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
@@ -139,10 +151,15 @@ class RumContextPropagationTest {
     @Test
     fun `M set header x-datadog-sampling-priority=0 W call is made { sessionId not sampled }`(
         @Forgery fakeRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext,
         forge: Forge
     ) {
         // Given
-        val rumContext = fakeRumContext.copy(sessionId = UUID(0, forge.anElementFrom(DROPPED_IDS)).toString())
+        val rumContext = fakeRumContext.copy(
+            session = fakeSession.copy(
+                id = UUID(0, forge.anElementFrom(DROPPED_IDS)).toString()
+            )
+        )
         val datadogContext = forge.aDatadogContextWithRumContext(rumContext)
         stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)

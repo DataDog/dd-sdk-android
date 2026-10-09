@@ -24,6 +24,7 @@ import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.utils.forge.Configurator
@@ -681,6 +682,7 @@ internal class WebViewTrackingTest {
     @Test
     fun `M pass web view event to RumWebEventConsumer W consumeWebViewEvent()`(
         @Forgery fakeRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext,
         forge: Forge
     ) {
         // Given
@@ -698,9 +700,9 @@ internal class WebViewTrackingTest {
             add(
                 "session",
                 JsonObject().apply {
-                    addProperty("id", fakeRumContext.sessionId)
+                    addProperty("id", fakeSession.id)
                     addProperty("is_main_process", fakeProcessInfo.isMainProcess)
-                    addProperty("has_timeseries", fakeRumContext.hasTimeseries)
+                    addProperty("has_timeseries", fakeSession.hasTimeseries)
                 }
             )
             add("usr", JsonObject().apply { addProperty("anonymous_id", fakeAnonymousId) })
@@ -724,7 +726,10 @@ internal class WebViewTrackingTest {
         }
         val fakeFeaturesContext = mapOf(
             Feature.RUM_FEATURE_NAME to mapOf(
-                FeatureContextKeys.RUM_CONTEXT to fakeRumContext.copy(sessionState = RumSessionState.TRACKED)
+                FeatureContextKeys.RUM_CONTEXT to
+                    fakeRumContext.copy(
+                        session = fakeSession.copy(state = RumSessionState.TRACKED)
+                    )
             )
         )
         whenever(mockDatadogContext.featuresContext) doReturn fakeFeaturesContext

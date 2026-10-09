@@ -25,6 +25,7 @@ import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.profiling.quota.QuotaReason
 import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.rum.RumSessionConstants
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -105,6 +106,9 @@ import java.util.concurrent.ScheduledExecutorService
 @ForgeConfiguration(Configurator::class)
 internal class ProfilingFeatureTest {
 
+    @StringForgery
+    private lateinit var fakeApplicationId: String
+
     private lateinit var testedFeature: ProfilingFeature
 
     @Mock
@@ -174,6 +178,9 @@ internal class ProfilingFeatureTest {
     private lateinit var fakeSessionContext: RumContext
 
     @Forgery
+    private lateinit var fakeSession: RumSessionContext
+
+    @Forgery
     private lateinit var fakeConfiguration: ProfilingConfiguration
 
     @StringForgery
@@ -213,6 +220,7 @@ internal class ProfilingFeatureTest {
 
     @BeforeEach
     fun `set up`() {
+        fakeSessionContext = fakeSessionContext.copy(session = fakeSession)
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.timeProvider) doReturn mockTimeProvider
         whenever(mockContext.packageManager) doReturn mockPackageManager
@@ -571,8 +579,26 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M ignore context update W onContextUpdate() {application-only RUM context}`(
+        @StringForgery fakeApplicationId: String
+    ) {
+        // Given
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(applicationId = fakeApplicationId))
+        )
+
+        // Then
+        assertThat(testedFeature.lastSeenRumSessionId).isNull()
+    }
+
+    @Test
     fun `M ignore context update W onContextUpdate {session id is NULL_UUID sentinel}`(
-        @Forgery fakeRumContext: RumContext
+        @Forgery fakeRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext
     ) {
         // Given — RUM has been initialised but no session has been created yet
         testedFeature.onInitialize(mockContext)
@@ -582,7 +608,11 @@ internal class ProfilingFeatureTest {
             Feature.RUM_FEATURE_NAME,
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
-                    fakeRumContext.copy(sessionId = RumSessionConstants.EMPTY_RUM_SESSION_ID)
+                    fakeRumContext.copy(
+                        session = fakeSession.copy(
+                            id = RumSessionConstants.EMPTY_RUM_SESSION_ID
+                        )
+                    )
             )
         )
 
@@ -591,7 +621,10 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M sample session out W onContextUpdate {session sample rate is zero}`(@Forgery fakeRumContext: RumContext) {
+    fun `M sample session out W onContextUpdate {session sample rate is zero}`(
+        @Forgery fakeRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext
+    ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         whenever(mockProfiler.isRunning()) doReturn false
@@ -602,14 +635,19 @@ internal class ProfilingFeatureTest {
             Feature.RUM_FEATURE_NAME,
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
-                    fakeRumContext.copy(sessionSampleRate = 0f, sessionState = RumSessionState.TRACKED)
+                    fakeRumContext.copy(
+                        session = fakeSession.copy(
+                            sampleRate = 0f,
+                            state = RumSessionState.TRACKED
+                        )
+                    )
             )
         )
 
         // Then
         val scheduler = checkNotNull(testedFeature.continuousProfilingScheduler)
-        assertThat(testedFeature.lastSeenRumSessionId).isEqualTo(fakeRumContext.sessionId)
-        assertThat(scheduler.currentSessionId).isEqualTo(fakeRumContext.sessionId)
+        assertThat(testedFeature.lastSeenRumSessionId).isEqualTo(fakeSession.id)
+        assertThat(scheduler.currentSessionId).isEqualTo(fakeSession.id)
         assertThat(scheduler.currentSessionSampled).isFalse()
     }
 
@@ -1875,9 +1913,7 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M not fire quota check W onContextUpdate {RUM session state defaults to not tracked}`(
-        @StringForgery fakeNewSessionId: String
-    ) {
+    fun `M not fire quota check W onContextUpdate {no session}`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         whenever(mockProfiler.isRunning()) doReturn true
@@ -1887,7 +1923,10 @@ internal class ProfilingFeatureTest {
         // When
         testedFeature.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(sessionId = fakeNewSessionId, sessionSampleRate = 100f))
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(applicationId = fakeApplicationId)
+            )
         )
 
         // Then
@@ -2306,9 +2345,11 @@ internal class ProfilingFeatureTest {
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
                     fakeSessionContext.copy(
-                        sessionId = sessionId,
-                        sessionSampleRate = sampleRate,
-                        sessionState = sessionState
+                        session = fakeSession.copy(
+                            id = sessionId,
+                            sampleRate = sampleRate,
+                            state = sessionState
+                        )
                     )
             )
         )

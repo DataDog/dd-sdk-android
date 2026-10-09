@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.internal.sampling.DeterministicSampling
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
 import com.datadog.android.rum.ExperimentalRumApi
@@ -75,8 +76,12 @@ class TraceCrossProductSamplingTest {
     @Forgery
     private lateinit var fakeRumContext: RumContext
 
+    @Forgery
+    private lateinit var fakeSession: RumSessionContext
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeRumContext = fakeRumContext.copy(session = fakeSession)
         stubSdkCore = StubSDKCore(forge)
         val registry: Any = Datadog::class.java.getStaticValue("registry")
         val instances: MutableMap<String, SdkCore> = registry.getFieldValue("instances")
@@ -290,7 +295,12 @@ class TraceCrossProductSamplingTest {
     private fun stubRumSessionContext(sessionIdToken: Long, sessionSampleRate: Float) {
         val sessionId = sessionIdToFakeUuid(sessionIdToken)
         val datadogContext = stubSdkCore.getDatadogContext().withRumContext(
-            fakeRumContext.copy(sessionId = sessionId, sessionSampleRate = sessionSampleRate)
+            fakeRumContext.copy(
+                session = fakeSession.copy(
+                    id = sessionId,
+                    sampleRate = sessionSampleRate
+                )
+            )
         )
         val rumFeature = mock<Feature> {
             on { name } doReturn Feature.RUM_FEATURE_NAME

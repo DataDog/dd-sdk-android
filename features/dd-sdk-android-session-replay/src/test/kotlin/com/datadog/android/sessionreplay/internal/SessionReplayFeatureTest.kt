@@ -20,6 +20,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.sessionreplay.NoOpSessionReplayInternalCallback
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
@@ -93,6 +94,9 @@ internal class SessionReplayFeatureTest {
     lateinit var fakeRumContext: RumContext
 
     @Forgery
+    private lateinit var fakeSession: RumSessionContext
+
+    @Forgery
     lateinit var fakeConfiguration: SessionReplayConfiguration
 
     @Mock
@@ -116,6 +120,7 @@ internal class SessionReplayFeatureTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeRumContext = fakeRumContext.copy(session = fakeSession)
         fakeRumContext = fakeRumContext.copy(viewId = forge.getForgery<UUID>().toString())
         fakeSampleRate = forge.aFloat(min = 1f, max = 100f)
         fakeSessionId = forge.getForgery<UUID>().toString()

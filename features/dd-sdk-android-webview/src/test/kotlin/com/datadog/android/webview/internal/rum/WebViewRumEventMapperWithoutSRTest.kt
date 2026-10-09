@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -50,6 +51,9 @@ internal class WebViewRumEventMapperWithoutSRTest {
     @Forgery
     lateinit var fakeRumContext: RumContext
 
+    @Forgery
+    private lateinit var fakeSession: RumSessionContext
+
     @Mock
     lateinit var mockNativeRumViewsCache: NativeRumViewsCache
 
@@ -66,6 +70,7 @@ internal class WebViewRumEventMapperWithoutSRTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeRumContext = fakeRumContext.copy(session = fakeSession)
         fakeTags = if (forge.aBool()) {
             forge.aMap {
                 forge.anAlphabeticalString() to forge.anAlphaNumericalString()
@@ -347,10 +352,10 @@ internal class WebViewRumEventMapperWithoutSRTest {
         assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.APPLICATION_KEY_NAME))
             .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeRumContext.applicationId)
         assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.SESSION_KEY_NAME))
-            .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeRumContext.sessionId)
+            .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeSession.id)
             .doesNotHaveField(WebViewRumEventMapper.SESSION_HAS_REPLAY_NAME)
         assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.SESSION_KEY_NAME))
-            .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeRumContext.sessionId)
+            .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeSession.id)
             .doesNotHaveField(WebViewRumEventMapper.SESSION_HAS_REPLAY_NAME)
         assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.DD_KEY_NAME))
             .doesNotHaveField(WebViewRumEventMapper.DD_REPLAY_STATS)

@@ -45,7 +45,9 @@ internal class CpuEventFactory(
         rumContext: RumContext,
         dataPoints: List<DataPoint<Double>>
     ): TimeseriesCpuEvent? {
-        if (dataPoints.isEmpty()) return null
+        val session = rumContext.session
+        if (session == null || dataPoints.isEmpty()) return null
+        val sessionId = session.id
 
         val deviceInfo = datadogContext.deviceInfo
         val syntheticsTestId = rumContext.syntheticsTestId
@@ -65,10 +67,10 @@ internal class CpuEventFactory(
         return TimeseriesCpuEvent(
             dd = TimeseriesCpuEvent.Dd(
                 session = TimeseriesCpuEvent.DdSession(
-                    sessionPrecondition = rumContext.sessionStartReason.toTimeseriesCpuSessionPrecondition()
+                    sessionPrecondition = session.startReason.toTimeseriesCpuSessionPrecondition()
                 ),
                 configuration = TimeseriesCpuEvent.Configuration(
-                    sessionSampleRate = rumContext.sessionSampleRate,
+                    sessionSampleRate = session.sampleRate,
                     sessionReplaySampleRate = datadogContext.resolveSessionReplaySampleRate(),
                     traceSampleRate = datadogContext.resolveTraceSampleRate()
                 )
@@ -78,7 +80,7 @@ internal class CpuEventFactory(
                 currentLocale = deviceInfo.localeInfo.currentLocale
             ),
             session = TimeseriesCpuEvent.TimeseriesCpuEventSession(
-                id = rumContext.sessionId,
+                id = sessionId,
                 type = sessionType.toTimeseriesCpuSessionType(),
                 hasReplay = featuresContextResolver.resolveViewHasReplay(
                     datadogContext,

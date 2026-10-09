@@ -43,8 +43,7 @@ internal class WebViewReplayEventConsumer(
                 val sessionReplayEnabled = sessionReplayFeatureContext?.get(
                     SESSION_REPLAY_ENABLED_KEY
                 ) as? Boolean ?: false
-                if (rumContext != null &&
-                    rumContext.sessionState == RumSessionState.TRACKED &&
+                if (rumContext?.session?.state == RumSessionState.TRACKED &&
                     sessionReplayEnabled
                 ) {
                     writeScope {

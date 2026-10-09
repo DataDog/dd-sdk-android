@@ -289,10 +289,10 @@ class RumContextPropagatorTest {
         verify(span).getTag(DATADOG_INITIAL_CONTEXT)
         val expectedTags = mapOf<String, Any?>(
             LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-            LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+            LogAttributes.RUM_SESSION_ID to fakeRumContext.session?.id,
             LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
             LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId,
-            LogAttributes.RUM_SESSION_SAMPLE_RATE to fakeRumContext.sessionSampleRate,
+            LogAttributes.RUM_SESSION_SAMPLE_RATE to fakeRumContext.session?.sampleRate,
             HttpCodec.RUM_KEY_ACCOUNT_ID to fakeDatadogContext.accountInfo?.id,
             HttpCodec.RUM_KEY_USER_ID to fakeDatadogContext.userInfo.id,
             DATADOG_INITIAL_CONTEXT to null
@@ -317,10 +317,10 @@ class RumContextPropagatorTest {
         verify(span).getTag(DATADOG_INITIAL_CONTEXT)
         val expectedTags = mapOf<String, Any?>(
             LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-            LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+            LogAttributes.RUM_SESSION_ID to fakeRumContext.session?.id,
             LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
             LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId,
-            LogAttributes.RUM_SESSION_SAMPLE_RATE to fakeRumContext.sessionSampleRate,
+            LogAttributes.RUM_SESSION_SAMPLE_RATE to fakeRumContext.session?.sampleRate,
             HttpCodec.RUM_KEY_ACCOUNT_ID to fakeDatadogContext.accountInfo?.id,
             HttpCodec.RUM_KEY_USER_ID to fakeDatadogContext.userInfo.id,
             DATADOG_INITIAL_CONTEXT to null
@@ -329,6 +329,46 @@ class RumContextPropagatorTest {
 
         verifyNoMoreInteractions(span)
         verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M retain application attribution W extractRumContext() {DatadogSpan, application-only context}`(forge: Forge) {
+        // Given
+        val fakeApplicationId = fakeRumContext.applicationId
+        val fakeContext = forge.aDatadogContextWithRumContext(
+            RumContext(applicationId = fakeApplicationId)
+        )
+        val mockSpan = newDatadogSpanWithLazyDatadogContext(completedFutureMock(fakeContext))
+
+        // When
+        mockSpan.extractRumContext(testedRumContextPropagator)
+
+        // Then
+        verify(mockSpan).setTag(LogAttributes.RUM_APPLICATION_ID, fakeApplicationId as Any?)
+        verify(mockSpan).setTag(LogAttributes.RUM_SESSION_ID, null as Any?)
+        verify(mockSpan).setTag(LogAttributes.RUM_VIEW_ID, null as Any?)
+        verify(mockSpan).setTag(LogAttributes.RUM_ACTION_ID, null as Any?)
+        verify(mockSpan).setTag(LogAttributes.RUM_SESSION_SAMPLE_RATE, null as Any?)
+    }
+
+    @Test
+    fun `M retain application attribution W extractRumContext() {DDSpan, application-only context}`(forge: Forge) {
+        // Given
+        val fakeApplicationId = fakeRumContext.applicationId
+        val fakeContext = forge.aDatadogContextWithRumContext(
+            RumContext(applicationId = fakeApplicationId)
+        )
+        val mockSpan = newDDSpanWithLazyDatadogContext(completedFutureMock(fakeContext))
+
+        // When
+        mockSpan.extractRumContext(testedRumContextPropagator)
+
+        // Then
+        verify(mockSpan).setTag(LogAttributes.RUM_APPLICATION_ID, fakeApplicationId as Any?)
+        verify(mockSpan).setTag(LogAttributes.RUM_SESSION_ID, null as Any?)
+        verify(mockSpan).setTag(LogAttributes.RUM_VIEW_ID, null as Any?)
+        verify(mockSpan).setTag(LogAttributes.RUM_ACTION_ID, null as Any?)
+        verify(mockSpan).setTag(LogAttributes.RUM_SESSION_SAMPLE_RATE, null as Any?)
     }
 
     @Test

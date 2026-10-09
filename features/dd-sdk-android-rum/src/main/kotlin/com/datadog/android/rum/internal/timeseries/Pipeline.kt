@@ -35,13 +35,15 @@ internal class Pipeline<T : Any>(
 
     @WorkerThread
     fun execute(rumContext: RumContext) {
+        val session = rumContext.session ?: return
+        val sessionId = session.id
         // reader.read() may hit the filesystem (/proc); kept outside the lock so a concurrent
         // flush() waits only for the buffer and never for I/O.
         val dataPoint = reader.read()
         synchronized(this) {
             if (dataPoint != null) {
                 buffer.add(dataPoint)
-                collectedSessionsRegistry.setTimeseriesCollected(rumContext.sessionId)
+                collectedSessionsRegistry.setTimeseriesCollected(sessionId)
             }
             if (buffer.isFull()) drainAndWrite(rumContext)
         }

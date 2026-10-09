@@ -203,10 +203,10 @@ internal class DatadogLogHandlerTest {
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.session?.id,
                         LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
                         LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
-                    )
+                    ).filterValues { it != null }
                 )
                 .hasExactlyTags(
                     fakeTags + setOf(
@@ -284,10 +284,10 @@ internal class DatadogLogHandlerTest {
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.session?.id,
                         LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
                         LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
-                    )
+                    ).filterValues { it != null }
                 )
                 .hasExactlyTags(
                     fakeTags + setOf(
@@ -348,10 +348,10 @@ internal class DatadogLogHandlerTest {
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.session?.id,
                         LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
                         LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
-                    )
+                    ).filterValues { it != null }
                 )
                 .hasExactlyTags(
                     fakeTags + setOf(
@@ -609,10 +609,10 @@ internal class DatadogLogHandlerTest {
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.session?.id,
                         LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
                         LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
-                    )
+                    ).filterValues { it != null }
                 )
                 .hasExactlyTags(
                     fakeTags + setOf(
@@ -672,10 +672,10 @@ internal class DatadogLogHandlerTest {
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.session?.id,
                         LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
                         LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
-                    )
+                    ).filterValues { it != null }
                 )
                 .hasExactlyTags(
                     fakeTags + setOf(
@@ -734,10 +734,10 @@ internal class DatadogLogHandlerTest {
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.session?.id,
                         LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
                         LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
-                    )
+                    ).filterValues { it != null }
                 )
                 .hasExactlyTags(
                     fakeTags + setOf(
@@ -986,14 +986,14 @@ internal class DatadogLogHandlerTest {
         argumentCaptor<LogEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 
-            assertThat(lastValue.additionalProperties)
-                .containsEntry(
-                    LogAttributes.RUM_APPLICATION_ID,
-                    fakeRumContext.applicationId
-                )
-                .containsEntry(LogAttributes.RUM_SESSION_ID, fakeRumContext.sessionId)
-                .containsEntry(LogAttributes.RUM_VIEW_ID, fakeRumContext.viewId)
-                .containsEntry(LogAttributes.RUM_ACTION_ID, fakeRumContext.actionId)
+            assertThat(lastValue.additionalProperties).containsAllEntriesOf(
+                mapOf(
+                    LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                    LogAttributes.RUM_SESSION_ID to fakeRumContext.session?.id,
+                    LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                    LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
+                ).filterValues { it != null }
+            )
         }
     }
 
@@ -1108,10 +1108,10 @@ internal class DatadogLogHandlerTest {
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.session?.id,
                         LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
                         LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
-                    )
+                    ).filterValues { it != null }
                 )
                 .hasExactlyTags(
                     fakeTags + setOf(

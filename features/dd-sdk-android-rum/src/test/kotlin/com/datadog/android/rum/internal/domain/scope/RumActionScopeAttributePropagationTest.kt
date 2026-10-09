@@ -18,6 +18,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
@@ -114,6 +115,9 @@ internal class RumActionScopeAttributePropagationTest {
     lateinit var fakeParentContext: RumContext
 
     @Forgery
+    private lateinit var fakeParentSession: RumSessionContext
+
+    @Forgery
     lateinit var fakeEventTime: Time
 
     lateinit var fakeEvent: RumRawEvent
@@ -149,6 +153,7 @@ internal class RumActionScopeAttributePropagationTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeParentContext = fakeParentContext.copy(session = fakeParentSession)
         fakeParentAttributes = forge.exhaustiveAttributes()
         fakeActionAttributes = forge.exhaustiveAttributes()
         whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes.toMutableMap()

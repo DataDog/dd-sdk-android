@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.timeseries.csv
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoData
@@ -89,7 +90,7 @@ internal class CsvCollector(
             forge: Forge,
             internalLogger: InternalLogger
         ): CsvCollector {
-            val rumContext = forge.getForgery<RumContext>()
+            val rumContext = forge.getForgery<RumContext>().copy(session = forge.getForgery<RumSessionContext>())
             val datadogContext = forge.getForgery<DatadogContext>()
             val batteryInfo = forge.getForgery<BatteryInfo>()
             val displayInfo = forge.getForgery<DisplayInfo>()

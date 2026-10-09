@@ -17,6 +17,7 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
@@ -121,6 +122,9 @@ internal class RumResourceScopeAttributePropagationTest {
     lateinit var fakeParentContext: RumContext
 
     @Forgery
+    private lateinit var fakeParentSession: RumSessionContext
+
+    @Forgery
     lateinit var fakeEventTime: Time
 
     lateinit var fakeEvent: RumRawEvent
@@ -162,6 +166,7 @@ internal class RumResourceScopeAttributePropagationTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeParentContext = fakeParentContext.copy(session = fakeParentSession)
         fakeParentAttributes = forge.exhaustiveAttributes()
         fakeResourceAttributes = forge.exhaustiveAttributes()
         fakeErrorAttributes = forge.exhaustiveAttributes()

@@ -16,6 +16,7 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -81,6 +83,9 @@ internal class WebViewReplayEventConsumerTest {
     @Forgery
     lateinit var fakeRumContext: RumContext
 
+    @Forgery
+    private lateinit var fakeSession: RumSessionContext
+
     lateinit var fakeSessionReplayFeatureContext: Map<String, Any?>
 
     lateinit var fakeValidBrowserEvent: JsonObject
@@ -96,13 +101,13 @@ internal class WebViewReplayEventConsumerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeRumContext = fakeRumContext.copy(session = fakeSession)
         fakeSessionReplayFeatureContext = forge.aMap {
             WebViewReplayEventConsumer.SESSION_REPLAY_ENABLED_KEY to true
         }
         fakeValidBrowserEvent = forge.getForgery()
-        fakeRumContext = fakeRumContext.copy(
-            sessionState = RumSessionState.TRACKED
-        )
+        fakeRumContext =
+            fakeRumContext.copy(session = fakeSession.copy(state = RumSessionState.TRACKED))
         fakeDatadogContext = fakeDatadogContext.copy(
             time = fakeDatadogContext.time.copy(
                 serverTimeOffsetMs = fakeServerTimeOffsetInMillis
@@ -233,12 +238,13 @@ internal class WebViewReplayEventConsumerTest {
         verifyNoInteractions(mockDataWriter)
     }
 
-    @Test
-    fun `M do nothing W consume() { rumContext not there }`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M do nothing W consume() {session absent}`(hasApplication: Boolean) {
         // Given
         whenever(
             mockRumContextProvider.getRumContext(fakeDatadogContext)
-        ) doReturn null
+        ) doReturn if (hasApplication) fakeRumContext.copy(session = null) else null
 
         // When
         testedConsumer.consume(fakeValidBrowserEvent)
@@ -254,7 +260,9 @@ internal class WebViewReplayEventConsumerTest {
             mockRumContextProvider.getRumContext(fakeDatadogContext)
         ) doReturn
             fakeRumContext.copy(
-                sessionState = forge.anElementFrom(RumSessionState.NOT_TRACKED, RumSessionState.EXPIRED)
+                session = fakeSession.copy(
+                    state = forge.anElementFrom(RumSessionState.NOT_TRACKED, RumSessionState.EXPIRED)
+                )
             )
 
         // When

@@ -9,6 +9,7 @@ package com.datadog.android.webview.internal.rum
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -52,6 +53,9 @@ internal class WebViewRumEventMapperTest {
     @Forgery
     lateinit var fakeRumContext: RumContext
 
+    @Forgery
+    private lateinit var fakeSession: RumSessionContext
+
     @Mock
     lateinit var mockNativeRumViewsCache: NativeRumViewsCache
 
@@ -68,6 +72,7 @@ internal class WebViewRumEventMapperTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeRumContext = fakeRumContext.copy(session = fakeSession)
         fakeTags = if (forge.aBool()) {
             forge.aMap {
                 forge.anAlphabeticalString() to forge.anAlphaNumericalString()
@@ -635,12 +640,15 @@ internal class WebViewRumEventMapperTest {
         assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.APPLICATION_KEY_NAME))
             .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeRumContext.applicationId)
         assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.SESSION_KEY_NAME))
-            .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeRumContext.sessionId)
+            .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeSession.id)
             .hasField(
                 WebViewRumEventMapper.SESSION_IS_MAIN_PROCESS_NAME,
                 fakeDatadogContext.processInfo.isMainProcess
             )
-            .hasField(WebViewRumEventMapper.SESSION_HAS_TIMESERIES_NAME, fakeRumContext.hasTimeseries)
+            .hasField(
+                WebViewRumEventMapper.SESSION_HAS_TIMESERIES_NAME,
+                fakeSession.hasTimeseries
+            )
         assertThat(mappedEvent).hasField(
             WebViewRumEventMapper.DATE_KEY_NAME,
             expectedDate

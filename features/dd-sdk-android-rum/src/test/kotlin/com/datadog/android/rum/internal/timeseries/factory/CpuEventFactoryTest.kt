@@ -11,6 +11,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.internal.rum.RumSessionStartReason
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
@@ -95,13 +96,20 @@ internal class CpuEventFactoryTest {
     @Forgery
     lateinit var fakeRumContext: RumContext
 
+    @Forgery
+    private lateinit var fakeSession: RumSessionContext
+
     private val fakeSerializedRumContext: RumContext
-        get() = fakeRumContext.copy(applicationId = fakeApplicationId, sessionId = fakeSessionId)
+        get() = fakeRumContext.copy(
+            session = fakeSession.copy(id = fakeSessionId),
+            applicationId = fakeApplicationId
+        )
 
     private val oneSample = listOf(DataPoint(1L, 1.0))
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeRumContext = fakeRumContext.copy(session = fakeSession)
         fakeSource = forge.aNullable { aValueFrom(TimeseriesCpuEvent.Source::class.java) }
         fakeDatadogContext = fakeDatadogContext.copy(
             source = fakeSource?.toJson()?.asString ?: forge.anAlphabeticalString()
@@ -123,6 +131,18 @@ internal class CpuEventFactoryTest {
         displayInfoProvider = stubDisplayInfoProvider,
         internalLogger = mockInternalLogger
     )
+
+    @Test
+    fun `M return null W create() {session absent}`() {
+        // Given
+        val context = fakeSerializedRumContext.copy(session = null)
+
+        // When
+        val result = testedFactory().create(fakeDatadogContext, context, oneSample)
+
+        // Then
+        assertThat(result).isNull()
+    }
 
     @Test
     fun `M return null W create() { empty input }`() {
@@ -273,8 +293,11 @@ internal class CpuEventFactoryTest {
     ) {
         // Given
         val rumContext = fakeSerializedRumContext.copy(
-            sessionStartReason = RumSessionStartReason.INACTIVITY_TIMEOUT,
-            sessionSampleRate = fakeSampleRate.toFloat()
+            session = fakeSession.copy(
+                id = fakeSessionId,
+                startReason = RumSessionStartReason.INACTIVITY_TIMEOUT,
+                sampleRate = fakeSampleRate.toFloat()
+            )
         )
 
         // When

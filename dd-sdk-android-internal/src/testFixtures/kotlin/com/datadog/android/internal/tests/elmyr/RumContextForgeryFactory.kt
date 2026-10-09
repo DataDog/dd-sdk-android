@@ -7,8 +7,7 @@
 package com.datadog.android.internal.tests.elmyr
 
 import com.datadog.android.internal.rum.RumContext
-import com.datadog.android.internal.rum.RumSessionStartReason
-import com.datadog.android.internal.rum.RumSessionState
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.internal.rum.RumViewType
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -16,21 +15,19 @@ import java.util.UUID
 
 class RumContextForgeryFactory : ForgeryFactory<RumContext> {
     override fun getForgery(forge: Forge): RumContext {
+        val applicationId = forge.getForgery<UUID>().toString()
+        val session = forge.aNullable { getForgery<RumSessionContext>() }
+            ?: return RumContext(applicationId = applicationId)
         return RumContext(
-            applicationId = forge.getForgery<UUID>().toString(),
-            sessionId = forge.getForgery<UUID>().toString(),
-            isSessionActive = forge.aBool(),
+            applicationId = applicationId,
+            session = session,
             viewId = forge.aNullable { getForgery<UUID>().toString() },
             viewName = forge.aNullable { forge.anAlphaNumericalString() },
             viewUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/[a-z]+"),
             actionId = forge.aNullable { getForgery<UUID>().toString() },
-            sessionState = forge.aValueFrom(RumSessionState::class.java),
-            sessionStartReason = forge.aValueFrom(RumSessionStartReason::class.java),
             viewType = forge.aValueFrom(RumViewType::class.java),
             syntheticsTestId = forge.aNullable { forge.anAlphaNumericalString() },
-            syntheticsResultId = forge.aNullable { forge.anAlphaNumericalString() },
-            hasTimeseries = forge.aBool(),
-            sessionSampleRate = forge.aFloat(min = 0f, max = 100f)
+            syntheticsResultId = forge.aNullable { forge.anAlphaNumericalString() }
         )
     }
 }

@@ -24,6 +24,7 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
@@ -52,6 +53,7 @@ import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
+import com.datadog.android.rum.internal.domain.setRumContext
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.heatmaps.NativeHeatmapActionData
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -96,6 +98,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -118,10 +121,14 @@ import org.mockito.quality.Strictness
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.Callable
+import java.util.concurrent.CancellationException
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import java.util.concurrent.FutureTask
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -257,9 +264,9 @@ internal class DatadogRumMonitorTest {
             it.getArgument<Runnable>(0).run()
             mock<Future<*>>()
         }
-        whenever(mockExecutorService.submit(any<Callable<RumContext?>>())) doAnswer {
-            val rumContext = it.getArgument<Callable<RumContext?>>(0).call()
-            mock<Future<RumContext?>>().apply { whenever(get()) doReturn rumContext }
+        whenever(mockExecutorService.submit(any<Callable<RumContext>>())) doAnswer {
+            val rumContext = it.getArgument<Callable<RumContext>>(0).call()
+            mock<Future<RumContext>>().apply { whenever(get()) doReturn rumContext }
         }
 
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
@@ -638,13 +645,16 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M return current view URL W getCurrentViewUrl()`(
         @Forgery fakeRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext,
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
         // Given
         val fakeContextWithSession = fakeRumContext.copy(
-            sessionId = UUID.randomUUID().toString(),
-            sessionState = RumSessionState.TRACKED
+            session = fakeSession.copy(
+                id = UUID.randomUUID().toString(),
+                state = RumSessionState.TRACKED
+            )
         )
         val mockSessionScope = mock<RumSessionScope>()
         val mockViewScope = mock<RumViewScope>()
@@ -663,13 +673,16 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M return null W getCurrentViewUrl() { no active session }`(
         @Forgery fakeRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext,
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
         // Given
         val primeContext = fakeRumContext.copy(
-            sessionId = UUID.randomUUID().toString(),
-            sessionState = RumSessionState.TRACKED
+            session = fakeSession.copy(
+                id = UUID.randomUUID().toString(),
+                state = RumSessionState.TRACKED
+            )
         )
         val mockSessionScope = mock<RumSessionScope>()
         val mockViewScope = mock<RumViewScope>()
@@ -690,13 +703,16 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M return null W getCurrentViewUrl() { session exists but has NULL_UUID, not yet sampled in }`(
         @Forgery fakeRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext,
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
         // Given
         val primeContext = fakeRumContext.copy(
-            sessionId = UUID.randomUUID().toString(),
-            sessionState = RumSessionState.TRACKED
+            session = fakeSession.copy(
+                id = UUID.randomUUID().toString(),
+                state = RumSessionState.TRACKED
+            )
         )
         val mockSessionScope = mock<RumSessionScope>()
         val mockViewScope = mock<RumViewScope>()
@@ -705,7 +721,7 @@ internal class DatadogRumMonitorTest {
         whenever(mockViewScope.getRumContext()) doReturn primeContext
         testedMonitor.startAction(type, name, fakeAttributes)
         whenever(mockSessionScope.activeView) doReturn null
-        whenever(mockSessionScope.getRumContext()) doReturn RumContext(sessionId = RumContext.NULL_UUID)
+        whenever(mockSessionScope.getRumContext()) doReturn RumContext(applicationId = fakeApplicationId)
         testedMonitor.startAction(type, name, fakeAttributes)
 
         // When
@@ -718,13 +734,16 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M return null W getCurrentViewUrl() { view stopped with no new view started }`(
         @Forgery fakeRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext,
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
         // Given
         val primeContext = fakeRumContext.copy(
-            sessionId = UUID.randomUUID().toString(),
-            sessionState = RumSessionState.TRACKED
+            session = fakeSession.copy(
+                id = UUID.randomUUID().toString(),
+                state = RumSessionState.TRACKED
+            )
         )
         val mockSessionScope = mock<RumSessionScope>()
         val mockViewScope = mock<RumViewScope>()
@@ -1500,7 +1519,7 @@ internal class DatadogRumMonitorTest {
         // Then
         // the crash is handled on the context thread: the extra hop would only add latency and expose the
         // event to the RUM executor back-pressure, and ordering is already guaranteed by the context thread
-        verify(mockExecutorService, never()).submit(any<Callable<RumContext?>>())
+        verify(mockExecutorService, never()).submit(any<Callable<RumContext>>())
         verify(mockApplicationScope).handleEvent(
             any(),
             same(fakeDatadogContext),
@@ -2453,7 +2472,10 @@ internal class DatadogRumMonitorTest {
         val viewScopes = forge.aList {
             mock<RumViewScope>().apply {
                 whenever(getRumContext()) doReturn
-                    RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
+                    RumContext(
+                        applicationId = fakeApplicationId,
+                        viewName = forge.aNullable { forge.anAlphaNumericalString() }
+                    )
 
                 whenever(isActive()) doReturn true
             }
@@ -2486,7 +2508,10 @@ internal class DatadogRumMonitorTest {
         val viewScopes = forge.aList {
             mock<RumViewScope>().apply {
                 whenever(getRumContext()) doReturn
-                    RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
+                    RumContext(
+                        applicationId = fakeApplicationId,
+                        viewName = forge.aNullable { forge.anAlphaNumericalString() }
+                    )
 
                 whenever(isActive()) doReturn false
             }
@@ -2768,6 +2793,7 @@ internal class DatadogRumMonitorTest {
     fun `M notify expiration checker with session state W addAction()`(
         fakeState: RumSessionState,
         @Forgery fakeRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext,
         @Forgery fakeType: RumActionType,
         @StringForgery fakeName: String
     ) {
@@ -2776,10 +2802,8 @@ internal class DatadogRumMonitorTest {
         testedMonitor.sessionExpirationChecker = mockChecker
         val mockSessionScope = mock<RumSessionScope>()
         whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
-        whenever(mockSessionScope.getRumContext()) doReturn fakeRumContext.copy(
-            sessionId = UUID.randomUUID().toString(),
-            sessionState = fakeState
-        )
+        whenever(mockSessionScope.getRumContext()) doReturn
+            fakeRumContext.copy(session = fakeSession.copy(state = fakeState))
 
         // When
         testedMonitor.addAction(fakeType, fakeName, fakeAttributes)
@@ -3118,9 +3142,11 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M update feature context W handleEvent() { active view exists }`(
         @Forgery fakeRumEvent: RumRawEvent,
-        @Forgery fakeRumContext: RumContext
+        @Forgery fakeBaseRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext
     ) {
         // Given
+        val fakeRumContext = fakeBaseRumContext.copy(session = fakeSession)
         val mockApplicationScope = mock<RumApplicationScope>()
         val mockSessionScope = mock<RumSessionScope>()
         val mockViewScope = mock<RumViewScope>()
@@ -3134,7 +3160,7 @@ internal class DatadogRumMonitorTest {
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), any(), capture())
+            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false), capture())
             val acc = mutableMapOf<String, Any?>()
             firstValue.invoke(acc)
             assertThat(acc[FeatureContextKeys.RUM_CONTEXT]).isSameAs(fakeRumContext)
@@ -3144,9 +3170,11 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M update feature context W handleEvent() { no active view, but active session }`(
         @Forgery fakeRumEvent: RumRawEvent,
-        @Forgery fakeRumContext: RumContext
+        @Forgery fakeBaseRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext
     ) {
         // Given
+        val fakeRumContext = fakeBaseRumContext.copy(session = fakeSession)
         val mockApplicationScope = mock<RumApplicationScope>()
         val mockSessionScope = mock<RumSessionScope>()
         whenever(mockSessionScope.activeView) doReturn null
@@ -3159,16 +3187,18 @@ internal class DatadogRumMonitorTest {
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), any(), capture())
+            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false), capture())
             val acc = mutableMapOf<String, Any?>()
             firstValue.invoke(acc)
             assertThat(acc[FeatureContextKeys.RUM_CONTEXT]).isSameAs(fakeRumContext)
         }
     }
 
-    @Test
-    fun `M clear feature context W handleEvent() { no active session }`(
-        @Forgery fakeRumEvent: RumRawEvent
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M retain application id W handleEvent() { no active session }`(
+        isFatal: Boolean,
+        @Forgery fakeRumEvent: RumRawEvent.AddError
     ) {
         // Given
         val mockApplicationScope = mock<RumApplicationScope>()
@@ -3176,54 +3206,189 @@ internal class DatadogRumMonitorTest {
         testedMonitor.rootScope = mockApplicationScope
 
         // When
-        testedMonitor.handleEvent(fakeRumEvent)
+        testedMonitor.handleEvent(fakeRumEvent.copy(isFatal = isFatal))
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), any(), capture())
-            val acc = mutableMapOf<String, Any?>("stale_key" to "stale_value")
+            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false), capture())
+            val acc = mutableMapOf<String, Any?>(
+                FeatureContextKeys.RUM_SESSION_ID to "stale_session",
+                "view_id" to "stale_view",
+                "action_id" to "stale_action"
+            )
             firstValue.invoke(acc)
-            assertThat(acc).isEmpty()
+            assertThat(acc).isEqualTo(
+                mapOf(
+                    FeatureContextKeys.RUM_CONTEXT to RumContext(fakeApplicationId),
+                    "application_id" to fakeApplicationId
+                )
+            )
         }
     }
 
     @Test
-    fun `M not update feature context W handleEvent() { event processing failed }`(
-        @Forgery fakeRumEvent: RumRawEvent
+    fun `M preserve feature context W handleEvent() {submission rejected}`(
+        @Forgery fakeRumEvent: RumRawEvent.AddError
     ) {
         // Given
-        val mockFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockFeatureScope
         whenever(mockExecutorService.submit(any<Callable<RumContext>>())) doAnswer {
-            mock<Future<RumContext>>().apply { whenever(get()) doReturn null }
+            throw RejectedExecutionException()
         }
 
         // When
-        testedMonitor.handleEvent(fakeRumEvent)
+        testedMonitor.handleEvent(fakeRumEvent.copy(isFatal = false))
 
         // Then
+        verify(mockExecutorService).submit(any<Callable<RumContext>>())
         verify(mockSdkCore, never()).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), any(), any())
+        verifyNoInteractions(mockApplicationScope)
     }
 
-    @Test
-    fun `M clear feature context W handleEvent() { session id is NULL_UUID }`(
-        @Forgery fakeRumEvent: RumRawEvent,
+    @ParameterizedTest
+    @EnumSource(FutureFailure::class)
+    fun `M retain only application context W handleEvent() {future unsuccessful}`(
+        failure: FutureFailure,
+        @Forgery fakeRumEvent: RumRawEvent.AddError,
         @Forgery fakeRumContext: RumContext
     ) {
         // Given
-        whenever(mockApplicationScope.getRumContext()) doReturn fakeRumContext.copy(
-            sessionId = RumContext.NULL_UUID
-        )
+        whenever(mockExecutorService.submit(any<Callable<RumContext>>())) doAnswer {
+            mock<Future<RumContext>>().apply {
+                whenever(get()) doAnswer {
+                    when (failure) {
+                        FutureFailure.CANCELLED -> throw CancellationException()
+                        FutureFailure.INTERRUPTED -> throw InterruptedException()
+                        FutureFailure.FAILED -> throw ExecutionException(IllegalStateException())
+                    }
+                }
+            }
+        }
 
         // When
-        testedMonitor.handleEvent(fakeRumEvent)
+        testedMonitor.handleEvent(fakeRumEvent.copy(isFatal = false))
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), any(), capture())
-            val acc = mutableMapOf<String, Any?>("stale_key" to "stale_value")
+            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false), capture())
+            val fakeSharedContext = mutableMapOf<String, Any?>().apply { setRumContext(fakeRumContext) }
+            firstValue.invoke(fakeSharedContext)
+            assertThat(fakeSharedContext).isEqualTo(
+                mapOf(
+                    FeatureContextKeys.RUM_CONTEXT to RumContext(fakeApplicationId),
+                    "application_id" to fakeApplicationId
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `M clear stale correlation W stopSession() {processing fails after session stops}`(
+        @Forgery fakeRumContext: RumContext
+    ) {
+        // Given
+        val mockSessionScope = mock<RumSessionScope>()
+        whenever(mockSessionScope.getRumContext()) doReturn fakeRumContext
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+        whenever(mockExecutorService.submit(any<Callable<RumContext>>())) doAnswer {
+            FutureTask(it.getArgument<Callable<RumContext>>(0)).apply { run() }
+        }
+        whenever(mockApplicationScope.handleEvent(any(), any(), any(), any())) doAnswer {
+            whenever(mockApplicationScope.activeSession) doReturn null
+            error("Event processing failed after stopping the session")
+        }
+
+        // When
+        testedMonitor.stopSession()
+
+        // Then
+        assertThat(mockApplicationScope.activeSession).isNull()
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false), capture())
+            val fakeSharedContext = mutableMapOf<String, Any?>().apply { setRumContext(fakeRumContext) }
+            firstValue.invoke(fakeSharedContext)
+            assertThat(fakeSharedContext).isEqualTo(
+                mapOf(
+                    FeatureContextKeys.RUM_CONTEXT to RumContext(fakeApplicationId),
+                    "application_id" to fakeApplicationId
+                )
+            )
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M retain application id W handleEvent() { session id is absent }`(
+        isFatal: Boolean,
+        @Forgery fakeRumEvent: RumRawEvent.AddError,
+        @Forgery fakeRumContext: RumContext
+    ) {
+        // Given
+        val mockSessionScope = mock<RumSessionScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+        whenever(mockSessionScope.getRumContext()) doReturn fakeRumContext.copy(session = null)
+
+        // When
+        testedMonitor.handleEvent(fakeRumEvent.copy(isFatal = isFatal))
+
+        // Then
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false), capture())
+            val acc = mutableMapOf<String, Any?>().apply { setRumContext(fakeRumContext) }
             firstValue.invoke(acc)
-            assertThat(acc).isEmpty()
+            assertThat(acc).isEqualTo(
+                mapOf(
+                    FeatureContextKeys.RUM_CONTEXT to RumContext(fakeApplicationId),
+                    "application_id" to fakeApplicationId
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `M publish session context changes W handleEvent() {active, absent, renewed session}`(
+        @Forgery fakeRumContext: RumContext,
+        @Forgery fakeNewRumContext: RumContext,
+        @StringForgery fakeViewKey: String
+    ) {
+        // Given
+        val fakeActiveContext = fakeRumContext.copy(applicationId = fakeApplicationId)
+        val fakeNewContext = fakeNewRumContext.copy(applicationId = fakeApplicationId)
+        val mockSessionScope = mock<RumSessionScope>()
+        val mockNewSessionScope = mock<RumSessionScope>()
+        whenever(mockSessionScope.getRumContext()) doReturn fakeActiveContext
+        whenever(mockNewSessionScope.getRumContext()) doReturn fakeNewContext
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+        testedMonitor.startView(fakeViewKey, fakeViewKey)
+
+        // When
+        whenever(mockApplicationScope.activeSession) doReturn null
+        testedMonitor.stopSession()
+        whenever(mockApplicationScope.activeSession) doReturn mockNewSessionScope
+        testedMonitor.startView(fakeViewKey, fakeViewKey)
+
+        // Then
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(mockSdkCore, times(3)).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), eq(false), capture())
+            val fakeSharedContext = mutableMapOf<String, Any?>()
+            allValues[0].invoke(fakeSharedContext)
+            assertThat(fakeSharedContext).isEqualTo(
+                mutableMapOf<String, Any?>().apply {
+                    setRumContext(fakeActiveContext)
+                }
+            )
+            allValues[1].invoke(fakeSharedContext)
+            assertThat(fakeSharedContext).isEqualTo(
+                mapOf(
+                    FeatureContextKeys.RUM_CONTEXT to RumContext(fakeApplicationId),
+                    "application_id" to fakeApplicationId
+                )
+            )
+            allValues[2].invoke(fakeSharedContext)
+            assertThat(fakeSharedContext).isEqualTo(
+                mutableMapOf<String, Any?>().apply {
+                    setRumContext(fakeNewContext)
+                }
+            )
         }
     }
 
@@ -3732,6 +3897,12 @@ internal class DatadogRumMonitorTest {
         }
 
         verifyNoMoreInteractions(mockWriter)
+    }
+
+    enum class FutureFailure {
+        CANCELLED,
+        FAILED,
+        INTERRUPTED
     }
 
     companion object {

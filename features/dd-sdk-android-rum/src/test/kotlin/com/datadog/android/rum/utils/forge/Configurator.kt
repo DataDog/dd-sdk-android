@@ -15,6 +15,7 @@ import com.datadog.android.internal.tests.elmyr.InternalTelemetryMetricForgeryFa
 import com.datadog.android.internal.tests.elmyr.ProfilingAnrDetectedEventForgeryFactory
 import com.datadog.android.internal.tests.elmyr.ProfilingThreadDumpForgeryFactory
 import com.datadog.android.internal.tests.elmyr.RumContextForgeryFactory
+import com.datadog.android.internal.tests.elmyr.RumSessionContextForgeryFactory
 import com.datadog.android.internal.tests.elmyr.TracingHeaderTypesSetForgeryFactory
 import com.datadog.android.rum.tests.elmyr.BatteryInfoForgeryFactory
 import com.datadog.android.rum.tests.elmyr.DisplayInfoForgeryFactory
@@ -41,6 +42,7 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(MotionEventForgeryFactory())
         forge.addFactory(RumEventMapperFactory())
         forge.addFactory(RumContextForgeryFactory())
+        forge.addFactory(RumSessionContextForgeryFactory())
         forge.addFactory(VitalInfoForgeryFactory())
         forge.addFactory(RumEventMetaForgeryFactory())
         forge.addFactory(ViewEventMetaForgeryFactory())

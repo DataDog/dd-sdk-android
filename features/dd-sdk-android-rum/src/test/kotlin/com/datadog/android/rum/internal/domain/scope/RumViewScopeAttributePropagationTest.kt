@@ -19,6 +19,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.internal.rum.RumViewType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -158,6 +159,9 @@ internal class RumViewScopeAttributePropagationTest {
     lateinit var fakeParentContext: RumContext
 
     @Forgery
+    private lateinit var fakeParentSession: RumSessionContext
+
+    @Forgery
     lateinit var fakeEventTime: Time
 
     lateinit var fakeEvent: RumRawEvent
@@ -210,6 +214,7 @@ internal class RumViewScopeAttributePropagationTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeParentContext = fakeParentContext.copy(session = fakeParentSession)
         val fakeBrightness = forge.aFloat(0f, 255f)
         val fakeBatteryLevel = forge.aFloat(0f, 100f)
         val fakeLowPowerMode = forge.aBool()

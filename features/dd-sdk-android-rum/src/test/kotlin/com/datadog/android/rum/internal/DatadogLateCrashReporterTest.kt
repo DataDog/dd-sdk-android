@@ -21,6 +21,7 @@ import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.ErrorEventAssert
@@ -1206,6 +1207,8 @@ internal class DatadogLateCrashReporterTest {
     @Test
     fun `M not send anything W handleAnrCrash() { last view event belongs to the current session }`(
         @Forgery viewEvent: ViewEvent,
+        @Forgery fakeRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext,
         forge: Forge
     ) {
         // Given
@@ -1224,7 +1227,10 @@ internal class DatadogLateCrashReporterTest {
             ),
             featuresContext = mapOf(
                 Feature.RUM_FEATURE_NAME to
-                    mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(sessionId = viewEvent.session.id))
+                    mapOf(
+                        FeatureContextKeys.RUM_CONTEXT to
+                            fakeRumContext.copy(session = fakeSession.copy(id = viewEvent.session.id))
+                    )
             )
         )
 

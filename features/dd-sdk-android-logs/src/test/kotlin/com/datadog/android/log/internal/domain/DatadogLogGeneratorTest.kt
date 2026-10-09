@@ -15,6 +15,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
 import com.datadog.android.log.model.LogEvent
@@ -43,6 +44,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.util.Locale
+import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -1110,10 +1112,10 @@ internal class DatadogLogGeneratorTest {
         // THEN
         val expectedAttributes = fakeAttributes + mapOf(
             LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-            LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+            LogAttributes.RUM_SESSION_ID to fakeRumContext.session?.id,
             LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
             LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
-        )
+        ).filterValues { it != null }
         assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
 
@@ -1143,10 +1145,10 @@ internal class DatadogLogGeneratorTest {
         // THEN
         val expectedAttributes = fakeAttributes + mapOf(
             LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-            LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+            LogAttributes.RUM_SESSION_ID to fakeRumContext.session?.id,
             LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
             LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
-        )
+        ).filterValues { it != null }
         assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
 
@@ -1170,10 +1172,10 @@ internal class DatadogLogGeneratorTest {
         // THEN
         val expectedAttributes = fakeAttributes + mapOf(
             LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-            LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+            LogAttributes.RUM_SESSION_ID to fakeRumContext.session?.id,
             LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
             LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
-        )
+        ).filterValues { it != null }
         assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
 
@@ -1197,16 +1199,79 @@ internal class DatadogLogGeneratorTest {
         assertThat(log.additionalProperties).containsAllEntriesOf(
             mapOf(
                 LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
-                LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                LogAttributes.RUM_SESSION_ID to fakeRumContext.session?.id,
                 LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
                 LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
-            )
+            ).filterValues { it != null }
         )
     }
 
     @Test
-    fun `M do nothing W required to bundle the rum information {no RUM context}`() {
+    fun `M replace customer correlation W generateLog() {RUM context present}`(
+        @Forgery fakeSession: RumSessionContext,
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewId = forge.getForgery<UUID>().toString()
+        val fakeActionId = forge.getForgery<UUID>().toString()
+        val hasApplicationId = forge.aBool()
+        val hasSession = hasApplicationId && forge.aBool()
+        val hasView = hasSession && forge.aBool()
+        val hasAction = hasView && forge.aBool()
+        val fakeSdkCorrelation = mapOf(
+            LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId.takeIf { hasApplicationId },
+            LogAttributes.RUM_SESSION_ID to fakeSession.id.takeIf { hasSession },
+            LogAttributes.RUM_VIEW_ID to fakeViewId.takeIf { hasView },
+            LogAttributes.RUM_ACTION_ID to fakeActionId.takeIf { hasAction }
+        )
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = mapOf(
+                Feature.RUM_FEATURE_NAME to mapOf(
+                    FeatureContextKeys.RUM_CONTEXT to if (hasApplicationId) {
+                        fakeRumContext.copy(
+                            session = fakeSession.takeIf { hasSession },
+                            viewId = fakeViewId.takeIf { hasView },
+                            actionId = fakeActionId.takeIf { hasAction }
+                        )
+                    } else {
+                        null
+                    }
+                )
+            )
+        )
+        val fakeCustomerCorrelation = if (forge.aBool()) {
+            fakeSdkCorrelation.keys.associateWith { forge.aString() }
+        } else {
+            emptyMap()
+        }
+
+        // When
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes + fakeCustomerCorrelation,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
+        )
+
+        // Then
+        assertThat(log).hasExactlyAttributes(fakeAttributes + fakeSdkCorrelation.filterValues { it != null })
+    }
+
+    @Test
+    fun `M do nothing W required to bundle the rum information {no RUM context}`(forge: Forge) {
         // GIVEN
+        fakeAttributes = fakeAttributes + mapOf(
+            LogAttributes.RUM_APPLICATION_ID to forge.aString(),
+            LogAttributes.RUM_SESSION_ID to forge.aString(),
+            LogAttributes.RUM_VIEW_ID to forge.aString(),
+            LogAttributes.RUM_ACTION_ID to forge.aString()
+        )
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 remove(Feature.RUM_FEATURE_NAME)
@@ -1236,7 +1301,15 @@ internal class DatadogLogGeneratorTest {
     }
 
     @Test
-    fun `M do nothing W not required to bundle the rum information`() {
+    fun `M do nothing W not required to bundle the rum information`(forge: Forge) {
+        // Given
+        fakeAttributes = fakeAttributes + mapOf(
+            LogAttributes.RUM_APPLICATION_ID to forge.aString(),
+            LogAttributes.RUM_SESSION_ID to forge.aString(),
+            LogAttributes.RUM_VIEW_ID to forge.aString(),
+            LogAttributes.RUM_ACTION_ID to forge.aString()
+        )
+
         // WHEN
         val log = testedLogGenerator.generateLog(
             fakeLevel,

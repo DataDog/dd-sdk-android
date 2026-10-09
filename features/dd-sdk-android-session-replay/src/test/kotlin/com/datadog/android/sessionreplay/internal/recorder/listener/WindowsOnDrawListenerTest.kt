@@ -19,6 +19,7 @@ import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -207,6 +208,7 @@ internal class WindowsOnDrawListenerTest {
     @Test
     fun `M resume without polling W context update {active RUM view disappears and returns}`(
         @Forgery fakeRumContext: RumContext,
+        @Forgery fakeSession: RumSessionContext,
         @Forgery fakeViewId: UUID
     ) {
         // Given: use the real context, queue and scheduler to exercise failed snapshot attempts.
@@ -267,7 +269,7 @@ internal class WindowsOnDrawListenerTest {
             methodCallSamplingRate = 0f,
             rumContextProvider = fakeRumContextProvider
         )
-        val fakeActiveRumContext = fakeRumContext.copy(viewId = fakeViewId.toString())
+        val fakeActiveRumContext = fakeRumContext.copy(session = fakeSession, viewId = fakeViewId.toString())
         val fakeContext = mutableMapOf<String, Any?>(FeatureContextKeys.RUM_CONTEXT to fakeActiveRumContext)
         fakeRumContextProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
         advanceTo(0L)
