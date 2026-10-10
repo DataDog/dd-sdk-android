@@ -93,6 +93,20 @@ internal class VitalReaderRunnableTest {
     }
 
     @Test
+    fun `M stop reading vitals W onContextUpdate() {application missing}`() {
+        // Given
+        val context = fakeRumContext.toMap() - RumContext.APPLICATION_ID
+
+        // When
+        testedRunnable.onContextUpdate(Feature.RUM_FEATURE_NAME, context)
+        testedRunnable.run()
+
+        // Then
+        assertThat(testedRunnable.currentRumContext).isNull()
+        verifyNoInteractions(mockReader, mockObserver)
+    }
+
+    @Test
     fun `M read data, notify observer and schedule W run { viewType == FOREGROUND }()`() {
         // Given
         whenever(mockReader.readVitalData()) doReturn fakeValue

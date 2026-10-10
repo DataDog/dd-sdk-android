@@ -46,6 +46,7 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrack
 @Suppress("TooManyFunctions")
 internal class TelemetryEventHandler(
     internal val sdkCore: InternalSdkCore,
+    private val applicationId: String,
     internal val eventSampler: Sampler<InternalTelemetryEvent>,
     internal val configurationExtraSampler: Sampler<InternalTelemetryEvent> =
         RateBasedSampler(DEFAULT_CONFIGURATION_SAMPLE_RATE),
@@ -106,10 +107,12 @@ internal class TelemetryEventHandler(
                 }
 
                 is InternalTelemetryEvent.Log.Error -> {
-                    sessionEndedMetricDispatcher.onSdkErrorTracked(
-                        sessionId = datadogContext.rumContext().sessionId,
-                        errorKind = event.kind
-                    )
+                    datadogContext.rumContext()?.sessionId?.let { sessionId ->
+                        sessionEndedMetricDispatcher.onSdkErrorTracked(
+                            sessionId = sessionId,
+                            errorKind = event.kind
+                        )
+                    }
                     createErrorEvent(
                         datadogContext = datadogContext,
                         timestamp = timestamp,
@@ -229,10 +232,10 @@ internal class TelemetryEventHandler(
             service = TELEMETRY_SERVICE_NAME,
             version = datadogContext.sdkVersion,
             effectiveSampleRate = effectiveSampleRate,
-            application = TelemetryDebugEvent.Application(rumContext.applicationId),
-            session = TelemetryDebugEvent.Session(rumContext.sessionId),
-            view = rumContext.viewId?.let { TelemetryDebugEvent.View(it) },
-            action = rumContext.actionId?.let { TelemetryDebugEvent.Action(it) },
+            application = TelemetryDebugEvent.Application(applicationId),
+            session = rumContext?.sessionId?.let { TelemetryDebugEvent.Session(it) },
+            view = rumContext?.viewId?.let { TelemetryDebugEvent.View(it) },
+            action = rumContext?.actionId?.let { TelemetryDebugEvent.Action(it) },
             telemetry = TelemetryDebugEvent.Telemetry(
                 message = message,
                 additionalProperties = resolvedAdditionalProperties,
@@ -278,10 +281,10 @@ internal class TelemetryEventHandler(
             ) ?: TelemetryErrorEvent.Source.ANDROID,
             service = TELEMETRY_SERVICE_NAME,
             version = datadogContext.sdkVersion,
-            application = TelemetryErrorEvent.Application(rumContext.applicationId),
-            session = TelemetryErrorEvent.Session(rumContext.sessionId),
-            view = rumContext.viewId?.let { TelemetryErrorEvent.View(it) },
-            action = rumContext.actionId?.let { TelemetryErrorEvent.Action(it) },
+            application = TelemetryErrorEvent.Application(applicationId),
+            session = rumContext?.sessionId?.let { TelemetryErrorEvent.Session(it) },
+            view = rumContext?.viewId?.let { TelemetryErrorEvent.View(it) },
+            action = rumContext?.actionId?.let { TelemetryErrorEvent.Action(it) },
             effectiveSampleRate = effectiveSampleRate,
             telemetry = TelemetryErrorEvent.Telemetry(
                 message = message,
@@ -370,10 +373,10 @@ internal class TelemetryEventHandler(
                 sdkCore.internalLogger
             ) ?: TelemetryConfigurationEvent.Source.ANDROID,
             version = datadogContext.sdkVersion,
-            application = TelemetryConfigurationEvent.Application(rumContext.applicationId),
-            session = TelemetryConfigurationEvent.Session(rumContext.sessionId),
-            view = rumContext.viewId?.let { TelemetryConfigurationEvent.View(it) },
-            action = rumContext.actionId?.let { TelemetryConfigurationEvent.Action(it) },
+            application = TelemetryConfigurationEvent.Application(applicationId),
+            session = rumContext?.sessionId?.let { TelemetryConfigurationEvent.Session(it) },
+            view = rumContext?.viewId?.let { TelemetryConfigurationEvent.View(it) },
+            action = rumContext?.actionId?.let { TelemetryConfigurationEvent.Action(it) },
             experimentalFeatures = null,
             effectiveSampleRate = effectiveSampleRate,
             telemetry = TelemetryConfigurationEvent.Telemetry(
@@ -499,10 +502,10 @@ internal class TelemetryEventHandler(
             ) ?: TelemetryUsageEvent.Source.ANDROID,
             service = TELEMETRY_SERVICE_NAME,
             version = datadogContext.sdkVersion,
-            application = TelemetryUsageEvent.Application(rumContext.applicationId),
-            session = TelemetryUsageEvent.Session(rumContext.sessionId),
-            view = rumContext.viewId?.let { TelemetryUsageEvent.View(it) },
-            action = rumContext.actionId?.let { TelemetryUsageEvent.Action(it) },
+            application = TelemetryUsageEvent.Application(applicationId),
+            session = rumContext?.sessionId?.let { TelemetryUsageEvent.Session(it) },
+            view = rumContext?.viewId?.let { TelemetryUsageEvent.View(it) },
+            action = rumContext?.actionId?.let { TelemetryUsageEvent.Action(it) },
             effectiveSampleRate = effectiveSampleRate,
             telemetry = TelemetryUsageEvent.Telemetry(
                 additionalProperties = resolvedAdditionalProperties,
@@ -573,9 +576,9 @@ internal class TelemetryEventHandler(
         }
     }
 
-    private fun DatadogContext.rumContext(): RumContext {
+    private fun DatadogContext.rumContext(): RumContext? {
         val rumContext = featuresContext[Feature.RUM_FEATURE_NAME].orEmpty()
-        return RumContext.fromFeatureContext(rumContext)
+        return RumContext.fromFeatureContext(rumContext)?.takeUnless { it.sessionId == RumContext.NULL_UUID }
     }
 
     private fun computeEffectiveSampleRate(

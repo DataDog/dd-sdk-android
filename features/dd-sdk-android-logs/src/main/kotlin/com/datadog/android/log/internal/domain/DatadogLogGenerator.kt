@@ -377,10 +377,10 @@ internal class DatadogLogGenerator(
         }
         if (bundleWithRum) {
             datadogContext.featuresContext[Feature.RUM_FEATURE_NAME]?.let {
-                combinedAttributes[LogAttributes.RUM_APPLICATION_ID] = it["application_id"]
-                combinedAttributes[LogAttributes.RUM_SESSION_ID] = it["session_id"]
-                combinedAttributes[LogAttributes.RUM_VIEW_ID] = it["view_id"]
-                combinedAttributes[LogAttributes.RUM_ACTION_ID] = it["action_id"]
+                it["application_id"]?.let { value -> combinedAttributes[LogAttributes.RUM_APPLICATION_ID] = value }
+                it["session_id"]?.let { value -> combinedAttributes[LogAttributes.RUM_SESSION_ID] = value }
+                it["view_id"]?.let { value -> combinedAttributes[LogAttributes.RUM_VIEW_ID] = value }
+                it["action_id"]?.let { value -> combinedAttributes[LogAttributes.RUM_ACTION_ID] = value }
             }
         }
         return combinedAttributes

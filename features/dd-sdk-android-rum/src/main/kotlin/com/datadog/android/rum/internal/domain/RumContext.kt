@@ -12,7 +12,7 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewType
 
 internal data class RumContext(
-    val applicationId: String = NULL_UUID,
+    val applicationId: String,
     val sessionId: String = NULL_UUID,
     val isSessionActive: Boolean = false,
     val viewId: String? = null,
@@ -74,8 +74,8 @@ internal data class RumContext(
         const val VIEW_TIMESTAMP_OFFSET = "view_timestamp_offset"
         const val SESSION_SAMPLE_RATE = FeatureContextKeys.RUM_SESSION_SAMPLE_RATE
 
-        fun fromFeatureContext(featureContext: Map<String, Any?>): RumContext {
-            val applicationId = featureContext[APPLICATION_ID] as? String
+        fun fromFeatureContext(featureContext: Map<String, Any?>): RumContext? {
+            val applicationId = featureContext[APPLICATION_ID] as? String ?: return null
             val sessionId = featureContext[SESSION_ID] as? String
             val isSessionActive = featureContext[SESSION_ACTIVE] as? Boolean
             val sessionState = RumSessionScope.State.fromString(
@@ -97,7 +97,7 @@ internal data class RumContext(
             val sampleRate = (featureContext[SESSION_SAMPLE_RATE] as? Number)?.toFloat() ?: SAMPLE_ALL_RATE
 
             return RumContext(
-                applicationId = applicationId ?: NULL_UUID,
+                applicationId = applicationId,
                 sessionId = sessionId ?: NULL_UUID,
                 isSessionActive = isSessionActive ?: false,
                 sessionState = sessionState ?: RumSessionScope.State.NOT_TRACKED,

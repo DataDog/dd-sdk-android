@@ -22,6 +22,8 @@ import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.tests.stub.StubTimeProvider
+import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.configuration.ViewEventWriteConfig
@@ -52,6 +54,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -264,6 +267,56 @@ internal class RumSessionScopeTest {
         }
 
         initializeTestedScope()
+    }
+
+    @Test
+    fun `M complete startup resource W stopResource() {before first session}`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeUrl: String
+    ) {
+        // Given
+        val fakeStartResource = RumRawEvent.StartResource(
+            fakeKey,
+            fakeUrl,
+            RumResourceMethod.GET,
+            emptyMap(),
+            currentFakeTime()
+        )
+        val fakeStopResource = RumRawEvent.StopResource(
+            fakeKey,
+            200L,
+            null,
+            RumResourceKind.OTHER,
+            emptyMap(),
+            currentFakeTime()
+        )
+        initializeTestedScope(withMockChildScope = false, backgroundTrackingEnabled = false)
+        testedScope.handleEvent(
+            RumRawEvent.ApplicationStarted(0L, currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        val fakeView = checkNotNull(testedScope.childScope).childrenScopes.single()
+        assertThat(testedScope.sessionId).isEqualTo(RumContext.NULL_UUID)
+        testedScope.handleEvent(
+            fakeStartResource,
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        assertThat(fakeView.activeResourceScopes).containsKey(fakeStartResource.key)
+
+        // When
+        testedScope.handleEvent(
+            fakeStopResource,
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        assertThat(fakeView.activeResourceScopes).isEmpty()
     }
 
     // region childScope

@@ -87,7 +87,7 @@ import com.datadog.android.rum.featureoperations.FailureReason as DeprecatedFail
 
 @Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
 internal class DatadogRumMonitor(
-    applicationId: String,
+    private val applicationId: String,
     private val sdkCore: InternalSdkCore,
     internal val appPackageName: String,
     internal val sessionSampler: Sampler<String>,
@@ -164,16 +164,10 @@ internal class DatadogRumMonitor(
         ) {
             val activeSessionId = rootScope.activeSession
                 ?.getRumContext()
-                ?.let {
-                    val sessionId = it.sessionId
-                    if (it.sessionState == RumSessionScope.State.NOT_TRACKED ||
-                        sessionId == RumContext.NULL_UUID
-                    ) {
-                        null
-                    } else {
-                        sessionId
-                    }
+                ?.takeIf {
+                    it.sessionState != RumSessionScope.State.NOT_TRACKED && it.sessionId != RumContext.NULL_UUID
                 }
+                ?.sessionId
             callback(activeSessionId)
         }
     }
@@ -957,10 +951,7 @@ internal class DatadogRumMonitor(
                         @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
                         rootScope.handleEvent(event, datadogContext, eventWriteScope, writer)
                         val rumContext = currentRumContext()
-                        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
-                            it.clear()
-                            rumContext?.toMap()?.let(it::putAll)
-                        }
+                        publishRumContext(rumContext?.toMap() ?: mapOf(RumContext.APPLICATION_ID to applicationId))
                     }
                 }
             if (handled != true) {
@@ -995,18 +986,22 @@ internal class DatadogRumMonitor(
                                     notifyDebugListenerWithState()
                                     val context = currentRumContext()
                                     updateCachedViewUrl(context)
-                                    context
+                                    context?.toMap() ?: mapOf(RumContext.APPLICATION_ID to applicationId)
                                 }
                             }
                         )
                         val rumContext = future?.getSafe("Rum get context", sdkCore.internalLogger)
-                        // we are on the context thread already, so useContextThread=false
-                        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
-                            it.clear()
-                            rumContext?.toMap()?.let(it::putAll)
-                        }
+                            ?: return@withWriteContext
+                        publishRumContext(rumContext)
                     }
                 }
+        }
+    }
+
+    private fun publishRumContext(rumContext: Map<String, Any?>) {
+        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
+            it.clear()
+            it.putAll(rumContext)
         }
     }
 
@@ -1057,10 +1052,9 @@ internal class DatadogRumMonitor(
     }
 
     private fun currentRumContext(): RumContext? {
-        val activeSession = rootScope.activeSession ?: return null
-        val context = activeSession.activeView?.getRumContext()
-            ?: activeSession.getRumContext()
-        return if (context.sessionId == RumContext.NULL_UUID) null else context
+        val session = rootScope.activeSession ?: return null
+        return (session.activeView?.getRumContext() ?: session.getRumContext())
+            .takeIf { it.sessionId != RumContext.NULL_UUID }
     }
 
     internal fun notifyDebugListenerWithState() {

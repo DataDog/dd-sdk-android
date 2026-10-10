@@ -12,7 +12,6 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.android.webview.internal.rum.domain.RumContext
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -27,6 +26,7 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
 import java.util.UUID
 
@@ -73,348 +73,80 @@ internal class WebViewRumEventContextProviderTest {
     }
 
     @Test
-    fun `M return the active context W getRumContext()`() {
+    fun `M return active context W getRumContext()`() {
+        // Given
+        val context = fakeDatadogContext
+
         // When
-        val rumContext = testedContextProvider.getRumContext(fakeDatadogContext)
+        val rumContext = checkNotNull(testedContextProvider.getRumContext(context))
 
         // Then
-        assertThat(rumContext?.applicationId)
+        assertThat(rumContext.applicationId)
             .isEqualTo(fakeApplicationId.toString())
-        assertThat(rumContext?.sessionId)
+        assertThat(rumContext.sessionId)
             .isEqualTo(fakeSessionId.toString())
     }
 
     @ParameterizedTest
-    @EnumSource(RumContextValueMissingType::class)
-    fun `M return null W getRumContext(){ applicationId was null }`(
-        missingType: RumContextValueMissingType
+    @EnumSource(UnavailableContext::class)
+    fun `M recover correlation W getRumContext() {context becomes available again}`(
+        unavailableContext: UnavailableContext
     ) {
         // Given
-        val rumContext = mutableMapOf<String, Any?>(
-            "session_id" to fakeSessionId
-        )
-        when (missingType) {
-            RumContextValueMissingType.NULL -> rumContext["application_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["application_id"] = RumContext.NULL_UUID
-            RumContextValueMissingType.NOT_REGISTERED -> {
-                // no-op
-            }
+        val originalContext = checkNotNull(testedContextProvider.getRumContext(fakeDatadogContext))
+        val partialContext = checkNotNull(fakeDatadogContext.featuresContext[Feature.RUM_FEATURE_NAME]).toMutableMap()
+        when (unavailableContext) {
+            UnavailableContext.MISSING_FEATURE -> partialContext.clear()
+            UnavailableContext.APPLICATION_ONLY -> partialContext.keys.retainAll(setOf("application_id"))
+            UnavailableContext.MISSING_APPLICATION -> partialContext.remove("application_id")
+            UnavailableContext.ZERO_APPLICATION -> partialContext["application_id"] = RumContext.NULL_UUID
+            UnavailableContext.MISSING_SESSION -> partialContext.remove("session_id")
+            UnavailableContext.ZERO_SESSION -> partialContext["session_id"] = RumContext.NULL_UUID
+            UnavailableContext.MISSING_STATE -> partialContext.remove("session_state")
+            UnavailableContext.EMPTY_STATE -> partialContext["session_state"] = ""
         }
-        fakeDatadogContext = fakeDatadogContext.copy(
-            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.RUM_FEATURE_NAME, rumContext)
-            }
-        )
-
-        // Then
-        assertThat(testedContextProvider.getRumContext(fakeDatadogContext)).isNull()
-    }
-
-    @ParameterizedTest
-    @EnumSource(RumContextValueMissingType::class)
-    fun `M return null W getRumContext(){ sessionId was null }`(
-        missingType: RumContextValueMissingType
-    ) {
-        // Given
-        val rumContext = mutableMapOf<String, Any?>(
-            "application_id" to fakeApplicationId
-        )
-        when (missingType) {
-            RumContextValueMissingType.NULL -> rumContext["session_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["session_id"] = RumContext.NULL_UUID
-            RumContextValueMissingType.NOT_REGISTERED -> {
-                // no-op
-            }
-        }
-        fakeDatadogContext = fakeDatadogContext.copy(
-            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.RUM_FEATURE_NAME, rumContext)
-            }
-        )
-
-        // Then
-        assertThat(testedContextProvider.getRumContext(fakeDatadogContext)).isNull()
-    }
-
-    @ParameterizedTest
-    @EnumSource(RumContextValueMissingType::class)
-    fun `M log a dev warning log W getRumContext(){ applicationId is null }`(
-        missingType: RumContextValueMissingType
-    ) {
-        // Given
-        val rumContext = mutableMapOf<String, Any?>(
-            "session_id" to fakeSessionId
-        )
-        when (missingType) {
-            RumContextValueMissingType.NULL -> rumContext["application_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["application_id"] = RumContext.NULL_UUID
-            RumContextValueMissingType.NOT_REGISTERED -> {
-                // no-op
-            }
-        }
-        fakeDatadogContext = fakeDatadogContext.copy(
-            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.RUM_FEATURE_NAME, rumContext)
+        val unavailableDatadogContext = fakeDatadogContext.copy(
+            featuresContext = if (unavailableContext == UnavailableContext.MISSING_FEATURE) {
+                emptyMap()
+            } else {
+                mapOf(Feature.RUM_FEATURE_NAME to partialContext)
             }
         )
 
         // When
-        testedContextProvider.getRumContext(fakeDatadogContext)
+        val unavailableRumContext = testedContextProvider.getRumContext(unavailableDatadogContext)
+        val repeatedRumContext = testedContextProvider.getRumContext(unavailableDatadogContext)
+        val restoredRumContext = testedContextProvider.getRumContext(fakeDatadogContext)
 
         // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
-        )
+        assertThat(unavailableRumContext).isNull()
+        assertThat(repeatedRumContext).isNull()
+        assertThat(restoredRumContext).isEqualTo(originalContext)
+        if (unavailableContext in
+            setOf(
+                UnavailableContext.MISSING_FEATURE,
+                UnavailableContext.MISSING_APPLICATION,
+                UnavailableContext.ZERO_APPLICATION
+            )
+        ) {
+            mockInternalLogger.verifyLog(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
+            )
+        } else {
+            verifyNoInteractions(mockInternalLogger)
+        }
     }
 
-    @ParameterizedTest
-    @EnumSource(RumContextValueMissingType::class)
-    fun `M log an sdk error log W getRumContext(){ application is null }`(
-        missingType: RumContextValueMissingType
-    ) {
-        // Given
-        val rumContext = mutableMapOf<String, Any?>(
-            "session_id" to fakeSessionId
-        )
-        when (missingType) {
-            RumContextValueMissingType.NULL -> rumContext["application_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["application_id"] = RumContext.NULL_UUID
-            RumContextValueMissingType.NOT_REGISTERED -> {
-                // no-op
-            }
-        }
-        fakeDatadogContext = fakeDatadogContext.copy(
-            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.RUM_FEATURE_NAME, rumContext)
-            }
-        )
-
-        // When
-        testedContextProvider.getRumContext(fakeDatadogContext)
-
-        // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
-        )
-    }
-
-    @ParameterizedTest
-    @EnumSource(RumContextValueMissingType::class)
-    fun `M log a dev warning log W getRumContext(){ sessionId is null }`(
-        missingType: RumContextValueMissingType
-    ) {
-        // Given
-        val rumContext = mutableMapOf<String, Any?>(
-            "application_id" to fakeApplicationId
-        )
-        when (missingType) {
-            RumContextValueMissingType.NULL -> rumContext["session_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["session_id"] = RumContext.NULL_UUID
-            RumContextValueMissingType.NOT_REGISTERED -> {
-                // no-op
-            }
-        }
-        fakeDatadogContext = fakeDatadogContext.copy(
-            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.RUM_FEATURE_NAME, rumContext)
-            }
-        )
-
-        // When
-        testedContextProvider.getRumContext(fakeDatadogContext)
-
-        // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
-        )
-    }
-
-    @ParameterizedTest
-    @EnumSource(RumContextValueMissingType::class)
-    fun `M log an sdk error log W getRumContext(){ sessionId is null }`(
-        missingType: RumContextValueMissingType
-    ) {
-        // Given
-        val rumContext = mutableMapOf<String, Any?>(
-            "application_id" to fakeApplicationId
-        )
-        when (missingType) {
-            RumContextValueMissingType.NULL -> rumContext["session_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["session_id"] = RumContext.NULL_UUID
-            RumContextValueMissingType.NOT_REGISTERED -> {
-                // no-op
-            }
-        }
-        fakeDatadogContext = fakeDatadogContext.copy(
-            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.RUM_FEATURE_NAME, rumContext)
-            }
-        )
-
-        // When
-        testedContextProvider.getRumContext(fakeDatadogContext)
-
-        // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
-        )
-    }
-
-    @ParameterizedTest
-    @EnumSource(RumContextValueMissingType::class)
-    fun `M return without internal logging when retrying { sessionId is null }`(
-        missingType: RumContextValueMissingType,
-        forge: Forge
-    ) {
-        // Given
-        val rumContext = mutableMapOf<String, Any?>(
-            "application_id" to fakeApplicationId
-        )
-        when (missingType) {
-            RumContextValueMissingType.NULL -> rumContext["session_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["session_id"] = RumContext.NULL_UUID
-            RumContextValueMissingType.NOT_REGISTERED -> {
-                // no-op
-            }
-        }
-        fakeDatadogContext = fakeDatadogContext.copy(
-            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.RUM_FEATURE_NAME, rumContext)
-            }
-        )
-
-        // When
-        repeat(forge.anInt(min = 1, max = 10)) {
-            testedContextProvider.getRumContext(fakeDatadogContext)
-        }
-
-        // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
-        )
-    }
-
-    @ParameterizedTest
-    @EnumSource(RumContextValueMissingType::class)
-    fun `M return without internal logging when retrying { applicationId is null }`(
-        missingType: RumContextValueMissingType,
-        forge: Forge
-    ) {
-        // Given
-        val rumContext = mutableMapOf<String, Any?>(
-            "session_id" to fakeSessionId
-        )
-        when (missingType) {
-            RumContextValueMissingType.NULL -> rumContext["application_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["application_id"] = RumContext.NULL_UUID
-            RumContextValueMissingType.NOT_REGISTERED -> {
-                // no-op
-            }
-        }
-        fakeDatadogContext = fakeDatadogContext.copy(
-            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.RUM_FEATURE_NAME, rumContext)
-            }
-        )
-
-        // When
-        repeat(forge.anInt(min = 1, max = 10)) {
-            testedContextProvider.getRumContext(fakeDatadogContext)
-        }
-
-        // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
-        )
-    }
-
-    @ParameterizedTest
-    @EnumSource(RumContextValueMissingType::class)
-    fun `M return without dev logging when retrying { sessionId is null }`(
-        missingType: RumContextValueMissingType,
-        forge: Forge
-    ) {
-        // Given
-        val rumContext = mutableMapOf<String, Any?>(
-            "application_id" to fakeApplicationId
-        )
-        when (missingType) {
-            RumContextValueMissingType.NULL -> rumContext["session_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["session_id"] = RumContext.NULL_UUID
-            RumContextValueMissingType.NOT_REGISTERED -> {
-                // no-op
-            }
-        }
-        fakeDatadogContext = fakeDatadogContext.copy(
-            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.RUM_FEATURE_NAME, rumContext)
-            }
-        )
-
-        // When
-        repeat(forge.anInt(min = 1, max = 10)) {
-            testedContextProvider.getRumContext(fakeDatadogContext)
-        }
-
-        // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
-        )
-    }
-
-    @ParameterizedTest
-    @EnumSource(RumContextValueMissingType::class)
-    fun `M return without dev logging when retrying { applicationId is null }`(
-        missingType: RumContextValueMissingType,
-        forge: Forge
-    ) {
-        // Given
-        val rumContext = mutableMapOf<String, Any?>(
-            "session_id" to fakeSessionId
-        )
-        when (missingType) {
-            RumContextValueMissingType.NULL -> rumContext["application_id"] = null
-            RumContextValueMissingType.NULL_UUID -> rumContext["application_id"] = RumContext.NULL_UUID
-            RumContextValueMissingType.NOT_REGISTERED -> {
-                // no-op
-            }
-        }
-        fakeDatadogContext = fakeDatadogContext.copy(
-            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.RUM_FEATURE_NAME, rumContext)
-            }
-        )
-
-        // When
-        repeat(forge.anInt(min = 1, max = 10)) {
-            testedContextProvider.getRumContext(fakeDatadogContext)
-        }
-
-        // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
-        )
-    }
-
-    enum class RumContextValueMissingType {
-        NOT_REGISTERED,
-        NULL,
-        NULL_UUID
+    enum class UnavailableContext {
+        MISSING_FEATURE,
+        APPLICATION_ONLY,
+        MISSING_APPLICATION,
+        ZERO_APPLICATION,
+        MISSING_SESSION,
+        ZERO_SESSION,
+        MISSING_STATE,
+        EMPTY_STATE
     }
 }
