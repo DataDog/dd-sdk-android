@@ -169,11 +169,9 @@ internal class LogEventSerializerTest {
         }
         val faultyLogEvent = fakeLog.copy(
             usr = fakeLog.usr?.copy(
-                additionalProperties = fakeLog.usr?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = fakeLog.usr.additionalProperties
                     .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
             )
         )
 
@@ -198,11 +196,9 @@ internal class LogEventSerializerTest {
         }
         val faultyLogEvent = fakeLog.copy(
             account = fakeLog.account?.copy(
-                additionalProperties = fakeLog.account?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = fakeLog.account.additionalProperties
                     .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
             )
         )
 
@@ -371,7 +367,7 @@ internal class LogEventSerializerTest {
             doesNotHaveField(KEY_USR_EMAIL)
         }
         containsExtraAttributes(
-            userInfo.additionalProperties.minus(LogEvent.Usr.RESERVED_PROPERTIES)
+            userInfo.additionalProperties.minus(LogEvent.Usr.RESERVED_PROPERTIES.toSet())
         )
     }
 
@@ -391,7 +387,7 @@ internal class LogEventSerializerTest {
             doesNotHaveField(KEY_ACCOUNT_NAME)
         }
         containsExtraAttributes(
-            accountInfo.additionalProperties.minus(LogEvent.Account.RESERVED_PROPERTIES)
+            accountInfo.additionalProperties.minus(LogEvent.Account.RESERVED_PROPERTIES.toSet())
         )
     }
 

@@ -84,6 +84,7 @@ internal class DefaultAlpha8ResourceCache(
     override fun onConfigurationChanged(newConfig: Configuration) {}
 
     @Deprecated("Deprecated in Java")
+    @Suppress("OVERRIDE_DEPRECATION")
     override fun onLowMemory() {
         cache.evictAll()
     }

@@ -16,7 +16,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
+import org.assertj.core.api.Assertions.assertThat
 import org.chromium.net.UrlRequest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

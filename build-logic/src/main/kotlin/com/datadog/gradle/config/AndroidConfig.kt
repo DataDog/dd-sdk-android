@@ -8,6 +8,9 @@ package com.datadog.gradle.config
 
 import com.android.build.api.dsl.CompileOptions
 import com.android.build.api.dsl.LibraryExtension
+import com.android.build.api.variant.HostTestBuilder
+import com.android.build.api.variant.LibraryAndroidComponentsExtension
+import com.android.build.api.variant.LibraryVariantBuilder
 import com.datadog.gradle.utils.Version
 import com.datadog.gradle.utils.forCi
 import org.gradle.api.JavaVersion
@@ -15,18 +18,12 @@ import org.gradle.api.Project
 
 object AndroidConfig {
 
-    const val TARGET_SDK = 36
+    const val TARGET_SDK = 37
     const val MIN_SDK = 23
     const val MIN_SDK_FOR_AUTO = 29
-    const val BUILD_TOOLS_VERSION = "36.0.0"
+    const val BUILD_TOOLS_VERSION = "37.0.0"
 
     val VERSION = Version(3, 16, 0, Version.Type.Snapshot).forCi()
-}
-
-// TODO RUM-628 Switch to Java 17 bytecode
-fun CompileOptions.java11() {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
 }
 
 fun CompileOptions.java17() {
@@ -52,7 +49,7 @@ internal fun Project.androidLibraryConfig() {
         }
 
         compileOptions {
-            java11()
+            java17()
         }
 
         sourceSets.all {
@@ -89,6 +86,11 @@ internal fun Project.androidLibraryConfig() {
                     "META-INF/LICENSE-notice.md"
                 )
             }
+        }
+    }
+    extensionConfig<LibraryAndroidComponentsExtension> {
+        beforeVariants { variant: LibraryVariantBuilder ->
+            variant.hostTests[HostTestBuilder.UNIT_TEST_TYPE]?.enable = true
         }
     }
 }
