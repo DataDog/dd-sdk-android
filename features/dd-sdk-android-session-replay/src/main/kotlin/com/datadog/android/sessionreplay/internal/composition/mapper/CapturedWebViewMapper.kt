@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.composition.mapper
 
 import android.webkit.WebView
+import com.datadog.android.sessionreplay.internal.composition.CapturedBounds
 import com.datadog.android.sessionreplay.internal.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.internal.composition.toCaptured
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
@@ -25,19 +26,34 @@ internal class CapturedWebViewMapper(
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver
 ) : CapturedViewMapper<WebView> {
 
-    override fun map(view: WebView, mappingContext: CapturedMappingContext): CapturedViewMapperResult {
-        val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity)
-        val slotId = viewIdentifierResolver.resolveViewId(view)
-        val identity = mappingContext.identityFactory.webViewWireframe(mappingContext.ownerIdentity, slotId)
-        return CapturedViewMapperResult.Wireframes(
-            wireframes = listOf(
+    override fun map(view: WebView, mappingContext: CapturedMappingContext): CapturedViewMapperResult =
+        capture(view, mappingContext).map(mappingContext)
+
+    override fun capture(view: WebView, mappingContext: CapturedMappingContext): CapturedViewData =
+        CapturedWebViewData(
+            (
+                mappingContext.bounds
+                    ?: viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity).toCaptured()
+                ),
+            viewIdentifierResolver.resolveViewId(view)
+        )
+}
+
+private data class CapturedWebViewData(
+    val bounds: CapturedBounds,
+    val slotId: Long
+) : CapturedViewData {
+    override val isTerminal: Boolean = true
+
+    override fun map(mappingContext: CapturedMappingContext): CapturedViewMapperResult =
+        CapturedViewMapperResult.Wireframes(
+            listOf(
                 CapturedWireframe.WebView(
-                    identity = identity,
-                    bounds = bounds.toCaptured(),
+                    identity = mappingContext.identityFactory.webViewWireframe(mappingContext.ownerIdentity, slotId),
+                    bounds = bounds,
                     isVisible = true
                 )
             ),
             isTerminal = true
         )
-    }
 }

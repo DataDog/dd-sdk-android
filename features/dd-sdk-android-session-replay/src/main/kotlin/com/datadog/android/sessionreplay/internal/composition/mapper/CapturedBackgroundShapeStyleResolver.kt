@@ -24,11 +24,16 @@ internal class CapturedBackgroundShapeStyleResolver(
     private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
 ) {
     fun resolve(view: View, internalLogger: InternalLogger): CapturedShapeStyle? {
+        return capture(view, internalLogger)?.resolve()
+    }
+
+    fun capture(view: View, internalLogger: InternalLogger): CapturedBackgroundColor? {
         val color = view.background?.let { drawableToColorMapper.mapDrawableToColor(it, internalLogger) }
             ?: return null
-        return CapturedShapeStyle(
-            // View alpha belongs to the owning layer so text and descendants share it exactly once.
-            backgroundColor = colorStringFormatter.formatColorAsHexString(color)
-        )
+        return CapturedBackgroundColor(color, colorStringFormatter)
     }
+}
+
+internal data class CapturedBackgroundColor(val color: Int, val formatter: ColorStringFormatter) {
+    fun resolve(): CapturedShapeStyle = CapturedShapeStyle(backgroundColor = formatter.formatColorAsHexString(color))
 }

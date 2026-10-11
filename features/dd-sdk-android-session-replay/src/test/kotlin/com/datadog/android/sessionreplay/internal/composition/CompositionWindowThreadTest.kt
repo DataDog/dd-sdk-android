@@ -276,7 +276,11 @@ internal class CompositionWindowThreadTest {
         val fixture = CaptureFixture(listOf(first, unsupported, last))
 
         // When
-        val snapshot = fixture.producer.capture(fixture.context)
+        val snapshot = (
+            fixture.producer.capture(
+                fixture.context
+            )
+            ).buildSnapshot(fixture.context)
 
         // Then
         assertThat(snapshot!!.root!!.children.map { it.identity.localId }).containsExactly("1", "3")
@@ -293,7 +297,11 @@ internal class CompositionWindowThreadTest {
         val fixture = CaptureFixture(listOf(root))
 
         // When
-        val snapshot = fixture.producer.capture(fixture.context)
+        val snapshot = (
+            fixture.producer.capture(
+                fixture.context
+            )
+            ).buildSnapshot(fixture.context)
 
         // Then
         assertThat(snapshot).isNull()
@@ -316,12 +324,40 @@ internal class CompositionWindowThreadTest {
         }
 
         // When
-        val snapshot = fixture.producer.capture(fixture.context)
+        val snapshot = (
+            fixture.producer.capture(
+                fixture.context
+            )
+            ).buildSnapshot(fixture.context)
 
         // Then: abort rather than publish overrides from only the already completed window.
         assertThat(snapshot).isNull()
         fixture.verifyNotVisited(next)
         verify(fixture.mockTouchPrivacyManager, never()).replaceCurrentTouchOverrideAreas(any())
+    }
+
+    @ParameterizedTest
+    @EnumSource(Owner::class)
+    fun `M recheck root owner W capture { ownership changes during copying }`(fakeOwner: Owner) {
+        // Given
+        val root = root(Owner.MAIN)
+        val fixture = CaptureFixture(listOf(root))
+        whenever(fixture.mockTraversal.traverseWindow(eq(root), any(), any(), any())).thenAnswer {
+            setOwner(root, fakeOwner)
+            fixture.windowResult(root)
+        }
+
+        // When
+        val snapshot = (fixture.producer.capture(fixture.context))
+
+        // Then
+        if (fakeOwner == Owner.MAIN) {
+            assertThat(snapshot).isNotNull()
+            verify(fixture.mockTouchPrivacyManager).replaceCurrentTouchOverrideAreas(any())
+        } else {
+            assertThat(snapshot).isNull()
+            verify(fixture.mockTouchPrivacyManager, never()).replaceCurrentTouchOverrideAreas(any())
+        }
     }
 
     @ParameterizedTest
@@ -433,14 +469,23 @@ internal class CompositionWindowThreadTest {
             viewIdentifierResolver = mockIdentifiers
         )
 
-        fun windowResult(window: View): WindowWalkResult.Present {
-            val root = CapturedLayer(
+        fun windowResult(window: View): WindowCopyResult.Present {
+            val copiedView = CapturedNativeView(
                 identityFactory.window((windows.indexOf(window) + 1).toString()),
-                CapturedLayerKind.WINDOW_ROOT,
+                -1,
                 CapturedBounds(0, 0, 100, 100),
-                emptyList()
+                1.0,
+                com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData.Mapped(
+                    com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult.None
+                ),
+                true,
+                null,
+                null
             )
-            return WindowWalkResult.Present(root, listOf(root), emptyList(), mapOf(Rect() to TouchPrivacy.SHOW))
+            return WindowCopyResult.Present(
+                CapturedNativeWindow(1f, listOf(copiedView)),
+                mapOf(Rect() to TouchPrivacy.SHOW)
+            )
         }
 
         fun verifyNotVisited(root: View) {

@@ -62,8 +62,9 @@ internal class DefaultCompositionPipelineFactory(
         val internalLogger = sdkCore.internalLogger
         val windowSource = ActiveWindowSource(WindowTouchPrivacyReader(internalLogger = internalLogger)::read)
         val skippedFrameNotifier = CaptureSkippedFrameNotifier(sdkCore)
+        val processingExecutor = sdkCore.createSingleThreadExecutorService(PROCESSING_EXECUTOR_NAME)
         val completionQueue = SnapshotCompletionQueue(
-            executorService = sdkCore.createSingleThreadExecutorService(PROCESSING_EXECUTOR_NAME),
+            executorService = processingExecutor,
             processor = DefaultSnapshotCompletionProcessor(
                 rumContextProvider = rumContextProvider,
                 recordWriter = recordWriter,
@@ -73,7 +74,7 @@ internal class DefaultCompositionPipelineFactory(
         )
         val orchestrator = SnapshotCaptureOrchestrator(
             producer = snapshotProducerFactory(windowSource, rumContextProvider),
-            processor = ImmediateCapturedSnapshotProcessor(),
+            processor = ExecutorCapturedSnapshotProcessor(processingExecutor, internalLogger),
             consumer = completionQueue,
             timeProvider = CaptureTimeProvider { sdkCore.timeProvider.getDeviceElapsedTimeNanos() },
             captureScheduler = HandlerCaptureTaskScheduler(),
