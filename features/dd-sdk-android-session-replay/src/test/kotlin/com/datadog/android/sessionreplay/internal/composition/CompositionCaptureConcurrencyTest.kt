@@ -338,7 +338,10 @@ internal class CompositionCaptureConcurrencyTest {
                 val future = processorExecutor.submit {
                     Thread.sleep(PROCESSOR_DELAY_RANGE_MS.random())
                     callback.onProcessed(
-                        SnapshotProcessingResult.Completed(request.generation.id, request.snapshot)
+                        SnapshotProcessingResult.Completed(
+                            request.generation.id,
+                            request.snapshot as CapturedFullSnapshot
+                        )
                     )
                 }
                 CancellableCaptureWork { future.cancel(false) }

@@ -591,7 +591,7 @@ internal class CompositionChildDrawingOrderTest {
             val identityFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope("view"))
             val context = CaptureGenerationContext(1L, 0L, Long.MAX_VALUE, CaptureTimeProvider { 0L })
             return testedTraversal.traverseWindow(root, identityFactory.window("window"), identityFactory, context)
-                as WindowWalkResult.Present
+                .buildWindow(context) as WindowWalkResult.Present
         }
     }
 

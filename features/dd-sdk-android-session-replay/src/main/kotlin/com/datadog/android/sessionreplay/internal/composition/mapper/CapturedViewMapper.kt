@@ -7,6 +7,8 @@
 package com.datadog.android.sessionreplay.internal.composition.mapper
 
 import android.view.View
+import androidx.annotation.UiThread
+import com.datadog.android.sessionreplay.internal.composition.CapturedBounds
 import com.datadog.android.sessionreplay.internal.composition.CapturedIdentity
 import com.datadog.android.sessionreplay.internal.composition.CapturedIdentityFactory
 import com.datadog.android.sessionreplay.internal.composition.CapturedWireframe
@@ -18,7 +20,9 @@ import com.datadog.android.sessionreplay.internal.composition.CapturedWireframe
 internal data class CapturedMappingContext(
     val identityFactory: CapturedIdentityFactory,
     val ownerIdentity: CapturedIdentity,
-    val screenDensity: Float
+    val screenDensity: Float,
+    // The native copier supplies geometry once for both the layer and its mapper.
+    val bounds: CapturedBounds? = null
 )
 
 internal sealed interface CapturedViewMapperResult {
@@ -39,4 +43,21 @@ internal sealed interface CapturedViewMapperResult {
 
 internal fun interface CapturedViewMapper<T : View> {
     fun map(view: T, mappingContext: CapturedMappingContext): CapturedViewMapperResult
+
+    /** Runs on the UI thread. Returned values must not retain Views, Layouts or Drawables. */
+    @UiThread
+    fun capture(view: T, mappingContext: CapturedMappingContext): CapturedViewData =
+        CapturedViewData.Mapped(map(view, mappingContext))
+}
+
+/** Builds wireframes exclusively from copied values; safe to invoke on the processing executor. */
+internal sealed interface CapturedViewData {
+    val isTerminal: Boolean get() = false
+
+    fun map(mappingContext: CapturedMappingContext): CapturedViewMapperResult
+
+    data class Mapped(val result: CapturedViewMapperResult) : CapturedViewData {
+        override val isTerminal: Boolean get() = (result as? CapturedViewMapperResult.Wireframes)?.isTerminal == true
+        override fun map(mappingContext: CapturedMappingContext): CapturedViewMapperResult = result
+    }
 }
