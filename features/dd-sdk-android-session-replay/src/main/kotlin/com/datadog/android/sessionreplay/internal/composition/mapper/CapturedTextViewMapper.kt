@@ -14,6 +14,7 @@ import androidx.core.text.TextDirectionHeuristicsCompat
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.internal.composition.CapturedAlignment
+import com.datadog.android.sessionreplay.internal.composition.CapturedBounds
 import com.datadog.android.sessionreplay.internal.composition.CapturedHorizontalAlignment
 import com.datadog.android.sessionreplay.internal.composition.CapturedPadding
 import com.datadog.android.sessionreplay.internal.composition.CapturedTextPosition
@@ -44,54 +45,43 @@ internal class CapturedTextViewMapper(
     // The mapper belongs to one recording session and is accessed by UI-thread traversal.
     private var hasReportedUnsupportedFont = false
 
-    override fun map(view: TextView, mappingContext: CapturedMappingContext): CapturedViewMapperResult {
-        val wireframes = mutableListOf<CapturedWireframe>()
-        val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity)
-        val capturedBounds = bounds.toCaptured()
+    override fun map(view: TextView, mappingContext: CapturedMappingContext): CapturedViewMapperResult =
+        capture(view, mappingContext).map(mappingContext)
 
-        backgroundShapeStyleResolver.resolve(view)?.let { style ->
-            wireframes += CapturedWireframe.Shape(
-                identity = mappingContext.identityFactory.shapeWireframe(mappingContext.ownerIdentity),
-                bounds = capturedBounds,
-                style = style
-            )
-        }
-
-        wireframes += CapturedWireframe.Text(
-            identity = mappingContext.identityFactory.textWireframe(mappingContext.ownerIdentity),
-            bounds = capturedBounds,
-            text = resolveLayoutText(view),
-            textStyle = resolveTextStyle(view, mappingContext.screenDensity),
-            textPosition = resolveTextPosition(view, mappingContext.screenDensity)
+    override fun capture(view: TextView, mappingContext: CapturedMappingContext): CapturedViewData {
+        val layout = view.layout
+        return CapturedTextViewData(
+            bounds = (
+                mappingContext.bounds
+                    ?: viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity).toCaptured()
+                ),
+            text = (layout?.text ?: view.text)?.toString().orEmpty(),
+            background = backgroundShapeStyleResolver.capture(view),
+            family = resolveFontFamily(view.typeface),
+            textSize = view.textSize.toLong(),
+            textColor = if (view.text.isNullOrEmpty()) {
+                if (view.hintTextColors != null) view.currentHintTextColor else view.currentTextColor
+            } else {
+                view.currentTextColor
+            },
+            truncationMode = when (view.ellipsize) {
+                TextUtils.TruncateAt.START -> CapturedTruncationMode.HEAD
+                TextUtils.TruncateAt.END -> CapturedTruncationMode.TAIL
+                TextUtils.TruncateAt.MIDDLE -> CapturedTruncationMode.MIDDLE
+                TextUtils.TruncateAt.MARQUEE -> CapturedTruncationMode.CLIP
+                null -> null
+            },
+            paddingTop = if (layout != null) view.totalPaddingTop else view.paddingTop,
+            paddingBottom = if (layout != null) view.totalPaddingBottom else view.paddingBottom,
+            paddingLeft = if (layout != null) view.totalPaddingLeft else view.paddingLeft,
+            paddingRight = if (layout != null) view.totalPaddingRight else view.paddingRight,
+            textAlignment = view.textAlignment,
+            gravity = view.gravity,
+            isParagraphRtl = isParagraphRtl(view),
+            isLayoutRtl = view.layoutDirection == TextView.LAYOUT_DIRECTION_RTL,
+            hasLayout = layout != null,
+            colorStringFormatter = colorStringFormatter
         )
-
-        return CapturedViewMapperResult.Wireframes(wireframes)
-    }
-
-    private fun resolveTextStyle(textView: TextView, pixelsDensity: Float): CapturedTextStyle {
-        return CapturedTextStyle(
-            family = resolveFontFamily(textView.typeface),
-            size = textView.textSize.toLong().densityNormalized(pixelsDensity),
-            color = resolveTextColor(textView),
-            truncationMode = resolveTruncationMode(textView)
-        )
-    }
-
-    private fun resolveTextColor(textView: TextView): String {
-        return if (textView.text.isNullOrEmpty()) {
-            resolveHintTextColor(textView)
-        } else {
-            colorStringFormatter.formatColorAsHexString(textView.currentTextColor)
-        }
-    }
-
-    private fun resolveHintTextColor(textView: TextView): String {
-        val hintTextColors = textView.hintTextColors
-        return if (hintTextColors != null) {
-            colorStringFormatter.formatColorAsHexString(textView.currentHintTextColor)
-        } else {
-            colorStringFormatter.formatColorAsHexString(textView.currentTextColor)
-        }
     }
 
     private fun resolveFontFamily(typeface: Typeface?): String {
@@ -119,69 +109,6 @@ internal class CapturedTextViewMapper(
         }
     }
 
-    private fun resolveTruncationMode(textView: TextView): CapturedTruncationMode? {
-        return textView.ellipsize?.let { truncationMode ->
-            when (truncationMode) {
-                TextUtils.TruncateAt.START -> CapturedTruncationMode.HEAD
-                TextUtils.TruncateAt.END -> CapturedTruncationMode.TAIL
-                TextUtils.TruncateAt.MIDDLE -> CapturedTruncationMode.MIDDLE
-                TextUtils.TruncateAt.MARQUEE -> CapturedTruncationMode.CLIP
-            }
-        }
-    }
-
-    private fun resolveTextPosition(textView: TextView, pixelsDensity: Float): CapturedTextPosition {
-        return CapturedTextPosition(
-            padding = resolvePadding(textView, pixelsDensity),
-            alignment = resolveAlignment(textView)
-        )
-    }
-
-    private fun resolvePadding(textView: TextView, pixelsDensity: Float): CapturedPadding {
-        // Total padding includes layout-dependent gravity offsets and compound drawables.
-        // Without a layout, use ordinary padding and resolve vertical gravity separately.
-        return if (textView.layout != null) {
-            CapturedPadding(
-                top = textView.totalPaddingTop.densityNormalized(pixelsDensity).toLong(),
-                bottom = textView.totalPaddingBottom.densityNormalized(pixelsDensity).toLong(),
-                left = textView.totalPaddingLeft.densityNormalized(pixelsDensity).toLong(),
-                right = textView.totalPaddingRight.densityNormalized(pixelsDensity).toLong()
-            )
-        } else {
-            CapturedPadding(
-                top = textView.paddingTop.densityNormalized(pixelsDensity).toLong(),
-                bottom = textView.paddingBottom.densityNormalized(pixelsDensity).toLong(),
-                left = textView.paddingLeft.densityNormalized(pixelsDensity).toLong(),
-                right = textView.paddingRight.densityNormalized(pixelsDensity).toLong()
-            )
-        }
-    }
-
-    private fun resolveAlignment(textView: TextView): CapturedAlignment {
-        val horizontal = when (textView.textAlignment) {
-            TextView.TEXT_ALIGNMENT_CENTER -> CapturedHorizontalAlignment.CENTER
-            TextView.TEXT_ALIGNMENT_TEXT_START -> relativeAlignment(isParagraphRtl(textView), isEnd = false)
-            TextView.TEXT_ALIGNMENT_TEXT_END -> relativeAlignment(isParagraphRtl(textView), isEnd = true)
-            TextView.TEXT_ALIGNMENT_VIEW_START -> relativeAlignment(
-                textView.layoutDirection == TextView.LAYOUT_DIRECTION_RTL,
-                isEnd = false
-            )
-            TextView.TEXT_ALIGNMENT_VIEW_END -> relativeAlignment(
-                textView.layoutDirection == TextView.LAYOUT_DIRECTION_RTL,
-                isEnd = true
-            )
-            TextView.TEXT_ALIGNMENT_GRAVITY -> return resolveAlignmentFromGravity(textView)
-            else -> CapturedHorizontalAlignment.LEFT
-        }
-        // Total padding already carries gravity offsets once the text has a layout.
-        val vertical = if (textView.layout == null) {
-            resolveVerticalAlignment(textView.gravity)
-        } else {
-            CapturedVerticalAlignment.CENTER
-        }
-        return CapturedAlignment(horizontal, vertical)
-    }
-
     @Suppress("UnsafeThirdPartyFunctionCall") // First line exists; heuristic range covers a captured string.
     private fun isParagraphRtl(textView: TextView): Boolean {
         val layout = textView.layout
@@ -204,25 +131,88 @@ internal class CapturedTextViewMapper(
         return heuristic.isRtl(text, 0, text.length)
     }
 
-    private fun resolveAlignmentFromGravity(textView: TextView): CapturedAlignment {
-        val horizontalAlignment = when (textView.gravity.and(Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK)) {
-            Gravity.START -> relativeAlignment(isParagraphRtl(textView), isEnd = false)
-            Gravity.END -> relativeAlignment(isParagraphRtl(textView), isEnd = true)
-            Gravity.LEFT -> CapturedHorizontalAlignment.LEFT
-            Gravity.RIGHT -> CapturedHorizontalAlignment.RIGHT
-
-            Gravity.CENTER,
-            Gravity.CENTER_HORIZONTAL -> CapturedHorizontalAlignment.CENTER
-
-            else -> CapturedHorizontalAlignment.LEFT
-        }
-        return CapturedAlignment(horizontalAlignment, resolveVerticalAlignment(textView.gravity))
-    }
-
     private companion object {
         const val SANS_SERIF_FAMILY_NAME = "roboto, sans-serif"
         const val SERIF_FAMILY_NAME = "serif"
         const val MONOSPACE_FAMILY_NAME = "monospace"
+    }
+}
+
+private data class CapturedTextViewData(
+    val bounds: CapturedBounds,
+    val text: String,
+    val background: CapturedBackgroundColor?,
+    val family: String,
+    val textSize: Long,
+    val textColor: Int,
+    val truncationMode: CapturedTruncationMode?,
+    val paddingTop: Int,
+    val paddingBottom: Int,
+    val paddingLeft: Int,
+    val paddingRight: Int,
+    val textAlignment: Int,
+    val gravity: Int,
+    val isParagraphRtl: Boolean,
+    val isLayoutRtl: Boolean,
+    val hasLayout: Boolean,
+    val colorStringFormatter: ColorStringFormatter
+) : CapturedViewData {
+    override fun map(mappingContext: CapturedMappingContext): CapturedViewMapperResult {
+        val wireframes = mutableListOf<CapturedWireframe>()
+        background?.let {
+            wireframes += CapturedWireframe.Shape(
+                identity = mappingContext.identityFactory.shapeWireframe(mappingContext.ownerIdentity),
+                bounds = bounds,
+                style = it.resolve()
+            )
+        }
+        val density = mappingContext.screenDensity
+        wireframes += CapturedWireframe.Text(
+            identity = mappingContext.identityFactory.textWireframe(mappingContext.ownerIdentity),
+            bounds = bounds,
+            text = text,
+            textStyle = CapturedTextStyle(
+                family = family,
+                size = textSize.densityNormalized(density),
+                color = colorStringFormatter.formatColorAsHexString(textColor),
+                truncationMode = truncationMode
+            ),
+            textPosition = CapturedTextPosition(
+                padding = CapturedPadding(
+                    top = paddingTop.densityNormalized(density).toLong(),
+                    bottom = paddingBottom.densityNormalized(density).toLong(),
+                    left = paddingLeft.densityNormalized(density).toLong(),
+                    right = paddingRight.densityNormalized(density).toLong()
+                ),
+                alignment = resolveAlignment()
+            )
+        )
+        return CapturedViewMapperResult.Wireframes(wireframes)
+    }
+
+    private fun resolveAlignment(): CapturedAlignment {
+        val horizontal = when (textAlignment) {
+            TextView.TEXT_ALIGNMENT_CENTER -> CapturedHorizontalAlignment.CENTER
+            TextView.TEXT_ALIGNMENT_TEXT_START -> relativeAlignment(isParagraphRtl, isEnd = false)
+            TextView.TEXT_ALIGNMENT_TEXT_END -> relativeAlignment(isParagraphRtl, isEnd = true)
+            TextView.TEXT_ALIGNMENT_VIEW_START -> relativeAlignment(isLayoutRtl, isEnd = false)
+            TextView.TEXT_ALIGNMENT_VIEW_END -> relativeAlignment(isLayoutRtl, isEnd = true)
+            TextView.TEXT_ALIGNMENT_GRAVITY -> return resolveAlignmentFromGravity()
+            else -> CapturedHorizontalAlignment.LEFT
+        }
+        val vertical = if (hasLayout) CapturedVerticalAlignment.CENTER else resolveVerticalAlignment(gravity)
+        return CapturedAlignment(horizontal, vertical)
+    }
+
+    private fun resolveAlignmentFromGravity(): CapturedAlignment {
+        val horizontal = when (gravity.and(Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK)) {
+            Gravity.START -> relativeAlignment(isParagraphRtl, isEnd = false)
+            Gravity.END -> relativeAlignment(isParagraphRtl, isEnd = true)
+            Gravity.RIGHT -> CapturedHorizontalAlignment.RIGHT
+            Gravity.CENTER_HORIZONTAL -> CapturedHorizontalAlignment.CENTER
+            else -> CapturedHorizontalAlignment.LEFT
+        }
+        return CapturedAlignment(horizontal, resolveVerticalAlignment(gravity))
     }
 }
 

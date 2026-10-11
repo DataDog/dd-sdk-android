@@ -765,7 +765,7 @@ internal class SnapshotCaptureOrchestratorTest {
 
         fun complete(generationId: Long = request.generation.id) {
             callback.onProcessed(
-                SnapshotProcessingResult.Completed(generationId, request.snapshot)
+                SnapshotProcessingResult.Completed(generationId, request.snapshot as CapturedFullSnapshot)
             )
         }
     }

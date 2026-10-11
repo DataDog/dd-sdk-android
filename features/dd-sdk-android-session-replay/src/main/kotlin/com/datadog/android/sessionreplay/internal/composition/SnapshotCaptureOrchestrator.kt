@@ -263,7 +263,7 @@ private fun safeCapture(
     producer: CapturedSnapshotProducer,
     internalLogger: InternalLogger,
     generation: CaptureGenerationContext
-): CapturedFullSnapshot? = try {
+): CapturedSnapshotInput? = try {
     producer.capture(generation)
 } catch (e: Exception) {
     internalLogger.log(
