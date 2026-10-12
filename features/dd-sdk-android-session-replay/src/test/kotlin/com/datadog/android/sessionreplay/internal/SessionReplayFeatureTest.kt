@@ -131,6 +131,7 @@ internal class SessionReplayFeatureTest {
             imagePrivacy = fakeConfiguration.imagePrivacy,
             startRecordingImmediately = true,
             touchPrivacy = fakeConfiguration.touchPrivacy,
+            adaptiveCaptureSchedulingEnabled = false,
             configuredSampleRate = fakeSampleRate
         ) { _, _, _, _, _, _ -> mockRecorder }
     }
@@ -416,6 +417,7 @@ internal class SessionReplayFeatureTest {
             imagePrivacy = fakeConfiguration.imagePrivacy,
             startRecordingImmediately = true,
             touchPrivacy = fakeConfiguration.touchPrivacy,
+            adaptiveCaptureSchedulingEnabled = false,
             configuredSampleRate = fakeSampleRate
         ) { _, _, _, _, _, _ -> mockRecorder }
 
@@ -505,7 +507,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `M preserve stop timing W manuallyStopRecording {opt-in omitted}`() {
+    fun `M preserve stop timing W manuallyStopRecording {adaptive scheduling disabled}`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         testedFeature.startRecording()
@@ -1025,6 +1027,7 @@ internal class SessionReplayFeatureTest {
             imagePrivacy = fakeConfiguration.imagePrivacy,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
+            adaptiveCaptureSchedulingEnabled = false,
             configuredSampleRate = fakeSampleRate
         ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(appContext.mockInstance)
@@ -1076,6 +1079,7 @@ internal class SessionReplayFeatureTest {
             imagePrivacy = fakeConfiguration.imagePrivacy,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = false,
+            adaptiveCaptureSchedulingEnabled = false,
             configuredSampleRate = fakeSampleRate
         ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(appContext.mockInstance)
@@ -1358,6 +1362,7 @@ internal class SessionReplayFeatureTest {
             imagePrivacy = fakeConfiguration.imagePrivacy,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = scenario.startRecordingImmediately,
+            adaptiveCaptureSchedulingEnabled = false,
             configuredSampleRate = fakeSampleRate
         ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
@@ -1527,6 +1532,7 @@ internal class SessionReplayFeatureTest {
             imagePrivacy = fakeConfiguration.imagePrivacy,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
+            adaptiveCaptureSchedulingEnabled = false,
             configuredSampleRate = fakeSampleRate
         ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
@@ -1559,6 +1565,7 @@ internal class SessionReplayFeatureTest {
             imagePrivacy = fakeConfiguration.imagePrivacy,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = false,
+            adaptiveCaptureSchedulingEnabled = false,
             configuredSampleRate = fakeSampleRate
         ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
@@ -1593,6 +1600,7 @@ internal class SessionReplayFeatureTest {
             imagePrivacy = fakeConfiguration.imagePrivacy,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
+            adaptiveCaptureSchedulingEnabled = false,
             configuredSampleRate = fakeSampleRate
         ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
@@ -1630,6 +1638,7 @@ internal class SessionReplayFeatureTest {
             imagePrivacy = fakeConfiguration.imagePrivacy,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
+            adaptiveCaptureSchedulingEnabled = false,
             configuredSampleRate = fakeSampleRate
         ) { _, _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
@@ -1716,6 +1725,7 @@ internal class SessionReplayFeatureTest {
             imagePrivacy = fakeConfiguration.imagePrivacy,
             startRecordingImmediately = true,
             touchPrivacy = fakeConfiguration.touchPrivacy,
+            adaptiveCaptureSchedulingEnabled = false,
             configuredSampleRate = 100f
         ) { _, _, _, _, _, _ -> mockRecorder }
 

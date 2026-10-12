@@ -32,7 +32,6 @@ import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueu
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.Node
-import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
@@ -199,6 +198,7 @@ internal class WindowsOnDrawListenerTest {
             sdkCore = mockSdkCore,
             methodCallSamplingRate = fakeMethodCallSamplingRate,
             dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled,
+            adaptiveCaptureSchedulingEnabled = false,
             touchPrivacyManager = mockTouchPrivacyManager,
             rumContextProvider = mockRumContextProvider,
             isCaptureAllowed = { fakeCaptureAllowed }
@@ -256,7 +256,6 @@ internal class WindowsOnDrawListenerTest {
             debouncer = Debouncer(
                 handler = mockHandler,
                 sdkCore = mockSdkCore,
-                timeBank = RecordingTimeBank(50),
                 dynamicOptimizationEnabled = true,
                 adaptiveCaptureSchedulingEnabled = true
             ),
@@ -458,6 +457,7 @@ internal class WindowsOnDrawListenerTest {
             sdkCore = mockSdkCore,
             methodCallSamplingRate = fakeMethodCallSamplingRate,
             dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled,
+            adaptiveCaptureSchedulingEnabled = false,
             touchPrivacyManager = mockTouchPrivacyManager,
             rumContextProvider = mockRumContextProvider
         )
@@ -576,6 +576,7 @@ internal class WindowsOnDrawListenerTest {
             sdkCore = mockSdkCore,
             methodCallSamplingRate = fakeMethodCallSamplingRate,
             dynamicOptimizationEnabled = fakeDynamicOptimizationEnabled,
+            adaptiveCaptureSchedulingEnabled = false,
             touchPrivacyManager = mockTouchPrivacyManager,
             rumContextProvider = mockRumContextProvider
         )

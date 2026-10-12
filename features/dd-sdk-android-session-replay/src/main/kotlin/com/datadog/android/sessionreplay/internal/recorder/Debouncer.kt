@@ -16,10 +16,14 @@ import java.util.concurrent.TimeUnit
 internal class Debouncer(
     private val handler: Handler = Handler(Looper.getMainLooper()),
     private val maxRecordDelayInNs: Long = MAX_DELAY_THRESHOLD_NS,
-    private val timeBank: TimeBank = RecordingTimeBank(),
     private val sdkCore: FeatureSdkCore,
     private val dynamicOptimizationEnabled: Boolean,
-    private val adaptiveCaptureSchedulingEnabled: Boolean = false
+    private val adaptiveCaptureSchedulingEnabled: Boolean = false,
+    private val timeBank: TimeBank = if (adaptiveCaptureSchedulingEnabled) {
+        RecordingTimeBank(CAPTURE_BUDGET_MS_PER_SECOND)
+    } else {
+        RecordingTimeBank()
+    }
 ) {
     private var captureIntervalStartNs: Long? = null
     private var pendingCapture: Runnable? = null
@@ -104,6 +108,7 @@ internal class Debouncer(
 
     companion object {
         internal const val DEBOUNCE_TIME_IN_MS: Long = 64
+        private const val CAPTURE_BUDGET_MS_PER_SECOND = 50L
         private val MAX_DELAY_THRESHOLD_NS = TimeUnit.MILLISECONDS.toNanos(DEBOUNCE_TIME_IN_MS)
         private const val NANOS_PER_MILLISECOND = 1_000_000L
     }

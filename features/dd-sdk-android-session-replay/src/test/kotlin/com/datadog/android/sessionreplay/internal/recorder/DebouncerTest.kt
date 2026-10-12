@@ -13,6 +13,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -57,6 +59,41 @@ internal class DebouncerTest {
             null
         }.whenever(mockHandler).removeCallbacksAndMessages(null)
         testedDebouncer = newDebouncer()
+    }
+
+    @ParameterizedTest
+    @CsvSource("true, 50", "false, 100")
+    fun `M select default capture budget W debounce {adaptive scheduling enabled or disabled}`(
+        fakeSchedulingEnabled: Boolean,
+        fakeBudgetMsPerSecond: Long
+    ) {
+        // Given
+        testedDebouncer = Debouncer(
+            handler = mockHandler,
+            maxRecordDelayInNs = 0L,
+            sdkCore = mockSdkCore,
+            dynamicOptimizationEnabled = true,
+            adaptiveCaptureSchedulingEnabled = fakeSchedulingEnabled
+        )
+        val fakeCaptureDurationMs = 2 * fakeBudgetMsPerSecond
+        testedDebouncer.debounce({
+            fakeCapture.run()
+            fakeClockMs += fakeCaptureDurationMs
+        })
+        advanceTo(fakeCaptureDurationMs)
+
+        // When: spending twice the initial budget requires one second of replenishment.
+        testedDebouncer.debounce(fakeCapture)
+        advanceTo(999L)
+        testedDebouncer.debounce(fakeCapture)
+        advanceTo(999L)
+
+        // Then
+        assertThat(fakeCaptureTimes).containsExactly(0L)
+        fakeClockMs = 1_000L
+        testedDebouncer.debounce(fakeCapture)
+        advanceTo(1_000L)
+        assertThat(fakeCaptureTimes).containsExactly(0L, 1_000L)
     }
 
     @Test

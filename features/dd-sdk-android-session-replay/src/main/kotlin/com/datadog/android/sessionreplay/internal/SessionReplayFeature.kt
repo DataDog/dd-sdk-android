@@ -65,7 +65,7 @@ internal class SessionReplayFeature(
     internal val imagePrivacy: ImagePrivacy,
     private val configuredSampleRate: Float,
     private val startRecordingImmediately: Boolean,
-    private val adaptiveCaptureSchedulingEnabled: Boolean = false,
+    private val adaptiveCaptureSchedulingEnabled: Boolean,
     private val recorderProvider: RecorderProvider
 ) : StorageBackedFeature, FeatureEventReceiver {
 

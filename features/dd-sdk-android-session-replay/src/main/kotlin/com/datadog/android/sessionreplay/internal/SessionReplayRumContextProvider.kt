@@ -13,7 +13,7 @@ import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import java.util.UUID
 
 internal class SessionReplayRumContextProvider(
-    private val adaptiveCaptureSchedulingEnabled: Boolean = false,
+    private val adaptiveCaptureSchedulingEnabled: Boolean,
     private val onRumViewChanged: () -> Unit = {}
 ) : RumContextProvider, FeatureContextUpdateReceiver {
 

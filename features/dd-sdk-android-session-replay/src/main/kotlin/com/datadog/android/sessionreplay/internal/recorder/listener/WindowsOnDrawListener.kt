@@ -18,7 +18,6 @@ import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.Debouncer
 import com.datadog.android.sessionreplay.internal.recorder.OnDemandCaptureListener
-import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.internal.recorder.withinSRBenchmarkSpan
 import com.datadog.android.sessionreplay.internal.utils.MiscUtils
@@ -34,17 +33,12 @@ internal class WindowsOnDrawListener(
     private val miscUtils: MiscUtils = MiscUtils,
     private val sdkCore: FeatureSdkCore,
     dynamicOptimizationEnabled: Boolean,
-    adaptiveCaptureSchedulingEnabled: Boolean = false,
+    adaptiveCaptureSchedulingEnabled: Boolean,
     private val touchPrivacyManager: TouchPrivacyManager,
     private val debouncer: Debouncer = Debouncer(
         sdkCore = sdkCore,
         dynamicOptimizationEnabled = dynamicOptimizationEnabled,
-        adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled,
-        timeBank = if (adaptiveCaptureSchedulingEnabled) {
-            RecordingTimeBank(CAPTURE_BUDGET_MS_PER_SECOND)
-        } else {
-            RecordingTimeBank()
-        }
+        adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled
     ),
     private val methodCallSamplingRate: Float,
     private val rumContextProvider: RumContextProvider,
@@ -148,8 +142,6 @@ internal class WindowsOnDrawListener(
     }
 
     companion object {
-        private const val CAPTURE_BUDGET_MS_PER_SECOND = 50L
-
         private const val METHOD_CALL_CAPTURE_RECORD: String = "Capture Record"
 
         private const val BENCHMARK_SPAN_SNAPSHOT_PRODUCER = "SnapshotProducer"
