@@ -7,10 +7,13 @@
 package com.datadog.tools.detekt.rules.sdk
 
 import com.datadog.tools.detekt.ext.isContainingEntryPointPublic
+import com.datadog.tools.detekt.ext.resolveCalledFunction
 import dev.detekt.api.Config
 import dev.detekt.api.Entity
 import dev.detekt.api.Finding
+import dev.detekt.api.RequiresAnalysisApi
 import dev.detekt.api.Rule
+import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.psi.KtCallExpression
 
 /**
@@ -19,16 +22,14 @@ import org.jetbrains.kotlin.psi.KtCallExpression
  */
 class CheckInternal(
     config: Config
-) : Rule(config, "This rule reports when an exception is thrown.") {
+) : Rule(config, "This rule reports when an exception is thrown."),
+    RequiresAnalysisApi {
 
     override fun visitCallExpression(expression: KtCallExpression) {
-        val callee = expression.calleeExpression
-        val isCheckMethod = callee?.textMatches(CHECK_LITERAL) == true
-        val isCheckNotNullMethod = callee?.textMatches(CHECK_NOT_NULL_LITERAL) == true
-        if (
-            (isCheckMethod || isCheckNotNullMethod) &&
-            !expression.isContainingEntryPointPublic()
-        ) {
+        val calledFunction = analyze(expression) {
+            resolveCalledFunction(expression)?.callableId?.asSingleFqName()?.asString()
+        }
+        if (calledFunction in CHECK_FUNCTIONS && !expression.isContainingEntryPointPublic()) {
             report(
                 Finding(
                     Entity.from(expression),
@@ -39,8 +40,10 @@ class CheckInternal(
         super.visitCallExpression(expression)
     }
 
-    companion object {
-        private const val CHECK_LITERAL = "check"
-        private const val CHECK_NOT_NULL_LITERAL = "checkNotNull"
+    private companion object {
+        private val CHECK_FUNCTIONS = setOf(
+            "kotlin.check",
+            "kotlin.checkNotNull"
+        )
     }
 }

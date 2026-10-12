@@ -12,7 +12,12 @@ import dev.detekt.api.Config
 import dev.detekt.api.Entity
 import dev.detekt.api.Finding
 import dev.detekt.api.config
+import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.analyze
+import org.jetbrains.kotlin.analysis.api.symbols.KaClassSymbol
+import org.jetbrains.kotlin.analysis.api.types.KaClassType
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtTryExpression
 import java.util.Stack
@@ -65,9 +70,12 @@ class UnsafeThirdPartyFunctionCall(
                 val typeReference = it.catchParameter?.typeReference ?: return@mapNotNull null
                 analyze(typeReference) { fqTypeName(typeReference.type) }
             }
+        // A catch clause only handles the exceptions thrown from the try block, not from catch or finally blocks
         caughtExceptions.push(caughtTypes)
-        super.visitTryExpression(expression)
+        expression.tryBlock.accept(this)
         caughtExceptions.pop()
+        expression.catchClauses.forEach { it.accept(this) }
+        expression.finallyBlock?.accept(this)
     }
 
     // endregion
@@ -106,20 +114,10 @@ class UnsafeThirdPartyFunctionCall(
         call: String,
         exceptions: List<String>
     ) {
-        val catchesAnyException = caughtExceptions.any { list ->
-            list.any { e -> e in topLevelExceptions }
+        val caughtTypes = caughtExceptions.flatten().toSet()
+        val uncaught = analyze(expression) {
+            exceptions.filterNot { isCaught(it, caughtTypes) }
         }
-        val catchesAnyError = caughtExceptions.any { list ->
-            list.any { e -> e in topLevelErrors }
-        }
-        val uncaught = exceptions.filter { exception ->
-            caughtExceptions.none { it.contains(exception) }
-        }
-            .filter {
-                val isUncaughtException = it.endsWith("Exception") && !catchesAnyException
-                val isUncaughtError = it.endsWith("Error") && !catchesAnyError
-                isUncaughtException || isUncaughtError
-            }
 
         if (uncaught.isEmpty()) {
             return
@@ -127,6 +125,41 @@ class UnsafeThirdPartyFunctionCall(
 
         val msg = "Calling $call can throw the following exceptions: ${exceptions.joinToString()}."
         reportUnsafeCall(expression, msg)
+    }
+
+    /**
+     * An exception is caught by a catch clause on its own type or on any of its super types
+     * (e.g. a `FileNotFoundException` is caught by `catch (e: IOException)`).
+     */
+    private fun KaSession.isCaught(exception: String, caughtTypes: Set<String>): Boolean {
+        if (exception in caughtTypes) return true
+
+        val exceptionClass = findExceptionClass(exception)
+        if (exceptionClass == null) {
+            // Unknown class (e.g. missing from the classpath), only top level catch clauses can be checked
+            val catchesAnyException = caughtTypes.any { it in topLevelExceptions }
+            val catchesAnyError = caughtTypes.any { it in topLevelErrors }
+            val isUncaughtException = exception.endsWith("Exception") && !catchesAnyException
+            val isUncaughtError = exception.endsWith("Error") && !catchesAnyError
+            return !isUncaughtException && !isUncaughtError
+        }
+
+        return exceptionClass.defaultType.allSupertypes.any {
+            (it as? KaClassType)?.classId?.asSingleFqName()?.asString() in caughtTypes
+        }
+    }
+
+    /**
+     * A fully qualified name doesn't tell where the package ends, try each split until the class is found
+     * (e.g. `android.content.res.Resources.NotFoundException` is the nested class `Resources.NotFoundException`).
+     */
+    private fun KaSession.findExceptionClass(exception: String): KaClassSymbol? {
+        val segments = exception.split('.')
+        return (segments.size - 1 downTo 1).firstNotNullOfOrNull { packageSize ->
+            val packageName = FqName.fromSegments(segments.take(packageSize))
+            val className = FqName.fromSegments(segments.drop(packageSize))
+            findClass(ClassId(packageName, className, isLocal = false))
+        }
     }
 
     private fun reportUnsafeCall(

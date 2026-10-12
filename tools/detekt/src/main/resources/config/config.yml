@@ -24,8 +24,6 @@ datadog:
   TodoWithoutTask:
     active: false
     deprecatedPrefixes: []
-  UnsafeCallOnNullableType:
-    active: false
   UnsafeThirdPartyFunctionCall:
     active: false
     internalPackagePrefix: ''

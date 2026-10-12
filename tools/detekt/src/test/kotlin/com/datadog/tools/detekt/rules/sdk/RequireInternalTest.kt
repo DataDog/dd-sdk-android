@@ -7,15 +7,25 @@
 package com.datadog.tools.detekt.rules.sdk
 
 import dev.detekt.api.Config
-import dev.detekt.test.lint
+import dev.detekt.test.lintWithContext
+import dev.detekt.test.utils.KotlinEnvironmentContainer
+import dev.detekt.test.utils.createEnvironment
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 
 @ExtendWith(ForgeExtension::class)
 class RequireInternalTest {
+
+    lateinit var kotlinEnv: KotlinEnvironmentContainer
+
+    @BeforeEach
+    fun `set up`() {
+        kotlinEnv = createEnvironment()
+    }
 
     @Test
     fun `detekt require in internal class`(forge: Forge) {
@@ -29,7 +39,7 @@ class RequireInternalTest {
             }
             """.trimIndent()
 
-        val findings = RequireInternal(Config.empty).lint(code)
+        val findings = RequireInternal(Config.empty).lintWithContext(kotlinEnv, code)
         assertThat(findings).hasSize(1)
     }
 
@@ -47,7 +57,7 @@ class RequireInternalTest {
             }
             """.trimIndent()
 
-        val findings = RequireInternal(Config.empty).lint(code)
+        val findings = RequireInternal(Config.empty).lintWithContext(kotlinEnv, code)
         assertThat(findings).hasSize(1)
     }
 
@@ -63,7 +73,7 @@ class RequireInternalTest {
             }
             """.trimIndent()
 
-        val findings = RequireInternal(Config.empty).lint(code)
+        val findings = RequireInternal(Config.empty).lintWithContext(kotlinEnv, code)
         assertThat(findings).hasSize(1)
     }
 
@@ -78,7 +88,7 @@ class RequireInternalTest {
             }
             """.trimIndent()
 
-        val findings = RequireInternal(Config.empty).lint(code)
+        val findings = RequireInternal(Config.empty).lintWithContext(kotlinEnv, code)
         assertThat(findings).hasSize(0)
     }
 
@@ -94,7 +104,7 @@ class RequireInternalTest {
             }
             """.trimIndent()
 
-        val findings = RequireInternal(Config.empty).lint(code)
+        val findings = RequireInternal(Config.empty).lintWithContext(kotlinEnv, code)
         assertThat(findings).hasSize(1)
     }
 
@@ -112,7 +122,7 @@ class RequireInternalTest {
             }
             """.trimIndent()
 
-        val findings = RequireInternal(Config.empty).lint(code)
+        val findings = RequireInternal(Config.empty).lintWithContext(kotlinEnv, code)
         assertThat(findings).hasSize(1)
     }
 
@@ -128,7 +138,7 @@ class RequireInternalTest {
             }
             """.trimIndent()
 
-        val findings = RequireInternal(Config.empty).lint(code)
+        val findings = RequireInternal(Config.empty).lintWithContext(kotlinEnv, code)
         assertThat(findings).hasSize(1)
     }
 
@@ -143,7 +153,24 @@ class RequireInternalTest {
             }
             """.trimIndent()
 
-        val findings = RequireInternal(Config.empty).lint(code)
+        val findings = RequireInternal(Config.empty).lintWithContext(kotlinEnv, code)
         assertThat(findings).hasSize(0)
+    }
+
+    @Test
+    fun `ignore own require function in internal class`() {
+        val code =
+            """
+            internal class Foo {
+                fun bar() {
+                    require(1 < 0)
+                }
+
+                private fun require(value: Boolean) {}
+            }
+            """.trimIndent()
+
+        val findings = RequireInternal(Config.empty).lintWithContext(kotlinEnv, code)
+        assertThat(findings).isEmpty()
     }
 }

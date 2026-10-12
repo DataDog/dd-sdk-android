@@ -25,7 +25,6 @@ internal class WebViewBridgePlaygroundActivity : AppCompatActivity() {
     lateinit var webView: WebView
 
     @SuppressLint("SetJavaScriptEnabled")
-    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
