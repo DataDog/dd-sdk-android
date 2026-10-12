@@ -846,6 +846,10 @@ datadog:
     - '**/reliability/**'
     - '**/sample/**'
     - '**/tools/**'
+  CheckInternal:
+    active: true
+  InvalidStringFormat:
+    active: true
   PackageNameVisibility:
     active: true
     withBreakingChanges: true
@@ -857,6 +861,8 @@ datadog:
       - '.*TimeProvider.*'
       - '.*Time\.kt'
       - '.*DdRumContentProvider.*'
+  RequireInternal:
+    active: true
   ThreadSafety:
     active: true
     workerThreadSwitchingCalls:
@@ -867,6 +873,8 @@ datadog:
       - "com.datadog.android.api.feature.EventWriteScope.invoke"
     mainThreadSwitchingCalls:
       - "android.widget.LinearLayout.post"
+  ThrowingInternalException:
+    active: true
   TodoWithoutTask:
     active: true
     deprecatedPrefixes:

@@ -6,6 +6,10 @@
 
 package com.datadog.tools.detekt.ext
 
+import org.jetbrains.kotlin.analysis.api.KaSession
+import org.jetbrains.kotlin.analysis.api.resolution.successfulFunctionCallOrNull
+import org.jetbrains.kotlin.analysis.api.symbols.KaFunctionSymbol
+import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.isPublic
@@ -25,4 +29,8 @@ internal fun KtExpression.isContainingDeclarationPublic(): Boolean {
 
 internal fun KtExpression.isContainingEntryPointPublic(): Boolean {
     return isContainingClassPublic() && isContainingDeclarationPublic()
+}
+
+internal fun KaSession.resolveCalledFunction(expression: KtCallExpression): KaFunctionSymbol? {
+    return expression.resolveToCall()?.successfulFunctionCallOrNull()?.partiallyAppliedSymbol?.signature?.symbol
 }

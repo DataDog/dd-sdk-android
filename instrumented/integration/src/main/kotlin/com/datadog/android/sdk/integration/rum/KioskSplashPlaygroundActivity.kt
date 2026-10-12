@@ -24,7 +24,6 @@ import java.util.Random
 
 internal class KioskSplashPlaygroundActivity : AppCompatActivity() {
 
-    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

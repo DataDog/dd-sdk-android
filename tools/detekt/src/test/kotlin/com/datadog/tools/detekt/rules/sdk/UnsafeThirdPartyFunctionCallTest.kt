@@ -502,6 +502,134 @@ internal class UnsafeThirdPartyFunctionCallTest {
     }
 
     @Test
+    fun `ignores safe call on known third party function {Catch parent exception}`() {
+        // Given
+        val knownThrowingCalls = listOf(
+            "java.io.File.inputStream():java.io.FileNotFoundException"
+        )
+        val config = TestConfig("knownThrowingCalls" to knownThrowingCalls)
+        val code =
+            """
+                import java.io.File
+                import java.io.IOException
+
+                fun test(f: File): Any? {
+                    try {
+                        return f.inputStream()
+                    } catch (e: IOException) {
+                        return null
+                    }
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .lintWithContext(kotlinEnv, code)
+
+        // Then
+        assertThat(findings).hasSize(0)
+    }
+
+    @Test
+    fun `ignores safe call on known third party function {Catch parent exception with Kotlin alias}`() {
+        // Given
+        val knownThrowingCalls = listOf(
+            "java.io.File.readText(java.nio.charset.Charset):java.lang.IllegalStateException"
+        )
+        val config = TestConfig("knownThrowingCalls" to knownThrowingCalls)
+        val code =
+            """
+                import java.io.File
+
+                fun test(f: File): String? {
+                    try {
+                        return f.readText()
+                    } catch (e: RuntimeException) {
+                        return null
+                    }
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .lintWithContext(kotlinEnv, code)
+
+        // Then
+        assertThat(findings).hasSize(0)
+    }
+
+    @Test
+    fun `ignores safe call on known third party function {Catch parent of nested exception}`() {
+        // Given
+        val knownThrowingCalls = listOf(
+            "com.example.Resources.getText():com.example.Resources.NotFoundException"
+        )
+        val config = TestConfig(
+            "knownThrowingCalls" to knownThrowingCalls,
+            "treatUnknownFunctionAsThrowing" to false
+        )
+        val code =
+            """
+                package com.example
+
+                class Resources {
+                    class NotFoundException : RuntimeException()
+
+                    fun getText(): String = throw NotFoundException()
+                }
+
+                fun test(resources: Resources): String? {
+                    try {
+                        return resources.getText()
+                    } catch (e: RuntimeException) {
+                        return null
+                    }
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .lintWithContext(kotlinEnv, code)
+
+        // Then
+        assertThat(findings).hasSize(0)
+    }
+
+    @Test
+    fun `detekt call on known third party function {Catch and finally blocks}`() {
+        // Given
+        val knownThrowingCalls = listOf(
+            "java.io.File.inputStream():java.io.FileNotFoundException"
+        )
+        val config = TestConfig(
+            "knownThrowingCalls" to knownThrowingCalls,
+            "treatUnknownFunctionAsThrowing" to false
+        )
+        val code =
+            """
+                import java.io.File
+                import java.io.IOException
+
+                fun test(f: File): Any? {
+                    try {
+                        return f.readBytes()
+                    } catch (e: IOException) {
+                        return f.inputStream()
+                    } finally {
+                        f.inputStream()
+                    }
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .lintWithContext(kotlinEnv, code)
+
+        // Then
+        assertThat(findings).hasSize(2)
+    }
+
+    @Test
     fun `ignores calls present in either known safe calls list`() {
         // Given - one call allowlisted in knownSafeAndroidCalls, one in knownSafeThirdPartyCalls;
         // if the lists were not combined (last-wins), one of the two calls would be flagged

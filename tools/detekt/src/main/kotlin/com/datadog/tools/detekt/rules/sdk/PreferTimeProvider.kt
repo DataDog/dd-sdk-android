@@ -6,13 +6,16 @@
 
 package com.datadog.tools.detekt.rules.sdk
 
+import com.datadog.tools.detekt.ext.resolveCalledFunction
 import dev.detekt.api.Config
 import dev.detekt.api.Entity
 import dev.detekt.api.Finding
+import dev.detekt.api.RequiresAnalysisApi
 import dev.detekt.api.Rule
 import dev.detekt.api.config
+import org.jetbrains.kotlin.analysis.api.analyze
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtCallExpression
-import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFile
 
 /**
@@ -25,7 +28,8 @@ import org.jetbrains.kotlin.psi.KtFile
  */
 class PreferTimeProvider(
     config: Config
-) : Rule(config, "Prefer using TimeProvider instead of static system time calls for better testability.") {
+) : Rule(config, "Prefer using TimeProvider instead of static system time calls for better testability."),
+    RequiresAnalysisApi {
 
     private val allowedFiles: List<Regex> by config(defaultValue = DEFAULT_ALLOWED_FILES) {
         it.map { pattern -> Regex(pattern) }
@@ -43,40 +47,39 @@ class PreferTimeProvider(
 
         if (isFileAllowed()) return
 
-        val calleeName = expression.calleeExpression?.text ?: return
-        if (calleeName in KOTLIN_TIME_FUNCTIONS) {
+        val (calledFunction, hasParameters) = analyze(expression) {
+            val symbol = resolveCalledFunction(expression)
+            symbol?.callableId?.asSingleFqName() to (symbol?.valueParameters?.isNotEmpty() == true)
+        }
+        if (calledFunction == null) return
+
+        // Overloads with parameters (e.g. `Instant.now(clock)`) get the time from an injected source
+        val isProhibited = calledFunction.asString() in KOTLIN_TIME_FUNCTIONS ||
+            (calledFunction.asString() in PROHIBITED_TIME_METHODS && !hasParameters)
+        if (isProhibited) {
             report(
                 Finding(
                     Entity.from(expression),
-                    "Use TimeProvider instead of $calleeName() for better testability."
+                    "Use TimeProvider instead of ${calledFunction.displayName()} for better testability."
                 )
             )
         }
-    }
-
-    override fun visitDotQualifiedExpression(expression: KtDotQualifiedExpression) {
-        super.visitDotQualifiedExpression(expression)
-
-        if (isFileAllowed()) return
-
-        val expressionText = expression.text
-        val detectedMethod = detectProhibitedTimeMethod(expressionText)
-        if (detectedMethod != null) {
-            report(
-                Finding(
-                    Entity.from(expression),
-                    "Use TimeProvider instead of $detectedMethod for better testability."
-                )
-            )
-        }
-    }
-
-    private fun detectProhibitedTimeMethod(expressionText: String): String? {
-        return PROHIBITED_TIME_METHODS.firstOrNull { expressionText.startsWith(it) }
     }
 
     private fun isFileAllowed(): Boolean {
         return allowedFiles.any { it.matches(currentFileName) }
+    }
+
+    /**
+     * @return the function as written in code, e.g. `System.currentTimeMillis()` or `measureNanoTime()`
+     */
+    private fun FqName.displayName(): String {
+        val name = if (asString() in KOTLIN_TIME_FUNCTIONS) {
+            shortName().asString()
+        } else {
+            "${parent().shortName()}.${shortName()}"
+        }
+        return "$name()"
     }
 
     internal companion object {
@@ -86,19 +89,19 @@ class PreferTimeProvider(
         )
 
         internal val KOTLIN_TIME_FUNCTIONS = setOf(
-            "measureNanoTime",
-            "measureTimeMillis"
+            "kotlin.system.measureNanoTime",
+            "kotlin.system.measureTimeMillis"
         )
 
-        internal val PROHIBITED_TIME_METHODS = listOf(
-            "Clock.systemDefaultZone()",
-            "Clock.systemUTC()",
-            "Instant.now()",
-            "System.currentTimeMillis()",
-            "System.nanoTime()",
-            "SystemClock.elapsedRealtime()",
-            "SystemClock.elapsedRealtimeNanos()",
-            "SystemClock.uptimeMillis()"
+        internal val PROHIBITED_TIME_METHODS = setOf(
+            "android.os.SystemClock.elapsedRealtime",
+            "android.os.SystemClock.elapsedRealtimeNanos",
+            "android.os.SystemClock.uptimeMillis",
+            "java.lang.System.currentTimeMillis",
+            "java.lang.System.nanoTime",
+            "java.time.Clock.systemDefaultZone",
+            "java.time.Clock.systemUTC",
+            "java.time.Instant.now"
         )
     }
 }

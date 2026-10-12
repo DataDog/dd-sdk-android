@@ -140,7 +140,6 @@ class ProhibitLeavingStaticMocksExtension : AfterEachCallback {
         }
     }
 
-    @Suppress("ThrowingInternalException") // not an issue in unit tests
     private fun reportViolation(
         fieldDescriptor: FieldDescriptor,
         hostClass: KClass<*>,

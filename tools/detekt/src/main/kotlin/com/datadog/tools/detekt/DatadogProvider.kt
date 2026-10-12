@@ -14,7 +14,6 @@ import com.datadog.tools.detekt.rules.sdk.RequireInternal
 import com.datadog.tools.detekt.rules.sdk.ThreadSafety
 import com.datadog.tools.detekt.rules.sdk.ThrowingInternalException
 import com.datadog.tools.detekt.rules.sdk.TodoWithoutTask
-import com.datadog.tools.detekt.rules.sdk.UnsafeCallOnNullableType
 import com.datadog.tools.detekt.rules.sdk.UnsafeThirdPartyFunctionCall
 import dev.detekt.api.RuleSet
 import dev.detekt.api.RuleSetProvider
@@ -38,7 +37,6 @@ class DatadogProvider : RuleSetProvider {
                 ::ThreadSafety,
                 ::ThrowingInternalException,
                 ::TodoWithoutTask,
-                ::UnsafeCallOnNullableType,
                 ::UnsafeThirdPartyFunctionCall
             )
         )

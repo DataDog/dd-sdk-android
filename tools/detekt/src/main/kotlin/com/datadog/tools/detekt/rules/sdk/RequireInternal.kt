@@ -7,10 +7,13 @@
 package com.datadog.tools.detekt.rules.sdk
 
 import com.datadog.tools.detekt.ext.isContainingEntryPointPublic
+import com.datadog.tools.detekt.ext.resolveCalledFunction
 import dev.detekt.api.Config
 import dev.detekt.api.Entity
 import dev.detekt.api.Finding
+import dev.detekt.api.RequiresAnalysisApi
 import dev.detekt.api.Rule
+import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.psi.KtCallExpression
 
 /**
@@ -19,13 +22,14 @@ import org.jetbrains.kotlin.psi.KtCallExpression
  */
 class RequireInternal(
     config: Config
-) : Rule(config, "This rule reports when an exception is thrown.") {
+) : Rule(config, "This rule reports when an exception is thrown."),
+    RequiresAnalysisApi {
 
     override fun visitCallExpression(expression: KtCallExpression) {
-        val callee = expression.calleeExpression
-        val isCheckMethod = callee?.textMatches(REQUIRE_LITERAL) == true
-        val isCheckNotNullMethod = callee?.textMatches(REQUIRE_NOT_NULL_LITERAL) == true
-        if ((isCheckMethod || isCheckNotNullMethod) && !expression.isContainingEntryPointPublic()) {
+        val calledFunction = analyze(expression) {
+            resolveCalledFunction(expression)?.callableId?.asSingleFqName()?.asString()
+        }
+        if (calledFunction in REQUIRE_FUNCTIONS && !expression.isContainingEntryPointPublic()) {
             report(
                 Finding(
                     Entity.from(expression),
@@ -36,8 +40,10 @@ class RequireInternal(
         super.visitCallExpression(expression)
     }
 
-    companion object {
-        private const val REQUIRE_LITERAL = "require"
-        private const val REQUIRE_NOT_NULL_LITERAL = "requireNotNull"
+    private companion object {
+        private val REQUIRE_FUNCTIONS = setOf(
+            "kotlin.require",
+            "kotlin.requireNotNull"
+        )
     }
 }

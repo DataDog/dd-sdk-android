@@ -19,7 +19,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
 
-@Suppress("CheckInternal", "UnsafeThirdPartyFunctionCall")
+@Suppress("UnsafeThirdPartyFunctionCall")
 internal class StubFeatureScope(
     private val feature: Feature,
     private val datadogContextProvider: () -> DatadogContext,
