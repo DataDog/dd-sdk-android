@@ -198,7 +198,8 @@ internal class RumSessionScope(
                     )
                 }
             }
-            is RumRawEvent.SdkInit -> {}
+            is RumRawEvent.SdkInit,
+            is RumRawEvent.SessionExpiryCheck -> {}
             else -> {
                 childScope =
                     childScope?.handleEvent(event, datadogContext, writeScope, actualWriter) as? RumViewManagerScope

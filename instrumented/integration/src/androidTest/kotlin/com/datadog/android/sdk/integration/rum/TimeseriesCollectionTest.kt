@@ -3,6 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "CheckInternal")
 
 package com.datadog.android.sdk.integration.rum
 
@@ -11,11 +12,16 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.Stage
+import com.datadog.android.Datadog
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.model.TimeseriesCpuEvent
 import com.datadog.android.rum.model.TimeseriesMemoryEvent
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.integration.rum.TimeseriesTrackingPlaygroundActivity.Companion.BUFFER_SIZE
 import com.datadog.android.sdk.integration.rum.TimeseriesTrackingPlaygroundActivity.Companion.SAMPLE_INTERVAL_MS
+import com.datadog.android.sdk.integration.rum.TimeseriesTrackingPlaygroundActivity.Companion.SESSION_INACTIVITY_MS
 import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
 import com.datadog.tools.unit.ConditionWatcher
@@ -107,6 +113,45 @@ internal class TimeseriesCollectionTest {
         secondForegroundEvents.assertForegroundDataPointCounts(EXPECTED_FOREGROUND_MEMORY_DATA_POINTS)
     }
 
+    @Test
+    fun verifySessionExpiresAndTimeseriesStopWithoutUserInteraction() {
+        // Given
+        ConditionWatcher { currentRumContext()[SESSION_STATE_KEY] == "TRACKED" }
+            .doWait(timeoutMs = RumTest.FINAL_WAIT_MS)
+        Thread.sleep(FOREGROUND_COLLECTION_DURATION_MS)
+        val sessionId = currentRumContext()[SESSION_ID_KEY]
+        assertThat(timeseriesEvents()).isEmpty()
+
+        // When
+        ConditionWatcher { currentRumContext()[SESSION_STATE_KEY] == "EXPIRED" }
+            .doWait(timeoutMs = SESSION_EXPIRY_WAIT_MS)
+        val finalSessionEvents = waitForTimeseriesEvents(expectedCount = TIMESERIES_PIPELINE_COUNT)
+
+        // Then
+        assertThat(currentRumContext()[SESSION_ID_KEY]).isEqualTo(sessionId)
+        assertThat(finalSessionEvents).hasSize(TIMESERIES_PIPELINE_COUNT)
+        assertThat(finalSessionEvents.cpuEvents()).hasSize(1)
+        assertThat(finalSessionEvents.memoryEvents()).hasSize(1)
+        finalSessionEvents.forEach { event ->
+            assertThat(event.getAsJsonObject("session").get("id").asString).isEqualTo(sessionId)
+        }
+
+        // When
+        Thread.sleep(FULL_BUFFER_COLLECTION_DURATION_MS + UPLOAD_OBSERVATION_DURATION_MS)
+
+        // Then
+        assertThat(currentRumContext()[SESSION_STATE_KEY]).isEqualTo("EXPIRED")
+        assertThat(currentRumContext()[SESSION_ID_KEY]).isEqualTo(sessionId)
+        assertThat(timeseriesEvents()).containsExactlyElementsOf(finalSessionEvents)
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            assertThat(ActivityLifecycleMonitorRegistry.getInstance().getLifecycleStageOf(mockServerRule.activity))
+                .isEqualTo(Stage.RESUMED)
+        }
+    }
+
+    private fun currentRumContext(): Map<String, Any?> =
+        (Datadog.getInstance() as FeatureSdkCore).getFeatureContext(Feature.RUM_FEATURE_NAME)
+
     private fun moveActivityToBackground() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.runOnMainSync {
@@ -152,6 +197,8 @@ internal class TimeseriesCollectionTest {
         private const val TYPE_KEY = "type"
         private const val TIMESERIES_KEY = "timeseries"
         private const val NAME_KEY = "name"
+        private const val SESSION_STATE_KEY = "session_state"
+        private const val SESSION_ID_KEY = "session_id"
 
         // One independent pipeline for each timeseries source: CPU and memory.
         private const val TIMESERIES_PIPELINE_COUNT = 2
@@ -168,6 +215,12 @@ internal class TimeseriesCollectionTest {
             SAMPLE_INTERVAL_MS / 2 - FLUSH_DELAY_MS
         private const val UPLOAD_GRACE_PERIOD_MS = 500L
         private const val BACKGROUND_OBSERVATION_DURATION_MS = SAMPLE_INTERVAL_MS + UPLOAD_GRACE_PERIOD_MS
+
+        private const val SESSION_EXPIRY_WAIT_MS = SESSION_INACTIVITY_MS + 10_000L
+
+        // Observe another full buffer interval plus upload time to detect collection continuing after expiry.
+        private const val FULL_BUFFER_COLLECTION_DURATION_MS = BUFFER_SIZE * SAMPLE_INTERVAL_MS
+        private const val UPLOAD_OBSERVATION_DURATION_MS = 10_000L
 
         private const val EXPECTED_FOREGROUND_MEMORY_DATA_POINTS =
             ((FOREGROUND_COLLECTION_DURATION_MS + FLUSH_DELAY_MS) / SAMPLE_INTERVAL_MS).toInt()

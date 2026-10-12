@@ -67,6 +67,10 @@ internal class CsvCollector(
 
     override fun onRumContextUpdate(newRumContext: RumContext) = Unit
 
+    override fun onUiVisible() = Unit
+
+    override fun onUiHidden() = Unit
+
     companion object {
 
         /**
