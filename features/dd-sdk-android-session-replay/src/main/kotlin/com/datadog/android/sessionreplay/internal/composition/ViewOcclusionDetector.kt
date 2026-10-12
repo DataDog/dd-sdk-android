@@ -66,11 +66,11 @@ internal class ViewOcclusionDetector(
             left <= other.left && top <= other.top && right >= other.right && bottom >= other.bottom
     }
 
+    @Suppress("DEPRECATION") // ColorDrawable opacity accounts for tint and color filters.
     private fun isFullyOpaqueCovering(view: View): Boolean {
         // A representative color does not prove coverage for inset, rounded or custom drawables.
         // Tint and color filters can make an opaque base color draw translucent pixels.
         val color = (view.background as? ColorDrawable)?.let {
-            @Suppress("DEPRECATION") // ColorDrawable opacity accounts for tint and color filters.
             if (it.opacity == PixelFormat.OPAQUE) drawableToColorMapper.mapDrawableToColor(it, internalLogger) else null
         } ?: return false
         // Same extraction as android.graphics.Color.alpha(), inlined so this doesn't depend on the

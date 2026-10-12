@@ -26,6 +26,7 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedVie
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedWebViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
+import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
@@ -46,6 +47,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
@@ -146,6 +148,7 @@ internal class AndroidWindowTraversalTest {
     private fun WindowCopyResult.doneValue(): WindowWalkResult = buildWindow(fakeContext)
 
     /** A view whose bounds fully cover whatever it's stacked on top of, painted with opaque black. */
+    @Suppress("DEPRECATION")
     private fun mockOpaqueCoveringView(bounds: GlobalBounds): View {
         val view = mockView(bounds)
         val drawable: ColorDrawable = mock()
@@ -156,6 +159,42 @@ internal class AndroidWindowTraversalTest {
         whenever(view.background).thenReturn(drawable)
         whenever(mockDrawableToColorMapper.mapDrawableToColor(eq(drawable), any())).thenReturn(Color.BLACK)
         return view
+    }
+
+    @Test
+    fun `M retain exact pixel geometry W traverseWindow { coordinates exceed float precision }`() {
+        // Given
+        val fakePixels = GlobalBounds(-2_000_000_123L, 0, 2_000_000_456L, 100)
+        val root = mockView(fakePixels)
+        doAnswer { invocation ->
+            val location = invocation.getArgument<IntArray>(0)
+            location[0] = fakePixels.x.toInt()
+            location[1] = fakePixels.y.toInt()
+            null
+        }.whenever(root).getLocationOnScreen(any())
+        val testedTraversal = AndroidWindowTraversal(
+            mapperRegistry = CapturedViewMapperRegistry(emptyList(), noOpFallback, mock()),
+            internalLogger = mock(),
+            viewIdentifierResolver = mockViewIdentifierResolver,
+            drawableToColorMapper = mockDrawableToColorMapper,
+            viewUtilsInternal = ViewUtilsInternal()
+        )
+
+        // When
+        val result = testedTraversal.traverseWindow(
+            root,
+            identityFactory.window("window"),
+            identityFactory,
+            fakeContext
+        )
+
+        // Then
+        val copiedView = (result as WindowCopyResult.Present).window.views.single()
+        assertThat(copiedView.pixelBounds).isEqualTo(fakePixels)
+        val normalized = DefaultViewBoundsResolver.resolveViewGlobalBounds(root, fakeDensity)
+        assertThat(copiedView.bounds).isEqualTo(
+            CapturedBounds(normalized.x, normalized.y, normalized.width, normalized.height)
+        )
     }
 
     @Test
