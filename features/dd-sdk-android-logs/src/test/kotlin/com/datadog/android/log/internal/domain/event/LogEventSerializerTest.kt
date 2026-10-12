@@ -172,7 +172,6 @@ internal class LogEventSerializerTest {
                 additionalProperties = fakeLog.usr.additionalProperties
                     .toMutableMap()
                     .apply { put(faultyKey, faultyObject) }
-                    .toMutableMap()
             )
         )
 
@@ -200,7 +199,6 @@ internal class LogEventSerializerTest {
                 additionalProperties = fakeLog.account.additionalProperties
                     .toMutableMap()
                     .apply { put(faultyKey, faultyObject) }
-                    .toMutableMap()
             )
         )
 
