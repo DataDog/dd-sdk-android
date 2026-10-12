@@ -68,7 +68,7 @@ detekt = "2.0.0-alpha.1"
 dokka = "2.2.0"
 ktlint = "1.5.0"
 ktlintGradlePlugin = "14.2.0"
-unmock = "0.9.0"
+unmock = "0.11.0"
 robolectric = "4.4_r1-robolectric-r2"
 androidLint = "31.0.2"
 
