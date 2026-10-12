@@ -106,7 +106,8 @@ class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
             session = ViewEvent.ViewEventSession(
                 id = forge.getForgery<UUID>().toString(),
                 type = ViewEvent.ViewEventSessionType.USER,
-                hasReplay = forge.aNullable { aBool() }
+                hasReplay = forge.aNullable { aBool() },
+                isMainProcess = forge.aNullable { aBool() }
             ),
             source = forge.aNullable { aValueFrom(ViewEvent.ViewEventSource::class.java) },
             ciTest = forge.aNullable {

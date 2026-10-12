@@ -210,6 +210,32 @@ internal class ViewEventDiffTest {
         assertThat(result.view.error?.count).isEqualTo(newCount)
     }
 
+    @Test
+    fun `M return null for session_is_main_process W diffViewEvent { is_main_process unchanged }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // When
+        val result = diffViewEvent(fakeEvent, fakeEvent.copy())
+
+        // Then
+        assertThat(result.session.isMainProcess).isNull()
+    }
+
+    @Test
+    fun `M return new value for session_is_main_process W diffViewEvent { is_main_process changed }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // Given
+        val newIsMainProcess = fakeEvent.session.isMainProcess?.not() ?: true
+        val newEvent = fakeEvent.copy(session = fakeEvent.session.copy(isMainProcess = newIsMainProcess))
+
+        // When
+        val result = diffViewEvent(fakeEvent, newEvent)
+
+        // Then
+        assertThat(result.session.isMainProcess).isEqualTo(newIsMainProcess)
+    }
+
     // endregion
 
     // region APPEND — accumulating arrays (only new elements)
