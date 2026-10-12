@@ -54,7 +54,7 @@ internal class DatadogFlagsClient(
     private val rumEvaluationLogger: RumEvaluationLogger,
     private val exposureProcessor: EventsProcessor,
     private val evaluationsFeature: EvaluationsFeature?,
-    private val flagStateManager: FlagsStateManager
+    flagStateManager: FlagsStateManager
 ) : FlagsClient {
 
     override val state: StateObservable = flagStateManager

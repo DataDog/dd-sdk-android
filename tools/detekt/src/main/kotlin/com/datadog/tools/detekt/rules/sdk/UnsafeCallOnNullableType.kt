@@ -6,12 +6,10 @@
 
 package com.datadog.tools.detekt.rules.sdk
 
-import io.gitlab.arturbosch.detekt.api.CodeSmell
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Entity
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Rule
-import io.gitlab.arturbosch.detekt.api.Severity
+import dev.detekt.api.Config
+import dev.detekt.api.Entity
+import dev.detekt.api.Finding
+import dev.detekt.api.Rule
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtUnaryExpression
 
@@ -21,22 +19,16 @@ import org.jetbrains.kotlin.psi.KtUnaryExpression
  *
  * This rule will report any use of `!!`, even on non-nullable types.
  */
-class UnsafeCallOnNullableType : Rule() {
-
-    override val issue: Issue = Issue(
-        javaClass.simpleName,
-        Severity.Defect,
-        "This rule reports when an Unsafe null cast is used (ie: using !!).",
-        Debt.TWENTY_MINS
-    )
+class UnsafeCallOnNullableType(
+    config: Config = Config.empty
+) : Rule(config, "This rule reports when an Unsafe null cast is used (ie: using !!).") {
 
     override fun visitUnaryExpression(expression: KtUnaryExpression) {
         super.visitUnaryExpression(expression)
 
         if (expression.operationToken == KtTokens.EXCLEXCL) {
             report(
-                CodeSmell(
-                    issue,
+                Finding(
                     Entity.from(expression),
                     "Calling !! on a nullable type will throw a " +
                         "NullPointerException at runtime in case the value is null. " +

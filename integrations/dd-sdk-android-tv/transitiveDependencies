@@ -30,7 +30,7 @@ androidx.slidingpanelayout:slidingpanelayout:1.0.0              :   22 Kb
 androidx.swiperefreshlayout:swiperefreshlayout:1.0.0            :   32 Kb
 androidx.versionedparcelable:versionedparcelable:1.0.0          :   26 Kb
 androidx.viewpager:viewpager:1.0.0                              :   52 Kb
-org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
+org.jetbrains.kotlin:kotlin-stdlib:2.3.20                       : 1762 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
 
 Total transitive dependencies size                              :    4 Mb

@@ -84,7 +84,17 @@ fun Project.createJsonModelsGenerationTask(
                 " the generated sources cannot be wired to any variant."
         )
     androidComponents.onVariants { variant ->
+        // Registered on BOTH source sets on purpose, they are read by different consumers:
+        //  - `java`   : KSP resolves the generated models from it (Kotlin-only registration makes
+        //               kspDebugKotlin fail with "Error type '<ERROR TYPE: ViewEvent>'").
+        //  - `kotlin` : detekt's Android integration collects only this one, and without it every
+        //               type touching a generated model degrades to `UNKNOWN`, which makes
+        //               UnsafeThirdPartyFunctionCall fire across the whole call graph.
         variant.sources.java?.addGeneratedSourceDirectory(
+            task,
+            GenerateJsonSchemaTask::destinationGenDirectory
+        )
+        variant.sources.kotlin?.addGeneratedSourceDirectory(
             task,
             GenerateJsonSchemaTask::destinationGenDirectory
         )

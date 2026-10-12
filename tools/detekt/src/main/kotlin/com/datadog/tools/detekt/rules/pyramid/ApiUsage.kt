@@ -7,12 +7,8 @@
 package com.datadog.tools.detekt.rules.pyramid
 
 import com.datadog.tools.detekt.rules.AbstractCallExpressionRule
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Severity
-import io.gitlab.arturbosch.detekt.api.config
-import io.gitlab.arturbosch.detekt.api.internal.RequiresTypeResolution
+import dev.detekt.api.Config
+import dev.detekt.api.config
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import java.io.File
@@ -20,10 +16,14 @@ import java.io.File
 /**
  * @active
  */
-@RequiresTypeResolution
 class ApiUsage(
-    config: Config
-) : AbstractCallExpressionRule(config, simplifyLocalTypes = true, includeTypeArguments = false) {
+    config: Config = Config.empty
+) : AbstractCallExpressionRule(
+    config,
+    "This rule reports api usages.",
+    simplifyLocalTypes = true,
+    includeTypeArguments = false
+) {
 
     private val outputFileName: String by config(defaultValue = "apiUsage.log")
     private val outputFile: File by lazy {
@@ -35,13 +35,6 @@ class ApiUsage(
     private var visitingTestFunction = false
 
     // region Rule
-
-    override val issue: Issue = Issue(
-        javaClass.simpleName,
-        Severity.Maintainability,
-        "This rule reports api usages.",
-        Debt.FIVE_MINS
-    )
 
     override fun visitNamedFunction(function: KtNamedFunction) {
         val annotations = function.annotationEntries.mapNotNull {

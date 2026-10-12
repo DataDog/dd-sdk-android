@@ -6,15 +6,15 @@
 
 package com.datadog.android.sqldelight
 
+import app.cash.sqldelight.Transacter
+import app.cash.sqldelight.TransactionWithReturn
+import app.cash.sqldelight.TransactionWithoutReturn
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.tools.unit.forge.BaseConfigurator
-import com.squareup.sqldelight.Transacter
-import com.squareup.sqldelight.TransactionWithReturn
-import com.squareup.sqldelight.TransactionWithoutReturn
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery

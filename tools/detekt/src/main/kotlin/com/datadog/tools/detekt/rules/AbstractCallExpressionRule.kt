@@ -6,20 +6,21 @@
 
 package com.datadog.tools.detekt.rules
 
+import com.datadog.tools.detekt.ext.fqReceiverTypeName
 import com.datadog.tools.detekt.ext.fqTypeName
-import com.datadog.tools.detekt.ext.type
-import io.gitlab.arturbosch.detekt.api.Config
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.descriptors.containingPackage
+import com.datadog.tools.detekt.ext.isExplicit
+import dev.detekt.api.Config
+import dev.detekt.api.RequiresAnalysisApi
+import org.jetbrains.kotlin.analysis.api.KaSession
+import org.jetbrains.kotlin.analysis.api.analyze
+import org.jetbrains.kotlin.analysis.api.resolution.KaFunctionCall
+import org.jetbrains.kotlin.analysis.api.resolution.KaImplicitInvokeCall
+import org.jetbrains.kotlin.analysis.api.resolution.singleFunctionCallOrNull
+import org.jetbrains.kotlin.analysis.api.resolution.symbol
+import org.jetbrains.kotlin.analysis.api.signatures.KaVariableSignature
+import org.jetbrains.kotlin.analysis.api.symbols.KaConstructorSymbol
+import org.jetbrains.kotlin.analysis.api.symbols.KaValueParameterSymbol
 import org.jetbrains.kotlin.psi.KtCallExpression
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
-import org.jetbrains.kotlin.resolve.calls.util.getCall
-import org.jetbrains.kotlin.resolve.calls.util.getImplicitReceiverValue
-import org.jetbrains.kotlin.resolve.calls.util.getResolvedCall
-import org.jetbrains.kotlin.resolve.calls.util.getType
 
 /**
  * An abstract Detekt rule resolving function calls.
@@ -28,6 +29,7 @@ import org.jetbrains.kotlin.resolve.calls.util.getType
  * and delegates the handling of the call to the child implementation.
  *
  * @param ruleSetConfig the detekt ruleSet configuration
+ * @param description the description of the rule
  * @param simplifyLocalTypes if a call in class `com.example.foo.A` uses type `com.example.foo.B`,
  * refer to the latter as `B`
  * @param treatGenericAsSuper if a call uses a generic (e.g. <T: java.io.Closeable>),
@@ -36,11 +38,12 @@ import org.jetbrains.kotlin.resolve.calls.util.getType
  * (e.g. if false, the type `List<String>` would only be reported as `List`)
  */
 abstract class AbstractCallExpressionRule(
-    ruleSetConfig: Config = Config.empty,
+    ruleSetConfig: Config,
+    description: String,
     private val simplifyLocalTypes: Boolean = false,
     private val treatGenericAsSuper: Boolean = true,
     private val includeTypeArguments: Boolean = true
-) : AbstractTypedRule(ruleSetConfig) {
+) : AbstractTypedRule(ruleSetConfig, description), RequiresAnalysisApi {
 
     /**
      * A representation for a function with resolved types.
@@ -60,69 +63,115 @@ abstract class AbstractCallExpressionRule(
 
     // region Rule
 
-    @Suppress("ReturnCount")
     override fun visitCallExpression(expression: KtCallExpression) {
         super.visitCallExpression(expression)
-        if (bindingContext == BindingContext.EMPTY) {
-            return
-        }
 
-        val resolvedCall = expression.getResolvedCall(bindingContext)
-        if (resolvedCall == null) {
-            println("Cannot resolve call for ${expression.getCall(bindingContext)}. Is classpath complete?")
-            return
-        }
-        val call = resolvedCall.call
-        val returnType = expression.getType(bindingContext)
-            ?.fqTypeName(treatGenericAsSuper, includeTypeArguments)
-            ?: return
-
-        val receiverType = listOf(
-            call.explicitReceiver,
-            call.dispatchReceiver,
-            resolvedCall.getImplicitReceiverValue()
-        )
-            .firstNotNullOfOrNull {
-                it?.type(bindingContext, treatGenericAsSuper, includeTypeArguments)
-            }
-
-        val callDescriptor = resolvedCall.candidateDescriptor
-        val (containerFqName, functionName) = if (callDescriptor is ClassConstructorDescriptor) {
-            returnType to "constructor"
-        } else {
-            val calleeName = call.calleeExpression?.node?.text ?: "UNKNOWNFUN"
-            val callContainingPackage = callDescriptor.containingPackage()?.toString().orEmpty()
-            if (receiverType == null) {
-                callContainingPackage to calleeName
-            } else {
-                "$receiverType" to calleeName
-            }
-        }
-
-        val arguments = resolveParameterTypes(resolvedCall, containerFqName)
-        val resolvedFunctionCall = ResolvedFunCall(
-            call = "$containerFqName.$functionName(${arguments.joinToString(", ")})",
-            containerFqName = containerFqName,
-            functionName = functionName,
-            containingPackage = callDescriptor.containingPackage()?.toString().orEmpty(),
-            arguments = arguments
-        )
+        val resolvedFunctionCall = analyze(expression) { resolveFunctionCall(expression) } ?: return
 
         visitResolvedFunctionCall(expression, resolvedFunctionCall)
     }
 
-    private fun resolveParameterTypes(
-        resolvedCall: ResolvedCall<out CallableDescriptor>,
-        containerFqName: String
-    ): List<String> {
-        return resolvedCall.valueArguments
-            // Ensure the arguments when named are in original order
-            .toSortedMap { p0, p1 -> (p0?.index ?: Int.MAX_VALUE) - (p1?.index ?: -1) }
-            .map { it.key.parameterType(containerFqName) }
+    // endregion
+
+    // region Internal
+
+    @Suppress("ReturnCount")
+    private fun KaSession.resolveFunctionCall(expression: KtCallExpression): ResolvedFunCall? {
+        val call = expression.resolveToCall()?.singleFunctionCallOrNull()
+        if (call == null) {
+            println("Cannot resolve call for ${expression.text}. Is classpath complete?")
+            return null
+        }
+
+        val returnType = expression.expressionType
+            ?.let { fqTypeName(it, treatGenericAsSuper, includeTypeArguments) }
+            ?: return null
+
+        val receiverType = resolveReceiverType(call)
+        val symbol = call.symbol
+        val callContainingPackage = symbol.callableId?.packageName?.asString().orEmpty()
+
+        val (containerFqName, functionName) = if (symbol is KaConstructorSymbol) {
+            returnType to "constructor"
+        } else {
+            val calleeName = if (call is KaImplicitInvokeCall) {
+                // Invoking a function value (`messageBuilder()` for a `() -> String` parameter) says
+                // nothing about third party API surface: the callee is whatever the caller supplied,
+                // and the lambda's body is analysed where it is declared. Name it after `invoke` rather
+                // than after the variable holding it, so callers can filter it out.
+                INVOKE_FUN_NAME
+            } else {
+                expression.calleeExpression?.text ?: "UNKNOWNFUN"
+            }
+            // Statics and companion members have no value receiver, but are named after the qualifier
+            // written at the call site, i.e. their declaring class. Top level functions have no
+            // declaring class and are named after their package instead.
+            val container = receiverType
+                ?: symbol.callableId?.classId?.asFqNameString()
+                ?: callContainingPackage
+            container to calleeName
+        }
+
+        val arguments = resolveParameterTypes(call, containerFqName)
+
+        return ResolvedFunCall(
+            call = "$containerFqName.$functionName(${arguments.joinToString(", ")})",
+            containerFqName = containerFqName,
+            functionName = functionName,
+            containingPackage = callContainingPackage,
+            arguments = arguments
+        )
     }
 
-    private fun ValueParameterDescriptor.parameterType(containerFqName: String): String {
-        val fullType = type.fqTypeName(treatGenericAsSuper, includeTypeArguments)
+    /**
+     * Resolves the type of the call's receiver, preferring the receiver explicitly written at the
+     * call site over an implicit one, so that a call on a subclass is reported on the subclass.
+     */
+    private fun KaSession.resolveReceiverType(call: KaFunctionCall<*>): String? {
+        val receivers = listOfNotNull(call.dispatchReceiver, call.extensionReceiver)
+        return (receivers.filter { it.isExplicit() } + receivers.filterNot { it.isExplicit() })
+            .asSequence()
+            .map { fqReceiverTypeName(it, treatGenericAsSuper, includeTypeArguments) }
+            // A type qualifier written at the call site (the `Thread` of `Thread.currentThread()`) is
+            // reported as an explicit receiver typed `Unit`, because it references a type rather than
+            // a value. It carries no receiver type; such calls are named after their declaring class.
+            .firstOrNull { it != UNIT_TYPE }
+    }
+
+    private fun KaSession.resolveParameterTypes(
+        call: KaFunctionCall<*>,
+        containerFqName: String
+    ): List<String> {
+        // the signature's parameters have their generics substituted with the types used at the call
+        // site, e.g. `listOf(window)` resolves to `listOf(android.view.Window)`
+        return call.signature.valueParameters.map {
+            parameterType(renderParameterType(it), containerFqName)
+        }
+    }
+
+    /**
+     * Renders the type of a single parameter. A `vararg` parameter is declared as an array, and is
+     * reported as such, even though the Analysis API exposes its element type instead.
+     */
+    private fun KaSession.renderParameterType(
+        parameter: KaVariableSignature<KaValueParameterSymbol>
+    ): String {
+        val rendered = fqTypeName(parameter.returnType, treatGenericAsSuper, includeTypeArguments)
+        if (!parameter.symbol.isVararg) return rendered
+
+        // Only a parameter *declared* with a primitive element type is a specialised array. A generic
+        // one stays a boxing `Array` even when the call site substitutes a primitive, so the declared
+        // type decides, e.g. `byteArrayOf(vararg Byte)` is a ByteArray but `setOf(vararg T)` is not.
+        val declaredElement = fqTypeName(
+            parameter.symbol.returnType,
+            treatGenericAsSuper = false,
+            includeTypeArguments = false
+        )
+        return primitiveArrays[declaredElement]
+            ?: if (includeTypeArguments) "$ARRAY_TYPE<$rendered>" else ARRAY_TYPE
+    }
+
+    private fun parameterType(fullType: String, containerFqName: String): String {
         val (nonNullType, suffix) = if (fullType.endsWith('?')) {
             fullType.substringBeforeLast('?') to "?"
         } else {
@@ -169,6 +218,20 @@ abstract class AbstractCallExpressionRule(
     // endregion
 
     companion object {
+        private const val UNIT_TYPE = "kotlin.Unit"
+        private const val INVOKE_FUN_NAME = "invoke"
+        private const val ARRAY_TYPE = "kotlin.Array"
         private val containerFqNameRegex = Regex("^([a-z0-9-]+(\\.[a-z0-9-]+)*)((\\.[A-Z][a-zA-Z0-9-]+)*)$")
+
+        private val primitiveArrays = mapOf(
+            "kotlin.Boolean" to "kotlin.BooleanArray",
+            "kotlin.Byte" to "kotlin.ByteArray",
+            "kotlin.Char" to "kotlin.CharArray",
+            "kotlin.Double" to "kotlin.DoubleArray",
+            "kotlin.Float" to "kotlin.FloatArray",
+            "kotlin.Int" to "kotlin.IntArray",
+            "kotlin.Long" to "kotlin.LongArray",
+            "kotlin.Short" to "kotlin.ShortArray"
+        )
     }
 }
