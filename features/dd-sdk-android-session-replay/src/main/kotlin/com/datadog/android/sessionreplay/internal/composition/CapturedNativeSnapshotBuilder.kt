@@ -18,7 +18,9 @@ internal data class CapturedWindow(
 )
 
 /** Never reads Android UI state. Returns null when the shared generation expires. */
-internal class CapturedNativeSnapshotBuilder {
+internal class CapturedNativeSnapshotBuilder(
+    private val occlusionDetector: CapturedNativeViewOcclusionDetector = CapturedNativeViewOcclusionDetector()
+) {
     @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Copies owned lists; expiry discards all work.
     fun build(snapshot: CapturedNativeSnapshot, generation: CaptureGenerationContext): CapturedFullSnapshot? {
         val windows = mutableListOf<CapturedWindow>()
@@ -48,6 +50,7 @@ internal class CapturedNativeSnapshotBuilder {
         val stack = ArrayDeque<PendingLayer>()
         val rootView = window.views.firstOrNull() ?: return null
         val identityFactory = DefaultCapturedIdentityFactory(rootView.identity.scope)
+        val occluded = occlusionDetector.occludedViews(window, generation)
         for ((index, view) in window.views.withIndex()) {
             if (!generation.isActive()) return null
             while (stack.isNotEmpty() && stack.last().index != view.parentIndex) {
@@ -55,10 +58,12 @@ internal class CapturedNativeSnapshotBuilder {
             }
             val parentClip = stack.lastOrNull()?.childClip
             val inheritedClip = if (view.clipToBounds) parentClip.intersectWith(view.bounds) else parentClip
-            val clip = view.explicitClip?.let { inheritedClip.intersectWith(it) } ?: inheritedClip
+            val clip = inheritedClip.intersectOptional(view.explicitClip)
             val children = mutableListOf<CapturedChild>()
-            addWireframes(view, window.screenDensity, identityFactory, clip, children, wireframes)
-            val childClip = view.childPaddingClip?.let { clip.intersectWith(it) } ?: clip
+            if (!occluded.isOccluded(index)) {
+                addWireframes(view, window.screenDensity, identityFactory, clip, children, wireframes)
+            }
+            val childClip = clip.intersectOptional(view.childPaddingClip)
             stack.addLast(PendingLayer(index, view, children, childClip))
         }
         while (stack.isNotEmpty()) {
@@ -163,3 +168,8 @@ private class ClipBounds private constructor(
 
 private fun ClipBounds?.intersectWith(bounds: CapturedBounds): ClipBounds =
     this?.intersect(bounds) ?: ClipBounds(bounds)
+
+private fun BooleanArray.isOccluded(index: Int): Boolean = index in indices && this[index]
+
+private fun ClipBounds?.intersectOptional(bounds: CapturedBounds?): ClipBounds? =
+    bounds?.let { intersectWith(it) } ?: this

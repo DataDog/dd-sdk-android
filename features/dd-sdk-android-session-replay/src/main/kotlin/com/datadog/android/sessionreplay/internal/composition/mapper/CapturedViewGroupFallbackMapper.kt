@@ -47,6 +47,9 @@ private data class CapturedBackgroundViewData(
     val bounds: CapturedBounds,
     val background: CapturedBackgroundColor
 ) : CapturedViewData {
+    override val isOcclusionBounded: Boolean get() = true
+    override val hasOpaqueBackground: Boolean get() = background.isOpaque
+
     override fun map(mappingContext: CapturedMappingContext): CapturedViewMapperResult =
         CapturedViewMapperResult.Wireframes(
             listOf(

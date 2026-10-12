@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 /** Values owned by a capture, with no live UI objects retained for processing. */
 internal sealed interface CapturedSnapshotInput
@@ -20,7 +21,8 @@ internal data class CapturedNativeSnapshot(
 /** Preorder copy; each parent index refers to an earlier entry, or -1 for the window root. */
 internal data class CapturedNativeWindow(
     val screenDensity: Float,
-    val views: List<CapturedNativeView>
+    val views: List<CapturedNativeView>,
+    val isDrawingOrderReliable: Boolean = true
 )
 
 internal data class CapturedNativeView(
@@ -31,5 +33,10 @@ internal data class CapturedNativeView(
     val mapping: CapturedViewData,
     val clipToBounds: Boolean,
     val explicitClip: CapturedBounds?,
-    val childPaddingClip: CapturedBounds?
+    val childPaddingClip: CapturedBounds?,
+    // Unrounded geometry from the existing bounds read; never inferred from density-normalized values.
+    val pixelBounds: GlobalBounds? = null,
+    val pixelClip: GlobalBounds? = null,
+    val pixelChildPaddingClip: GlobalBounds? = null,
+    val isGeometryReliable: Boolean = false
 )

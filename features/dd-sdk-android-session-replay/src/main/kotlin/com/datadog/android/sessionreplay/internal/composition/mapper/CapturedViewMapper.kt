@@ -50,6 +50,10 @@ internal fun interface CapturedViewMapper<T : View> {
 internal sealed interface CapturedViewData {
     val isTerminal: Boolean get() = false
 
+    /** Only built-in mappings with visual output confined to the copied view rectangle opt in. */
+    val isOcclusionBounded: Boolean get() = false
+    val hasOpaqueBackground: Boolean get() = false
+
     fun map(mappingContext: CapturedMappingContext): CapturedViewMapperResult
 
     data class Mapped(val result: CapturedViewMapperResult) : CapturedViewData {
