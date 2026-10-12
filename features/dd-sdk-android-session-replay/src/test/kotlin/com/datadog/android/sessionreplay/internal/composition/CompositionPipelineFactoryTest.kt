@@ -32,6 +32,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.ExecutorService
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -79,8 +80,29 @@ internal class CompositionPipelineFactoryTest {
         testedFactory.create(mock<RecordWriter>(), mock<RumContextProvider>(), mockApplication)
 
         // Then
+        verify(mockSdkCore).createSingleThreadExecutorService("sr-composition-construction")
         verify(mockSdkCore).createSingleThreadExecutorService("sr-composition-processing")
         verify(mockSdkCore).createScheduledExecutorService("sr-composition-expiry")
+    }
+
+    @Test
+    fun `M shut down construction and completion W stopProcessingRecords`() {
+        // Given
+        val mockConstructionExecutor = mock<ExecutorService>()
+        val mockCompletionExecutor = mock<ExecutorService>()
+        whenever(mockSdkCore.createSingleThreadExecutorService("sr-composition-construction"))
+            .thenReturn(mockConstructionExecutor)
+        whenever(mockSdkCore.createSingleThreadExecutorService("sr-composition-processing"))
+            .thenReturn(mockCompletionExecutor)
+        val testedPipeline = createFactory(dynamicOptimizationEnabled = false)
+            .create(mock<RecordWriter>(), mock<RumContextProvider>(), mockApplication)
+
+        // When
+        testedPipeline.stopProcessingRecords()
+
+        // Then
+        verify(mockConstructionExecutor).shutdownNow()
+        verify(mockCompletionExecutor).shutdownNow()
     }
 
     @Test

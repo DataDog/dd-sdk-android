@@ -27,6 +27,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
+import java.util.concurrent.ExecutorService
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -44,6 +45,9 @@ internal class CompositionCapturePipelineTest {
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
+    lateinit var mockConstructionExecutor: ExecutorService
 
     @Test
     fun `M select only legacy pipeline W create { flag disabled }`() {
@@ -152,6 +156,7 @@ internal class CompositionCapturePipelineTest {
             mockOrchestrator,
             mockLifecycle,
             mockCompletionQueue,
+            mockConstructionExecutor,
             mockInternalLogger
         )
 
@@ -163,13 +168,14 @@ internal class CompositionCapturePipelineTest {
         testedPipeline.unregisterCallbacks()
 
         // Then
-        inOrder(mockOrchestrator, mockLifecycle, mockCompletionQueue) {
+        inOrder(mockOrchestrator, mockLifecycle, mockConstructionExecutor, mockCompletionQueue) {
             verify(mockLifecycle).registerCallbacks()
             verify(mockOrchestrator).start()
             verify(mockLifecycle).start()
             verify(mockLifecycle).stop()
             verify(mockOrchestrator).stop()
             verify(mockOrchestrator).shutdown()
+            verify(mockConstructionExecutor).shutdownNow()
             verify(mockCompletionQueue).stop()
             verify(mockLifecycle).unregisterCallbacks()
         }
@@ -187,6 +193,7 @@ internal class CompositionCapturePipelineTest {
             mockOrchestrator,
             mockLifecycle,
             mockCompletionQueue,
+            mockConstructionExecutor,
             mockInternalLogger
         )
 
@@ -213,6 +220,7 @@ internal class CompositionCapturePipelineTest {
             mock<SnapshotCaptureOrchestrator>(),
             mock<CompositionCaptureLifecycle>(),
             mock<SnapshotCompletionQueue>(),
+            mockConstructionExecutor,
             mockInternalLogger
         )
 
@@ -236,6 +244,7 @@ internal class CompositionCapturePipelineTest {
             mock<SnapshotCaptureOrchestrator>(),
             mock<CompositionCaptureLifecycle>(),
             mock<SnapshotCompletionQueue>(),
+            mockConstructionExecutor,
             mockInternalLogger
         )
 

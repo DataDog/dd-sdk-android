@@ -62,9 +62,11 @@ internal class DefaultCompositionPipelineFactory(
         val internalLogger = sdkCore.internalLogger
         val windowSource = ActiveWindowSource(WindowTouchPrivacyReader(internalLogger = internalLogger)::read)
         val skippedFrameNotifier = CaptureSkippedFrameNotifier(sdkCore)
-        val processingExecutor = sdkCore.createSingleThreadExecutorService(PROCESSING_EXECUTOR_NAME)
+        // Construction has a capture deadline and must not queue behind completion mapping or writes.
+        val constructionExecutor = sdkCore.createSingleThreadExecutorService(CONSTRUCTION_EXECUTOR_NAME)
+        val completionExecutor = sdkCore.createSingleThreadExecutorService(COMPLETION_EXECUTOR_NAME)
         val completionQueue = SnapshotCompletionQueue(
-            executorService = processingExecutor,
+            executorService = completionExecutor,
             processor = DefaultSnapshotCompletionProcessor(
                 rumContextProvider = rumContextProvider,
                 recordWriter = recordWriter,
@@ -74,7 +76,7 @@ internal class DefaultCompositionPipelineFactory(
         )
         val orchestrator = SnapshotCaptureOrchestrator(
             producer = snapshotProducerFactory(windowSource, rumContextProvider),
-            processor = ExecutorCapturedSnapshotProcessor(processingExecutor, internalLogger),
+            processor = ExecutorCapturedSnapshotProcessor(constructionExecutor, internalLogger),
             consumer = completionQueue,
             timeProvider = CaptureTimeProvider { sdkCore.timeProvider.getDeviceElapsedTimeNanos() },
             captureScheduler = HandlerCaptureTaskScheduler(),
@@ -111,6 +113,7 @@ internal class DefaultCompositionPipelineFactory(
                 currentActivity = internalCallback.getCurrentActivity()
             ),
             completionQueue = completionQueue,
+            constructionExecutor = constructionExecutor,
             internalLogger = internalLogger
         )
     }
@@ -122,7 +125,8 @@ internal class DefaultCompositionPipelineFactory(
     }
 
     private companion object {
-        const val PROCESSING_EXECUTOR_NAME = "sr-composition-processing"
+        const val CONSTRUCTION_EXECUTOR_NAME = "sr-composition-construction"
+        const val COMPLETION_EXECUTOR_NAME = "sr-composition-processing"
         const val EXPIRY_EXECUTOR_NAME = "sr-composition-expiry"
 
         fun builtInCapturedMappers(
