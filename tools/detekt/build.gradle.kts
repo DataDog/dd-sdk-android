@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+
 plugins {
     // Build
     id("org.jetbrains.kotlin.jvm")
@@ -14,18 +16,18 @@ plugins {
 }
 
 dependencies {
-    // pin it temporarily to Kotlin Runtime, because Detekt 1.23.8 is not capable processing Kotlin 2.2 stdlib
-    implementation(libs.kotlinRuntime)
-    implementation(libs.androidXAnnotation)
+    compileOnly(libs.kotlinBuildscript)
     compileOnly(libs.detektApi)
 
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.detektTest)
-    testImplementation(libs.robolectric)
 }
 
 datadogBuild {
-    applyKotlinConfig()
+    applyKotlinConfig(
+        kotlinApiVersion = KotlinVersion.KOTLIN_2_2,
+        kotlinLanguageVersion = KotlinVersion.KOTLIN_2_2
+    )
     applyJunitConfig()
 }

@@ -6,28 +6,22 @@
 
 package com.datadog.tools.detekt.rules.sdk
 
+import com.datadog.tools.detekt.ext.fqClassName
 import com.datadog.tools.detekt.ext.fqTypeName
 import com.datadog.tools.detekt.rules.AbstractTypedRule
-import io.gitlab.arturbosch.detekt.api.CodeSmell
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Entity
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Severity
-import io.gitlab.arturbosch.detekt.api.config
-import io.gitlab.arturbosch.detekt.rules.fqNameOrNull
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import dev.detekt.api.Config
+import dev.detekt.api.Entity
+import dev.detekt.api.Finding
+import dev.detekt.api.RequiresAnalysisApi
+import dev.detekt.api.config
+import org.jetbrains.kotlin.analysis.api.KaSession
+import org.jetbrains.kotlin.analysis.api.analyze
+import org.jetbrains.kotlin.analysis.api.resolution.KaFunctionCall
+import org.jetbrains.kotlin.analysis.api.resolution.successfulFunctionCallOrNull
+import org.jetbrains.kotlin.analysis.api.symbols.KaCallableSymbol
 import org.jetbrains.kotlin.psi.KtCallExpression
-import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
-import org.jetbrains.kotlin.resolve.calls.util.getResolvedCall
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
-import org.jetbrains.kotlin.types.SimpleType
-import org.jetbrains.kotlin.types.getAbbreviation
 
 /**
  * A rule to ensure thread safety is ensured.
@@ -36,8 +30,9 @@ import org.jetbrains.kotlin.types.getAbbreviation
  * @active
  */
 class ThreadSafety(
-    ruleSetConfig: Config
-) : AbstractTypedRule(ruleSetConfig) {
+    config: Config
+) : AbstractTypedRule(config, "This rule reports when a method is called from the wrong thread."),
+    RequiresAnalysisApi {
 
     private val workerThreadSwitchingCalls: List<String> by config(defaultValue = emptyList())
     private val mainThreadSwitchingCalls: List<String> by config(defaultValue = emptyList())
@@ -76,21 +71,6 @@ class ThreadSafety(
 
     // region Rule
 
-    override val issue = Issue(
-        javaClass.simpleName,
-        Severity.Security,
-        "This rule reports when a method is called from the wrong thread.",
-        Debt.TWENTY_MINS
-    )
-
-    override fun visitKtFile(file: KtFile) {
-        if (bindingContext == BindingContext.EMPTY) {
-            println("Missing BindingContext when checking file:${file.virtualFilePath}")
-            return
-        }
-        super.visitKtFile(file)
-    }
-
     override fun visitNamedFunction(function: KtNamedFunction) {
         val parentFunGroup: ThreadGroup = function.annotationEntries.mapNotNull {
             it.shortName?.asString()?.toMethodGroup()
@@ -103,14 +83,19 @@ class ThreadSafety(
     }
 
     override fun visitCallExpression(expression: KtCallExpression) {
+        val resolvedCall = analyze(expression) {
+            expression.resolveToCall()?.successfulFunctionCallOrNull()?.let { call ->
+                ResolvedThreadCall(
+                    calleeGroup = call.partiallyAppliedSymbol.signature.symbol.extractMethodGroup(),
+                    callFullNames = resolveCallFullNames(call)
+                )
+            }
+        }
         var wrapCallWith: ThreadGroup? = null
-        val resolvedCall = expression.getResolvedCall(bindingContext)
         if (resolvedCall != null) {
-            val callDescriptor = resolvedCall.candidateDescriptor
+            checkCallExpression(expression, resolvedCall.calleeGroup)
 
-            checkCallExpression(expression, callDescriptor)
-
-            val callFullNames = resolveCallFullNames(resolvedCall)
+            val callFullNames = resolvedCall.callFullNames
 
             wrapCallWith = if (workerThreadSwitchingCalls.any { callFullNames.contains(it) }) {
                 ThreadGroup.WORKER
@@ -143,28 +128,14 @@ class ThreadSafety(
 
     // region Internal
 
-    private fun Iterable<AnnotationDescriptor>.extractMethodGroup(): ThreadGroup {
-        return firstNotNullOfOrNull { annotationDescriptor ->
-            val type = annotationDescriptor.type
-            when (type) {
-                is SimpleType -> {
-                    val typeName = try {
-                        type.fqNameOrNull()?.shortName()?.asString()
-                    } catch (e: IllegalStateException) {
-                        System.err.println(e.message)
-                        null
-                    }
-                    if (typeName == null) {
-                        println("\nUNABLE to get annotation name for $annotationDescriptor")
-                    }
-                    typeName?.toMethodGroup()
-                }
+    private class ResolvedThreadCall(
+        val calleeGroup: ThreadGroup,
+        val callFullNames: Set<String>
+    )
 
-                else -> {
-                    println("\nUnknown type class for $type (${type.javaClass})")
-                    null
-                }
-            }
+    private fun KaCallableSymbol.extractMethodGroup(): ThreadGroup {
+        return annotations.firstNotNullOfOrNull { annotation ->
+            annotation.classId?.shortClassName?.asString()?.toMethodGroup()
         } ?: ThreadGroup.UNKNOWN
     }
 
@@ -173,16 +144,14 @@ class ThreadSafety(
             .firstOrNull { it.className == this }
     }
 
-    private fun checkCallExpression(expression: KtCallExpression, callDescriptor: CallableDescriptor) {
+    private fun checkCallExpression(expression: KtCallExpression, calleeGroup: ThreadGroup) {
         val parentFunGroup = parentFunGroupStack.first()
 
-        val calleeGroup = callDescriptor.annotations.extractMethodGroup()
         val allowedCall = ThreadGroup.allowedCalls[parentFunGroup]?.contains(calleeGroup)
 
         if (allowedCall != true) {
             report(
-                CodeSmell(
-                    issue,
+                Finding(
                     Entity.from(expression),
                     "Calling a ${calleeGroup.asAnnotation()} annotated fun " +
                         "from a ${parentFunGroup.asAnnotation()} annotated fun " +
@@ -192,21 +161,23 @@ class ThreadSafety(
         }
     }
 
-    private fun resolveCallFullNames(resolvedCall: ResolvedCall<out CallableDescriptor>): Set<String> {
-        val resolvedName = resolvedCall.candidateDescriptor.fqNameOrNull()?.asString()
-        if (resolvedName == null) return emptySet()
-
-        val hostType = resolvedCall.dispatchReceiver
+    private fun KaSession.resolveCallFullNames(call: KaFunctionCall<*>): Set<String> {
+        val callableId = call.partiallyAppliedSymbol.signature.symbol.callableId ?: return emptySet()
+        val hostType = call.partiallyAppliedSymbol.dispatchReceiver
             ?.type
+
+        // An inherited member is named after the receiver's class (e.g. `LinearLayout.post` rather than `View.post`)
+        val resolvedName = hostType?.fqClassName()
+            ?.let { "$it.${callableId.callableName}" }
+            ?: callableId.asSingleFqName().asString()
 
         return if (hostType != null) {
             val aliasedName = hostType
-                .getAbbreviation()
-                ?.constructor
-                ?.declarationDescriptor
-                ?.fqNameOrNull()
+                .abbreviation
+                ?.classId
+                ?.asSingleFqName()
                 ?.let {
-                    resolvedName.replace(hostType.fqTypeName(includeTypeArguments = false), it.asString())
+                    resolvedName.replace(fqTypeName(hostType, includeTypeArguments = false), it.asString())
                 }
 
             listOf(resolvedName, aliasedName).filterNotNull().toSet()

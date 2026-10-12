@@ -229,8 +229,7 @@ internal class SpanEventSerializerTest {
             meta = fakeSpanEvent.meta.copy(
                 account = fakeSpanEvent.meta.account?.copy(
                     additionalProperties = fakeSpanEvent.meta.account
-                        ?.additionalProperties
-                        .orEmpty()
+                        .additionalProperties
                         .toMutableMap()
                         .apply { put(faultyKey, faultyObject) }
                 )

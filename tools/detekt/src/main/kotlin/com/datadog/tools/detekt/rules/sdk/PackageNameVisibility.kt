@@ -7,14 +7,10 @@
 package com.datadog.tools.detekt.rules.sdk
 
 import com.datadog.tools.detekt.rules.AbstractTypedRule
-import io.gitlab.arturbosch.detekt.api.CodeSmell
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Entity
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Severity
-import io.gitlab.arturbosch.detekt.api.config
-import io.gitlab.arturbosch.detekt.api.internal.RequiresTypeResolution
+import dev.detekt.api.Config
+import dev.detekt.api.Entity
+import dev.detekt.api.Finding
+import dev.detekt.api.config
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtModifierListOwner
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
@@ -28,20 +24,15 @@ import org.jetbrains.kotlin.psi.KtProperty
  * `com.datadog.android.*.internal.*` package name.
  * @active
  */
-@RequiresTypeResolution
 class PackageNameVisibility(
-    ruleSetConfig: Config
-) : AbstractTypedRule(ruleSetConfig) {
+    config: Config
+) : AbstractTypedRule(
+    config,
+    "This rule reports when a top level declaration's visibility doesn't match the package naming policy."
+) {
 
     private val withBreakingChanges: Boolean by config(defaultValue = true)
     private val ignoredAnnotations: List<String> by config(defaultValue = emptyList())
-
-    override val issue: Issue = Issue(
-        javaClass.simpleName,
-        Severity.Warning,
-        "This rule reports when a top level declaration's visibility doesn't match the package naming policy.",
-        Debt.FIVE_MINS
-    )
 
     private var currentPackageName: String = ""
     private var isCurrentPackageInternal: Boolean = false
@@ -63,8 +54,7 @@ class PackageNameVisibility(
         if (isDeclarationInternal && !isCurrentPackageInternal) {
             if (decl !is KtProperty) {
                 report(
-                    CodeSmell(
-                        issue,
+                    Finding(
                         Entity.from(decl),
                         "Type ${decl.name} is marked Internal but is not in an internal package: $currentPackageName."
                     )
@@ -73,8 +63,7 @@ class PackageNameVisibility(
         } else if (isCurrentPackageInternal && !isDeclarationInternal && !isEscapePackage) {
             if (withBreakingChanges && !isIgnoredAnnotation) {
                 report(
-                    CodeSmell(
-                        issue,
+                    Finding(
                         Entity.from(decl),
                         "Type ${decl.name} is marked Public but is in an internal package: $currentPackageName."
                     )
