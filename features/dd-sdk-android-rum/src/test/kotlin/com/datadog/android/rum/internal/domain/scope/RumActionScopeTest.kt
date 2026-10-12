@@ -269,6 +269,7 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
                     hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
