@@ -157,6 +157,9 @@ private data class CapturedTextViewData(
     val hasLayout: Boolean,
     val colorStringFormatter: ColorStringFormatter
 ) : CapturedViewData {
+    override val isOcclusionBounded: Boolean get() = true
+    override val hasOpaqueBackground: Boolean get() = background?.isOpaque == true
+
     override fun map(mappingContext: CapturedMappingContext): CapturedViewMapperResult {
         val wireframes = mutableListOf<CapturedWireframe>()
         background?.let {
