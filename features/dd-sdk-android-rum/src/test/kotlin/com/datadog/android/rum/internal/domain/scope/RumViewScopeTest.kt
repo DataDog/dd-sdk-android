@@ -6044,7 +6044,7 @@ internal class RumViewScopeTest {
     fun `M include quotaReason in LongTaskEvent W handleEvent(AddLongTask) {profiler not running and quota denied}`(
         @LongForgery(0L, 700_000_000L) durationNs: Long,
         @StringForgery target: String,
-        @StringForgery fakeQuotaReason: String
+        @Forgery fakeQuotaReason: LongTaskEvent.QuotaReason
     ) {
         // Given
         testedScope.activeActionScope = null
@@ -6055,7 +6055,7 @@ internal class RumViewScopeTest {
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to false,
-                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason.toJson().asString,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
                     )
                 )
@@ -6077,7 +6077,7 @@ internal class RumViewScopeTest {
     fun `M ignore stale quotaReason in LongTaskEvent W handleEvent(AddLongTask) {quota reason for other session}`(
         @LongForgery(0L, 700_000_000L) durationNs: Long,
         @StringForgery target: String,
-        @StringForgery fakeQuotaReason: String,
+        @Forgery fakeQuotaReason: LongTaskEvent.QuotaReason,
         @StringForgery fakeOtherSessionId: String
     ) {
         // Given — the quota reason is stamped with a different session than the current one
@@ -6089,7 +6089,7 @@ internal class RumViewScopeTest {
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to false,
-                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason.toJson().asString,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
                     )
                 )
@@ -6169,7 +6169,7 @@ internal class RumViewScopeTest {
     @Test
     fun `M include quotaReason in VitalOperationStep W handleEvent(StartOperation) {profiler stopped, quota denied}`(
         @StringForgery fakeName: String,
-        @StringForgery fakeQuotaReason: String
+        @Forgery fakeQuotaReason: VitalOperationStepEvent.QuotaReason
     ) {
         // Given
         val event = RumRawEvent.StartOperation(
@@ -6184,7 +6184,7 @@ internal class RumViewScopeTest {
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to false,
-                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason.toJson().asString,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
                     )
                 )
@@ -6209,7 +6209,7 @@ internal class RumViewScopeTest {
     @Test
     fun `M ignore stale quotaReason in VitalOperationStep W handleEvent(StartOperation) {stale quota, other session}`(
         @StringForgery fakeName: String,
-        @StringForgery fakeQuotaReason: String,
+        @Forgery fakeQuotaReason: VitalOperationStepEvent.QuotaReason,
         @StringForgery fakeOtherSessionId: String
     ) {
         // Given — the quota reason is stamped with a different session than the current one
@@ -6225,7 +6225,7 @@ internal class RumViewScopeTest {
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to false,
-                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason.toJson().asString,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
                     )
                 )
@@ -6413,7 +6413,7 @@ internal class RumViewScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String,
-        @StringForgery fakeQuotaReason: String,
+        @Forgery fakeQuotaReason: ErrorEvent.QuotaReason,
         forge: Forge
     ) {
         // Given — the error was reported by the trigger-based profiling pipeline, but the current
@@ -6439,7 +6439,7 @@ internal class RumViewScopeTest {
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to false,
-                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason.toJson().asString,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
                     )
                 )
@@ -6536,7 +6536,7 @@ internal class RumViewScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String,
-        @StringForgery fakeQuotaReason: String,
+        @Forgery fakeQuotaReason: ErrorEvent.QuotaReason,
         forge: Forge
     ) {
         // Given
@@ -6559,7 +6559,7 @@ internal class RumViewScopeTest {
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to false,
-                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason.toJson().asString,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
                     )
                 )
@@ -6582,7 +6582,7 @@ internal class RumViewScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String,
-        @StringForgery fakeQuotaReason: String,
+        @Forgery fakeQuotaReason: ErrorEvent.QuotaReason,
         @StringForgery fakeOtherSessionId: String,
         forge: Forge
     ) {
@@ -6606,7 +6606,7 @@ internal class RumViewScopeTest {
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to false,
-                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason.toJson().asString,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
                     )
                 )
@@ -6679,7 +6679,7 @@ internal class RumViewScopeTest {
     @Test
     fun `M include quotaReason in ViewEvent W handleEvent(StartView) {profiler not running and quota denied}`(
         @Forgery key: RumScopeKey,
-        @StringForgery fakeQuotaReason: String
+        @Forgery fakeQuotaReason: ViewEvent.QuotaReason
     ) {
         // Given
         val datadogContext = fakeDatadogContext.copy(
@@ -6688,7 +6688,7 @@ internal class RumViewScopeTest {
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to false,
-                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason.toJson().asString,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
                     )
                 )
@@ -6714,7 +6714,7 @@ internal class RumViewScopeTest {
     @Test
     fun `M ignore stale quotaReason in ViewEvent W handleEvent(StartView) {quota reason for other session}`(
         @Forgery key: RumScopeKey,
-        @StringForgery fakeQuotaReason: String,
+        @Forgery fakeQuotaReason: ViewEvent.QuotaReason,
         @StringForgery fakeOtherSessionId: String
     ) {
         // Given — the quota reason is stamped with a different session than the current one
@@ -6724,7 +6724,7 @@ internal class RumViewScopeTest {
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to false,
-                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason.toJson().asString,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
                     )
                 )

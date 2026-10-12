@@ -6,29 +6,6 @@
   "description": "Schema of mobile specific features usage",
   "oneOf": [
     {
-      "required": ["feature", "no_view", "no_active_view", "overwritten"],
-      "title": "AddViewLoadingTime",
-      "properties": {
-        "feature": {
-          "type": "string",
-          "description": "addViewLoadingTime API",
-          "const": "addViewLoadingTime"
-        },
-        "no_view": {
-          "type": "boolean",
-          "description": "Whether the view is not available"
-        },
-        "no_active_view": {
-          "type": "boolean",
-          "description": "Whether the available view is not active"
-        },
-        "overwritten": {
-          "type": "boolean",
-          "description": "Whether the loading time was overwritten"
-        }
-      }
-    },
-    {
       "required": ["feature"],
       "title": "TrackWebView",
       "properties": {

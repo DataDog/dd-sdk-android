@@ -1762,7 +1762,7 @@ internal open class RumViewScope(
 
     private fun resolveErrorProfilingStatus(datadogContext: DatadogContext): ErrorEvent.Profiling? {
         val isRunning = datadogContext.isProfilerRunning()
-        val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
+        val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId, ErrorEvent.QuotaReason::fromJson)
         return when {
             isRunning -> ErrorEvent.Profiling(
                 status = ErrorEvent.ProfilingStatus.RUNNING
@@ -1781,7 +1781,10 @@ internal open class RumViewScope(
         datadogContext: DatadogContext
     ): VitalOperationStepEvent.Profiling? {
         val isRunning = datadogContext.isProfilerRunning()
-        val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
+        val quotaReason = datadogContext.resolveProfilingQuotaReason(
+            sessionId,
+            VitalOperationStepEvent.QuotaReason::fromJson
+        )
         return when {
             isRunning -> VitalOperationStepEvent.Profiling(
                 status = VitalOperationStepEvent.ProfilingStatus.RUNNING
@@ -1798,7 +1801,7 @@ internal open class RumViewScope(
 
     private fun resolveLongTaskProfilingStatus(datadogContext: DatadogContext): LongTaskEvent.Profiling? {
         val isRunning = datadogContext.isProfilerRunning()
-        val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
+        val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId, LongTaskEvent.QuotaReason::fromJson)
         return when {
             isRunning -> LongTaskEvent.Profiling(
                 status = LongTaskEvent.ProfilingStatus.RUNNING
@@ -1815,7 +1818,7 @@ internal open class RumViewScope(
 
     private fun resolveViewProfilingStatus(datadogContext: DatadogContext): ViewEvent.Profiling? {
         val isRunning = datadogContext.isProfilerRunning()
-        val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
+        val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId, ViewEvent.QuotaReason::fromJson)
         return when {
             isRunning -> ViewEvent.Profiling(
                 status = ViewEvent.ProfilingStatus.RUNNING

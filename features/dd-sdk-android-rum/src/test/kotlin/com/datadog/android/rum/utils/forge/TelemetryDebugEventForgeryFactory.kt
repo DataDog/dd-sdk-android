@@ -37,7 +37,7 @@ internal class TelemetryDebugEventForgeryFactory : ForgeryFactory<TelemetryDebug
             },
             action = forge.aNullable {
                 TelemetryDebugEvent.Action(
-                    forge.getForgery<UUID>().toString()
+                    listOf(forge.getForgery<UUID>().toString())
                 )
             },
             dd = TelemetryDebugEvent.Dd(),

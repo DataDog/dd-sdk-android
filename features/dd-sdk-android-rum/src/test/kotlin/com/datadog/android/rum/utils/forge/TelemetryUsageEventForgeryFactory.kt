@@ -36,7 +36,7 @@ internal class TelemetryUsageEventForgeryFactory : ForgeryFactory<TelemetryUsage
             },
             action = forge.aNullable {
                 TelemetryUsageEvent.Action(
-                    id = anAlphabeticalString()
+                    id = listOf(anAlphabeticalString())
                 )
             },
             experimentalFeatures = forge.aNullable { aList { anAlphabeticalString() } },

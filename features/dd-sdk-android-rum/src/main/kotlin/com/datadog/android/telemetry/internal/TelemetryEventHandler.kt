@@ -232,7 +232,7 @@ internal class TelemetryEventHandler(
             application = TelemetryDebugEvent.Application(rumContext.applicationId),
             session = TelemetryDebugEvent.Session(rumContext.sessionId),
             view = rumContext.viewId?.let { TelemetryDebugEvent.View(it) },
-            action = rumContext.actionId?.let { TelemetryDebugEvent.Action(it) },
+            action = rumContext.actionId?.let { TelemetryDebugEvent.Action(listOf(it)) },
             telemetry = TelemetryDebugEvent.Telemetry(
                 message = message,
                 additionalProperties = resolvedAdditionalProperties,
@@ -281,7 +281,7 @@ internal class TelemetryEventHandler(
             application = TelemetryErrorEvent.Application(rumContext.applicationId),
             session = TelemetryErrorEvent.Session(rumContext.sessionId),
             view = rumContext.viewId?.let { TelemetryErrorEvent.View(it) },
-            action = rumContext.actionId?.let { TelemetryErrorEvent.Action(it) },
+            action = rumContext.actionId?.let { TelemetryErrorEvent.Action(listOf(it)) },
             effectiveSampleRate = effectiveSampleRate,
             telemetry = TelemetryErrorEvent.Telemetry(
                 message = message,
@@ -373,7 +373,7 @@ internal class TelemetryEventHandler(
             application = TelemetryConfigurationEvent.Application(rumContext.applicationId),
             session = TelemetryConfigurationEvent.Session(rumContext.sessionId),
             view = rumContext.viewId?.let { TelemetryConfigurationEvent.View(it) },
-            action = rumContext.actionId?.let { TelemetryConfigurationEvent.Action(it) },
+            action = rumContext.actionId?.let { TelemetryConfigurationEvent.Action(listOf(it)) },
             experimentalFeatures = null,
             effectiveSampleRate = effectiveSampleRate,
             telemetry = TelemetryConfigurationEvent.Telemetry(
@@ -502,7 +502,7 @@ internal class TelemetryEventHandler(
             application = TelemetryUsageEvent.Application(rumContext.applicationId),
             session = TelemetryUsageEvent.Session(rumContext.sessionId),
             view = rumContext.viewId?.let { TelemetryUsageEvent.View(it) },
-            action = rumContext.actionId?.let { TelemetryUsageEvent.Action(it) },
+            action = rumContext.actionId?.let { TelemetryUsageEvent.Action(listOf(it)) },
             effectiveSampleRate = effectiveSampleRate,
             telemetry = TelemetryUsageEvent.Telemetry(
                 additionalProperties = resolvedAdditionalProperties,

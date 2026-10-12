@@ -86,7 +86,7 @@ internal class TelemetryUsageEventAssert(actual: TelemetryUsageEvent) :
             .overridingErrorMessage(
                 "Expected event data to have action.id $expected but was ${actual.action?.id}"
             )
-            .isEqualTo(expected)
+            .isEqualTo(expected?.let { listOf(it) })
         return this
     }
 

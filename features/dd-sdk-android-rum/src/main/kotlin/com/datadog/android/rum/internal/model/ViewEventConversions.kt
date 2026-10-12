@@ -130,6 +130,8 @@ internal fun ViewEvent.LoadingType.toViewUpdate() = when (this) {
     ViewEvent.LoadingType.FRAGMENT_REDISPLAY -> ViewUpdateEvent.LoadingType.FRAGMENT_REDISPLAY
     ViewEvent.LoadingType.VIEW_CONTROLLER_DISPLAY -> ViewUpdateEvent.LoadingType.VIEW_CONTROLLER_DISPLAY
     ViewEvent.LoadingType.VIEW_CONTROLLER_REDISPLAY -> ViewUpdateEvent.LoadingType.VIEW_CONTROLLER_REDISPLAY
+    ViewEvent.LoadingType.SESSION_RENEWAL -> ViewUpdateEvent.LoadingType.SESSION_RENEWAL
+    ViewEvent.LoadingType.BF_CACHE -> ViewUpdateEvent.LoadingType.BF_CACHE
 }
 
 internal fun ViewEvent.ConnectivityStatus.toViewUpdate() = when (this) {

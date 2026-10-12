@@ -130,7 +130,10 @@ internal class RumSessionScopeStartupManagerImpl(
             // The quota reason is only meaningful when profiling is STOPPED; a running profiler
             // must not carry a denial reason (mirrors the Error/LongTask path in RumViewScope).
             profilingQuotaReason = if (profilingStatus == VitalAppLaunchEvent.ProfilingStatus.STOPPED) {
-                datadogContext.resolveProfilingQuotaReason(rumContext.sessionId)
+                datadogContext.resolveProfilingQuotaReason(
+                    rumContext.sessionId,
+                    VitalAppLaunchEvent.QuotaReason::fromJson
+                )
             } else {
                 null
             }
@@ -274,7 +277,10 @@ internal class RumSessionScopeStartupManagerImpl(
             // The quota reason is only meaningful when profiling is STOPPED; a running profiler
             // must not carry a denial reason (mirrors the TTID and Error/LongTask paths).
             profilingQuotaReason = if (profilingStatus == VitalAppLaunchEvent.ProfilingStatus.STOPPED) {
-                datadogContext.resolveProfilingQuotaReason(rumContext.sessionId)
+                datadogContext.resolveProfilingQuotaReason(
+                    rumContext.sessionId,
+                    VitalAppLaunchEvent.QuotaReason::fromJson
+                )
             } else {
                 null
             }
