@@ -81,7 +81,7 @@ internal class SnapshotProducer(
         return rootNode
     }
 
-    @Suppress("ComplexMethod", "ReturnCount", "LongParameterList")
+    @Suppress("CyclomaticComplexMethod", "ReturnCount", "LongParameterList")
     @UiThread
     private fun convertViewToNode(
         view: View,

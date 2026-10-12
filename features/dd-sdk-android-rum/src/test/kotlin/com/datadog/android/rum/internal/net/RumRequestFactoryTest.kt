@@ -68,17 +68,15 @@ internal class RumRequestFactoryTest {
     @Test
     fun `M create a proper request W create()`(
         @Forgery batchData: List<RawBatchEvent>,
-        @StringForgery batchMetadata: String,
         forge: Forge
     ) {
         // Given
-        val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
+        val batchMetadata = forge.aNullable { forge.aString().toByteArray() }
 
         // When
         val request = testedFactory.create(fakeDatadogContext, fakeExecutionContext, batchData, batchMetadata)
 
         // Then
-        requireNotNull(request)
         val expectedUrl = expectedUrl(fakeDatadogContext.site.intakeEndpoint + "/api/v2/rum")
         assertThat(request.url).isEqualTo(expectedUrl)
         assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
@@ -113,7 +111,6 @@ internal class RumRequestFactoryTest {
     fun `M create a proper request W create() { custom endpoint }`(
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeEndpoint: String,
         @Forgery batchData: List<RawBatchEvent>,
-        @StringForgery batchMetadata: String,
         forge: Forge
     ) {
         // Given
@@ -122,7 +119,7 @@ internal class RumRequestFactoryTest {
             viewEventFilter = mockViewEventFilter,
             internalLogger = InternalLogger.UNBOUND
         )
-        val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
+        val batchMetadata = forge.aNullable { forge.aString().toByteArray() }
 
         // When
         val request = testedFactory.create(fakeDatadogContext, fakeExecutionContext, batchData, batchMetadata)

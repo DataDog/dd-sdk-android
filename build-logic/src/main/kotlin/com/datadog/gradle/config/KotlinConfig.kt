@@ -13,15 +13,17 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 internal fun Project.kotlinConfig(
     evaluateWarningsAsErrors: Boolean = true,
-    jvmBytecodeTarget: JvmTarget = JvmTarget.JVM_17
+    jvmBytecodeTarget: JvmTarget = JvmTarget.JVM_17,
+    kotlinApiVersion: KotlinVersion = KotlinVersion.KOTLIN_2_0,
+    kotlinLanguageVersion: KotlinVersion = KotlinVersion.KOTLIN_2_0
 ) {
     taskConfig<KotlinJvmCompile> {
         compilerOptions {
             jvmTarget.set(jvmBytecodeTarget)
             val isCI = System.getenv("CI").toBoolean()
             allWarningsAsErrors.set(evaluateWarningsAsErrors && isCI)
-            apiVersion.set(KotlinVersion.KOTLIN_2_0)
-            languageVersion.set(KotlinVersion.KOTLIN_2_0)
+            apiVersion.set(kotlinApiVersion)
+            languageVersion.set(kotlinLanguageVersion)
         }
     }
 }

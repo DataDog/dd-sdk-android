@@ -111,7 +111,7 @@ android {
 }
 
 dependencies {
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     // Network
     implementation(libs.okHttp)
@@ -144,7 +144,7 @@ dependencies {
     unmock(libs.robolectric)
 
     // Test Fixtures
-    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.kotlinRuntime)
     testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.okHttp)
     testFixturesImplementation(libs.bundles.testTools)

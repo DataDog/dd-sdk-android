@@ -7209,6 +7209,7 @@ internal class RumViewScopeTest {
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.USER,
             RumViewScope.ADDING_VIEW_LOADING_TIME_DEBUG_MESSAGE_FORMAT.format(
+                Locale.US,
                 expectedViewLoadingTime,
                 testedScope.key.name
             )

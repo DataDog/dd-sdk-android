@@ -39,7 +39,7 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
      * @return the mutations as [MobileSegment.MobileIncrementalData.MobileMutationData]
      * describing changes from `oldArray` to `newArray` or null if no difference was found.
      */
-    @Suppress("LongMethod", "ComplexMethod", "NestedBlockDepth", "ReturnCount")
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth", "ReturnCount")
     internal fun resolveMutations(
         oldSnapshot: List<MobileSegment.Wireframe>,
         newSnapshot: List<MobileSegment.Wireframe>
@@ -203,7 +203,7 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
     }
 
     // TODO RUM-841 Use the `diff` method int the ShapeWireframe type when available
-    @Suppress("ComplexMethod")
+    @Suppress("CyclomaticComplexMethod")
     private fun resolveShapeMutation(
         prevWireframe: MobileSegment.Wireframe.ShapeWireframe,
         currentWireframe: MobileSegment.Wireframe.ShapeWireframe
@@ -472,7 +472,7 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
     }
 
     // TODO RUM-841 Use the `diff` method int the TextWireframe type when available
-    @Suppress("ComplexMethod")
+    @Suppress("CyclomaticComplexMethod")
     private fun resolveTextMutation(
         prevWireframe: MobileSegment.Wireframe.TextWireframe,
         currentWireframe: MobileSegment.Wireframe.TextWireframe

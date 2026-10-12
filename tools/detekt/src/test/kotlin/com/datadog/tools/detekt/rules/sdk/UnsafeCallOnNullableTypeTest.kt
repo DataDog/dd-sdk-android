@@ -6,9 +6,10 @@
 
 package com.datadog.tools.detekt.rules.sdk
 
+import dev.detekt.api.Config
+import dev.detekt.test.lint
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.gitlab.arturbosch.detekt.test.assertThat
-import io.gitlab.arturbosch.detekt.test.lint
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 
@@ -24,7 +25,7 @@ internal class UnsafeCallOnNullableTypeTest {
                 }
             """.trimIndent()
 
-        val findings = UnsafeCallOnNullableType().lint(code)
+        val findings = UnsafeCallOnNullableType(Config.empty).lint(code)
         assertThat(findings).hasSize(1)
     }
 
@@ -38,7 +39,7 @@ internal class UnsafeCallOnNullableTypeTest {
                 }
             """.trimIndent()
 
-        val findings = UnsafeCallOnNullableType().lint(code)
+        val findings = UnsafeCallOnNullableType(Config.empty).lint(code)
         assertThat(findings).hasSize(0)
     }
 
@@ -51,7 +52,7 @@ internal class UnsafeCallOnNullableTypeTest {
                 }
             """.trimIndent()
 
-        val findings = UnsafeCallOnNullableType().lint(code)
+        val findings = UnsafeCallOnNullableType(Config.empty).lint(code)
         assertThat(findings).hasSize(0)
     }
 
@@ -64,7 +65,7 @@ internal class UnsafeCallOnNullableTypeTest {
                 }
             """.trimIndent()
 
-        val findings = UnsafeCallOnNullableType().lint(code)
+        val findings = UnsafeCallOnNullableType(Config.empty).lint(code)
         assertThat(findings).hasSize(0)
     }
 }

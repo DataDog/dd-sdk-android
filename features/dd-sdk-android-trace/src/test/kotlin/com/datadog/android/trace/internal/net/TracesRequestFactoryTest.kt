@@ -52,12 +52,11 @@ internal class TracesRequestFactoryTest {
     @Test
     fun `M create a proper request W create()`(
         @Forgery batchData: List<RawBatchEvent>,
-        @StringForgery batchMetadata: String,
         @Forgery executionContext: RequestExecutionContext,
         forge: Forge
     ) {
         // Given
-        val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
+        val batchMetadata = forge.aNullable { forge.aString().toByteArray() }
 
         // When
         val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, batchMetadata)
@@ -89,13 +88,12 @@ internal class TracesRequestFactoryTest {
     fun `M create a proper request W create() { custom endpoint }`(
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeEndpoint: String,
         @Forgery batchData: List<RawBatchEvent>,
-        @StringForgery batchMetadata: String,
         @Forgery executionContext: RequestExecutionContext,
         forge: Forge
     ) {
         // Given
         testedFactory = TracesRequestFactory(customEndpointUrl = fakeEndpoint, internalLogger = InternalLogger.UNBOUND)
-        val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
+        val batchMetadata = forge.aNullable { forge.aString().toByteArray() }
 
         // When
         val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, batchMetadata)

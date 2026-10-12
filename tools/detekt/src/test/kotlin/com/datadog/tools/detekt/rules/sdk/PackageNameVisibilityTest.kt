@@ -7,16 +7,15 @@
 package com.datadog.tools.detekt.rules.sdk
 
 import com.datadog.tools.detekt.rules.test.FakeAnnotation
+import dev.detekt.test.TestConfig
+import dev.detekt.test.lint
+import dev.detekt.test.utils.KotlinEnvironmentContainer
+import dev.detekt.test.utils.createEnvironment
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.github.detekt.test.utils.KotlinCoreEnvironmentWrapper
-import io.github.detekt.test.utils.createEnvironment
-import io.gitlab.arturbosch.detekt.test.TestConfig
-import io.gitlab.arturbosch.detekt.test.assertThat
-import io.gitlab.arturbosch.detekt.test.lint
-import org.junit.jupiter.api.AfterEach
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -28,7 +27,7 @@ import java.util.stream.Stream
 @ExtendWith(ForgeExtension::class)
 class PackageNameVisibilityTest {
 
-    lateinit var kotlinEnv: KotlinCoreEnvironmentWrapper
+    lateinit var kotlinEnv: KotlinEnvironmentContainer
 
     @BoolForgery
     var fakeWithBreakingChanges: Boolean = false
@@ -39,11 +38,6 @@ class PackageNameVisibilityTest {
     @BeforeEach
     fun setup() {
         kotlinEnv = createEnvironment()
-    }
-
-    @AfterEach
-    fun tearDown() {
-        kotlinEnv.dispose()
     }
 
     @ParameterizedTest

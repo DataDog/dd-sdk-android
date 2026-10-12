@@ -438,6 +438,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
     // a window already open (e.g. a dialog) isn't reported through the Activity lifecycle
     private fun resolveUntrackedWindows(decorViews: List<View>, knownWindows: List<Window>): List<Window> {
+        @Suppress("CouldBeSequence")
         return decorViews
             .filterNot { it.width == 0 || it.height == 0 }
             .mapNotNull { windowFromDecorView(it) }

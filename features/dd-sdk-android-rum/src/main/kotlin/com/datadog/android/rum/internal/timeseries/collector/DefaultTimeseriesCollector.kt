@@ -168,7 +168,7 @@ internal class DefaultTimeseriesCollector(
 
     // @Suppress("unused") required here to avoid creating wrapping lambda in [onRumContextUpdate] method
     @AnyThread
-    private fun tryStartCollection(generation: Int, @Suppress("unused") rumContext: RumContext) {
+    private fun tryStartCollection(generation: Int, @Suppress("UnusedParameter", "unused") rumContext: RumContext) {
         if (looperGeneration.getAndSet(generation) != generation) {
             pipelines.forEach { pipeline ->
                 looper.start(
@@ -183,7 +183,7 @@ internal class DefaultTimeseriesCollector(
 
     // @Suppress("unused") required here to avoid creating wrapping lambdas at the call sites above
     @AnyThread
-    private fun flushPipelines(@Suppress("unused") generation: Int, rumContext: RumContext) {
+    private fun flushPipelines(@Suppress("UnusedParameter", "unused") generation: Int, rumContext: RumContext) {
         pipelines.forEach { pipeline -> pipeline.flush(rumContext) }
     }
 

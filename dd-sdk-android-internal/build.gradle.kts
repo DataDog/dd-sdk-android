@@ -52,7 +52,7 @@ android {
 }
 
 dependencies {
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.androidXAnnotation)
 
     // Generate NoOp implementations
@@ -65,7 +65,7 @@ dependencies {
             )
         }
     }
-    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.kotlinRuntime)
     testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.bundles.testTools)
     testFixturesImplementation(project(":tools:unit")) {

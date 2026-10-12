@@ -244,7 +244,7 @@ internal class ViewEventDiffTest {
         // Then — only the newly appended frame is returned
         assertThat(result.view.slowFrames).hasSize(1)
         assertThat(result.view.slowFrames!!.first().start).isEqualTo(newFrame.start)
-        assertThat(result.view.slowFrames!!.first().duration).isEqualTo(newFrame.duration)
+        assertThat(result.view.slowFrames.first().duration).isEqualTo(newFrame.duration)
     }
 
     @Test
@@ -269,7 +269,7 @@ internal class ViewEventDiffTest {
         // Then — only the new frame (start > last known start) must be returned
         assertThat(result.view.slowFrames).hasSize(1)
         assertThat(result.view.slowFrames!!.first().start).isEqualTo(newFrame.start)
-        assertThat(result.view.slowFrames!!.first().duration).isEqualTo(newFrame.duration)
+        assertThat(result.view.slowFrames.first().duration).isEqualTo(newFrame.duration)
     }
 
     @Test

@@ -1045,7 +1045,7 @@ internal class DatadogRumMonitor(
      * Wait for any pending events. This is mostly for integration tests to ensure that the
      * RUM context is in the correct state before proceeding.
      */
-    @Suppress("unused")
+    @Suppress("UnusedPrivateFunction", "unused")
     private fun waitForPendingEvents() {
         if (!executorService.isShutdown) {
             @Suppress("UnsafeThirdPartyFunctionCall") // 1 cannot be negative
