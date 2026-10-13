@@ -60,7 +60,7 @@ internal class CapturedTextViewMapper(
                 Typeface.SERIF -> "serif"
                 else -> "roboto, sans-serif"
             },
-            textSize = view.textSize.toLong(),
+            textSizePx = view.textSize.toLong(),
             textColor = if (view.text.isNullOrEmpty()) {
                 if (view.hintTextColors != null) view.currentHintTextColor else view.currentTextColor
             } else {
@@ -73,10 +73,10 @@ internal class CapturedTextViewMapper(
                 TextUtils.TruncateAt.MARQUEE -> CapturedTruncationMode.CLIP
                 null -> null
             },
-            paddingTop = if (layout != null) view.totalPaddingTop else view.paddingTop,
-            paddingBottom = if (layout != null) view.totalPaddingBottom else view.paddingBottom,
-            paddingLeft = if (layout != null) view.totalPaddingLeft else view.paddingLeft,
-            paddingRight = if (layout != null) view.totalPaddingRight else view.paddingRight,
+            paddingTopPx = if (layout != null) view.totalPaddingTop else view.paddingTop,
+            paddingBottomPx = if (layout != null) view.totalPaddingBottom else view.paddingBottom,
+            paddingLeftPx = if (layout != null) view.totalPaddingLeft else view.paddingLeft,
+            paddingRightPx = if (layout != null) view.totalPaddingRight else view.paddingRight,
             textAlignment = view.textAlignment,
             gravity = view.gravity,
             isParagraphRtl = isParagraphRtl(view),
@@ -86,10 +86,12 @@ internal class CapturedTextViewMapper(
         )
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // First line exists; heuristic range covers a captured string.
     private fun isParagraphRtl(textView: TextView): Boolean {
         val layout = textView.layout
-        if (layout != null && layout.lineCount > 0) return layout.getParagraphDirection(0) < 0
+        if (layout != null && layout.lineCount > 0) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // The first line exists.
+            return layout.getParagraphDirection(0) < 0
+        }
 
         val heuristic = when (textView.textDirection) {
             TextView.TEXT_DIRECTION_LTR -> TextDirectionHeuristicsCompat.LTR
@@ -105,6 +107,7 @@ internal class CapturedTextViewMapper(
             }
         }
         val text = resolveLayoutText(textView)
+        @Suppress("UnsafeThirdPartyFunctionCall") // Range covers the captured string.
         return heuristic.isRtl(text, 0, text.length)
     }
 }
@@ -114,13 +117,13 @@ private data class CapturedTextViewData(
     val text: String,
     val background: CapturedBackgroundColor?,
     val family: String,
-    val textSize: Long,
+    val textSizePx: Long,
     val textColor: Int,
     val truncationMode: CapturedTruncationMode?,
-    val paddingTop: Int,
-    val paddingBottom: Int,
-    val paddingLeft: Int,
-    val paddingRight: Int,
+    val paddingTopPx: Int,
+    val paddingBottomPx: Int,
+    val paddingLeftPx: Int,
+    val paddingRightPx: Int,
     val textAlignment: Int,
     val gravity: Int,
     val isParagraphRtl: Boolean,
@@ -147,16 +150,16 @@ private data class CapturedTextViewData(
             text = text,
             textStyle = CapturedTextStyle(
                 family = family,
-                size = textSize.densityNormalized(density),
+                size = textSizePx.densityNormalized(density),
                 color = colorStringFormatter.formatColorAsHexString(textColor),
                 truncationMode = truncationMode
             ),
             textPosition = CapturedTextPosition(
                 padding = CapturedPadding(
-                    top = paddingTop.densityNormalized(density).toLong(),
-                    bottom = paddingBottom.densityNormalized(density).toLong(),
-                    left = paddingLeft.densityNormalized(density).toLong(),
-                    right = paddingRight.densityNormalized(density).toLong()
+                    top = paddingTopPx.densityNormalized(density).toLong(),
+                    bottom = paddingBottomPx.densityNormalized(density).toLong(),
+                    left = paddingLeftPx.densityNormalized(density).toLong(),
+                    right = paddingRightPx.densityNormalized(density).toLong()
                 ),
                 alignment = resolveAlignment()
             )

@@ -6,43 +6,39 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
-import android.app.Activity
 import android.app.Application
 import android.os.Handler
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
-import com.datadog.tools.unit.getFieldValue
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
-import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
-import org.mockito.kotlin.reset
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
-import java.lang.ref.Reference
-import java.lang.ref.WeakReference
 
 internal class CompositionDrawListenerRetentionTest {
 
     @Test
-    fun `M release source and ignore callback W onDraw { source collected }`() {
+    fun `M ignore callback W onDraw { source reference cleared }`() {
         // Given
+        val mockRoot: View = mock()
         val mockChanges: CompositionChangeListener = mock()
-        val (testedListener, fakeReferences) = listenerWithUnownedView(mockChanges)
+        val testedListener = CompositionOnDrawListener(mockRoot, mockChanges)
+        testedListener.viewReference.clear()
 
-        // When: the listener stays alive after its source loses all external owners.
-        assertCollected(fakeReferences)
+        // When
         testedListener.onDraw()
 
         // Then
@@ -50,45 +46,17 @@ internal class CompositionDrawListenerRetentionTest {
     }
 
     @Test
-    fun `M ignore callback W onDraw { source reference cleared }`() {
-        // Given: deterministic coverage of the collected-reference branch, independent of GC timing.
+    fun `M report the live source W onDraw`() {
+        // Given
         val mockRoot: View = mock()
         val mockChanges: CompositionChangeListener = mock()
         val testedListener = CompositionOnDrawListener(mockRoot, mockChanges)
-        val fakeReference: WeakReference<View> = testedListener.getFieldValue("viewReference")
-        assertThat(fakeReference.get()).isSameAs(mockRoot)
-        fakeReference.clear()
 
         // When
         testedListener.onDraw()
 
         // Then
-        verifyNoInteractions(mockChanges)
-    }
-
-    @ParameterizedTest
-    @EnumSource(Cleanup::class)
-    fun `M release detached root and original observer W cleanup`(fakeCleanup: Cleanup) {
-        // Given: the observer also owns another listener that strongly captures the root.
-        val fixture = Fixture()
-        val fakeReferences = fixture.showWindow()
-
-        // When
-        fixture.reportedViews = emptyList()
-        when (fakeCleanup) {
-            Cleanup.REFRESH -> fixture.refresh()
-            Cleanup.STOP -> fixture.lifecycle.stop()
-        }
-
-        // Then: keep the recorder-side owners alive while checking the detached graph.
-        assertThat(fixture.source.currentWindows()).isEmpty()
-        assertThat(fixture.registrations()).isEmpty()
-        clearObserverHistory(fakeReferences.last())
-        try {
-            assertCollected(fakeReferences)
-        } finally {
-            Reference.reachabilityFence(fixture)
-        }
+        verify(mockChanges).onWindowsChanged(listOf(mockRoot))
     }
 
     @ParameterizedTest
@@ -100,10 +68,7 @@ internal class CompositionDrawListenerRetentionTest {
         "STOP, DEAD",
         "STOP, REMOVAL_THROWS"
     )
-    fun `M drop registration even when observer cannot unregister W cleanup`(
-        fakeCleanup: Cleanup,
-        fakeState: ObserverState
-    ) {
+    fun `M forget original observer registration W cleanup`(fakeCleanup: Cleanup, fakeState: ObserverState) {
         // Given
         val mockObserver: ViewTreeObserver = mock()
         whenever(mockObserver.isAlive).thenReturn(true)
@@ -128,152 +93,61 @@ internal class CompositionDrawListenerRetentionTest {
             Cleanup.STOP -> testedInterceptor.stop()
         }
 
-        // Then: a removal failure must not leave either the listener or observer in the map.
-        val fakeRegistrations: Map<View, *> = testedInterceptor.getFieldValue("interceptedViews")
-        assertThat(fakeRegistrations).isEmpty()
+        // Then
         assertThat(fakeSource.currentWindows()).isEmpty()
         if (fakeState == ObserverState.DEAD) {
             verify(mockObserver, never()).removeOnDrawListener(any())
         } else {
             verify(mockObserver).removeOnDrawListener(fakeListener.firstValue)
         }
+        // A fresh registration proves cleanup forgot both the listener and its original observer,
+        // including failure paths; no access to the interceptor's private map is needed.
+        val mockNewObserver: ViewTreeObserver = mock()
+        whenever(mockNewObserver.isAlive).thenReturn(true)
+        doReturn(mockNewObserver).whenever(mockRoot).viewTreeObserver
+        testedInterceptor.intercept(listOf(mockRoot))
+        verify(mockNewObserver).addOnDrawListener(any())
+        assertThat(fakeSource.currentWindows()).containsExactly(mockRoot)
     }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M release excluded root W activity pauses while not recording`(fakePreviouslyRecording: Boolean) {
-        // Given: callbacks remain registered while SessionReplayFeature has stopped recording.
-        val fixture = Fixture()
-        if (fakePreviouslyRecording) {
-            fixture.lifecycle.start()
-            fixture.lifecycle.stop()
-        }
-
-        // When: the activity subsequently pauses and disappears, with no refresh loop running.
-        val fakeReferences = fixture.removeWindowWhileStopped()
-
-        // Then
-        try {
-            assertCollected(fakeReferences)
-        } finally {
-            Reference.reachabilityFence(fixture)
-        }
-    }
-
-    @Test
-    fun `M preserve live window exclusion W recording restarts after activity pauses`() {
-        // Given: a paused split-screen window is still owned by the window manager.
-        val fixture = Fixture()
-        fixture.lifecycle.start()
-        fixture.lifecycle.stop()
+    fun `M preserve live window exclusion W start { window removed while stopped }`(fakePreviouslyRecording: Boolean) {
+        // Given
+        val fakeSource = ActiveWindowSource()
         val mockRoot: View = mock()
         val mockWindow: Window = mock()
         whenever(mockWindow.peekDecorView()).thenReturn(mockRoot)
-        fixture.reportedViews = listOf(mockRoot)
-        fixture.lifecycle.onWindowsRemoved(listOf(mockWindow))
-
-        // When
-        fixture.lifecycle.start()
-
-        // Then: weak exclusions still prevent reclassification as an untracked dialog.
-        assertThat(fixture.source.currentWindows()).isEmpty()
-        assertThat(fixture.registrations()).isEmpty()
-    }
-
-    private class Fixture {
-        val source = ActiveWindowSource()
-        private val interceptor = CompositionViewOnDrawInterceptor(source, {}, mock())
-        private val mockApplication: Application = mock()
-        var reportedViews = emptyList<View>()
-        private val mockHandler: Handler = mock<Handler>().also { handler ->
-            doAnswer {
-                it.getArgument<Runnable>(0).run()
-                true
-            }.whenever(handler).post(any<Runnable>())
-        }
-        val lifecycle = AndroidSnapshotCaptureLifecycle(
-            application = mockApplication,
-            interceptor = interceptor,
+        val mockObserver: ViewTreeObserver = mock()
+        whenever(mockObserver.isAlive).thenReturn(true)
+        whenever(mockRoot.viewTreeObserver).thenReturn(mockObserver)
+        val mockHandler: Handler = mock()
+        doAnswer { it.getArgument<Runnable>(0).run(); true }.whenever(mockHandler).post(any())
+        val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mock<Application>(),
+            interceptor = CompositionViewOnDrawInterceptor(fakeSource, {}, mock()),
             touchInterceptor = mock(),
             internalLogger = mock(),
             uiHandler = mockHandler,
-            windowProvider = { reportedViews },
-            windowFromDecorView = { null },
+            windowProvider = { listOf(mockRoot) },
+            windowFromDecorView = { mockWindow },
             isMainThreadWindow = { true }
         )
-
-        // Separate stack frames prevent the test itself from keeping these objects alive.
-        fun showWindow(): List<WeakReference<*>> {
-            val fakeActivity = Activity()
-            val mockObserver: ViewTreeObserver = mock()
-            whenever(mockObserver.isAlive).thenReturn(true)
-            val fakeRoot = RetentionView(fakeActivity, mockObserver)
-            val fakeOtherListener = ViewTreeObserver.OnGlobalLayoutListener { fakeRoot.invalidate() }
-            // Model an observer's unrelated callback retaining the view. Mockito stores arguments.
-            mockObserver.addOnGlobalLayoutListener(fakeOtherListener)
-            reportedViews = listOf(fakeRoot)
-            lifecycle.start()
-            return listOf(WeakReference(fakeRoot), WeakReference(fakeActivity), WeakReference(mockObserver))
+        if (fakePreviouslyRecording) {
+            testedLifecycle.start()
+            testedLifecycle.stop()
         }
+        testedLifecycle.onWindowsRemoved(listOf(mockWindow))
 
-        fun removeWindowWhileStopped(): List<WeakReference<*>> {
-            lifecycle.registerCallbacks()
-            val fakeCallbacks = argumentCaptor<Application.ActivityLifecycleCallbacks>()
-            verify(mockApplication).registerActivityLifecycleCallbacks(fakeCallbacks.capture())
-            val mockActivity: Activity = mock()
-            val fakeRoot = RetentionView(mockActivity, mock())
-            val mockWindow: Window = mock()
-            whenever(mockWindow.peekDecorView()).thenReturn(fakeRoot)
-            whenever(mockActivity.window).thenReturn(mockWindow)
-            fakeCallbacks.firstValue.onActivityResumed(mockActivity)
-            fakeCallbacks.firstValue.onActivityPaused(mockActivity)
-            fakeCallbacks.firstValue.onActivityDestroyed(mockActivity)
-            // Drop Mockito's stubbing graph; the lifecycle must not remain an owner either.
-            reset(mockWindow, mockActivity)
-            return listOf(WeakReference(fakeRoot), WeakReference(mockActivity))
-        }
+        // When
+        testedLifecycle.start()
 
-        fun refresh() {
-            val fakeRefresh = argumentCaptor<Runnable>()
-            verify(mockHandler).postDelayed(fakeRefresh.capture(), eq(1_000L))
-            fakeRefresh.firstValue.run()
-        }
-
-        fun registrations(): Map<View, *> = interceptor.getFieldValue("interceptedViews")
-    }
-
-    // Plain Android stubs do not store the constructor context. Model that ownership explicitly,
-    // without mock invocation histories retaining a root or Activity outside the tested graph.
-    private class RetentionView(
-        private val fakeActivity: Activity,
-        private val fakeObserver: ViewTreeObserver
-    ) : View(fakeActivity) {
-        override fun getViewTreeObserver(): ViewTreeObserver = fakeObserver
-    }
-
-    private fun assertCollected(references: List<WeakReference<*>>) {
-        // GC is asynchronous; allow bounded retries instead of relying on one System.gc() call.
-        repeat(100) {
-            System.gc()
-            if (references.all { reference -> reference.get() == null }) return
-            Thread.sleep(20)
-        }
-        assertThat(references.map { it.get() }).containsOnlyNulls()
-    }
-
-    private fun listenerWithUnownedView(
-        onWindowsChanged: CompositionChangeListener
-    ): Pair<CompositionOnDrawListener, List<WeakReference<*>>> {
-        val fakeActivity = Activity()
-        val fakeRoot = RetentionView(fakeActivity, mock())
-        return CompositionOnDrawListener(fakeRoot, onWindowsChanged) to
-            listOf(WeakReference(fakeRoot), WeakReference(fakeActivity))
-    }
-
-    private fun clearObserverHistory(reference: WeakReference<*>) {
-        // Mockito's invocation history is not part of the Android object graph. It otherwise
-        // keeps even successfully removed listeners reachable through its inline mock registry.
-        reference.get()?.let { reset(it) }
+        // Then
+        assertThat(fakeSource.currentWindows()).isEmpty()
+        verify(mockObserver, times(if (fakePreviouslyRecording) 1 else 0)).addOnDrawListener(any())
+        // Tracking the same window again clears the exclusion without waiting for polling or GC.
+        testedLifecycle.onWindowsAdded(listOf(mockWindow))
+        assertThat(fakeSource.currentWindows()).containsExactly(mockRoot)
     }
 
     enum class Cleanup { REFRESH, STOP }

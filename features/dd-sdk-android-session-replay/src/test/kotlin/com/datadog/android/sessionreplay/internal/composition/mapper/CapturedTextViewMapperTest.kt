@@ -109,7 +109,9 @@ internal class CapturedTextViewMapperTest {
     }
 
     @Test
-    fun `M build exclusively from copied text and style W live view changes after capture`() {
+    fun `M build exclusively from copied text and style W live view changes after capture`(
+        @Forgery fakeContext: CapturedMappingContext
+    ) {
         // Given
         val mockTextView: TextView = mock()
         val fakeText = StringBuilder("original")
@@ -121,26 +123,24 @@ internal class CapturedTextViewMapperTest {
             .thenReturn(GlobalBounds(0, 0, 100, 100))
         whenever(mockColorStringFormatter.formatColorAsHexString(0x112233))
             .thenReturn("#112233FF")
-        val fakeFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope("view"))
-        val fakeMappingContext = CapturedMappingContext(fakeFactory, fakeFactory.window("window"), 1f)
+        val fakeMappingContext = fakeContext.copy(screenDensity = 1f, bounds = null)
         val copied = testedMapper.capture(mockTextView, fakeMappingContext)
         fakeText.replace(0, fakeText.length, "changed")
         whenever(mockTextView.currentTextColor).thenReturn(0xFFFFFF)
         whenever(mockTextView.paddingLeft).thenReturn(40)
         clearInvocations(mockTextView, mockViewBoundsResolver)
-        val fakeResult = java.util.concurrent.atomic.AtomicReference<CapturedViewMapperResult>()
 
         // When
-        Thread { fakeResult.set(copied.map(fakeMappingContext)) }.apply { start(); join() }
+        val result = copied.map(fakeMappingContext) as CapturedViewMapperResult.Wireframes
 
         // Then
         verifyNoInteractions(mockTextView, mockViewBoundsResolver)
-        val text = (fakeResult.get() as CapturedViewMapperResult.Wireframes).wireframes
+        val text = result.wireframes
             .filterIsInstance<CapturedWireframe.Text>().single()
         assertThat(text.text).isEqualTo("original")
         assertThat(text.textStyle.color).isEqualTo("#112233FF")
         assertThat(text.textStyle.size).isEqualTo(20L)
-        assertThat(text.textPosition!!.padding!!.left).isEqualTo(4L)
+        assertThat(checkNotNull(checkNotNull(text.textPosition).padding).left).isEqualTo(4L)
     }
 
     @Test

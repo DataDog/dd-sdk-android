@@ -16,6 +16,8 @@ import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -475,8 +477,8 @@ internal class CompositionWindowThreadTest {
                 -1,
                 CapturedBounds(0, 0, 100, 100),
                 1.0,
-                com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData.Mapped(
-                    com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult.None
+                CapturedViewData.Mapped(
+                    CapturedViewMapperResult.None
                 ),
                 true,
                 null,

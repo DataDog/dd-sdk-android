@@ -451,9 +451,9 @@ internal class CompositionClippingTest {
             whenever(view.clipBounds).thenReturn(fakeClip)
         }
 
-        @Suppress("DEPRECATION")
         fun makeOpaque(view: View) {
             val stubBackground: ColorDrawable = mock()
+            @Suppress("DEPRECATION") // Stub the same opacity check as the production occluder.
             whenever(stubBackground.opacity).thenReturn(PixelFormat.OPAQUE)
             whenever(view.background).thenReturn(stubBackground)
             whenever(view.alpha).thenReturn(1f)

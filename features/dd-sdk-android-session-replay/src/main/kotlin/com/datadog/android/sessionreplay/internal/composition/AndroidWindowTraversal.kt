@@ -42,7 +42,7 @@ internal sealed interface WindowCopyResult {
 
 /**
  * Copies one native window in a single UI-thread turn. Only this phase reads live Views; clipping,
- * text styling and wireframe/layer construction operate on the copy on the processing executor.
+ * text styling and wireframe/layer construction operate on the copy on the construction executor.
  * The iterative walk avoids call-stack limits without yielding between inconsistent UI states.
  */
 internal class AndroidWindowTraversal(
@@ -59,7 +59,7 @@ internal class AndroidWindowTraversal(
     private val occlusionDetector = ViewOcclusionDetector(drawableToColorMapper, viewUtilsInternal, internalLogger)
 
     @UiThread
-    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // UI-owned deque/map; pops are guarded by isNotEmpty.
+    @Suppress("ReturnCount") // Expiry discards all work.
     fun traverseWindow(
         windowRoot: View,
         windowIdentity: CapturedIdentity,
@@ -67,15 +67,19 @@ internal class AndroidWindowTraversal(
         context: CaptureGenerationContext
     ): WindowCopyResult {
         val state = CopyState(windowRoot.resources.displayMetrics.density, windowIdentity, identityFactory)
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // Empty UI-owned deque.
         val stack = ArrayDeque<WorkItem>()
+        @Suppress("UnsafeThirdPartyFunctionCall") // Unbounded UI-owned deque.
         stack.addLast(WorkItem(windowRoot, -1, clipToBounds = true))
-        while (stack.isNotEmpty()) {
+        while (stack.size > 0) {
             if (!context.shouldContinue()) return WindowCopyResult.Aborted
+            @Suppress("UnsafeThirdPartyFunctionCall") // Non-empty check above; synchronous ownership.
             val item = stack.removeLast()
             if (!tryVisit(item, state)) continue
             // Separate surfaces remain uncertain even inside a subtree omitted by sibling culling.
             state.isDrawingOrderReliable = state.isDrawingOrderReliable && item.view.sharesNativePaintOrder()
-            collectTouchOverrideArea(item.view, state.touchOverrideAreas)
+            collectTouchOverrideArea(item.view, state.touchOverrideAreas, internalLogger)
             if (item.touchOnly) {
                 (item.view as? ViewGroup)?.let { pushTouchChildren(it, stack) }
             } else {
@@ -95,12 +99,16 @@ internal class AndroidWindowTraversal(
     }
 
     @UiThread
-    @Suppress("UnsafeThirdPartyFunctionCall") // The identity map is owned by this synchronous walk.
     private fun tryVisit(item: WorkItem, state: CopyState): Boolean {
         val view = item.view
-        return !viewUtilsInternal.isNotVisible(view) && !viewUtilsInternal.isSystemNoise(view) &&
-            !viewUtilsInternal.isOnSecondaryDisplay(view) && view.parent === item.expectedParent &&
-            state.visited.put(view, true) == null
+        val isFiltered = viewUtilsInternal.isNotVisible(view) || viewUtilsInternal.isSystemNoise(view)
+        if (isFiltered || viewUtilsInternal.isOnSecondaryDisplay(view) ||
+            view.parent !== item.expectedParent
+        ) {
+            return false
+        }
+        @Suppress("UnsafeThirdPartyFunctionCall") // UI-owned IdentityHashMap accepts this non-null key/value.
+        return state.visited.put(view, true) == null
     }
 
     @UiThread
@@ -126,9 +134,9 @@ internal class AndroidWindowTraversal(
             !hidden && view.javaClass.name == COMPOSE_VIEW_CLASS_NAME
         }?.map(view, mappingContext)
         if (!context.shouldContinue()) return
-        val mapping = interop?.let { CapturedViewData.Mapped(it) }
+        val viewData = interop?.let { CapturedViewData.Mapped(it) }
             ?: (if (hidden) hiddenViewMapper else mapperRegistry.resolve(view)).capture(view, mappingContext)
-        val children = if (!hidden && interop == null && !mapping.isTerminal) view as? ViewGroup else null
+        val children = if (!hidden && interop == null && !viewData.isTerminal) view as? ViewGroup else null
         val pixelPaddingClip = children?.let { pixels?.paddingClip(it) }
         val paddingClip = resolvePaddingClip(children, pixelPaddingClip, state.density)
         val pixelClip = pixels?.explicitClip(view)
@@ -140,7 +148,7 @@ internal class AndroidWindowTraversal(
             item.parentIndex,
             bounds,
             view.alpha.toDouble(),
-            mapping,
+            viewData,
             item.clipToBounds,
             clip,
             paddingClip,
@@ -151,20 +159,18 @@ internal class AndroidWindowTraversal(
         )
         if (children != null) {
             pushChildren(children, index, geometryIsReliable, stack, state)
-        } else if (hidden && view is ViewGroup) {
-            pushTouchChildren(view, stack)
+        } else {
+            pushHiddenTouchChildren(view, hidden, stack)
         }
     }
 
     @UiThread
-    @Suppress("UnsafeThirdPartyFunctionCall") // The capture-owned coordinate array always has two entries.
-    private fun resolvePixelBounds(view: View, location: IntArray): GlobalBounds? =
-        if (viewBoundsResolver === DefaultViewBoundsResolver) {
-            view.getLocationOnScreen(location)
-            GlobalBounds(location[0].toLong(), location[1].toLong(), view.width.toLong(), view.height.toLong())
-        } else {
-            null
-        }
+    private fun resolvePixelBounds(view: View, location: IntArray): GlobalBounds? {
+        if (viewBoundsResolver !== DefaultViewBoundsResolver) return null
+        @Suppress("UnsafeThirdPartyFunctionCall") // Capture-owned coordinate array always has two entries.
+        view.getLocationOnScreen(location)
+        return GlobalBounds(location[0].toLong(), location[1].toLong(), view.width.toLong(), view.height.toLong())
+    }
 
     @UiThread
     private fun resolvePaddingClip(
@@ -189,7 +195,6 @@ internal class AndroidWindowTraversal(
     ): CapturedBounds? = if (pixels != null) clip?.toNormalizedClip(density) else view.clipBoundsOnScreen(density)
 
     @UiThread
-    @Suppress("UnsafeThirdPartyFunctionCall") // addLast cannot fail for this unbounded, UI-owned deque.
     private fun pushChildren(
         viewGroup: ViewGroup,
         parentIndex: Int,
@@ -202,6 +207,7 @@ internal class AndroidWindowTraversal(
         val clipChildren = viewGroup.clipChildren
         val occluded = if (clipChildren) occlusionDetector.occludedChildIndices(drawingOrder) else emptySet()
         for (i in drawingOrder.children.indices.reversed()) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // Unbounded UI-owned deque.
             stack.addLast(
                 WorkItem(drawingOrder.children[i], parentIndex, clipChildren, i in occluded, geometryIsReliable)
             )
@@ -210,18 +216,19 @@ internal class AndroidWindowTraversal(
 
     // Occlusion affects drawing, not touch delivery: keep collecting tags throughout covered subtrees.
     @UiThread
-    @Suppress("UnsafeThirdPartyFunctionCall") // addLast cannot fail for this unbounded, UI-owned deque.
     private fun pushTouchChildren(viewGroup: ViewGroup, stack: ArrayDeque<WorkItem>) {
         if (viewGroup is WebView) return
         val children = drawingOrderResolver.resolve(viewGroup).children
-        for (i in children.indices.reversed()) stack.addLast(WorkItem(children[i], -1, false, touchOnly = true))
+        for (i in children.indices.reversed()) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // Unbounded UI-owned deque.
+            stack.addLast(WorkItem(children[i], -1, false, touchOnly = true))
+        }
     }
 
-    // MotionEvents report raw screen pixels, so the override area must come from the view's actual
-    // on-screen geometry rather than the density-scaled CapturedBounds used for wireframes.
+    /** Visual hiding still allows descendant touch overrides; WebView internals remain opaque. */
     @UiThread
-    private fun collectTouchOverrideArea(view: View, touchOverrideAreas: MutableMap<Rect, TouchPrivacy>) {
-        collectTouchOverrideArea(view, touchOverrideAreas, internalLogger)
+    private fun pushHiddenTouchChildren(view: View, hidden: Boolean, stack: ArrayDeque<WorkItem>) {
+        if (hidden && view is ViewGroup) pushTouchChildren(view, stack)
     }
 
     private class CopyState(

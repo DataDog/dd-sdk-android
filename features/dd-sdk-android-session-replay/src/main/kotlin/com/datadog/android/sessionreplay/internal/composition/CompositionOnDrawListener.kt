@@ -18,13 +18,12 @@ internal class CompositionOnDrawListener(
 ) : ViewTreeObserver.OnDrawListener {
     // The interceptor owns this listener as a map value; retaining its weak key here would
     // keep the decor view (and its Activity) alive until explicit lifecycle cleanup.
-    private val viewReference = WeakReference(view)
+    internal val viewReference = WeakReference(view)
 
-    // listOf receives the non-null result of dereferencing the source view.
-    @Suppress("UnsafeThirdPartyFunctionCall")
     @MainThread
     override fun onDraw() {
         val view = viewReference.get() ?: return
+        @Suppress("UnsafeThirdPartyFunctionCall") // Non-null source dereferenced above.
         onWindowsChanged.onWindowsChanged(listOf(view))
     }
 }
