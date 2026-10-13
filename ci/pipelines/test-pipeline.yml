@@ -38,10 +38,18 @@ test:debug:
     - .cpu-memory-intensive-job
   variables:
     DD_COMMON_AGENT_CONFIG: "dd.env=ci,dd.trace.enabled=true,dd.jmx.fetch.enabled=false,dd.civisibility.compiler.plugin.auto.configuration.enabled=false"
+    GRADLE_CACHE_CLEANUP: "true"
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: verify
   timeout: 1h
+  cache:
+    key: test-debug-$CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/wrapper/
+      - cache/notifications/
+    policy: pull-push
   script:
     - !reference [.snippets, setup-gradle]
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
