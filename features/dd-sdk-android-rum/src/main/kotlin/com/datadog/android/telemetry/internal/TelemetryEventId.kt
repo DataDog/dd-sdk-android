@@ -30,7 +30,9 @@ internal fun InternalTelemetryEvent.type(): TelemetryType {
         is InternalTelemetryEvent.Configuration -> TelemetryType.CONFIGURATION
         is InternalTelemetryEvent.Metric -> TelemetryType.METRIC
         is InternalTelemetryEvent.ApiUsage -> TelemetryType.API_USAGE
-        is InternalTelemetryEvent.InterceptorInstantiated -> TelemetryType.INTERCEPTOR_SETUP
+        is InternalTelemetryEvent.InterceptorInstantiated,
+        is InternalTelemetryEvent.NetworkInstrumentationConfigured -> TelemetryType.INTERCEPTOR_SETUP
         is InternalTelemetryEvent.ResourceHeadersTrackingConfigured -> TelemetryType.RESOURCE_HEADERS_SETUP
+        is InternalTelemetryEvent.FirstPartyHostsConfigured -> TelemetryType.FIRST_PARTY_HOSTS_SETUP
     }
 }

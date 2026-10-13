@@ -45,6 +45,7 @@ import com.datadog.android.trace.internal.net.effectiveSampleRate
 import com.datadog.android.trace.internal.net.finishRumAware
 import com.datadog.android.trace.internal.net.isDropped
 import com.datadog.android.trace.internal.net.isDroppedPriority
+import com.datadog.android.trace.internal.reportFirstPartyHostsConfiguration
 import com.datadog.android.trace.internal.toSdkInjection
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -96,7 +97,8 @@ internal constructor(
     internal val redacted404ResourceName: Boolean,
     internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer,
     private val globalTracerProvider: () -> DatadogTracer?,
-    internal val defaultTracerCheck: (DatadogTracer) -> Boolean = _TraceInternalProxy::isDefaultTracer
+    internal val defaultTracerCheck: (DatadogTracer) -> Boolean = _TraceInternalProxy::isDefaultTracer,
+    private val onSdkInstanceCaptured: (SdkCore) -> Unit = {}
 ) : Interceptor {
 
     private val rcApplied = AtomicBoolean(false)
@@ -110,6 +112,9 @@ internal constructor(
     @Volatile internal var localFirstPartyHostHeaderTypeResolver = DefaultFirstPartyHostHeaderTypeResolver(
         tracedHosts.filterKeys { sanitizedHosts.contains(it) }
     )
+
+    // Configuration telemetry describes client-provided hosts, before remote overrides.
+    private val hasConfiguredFirstPartyHosts = !localFirstPartyHostHeaderTypeResolver.isEmpty()
 
     internal val sdkCoreReference = SdkReference(sdkInstanceName) {
         onSdkInstanceReady(it as InternalSdkCore)
@@ -219,7 +224,7 @@ internal constructor(
 
     // region Internal
 
-    internal open fun onSdkInstanceReady(sdkCore: InternalSdkCore) {
+    internal fun onSdkInstanceReady(sdkCore: InternalSdkCore) {
         if (rcApplied.compareAndSet(false, true)) {
             sdkCore.remoteConfiguration?.trace?.let { trace ->
                 trace.sampleRate?.toFloat()?.let { traceSampler = applyRcSampleRate(traceSampler, it) }
@@ -228,16 +233,11 @@ internal constructor(
             }
         }
         updateTracingFeatureContext(sdkCore)
-        if (localFirstPartyHostHeaderTypeResolver.isEmpty() &&
-            sdkCore.firstPartyHostResolver.isEmpty()
-        ) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { WARNING_TRACING_NO_HOSTS },
-                onlyOnce = true
-            )
-        }
+        sdkCore.reportFirstPartyHostsConfiguration(
+            hasFirstPartyHosts = hasConfiguredFirstPartyHosts,
+            hasEffectiveLocalHosts = !localFirstPartyHostHeaderTypeResolver.isEmpty()
+        ) { WARNING_TRACING_NO_HOSTS }
+        onSdkInstanceCaptured(sdkCore)
     }
 
     private fun updateTracingFeatureContext(sdkCore: FeatureSdkCore) {

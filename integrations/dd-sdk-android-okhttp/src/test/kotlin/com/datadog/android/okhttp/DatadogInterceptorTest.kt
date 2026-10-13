@@ -60,6 +60,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -135,7 +136,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `M notify monitor once W intercept()`(
+    fun `M report network tracking once W intercept()`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
@@ -146,11 +147,14 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         testedInterceptor.intercept(mockChain)
 
         // Then
-        verify(rumMonitor.mockInstance).notifyInterceptorInstantiated()
+        argumentCaptor<InternalTelemetryEvent.NetworkInstrumentationConfigured> {
+            verify(rumMonitor.mockNetworkConfiguration).update(capture())
+            assertThat(firstValue.resourceHeadersTracking).isNull()
+        }
     }
 
     @Test
-    fun `M report LEGACY_OKHTTP library type W onSdkInstanceReady()`() {
+    fun `M report LEGACY_OKHTTP library type W constructor()`() {
         // Then
         verify(rumMonitor.mockInstance).reportNetworkingLibraryType(
             InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP
@@ -158,41 +162,78 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `M call notifyResourceHeadersTrackingConfigured W onSdkInstanceReady() { extractor uses defaults }`() {
+    fun `M report resource header configuration W constructor() { extractor uses defaults }`() {
         // Given
+        clearInvocations(rumMonitor.mockNetworkConfiguration)
         resourceHeadersExtractor = ResourceHeadersExtractor.Builder().build()
-        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
-
         // When
-        (testedInterceptor as DatadogInterceptor).onSdkInstanceReady(rumMonitor.mockSdkCore)
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
+        testedInterceptor.sdkCoreReference.get()
+        testedInterceptor.sdkCoreReference.get()
 
         // Then
-        verify(rumMonitor.mockInstance).notifyResourceHeadersTrackingConfigured(
-            InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.DEFAULT_HEADERS
-        )
+        argumentCaptor<InternalTelemetryEvent.NetworkInstrumentationConfigured> {
+            verify(rumMonitor.mockNetworkConfiguration).update(capture())
+            assertThat(
+                firstValue.resourceHeadersTracking
+            ).isEqualTo(InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.DEFAULT_HEADERS)
+        }
     }
 
     @Test
-    fun `M call notifyResourceHeadersTrackingConfigured W onSdkInstanceReady() { extractor uses custom }`() {
+    fun `M report resource header configuration W constructor() { extractor uses custom }`() {
         // Given
+        clearInvocations(rumMonitor.mockNetworkConfiguration)
         resourceHeadersExtractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
             .captureHeaders("x-request-id")
             .build()
+        // When
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
 
-        // When
-        (testedInterceptor as DatadogInterceptor).onSdkInstanceReady(rumMonitor.mockSdkCore)
-
         // Then
-        verify(rumMonitor.mockInstance).notifyResourceHeadersTrackingConfigured(
-            InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.CUSTOM
-        )
+        argumentCaptor<InternalTelemetryEvent.NetworkInstrumentationConfigured> {
+            verify(rumMonitor.mockNetworkConfiguration).update(capture())
+            assertThat(
+                firstValue.resourceHeadersTracking
+            ).isEqualTo(InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.CUSTOM)
+        }
     }
 
     @Test
-    fun `M not call notifyResourceHeadersTrackingConfigured W onSdkInstanceReady() { no extractor }`() {
+    fun `M report resource headers once W SDK resolved {SDK initialized after construction}`(forge: Forge) {
+        // Given
+        clearInvocations(rumMonitor.mockNetworkConfiguration)
+        datadogCore.clearRegistry()
+        resourceHeadersExtractor = ResourceHeadersExtractor.Builder().build()
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
+        verify(
+            rumMonitor.mockNetworkConfiguration,
+            never()
+        ).update(any<InternalTelemetryEvent.NetworkInstrumentationConfigured>())
+        datadogCore.setUp(forge)
+        rumMonitor.setUp(forge)
+        whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver
+
+        // When
+        testedInterceptor.sdkCoreReference.get()
+        testedInterceptor.sdkCoreReference.get()
+
         // Then
-        verify(rumMonitor.mockInstance, never()).notifyResourceHeadersTrackingConfigured(any())
+        argumentCaptor<InternalTelemetryEvent.NetworkInstrumentationConfigured> {
+            verify(rumMonitor.mockNetworkConfiguration).update(capture())
+            assertThat(
+                firstValue.resourceHeadersTracking
+            ).isEqualTo(InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.DEFAULT_HEADERS)
+        }
+    }
+
+    @Test
+    fun `M omit resource header configuration W constructor() { no extractor }`() {
+        // Then
+        argumentCaptor<InternalTelemetryEvent.NetworkInstrumentationConfigured> {
+            verify(rumMonitor.mockNetworkConfiguration).update(capture())
+            assertThat(firstValue.resourceHeadersTracking).isNull()
+        }
     }
 
     @Test

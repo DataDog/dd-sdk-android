@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.network.HttpSpec
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.internal.trace.toTelemetryTracingHeaderType
@@ -67,12 +68,15 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -1645,6 +1649,30 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
+    fun `M report local first party hosts W constructor()`() {
+        // Given
+        clearInvocations(rumMonitor.mockNetworkConfiguration)
+
+        // When
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
+
+        // Then
+        verify(rumMonitor.mockNetworkConfiguration).update(InternalTelemetryEvent.FirstPartyHostsConfigured)
+    }
+
+    @Test
+    fun `M not report local first party hosts W constructor() {empty hosts}`() {
+        // Given
+        clearInvocations(rumMonitor.mockNetworkConfiguration)
+
+        // When
+        testedInterceptor = instantiateTestedInterceptor(emptyMap()) { _, _ -> mockLocalTracer }
+
+        // Then
+        verify(rumMonitor.mockNetworkConfiguration, never()).update(InternalTelemetryEvent.FirstPartyHostsConfigured)
+    }
+
+    @Test
     fun `M add trace sample rate and header types to tracing feature context W constructor called`(
         @FloatForgery(min = 0f, max = 100f) sampleRate: Float
     ) {
@@ -1891,6 +1919,45 @@ internal open class TracingInterceptorTest {
     // endregion
 
     // region Remote Configuration
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M report client hosts W SDK acquired {remote config reverses host configuration}`(
+        hasConfiguredHosts: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val fakeRcHosts = if (hasConfiguredHosts) {
+            emptyList()
+        } else {
+            listOf(
+                RemoteConfiguration.TracedHost(
+                    host = forge.aStringMatching("[a-z]+\\.[a-z]{2,3}"),
+                    propagatorTypes = listOf(RemoteConfiguration.PropagatorType.DATADOG)
+                )
+            )
+        }
+        whenever(rumMonitor.mockSdkCore.remoteConfiguration) doReturn RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(tracedHosts = fakeRcHosts)
+        )
+        clearInvocations(rumMonitor.mockNetworkConfiguration)
+
+        // When
+        testedInterceptor =
+            instantiateTestedInterceptor(if (hasConfiguredHosts) fakeLocalHosts else emptyMap()) { _, _ ->
+                mockLocalTracer
+            }
+
+        // Then
+        if (hasConfiguredHosts) {
+            verify(rumMonitor.mockNetworkConfiguration).update(InternalTelemetryEvent.FirstPartyHostsConfigured)
+        } else {
+            verify(
+                rumMonitor.mockNetworkConfiguration,
+                never()
+            ).update(InternalTelemetryEvent.FirstPartyHostsConfigured)
+        }
+    }
 
     @Test
     fun `M override traceSampler W onSdkInstanceReady { RC provides sampleRate }`(

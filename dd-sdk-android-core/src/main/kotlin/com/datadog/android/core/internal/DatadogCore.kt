@@ -49,6 +49,7 @@ import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.NetworkInstrumentationConfiguration
 import com.datadog.android.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.privacy.TrackingConsent
@@ -86,6 +87,8 @@ internal class DatadogCore(
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     private val remoteConfigServiceFactory: RemoteConfigService.Factory = DEFAULT_REMOTE_CONFIG_SERVICE_FACTORY
 ) : InternalSdkCore {
+
+    internal val networkInstrumentationConfiguration = NetworkInstrumentationConfiguration()
 
     internal lateinit var coreFeature: CoreFeature
 

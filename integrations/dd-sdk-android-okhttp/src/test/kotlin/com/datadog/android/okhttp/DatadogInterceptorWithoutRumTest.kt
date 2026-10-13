@@ -22,6 +22,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
@@ -30,6 +31,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.verify
@@ -103,7 +105,10 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         testedInterceptor.intercept(mockChain)
 
         // Then
-        verify(rumMonitor.mockInstance).notifyInterceptorInstantiated()
+        argumentCaptor<InternalTelemetryEvent.NetworkInstrumentationConfigured> {
+            verify(rumMonitor.mockNetworkConfiguration).update(capture())
+            assertThat(firstValue.resourceHeadersTracking).isNull()
+        }
         verify(rumMonitor.mockInstance).reportNetworkingLibraryType(
             InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP
         )
@@ -122,7 +127,10 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         testedInterceptor.intercept(mockChain)
 
         // Then
-        verify(rumMonitor.mockInstance).notifyInterceptorInstantiated()
+        argumentCaptor<InternalTelemetryEvent.NetworkInstrumentationConfigured> {
+            verify(rumMonitor.mockNetworkConfiguration).update(capture())
+            assertThat(firstValue.resourceHeadersTracking).isNull()
+        }
         verify(rumMonitor.mockInstance).reportNetworkingLibraryType(
             InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP
         )
@@ -144,7 +152,10 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         }
 
         // Then
-        verify(rumMonitor.mockInstance).notifyInterceptorInstantiated()
+        argumentCaptor<InternalTelemetryEvent.NetworkInstrumentationConfigured> {
+            verify(rumMonitor.mockNetworkConfiguration).update(capture())
+            assertThat(firstValue.resourceHeadersTracking).isNull()
+        }
         verify(rumMonitor.mockInstance).reportNetworkingLibraryType(
             InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP
         )

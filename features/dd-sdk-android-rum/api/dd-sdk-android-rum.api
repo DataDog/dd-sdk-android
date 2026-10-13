@@ -452,6 +452,7 @@ public final class com/datadog/android/rum/internal/net/GraphQLExtractor$Compani
 }
 
 public final class com/datadog/android/rum/internal/net/NetworkInstrumentationTelemetryExtKt {
+	public static final fun reportNetworkInstrumentationConfigured (Lcom/datadog/android/api/SdkCore;Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType;Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;)V
 	public static final fun reportNetworkInstrumentationConfigured (Lcom/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor;Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$NetworkInstrumentation$LibraryType;Lcom/datadog/android/rum/resource/ResourceHeadersExtractor;)V
 }
 

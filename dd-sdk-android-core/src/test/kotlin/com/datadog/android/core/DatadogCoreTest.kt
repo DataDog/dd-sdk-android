@@ -7,6 +7,7 @@
 package com.datadog.android.core
 
 import android.app.Application
+import com.datadog.android._InternalProxy
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
@@ -27,6 +28,7 @@ import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.tests.stub.StubTimeProvider
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.ndk.internal.NdkCrashHandler
@@ -159,6 +161,41 @@ internal class DatadogCoreTest {
     @AfterEach
     fun `tear down`() {
         testedCore.stop()
+    }
+
+    @Test
+    fun `M retain separate network configuration W updateNetworkInstrumentationConfiguration {two cores}`(
+        @StringForgery fakeOtherInstanceId: String,
+        @StringForgery fakeOtherInstanceName: String
+    ) {
+        // Given
+        val testedOtherCore = DatadogCore(appContext.mockInstance, fakeOtherInstanceId, fakeOtherInstanceName)
+        val fakeHeaderMode = InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.CUSTOM
+        assertThat(testedCore.getFeature(Feature.RUM_FEATURE_NAME)).isNull()
+
+        // When
+        _InternalProxy.updateNetworkInstrumentationConfiguration(
+            testedCore,
+            InternalTelemetryEvent.InterceptorInstantiated
+        )
+        _InternalProxy.updateNetworkInstrumentationConfiguration(
+            testedCore,
+            InternalTelemetryEvent.ResourceHeadersTrackingConfigured(fakeHeaderMode)
+        )
+        _InternalProxy.updateNetworkInstrumentationConfiguration(
+            testedOtherCore,
+            InternalTelemetryEvent.FirstPartyHostsConfigured
+        )
+
+        // Then
+        val firstSnapshot = checkNotNull(_InternalProxy.getNetworkInstrumentationConfiguration(testedCore))
+        val secondSnapshot = checkNotNull(_InternalProxy.getNetworkInstrumentationConfiguration(testedOtherCore))
+        assertThat(firstSnapshot.trackNetworkRequests).isTrue()
+        assertThat(firstSnapshot.resourceHeadersTracking).isEqualTo(fakeHeaderMode)
+        assertThat(firstSnapshot.useFirstPartyHosts).isFalse()
+        assertThat(secondSnapshot.trackNetworkRequests).isFalse()
+        assertThat(secondSnapshot.resourceHeadersTracking).isNull()
+        assertThat(secondSnapshot.useFirstPartyHosts).isTrue()
     }
 
     @ParameterizedTest

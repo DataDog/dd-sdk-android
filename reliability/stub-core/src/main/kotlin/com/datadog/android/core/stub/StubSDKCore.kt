@@ -46,7 +46,8 @@ class StubSDKCore(
     private val forge: Forge,
     private val mockContext: Application = mock(),
     private val mockSdkCore: InternalSdkCore = kmock { on { name } doReturn toString() },
-    private var datadogContext: DatadogContext = forge.getForgery<DatadogContext>().copy(source = "android")
+    private var datadogContext: DatadogContext = forge.getForgery<DatadogContext>().copy(source = "android"),
+    override val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver = StubFirstPartyHostHeaderTypeResolver()
 ) : InternalSdkCore by mockSdkCore {
 
     private val featureScopes = mutableMapOf<String, FeatureScope>()
@@ -163,9 +164,6 @@ class StubSDKCore(
     // endregion
 
     // region InternalSdkCore
-
-    override val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver =
-        StubFirstPartyHostHeaderTypeResolver()
 
     override fun getDatadogContext(withFeatureContexts: Set<String>): DatadogContext {
         return datadogContext

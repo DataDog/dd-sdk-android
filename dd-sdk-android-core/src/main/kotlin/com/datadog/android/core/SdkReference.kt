@@ -9,13 +9,13 @@ package com.datadog.android.core
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
 import com.datadog.android.core.internal.DatadogCore
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Class establishing the reference to the particular SDK instance by using its name.
  *
- * Once SDK instance with given name is available (during the [SdkReference.get] call), it will be
- * kept in this class and callback [onSdkInstanceCaptured] will be fired.
+ * Calling [get] starts observing the named SDK instance. If it is already initialized,
+ * [onSdkInstanceCaptured] is called immediately; otherwise it is called when the instance is registered.
+ * The reference also observes replacement instances after the SDK is stopped and initialized again.
  *
  * Once SDK instance with given name becomes inactive (it is stopped), reference will be
  * automatically cleaned up.
@@ -31,40 +31,44 @@ constructor(
     private val onSdkInstanceCaptured: (SdkCore) -> Unit = {}
 ) {
 
-    private val reference = AtomicReference<SdkCore>(null)
+    @Volatile
+    private var reference: CapturedSdkCore? = null
 
     /**
      * Returns SDK instance if it is acquired, null otherwise.
      */
     fun get(): SdkCore? {
-        val current = reference.get()
+        val current = reference
         return if (current == null) {
-            tryAcquire()
+            Datadog.registry.registerReference(sdkInstanceName, this)
+            reference?.sdkCore
         } else {
-            val isActive = (current as? DatadogCore)?.isActive
+            val isActive = (current.sdkCore as? DatadogCore)?.isActive
             if (isActive != null && !isActive) {
-                reference.compareAndSet(current, null)
+                synchronized(Datadog.registry) {
+                    if (reference === current) reference = null
+                }
                 null
             } else {
-                current
+                current.sdkCore
             }
         }
     }
 
-    private fun tryAcquire(): SdkCore? {
-        return synchronized(reference) {
-            val current = reference.get()
-            @Suppress("IfThenToElvis") // Less readable
-            if (current != null) {
-                current
-            } else if (Datadog.isInitialized(sdkInstanceName)) {
-                val sdkCore = Datadog.getInstance(sdkInstanceName)
-                reference.set(sdkCore)
-                onSdkInstanceCaptured(sdkCore)
-                sdkCore
-            } else {
-                null
-            }
+    // Bind under the registry lock; invoke the returned notification after releasing it.
+    internal fun capture(sdkCore: SdkCore): (() -> Unit)? {
+        if (reference?.sdkCore === sdkCore) return null
+        val captured = CapturedSdkCore(sdkCore)
+        reference = captured
+        return {
+            // Skip notifications invalidated before delivery by shutdown or replacement.
+            if (reference === captured) onSdkInstanceCaptured(sdkCore)
         }
     }
+
+    internal fun release() {
+        reference = null
+    }
+
+    private class CapturedSdkCore(val sdkCore: SdkCore)
 }

@@ -10,6 +10,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.DatadogCore
+import com.datadog.android.core.internal.NoOpInternalSdkCore
 import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.utils.forge.Configurator
@@ -38,6 +39,23 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class InternalProxyTest {
+
+    @Test
+    fun `M decline network configuration W proxy access {no-op core}`() {
+        // Given
+        val sdkCore = NoOpInternalSdkCore
+
+        // When
+        val updated = _InternalProxy.updateNetworkInstrumentationConfiguration(
+            sdkCore,
+            InternalTelemetryEvent.NetworkInstrumentationConfigured(null)
+        )
+        val snapshot = _InternalProxy.getNetworkInstrumentationConfiguration(sdkCore)
+
+        // Then
+        assertThat(updated).isFalse()
+        assertThat(snapshot).isNull()
+    }
 
     @Test
     fun `M proxy telemetry to RumMonitor W debug()`(

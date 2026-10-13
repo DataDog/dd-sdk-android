@@ -21,6 +21,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType
+import com.datadog.android.internal.telemetry.NetworkInstrumentationConfiguration
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -33,6 +34,7 @@ import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.rum.resource.ResourceHeadersExtractor
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.tests.config.createMockSdkCore
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -58,7 +60,6 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -75,8 +76,10 @@ internal class RumNetworkInstrumentationTest {
 
     private lateinit var testedInstrumentation: RumNetworkInstrumentation
 
-    @Mock
     lateinit var mockSdkCore: InternalSdkCore
+
+    @Mock
+    lateinit var mockNetworkConfiguration: NetworkInstrumentationConfiguration
 
     @Mock
     lateinit var mockRumMonitor: FakeNetworkRumMonitor
@@ -109,6 +112,7 @@ internal class RumNetworkInstrumentationTest {
 
     @BeforeEach
     fun `set up`() {
+        mockSdkCore = createMockSdkCore(mockNetworkConfiguration)
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeature
 
@@ -686,7 +690,7 @@ internal class RumNetworkInstrumentationTest {
     }
 
     @Test
-    fun `M call notifyResourceHeadersTrackingConfigured W sdkCoreReference resolved { extractor uses defaults }`() {
+    fun `M report resource header configuration W sdkCoreReference resolved { extractor uses defaults }`() {
         // Given
         val extractor = ResourceHeadersExtractor.Builder().build()
         testedInstrumentation = RumNetworkInstrumentation(
@@ -701,13 +705,16 @@ internal class RumNetworkInstrumentationTest {
         testedInstrumentation.sdkCore
 
         // Then
-        verify(mockRumMonitor).notifyResourceHeadersTrackingConfigured(
-            InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.DEFAULT_HEADERS
-        )
+        argumentCaptor<InternalTelemetryEvent.NetworkInstrumentationConfigured> {
+            verify(mockNetworkConfiguration).update(capture())
+            assertThat(
+                firstValue.resourceHeadersTracking
+            ).isEqualTo(InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.DEFAULT_HEADERS)
+        }
     }
 
     @Test
-    fun `M call notifyResourceHeadersTracking W sdkCoreReference resolved { extractor uses custom }`() {
+    fun `M report resource header configuration W sdkCoreReference resolved { extractor uses custom }`() {
         // Given
         val extractor = ResourceHeadersExtractor.Builder(includeDefaults = false)
             .captureHeaders("x-request-id")
@@ -724,20 +731,26 @@ internal class RumNetworkInstrumentationTest {
         testedInstrumentation.sdkCore
 
         // Then
-        verify(mockRumMonitor).notifyResourceHeadersTrackingConfigured(
-            InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.CUSTOM
-        )
+        argumentCaptor<InternalTelemetryEvent.NetworkInstrumentationConfigured> {
+            verify(mockNetworkConfiguration).update(capture())
+            assertThat(
+                firstValue.resourceHeadersTracking
+            ).isEqualTo(InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.CUSTOM)
+        }
     }
 
     @Test
-    fun `M not call notifyResourceHeadersTracking W sdkCoreReference resolved { no extractor }`() {
+    fun `M omit resource header configuration W sdkCoreReference resolved { no extractor }`() {
         // Given - default testedInstrumentation has resourceHeadersExtractor = null
 
         // When
         testedInstrumentation.sdkCore
 
         // Then
-        verify(mockRumMonitor, never()).notifyResourceHeadersTrackingConfigured(any())
+        argumentCaptor<InternalTelemetryEvent.NetworkInstrumentationConfigured> {
+            verify(mockNetworkConfiguration).update(capture())
+            assertThat(firstValue.resourceHeadersTracking).isNull()
+        }
     }
 
     @Test

@@ -19,6 +19,9 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.remote.model.RemoteConfiguration
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.NetworkInstrumentationConfiguration
+import com.datadog.android.tests.config.createMockSdkCore
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkTracingScope
 import com.datadog.android.trace.DeterministicTraceSampler
@@ -85,6 +88,9 @@ internal class ApmNetworkInstrumentationTest {
     lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
+    lateinit var mockNetworkConfiguration: NetworkInstrumentationConfiguration
+
+    @Mock
     lateinit var mockTracerProvider: TracerProvider
 
     @Mock
@@ -146,13 +152,12 @@ internal class ApmNetworkInstrumentationTest {
             }.toSet()
         }
 
-        mockSdkCore = mock {
-            on { internalLogger } doReturn mockInternalLogger
-            on { getFeature(Feature.TRACING_FEATURE_NAME) } doReturn mockTracingFeature
-            on { getFeature(Feature.RUM_FEATURE_NAME) } doReturn mockRumFeature
-            on { firstPartyHostResolver } doReturn mock()
-            on { remoteConfiguration } doReturn null
-        }
+        mockSdkCore = createMockSdkCore(mockNetworkConfiguration)
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mockTracingFeature
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeature
+        whenever(mockSdkCore.firstPartyHostResolver) doReturn mock()
+        whenever(mockSdkCore.remoteConfiguration) doReturn null
         datadogRegistryRegisterMethod.invoke(datadogRegistryField.get(null), null, mockSdkCore)
 
         mockRequestInfo = mock(extraInterfaces = arrayOf(MutableHttpRequestInfo::class)) {
@@ -207,6 +212,24 @@ internal class ApmNetworkInstrumentationTest {
     @AfterEach
     fun `tear down`() {
         datadogRegistryClearMethod.invoke(datadogRegistryField.get(null))
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M report local first party hosts W onSdkInstanceReady()`(hasLocalHosts: Boolean) {
+        // Given
+        whenever(mockLocalFirstPartyHostResolver.isEmpty()) doReturn !hasLocalHosts
+        testedInstrumentation = createInstrumentation()
+
+        // When
+        testedInstrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // Then
+        if (hasLocalHosts) {
+            verify(mockNetworkConfiguration).update(InternalTelemetryEvent.FirstPartyHostsConfigured)
+        } else {
+            verify(mockNetworkConfiguration, never()).update(InternalTelemetryEvent.FirstPartyHostsConfigured)
+        }
     }
 
     // region onRequest
@@ -1205,6 +1228,40 @@ internal class ApmNetworkInstrumentationTest {
     )
 
     // region Remote Configuration
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M report client hosts W SDK acquired {remote config reverses host configuration}`(
+        hasConfiguredHosts: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val fakeRcHosts = if (hasConfiguredHosts) {
+            emptyList()
+        } else {
+            listOf(
+                RemoteConfiguration.TracedHost(
+                    host = forge.aStringMatching("[a-z]+\\.[a-z]{2,3}"),
+                    propagatorTypes = listOf(RemoteConfiguration.PropagatorType.DATADOG)
+                )
+            )
+        }
+        whenever(mockSdkCore.remoteConfiguration) doReturn RemoteConfiguration(
+            trace = RemoteConfiguration.Trace(tracedHosts = fakeRcHosts)
+        )
+        whenever(mockLocalFirstPartyHostResolver.isEmpty()) doReturn !hasConfiguredHosts
+        testedInstrumentation = createInstrumentation()
+
+        // When
+        testedInstrumentation.onSdkInstanceReady(mockSdkCore)
+
+        // Then
+        if (hasConfiguredHosts) {
+            verify(mockNetworkConfiguration).update(InternalTelemetryEvent.FirstPartyHostsConfigured)
+        } else {
+            verify(mockNetworkConfiguration, never()).update(InternalTelemetryEvent.FirstPartyHostsConfigured)
+        }
+    }
 
     @Test
     fun `M override traceSampler W onSdkInstanceReady { RC provides sampleRate }`(

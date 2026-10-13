@@ -8,6 +8,8 @@ package com.datadog.android.core.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.core.SdkReference
+import java.util.WeakHashMap
 
 /**
  * A Registry for all [SdkCore] instances, allowing customers to retrieve the one
@@ -19,14 +21,25 @@ internal class SdkCoreRegistry(
 
     private val instances = mutableMapOf<String, SdkCore>()
 
+    // Clients own their references; the registry must not keep discarded clients alive.
+    private val references: MutableMap<SdkReference, String> = WeakHashMap()
+
     // region SdkCoreRegistry
 
     /**
      * Register an instance of [SdkCore] with the given name.
+     * Callers holding the registry lock must use [registerAndGetNotifications] instead and
+     * invoke [notifyReferences] after releasing the lock.
      * @param name the name for the given instance
      * @param sdkCore the [SdkCore] instance
      */
     fun register(name: String?, sdkCore: SdkCore) {
+        notifyReferences(registerAndGetNotifications(name, sdkCore))
+    }
+
+    /** Allows initialization to finish its registry transaction before invoking capture callbacks. */
+    @Synchronized
+    fun registerAndGetNotifications(name: String?, sdkCore: SdkCore): List<() -> Unit> {
         val key = name ?: DEFAULT_INSTANCE_NAME
         if (instances.containsKey(key)) {
             internalLogger.log(
@@ -34,9 +47,14 @@ internal class SdkCoreRegistry(
                 InternalLogger.Target.USER,
                 { "An SdkCode with name $key has already been registered." }
             )
-        } else {
-            instances[key] = sdkCore
+            return emptyList()
         }
+        instances[key] = sdkCore
+        return referencesFor(key).mapNotNull { it.capture(sdkCore) }
+    }
+
+    fun notifyReferences(notifications: List<() -> Unit>) {
+        notifications.forEach { notifyReference(it) }
     }
 
     /**
@@ -44,8 +62,10 @@ internal class SdkCoreRegistry(
      * @param name the name of the instance to unregister
      * @return the [SdkCore] instance if it exists, or null
      */
+    @Synchronized
     fun unregister(name: String? = null): SdkCore? {
         val key = name ?: DEFAULT_INSTANCE_NAME
+        referencesFor(key).forEach { it.release() }
         return instances.remove(key)
     }
 
@@ -54,6 +74,7 @@ internal class SdkCoreRegistry(
      * @param name the name of the instance to get
      * @return the [SdkCore] instance if it exists, or null
      */
+    @Synchronized
     fun getInstance(name: String? = null): SdkCore? {
         val key = name ?: DEFAULT_INSTANCE_NAME
         return instances[key]
@@ -62,8 +83,37 @@ internal class SdkCoreRegistry(
     /**
      * Clears all registered instances.
      */
+    @Synchronized
     fun clear() {
+        references.keys.toList().forEach { it.release() }
+        references.clear()
         instances.clear()
+    }
+
+    fun registerReference(name: String?, reference: SdkReference) {
+        val notification = synchronized(this) {
+            val key = name ?: DEFAULT_INSTANCE_NAME
+            references[reference] = key
+            instances[key]?.let { reference.capture(it) }
+        }
+        notification?.let { notifyReference(it) }
+    }
+
+    private fun referencesFor(name: String): List<SdkReference> =
+        references.filterValues { it == name }.keys.toList()
+
+    private fun notifyReference(notification: () -> Unit) {
+        try {
+            notification()
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            // SdkReference accepts customer-provided callbacks.
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { "SDK instance capture callback failed." },
+                e
+            )
+        }
     }
 
     // endregion

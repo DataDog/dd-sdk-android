@@ -8,6 +8,7 @@ package com.datadog.android.core.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.core.SdkReference
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -18,6 +19,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -169,5 +172,69 @@ internal class SdkCoreRegistryTest {
 
         // Then
         assertThat(instance).isNull()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M skip stale capture notification W unregister and register`(
+        fakeReuseInstance: Boolean,
+        @StringForgery fakeInstanceName: String
+    ) {
+        // Given
+        val fakeCaptures = mutableListOf<SdkCore>()
+        val testedReference = SdkReference(fakeInstanceName) { fakeCaptures.add(it) }
+        testedRegistry.registerReference(fakeInstanceName, testedReference)
+        val fakeNotifications = testedRegistry.registerAndGetNotifications(fakeInstanceName, mockSdkCore)
+        val mockReplacementCore = if (fakeReuseInstance) mockSdkCore else mock<SdkCore>()
+
+        // When
+        testedRegistry.unregister(fakeInstanceName)
+        testedRegistry.register(fakeInstanceName, mockReplacementCore)
+        testedRegistry.notifyReferences(fakeNotifications)
+
+        // Then
+        assertThat(fakeCaptures).containsExactly(mockReplacementCore)
+        assertThat(testedReference.get()).isSameAs(mockReplacementCore)
+    }
+
+    @Test
+    fun `M skip pending capture notification W clear`(@StringForgery fakeInstanceName: String) {
+        // Given
+        val fakeCaptures = mutableListOf<SdkCore>()
+        val testedReference = SdkReference(fakeInstanceName) { fakeCaptures.add(it) }
+        testedRegistry.registerReference(fakeInstanceName, testedReference)
+        val fakeNotifications = testedRegistry.registerAndGetNotifications(fakeInstanceName, mockSdkCore)
+
+        // When
+        testedRegistry.clear()
+        testedRegistry.notifyReferences(fakeNotifications)
+
+        // Then
+        assertThat(fakeCaptures).isEmpty()
+        assertThat(testedRegistry.getInstance(fakeInstanceName)).isNull()
+    }
+
+    @Test
+    fun `M notify remaining references W register {capture callback throws}`(@StringForgery fakeMessage: String) {
+        // Given
+        val fakeException = IllegalStateException(fakeMessage)
+        val testedFailingReference = SdkReference { throw fakeException }
+        val fakeCaptures = mutableListOf<SdkCore>()
+        val testedReference = SdkReference { fakeCaptures.add(it) }
+        testedRegistry.registerReference(null, testedFailingReference)
+        testedRegistry.registerReference(null, testedReference)
+
+        // When
+        testedRegistry.register(null, mockSdkCore)
+
+        // Then
+        assertThat(testedRegistry.getInstance()).isSameAs(mockSdkCore)
+        assertThat(fakeCaptures).containsExactly(mockSdkCore)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            "SDK instance capture callback failed.",
+            fakeException
+        )
     }
 }

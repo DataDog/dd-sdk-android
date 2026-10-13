@@ -250,7 +250,8 @@ class com.datadog.android.rum.internal.net.GraphQLExtractor
   fun extractGraphQLErrors(String?, String?, com.datadog.android.api.InternalLogger): String?
   companion object 
     const val MAX_GRAPHQL_BODY_PEEK: Long
-fun com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor.reportNetworkInstrumentationConfigured(com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType, com.datadog.android.rum.resource.ResourceHeadersExtractor?)
+DEPRECATED fun com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor.reportNetworkInstrumentationConfigured(com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType, com.datadog.android.rum.resource.ResourceHeadersExtractor?)
+fun com.datadog.android.api.SdkCore.reportNetworkInstrumentationConfigured(com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType, com.datadog.android.rum.resource.ResourceHeadersExtractor?)
 class com.datadog.android.rum.internal.net.RumNetworkInstrumentation
   val sdkCore: com.datadog.android.api.SdkCore?
   fun sendWaitForResourceTimingEvent(com.datadog.android.api.instrumentation.network.HttpRequestInfo)
