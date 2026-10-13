@@ -119,27 +119,32 @@ verify:all:
     - set +e
     - gradle_exit_code=0
     - >-
-        DD_TAGS="test.configuration.variant:debug" ./gradlew
+        DD_TAGS="test.configuration.variant:release" ./gradlew
         --console=plain
         --continue
         --scan
         -Dscan.uploadInBackground=false
+        -PverificationBuildType=release
         checkGeneratedFiles
         ktlintCheck
         :build-logic:ktlintCheck
         detekt
-        :lintCheckAll
-        :dd-sdk-android-core:testDebugUnitTest
-        :dd-sdk-android-internal:testDebugUnitTest
-        :unitTestDebugFeatures
-        :unitTestDebugIntegrations
-        :unitTestDebugSamples
-        :unitTestTools
+        lintRelease
+        :dd-sdk-android-core:testReleaseUnitTest
+        :dd-sdk-android-internal:testReleaseUnitTest
+        :unitTestReleaseFeatures
+        :unitTestReleaseIntegrations
+        :sample:benchmark:testReleaseUnitTest
+        :tools:unit:testJvmReleaseUnitTest
+        :tools:detekt:test
+        :tools:lint:test
+        :tools:noopfactory:test
+        :tools:benchmark:testReleaseUnitTest
         :build-logic:test
-        :dd-sdk-android-core:koverXmlReportDebug
-        :dd-sdk-android-internal:koverXmlReportDebug
-        :koverReportDebugFeatures
-        :koverReportDebugIntegrations
+        :dd-sdk-android-core:koverXmlReportRelease
+        :dd-sdk-android-internal:koverXmlReportRelease
+        :koverReportFeatures
+        :koverReportIntegrations
         || gradle_exit_code=$?
     - dd-sts exchange --policy dd-sdk-android -- datadog-ci coverage upload . || true
     - exit "$gradle_exit_code"
@@ -150,7 +155,7 @@ verify:all:
       junit:
         - "tools/**/build/test-results/test/*.xml"
         - "build-logic/build/test-results/test/*.xml"
-        - "**/build/test-results/testDebugUnitTest/*.xml"
+        - "**/build/test-results/testReleaseUnitTest/*.xml"
 
 #test-pyramid:core-it-latest-api:
 #  tags: [ "macos:sonoma", "specific:true" ]

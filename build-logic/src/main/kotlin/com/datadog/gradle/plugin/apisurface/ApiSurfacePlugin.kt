@@ -23,6 +23,10 @@ import java.nio.file.Paths
 class ApiSurfacePlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
+        val verificationBuildType = target.providers.gradleProperty(VERIFICATION_BUILD_TYPE_PROPERTY)
+            .getOrElse(DEFAULT_VERIFICATION_BUILD_TYPE)
+        val verificationBuildTypeName = verificationBuildType.replaceFirstChar { it.uppercase() }
+        val compileKotlinTaskName = "compile${verificationBuildTypeName}Kotlin"
         val srcDir = target.layout.projectDirectory
             .dir(Paths.get("src", "main").toString())
         val apiDir = target.layout.projectDirectory
@@ -58,7 +62,7 @@ class ApiSurfacePlugin : Plugin<Project> {
         val generateCompilerMetaTask = target.tasks
             .register<GenerateCompilerMetaTask>(TASK_GEN_COMPILER_METADATA) {
                 compiledClassesDirectory.set(
-                    kotlinCompilations.named("compileDebugKotlin")
+                    kotlinCompilations.named(compileKotlinTaskName)
                         .flatMap { (it as KotlinCompileTool).destinationDirectory }
                 )
                 metadataInfoFile.set(compilerMetaFile)
@@ -71,7 +75,7 @@ class ApiSurfacePlugin : Plugin<Project> {
             }
 
         target.taskConfig<KotlinCompilationTask<KotlinJvmCompilerOptions>> {
-            if (name == "compileDebugKotlin") {
+            if (name == compileKotlinTaskName) {
                 finalizedBy(generateCompilerMetaTask)
             }
             // Java API generation task does a clean-up of all files in the output
@@ -123,5 +127,7 @@ class ApiSurfacePlugin : Plugin<Project> {
         const val TASK_CHECK_COMPILER_METADATA = "checkCompilerMetadataChanges"
         const val FILE_NAME = "apiSurface"
         const val GEN_JAVA_API_LAYOUT_PLUGIN = "binary-compatibility-validator"
+        const val VERIFICATION_BUILD_TYPE_PROPERTY = "verificationBuildType"
+        const val DEFAULT_VERIFICATION_BUILD_TYPE = "debug"
     }
 }

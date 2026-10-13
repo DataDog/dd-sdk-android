@@ -21,10 +21,11 @@ val detektConfigFiles = listOf(
     rootProject.file("detekt_custom_safe_calls_third_party.yml"),
     rootProject.file("detekt_custom_unsafe_calls.yml")
 )
+val verificationBuildType = providers.gradleProperty("verificationBuildType").getOrElse("debug")
 
 detekt {
     config.setFrom(detektConfigFiles)
-    ignoredVariants = listOf("release")
+    ignoredVariants = listOf("debug", "release").filterNot { it == verificationBuildType }
 }
 
 tasks.withType<Detekt>().configureEach {
@@ -52,7 +53,7 @@ tasks.detekt {
 // testFixtures is an Android source set and isn't picked up by the detekt/AGP on AGP 8, this should
 // be able to be deleted in AGP 9 and covered by `detektTest`
 extensions.getByType<LibraryAndroidComponentsExtension>().onVariants { variant ->
-    if (variant.name == "debug") {
+    if (variant.name == verificationBuildType) {
         variant.testFixtures?.let { testFixtures ->
             val detektTestFixtures = tasks.register<Detekt>("detektTestFixtures") {
                 source(layout.projectDirectory.dir("src/testFixtures/kotlin"))

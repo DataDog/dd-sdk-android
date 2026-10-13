@@ -185,8 +185,6 @@ tasks.register("checkGeneratedFiles") {
 registerSubModuleAggregationTask("koverReportAll", "koverXmlReportRelease")
 registerSubModuleAggregationTask("koverReportFeatures", "koverXmlReportRelease", ":features:")
 registerSubModuleAggregationTask("koverReportIntegrations", "koverXmlReportRelease", ":integrations:")
-registerSubModuleAggregationTask("koverReportDebugFeatures", "koverXmlReportDebug", ":features:")
-registerSubModuleAggregationTask("koverReportDebugIntegrations", "koverXmlReportDebug", ":integrations:")
 
 tasks.register("instrumentTestAll") {
     dependsOn(":instrumented:integration:connectedCheck")

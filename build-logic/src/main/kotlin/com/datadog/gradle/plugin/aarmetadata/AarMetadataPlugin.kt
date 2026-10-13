@@ -15,8 +15,8 @@ import org.gradle.kotlin.dsl.register
 
 /**
  * Extracts the AAR metadata properties (`META-INF/com/android/build/gradle/aar-metadata.properties`)
- * from the produced debug AAR into a file checked into the repository, so that any change of the
- * consumer constraints (min compile SDK, min AGP version, ...) is visible in the diff.
+ * from the produced verification AAR into a file checked into the repository, so that any change
+ * of the consumer constraints (min compile SDK, min AGP version, ...) is visible in the diff.
  */
 class AarMetadataPlugin : Plugin<Project> {
 
@@ -27,6 +27,9 @@ class AarMetadataPlugin : Plugin<Project> {
     }
 
     private fun registerTasks(target: Project) {
+        val verificationBuildType = target.providers.gradleProperty(VERIFICATION_BUILD_TYPE_PROPERTY)
+            .getOrElse(DEFAULT_VERIFICATION_BUILD_TYPE)
+        val verificationBuildTypeName = verificationBuildType.replaceFirstChar { it.uppercase() }
         val aarMetadataFile = target.layout.projectDirectory
             .dir("api")
             .file(FILE_NAME)
@@ -43,14 +46,14 @@ class AarMetadataPlugin : Plugin<Project> {
             }
 
         target.extensions.configure<LibraryAndroidComponentsExtension>("androidComponents") {
-            onVariants(selector().withName(VARIANT_NAME)) { variant ->
+            onVariants(selector().withName(verificationBuildType)) { variant ->
                 generateAarMetadataTask.configure {
                     this.aarFile.set(variant.artifacts.get(SingleArtifact.AAR))
                 }
             }
         }
 
-        target.tasks.matching { it.name == BUNDLE_AAR_TASK }.configureEach {
+        target.tasks.matching { it.name == "bundle${verificationBuildTypeName}Aar" }.configureEach {
             finalizedBy(generateAarMetadataTask)
         }
     }
@@ -60,7 +63,7 @@ class AarMetadataPlugin : Plugin<Project> {
         const val TASK_CHECK_AAR_METADATA = "checkAarMetadataInfoChanges"
         const val FILE_NAME = "aar-metadata.txt"
         const val ANDROID_LIBRARY_PLUGIN = "com.android.library"
-        const val VARIANT_NAME = "debug"
-        const val BUNDLE_AAR_TASK = "bundleDebugAar"
+        const val VERIFICATION_BUILD_TYPE_PROPERTY = "verificationBuildType"
+        const val DEFAULT_VERIFICATION_BUILD_TYPE = "debug"
     }
 }
