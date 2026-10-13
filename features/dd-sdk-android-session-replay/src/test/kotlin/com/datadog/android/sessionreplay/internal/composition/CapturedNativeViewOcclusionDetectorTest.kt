@@ -12,6 +12,7 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
@@ -40,10 +41,10 @@ internal class CapturedNativeViewOcclusionDetectorTest {
         val testedBuilder = CapturedNativeSnapshotBuilder()
 
         // When
-        val result = testedBuilder.buildWindow(CapturedNativeWindow(1f, fakeViews), fakeContext)!!
+        val result = checkNotNull(testedBuilder.buildWindow(CapturedNativeWindow(1f, fakeViews), fakeContext))
 
         // Then: skip mapping, retain the hierarchy and the covering visual.
-        verify(fakeText.mapping, never()).map(any())
+        verify(fakeText.viewData, never()).map(any())
         assertThat(result.layers).hasSize(fakeViews.size)
         assertThat(result.wireframes.map { it.identity }).containsExactly(
             fakeFactory.shapeWireframe(fakeRoot.identity),
@@ -86,6 +87,89 @@ internal class CapturedNativeViewOcclusionDetectorTest {
             CapturedNativeWindow(3f, listOf(view("root", -1, GlobalBounds(0, 0, 200, 200)), fakeTarget, fakeCover)),
             fakeContext
         )
+
+        // Then
+        assertThat(result[1]).isFalse()
+    }
+
+    @ParameterizedTest
+    @CsvSource("2, false", "2, true", "3, false", "3, true")
+    fun `M retain replay-visible content W buildWindow { pixel coverage disagrees after normalization }`(
+        fakeDensity: Float,
+        fakeVertical: Boolean
+    ) {
+        // Given: origin and size truncate independently, leaving one replay unit uncovered.
+        val pixelOrigin = fakeDensity.toLong()
+        val fakeTargetBounds = if (fakeVertical) {
+            GlobalBounds(0, pixelOrigin, 12, pixelOrigin)
+        } else {
+            GlobalBounds(pixelOrigin, 0, pixelOrigin, 12)
+        }
+        val fakeCoverBounds = if (fakeVertical) {
+            GlobalBounds(0, pixelOrigin - 1, 12, pixelOrigin + 1)
+        } else {
+            GlobalBounds(pixelOrigin - 1, 0, pixelOrigin + 1, 12)
+        }
+        val fakeTarget = view("target", 1, fakeTargetBounds, density = fakeDensity)
+        val fakeViews = listOf(
+            view("root", -1, GlobalBounds(0, 0, 30, 30), density = fakeDensity),
+            view("back", 0, density = fakeDensity),
+            fakeTarget,
+            view("front", 0, density = fakeDensity),
+            view("cover", 3, fakeCoverBounds, opaque = true, density = fakeDensity)
+        )
+
+        // When
+        val result = checkNotNull(
+            CapturedNativeSnapshotBuilder().buildWindow(CapturedNativeWindow(fakeDensity, fakeViews), fakeContext)
+        )
+
+        // Then
+        verify(fakeTarget.viewData).map(any())
+        assertThat(result.wireframes.map { it.identity }).contains(fakeFactory.shapeWireframe(fakeTarget.identity))
+        assertThat(DefaultCapturedTreeValidator().validate(snapshot(result))).isEqualTo(CaptureValidationResult.Valid)
+    }
+
+    @Test
+    fun `M retain replay-visible gap W occludedViews { pixel union covers the target }`() {
+        // Given
+        val fakeViews = listOf(
+            view("root", -1, density = 2f),
+            view("target", 0, GlobalBounds(2, 0, 4, 10), density = 2f),
+            view("left", 0, GlobalBounds(1, 0, 3, 10), opaque = true, density = 2f),
+            view("right", 0, GlobalBounds(4, 0, 2, 10), opaque = true, density = 2f)
+        )
+
+        // When
+        val result = testedDetector.occludedViews(CapturedNativeWindow(2f, fakeViews), fakeContext)
+
+        // Then
+        assertThat(result[1]).isFalse()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M retain replay-visible content W occludedViews { inherited clip rounds differently }`(
+        fakePaddingClip: Boolean
+    ) {
+        // Given: negative origins truncate toward zero; the normalized clip ends before the target.
+        val fakePixelClip = GlobalBounds(-1, 0, 4, 4)
+        val fakeReplayClip = CapturedBounds(0, 0, 1, 2)
+        val fakeFront = view("front", 0, GlobalBounds(-4, 0, 8, 4), density = 2f).copy(
+            pixelClip = fakePixelClip.takeUnless { fakePaddingClip },
+            explicitClip = fakeReplayClip.takeUnless { fakePaddingClip },
+            pixelChildPaddingClip = fakePixelClip.takeIf { fakePaddingClip },
+            childPaddingClip = fakeReplayClip.takeIf { fakePaddingClip }
+        )
+        val fakeViews = listOf(
+            view("root", -1, GlobalBounds(-20, -20, 40, 40), density = 2f),
+            view("target", 0, GlobalBounds(-1, 0, 4, 4), density = 2f),
+            fakeFront,
+            view("cover", 2, GlobalBounds(-4, 0, 8, 4), opaque = true, density = 2f)
+        )
+
+        // When
+        val result = testedDetector.occludedViews(CapturedNativeWindow(2f, fakeViews), fakeContext)
 
         // Then
         assertThat(result[1]).isFalse()
@@ -175,13 +259,15 @@ internal class CapturedNativeViewOcclusionDetectorTest {
         val testedBuilder = CapturedNativeSnapshotBuilder()
 
         // When
-        val result = testedBuilder.buildWindow(
-            CapturedNativeWindow(1f, listOf(view("root", -1), fakeCustom, fakeCover)),
-            fakeContext
-        )!!
+        val result = checkNotNull(
+            testedBuilder.buildWindow(
+                CapturedNativeWindow(1f, listOf(view("root", -1), fakeCustom, fakeCover)),
+                fakeContext
+            )
+        )
 
         // Then: no bounds contract is inferred from arbitrary custom results.
-        verify(fakeCustom.mapping).map(any())
+        verify(fakeCustom.viewData).map(any())
         assertThat(result.wireframes.map { it.identity }).contains(fakeFactory.shapeWireframe(fakeCustom.identity))
     }
 
@@ -280,7 +366,7 @@ internal class CapturedNativeViewOcclusionDetectorTest {
 
         // Then
         assertThat(result).isNull()
-        fakeViews.forEach { verify(it.mapping, never()).map(any()) }
+        fakeViews.forEach { verify(it.viewData, never()).map(any()) }
     }
 
     @Test
@@ -324,7 +410,8 @@ internal class CapturedNativeViewOcclusionDetectorTest {
         fakeParent: Int,
         fakePixels: GlobalBounds = fakeBounds,
         opaque: Boolean = false,
-        bounded: Boolean = true
+        bounded: Boolean = true,
+        density: Float = 1f
     ): CapturedNativeView {
         val fakeIdentity = if (fakeParent < 0) fakeWindow else fakeFactory.view(fakeWindow, fakeId)
         val mockMapping: CapturedViewData = mock()
@@ -332,7 +419,12 @@ internal class CapturedNativeViewOcclusionDetectorTest {
         whenever(mockMapping.hasOpaqueBackground).thenReturn(opaque)
         val fakeWireframe = CapturedWireframe.Shape(
             fakeFactory.shapeWireframe(fakeIdentity),
-            CapturedBounds(fakePixels.x, fakePixels.y, fakePixels.width, fakePixels.height)
+            CapturedBounds(
+                (fakePixels.x / density).toLong(),
+                (fakePixels.y / density).toLong(),
+                (fakePixels.width / density).toLong(),
+                (fakePixels.height / density).toLong()
+            )
         )
         whenever(mockMapping.map(any())).thenReturn(CapturedViewMapperResult.Wireframes(listOf(fakeWireframe)))
         return CapturedNativeView(
