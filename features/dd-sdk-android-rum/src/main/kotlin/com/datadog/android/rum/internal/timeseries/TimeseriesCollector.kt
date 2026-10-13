@@ -32,4 +32,7 @@ internal interface TimeseriesCollector {
      * This is the app visibility state, which is independent of the RUM session state.
      */
     fun onUiHidden()
+
+    /** Whether at least one timeseries event was written for the session with [sessionId]. */
+    fun isTimeseriesWritten(sessionId: String): Boolean
 }

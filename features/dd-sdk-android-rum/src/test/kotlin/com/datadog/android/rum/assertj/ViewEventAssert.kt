@@ -213,6 +213,16 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasSessionTimeseries(expected: Boolean?): ViewEventAssert {
+        assertThat(actual.session.hasTimeseries)
+            .overridingErrorMessage(
+                "Expected event to have session.has_timeseries:$expected " +
+                    "but was ${actual.session.hasTimeseries}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasSessionType(expected: ViewEvent.ViewEventSessionType): ViewEventAssert {
         assertThat(actual.session.type)
             .overridingErrorMessage(

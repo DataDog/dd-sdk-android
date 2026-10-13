@@ -414,6 +414,15 @@ internal class MemoryEventFactoryTest {
     }
 
     @Test
+    fun `M fill session hasTimeseries W create()`() {
+        // When
+        val event = createEvent()
+
+        // Then
+        assertThat(event.session.hasTimeseries).isTrue()
+    }
+
+    @Test
     fun `M fill synthetics W create() { synthetics ids are set }`(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String

@@ -55,6 +55,7 @@ import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
 import com.datadog.android.rum.internal.timeseries.PipelineFactory
 import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
+import com.datadog.android.rum.internal.timeseries.WrittenTimeseriesSessionsRegistry
 import com.datadog.android.rum.internal.timeseries.collector.DefaultTimeseriesCollector
 import com.datadog.android.rum.internal.timeseries.collector.Looper
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
@@ -889,7 +890,8 @@ internal class RumFeatureTest {
             timeseriesConfiguration = TimeseriesConfiguration(
                 TimeseriesConfiguration.DEFAULT.collectTypes,
                 bufferSize = fakeBufferSize,
-                intervalMs = fakeIntervalMs
+                samplingIntervalMs = fakeIntervalMs,
+                viewTransitionDelayMs = TimeseriesConfiguration.BACKGROUND_TRANSITION_DELAY_MS
             )
         )
         testedFeature = RumFeature(
@@ -919,14 +921,18 @@ internal class RumFeatureTest {
             looper.getFieldValue<ScheduledExecutorService, Looper>("scheduledExecutorService")
         ).isSameAs(testedFeature.vitalExecutorService)
 
+        val sessionRegistry = timeseriesCollector
+            .getFieldValue<WrittenTimeseriesSessionsRegistry, DefaultTimeseriesCollector>("sessionRegistry")
+
         val pipelinesFactory = timeseriesCollector
             .getFieldValue<PipelineFactory, DefaultTimeseriesCollector>("pipelinesFactory")
+        assertThat(
+            pipelinesFactory.getFieldValue<WrittenTimeseriesSessionsRegistry, PipelineFactory>("sessionRegistry")
+        ).isSameAs(sessionRegistry)
+        assertThat(pipelinesFactory.getFieldValue<InsightsCollector, PipelineFactory>("insightsCollector"))
+            .isSameAs(testedFeature.insightsCollector)
         assertThat(pipelinesFactory.getFieldValue<DataWriter<*>, PipelineFactory>("dataWriter"))
             .isSameAs(testedFeature.dataWriter)
-        assertThat(
-            pipelinesFactory.getFieldValue<InsightsCollector, PipelineFactory>("insightsCollector")
-        )
-            .isSameAs(testedFeature.insightsCollector)
         assertThat(pipelinesFactory.getFieldValue<Long, PipelineFactory>("totalRamBytes"))
             .isEqualTo(fakeTotalRamBytes)
         assertThat(pipelinesFactory.getFieldValue<TimeseriesConfiguration, PipelineFactory>("configuration"))

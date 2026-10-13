@@ -641,6 +641,7 @@ internal class RumViewScopeTest {
                 hasApplicationId(fakeParentContext.applicationId)
                 hasSessionId(fakeParentContext.sessionId)
                 hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+                hasSessionTimeseries(fakeParentContext.hasTimeseries)
                 hasSessionType(fakeRumSessionType?.toView() ?: ViewEvent.ViewEventSessionType.USER)
                 hasNoSyntheticsTest()
                 hasStartReason(fakeParentContext.sessionStartReason)
@@ -2154,6 +2155,7 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+                    hasSessionTimeseries(fakeParentContext.hasTimeseries)
                     hasSessionType(fakeRumSessionType?.toView() ?: ViewEvent.ViewEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
@@ -4815,6 +4817,7 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+                    hasSessionTimeseries(fakeParentContext.hasTimeseries)
                     hasActionId(fakeActionId)
                     hasErrorType(null)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
@@ -10285,6 +10288,7 @@ internal class RumViewScopeTest {
                 .hasSampleRate(fakeSampleRate)
                 .hasSessionId(fakeParentContext.sessionId)
                 .hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+                .hasSessionTimeseries(fakeParentContext.hasTimeseries)
                 .hasSessionType(
                     fakeRumSessionType?.toVital()
                         ?: VitalOperationStepEvent.VitalOperationStepEventSessionType.USER

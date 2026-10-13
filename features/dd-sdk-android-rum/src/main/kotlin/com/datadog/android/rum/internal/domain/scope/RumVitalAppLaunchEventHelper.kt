@@ -96,7 +96,8 @@ internal class RumVitalAppLaunchEventHelper(
                 id = rumContext.sessionId,
                 type = sessionType,
                 hasReplay = hasReplay,
-                isMainProcess = datadogContext.processInfo.isMainProcess
+                isMainProcess = datadogContext.processInfo.isMainProcess,
+                hasTimeseries = rumContext.hasTimeseries
             ),
             view = view,
             source = VitalAppLaunchEvent.VitalAppLaunchEventSource.tryFromSource(
