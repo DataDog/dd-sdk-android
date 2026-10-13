@@ -57,6 +57,7 @@ datadog:
       - "androidx.collection.LruCache.get(java.io.File):java.lang.NullPointerException"
       - "androidx.collection.LruCache.get(kotlin.String):java.lang.NullPointerException"
       - "androidx.collection.LruCache.put(java.io.File, kotlin.Unit):java.lang.NullPointerException"
+      - "androidx.collection.LruCache.put(kotlin.String, kotlin.Unit):java.lang.NullPointerException"
       - "androidx.collection.LruCache.remove(java.io.File):java.lang.NullPointerException"
       - "androidx.metrics.performance.JankStats.createAndTrack(android.view.Window, androidx.metrics.performance.JankStats.OnFrameListener):java.lang.IllegalStateException"
       - "androidx.navigation.Navigation.findNavController(android.app.Activity, kotlin.Int):java.lang.IllegalStateException"

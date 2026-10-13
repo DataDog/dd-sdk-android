@@ -1127,6 +1127,7 @@ internal class RumSessionScopeStartupManagerTest {
             hasNoSyntheticsTest()
             hasSessionId(rumContext.sessionId)
             hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+            hasSessionTimeseries(rumContext.hasTimeseries)
             hasSessionType(
                 fakeRumSessionType?.toVitalAppLaunch()
                     ?: VitalAppLaunchEvent.VitalAppLaunchEventSessionType.USER
@@ -1196,6 +1197,7 @@ internal class RumSessionScopeStartupManagerTest {
             hasNoSyntheticsTest()
             hasSessionId(rumContext.sessionId)
             hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+            hasSessionTimeseries(rumContext.hasTimeseries)
             hasSessionType(
                 fakeRumSessionType?.toVitalAppLaunch()
                     ?: VitalAppLaunchEvent.VitalAppLaunchEventSessionType.USER

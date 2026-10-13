@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.okHttp)
 
     // Android Instrumentation
+    implementation(libs.androidXCollection)
     implementation(libs.androidXCore)
     implementation(libs.androidXMetrics)
     implementation(libs.bundles.androidXNavigation)

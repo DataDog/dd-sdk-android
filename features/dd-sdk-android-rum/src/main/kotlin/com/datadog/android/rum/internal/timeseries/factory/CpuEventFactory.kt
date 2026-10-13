@@ -82,7 +82,8 @@ internal class CpuEventFactory(
                     datadogContext,
                     rumContext.viewId.orEmpty()
                 ),
-                isMainProcess = datadogContext.processInfo.isMainProcess
+                isMainProcess = datadogContext.processInfo.isMainProcess,
+                hasTimeseries = true
             ),
             synthetics = syntheticsAttribute,
             source = TimeseriesCpuEvent.Source.tryFromSource(datadogContext.source, internalLogger),
