@@ -7,14 +7,14 @@
 package com.datadog.benchmark.sample.activities.scenarios
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.benchmark.DatadogBaseMeter
 import com.datadog.benchmark.sample.MainActivityViewModel
 import com.datadog.benchmark.sample.MainActivityViewModelFactory
+import com.datadog.benchmark.sample.activities.BaseBenchmarkActivity
 import javax.inject.Inject
 
-internal open class BaseScenarioActivity : AppCompatActivity() {
+internal open class BaseScenarioActivity : BaseBenchmarkActivity() {
     internal lateinit var viewModel: MainActivityViewModel
 
     @Inject
