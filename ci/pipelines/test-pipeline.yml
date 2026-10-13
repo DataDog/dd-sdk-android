@@ -4,16 +4,30 @@ default:
 workflow:
   rules:
     - if: "$CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH !~ /^(develop|master)$|^feature\//"
-      auto_cancel:
-        on_new_commit: interruptible
     - when: always
-      auto_cancel:
-        on_new_commit: none
 
 stages:
   - verify
+  - test-pyramid
 
 .snippets:
+  source-secrets-macos:
+    - vault login -method=aws -no-print
+    - export DD_ANDROID_SECRETS_PATH_PREFIX="kv/aws/arn:aws:iam::486234852809:role/ci-dd-sdk-android/"
+    - source ./ci/scripts/vault_config.sh
+    - source ./ci/scripts/get-secret.sh
+
+  setup-dd-tracer:
+    - export DD_TRACER_FOLDER="$HOME/dd-java-agent"
+    - mkdir -p "$DD_TRACER_FOLDER"
+    - curl -Lo "$DD_TRACER_FOLDER/dd-java-agent.jar" https://dtdg.co/latest-java-tracer
+    - export DD_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)
+    - export DD_CIVISIBILITY_AGENTLESS_ENABLED=true
+
+  setup-dd-ci-cli:
+    - npm install -g @datadog/datadog-ci
+    - export DATADOG_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)
+
   setup-gradle:
     - export GRADLE_USER_HOME="cache/"
     - echo "org.gradle.jvmargs=-Xmx4096m -javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG" >> gradle.properties
@@ -27,6 +41,35 @@ stages:
     - echo "kotlin.compiler.execution.strategy=in-process" >> gradle.properties
     - echo "--- gradle.properties ---" && cat gradle.properties
 
+  install-android-api-components:
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "emulator"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "platform-tools"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_PLATFORM"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_BUILD_TOOLS"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_EMULATOR_IMAGE"
+    - yes | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+    - echo "no" | ~/android_sdk/cmdline-tools/latest/bin/avdmanager --verbose create avd --force --name "$EMULATOR_NAME" --package "$ANDROID_EMULATOR_IMAGE"
+
+  setup-macos-ami-runner:
+    - !reference [ .snippets, source-secrets-macos ]
+    - !reference [ .snippets, setup-dd-tracer ]
+    - !reference [ .snippets, setup-gradle ]
+    - !reference [ .snippets, setup-dd-ci-cli ]
+    - !reference [ .snippets, install-android-api-components ]
+
+  start-emulator:
+    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
+
+  run-core-it-instrumented:
+    - set +e
+    - exit_code=0
+    - !reference [ .snippets, start-emulator ]
+    - DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew --scan -Dscan.uploadInBackground=false :reliability:core-it:connectedDebugAndroidTest $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
+    - $ANDROID_HOME/platform-tools/adb emu kill
+    - datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname reliability/core-it/build/outputs/androidTest-results/connected/debug/
+    - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
+    - exit 0
+
 .cpu-memory-intensive-job:
   variables:
     KUBERNETES_MEMORY_REQUEST: "8Gi"
@@ -38,7 +81,6 @@ test:debug:
     - .cpu-memory-intensive-job
   variables:
     DD_COMMON_AGENT_CONFIG: "dd.env=ci,dd.trace.enabled=true,dd.jmx.fetch.enabled=false,dd.civisibility.compiler.plugin.auto.configuration.enabled=false"
-    GRADLE_CACHE_CLEANUP: "true"
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: verify
@@ -67,3 +109,24 @@ test:debug:
     expire_in: 1 week
     reports:
       junit: "**/build/test-results/testDebugUnitTest/*.xml"
+
+test-pyramid:core-it-latest-api:
+  tags: [ "macos:sonoma", "specific:true" ]
+  stage: test-pyramid
+  needs: []
+  timeout: 1h
+  variables:
+    ANDROID_API: "37"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API.0;google_apis_ps16k;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API.0"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+  cache:
+    key: test-debug-$CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/wrapper/
+      - cache/notifications/
+    policy: pull
+  script:
+    - !reference [.snippets, setup-macos-ami-runner]
+    - !reference [.snippets, run-core-it-instrumented]
