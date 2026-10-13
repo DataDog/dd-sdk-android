@@ -220,10 +220,20 @@ private fun diffSlowFrames(
     new: List<ViewEvent.SlowFrame>
 ): List<ViewUpdateEvent.SlowFrame>? {
     // diffList (drop-by-size) breaks when the backing EvictingQueue evicts the head at capacity:
-    // both lists have the same size but the content has shifted. Using the last known start
-    // timestamp as an anchor ensures only genuinely new frames are returned regardless of eviction.
-    val lastKnownStart = old.lastOrNull()?.start
-    val newFrames = if (lastKnownStart == null) new else new.filter { it.start > lastKnownStart }
+    // both lists have the same size but the content has shifted. Using the last known frame
+    // as an anchor ensures only genuinely new frames are returned regardless of eviction.
+    // The last known frame may still be growing (consecutive slow frames are merged into it), so it
+    // is resent whenever its duration changed. The backend deduplicates slow frames by `start`,
+    // keeping the larger `duration`.
+    val lastKnownFrame = old.lastOrNull()
+    val newFrames = if (lastKnownFrame == null) {
+        new
+    } else {
+        new.filter {
+            it.start > lastKnownFrame.start ||
+                (it.start == lastKnownFrame.start && it.duration != lastKnownFrame.duration)
+        }
+    }
     return newFrames.ifEmpty { null }
         ?.map { ViewUpdateEvent.SlowFrame(start = it.start, duration = it.duration) }
 }

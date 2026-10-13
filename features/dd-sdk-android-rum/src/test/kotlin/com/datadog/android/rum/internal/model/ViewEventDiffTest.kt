@@ -248,6 +248,31 @@ internal class ViewEventDiffTest {
     }
 
     @Test
+    fun `M return grown last slow_frame W diffViewEvent { last slow frame duration increased }`(
+        @Forgery fakeEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val firstFrame = ViewEvent.SlowFrame(start = 1000L, duration = 500L)
+        val lastFrame = ViewEvent.SlowFrame(start = 2000L, duration = 600L)
+        val grownLastFrame = lastFrame.copy(duration = lastFrame.duration + forge.aLong(min = 1, max = 1000))
+        val newFrame = ViewEvent.SlowFrame(start = 3000L, duration = 400L)
+        val old = fakeEvent.copy(view = fakeEvent.view.copy(slowFrames = listOf(firstFrame, lastFrame)))
+        val new = fakeEvent.copy(
+            view = fakeEvent.view.copy(slowFrames = listOf(firstFrame, grownLastFrame, newFrame))
+        )
+
+        // When
+        val result = diffViewEvent(old, new)
+
+        // Then
+        assertThat(result.view.slowFrames).containsExactly(
+            ViewUpdateEvent.SlowFrame(start = grownLastFrame.start, duration = grownLastFrame.duration),
+            ViewUpdateEvent.SlowFrame(start = newFrame.start, duration = newFrame.duration)
+        )
+    }
+
+    @Test
     fun `M return new slow_frame W diffViewEvent { queue at capacity, head evicted }`(
         @Forgery fakeEvent: ViewEvent,
         forge: Forge
