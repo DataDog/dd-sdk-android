@@ -81,7 +81,7 @@ android {
             "String",
             "SDK_COMMIT_SHA1",
             // make it more friendly to configuration cache
-            "\"${providers.of(GitHashValueSource::class) { }.get()}\""
+            "\"TODO_FIX\""
         )
     }
 

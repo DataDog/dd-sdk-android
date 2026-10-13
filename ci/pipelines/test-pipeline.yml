@@ -142,5 +142,4 @@ test-pyramid:core-it-latest-api:
     policy: pull
   script:
     - !reference [.snippets, setup-macos-ami-runner]
-    - du -ah cache/caches | sort -h | tail -100
     - !reference [.snippets, run-core-it-instrumented]
