@@ -11,6 +11,10 @@ stages:
   - test-pyramid
 
 .snippets:
+  source-secrets:
+    - source ./ci/scripts/vault_config.sh
+    - source ./ci/scripts/get-secret.sh
+
   source-secrets-macos:
     - vault login -method=aws -no-print
     - export DD_ANDROID_SECRETS_PATH_PREFIX="kv/aws/arn:aws:iam::486234852809:role/ci-dd-sdk-android/"
@@ -30,9 +34,9 @@ stages:
 
   setup-gradle:
     - export GRADLE_USER_HOME="cache/"
-    - echo "org.gradle.jvmargs=-Xmx4096m -javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG" >> gradle.properties
+    - echo "org.gradle.jvmargs=-Xmx${GRADLE_JVM_XMX:-4096m} -javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG" >> gradle.properties
     # Set max workers to keep memory under control
-    - echo "org.gradle.workers.max=8" >> gradle.properties
+    - echo "org.gradle.workers.max=${GRADLE_MAX_WORKERS:-8}" >> gradle.properties
     # Disable cache clean up if we won't upload the cache anywhere
     - echo "org.gradle.cache.cleanup=$( [[ "$GRADLE_CACHE_CLEANUP" == "true" ]] && echo "always" || echo "disabled" )" >> gradle.properties
     # Equal to --stacktrace
@@ -81,19 +85,25 @@ stages:
 
 .cpu-memory-intensive-job:
   variables:
-    KUBERNETES_MEMORY_REQUEST: "8Gi"
-    KUBERNETES_MEMORY_LIMIT: "32Gi"
-    KUBERNETES_CPU_REQUEST: 20
+    KUBERNETES_MEMORY_REQUEST: 32Gi
+    KUBERNETES_MEMORY_LIMIT: 32Gi
+    KUBERNETES_CPU_REQUEST: 16
+    KUBERNETES_CPU_LIMIT: 16
 
-test:debug:
+verify:all:
   extends:
     - .cpu-memory-intensive-job
   variables:
     DD_COMMON_AGENT_CONFIG: "dd.env=ci,dd.trace.enabled=true,dd.jmx.fetch.enabled=false,dd.civisibility.compiler.plugin.auto.configuration.enabled=false"
+    GRADLE_JVM_XMX: "8g"
+    GRADLE_MAX_WORKERS: "16"
+  id_tokens:
+    DD_STS_OIDC_TOKEN:
+      aud: dd-sts
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: verify
-  timeout: 1h
+  timeout: 2h
   cache:
     key: test-debug-$CI_COMMIT_REF_SLUG
     paths:
@@ -102,26 +112,48 @@ test:debug:
       - cache/notifications/
     policy: pull-push
   script:
+    - !reference [.snippets, source-secrets]
     - !reference [.snippets, setup-gradle]
     - du -ah cache/caches | sort -h | tail -100
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - set +e
+    - gradle_exit_code=0
     - >-
         DD_TAGS="test.configuration.variant:debug" ./gradlew
         --info
         --console=plain
+        --continue
+        --no-configuration-cache
         -Dorg.gradle.caching.debug=true
         --scan
         -Dscan.uploadInBackground=false
+        checkGeneratedFiles
+        ktlintCheck
+        :build-logic:ktlintCheck
+        detekt
+        :lintCheckAll
         :dd-sdk-android-core:testDebugUnitTest
         :dd-sdk-android-internal:testDebugUnitTest
         :unitTestDebugFeatures
         :unitTestDebugIntegrations
         :unitTestDebugSamples
+        :unitTestTools
+        :build-logic:test
+        :dd-sdk-android-core:koverXmlReportDebug
+        :dd-sdk-android-internal:koverXmlReportDebug
+        :koverReportDebugFeatures
+        :koverReportDebugIntegrations
+        || gradle_exit_code=$?
+    - dd-sts exchange --policy dd-sdk-android -- datadog-ci coverage upload . || true
+    - exit "$gradle_exit_code"
   artifacts:
     when: always
     expire_in: 1 week
     reports:
-      junit: "**/build/test-results/testDebugUnitTest/*.xml"
+      junit:
+        - "tools/**/build/test-results/test/*.xml"
+        - "build-logic/build/test-results/test/*.xml"
+        - "**/build/test-results/testDebugUnitTest/*.xml"
 
 test-pyramid:core-it-latest-api:
   tags: [ "macos:sonoma", "specific:true" ]
