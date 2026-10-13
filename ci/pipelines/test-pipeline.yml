@@ -46,7 +46,6 @@ test:debug:
     - !reference [.snippets, setup-gradle]
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - >-
-        printf 'yes\n' |
         DD_TAGS="test.configuration.variant:debug" ./gradlew
         --scan
         -Dscan.uploadInBackground=false

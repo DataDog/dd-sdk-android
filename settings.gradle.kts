@@ -20,6 +20,17 @@ pluginManagement {
     includeBuild("./build-logic")
 }
 
+plugins {
+    id("com.gradle.develocity") version "4.5.0"
+}
+
+develocity {
+    buildScan {
+        termsOfUseUrl.set("https://gradle.com/help/legal-terms-of-use")
+        termsOfUseAgree.set("yes")
+    }
+}
+
 // CORE LIBRARY
 include(":dd-sdk-android-core")
 include(":dd-sdk-android-internal")
