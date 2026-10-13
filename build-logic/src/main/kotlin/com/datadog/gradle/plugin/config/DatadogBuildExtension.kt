@@ -6,6 +6,7 @@
 
 package com.datadog.gradle.plugin.config
 
+import com.datadog.gradle.config.PublishingDestination
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
@@ -52,11 +53,17 @@ abstract class DatadogBuildExtension @Inject constructor(
         project.javadocConfig()
     }
 
-    /** Declares the Maven publication (POM metadata, sources/javadoc jars) and its signing. */
+    /**
+     * Declares the Maven publication (POM metadata, sources/javadoc jars) and its signing.
+     * @param destination where this module's releases and snapshots are published: Maven Central (through
+     * Sonatype), or an internal binaries.ddbuild.io repository, in which case its Sonatype upload is disabled.
+     * Dogfood versions are published to the dogfood repository whatever the destination.
+     */
     fun applyPublishingConfig(
         projectDescription: String,
-        customArtifactId: String = project.name
+        customArtifactId: String = project.name,
+        destination: PublishingDestination = PublishingDestination.MAVEN_CENTRAL
     ) {
-        project.publishingConfig(projectDescription, customArtifactId)
+        project.publishingConfig(projectDescription, customArtifactId, destination)
     }
 }
