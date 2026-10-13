@@ -18,7 +18,7 @@ stages:
     - export GRADLE_USER_HOME="cache/"
     - echo "org.gradle.jvmargs=-Xmx4096m -javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG" >> gradle.properties
     # Set max workers to keep memory under control
-    - echo "org.gradle.workers.max=4" >> gradle.properties
+    - echo "org.gradle.workers.max=8" >> gradle.properties
     # Disable cache clean up if we won't upload the cache anywhere
     - echo "org.gradle.cache.cleanup=$( [[ "$GRADLE_CACHE_CLEANUP" == "true" ]] && echo "always" || echo "disabled" )" >> gradle.properties
     # Equal to --stacktrace
