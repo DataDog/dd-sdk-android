@@ -1,0 +1,59 @@
+default:
+  interruptible: true
+
+workflow:
+  rules:
+    - if: "$CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH !~ /^(develop|master)$|^feature\//"
+      auto_cancel:
+        on_new_commit: interruptible
+    - when: always
+      auto_cancel:
+        on_new_commit: none
+
+stages:
+  - verify
+
+.snippets:
+  setup-gradle:
+    - export GRADLE_USER_HOME="cache/"
+    - echo "org.gradle.jvmargs=-Xmx4096m -javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG" >> gradle.properties
+    # Set max workers to keep memory under control
+    - echo "org.gradle.workers.max=4" >> gradle.properties
+    # Disable cache clean up if we won't upload the cache anywhere
+    - echo "org.gradle.cache.cleanup=$( [[ "$GRADLE_CACHE_CLEANUP" == "true" ]] && echo "always" || echo "disabled" )" >> gradle.properties
+    # Equal to --stacktrace
+    - echo "org.gradle.logging.stacktrace=all" >> gradle.properties
+    # Keep kotlin compiler in Gradle daemon process for more predictable memory
+    - echo "kotlin.compiler.execution.strategy=in-process" >> gradle.properties
+    - echo "--- gradle.properties ---" && cat gradle.properties
+
+.cpu-memory-intensive-job:
+  variables:
+    KUBERNETES_MEMORY_REQUEST: "8Gi"
+    KUBERNETES_MEMORY_LIMIT: "32Gi"
+    KUBERNETES_CPU_REQUEST: 20
+
+test:debug:
+  extends:
+    - .cpu-memory-intensive-job
+  variables:
+    DD_COMMON_AGENT_CONFIG: "dd.env=ci,dd.trace.enabled=true,dd.jmx.fetch.enabled=false,dd.civisibility.compiler.plugin.auto.configuration.enabled=false"
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: verify
+  timeout: 1h
+  script:
+    - !reference [.snippets, setup-gradle]
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - >-
+        DD_TAGS="test.configuration.variant:debug" ./gradlew
+        :dd-sdk-android-core:testDebugUnitTest
+        :dd-sdk-android-internal:testDebugUnitTest
+        :unitTestDebugFeatures
+        :unitTestDebugIntegrations
+        :unitTestDebugSamples
+  artifacts:
+    when: always
+    expire_in: 1 week
+    reports:
+      junit: "**/build/test-results/testDebugUnitTest/*.xml"
