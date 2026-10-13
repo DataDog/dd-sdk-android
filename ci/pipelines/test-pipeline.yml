@@ -120,11 +120,8 @@ verify:all:
     - gradle_exit_code=0
     - >-
         DD_TAGS="test.configuration.variant:debug" ./gradlew
-        --info
         --console=plain
         --continue
-        --no-configuration-cache
-        -Dorg.gradle.caching.debug=true
         --scan
         -Dscan.uploadInBackground=false
         checkGeneratedFiles
