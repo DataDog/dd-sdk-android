@@ -103,6 +103,7 @@ test:debug:
     policy: pull-push
   script:
     - !reference [.snippets, setup-gradle]
+    - du -ah cache/caches | sort -h | tail -100
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - >-
         DD_TAGS="test.configuration.variant:debug" ./gradlew
@@ -141,4 +142,5 @@ test-pyramid:core-it-latest-api:
     policy: pull
   script:
     - !reference [.snippets, setup-macos-ami-runner]
+    - du -ah cache/caches | sort -h | tail -100
     - !reference [.snippets, run-core-it-instrumented]
