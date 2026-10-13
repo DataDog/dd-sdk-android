@@ -44,6 +44,8 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.concurrent.Executor
+import java.util.concurrent.FutureTask
+import java.util.concurrent.TimeUnit
 
 internal class CompositionTouchPrivacyTest {
 
@@ -432,9 +434,9 @@ internal class CompositionTouchPrivacyTest {
                 when (cancellation) {
                     Cancellation.EXPIRY -> {
                         fixture.nowNs = GENERATION_BUDGET_NS
-                        Thread { fixture.expiryScheduler.runNext() }.apply { start(); join() }
+                        runCancellation { fixture.expiryScheduler.runNext() }
                     }
-                    Cancellation.STOP -> Thread { fixture.orchestrator.stop() }.apply { start(); join() }
+                    Cancellation.STOP -> runCancellation { fixture.orchestrator.stop() }
                     Cancellation.DEADLINE -> fixture.nowNs = GENERATION_BUDGET_NS
                 }
             }
@@ -814,7 +816,7 @@ internal class CompositionTouchPrivacyTest {
     fun `M capture new RUM view W onRumViewChanged { native copy in progress }`() {
         // Given
         val fixture = Fixture()
-        val testedPipeline = CompositionCapturePipeline(fixture.orchestrator, mock(), mock(), mock())
+        val testedPipeline = CompositionCapturePipeline(fixture.orchestrator, mock(), mock(), mock(), mock())
         fixture.onMap = { view ->
             if (view === fixture.root) {
                 fixture.rumViewScope = CapturedRumViewScope(RumViewIdentityScope("next-view"), 0L)
@@ -833,6 +835,19 @@ internal class CompositionTouchPrivacyTest {
         fixture.mainThreadExecutor.runNext()
         assertThat(fixture.consumed.single().snapshot.scope).isEqualTo(RumViewIdentityScope("next-view"))
         assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("next-view"))).isTrue()
+    }
+
+    private fun runCancellation(task: () -> Unit) {
+        val fakeTask = FutureTask { task(); Unit }
+        val fakeWorker = Thread(fakeTask).apply { isDaemon = true }
+        fakeWorker.start()
+        try {
+            fakeTask.get(5, TimeUnit.SECONDS)
+        } finally {
+            fakeWorker.interrupt()
+            fakeWorker.join(5_000L)
+        }
+        assertThat(fakeWorker.isAlive).isFalse()
     }
 
     private class Fixture(

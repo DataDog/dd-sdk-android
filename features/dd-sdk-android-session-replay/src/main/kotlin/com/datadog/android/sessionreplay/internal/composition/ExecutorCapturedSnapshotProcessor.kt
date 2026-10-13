@@ -19,15 +19,17 @@ internal class ExecutorCapturedSnapshotProcessor(
     private val internalLogger: InternalLogger,
     private val builder: CapturedNativeSnapshotBuilder = CapturedNativeSnapshotBuilder()
 ) : CapturedSnapshotProcessor {
-    @Suppress("UnsafeThirdPartyFunctionCall") // Atomic references accept null; executor rejection is caught.
     override fun process(
         request: SnapshotProcessingRequest,
         callback: SnapshotProcessingCallback
     ): CancellableCaptureWork {
         val generation = request.generation
         val terminal = AtomicBoolean(false)
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference accepts this non-null input.
         val pending = AtomicReference(request)
         val work = CancellableCaptureWork {
+            @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference accepts a null cleared value.
             pending.set(null)
             // Once the result is handed off, the completion queue owns its remaining lifetime.
             if (terminal.compareAndSet(false, true)) generation.expire()
@@ -47,12 +49,14 @@ internal class ExecutorCapturedSnapshotProcessor(
                 }
             )
         } catch (e: RejectedExecutionException) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference accepts a null cleared value.
             pending.set(null)
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.TELEMETRY,
                 { "Unable to schedule composition snapshot construction" },
-                e
+                e,
+                onlyOnce = true
             )
             if (terminal.compareAndSet(false, true)) {
                 callback.onProcessed(SnapshotProcessingResult.Failed(request.generation.id))
@@ -76,7 +80,8 @@ internal class ExecutorCapturedSnapshotProcessor(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
             { "Composition snapshot construction threw an exception" },
-            e
+            e,
+            onlyOnce = true
         )
         null
     }

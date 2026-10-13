@@ -30,10 +30,11 @@ internal class CapturedBackgroundShapeStyleResolver(
         return capture(view)?.resolve()
     }
 
-    @Suppress("DEPRECATION") // ColorDrawable opacity accounts for tint and color filters.
     fun capture(view: View): CapturedBackgroundColor? {
         val background = view.background
         val color = background?.let { drawableToColorMapper.mapDrawableToColor(it, internalLogger) } ?: return null
+
+        @Suppress("DEPRECATION") // ColorDrawable opacity accounts for tint and color filters.
         val isOpaque = background is ColorDrawable && background.opacity == PixelFormat.OPAQUE &&
             (color ushr ALPHA_SHIFT) == FULLY_OPAQUE_ALPHA
         return CapturedBackgroundColor(color, colorStringFormatter, isOpaque)

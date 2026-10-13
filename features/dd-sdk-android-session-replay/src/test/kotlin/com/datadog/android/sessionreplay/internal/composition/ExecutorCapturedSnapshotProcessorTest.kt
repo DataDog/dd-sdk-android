@@ -6,42 +6,44 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.concurrent.Executor
 import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.atomic.AtomicReference
 
+@ExtendWith(ForgeExtension::class)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class ExecutorCapturedSnapshotProcessorTest {
-    private val fakeFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope("view"))
+    private lateinit var fakeSnapshot: CapturedNativeSnapshot
+    private lateinit var fakeFactory: DefaultCapturedIdentityFactory
     private val fakeContext = CaptureGenerationContext(1L, 0L, 100L, CaptureTimeProvider { 0L })
     private val fakeNone = CapturedViewData.Mapped(CapturedViewMapperResult.None)
 
-    private fun snapshot(mapping: CapturedViewData = fakeNone): CapturedNativeSnapshot = CapturedNativeSnapshot(
-        123L,
-        fakeFactory.scope,
-        listOf(
-            CapturedNativeWindow(
-                1f,
-                listOf(
-                    CapturedNativeView(
-                        fakeFactory.window("window"),
-                        -1,
-                        CapturedBounds(0, 0, 100, 100),
-                        1.0,
-                        mapping,
-                        true,
-                        null,
-                        null
-                    )
-                )
-            )
-        )
+    @BeforeEach
+    fun setUp(@Forgery fakeInput: CapturedNativeSnapshot) {
+        fakeSnapshot = fakeInput
+        fakeFactory = DefaultCapturedIdentityFactory(fakeInput.scope)
+    }
+
+    private fun snapshot(viewData: CapturedViewData = fakeNone): CapturedNativeSnapshot = fakeSnapshot.copy(
+        windows = fakeSnapshot.windows.map { window ->
+            window.copy(views = window.views.map { it.copy(viewData = viewData) })
+        }
     )
 
     @Test
@@ -49,22 +51,43 @@ internal class ExecutorCapturedSnapshotProcessorTest {
         // Given
         val fakeQueue = mutableListOf<Runnable>()
         val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(fakeQueue::add), mock())
-        val fakeResult = AtomicReference<SnapshotProcessingResult>()
-        val fakeCallbackThread = AtomicReference<Thread>()
+        val fakeResults = mutableListOf<SnapshotProcessingResult>()
 
         // When
-        testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot())) {
-            fakeResult.set(it)
-            fakeCallbackThread.set(Thread.currentThread())
-        }
+        testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), fakeResults::add)
 
         // Then
-        assertThat(fakeResult.get()).isNull()
-        val fakeWorker = Thread { fakeQueue.single().run() }.apply { start(); join() }
-        assertThat(fakeCallbackThread.get()).isSameAs(fakeWorker)
-        val snapshot = (fakeResult.get() as SnapshotProcessingResult.Completed).snapshot
-        assertThat(snapshot.timestamp).isEqualTo(123L)
+        assertThat(fakeResults).isEmpty()
+        fakeQueue.single().run()
+        val snapshot = (fakeResults.single() as SnapshotProcessingResult.Completed).snapshot
+        assertThat(snapshot.timestamp).isEqualTo(fakeSnapshot.timestamp)
         assertThat(DefaultCapturedTreeValidator().validate(snapshot)).isEqualTo(CaptureValidationResult.Valid)
+    }
+
+    @Test
+    fun `M pass through a completed tree W process`(@Forgery fakeWindow: CapturedWindow) {
+        // Given
+        val factory = DefaultCapturedIdentityFactory(fakeWindow.rootLayer.identity.scope)
+        val fakeTree = CapturedFullSnapshot(
+            fakeSnapshot.timestamp,
+            factory.scope,
+            CapturedLayer(
+                factory.screenRoot(),
+                CapturedLayerKind.SYNTHETIC_SCREEN_ROOT,
+                fakeWindow.rootLayer.bounds,
+                listOf(CapturedChild.Layer(fakeWindow.rootLayer.identity))
+            ),
+            fakeWindow.layers,
+            fakeWindow.wireframes
+        )
+        val fakeResults = mutableListOf<SnapshotProcessingResult>()
+        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(Runnable::run), mock())
+
+        // When
+        testedProcessor.process(SnapshotProcessingRequest(fakeContext, fakeTree), fakeResults::add)
+
+        // Then
+        assertThat((fakeResults.single() as SnapshotProcessingResult.Completed).snapshot).isSameAs(fakeTree)
     }
 
     @Test
@@ -126,13 +149,25 @@ internal class ExecutorCapturedSnapshotProcessorTest {
     fun `M report failure W executor rejects work`() {
         // Given
         val fakeResults = mutableListOf<SnapshotProcessingResult>()
-        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor { throw RejectedExecutionException() }, mock())
+        val fakeError = RejectedExecutionException()
+        val mockLogger: InternalLogger = mock()
+        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor { throw fakeError }, mockLogger)
 
         // When
         testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), fakeResults::add)
 
         // Then
         assertThat(fakeResults).containsExactly(SnapshotProcessingResult.Failed(fakeContext.id))
+        val fakeMessage = argumentCaptor<() -> String>()
+        verify(mockLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.TELEMETRY),
+            fakeMessage.capture(),
+            eq(fakeError),
+            eq(true),
+            eq(null)
+        )
+        assertThat(fakeMessage.firstValue()).isEqualTo("Unable to schedule composition snapshot construction")
     }
 
     @Test
@@ -140,14 +175,26 @@ internal class ExecutorCapturedSnapshotProcessorTest {
         // Given
         val fakeResults = mutableListOf<SnapshotProcessingResult>()
         val mockMapping: CapturedViewData = mock()
-        whenever(mockMapping.map(any())).thenThrow(IllegalStateException("Invalid copied value"))
-        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(Runnable::run), mock())
+        val fakeError = IllegalStateException("Invalid copied value")
+        whenever(mockMapping.map(any())).thenThrow(fakeError)
+        val mockLogger: InternalLogger = mock()
+        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(Runnable::run), mockLogger)
 
         // When
         testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot(mockMapping)), fakeResults::add)
 
         // Then
         assertThat(fakeResults).containsExactly(SnapshotProcessingResult.Failed(fakeContext.id))
+        val fakeMessage = argumentCaptor<() -> String>()
+        verify(mockLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.TELEMETRY),
+            fakeMessage.capture(),
+            eq(fakeError),
+            eq(true),
+            eq(null)
+        )
+        assertThat(fakeMessage.firstValue()).isEqualTo("Composition snapshot construction threw an exception")
     }
 
     @Test
@@ -172,7 +219,7 @@ internal class ExecutorCapturedSnapshotProcessorTest {
         val result = testedBuilder.buildWindow(CapturedNativeWindow(1f, fakeViews), fakeContext)
 
         // Then
-        assertThat(result!!.layers).hasSize(5000)
+        assertThat(checkNotNull(result).layers).hasSize(5000)
         assertThat(result.rootLayer.identity).isEqualTo(fakeWindowIdentity)
         assertThat(result.layers.first().identity).isEqualTo(fakeViews.last().identity)
     }

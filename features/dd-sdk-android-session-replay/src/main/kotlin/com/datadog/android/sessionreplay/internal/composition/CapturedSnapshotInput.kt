@@ -30,7 +30,7 @@ internal data class CapturedNativeView(
     val parentIndex: Int,
     val bounds: CapturedBounds,
     val alpha: Double,
-    val mapping: CapturedViewData,
+    val viewData: CapturedViewData,
     val clipToBounds: Boolean,
     val explicitClip: CapturedBounds?,
     val childPaddingClip: CapturedBounds?,
