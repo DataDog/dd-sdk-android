@@ -38,3 +38,5 @@ gh_token
 
 # Claude
 .claude/worktrees/
+
+megacache/

@@ -64,7 +64,16 @@ stages:
     - set +e
     - exit_code=0
     - !reference [ .snippets, start-emulator ]
-    - DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew --scan -Dscan.uploadInBackground=false :reliability:core-it:connectedDebugAndroidTest $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
+    - >-
+        DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew
+        --info
+        --console=plain
+        -Dorg.gradle.caching.debug=true
+        --scan
+        -Dscan.uploadInBackground=false
+        :reliability:core-it:connectedDebugAndroidTest
+        $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" )
+        || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname reliability/core-it/build/outputs/androidTest-results/connected/debug/
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
@@ -97,6 +106,9 @@ test:debug:
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - >-
         DD_TAGS="test.configuration.variant:debug" ./gradlew
+        --info
+        --console=plain
+        -Dorg.gradle.caching.debug=true
         --scan
         -Dscan.uploadInBackground=false
         :dd-sdk-android-core:testDebugUnitTest
