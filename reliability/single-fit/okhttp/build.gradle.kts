@@ -72,6 +72,10 @@ apollo {
     }
 }
 
+tasks.named("runKtlintCheckOverTestSourceSet") {
+    mustRunAfter("generateTestServiceApolloSources")
+}
+
 unMock {
     keep("android.util.Singleton")
     keep("com.android.internal.util.FastPrintWriter")

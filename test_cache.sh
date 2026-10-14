@@ -14,6 +14,8 @@ GRADLE_USER_HOME="$CACHE_TEST_HOME" ./gradlew \
   --scan \
   -Dscan.uploadInBackground=false \
   -PverificationBuildType=debug \
+  -Puse-api21-java-backport \
+  -Puse-desugaring \
   checkGeneratedFiles \
   ktlintCheck \
   :build-logic:ktlintCheck \
@@ -34,8 +36,17 @@ GRADLE_USER_HOME="$CACHE_TEST_HOME" ./gradlew \
   :dd-sdk-android-internal:koverXmlReportDebug \
   :koverReportDebugFeatures \
   :koverReportDebugIntegrations \
+  :reliability:single-fit:logs:testDebugUnitTest \
+  :reliability:single-fit:rum:testDebugUnitTest \
+  :reliability:single-fit:trace:testDebugUnitTest \
+  :reliability:single-fit:okhttp:testDebugUnitTest \
+  :reliability:single-fit:profiling:testDebugUnitTest \
+  checkTestPyramidCoverage \
   :reliability:core-it:assembleDebug \
-  :reliability:core-it:assembleDebugAndroidTest
+  :reliability:core-it:assembleDebugAndroidTest \
+  :instrumented:integration:assembleDebug \
+  :instrumented:integration:assembleDebugAndroidTest \
+  :features:dd-sdk-android-ndk:assembleDebugAndroidTest
 
 #GRADLE_USER_HOME="$CACHE_TEST_HOME" ./gradlew \
 #  --build-cache \

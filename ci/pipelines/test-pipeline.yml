@@ -64,26 +64,32 @@ stages:
   start-emulator:
     - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
 
-  run-core-it-instrumented-apks:
+  run-instrumented-apks:
     - set +e
     - exit_code=0
     - !reference [ .snippets, start-emulator ]
     - $ANDROID_HOME/platform-tools/adb wait-for-device
     - until [[ "$($ANDROID_HOME/platform-tools/adb shell getprop sys.boot_completed | tr -d '\r')" == "1" ]]; do sleep 2; done
-    - export CORE_IT_APP_APK=$(find reliability/core-it/build/outputs/apk/debug -name '*.apk' -type f | head -1)
-    - export CORE_IT_TEST_APK=$(find reliability/core-it/build/outputs/apk/androidTest/debug -name '*.apk' -type f | head -1)
-    - test -f "$CORE_IT_APP_APK" || exit_code=1
-    - test -f "$CORE_IT_TEST_APK" || exit_code=1
-    - if [[ "$exit_code" -eq 0 ]]; then $ANDROID_HOME/platform-tools/adb install -r -t "$CORE_IT_APP_APK" || exit_code=$?; fi
-    - if [[ "$exit_code" -eq 0 ]]; then $ANDROID_HOME/platform-tools/adb install -r -t "$CORE_IT_TEST_APK" || exit_code=$?; fi
+    - export INSTRUMENTED_TEST_APK=$(find "$INSTRUMENTED_TEST_APK_DIR" -name '*.apk' -type f | head -1)
+    - test -f "$INSTRUMENTED_TEST_APK" || exit_code=1
+    - |
+        if [[ -n "$INSTRUMENTED_APP_APK_DIR" ]]; then
+          export INSTRUMENTED_APP_APK=$(find "$INSTRUMENTED_APP_APK_DIR" -name '*.apk' -type f | head -1)
+          test -f "$INSTRUMENTED_APP_APK" || exit_code=1
+        fi
+    - if [[ "$exit_code" -eq 0 ]] && [[ -n "$INSTRUMENTED_APP_APK_DIR" ]]; then $ANDROID_HOME/platform-tools/adb install -r -t "$INSTRUMENTED_APP_APK" || exit_code=$?; fi
+    - if [[ "$exit_code" -eq 0 ]]; then $ANDROID_HOME/platform-tools/adb install -r -t "$INSTRUMENTED_TEST_APK" || exit_code=$?; fi
     - |
         if [[ "$exit_code" -eq 0 ]]; then
-          $ANDROID_HOME/platform-tools/adb shell am instrument -w -r \
-            com.datadog.android.core.integration.test/androidx.test.runner.AndroidJUnitRunner \
-            > core-it-instrumentation-output.txt 2>&1 || exit_code=$?
+          set -o pipefail
+          $ANDROID_HOME/platform-tools/adb shell am instrument -w -r $INSTRUMENTATION_ARGUMENTS \
+            "$INSTRUMENTATION_PACKAGE/androidx.test.runner.AndroidJUnitRunner" \
+            | python3 ci/scripts/instrumentation_to_junit.py \
+                --raw-output instrumentation-output.txt \
+                --junit-output instrumentation-results.xml \
+            || exit_code=$?
+          set +o pipefail
         fi
-    - cat core-it-instrumentation-output.txt || true
-    - if [[ "$exit_code" -eq 0 ]] && ! grep -q '^OK (' core-it-instrumentation-output.txt; then exit_code=1; fi
     - $ANDROID_HOME/platform-tools/adb emu kill
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
@@ -132,6 +138,8 @@ verify:all:
         --scan
         -Dscan.uploadInBackground=false
         -PverificationBuildType=debug
+        -Puse-api21-java-backport
+        -Puse-desugaring
         checkGeneratedFiles
         ktlintCheck
         :build-logic:ktlintCheck
@@ -152,8 +160,17 @@ verify:all:
         :dd-sdk-android-internal:koverXmlReportDebug
         :koverReportDebugFeatures
         :koverReportDebugIntegrations
+        :reliability:single-fit:logs:testDebugUnitTest
+        :reliability:single-fit:rum:testDebugUnitTest
+        :reliability:single-fit:trace:testDebugUnitTest
+        :reliability:single-fit:okhttp:testDebugUnitTest
+        :reliability:single-fit:profiling:testDebugUnitTest
+        checkTestPyramidCoverage
         :reliability:core-it:assembleDebug
         :reliability:core-it:assembleDebugAndroidTest
+        :instrumented:integration:assembleDebug
+        :instrumented:integration:assembleDebugAndroidTest
+        :features:dd-sdk-android-ndk:assembleDebugAndroidTest
         || gradle_exit_code=$?
     - dd-sts exchange --policy dd-sdk-android -- datadog-ci coverage upload . || true
     - exit "$gradle_exit_code"
@@ -163,13 +180,18 @@ verify:all:
     paths:
       - "reliability/core-it/build/outputs/apk/debug/*.apk"
       - "reliability/core-it/build/outputs/apk/androidTest/debug/*.apk"
+      - "instrumented/integration/build/outputs/apk/debug/*.apk"
+      - "instrumented/integration/build/outputs/apk/androidTest/debug/*.apk"
+      - "features/dd-sdk-android-ndk/build/outputs/apk/androidTest/debug/*.apk"
+      - "build/reports/test-pyramid/coverage.txt"
     reports:
       junit:
         - "tools/**/build/test-results/test/*.xml"
         - "build-logic/build/test-results/test/*.xml"
         - "**/build/test-results/testDebugUnitTest/*.xml"
+        - "reliability/single-fit/**/build/test-results/testDebugUnitTest/*.xml"
 
-test-pyramid:core-it-latest-api:
+.instrumented-apk-job:
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   needs:
@@ -183,9 +205,88 @@ test-pyramid:core-it-latest-api:
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
     - !reference [.snippets, install-android-api-components]
-    - !reference [.snippets, run-core-it-instrumented-apks]
+    - !reference [.snippets, run-instrumented-apks]
   artifacts:
     when: always
     expire_in: 1 week
     paths:
-      - core-it-instrumentation-output.txt
+      - instrumentation-output.txt
+    reports:
+      junit: instrumentation-results.xml
+
+.core-it-apk-job:
+  extends: .instrumented-apk-job
+  variables:
+    INSTRUMENTED_APP_APK_DIR: "reliability/core-it/build/outputs/apk/debug"
+    INSTRUMENTED_TEST_APK_DIR: "reliability/core-it/build/outputs/apk/androidTest/debug"
+    INSTRUMENTATION_PACKAGE: "com.datadog.android.core.integration.test"
+    INSTRUMENTATION_ARGUMENTS: ""
+
+.legacy-integration-apk-job:
+  extends: .instrumented-apk-job
+  variables:
+    INSTRUMENTED_APP_APK_DIR: "instrumented/integration/build/outputs/apk/debug"
+    INSTRUMENTED_TEST_APK_DIR: "instrumented/integration/build/outputs/apk/androidTest/debug"
+    INSTRUMENTATION_PACKAGE: "com.datadog.android.sdk.integration.test"
+    INSTRUMENTATION_ARGUMENTS: ""
+
+test-pyramid:core-it-min-api:
+  extends: .core-it-apk-job
+  variables:
+    ANDROID_API: "23"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+
+test-pyramid:core-it-latest-api:
+  extends: .core-it-apk-job
+  variables:
+    ANDROID_API: "37"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API.0;google_apis_ps16k;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API.0"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+
+test-pyramid:core-it-median-api:
+  extends: .core-it-apk-job
+  variables:
+    ANDROID_API: "28"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+
+test-pyramid:legacy-integration-instrumented-min-api:
+  extends: .legacy-integration-apk-job
+  variables:
+    ANDROID_API: "23"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+    INSTRUMENTATION_ARGUMENTS: "-e disableLeakCanary true"
+
+test-pyramid:legacy-integration-instrumented-latest-api:
+  extends: .legacy-integration-apk-job
+  variables:
+    ANDROID_API: "37"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API.0;google_apis_ps16k;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API.0"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+
+test-pyramid:legacy-integration-instrumented-median-api:
+  extends: .legacy-integration-apk-job
+  variables:
+    ANDROID_API: "28"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+
+test-pyramid:ndk-instrumented-latest-api:
+  extends: .instrumented-apk-job
+  variables:
+    ANDROID_API: "37"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API.0;google_apis_ps16k;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API.0"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+    INSTRUMENTED_APP_APK_DIR: ""
+    INSTRUMENTED_TEST_APK_DIR: "features/dd-sdk-android-ndk/build/outputs/apk/androidTest/debug"
+    INSTRUMENTATION_PACKAGE: "com.datadog.android.ndk.test"
+    INSTRUMENTATION_ARGUMENTS: ""
