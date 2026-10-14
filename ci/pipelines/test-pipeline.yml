@@ -76,6 +76,8 @@ stages:
     - gradle_exit_code=0
     - >-
         DD_TAGS="test.configuration.variant:debug" ./gradlew
+        --no-build-cache
+        --no-configuration-cache
         --console=plain
         --continue
         --scan
@@ -138,8 +140,6 @@ verify:all:
   extends:
     - .verify-all
     - .cpu-memory-intensive-job
-  rules:
-    - when: never
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   cache:
@@ -155,6 +155,8 @@ verify:all:
 
 verify:all_mac:
   extends: .verify-all
+  rules:
+    - when: never
   tags: [ "macos:sonoma", "specific:true" ]
   before_script:
     - !reference [.snippets, setup-macos-ami-runner]
