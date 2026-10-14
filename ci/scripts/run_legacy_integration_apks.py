@@ -14,6 +14,7 @@ from typing import Optional, Tuple
 from run_instrumented_apks import (
     InstrumentationRun,
     emulator_from_environment,
+    parse_arguments,
     run_instrumented_apks,
 )
 
@@ -36,7 +37,10 @@ def instrumentation_run(
 
 
 def main() -> int:
-    arguments = tuple(shlex.split(os.environ.get("INSTRUMENTATION_ARGUMENTS", "")))
+    command_arguments = parse_arguments(__doc__ or "Run legacy instrumented tests.")
+    instrumentation_arguments = tuple(
+        shlex.split(os.environ.get("INSTRUMENTATION_ARGUMENTS", ""))
+    )
     return run_instrumented_apks(
         (
             emulator_from_environment(
@@ -44,7 +48,7 @@ def main() -> int:
                 (
                     instrumentation_run(
                         "rum",
-                        arguments,
+                        instrumentation_arguments,
                         "com.datadog.android.sdk.integration.rum",
                     ),
                 ),
@@ -54,7 +58,7 @@ def main() -> int:
                 (
                     instrumentation_run(
                         "session-replay",
-                        arguments,
+                        instrumentation_arguments,
                         "com.datadog.android.sdk.integration.sessionreplay",
                     ),
                 ),
@@ -64,14 +68,15 @@ def main() -> int:
                 (
                     instrumentation_run(
                         "other",
-                        arguments,
+                        instrumentation_arguments,
                         "com.datadog.android.sdk.integration",
                         "com.datadog.android.sdk.integration.rum,"
                         "com.datadog.android.sdk.integration.sessionreplay",
                     ),
                 ),
             ),
-        )
+        ),
+        dry_run_only=command_arguments.dry_run,
     )
 
 

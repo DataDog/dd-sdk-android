@@ -6,7 +6,9 @@
 
 """Run configured Android instrumentation tests on concurrent emulators."""
 
+import argparse
 import os
+import shlex
 import signal
 import subprocess
 import sys
@@ -43,6 +45,16 @@ class EmulatorConfiguration:
     runs: Tuple[InstrumentationRun, ...]
 
 
+def parse_arguments(description: str) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate the configuration and print commands without executing them.",
+    )
+    return parser.parse_args()
+
+
 def required_environment(name: str) -> str:
     value = os.environ.get(name)
     if not value:
@@ -70,10 +82,9 @@ def emulator_from_environment(
     )
 
 
-def install_android_components(
-    sdkmanager: Path,
+def required_android_components(
     configurations: Sequence[EmulatorConfiguration],
-) -> None:
+) -> List[str]:
     components = {"emulator", "platform-tools"}
     for configuration in configurations:
         components.update(
@@ -83,9 +94,16 @@ def install_android_components(
                 configuration.android_build_tools,
             }
         )
+    return sorted(components)
+
+
+def install_android_components(
+    sdkmanager: Path,
+    configurations: Sequence[EmulatorConfiguration],
+) -> None:
 
     subprocess.run(
-        [sdkmanager, "--install", *sorted(components)],
+        [sdkmanager, "--install", *required_android_components(configurations)],
         check=True,
         input="y\n" * 100,
         text=True,
@@ -96,6 +114,137 @@ def install_android_components(
         input="y\n" * 100,
         text=True,
     )
+
+
+def print_command(command: Sequence[object]) -> None:
+    print(shlex.join(str(argument) for argument in command))
+
+
+def apk_install_commands(
+    run: InstrumentationRun,
+    adb: Path,
+    serial: str,
+) -> List[List[object]]:
+    commands: List[List[object]] = []
+    if run.app_apk_directory:
+        commands.append(
+            [
+                adb,
+                "-s",
+                serial,
+                "install",
+                "-r",
+                "-t",
+                find_apk(run.app_apk_directory),
+            ]
+        )
+    commands.append(
+        [
+            adb,
+            "-s",
+            serial,
+            "install",
+            "-r",
+            "-t",
+            find_apk(run.test_apk_directory),
+        ]
+    )
+    return commands
+
+
+def instrumentation_command(
+    run: InstrumentationRun,
+    adb: Path,
+    serial: str,
+) -> List[object]:
+    runner_arguments: List[str] = []
+    if run.include_package:
+        runner_arguments.extend(["-e", "package", run.include_package])
+    if run.exclude_packages:
+        runner_arguments.extend(["-e", "notPackage", run.exclude_packages])
+    return [
+        adb,
+        "-s",
+        serial,
+        "shell",
+        "am",
+        "instrument",
+        "-w",
+        "-r",
+        *run.arguments,
+        *runner_arguments,
+        f"{run.instrumentation_package}/androidx.test.runner.AndroidJUnitRunner",
+    ]
+
+
+def dry_run(
+    configurations: Sequence[EmulatorConfiguration],
+    android_home: Path,
+    emulator_name: str,
+) -> None:
+    sdkmanager = android_home / "cmdline-tools" / "latest" / "bin" / "sdkmanager"
+    avdmanager = android_home / "cmdline-tools" / "latest" / "bin" / "avdmanager"
+    emulator = android_home / "emulator" / "emulator"
+    adb = android_home / "platform-tools" / "adb"
+
+    print("SDK components:")
+    print_command([sdkmanager, "--install", *required_android_components(configurations)])
+
+    configuration_labels = set()
+    for index, configuration in enumerate(configurations):
+        if configuration.label in configuration_labels:
+            raise RuntimeError(f"Duplicate emulator label: {configuration.label}")
+        configuration_labels.add(configuration.label)
+        if not configuration.runs:
+            raise RuntimeError(f"No runs configured for emulator {configuration.label}")
+
+        avd_name = f"{emulator_name}_{configuration.label.replace('-', '_')}"
+        port = FIRST_EMULATOR_PORT + index * 2
+        serial = f"emulator-{port}"
+        print(f"\nEmulator {configuration.label}:")
+        print_command(
+            [
+                avdmanager,
+                "--verbose",
+                "create",
+                "avd",
+                "--force",
+                "--name",
+                avd_name,
+                "--package",
+                configuration.emulator_image,
+            ]
+        )
+        print_command(
+            [
+                emulator,
+                "-avd",
+                avd_name,
+                "-port",
+                port,
+                "-grpc-use-jwt",
+                "-no-snapstorage",
+                "-no-audio",
+                "-no-window",
+                "-no-boot-anim",
+                "-verbose",
+                "-qemu",
+                "-machine",
+                "virt",
+            ]
+        )
+
+        run_labels = set()
+        for run in configuration.runs:
+            if run.label in run_labels:
+                raise RuntimeError(
+                    f"Duplicate run label on emulator {configuration.label}: {run.label}"
+                )
+            run_labels.add(run.label)
+            print(f"  Run {run.label}:")
+            for command in apk_install_commands(run, adb, serial):
+                print_command(command)
+            print_command(instrumentation_command(run, adb, serial))
 
 
 def wait_for_boot(adb: Path, serial: str) -> None:
@@ -123,37 +272,12 @@ def run_tests(
     adb: Path,
     serial: str,
 ) -> int:
-    if run.app_apk_directory:
-        subprocess.run(
-            [adb, "-s", serial, "install", "-r", "-t", find_apk(run.app_apk_directory)],
-            check=True,
-        )
-    subprocess.run(
-        [adb, "-s", serial, "install", "-r", "-t", find_apk(run.test_apk_directory)],
-        check=True,
-    )
-
-    runner_arguments: List[str] = []
-    if run.include_package:
-        runner_arguments.extend(["-e", "package", run.include_package])
-    if run.exclude_packages:
-        runner_arguments.extend(["-e", "notPackage", run.exclude_packages])
+    for command in apk_install_commands(run, adb, serial):
+        subprocess.run(command, check=True)
 
     output_suffix = f"-{emulator_label}-{run.label}"
     instrumentation = subprocess.Popen(
-        [
-            adb,
-            "-s",
-            serial,
-            "shell",
-            "am",
-            "instrument",
-            "-w",
-            "-r",
-            *run.arguments,
-            *runner_arguments,
-            f"{run.instrumentation_package}/androidx.test.runner.AndroidJUnitRunner",
-        ],
+        instrumentation_command(run, adb, serial),
         stdout=subprocess.PIPE,
         text=True,
     )
@@ -189,12 +313,17 @@ def run_on_emulator(
 
 def run_instrumented_apks(
     configurations: Sequence[EmulatorConfiguration],
+    dry_run_only: bool = False,
 ) -> int:
     if not configurations:
         raise RuntimeError("At least one emulator configuration is required")
 
     android_home = Path(required_environment("ANDROID_HOME"))
     emulator_name = required_environment("EMULATOR_NAME")
+    if dry_run_only:
+        dry_run(configurations, android_home, emulator_name)
+        return 0
+
     adb = android_home / "platform-tools" / "adb"
     emulator = android_home / "emulator" / "emulator"
     sdkmanager = android_home / "cmdline-tools" / "latest" / "bin" / "sdkmanager"

@@ -11,12 +11,14 @@ import sys
 from run_instrumented_apks import (
     EmulatorConfiguration,
     InstrumentationRun,
+    parse_arguments,
     required_environment,
     run_instrumented_apks,
 )
 
 
 def main() -> int:
+    arguments = parse_arguments(__doc__ or "Run core-it instrumented tests.")
     android_arch = required_environment("ANDROID_ARCH")
     run = InstrumentationRun(
         label="core-it",
@@ -47,7 +49,8 @@ def main() -> int:
                 android_build_tools="build-tools;37.0.0",
                 runs=(run,),
             ),
-        )
+        ),
+        dry_run_only=arguments.dry_run,
     )
 
 

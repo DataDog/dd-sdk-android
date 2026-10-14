@@ -11,17 +11,22 @@ import sys
 from run_instrumented_apks import (
     InstrumentationRun,
     emulator_from_environment,
+    parse_arguments,
     run_instrumented_apks,
 )
 
 
 def main() -> int:
+    arguments = parse_arguments(__doc__ or "Run NDK instrumented tests.")
     run = InstrumentationRun(
         label="ndk",
         test_apk_directory="features/dd-sdk-android-ndk/build/outputs/apk/androidTest/debug",
         instrumentation_package="com.datadog.android.ndk.test",
     )
-    return run_instrumented_apks((emulator_from_environment("ndk", (run,)),))
+    return run_instrumented_apks(
+        (emulator_from_environment("ndk", (run,)),),
+        dry_run_only=arguments.dry_run,
+    )
 
 
 if __name__ == "__main__":

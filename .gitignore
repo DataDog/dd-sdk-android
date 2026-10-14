@@ -40,3 +40,5 @@ gh_token
 .claude/worktrees/
 
 megacache/
+
+ci/scripts/__pycache__/
