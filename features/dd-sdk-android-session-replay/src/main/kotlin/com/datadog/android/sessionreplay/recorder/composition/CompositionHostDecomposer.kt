@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.recorder.composition
 
 import android.view.View
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
@@ -55,6 +56,9 @@ interface CompositionHostDecomposer {
  * [CompositionIdentityFactory.composeHost] by the caller), the owner every `composeNode`/wireframe
  * identity in this decomposition must be minted against.
  * @param screenDensity The screen density, for pixel-to-dp conversion.
+ * @param hostBounds Copied host bounds in screen dp. The native snapshot builder always clips
+ * composition wireframes to this rectangle, even when the host does not clip native children.
+ * Null means that guarantee is unavailable and the decomposer must not cull against host bounds.
  * @param nativeViewHandoff Bound back into the caller's own native-View traversal - used when the
  * decomposer encounters a real interop `View` embedded inside the host (e.g. Compose's
  * `AndroidView { }`), so that region is mapped through the ordinary View-based path (becoming
@@ -69,8 +73,17 @@ class CompositionHostDecomposeRequest(
     val identityFactory: CompositionIdentityFactory,
     val hostIdentity: CapturedIdentity,
     val screenDensity: Float,
+    val hostBounds: CapturedBounds?,
     val nativeViewHandoff: (view: View, childIdentity: CapturedIdentity) -> CompositionNativeSubtree?
-)
+) {
+    /** Preserves callers that do not supply a copied host clip. */
+    constructor(
+        identityFactory: CompositionIdentityFactory,
+        hostIdentity: CapturedIdentity,
+        screenDensity: Float,
+        nativeViewHandoff: (view: View, childIdentity: CapturedIdentity) -> CompositionNativeSubtree?
+    ) : this(identityFactory, hostIdentity, screenDensity, null, nativeViewHandoff)
+}
 
 /**
  * One embedded native `View`'s subtree, mapped by the caller's own native-View traversal in

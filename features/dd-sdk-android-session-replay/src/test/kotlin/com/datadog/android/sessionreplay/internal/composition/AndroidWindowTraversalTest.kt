@@ -24,6 +24,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
+import com.datadog.android.internal.sessionreplay.composition.CapturedTextStyle
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.R
@@ -752,6 +753,7 @@ internal class AndroidWindowTraversalTest {
         val windowIdentity = identityFactory.window("window")
 
         var capturedHostIdentity: CapturedIdentity? = null
+        var capturedHostBounds: CapturedBounds? = null
         val decomposer = object : CompositionHostDecomposer {
             override fun canDecompose(view: View) = view === composeHost
             override fun decompose(
@@ -759,6 +761,7 @@ internal class AndroidWindowTraversalTest {
                 request: CompositionHostDecomposeRequest
             ): CompositionHostDecomposeResult {
                 capturedHostIdentity = request.hostIdentity
+                capturedHostBounds = request.hostBounds
                 val nodeIdentity = request.identityFactory.composeNode(request.hostIdentity, "node")
                 val wireframeIdentity = request.identityFactory.shapeWireframe(nodeIdentity)
                 val wireframe = CapturedWireframe.Shape(
@@ -790,6 +793,7 @@ internal class AndroidWindowTraversalTest {
         val hostLayer = present.layers.first { it.kind == CapturedLayerKind.COMPOSE_HOST }
         val nodeLayer = present.layers.first { it.kind == CapturedLayerKind.COMPOSE_NODE }
         assertThat(capturedHostIdentity).isEqualTo(hostLayer.identity)
+        assertThat(capturedHostBounds).isEqualTo(hostLayer.bounds)
         assertThat(hostLayer.children).containsExactly(CapturedChild.Layer(nodeLayer.identity))
         assertThat(present.wireframes).hasSize(1)
         assertThat(present.layers).hasSize(3) // root + compose host + compose node
@@ -922,6 +926,63 @@ internal class AndroidWindowTraversalTest {
         assertThat(hostLayer.modifiers).containsExactly(CapturedModifier.Opacity(0.5))
         assertThat(present.layers).hasSize(2)
         verify(mockViewBoundsResolver, never()).resolveViewGlobalBounds(eq(implementationChild), any())
+    }
+
+    @Test
+    fun `M fully clip offscreen Compose wireframes W traverseWindow { host permits overflowing native children }`() {
+        // Given
+        fakeDensity = 1f
+        val root = mockViewGroup(GlobalBounds(0, 0, 300, 300))
+        val composeHost = mockViewGroup(GlobalBounds(50, 50, 100, 100))
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(composeHost)
+        whenever(root.clipChildren).thenReturn(false)
+        whenever(composeHost.clipChildren).thenReturn(false)
+        whenever(composeHost.clipToPadding).thenReturn(false)
+        val fakeWireframeBounds = listOf(
+            CapturedBounds(20, 60, 20, 20),
+            CapturedBounds(150, 60, 20, 20),
+            CapturedBounds(60, 20, 20, 20),
+            CapturedBounds(60, 150, 20, 20),
+            CapturedBounds(40, 60, 20, 20)
+        )
+        val stubDecomposer: CompositionHostDecomposer = mock()
+        whenever(stubDecomposer.canDecompose(composeHost)).thenReturn(true)
+        whenever(stubDecomposer.decompose(eq(composeHost), any())).thenAnswer { fakeInvocation ->
+            val fakeRequest = fakeInvocation.getArgument<CompositionHostDecomposeRequest>(1)
+            val fakeWireframes = fakeWireframeBounds.mapIndexed { index, bounds ->
+                val fakeNode = fakeRequest.identityFactory.composeNode(fakeRequest.hostIdentity, index.toString())
+                CapturedWireframe.Text(
+                    identity = fakeRequest.identityFactory.textWireframe(fakeNode),
+                    bounds = bounds,
+                    text = "overflowing text",
+                    textStyle = CapturedTextStyle("sans-serif", 12, "#000000FF")
+                )
+            }
+            CompositionHostDecomposeResult(
+                fakeWireframes.map { CapturedChild.Wireframe(it.identity) },
+                emptyList(),
+                fakeWireframes
+            )
+        }
+
+        // When
+        val result = traversal(
+            composeHostDecomposer = stubDecomposer,
+            isComposeHost = { it === composeHost }
+        ).traverseWindow(root, identityFactory.window("window"), identityFactory, fakeContext)
+
+        // Then
+        val fakeWireframes = (result.doneValue() as WindowWalkResult.Present).wireframes
+        assertThat(fakeWireframes).hasSize(5)
+        fakeWireframes.take(4).forEach { wireframe ->
+            val clip = requireNotNull(wireframe.clip)
+            assertThat(
+                (clip.left ?: 0) >= wireframe.bounds.width || (clip.right ?: 0) >= wireframe.bounds.width ||
+                    (clip.top ?: 0) >= wireframe.bounds.height || (clip.bottom ?: 0) >= wireframe.bounds.height
+            ).isTrue()
+        }
+        assertThat(fakeWireframes.last().clip).isEqualTo(CapturedClip(left = 10))
     }
 
     @Test

@@ -7,10 +7,19 @@
 package com.datadog.android.sessionreplay.compose.internal.granular
 
 import android.view.View
+import androidx.compose.ui.layout.LayoutInfo
+import androidx.compose.ui.semantics.SemanticsNode
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
 import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
+import com.datadog.android.sessionreplay.recorder.composition.CompositionNativeSubtree
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -21,7 +30,11 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -117,5 +130,216 @@ internal class GranularComposeDecomposerTest {
         // Then
         assertThat(result).isNull()
         assertThat(testedGate.isAvailable()).isTrue()
+    }
+
+    @Test
+    fun `M capture a leaf entering the viewport W decompose() { clipped leaf is skipped initially }`() {
+        // Given
+        val stubLeaf = mockNode(GlobalBounds(10, 110, 20, 20))
+        val fakeRequest = requestWithLargeGroup(stubLeaf)
+
+        // When
+        val outsideResult = testedDecomposer.decompose(mockView, fakeRequest)
+
+        // Then
+        assertThat(outsideResult).isNotNull()
+        assertThat(outsideResult?.nodes).isEmpty()
+        assertThat(outsideResult?.wireframes).isEmpty()
+        assertThat(testedGate.isAvailable()).isTrue()
+        verify(mockSemanticsUtils, never()).resolveTextLayoutInfo(eq(stubLeaf), any())
+
+        // When
+        whenever(mockSemanticsUtils.resolveInnerBounds(eq(stubLeaf), any()))
+            .thenReturn(GlobalBounds(10, 90, 20, 20))
+        val enteringResult = testedDecomposer.decompose(mockView, fakeRequest)
+
+        // Then
+        assertThat(enteringResult?.nodes).hasSize(1)
+        assertThat(enteringResult?.nodes?.single()?.bounds?.y).isEqualTo(90L)
+        verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(stubLeaf), any())
+    }
+
+    @Test
+    fun `M retain overflowing children W decompose() { parent bounds are outside viewport }`() {
+        // Given
+        val stubChild = mockNode(GlobalBounds(10, 10, 20, 20))
+        val stubParent = mockNode(GlobalBounds(-50, 10, 20, 20), listOf(stubChild))
+        val fakeRequest = requestWithLargeGroup(stubParent)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, fakeRequest)
+
+        // Then
+        assertThat(result?.nodes).hasSize(2)
+        assertThat(testedGate.isAvailable()).isTrue()
+        verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(stubChild), any())
+    }
+
+    @Test
+    fun `M retain nodes W decompose() { copied host clip is unknown }`() {
+        // Given
+        val stubLeaf = mockNode(GlobalBounds(10, 110, 20, 20))
+        val fakeRequest = requestWithLargeGroup(stubLeaf, hostBounds = null)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, fakeRequest)
+
+        // Then
+        assertThat(result?.nodes).hasSize(32)
+        verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(stubLeaf), any())
+    }
+
+    @Test
+    fun `M return an empty composition W decompose() { all leaves are clipped }`() {
+        // Given
+        val stubLeaves = List(32) { mockNode(GlobalBounds(10, 110, 20, 20)) }
+        val fakeRequest = requestWithRoots(stubLeaves)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, fakeRequest)
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result?.rootChildren).isEmpty()
+        assertThat(result?.nodes).isEmpty()
+        assertThat(result?.wireframes).isEmpty()
+        assertThat(testedGate.isAvailable()).isTrue()
+    }
+
+    @Test
+    fun `M retain small groups W decompose() { selective culling below threshold }`() {
+        // Given
+        val stubLeaves = List(31) { mockNode(GlobalBounds(10, 110, 20, 20)) }
+        val stubParent = mockNode(GlobalBounds(0, 0, 100, 100), stubLeaves)
+        val fakeRequest = requestWithRoot(stubParent)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, fakeRequest)
+
+        // Then
+        assertThat(result?.nodes).hasSize(32)
+        stubLeaves.forEach { verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(it), any()) }
+    }
+
+    @Test
+    fun `M cull large groups W decompose() { selective culling reaches threshold }`() {
+        // Given
+        val stubOffscreenLeaves = List(31) { mockNode(GlobalBounds(10, 110, 20, 20)) }
+        val stubVisibleLeaf = mockNode(GlobalBounds(10, 10, 20, 20))
+        val stubParent = mockNode(GlobalBounds(0, 0, 100, 100), stubOffscreenLeaves + stubVisibleLeaf)
+        val fakeRequest = requestWithRoot(stubParent)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, fakeRequest)
+
+        // Then
+        assertThat(result?.nodes).hasSize(2)
+        stubOffscreenLeaves.forEach { verify(mockSemanticsUtils, never()).resolveTextLayoutInfo(eq(it), any()) }
+        verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(stubVisibleLeaf), any())
+    }
+
+    @Test
+    fun `M retain intersecting leaves W decompose() { partial visibility and zero extent }`() {
+        // Given
+        val fakeBounds = listOf(
+            GlobalBounds(-19, 10, 20, 20),
+            GlobalBounds(99, 10, 20, 20),
+            GlobalBounds(10, -19, 20, 20),
+            GlobalBounds(10, 99, 20, 20),
+            GlobalBounds(10, 110, 0, 20)
+        )
+        val stubLeaves = fakeBounds.map { mockNode(it) }
+        val fakeRequest = requestWithRoots(stubLeaves + List(27) { mockNode(GlobalBounds(10, 110, 20, 20)) })
+
+        // When
+        val result = testedDecomposer.decompose(mockView, fakeRequest)
+
+        // Then
+        assertThat(result?.nodes).hasSize(5)
+        stubLeaves.forEach { verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(it), any()) }
+    }
+
+    @Test
+    fun `M retain hidden placeholders W decompose() { leaf is outside host clip }`() {
+        // Given
+        val stubLeaf = mockNode(GlobalBounds(10, 110, 20, 20))
+        whenever(mockSemanticsUtils.isNodeHidden(stubLeaf)).thenReturn(true)
+        val fakeRequest = requestWithLargeGroup(stubLeaf)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, fakeRequest)
+
+        // Then
+        assertThat(result?.nodes).hasSize(1)
+        assertThat(result?.wireframes).hasSize(1)
+        verify(mockSemanticsUtils, never()).resolveTextLayoutInfo(eq(stubLeaf), any())
+        verify(mockReflectionUtils, never()).getInteropView(stubLeaf)
+    }
+
+    @Test
+    fun `M retain native handoff W decompose() { interop leaf is outside host clip }`() {
+        // Given
+        val stubLeaf = mockNode(GlobalBounds(10, 110, 20, 20))
+        val stubInteropView: View = mock()
+        whenever(mockReflectionUtils.getInteropView(stubLeaf)).thenReturn(stubInteropView)
+        val fakeRoot = CapturedLayer(
+            mock(),
+            CapturedLayerKind.NATIVE_VIEW,
+            CapturedBounds(10, 110, 20, 20),
+            emptyList()
+        )
+        val fakeSubtree = CompositionNativeSubtree(fakeRoot, listOf(fakeRoot), emptyList())
+        val fakeRequest = requestWithLargeGroup(stubLeaf, nativeHandoff = { view, _ ->
+            assertThat(view).isSameAs(stubInteropView)
+            fakeSubtree
+        })
+
+        // When
+        val result = testedDecomposer.decompose(mockView, fakeRequest)
+
+        // Then
+        assertThat(result?.nodes).containsExactly(fakeRoot)
+        verify(mockSemanticsUtils, never()).resolveTextLayoutInfo(eq(stubLeaf), any())
+    }
+
+    private fun mockNode(bounds: GlobalBounds, children: List<SemanticsNode> = emptyList()): SemanticsNode {
+        val stubNode: SemanticsNode = mock()
+        val stubLayout: LayoutInfo = mock()
+        whenever(stubNode.layoutInfo).thenReturn(stubLayout)
+        whenever(stubLayout.getModifierInfo()).thenReturn(emptyList())
+        whenever(stubNode.children).thenReturn(children)
+        whenever(mockSemanticsUtils.resolveInnerBounds(eq(stubNode), any())).thenReturn(bounds)
+        whenever(mockSemanticsUtils.resolveBackgroundColor(stubNode)).thenReturn(null)
+        return stubNode
+    }
+
+    private fun requestWithRoot(
+        node: SemanticsNode,
+        hostBounds: CapturedBounds? = CapturedBounds(0, 0, 100, 100),
+        nativeHandoff: (View, CapturedIdentity) -> CompositionNativeSubtree? = { _, _ -> null }
+    ): CompositionHostDecomposeRequest = requestWithRoots(listOf(node), hostBounds, nativeHandoff)
+
+    private fun requestWithLargeGroup(
+        node: SemanticsNode,
+        hostBounds: CapturedBounds? = CapturedBounds(0, 0, 100, 100),
+        nativeHandoff: (View, CapturedIdentity) -> CompositionNativeSubtree? = { _, _ -> null }
+    ): CompositionHostDecomposeRequest = requestWithRoots(
+        listOf(node) + List(31) { mockNode(GlobalBounds(10, 110, 20, 20)) },
+        hostBounds,
+        nativeHandoff
+    )
+
+    private fun requestWithRoots(
+        nodes: List<SemanticsNode>,
+        hostBounds: CapturedBounds? = CapturedBounds(0, 0, 100, 100),
+        nativeHandoff: (View, CapturedIdentity) -> CompositionNativeSubtree? = { _, _ -> null }
+    ): CompositionHostDecomposeRequest {
+        val stubRoot: SemanticsNode = mock()
+        whenever(stubRoot.children).thenReturn(nodes)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
+        val stubIdentityFactory: CompositionIdentityFactory = mock()
+        whenever(stubIdentityFactory.composeNode(any(), any())).thenAnswer { mock<CapturedIdentity>() }
+        whenever(stubIdentityFactory.placeholderWireframe(any())).thenAnswer { mock<CapturedIdentity>() }
+        return CompositionHostDecomposeRequest(stubIdentityFactory, mock(), 1f, hostBounds, nativeHandoff)
     }
 }

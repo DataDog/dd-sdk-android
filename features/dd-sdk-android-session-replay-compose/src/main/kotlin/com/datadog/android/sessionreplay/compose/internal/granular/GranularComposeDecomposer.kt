@@ -53,6 +53,11 @@ import kotlin.math.roundToInt
  * workstream); a node whose own drawing effect can't be resolved as text/shape simply contributes no
  * wireframe of its own, but its children are still walked, so resolvable content beneath it is not
  * silently lost.
+ *
+ * In sibling groups with at least 32 nodes, leaves outside the caller's copied host bounds are
+ * omitted before style extraction. The native snapshot builder always clips composition output
+ * to those bounds, so these leaves would contribute no replay pixels. Parents, privacy placeholders,
+ * and native interop retain their existing paths; every capture resolves current geometry.
  */
 internal class GranularComposeDecomposer(
     private val semanticsUtils: SemanticsUtils = SemanticsUtils(),
@@ -93,34 +98,27 @@ internal class GranularComposeDecomposer(
         private val request: CompositionHostDecomposeRequest
     ) {
         private val windowOffset = hostView.resolveComposeWindowOffset(request.screenDensity)
+        private val hostClip = request.hostBounds
         private val nodes = mutableListOf<CapturedLayer>()
         private val wireframes = mutableListOf<CapturedWireframe>()
+        private var culledLeaf = false
 
         @Suppress("ReturnCount")
         fun run(): CompositionHostDecomposeResult? {
             val root = semanticsUtils.findRootSemanticsNode(hostView) ?: return null
-            val rootChildren = root.children.mapNotNull { walkNode(it) }
-            if (rootChildren.isEmpty()) return null
+            val rootChildren = mutableListOf<CapturedChild>()
+            walkChildren(root.children, rootChildren)
+            if (rootChildren.isEmpty() && !culledLeaf) return null
             return CompositionHostDecomposeResult(rootChildren, nodes, wireframes)
         }
 
         @Suppress("ReturnCount")
-        private fun walkNode(node: SemanticsNode): CapturedChild? {
+        private fun walkNode(node: SemanticsNode, allowCulling: Boolean): CapturedChild? {
             val nodeIdentity = request.identityFactory.composeNode(request.hostIdentity, node.id.toString())
             val bounds = boundsOf(node)
 
             if (semanticsUtils.isNodeHidden(node)) {
-                val placeholderId = request.identityFactory.placeholderWireframe(nodeIdentity)
-                wireframes += CapturedWireframe.PrivacyPlaceholder(
-                    identity = placeholderId,
-                    bounds = bounds,
-                    label = HIDDEN_LABEL
-                )
-                return registerLayer(
-                    nodeIdentity,
-                    bounds,
-                    listOf(CapturedChild.Wireframe(placeholderId))
-                )
+                return captureHiddenNode(nodeIdentity, bounds)
             }
 
             val interopView = reflectionUtils.getInteropView(node)
@@ -129,6 +127,17 @@ internal class GranularComposeDecomposer(
                 nodes += subtree.layers
                 wireframes += subtree.wireframes
                 return CapturedChild.Layer(subtree.rootLayer.identity)
+            }
+
+            // The native builder applies this same copied rectangle to all composition wireframes.
+            // Retain parents to preserve overflowing children, and preserve privacy/interop above.
+            var resolvedChildren: List<SemanticsNode>? = null
+            if (allowCulling && hostClip != null && isFullyOutsideHostClip(bounds, hostClip)) {
+                resolvedChildren = node.children
+                if (resolvedChildren.isEmpty()) {
+                    culledLeaf = true
+                    return null
+                }
             }
 
             val textLayoutInfo = semanticsUtils.resolveTextLayoutInfo(node, internalLogger)
@@ -148,9 +157,23 @@ internal class GranularComposeDecomposer(
                 wireframes += shape
                 children += CapturedChild.Wireframe(shape.identity)
             }
-            node.children.forEach { child -> walkNode(child)?.let { children += it } }
+            walkChildren(resolvedChildren ?: node.children, children)
 
             return registerLayer(nodeIdentity, bounds, children, modifiers = resolveModifiers(node))
+        }
+
+        private fun walkChildren(source: List<SemanticsNode>, destination: MutableList<CapturedChild>) {
+            // Use the child list already needed for traversal; no scan, cache, or extra View reads.
+            val allowCulling = hostClip != null && source.size >= MIN_CULLING_SIBLINGS
+            for (child in source) {
+                walkNode(child, allowCulling)?.let { destination += it }
+            }
+        }
+
+        private fun captureHiddenNode(identity: CapturedIdentity, bounds: CapturedBounds): CapturedChild {
+            val placeholderId = request.identityFactory.placeholderWireframe(identity)
+            wireframes += CapturedWireframe.PrivacyPlaceholder(placeholderId, bounds, label = HIDDEN_LABEL)
+            return registerLayer(identity, bounds, listOf(CapturedChild.Wireframe(placeholderId)))
         }
 
         private fun registerLayer(
@@ -261,5 +284,19 @@ internal class GranularComposeDecomposer(
         const val GRAPHICS_LAYER_NAME_FALLBACK = "graphicsLayer"
         const val ALPHA_PROPERTY_NAME = "alpha"
         const val COMPOSE_COLOR_SHIFT = 32
+        const val MIN_CULLING_SIBLINGS = 32
     }
+}
+
+private fun isFullyOutsideHostClip(bounds: CapturedBounds, clip: CapturedBounds): Boolean =
+    bounds.width > 0 && bounds.height > 0 && clip.width > 0 && clip.height > 0 &&
+        (
+            isOutsideAxis(bounds.x, bounds.width, clip.x, clip.width) ||
+                isOutsideAxis(bounds.y, bounds.height, clip.y, clip.height)
+            )
+
+private fun isOutsideAxis(start: Long, size: Long, clipStart: Long, clipSize: Long): Boolean {
+    val distance = if (start >= clipStart) start - clipStart else clipStart - start
+    // Overflow makes the proof uncertain; preserve that node rather than lose content.
+    return distance >= 0 && distance >= if (start >= clipStart) clipSize else size
 }
