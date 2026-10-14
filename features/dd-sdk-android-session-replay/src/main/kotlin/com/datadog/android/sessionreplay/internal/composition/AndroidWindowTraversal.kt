@@ -218,6 +218,7 @@ internal class AndroidWindowTraversal(
             identityFactory = state.identityFactory,
             hostIdentity = mappingContext.ownerIdentity,
             screenDensity = state.density,
+            hostBounds = mappingContext.bounds,
             nativeViewHandoff = { interopView, childIdentity ->
                 captureNativeSubtree(interopView, childIdentity, state, context)
             }

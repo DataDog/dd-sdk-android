@@ -15,7 +15,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedAlignment
 import com.datadog.android.internal.sessionreplay.composition.CapturedHorizontalAlignment
 import com.datadog.android.internal.sessionreplay.composition.CapturedPadding
-import com.datadog.android.internal.sessionreplay.composition.CapturedTextPosition
 import com.datadog.android.internal.sessionreplay.composition.CapturedVerticalAlignment
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope

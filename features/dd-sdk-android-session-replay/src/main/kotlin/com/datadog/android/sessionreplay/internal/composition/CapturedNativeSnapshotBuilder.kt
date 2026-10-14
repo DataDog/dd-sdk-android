@@ -85,6 +85,7 @@ internal class CapturedNativeSnapshotBuilder(
             }
             val childClip = clip.intersectOptional(view.childPaddingClip)
             view.composition?.let { composition ->
+                // Compose leaf culling relies on this unconditional intersection with copied host bounds.
                 addComposition(
                     composition,
                     childClip.intersectWith(view.bounds),
