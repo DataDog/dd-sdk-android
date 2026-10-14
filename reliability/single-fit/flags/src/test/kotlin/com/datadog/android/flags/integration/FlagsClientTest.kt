@@ -230,8 +230,7 @@ class FlagsClientTest {
             }
             return StubSDKCore(
                 forge = forge,
-                mockContext = mockApplication,
-                forwardEventsToReceivers = true
+                mockContext = mockApplication
             )
         }
     }

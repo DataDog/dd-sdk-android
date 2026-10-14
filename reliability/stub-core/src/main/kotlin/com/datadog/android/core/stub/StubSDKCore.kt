@@ -31,14 +31,13 @@ import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.mockito.Mockito.mock
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import org.mockito.kotlin.mock as kmock
 
 /**
  * A stub implementation of [InternalSdkCore].
@@ -50,9 +49,8 @@ import org.mockito.kotlin.mock as kmock
 class StubSDKCore(
     private val forge: Forge,
     private val mockContext: Application = mock(),
-    private val mockSdkCore: InternalSdkCore = kmock { on { name } doReturn toString() },
-    private var datadogContext: DatadogContext = forge.getForgery<DatadogContext>().copy(source = "android"),
-    private val forwardEventsToReceivers: Boolean = false
+    private val mockSdkCore: InternalSdkCore = mock { on { name } doReturn toString() },
+    private var datadogContext: DatadogContext = forge.getForgery<DatadogContext>().copy(source = "android")
 ) : InternalSdkCore by mockSdkCore {
 
     private val featureScopes = mutableMapOf<String, FeatureScope>()
@@ -254,7 +252,7 @@ class StubSDKCore(
                 feature = feature,
                 datadogContextProvider = { datadogContext },
                 dataStoreProvider = { dataStores[featureName] },
-                eventReceiverProvider = { if (forwardEventsToReceivers) eventReceivers[featureName] else null }
+                eventReceiverProvider = { eventReceivers[featureName] }
             )
         )
     }

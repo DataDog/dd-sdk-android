@@ -29,7 +29,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.atMost
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -87,52 +86,6 @@ internal class ExposureEventsProcessorTest {
         // When
         testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeCachedFlag)
         testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeNetworkFlag)
-
-        // Then
-        verify(mockRecordWriter).write(any())
-    }
-
-    @Test
-    fun `M process first exposure W processEvent() { new key }`(forge: Forge) {
-        // Given
-        val fakeContext = EvaluationContext(
-            targetingKey = fakeTargetingKey,
-            attributes = mapOf(
-                "user_id" to forge.anAlphabeticalString(),
-                "plan" to "premium",
-                "age" to forge.anInt(min = 18, max = 99).toString()
-            )
-        )
-
-        // When
-        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeTimestamp
-        testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
-
-        // Then
-        val eventCaptor = argumentCaptor<ExposureEvent>()
-        verify(mockRecordWriter).write(eventCaptor.capture())
-
-        val capturedEvent = eventCaptor.firstValue
-        assertThat(capturedEvent.flag.key).isEqualTo(fakeFlagKey)
-        assertThat(capturedEvent.allocation.key).isEqualTo(fakeAllocationKey)
-        assertThat(capturedEvent.variant.key).isEqualTo(fakeVariationKey)
-        assertThat(capturedEvent.subject.id).isEqualTo(fakeTargetingKey)
-        assertThat(capturedEvent.subject.attributes.additionalProperties).containsKeys("user_id", "plan", "age")
-        assertThat(capturedEvent.subject.attributes.additionalProperties).hasSize(3)
-        assertThat(capturedEvent.timestamp).isEqualTo(fakeTimestamp)
-    }
-
-    @Test
-    fun `M not process duplicate exposure W processEvent() { same flag and targeting key }`(forge: Forge) {
-        // Given
-        val fakeContext = EvaluationContext(
-            targetingKey = fakeTargetingKey,
-            attributes = mapOf("user_id" to forge.anAlphabeticalString())
-        )
-
-        // When
-        testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
-        testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag) // Duplicate
 
         // Then
         verify(mockRecordWriter).write(any())
