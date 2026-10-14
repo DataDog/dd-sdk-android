@@ -106,11 +106,11 @@ verify:all:
   stage: verify
   timeout: 2h
   cache:
-    key: test-debug-$CI_COMMIT_REF_SLUG
+    key: test-debug-2-$CI_COMMIT_REF_SLUG
     paths:
-      - cache/caches/
+      - cache/caches/build-cache-1/
+      - cache/caches/modules-2/
       - cache/wrapper/
-      - cache/notifications/
     policy: pull-push
   script:
     - !reference [.snippets, source-secrets]
