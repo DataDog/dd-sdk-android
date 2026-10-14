@@ -109,11 +109,19 @@ class SharedPreferencesStorage(appContext: Context) : PreferencesStorage {
         } ?: defaultValue
     }
 
-    override fun remove(key: String) {
+    override fun remove(key: String, sync: Boolean) {
         runSafe {
             // Called in safe
             @Suppress("UnsafeThirdPartyFunctionCall")
-            prefs.edit().remove(key).apply()
+            val editor = prefs.edit().remove(key)
+            if (sync) {
+                // `commit()` on purpose: `apply()` hands the write to QueuedWork, which is not
+                // flushed when the process is killed, so the removal would be lost.
+                @Suppress("ApplySharedPref")
+                editor.commit()
+            } else {
+                editor.apply()
+            }
         }
     }
 

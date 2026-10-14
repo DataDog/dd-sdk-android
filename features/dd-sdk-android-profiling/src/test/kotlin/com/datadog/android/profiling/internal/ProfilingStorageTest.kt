@@ -27,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -245,13 +246,18 @@ internal class ProfilingStorageTest {
     }
 
     @Test
-    fun `M remove marker W removePendingOomProfile()`() {
+    fun `M remove marker before returning W removePendingOomProfile()`() {
+        // Given
+        // A leftover `apply()`-based removal could survive a subsequent process death and let
+        // the same trace be replayed again on the next launch.
+
         // When
         ProfilingStorage.removePendingOomProfile(mockContext)
 
         // Then
         verify(mockEditor).remove("dd_profiling_pending_oom")
-        verify(mockEditor).apply()
+        verify(mockEditor).commit()
+        verify(mockEditor, never()).apply()
     }
 
     @Test
@@ -309,13 +315,18 @@ internal class ProfilingStorageTest {
     }
 
     @Test
-    fun `M remove marker W removePendingOomGatingEvent()`() {
+    fun `M remove marker before returning W removePendingOomGatingEvent()`() {
+        // Given
+        // A leftover `apply()`-based removal could survive a subsequent process death and let
+        // the OS deliver a trigger result against an already-consumed match on a later launch.
+
         // When
         ProfilingStorage.removePendingOomGatingEvent(mockContext)
 
         // Then
         verify(mockEditor).remove("dd_profiling_pending_oom_gating_event")
-        verify(mockEditor).apply()
+        verify(mockEditor).commit()
+        verify(mockEditor, never()).apply()
     }
 
     @Test

@@ -650,7 +650,8 @@ internal class ProfilingDataWriterTest {
                 startReason = ProfilingStartReason.OUT_OF_MEMORY,
                 end = detectedAtMs,
                 resultFilePath = profileFile.absolutePath,
-                profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
+                profileTypes = listOf(ProfileType.HEAP_HISTOGRAM),
+                bootNtpNs = 0L
             ),
             rumErrorId = rumErrorId,
             rumContext = rumContext
@@ -671,12 +672,12 @@ internal class ProfilingDataWriterTest {
             "sdk_version:${fakeDatadogContext.sdkVersion}",
             "profiler_version:${fakeDatadogContext.sdkVersion}",
             "runtime_version:${fakeDatadogContext.deviceInfo.osVersion}",
-            "operation:out_of_memory",
-            "profile_type:heap_histogram"
+            "operation:out_of_memory"
         )
         fakeDatadogContext.appBuildId?.let {
             expectedTagList.add("build_id:${fakeDatadogContext.appBuildId}")
         }
+        expectedTagList.add("profile_type:heap_histogram")
         assertThat(actualEvent)
             .hasStart(formatIsoUtc(detectedAtMs))
             .hasEnd(formatIsoUtc(detectedAtMs))
@@ -723,7 +724,8 @@ internal class ProfilingDataWriterTest {
                 startReason = ProfilingStartReason.MEMORY_ANOMALY,
                 end = 1_000L,
                 resultFilePath = profileFile.absolutePath,
-                profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
+                profileTypes = listOf(ProfileType.HEAP_HISTOGRAM),
+                bootNtpNs = 0L
             ),
             rumErrorId = rumErrorId,
             rumContext = rumContext

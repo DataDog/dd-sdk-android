@@ -74,8 +74,14 @@ interface PreferencesStorage {
 
     /**
      * Remove a value from the storage.
+     *
+     * @param key the key to remove.
+     * @param sync when `true`, blocks until the removal has been persisted instead of applying it
+     * asynchronously. Use this when the removal must survive an imminent process death (for
+     * example consuming a marker written for crash/out-of-memory recovery), at the cost of
+     * performing the write on the calling thread.
      */
-    fun remove(key: String)
+    fun remove(key: String, sync: Boolean = false)
 
     /**
      * Clear all values from the storage.

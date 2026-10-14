@@ -6,6 +6,7 @@
 
 package com.datadog.android.profiling.internal.trigger
 
+import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.internal.profiling.ProfilerEvent
@@ -14,6 +15,7 @@ import com.datadog.android.internal.profiling.ProfilerEvent.RumAnrEvent
 import com.datadog.android.internal.profiling.ProfilerEvent.RumOomErrorEvent
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.ProfilingStartReason
+import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.utils.fileDeleteSafe
 import java.util.concurrent.ScheduledExecutorService
@@ -22,10 +24,12 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
 internal class PendingTriggerProfileStorage(
+    private val appContext: Context,
     private val executor: ScheduledExecutorService,
     private val timeProvider: TimeProvider,
     private val internalLogger: InternalLogger? = null,
-    private val onMatch: (PerfettoResult, ProfilerEvent) -> Unit
+    private val onMatch: (PerfettoResult, ProfilerEvent) -> Unit,
+    private val onDeferredOomProfileReady: () -> Unit = {}
 ) : PendingTriggerProfiles {
     private val lock = Any()
 
@@ -50,24 +54,90 @@ internal class PendingTriggerProfileStorage(
         }
         overriddenResult?.let { fileDeleteSafe(it.resultFilePath, internalLogger) }
         if (pair != null) {
-            val (matchedResult, gatingEvent) = pair
-            onMatch(matchedResult, gatingEvent)
-        } else {
-            scheduleResultCleanup()
+            handleMatch(pair.first, pair.second)
+            return
+        }
+        scheduleResultCleanup()
+        if (result.startReason == ProfilingStartReason.OUT_OF_MEMORY) {
+            // A previous launch received the RUM gating event but died
+            // before this trigger result arrived: match them now instead of waiting for yet
+            // another launch.
+            matchDeferredOomGatingEvent()?.let { deferredGatingEvent ->
+                persistPendingOomProfile(result, deferredGatingEvent)
+                synchronized(lock) {
+                    if (profilingResult === result) {
+                        profilingResult = null
+                    }
+                }
+                onDeferredOomProfileReady()
+            }
         }
     }
 
     override fun setRumGatingEvent(event: ProfilerEvent) {
         if (event.triggerType() == null) return
+        if (event is RumOomErrorEvent) {
+            // Persisted immediately: the OS trigger result may not arrive before this process
+            // dies, in which case it is only delivered on a later launch.
+            ProfilingStorage.setPendingOomGatingEvent(
+                appContext,
+                PendingOomGatingEvent(
+                    rumErrorId = event.id,
+                    timestampMs = event.timestamp,
+                    rumContext = event.rumContext
+                )
+            )
+        }
         val pair = synchronized(lock) {
             rumGatingEvent = event
             matchResult()
         }
         if (pair != null) {
-            onMatch(pair.first, pair.second)
+            handleMatch(pair.first, pair.second)
         } else {
             scheduleGatingEventCleanup()
         }
+    }
+
+    private fun handleMatch(result: PerfettoResult, event: ProfilerEvent) {
+        if (event is RumOomErrorEvent) {
+            // The OOM is about to take the process down, so the match is recorded for the next
+            // launch instead of being written now: the batch write would not complete, and
+            // reading the trace would allocate on a heap that has just been exhausted.
+            persistPendingOomProfile(result, event)
+        }
+        onMatch(result, event)
+    }
+
+    @Suppress("ReturnCount")
+    private fun matchDeferredOomGatingEvent(): RumOomErrorEvent? {
+        val deferred = ProfilingStorage.getPendingOomGatingEvent(appContext) ?: return null
+        val ageMs = timeProvider.getServerTimestampMillis() - deferred.timestampMs
+        if (ageMs >= PENDING_OOM_PROFILE_MAX_AGE_MS) {
+            ProfilingStorage.removePendingOomGatingEvent(appContext)
+            return null
+        }
+        return RumOomErrorEvent(
+            id = deferred.rumErrorId,
+            timestamp = deferred.timestampMs,
+            rumContext = deferred.rumContext
+        )
+    }
+
+    private fun persistPendingOomProfile(result: PerfettoResult, event: RumOomErrorEvent) {
+        ProfilingStorage.setPendingOomProfile(
+            appContext,
+            PendingOomProfile(
+                resultFilePath = result.resultFilePath,
+                startMs = result.start,
+                endMs = result.end,
+                bootNtpNs = result.bootNtpNs,
+                rumErrorId = event.id,
+                rumContext = event.rumContext
+            )
+        )
+        // The pair is now matched, so the standalone gating marker (if any) is no longer needed.
+        ProfilingStorage.removePendingOomGatingEvent(appContext)
     }
 
     private fun matchResult(): Pair<PerfettoResult, ProfilerEvent>? {
@@ -171,5 +241,12 @@ internal class PendingTriggerProfileStorage(
     companion object {
         private const val OPERATION_NAME_RESULT_CLEANUP = "pending_trigger_result_cleanup"
         private const val OPERATION_NAME_GATING_EVENT_CLEANUP = "pending_trigger_gating_event_cleanup"
+
+        /**
+         * How long an OOM profile persisted by a previous process stays worth uploading. Matches
+         * the window the late-crash reporter uses to decide a stored RUM view event is still
+         * relevant, so both cross-launch paths age out together.
+         */
+        internal val PENDING_OOM_PROFILE_MAX_AGE_MS = TimeUnit.HOURS.toMillis(4)
     }
 }

@@ -20,6 +20,15 @@ internal interface Profiler {
 
     val scheduledExecutorService: ScheduledExecutorService
 
+    /**
+     * Whether the OOM system trigger is currently registered and can deliver a result. This is
+     * `false` not only on API levels below Cinnamon Bun, but also whenever the trigger
+     * registration is currently torn down — e.g. ANR triggers disabled via configuration, or
+     * an untracked RUM session. Persisting an OOM RUM error as a gating marker while this is
+     * `false` would wait for a result that can never arrive.
+     */
+    val isOomTriggerActive: Boolean
+
     fun start(
         appContext: Context,
         startReason: ProfilingStartReason,
