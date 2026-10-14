@@ -122,7 +122,7 @@ verify:all:
   script:
     - !reference [.snippets, source-secrets]
     - !reference [.snippets, setup-gradle]
-    - du -ah cache/caches | sort -h | tail -100
+    - if [[ -d cache/caches ]]; then du -ah cache/caches | sort -h | tail -100; else echo "No existing Gradle cache"; fi
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - set +e
     - gradle_exit_code=0
