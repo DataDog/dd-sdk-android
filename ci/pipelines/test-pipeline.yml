@@ -58,9 +58,7 @@ stages:
     KUBERNETES_CPU_REQUEST: 16
     KUBERNETES_CPU_LIMIT: 16
 
-verify:all:
-  extends:
-    - .cpu-memory-intensive-job
+.verify-all:
   variables:
     GRADLE_JVM_XMX: "8g"
     GRADLE_MAX_WORKERS: "16"
@@ -69,20 +67,9 @@ verify:all:
   id_tokens:
     DD_STS_OIDC_TOKEN:
       aud: dd-sts
-  tags: [ "arch:amd64" ]
-  image: $CI_IMAGE_DOCKER
   stage: verify
   timeout: 2h
-  cache:
-    key: test-debug-3-$CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/wrapper/
-      - cache/notifications/
-    policy: pull-push
   script:
-    - !reference [.snippets, source-secrets]
-    - !reference [.snippets, setup-gradle]
     - if [[ -d cache/caches ]]; then du -ah cache/caches | sort -h | tail -100; else echo "No existing Gradle cache"; fi
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - set +e
@@ -147,7 +134,34 @@ verify:all:
         - "**/build/test-results/testDebugUnitTest/*.xml"
         - "reliability/single-fit/**/build/test-results/testDebugUnitTest/*.xml"
 
+verify:all:
+  extends:
+    - .verify-all
+    - .cpu-memory-intensive-job
+  rules:
+    - when: never
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  cache:
+    key: test-debug-3-$CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/wrapper/
+      - cache/notifications/
+    policy: pull-push
+  before_script:
+    - !reference [.snippets, source-secrets]
+    - !reference [.snippets, setup-gradle]
+
+verify:all_mac:
+  extends: .verify-all
+  tags: [ "macos:sonoma", "specific:true" ]
+  before_script:
+    - !reference [.snippets, setup-macos-ami-runner]
+
 .instrumented-apk-job:
+  rules:
+    - when: never
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   needs:
