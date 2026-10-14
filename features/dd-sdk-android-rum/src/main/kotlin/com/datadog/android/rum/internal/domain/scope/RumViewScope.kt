@@ -192,11 +192,11 @@ internal open class RumViewScope(
 
     init {
         cpuVitalMonitor.register(cpuVitalListener)
+        slowFramesListener?.onViewCreated(viewId, startedNanos)
         interactionToNextViewMetricResolver.onViewCreated(viewId, eventTime.nanoTime)
         memoryVitalMonitor.register(memoryVitalListener)
         frameRateVitalMonitor.register(frameRateVitalListener)
         networkSettledMetricResolver.viewWasCreated(eventTime.nanoTime)
-        slowFramesListener?.onViewCreated(viewId, startedNanos)
         insightsCollector.onNewView(key.url)
     }
 
