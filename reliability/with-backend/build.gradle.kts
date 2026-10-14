@@ -69,6 +69,7 @@ dependencies {
         coreLibraryDesugaring(libs.androidDesugaringSdk)
     }
     implementation(libs.kotlin)
+    debugImplementation(libs.jetbrainsAnnotations)
 
     // Testing
     androidTestImplementation(libs.assertJ)

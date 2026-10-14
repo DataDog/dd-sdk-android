@@ -4,6 +4,8 @@
 # Copyright 2016-Present Datadog, Inc.
 #
 
+java --version
+
 CACHE_TEST_HOME="/Users/aleksandr.gringauz/projects/test-cache-1/"
 
 GRADLE_USER_HOME="$CACHE_TEST_HOME" ./gradlew \
@@ -11,27 +13,29 @@ GRADLE_USER_HOME="$CACHE_TEST_HOME" ./gradlew \
   --continue \
   --scan \
   -Dscan.uploadInBackground=false \
-  -PverificationBuildType=release \
+  -PverificationBuildType=debug \
   checkGeneratedFiles \
   ktlintCheck \
   :build-logic:ktlintCheck \
   detekt \
-  lintRelease \
-  :dd-sdk-android-core:testReleaseUnitTest \
-  :dd-sdk-android-internal:testReleaseUnitTest \
-  :unitTestReleaseFeatures \
-  :unitTestReleaseIntegrations \
-  :sample:benchmark:testReleaseUnitTest \
-  :tools:unit:testJvmReleaseUnitTest \
+  lintDebug \
+  :dd-sdk-android-core:testDebugUnitTest \
+  :dd-sdk-android-internal:testDebugUnitTest \
+  :unitTestDebugFeatures \
+  :unitTestDebugIntegrations \
+  :sample:benchmark:testDebugUnitTest \
+  :tools:unit:testJvmDebugUnitTest \
   :tools:detekt:test \
   :tools:lint:test \
   :tools:noopfactory:test \
-  :tools:benchmark:testReleaseUnitTest \
+  :tools:benchmark:testDebugUnitTest \
   :build-logic:test \
-  :dd-sdk-android-core:koverXmlReportRelease \
-  :dd-sdk-android-internal:koverXmlReportRelease \
-  :koverReportFeatures \
-  :koverReportIntegrations
+  :dd-sdk-android-core:koverXmlReportDebug \
+  :dd-sdk-android-internal:koverXmlReportDebug \
+  :koverReportDebugFeatures \
+  :koverReportDebugIntegrations \
+  :reliability:core-it:assembleDebug \
+  :reliability:core-it:assembleDebugAndroidTest
 
 #GRADLE_USER_HOME="$CACHE_TEST_HOME" ./gradlew \
 #  --build-cache \

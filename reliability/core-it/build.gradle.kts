@@ -70,6 +70,7 @@ dependencies {
     }
     implementation(project(":dd-sdk-android-core"))
     implementation(libs.kotlin)
+    debugImplementation(libs.jetbrainsAnnotations)
 
     // Testing
     androidTestImplementation(project(":tools:unit")) {
