@@ -1,11 +1,3 @@
-default:
-  interruptible: true
-
-workflow:
-  rules:
-    - if: "$CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH !~ /^(develop|master)$|^feature\//"
-    - when: always
-
 stages:
   - verify
   - test-pyramid
@@ -41,8 +33,9 @@ stages:
     - echo "org.gradle.cache.cleanup=$( [[ "$GRADLE_CACHE_CLEANUP" == "true" ]] && echo "always" || echo "disabled" )" >> gradle.properties
     # Equal to --stacktrace
     - echo "org.gradle.logging.stacktrace=all" >> gradle.properties
-    # Keep kotlin compiler in Gradle daemon process for more predictable memory
-    - echo "kotlin.compiler.execution.strategy=in-process" >> gradle.properties
+    # Run Kotlin compilation in its dedicated daemon for faster compilation
+    - echo "kotlin.compiler.execution.strategy=daemon" >> gradle.properties
+    - echo "kotlin.daemon.jvmargs=-Xmx${KOTLIN_DAEMON_JVM_XMX:-8g}" >> gradle.properties
     - echo "--- gradle.properties ---" && cat gradle.properties
 
   setup-macos-ami-runner:
