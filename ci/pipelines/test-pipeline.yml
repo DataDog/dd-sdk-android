@@ -104,6 +104,7 @@ verify:all:
     GRADLE_JVM_XMX: "8g"
     GRADLE_MAX_WORKERS: "16"
     TRANSFER_METER_FREQUENCY: "1s"
+    CACHE_FALLBACK_KEY: ""
   id_tokens:
     DD_STS_OIDC_TOKEN:
       aud: dd-sts
