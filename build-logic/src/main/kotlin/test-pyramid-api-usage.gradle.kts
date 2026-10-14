@@ -8,25 +8,26 @@ import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.api.variant.HasUnitTest
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import com.android.build.api.variant.Variant
-import io.gitlab.arturbosch.detekt.Detekt
-import org.gradle.api.artifacts.VersionCatalogsExtension
+import dev.detekt.gradle.Detekt
 import org.gradle.api.attributes.Usage
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.named
-import org.gradle.kotlin.dsl.the
 
-// Applying `io.gitlab.arturbosch.detekt` would also register its own detekt tasks and apply detekt.yml
-// - unwanted, since this plugin isn't linting, only using Detekt as an engine. All our own task actually needs
-// from the plugin is the engine classpath, so provide that directly via detached configurations instead of applying it.
-val detektVersion = the<VersionCatalogsExtension>().named("libs").findVersion("detekt").get().requiredVersion
-val detektEngineClasspath = configurations.detachedConfiguration(
-    dependencies.create("io.gitlab.arturbosch.detekt:detekt-cli:$detektVersion")
-)
-val detektPluginClasspath = configurations.detachedConfiguration(
-    dependencies.create(project(":tools:detekt"))
-)
+plugins {
+    // Provides the Detekt engine classpath and the defaults of the `Detekt` tasks
+    id("dev.detekt")
+}
+
+dependencies {
+    detektPlugins(project(":tools:detekt"))
+}
+
+// This plugin only uses Detekt as an engine: these modules aren't linted, so keep the root `detekt` task away from them
+tasks.detekt {
+    isEnabled = false
+}
 
 val apiUsageLogFile = layout.buildDirectory.file("reports/detekt-test-pyramid/apiUsage.log")
 val generatedConfigFile = layout.buildDirectory.file("tmp/detekt-test-pyramid/apiUsageTestPyramidConfig.yml")
@@ -41,8 +42,6 @@ fun configureApiUsageVariant(variant: Variant, bootClasspath: Provider<List<Regu
 
         unitTest.sources.java?.let { source(it.all) }
         unitTest.sources.kotlin?.let { source(it.all) }
-        detektClasspath.setFrom(detektEngineClasspath)
-        pluginClasspath.setFrom(detektPluginClasspath)
         classpath.setFrom(unitTest.compileClasspath, bootClasspath)
         jvmTarget = "17"
         buildUponDefaultConfig = false
@@ -52,9 +51,8 @@ fun configureApiUsageVariant(variant: Variant, bootClasspath: Provider<List<Regu
         reports {
             sarif.required = false
             html.required = false
-            xml.required = false
-            txt.required = false
-            md.required = false
+            markdown.required = false
+            checkstyle.required = false
         }
 
         localState.register(generatedConfigFile)

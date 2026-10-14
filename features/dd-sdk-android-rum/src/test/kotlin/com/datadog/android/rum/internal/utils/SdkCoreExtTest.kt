@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.utils
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
@@ -68,9 +67,6 @@ internal class SdkCoreExtTest {
         get() = rumMonitor.mockSdkCore
 
     @Forgery
-    lateinit var fakeDatadogContext: DatadogContext
-
-    @Forgery
     lateinit var fakeEventType: EventType
 
     @BeforeEach
@@ -89,7 +85,7 @@ internal class SdkCoreExtTest {
         val fakeEvent = Any()
 
         // When
-        mockSdkCore.newRumEventWriteOperation(fakeDatadogContext, mockEventWriteScope, mockWriter) { fakeEvent }
+        mockSdkCore.newRumEventWriteOperation(mockEventWriteScope, mockWriter) { fakeEvent }
             .submit()
 
         // Then
@@ -104,7 +100,6 @@ internal class SdkCoreExtTest {
 
         // When
         mockSdkCore.newRumEventWriteOperation(
-            fakeDatadogContext,
             mockEventWriteScope,
             mockWriter,
             fakeEventType
@@ -123,7 +118,6 @@ internal class SdkCoreExtTest {
 
         // When
         mockSdkCore.newRumEventWriteOperation(
-            fakeDatadogContext,
             mockEventWriteScope,
             mockWriter,
             fakeEventType
@@ -147,7 +141,6 @@ internal class SdkCoreExtTest {
 
         // When
         mockSdkCore.newRumEventWriteOperation(
-            fakeDatadogContext,
             mockEventWriteScope,
             mockWriter,
             fakeEventType
@@ -178,7 +171,6 @@ internal class SdkCoreExtTest {
 
         // When
         mockSdkCore.newRumEventWriteOperation(
-            fakeDatadogContext,
             mockEventWriteScope,
             mockWriter,
             fakeEventType
@@ -208,7 +200,6 @@ internal class SdkCoreExtTest {
 
         // When
         mockSdkCore.newRumEventWriteOperation(
-            fakeDatadogContext,
             mockEventWriteScope,
             mockWriter,
             fakeEventType
@@ -237,7 +228,6 @@ internal class SdkCoreExtTest {
 
         // When
         mockSdkCore.newRumEventWriteOperation(
-            fakeDatadogContext,
             mockEventWriteScope,
             mockWriter,
             fakeEventType
@@ -262,7 +252,6 @@ internal class SdkCoreExtTest {
 
         // When
         mockSdkCore.newRumEventWriteOperation(
-            fakeDatadogContext,
             mockEventWriteScope,
             mockWriter,
             fakeEventType

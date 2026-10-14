@@ -19,7 +19,7 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
     // JSONObject methods accept non-null String parameters despite Detekt's incorrect nullable interpretation
     // All getJsonObject calls are wrapped in try-catch for JSONException which is the actual exception thrown
     @Suppress("UnsafeThirdPartyFunctionCall")
-    internal fun map(rawJson: String): Map<String, PrecomputedFlag> = try {
+    internal fun map(rawJson: String): Map<String, PrecomputedFlag>? = try {
         val jsonResponse = JSONObject(rawJson)
         val data = jsonResponse.getJSONObject("data")
         val attributes = data.getJSONObject("attributes")
@@ -68,7 +68,7 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
             onlyOnce = true
         )
 
-        emptyMap()
+        null
     }
 
     private companion object {

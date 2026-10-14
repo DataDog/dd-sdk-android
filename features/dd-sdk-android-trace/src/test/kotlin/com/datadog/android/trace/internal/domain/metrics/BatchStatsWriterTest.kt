@@ -34,7 +34,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -246,13 +245,15 @@ internal class BatchStatsWriterTest {
         testedWriter.write(fakeBuckets, fakeForced)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
         val captor = argumentCaptor<Map<String, Any?>>()
         verify(mockInternalLogger).logMetric(
-            messageBuilder = argThat { invoke() == BatchStatsWriter.METRIC_MESSAGE },
+            messageBuilder = messageCaptor.capture(),
             additionalProperties = captor.capture(),
             samplingRate = eq(15.0f),
             creationSampleRate = eq(null)
         )
+        assertThat(messageCaptor.firstValue()).isEqualTo(BatchStatsWriter.METRIC_MESSAGE)
         assertThat(captor.firstValue[BatchStatsWriter.KEY_METRIC_TYPE]).isEqualTo(BatchStatsWriter.VALUE_METRIC_TYPE)
         assertThat(captor.firstValue[BatchStatsWriter.KEY_BUCKETS_COUNT]).isEqualTo(1)
         assertThat(captor.firstValue[BatchStatsWriter.KEY_GROUPS_COUNT]).isEqualTo(1)
@@ -276,13 +277,15 @@ internal class BatchStatsWriterTest {
         testedWriter.write(fakeBuckets, fakeForced)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
         val captor = argumentCaptor<Map<String, Any?>>()
         verify(mockInternalLogger).logMetric(
-            messageBuilder = argThat { invoke() == BatchStatsWriter.METRIC_MESSAGE },
+            messageBuilder = messageCaptor.capture(),
             additionalProperties = captor.capture(),
             samplingRate = eq(15.0f),
             creationSampleRate = eq(null)
         )
+        assertThat(messageCaptor.firstValue()).isEqualTo(BatchStatsWriter.METRIC_MESSAGE)
         assertThat(captor.firstValue[BatchStatsWriter.KEY_METRIC_TYPE]).isEqualTo(BatchStatsWriter.VALUE_METRIC_TYPE)
         assertThat(captor.firstValue[BatchStatsWriter.KEY_BUCKETS_COUNT]).isEqualTo(2)
         assertThat(captor.firstValue[BatchStatsWriter.KEY_GROUPS_COUNT]).isEqualTo(3)
@@ -301,13 +304,15 @@ internal class BatchStatsWriterTest {
         testedWriter.write(fakeBuckets, fakeMetricForced)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
         val captor = argumentCaptor<Map<String, Any?>>()
         verify(mockInternalLogger).logMetric(
-            messageBuilder = argThat { invoke() == BatchStatsWriter.METRIC_MESSAGE },
+            messageBuilder = messageCaptor.capture(),
             additionalProperties = captor.capture(),
             samplingRate = eq(15.0f),
             creationSampleRate = eq(null)
         )
+        assertThat(messageCaptor.firstValue()).isEqualTo(BatchStatsWriter.METRIC_MESSAGE)
         assertThat(captor.firstValue[BatchStatsWriter.KEY_FORCED]).isEqualTo(fakeMetricForced)
     }
 

@@ -19,7 +19,11 @@ import com.datadog.android.sdk.integration.network.wrappers.HttpTestClientWrappe
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkTracingScope
 import com.datadog.android.trace.ExperimentalTraceApi
+import com.google.android.gms.net.CronetProviderInstaller
+import com.google.android.gms.tasks.Tasks
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import org.chromium.net.CronetEngine
 import org.chromium.net.CronetException
 import org.chromium.net.UploadDataProvider
@@ -32,6 +36,7 @@ import java.nio.ByteBuffer
 import java.nio.charset.Charset
 import java.util.UUID
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 
 @OptIn(ExperimentalRumApi::class, ExperimentalTraceApi::class)
@@ -43,7 +48,17 @@ internal class CronetClientWrapper(
     override val name: String = "Cronet"
     private val executor = Executors.newSingleThreadExecutor()
 
-    override suspend fun execute(request: TestRequest): ClientExecutionResult =
+    override suspend fun execute(request: TestRequest): ClientExecutionResult = withContext(Dispatchers.IO) {
+        // Install explicitly so provider failures retain their cause instead of appearing as disabled providers.
+        Tasks.await(
+            CronetProviderInstaller.installProvider(context),
+            PROVIDER_INSTALL_TIMEOUT_SECONDS,
+            TimeUnit.SECONDS
+        )
+        executeRequest(request)
+    }
+
+    private suspend fun executeRequest(request: TestRequest): ClientExecutionResult =
         suspendCancellableCoroutine { continuation ->
             val cronetSpansCollector = CronetSpansCollector()
             val callback = object : UrlRequest.Callback() {
@@ -139,6 +154,7 @@ internal class CronetClientWrapper(
     companion object {
         private const val NETWORK_FRAMEWORK_HEADER = "NetworkFramework"
         private const val BUFFER_SIZE = 32 * 1024
+        private const val PROVIDER_INSTALL_TIMEOUT_SECONDS = 60L
 
         private fun UrlRequest.Builder.setHeaders(headers: Map<String, List<String>>) = apply {
             headers.forEach { (key, values) ->

@@ -56,7 +56,7 @@ android {
 dependencies {
     api(project(":features:dd-sdk-android-session-replay"))
     implementation(project(":dd-sdk-android-internal"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.gson)
 
     implementation(platform(libs.androidXComposeBom))

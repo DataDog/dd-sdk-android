@@ -7,48 +7,43 @@
 package com.datadog.tools.detekt.rules.sdk
 
 import com.datadog.tools.detekt.ext.isContainingEntryPointPublic
-import io.gitlab.arturbosch.detekt.api.CodeSmell
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Entity
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Rule
-import io.gitlab.arturbosch.detekt.api.Severity
+import com.datadog.tools.detekt.ext.resolveCalledFunction
+import dev.detekt.api.Config
+import dev.detekt.api.Entity
+import dev.detekt.api.Finding
+import dev.detekt.api.RequiresAnalysisApi
+import dev.detekt.api.Rule
+import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.psi.KtCallExpression
 
 /**
  * A rule to detekt `check`, `checkNotNull` calls.
  * @active
  */
-class CheckInternal : Rule() {
-
-    override val issue: Issue = Issue(
-        javaClass.simpleName,
-        Severity.Defect,
-        "This rule reports when an exception is thrown.",
-        Debt.TWENTY_MINS
-    )
+class CheckInternal(
+    config: Config
+) : Rule(config, "This rule reports when an exception is thrown."),
+    RequiresAnalysisApi {
 
     override fun visitCallExpression(expression: KtCallExpression) {
-        val callee = expression.calleeExpression
-        val isCheckMethod = callee?.textMatches(CHECK_LITERAL) == true
-        val isCheckNotNullMethod = callee?.textMatches(CHECK_NOT_NULL_LITERAL) == true
-        if (
-            (isCheckMethod || isCheckNotNullMethod) &&
-            !expression.isContainingEntryPointPublic()
-        ) {
+        val calledFunction = analyze(expression) {
+            resolveCalledFunction(expression)?.callableId?.asSingleFqName()?.asString()
+        }
+        if (calledFunction in CHECK_FUNCTIONS && !expression.isContainingEntryPointPublic()) {
             report(
-                CodeSmell(
-                    issue,
+                Finding(
                     Entity.from(expression),
-                    message = "A check is called from an internal or private part of the code."
+                    "A check is called from an internal or private part of the code."
                 )
             )
         }
         super.visitCallExpression(expression)
     }
 
-    companion object {
-        private const val CHECK_LITERAL = "check"
-        private const val CHECK_NOT_NULL_LITERAL = "checkNotNull"
+    private companion object {
+        private val CHECK_FUNCTIONS = setOf(
+            "kotlin.check",
+            "kotlin.checkNotNull"
+        )
     }
 }

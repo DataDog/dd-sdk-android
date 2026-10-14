@@ -31,6 +31,10 @@ internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
 
     fun start()
 
+    fun stop()
+
+    fun checkSessionExpiry()
+
     fun addActionWithHeatmap(
         type: RumActionType,
         name: String,

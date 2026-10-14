@@ -16,12 +16,12 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.FeatureContextKeys
-import com.datadog.android.internal.FeatureContextKeys.PROFILER_IS_RUNNING
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
@@ -4492,6 +4492,35 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `M not send RumAnrEvent to profiling W handleEvent(AddError) {ANRException, session not tracked}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = ANRException(Thread.currentThread())
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = false,
+            threads = emptyList(),
+            attributes = attributes,
+            eventTime = fakeEventTime
+        )
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, NoOpDataWriter())
+
+        // Then
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumAnrEvent>())
+    }
+
+    @Test
     fun `M send event W handleEvent(AddError) on active view {throwable_message == blank}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
@@ -6143,7 +6172,7 @@ internal class RumViewScopeTest {
         fakeEvent = RumRawEvent.AddLongTask(durationNs, target, eventTime = fakeEventTime)
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.PROFILING_FEATURE_NAME, mapOf(PROFILER_IS_RUNNING to false))
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to false))
             }
         )
 
@@ -6171,7 +6200,7 @@ internal class RumViewScopeTest {
                 put(
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
-                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
                         FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
                     )
@@ -6205,7 +6234,7 @@ internal class RumViewScopeTest {
                 put(
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
-                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
                         FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
                     )
@@ -6265,7 +6294,7 @@ internal class RumViewScopeTest {
         )
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.PROFILING_FEATURE_NAME, mapOf(PROFILER_IS_RUNNING to false))
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to false))
             }
         )
 
@@ -6300,7 +6329,7 @@ internal class RumViewScopeTest {
                 put(
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
-                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
                         FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
                     )
@@ -6341,7 +6370,7 @@ internal class RumViewScopeTest {
                 put(
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
-                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
                         FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
                     )
@@ -6472,7 +6501,7 @@ internal class RumViewScopeTest {
         )
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.PROFILING_FEATURE_NAME, mapOf(PROFILER_IS_RUNNING to false))
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to false))
             }
         )
 
@@ -6511,7 +6540,7 @@ internal class RumViewScopeTest {
         )
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.PROFILING_FEATURE_NAME, mapOf(PROFILER_IS_RUNNING to false))
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to false))
             }
         )
 
@@ -6555,7 +6584,7 @@ internal class RumViewScopeTest {
                 put(
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
-                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
                         FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
                     )
@@ -6597,7 +6626,7 @@ internal class RumViewScopeTest {
         )
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.PROFILING_FEATURE_NAME, mapOf(PROFILER_IS_RUNNING to false))
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to false))
             }
         )
 
@@ -6675,7 +6704,7 @@ internal class RumViewScopeTest {
                 put(
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
-                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
                         FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
                     )
@@ -6722,7 +6751,7 @@ internal class RumViewScopeTest {
                 put(
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
-                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
                         FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
                     )
@@ -6774,7 +6803,7 @@ internal class RumViewScopeTest {
         // Given
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.PROFILING_FEATURE_NAME, mapOf(PROFILER_IS_RUNNING to false))
+                put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILER_IS_RUNNING to false))
             }
         )
 
@@ -6804,7 +6833,7 @@ internal class RumViewScopeTest {
                 put(
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
-                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
                         FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
                     )
@@ -6840,7 +6869,7 @@ internal class RumViewScopeTest {
                 put(
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
-                        PROFILER_IS_RUNNING to false,
+                        FeatureContextKeys.PROFILER_IS_RUNNING to false,
                         FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
                     )
@@ -7326,6 +7355,7 @@ internal class RumViewScopeTest {
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.USER,
             RumViewScope.ADDING_VIEW_LOADING_TIME_DEBUG_MESSAGE_FORMAT.format(
+                Locale.US,
                 expectedViewLoadingTime,
                 testedScope.key.name
             )

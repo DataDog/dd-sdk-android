@@ -178,7 +178,7 @@ internal class PlainBatchFileReaderWriter(
     }
 
     @Throws(IOException::class)
-    @Suppress("UnsafeThirdPartyFunctionCall", "ComplexMethod", "LoopWithTooManyJumpStatements")
+    @Suppress("UnsafeThirdPartyFunctionCall", "CyclomaticComplexMethod", "LoopWithTooManyJumpStatements")
     // Called within a try/catch block
     private fun readFileData(
         file: File,

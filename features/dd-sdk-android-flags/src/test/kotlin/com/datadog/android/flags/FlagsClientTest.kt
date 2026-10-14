@@ -26,7 +26,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -312,18 +311,19 @@ internal class FlagsClientTest {
 
         // Then - should return existing client and log warning
         assertThat(client).isEqualTo(mockFlagsClient)
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.WARN),
-            eq(InternalLogger.Target.USER),
-            argThat {
-                invoke().startsWith(
-                    "[Datadog Flags] Attempted to create a FlagsClient named 'default', but one already exists."
-                )
-            },
-            eq(null),
-            eq(false),
-            eq(null)
-        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+            assertThat(firstValue()).startsWith(
+                "[Datadog Flags] Attempted to create a FlagsClient named 'default', but one already exists."
+            )
+        }
     }
 
     @Test
@@ -357,18 +357,21 @@ internal class FlagsClientTest {
         // Then - should return NoOpClient
         assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
         // Verify error was logged
-        verify(mockLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            argThat {
-                invoke() == "Failed to create FlagsClient named 'default': Flags feature must be " +
+        argumentCaptor<() -> String> {
+            verify(mockLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+            assertThat(firstValue()).isEqualTo(
+                "Failed to create FlagsClient named 'default': Flags feature must be " +
                     "enabled first. Call Flags.enable() before creating clients. " +
                     "Operating in no-op mode."
-            },
-            eq(null),
-            eq(false),
-            eq(null)
-        )
+            )
+        }
     }
 
     // endregion
@@ -391,14 +394,17 @@ internal class FlagsClientTest {
         assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
 
         // Verify error was logged
-        verify(mockLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            argThat { invoke() == "Flags feature is not enabled. Returning NoOpFlagsClient." },
-            eq(null),
-            eq(false),
-            eq(null)
-        )
+        argumentCaptor<() -> String> {
+            verify(mockLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+            assertThat(firstValue()).isEqualTo("Flags feature is not enabled. Returning NoOpFlagsClient.")
+        }
     }
 
     @Test
@@ -417,18 +423,19 @@ internal class FlagsClientTest {
 
         // Then - should log critical error
         assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            argThat {
-                invoke().startsWith(
-                    "[Datadog Flags] No FlagsClient with name 'default' exists for SDK instance 'test-sdk'."
-                )
-            },
-            eq(null),
-            eq(false),
-            eq(null)
-        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+            assertThat(firstValue()).startsWith(
+                "[Datadog Flags] No FlagsClient with name 'default' exists for SDK instance 'test-sdk'."
+            )
+        }
     }
 
     @Test

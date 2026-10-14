@@ -17,6 +17,7 @@ public abstract interface class com/datadog/android/flags/FlagsClient {
 	public static fun get (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsClient;
 	public static fun get (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/flags/FlagsClient;
 	public abstract fun getState ()Lcom/datadog/android/flags/StateObservable;
+	public abstract fun onFirstFlags (Lcom/datadog/android/flags/FlagsClientEventListener;)Lcom/datadog/android/flags/FlagsSubscription;
 	public abstract fun resolve (Ljava/lang/String;Ljava/lang/Object;)Lcom/datadog/android/flags/model/ResolutionDetails;
 	public abstract fun resolveBooleanValue (Ljava/lang/String;Z)Z
 	public abstract fun resolveDoubleValue (Ljava/lang/String;D)D
@@ -42,6 +43,10 @@ public final class com/datadog/android/flags/FlagsClient$Companion {
 
 public final class com/datadog/android/flags/FlagsClient$DefaultImpls {
 	public static synthetic fun setEvaluationContext$default (Lcom/datadog/android/flags/FlagsClient;Lcom/datadog/android/flags/model/EvaluationContext;Lcom/datadog/android/flags/EvaluationContextCallback;ILjava/lang/Object;)V
+}
+
+public abstract interface class com/datadog/android/flags/FlagsClientEventListener {
+	public abstract fun onEvent (Lcom/datadog/android/flags/model/FlagsClientEvent;)V
 }
 
 public final class com/datadog/android/flags/FlagsConfiguration {
@@ -71,6 +76,10 @@ public final class com/datadog/android/flags/FlagsInitializationTimeoutException
 
 public abstract interface class com/datadog/android/flags/FlagsStateListener {
 	public abstract fun onStateChanged (Lcom/datadog/android/flags/model/FlagsClientState;)V
+}
+
+public abstract interface class com/datadog/android/flags/FlagsSubscription {
+	public abstract fun unsubscribe ()V
 }
 
 public abstract interface class com/datadog/android/flags/StateObservable {
@@ -432,6 +441,19 @@ public final class com/datadog/android/flags/model/FlagEvaluation$View$Companion
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/flags/model/FlagEvaluation$View;
 }
 
+public final class com/datadog/android/flags/model/FlagsClientEvent {
+	public final fun getFlagsChanged ()Ljava/util/List;
+	public final fun getType ()Lcom/datadog/android/flags/model/FlagsClientEventType;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/flags/model/FlagsClientEventType : java/lang/Enum {
+	public static final field CONFIGURATION_CHANGED Lcom/datadog/android/flags/model/FlagsClientEventType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/flags/model/FlagsClientEventType;
+	public static fun values ()[Lcom/datadog/android/flags/model/FlagsClientEventType;
+}
+
 public abstract class com/datadog/android/flags/model/FlagsClientState {
 }
 
@@ -487,6 +509,7 @@ public final class com/datadog/android/flags/model/ResolutionDetails {
 }
 
 public final class com/datadog/android/flags/model/ResolutionReason : java/lang/Enum {
+	public static final field CACHED Lcom/datadog/android/flags/model/ResolutionReason;
 	public static final field DEFAULT Lcom/datadog/android/flags/model/ResolutionReason;
 	public static final field ERROR Lcom/datadog/android/flags/model/ResolutionReason;
 	public static final field PREREQUISITE_FAILED Lcom/datadog/android/flags/model/ResolutionReason;

@@ -8,23 +8,22 @@ package com.datadog.tools.detekt
 
 import com.datadog.tools.detekt.rules.pyramid.ApiSurface
 import com.datadog.tools.detekt.rules.pyramid.ApiUsage
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.api.RuleSet
-import io.gitlab.arturbosch.detekt.api.RuleSetProvider
+import dev.detekt.api.RuleSet
+import dev.detekt.api.RuleSetProvider
 
 /**
  * The [RuleSetProvider] for Datadog's SDK for Android.
  */
 class DatadogTestPyramidProvider : RuleSetProvider {
 
-    override val ruleSetId: String = "datadog-test-pyramid"
+    override val ruleSetId: RuleSet.Id = RuleSet.Id("datadog-test-pyramid")
 
-    override fun instance(config: Config): RuleSet {
+    override fun instance(): RuleSet {
         return RuleSet(
             ruleSetId,
             listOf(
-                ApiUsage(config),
-                ApiSurface(config)
+                ::ApiUsage,
+                ::ApiSurface
             )
         )
     }

@@ -14,7 +14,7 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 }
 
 datadogBuild {

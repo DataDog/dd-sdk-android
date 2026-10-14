@@ -480,13 +480,13 @@ internal class SessionReplayFeature(
          * max item size = 10 MB,
          * max items per batch = 1000,
          * max batch size = 10 MB, SR intake batch limit is 10MB
-         * old batch threshold = 5 hours.
+         * old batch threshold = 12 hours.
          */
         internal val STORAGE_CONFIGURATION: FeatureStorageConfiguration =
             FeatureStorageConfiguration.DEFAULT.copy(
                 maxItemSize = 10 * 1024 * 1024,
                 maxBatchSize = 10 * 1024 * 1024,
-                oldBatchThreshold = 5L * 60L * 60L * 1000L
+                oldBatchThreshold = 12L * 60L * 60L * 1000L
             )
 
         internal const val REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE = "Session Replay could not " +

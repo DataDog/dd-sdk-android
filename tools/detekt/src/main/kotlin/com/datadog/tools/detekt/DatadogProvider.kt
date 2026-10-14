@@ -14,33 +14,30 @@ import com.datadog.tools.detekt.rules.sdk.RequireInternal
 import com.datadog.tools.detekt.rules.sdk.ThreadSafety
 import com.datadog.tools.detekt.rules.sdk.ThrowingInternalException
 import com.datadog.tools.detekt.rules.sdk.TodoWithoutTask
-import com.datadog.tools.detekt.rules.sdk.UnsafeCallOnNullableType
 import com.datadog.tools.detekt.rules.sdk.UnsafeThirdPartyFunctionCall
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.api.RuleSet
-import io.gitlab.arturbosch.detekt.api.RuleSetProvider
+import dev.detekt.api.RuleSet
+import dev.detekt.api.RuleSetProvider
 
 /**
  * The [RuleSetProvider] for Datadog's SDK for Android.
  */
 class DatadogProvider : RuleSetProvider {
 
-    override val ruleSetId: String = "datadog"
+    override val ruleSetId: RuleSet.Id = RuleSet.Id("datadog")
 
-    override fun instance(config: Config): RuleSet {
+    override fun instance(): RuleSet {
         return RuleSet(
             ruleSetId,
             listOf(
-                CheckInternal(),
-                InvalidStringFormat(),
-                PackageNameVisibility(config),
-                PreferTimeProvider(config),
-                RequireInternal(),
-                ThreadSafety(config),
-                ThrowingInternalException(),
-                TodoWithoutTask(config),
-                UnsafeCallOnNullableType(),
-                UnsafeThirdPartyFunctionCall(config)
+                ::CheckInternal,
+                ::InvalidStringFormat,
+                ::PackageNameVisibility,
+                ::PreferTimeProvider,
+                ::RequireInternal,
+                ::ThreadSafety,
+                ::ThrowingInternalException,
+                ::TodoWithoutTask,
+                ::UnsafeThirdPartyFunctionCall
             )
         )
     }
