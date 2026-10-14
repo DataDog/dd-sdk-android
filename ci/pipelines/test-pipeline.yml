@@ -105,7 +105,6 @@ verify:all:
   extends:
     - .cpu-memory-intensive-job
   variables:
-    DD_COMMON_AGENT_CONFIG: "dd.env=ci,dd.trace.enabled=true,dd.jmx.fetch.enabled=false,dd.civisibility.compiler.plugin.auto.configuration.enabled=false"
     GRADLE_JVM_XMX: "8g"
     GRADLE_MAX_WORKERS: "16"
     TRANSFER_METER_FREQUENCY: "1s"

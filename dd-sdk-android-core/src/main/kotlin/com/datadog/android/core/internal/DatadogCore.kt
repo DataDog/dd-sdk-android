@@ -205,8 +205,8 @@ internal class DatadogCore(
                 it.clearAllData()
             }
             getPersistenceExecutorService().executeSafe("Clear all data", internalLogger) {
-                coreFeature.deleteLastViewEvent()
                 coreFeature.deleteLastFatalAnrSent()
+                coreFeature.deleteLastViewEvent()
             }
         }
     }
