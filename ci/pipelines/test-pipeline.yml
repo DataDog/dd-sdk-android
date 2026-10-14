@@ -76,12 +76,11 @@ stages:
     - test -f "$CORE_IT_TEST_APK" || exit_code=1
     - if [[ "$exit_code" -eq 0 ]]; then $ANDROID_HOME/platform-tools/adb install -r -t "$CORE_IT_APP_APK" || exit_code=$?; fi
     - if [[ "$exit_code" -eq 0 ]]; then $ANDROID_HOME/platform-tools/adb install -r -t "$CORE_IT_TEST_APK" || exit_code=$?; fi
-    - >-
+    - |
         if [[ "$exit_code" -eq 0 ]]; then
-          $ANDROID_HOME/platform-tools/adb shell am instrument -w -r
-          com.datadog.android.core.integration.test/androidx.test.runner.AndroidJUnitRunner
-          > core-it-instrumentation-output.txt 2>&1
-          || exit_code=$?;
+          $ANDROID_HOME/platform-tools/adb shell am instrument -w -r \
+            com.datadog.android.core.integration.test/androidx.test.runner.AndroidJUnitRunner \
+            > core-it-instrumentation-output.txt 2>&1 || exit_code=$?
         fi
     - cat core-it-instrumentation-output.txt || true
     - if [[ "$exit_code" -eq 0 ]] && ! grep -q '^OK (' core-it-instrumentation-output.txt; then exit_code=1; fi
