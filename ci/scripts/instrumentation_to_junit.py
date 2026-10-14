@@ -274,28 +274,46 @@ def first_line(value: str) -> str:
     return value.splitlines()[0] if value else ""
 
 
-def stream_input(parser: InstrumentationParser, raw_output: TextIO) -> None:
-    for line in sys.stdin:
-        sys.stdout.write(line)
-        sys.stdout.flush()
+def stream_input(
+    parser: InstrumentationParser,
+    input_stream: TextIO,
+    raw_output: TextIO,
+    output_stream: TextIO,
+) -> None:
+    for line in input_stream:
+        output_stream.write(line)
+        output_stream.flush()
         raw_output.write(line)
         raw_output.flush()
         parser.consume(line)
 
 
-def main() -> int:
-    arguments = parse_arguments()
-    if arguments.raw_output.resolve() == arguments.junit_output.resolve():
+def convert_stream(
+    input_stream: TextIO,
+    raw_output_path: Path,
+    junit_output_path: Path,
+    output_stream: TextIO = sys.stdout,
+) -> int:
+    if raw_output_path.resolve() == junit_output_path.resolve():
         raise ValueError("Raw output and JUnit output paths must be different.")
 
-    arguments.raw_output.parent.mkdir(parents=True, exist_ok=True)
+    raw_output_path.parent.mkdir(parents=True, exist_ok=True)
     instrumentation_parser = InstrumentationParser()
-    with arguments.raw_output.open("w", encoding="utf-8") as raw_output:
-        stream_input(instrumentation_parser, raw_output)
+    with raw_output_path.open("w", encoding="utf-8") as raw_output:
+        stream_input(instrumentation_parser, input_stream, raw_output, output_stream)
 
     instrumentation_parser.finish()
-    write_junit(instrumentation_parser, arguments.junit_output)
+    write_junit(instrumentation_parser, junit_output_path)
     return 1 if instrumentation_parser.has_failures() else 0
+
+
+def main() -> int:
+    arguments = parse_arguments()
+    return convert_stream(
+        sys.stdin,
+        arguments.raw_output,
+        arguments.junit_output,
+    )
 
 
 if __name__ == "__main__":

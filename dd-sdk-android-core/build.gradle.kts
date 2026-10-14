@@ -80,7 +80,7 @@ android {
             "String",
             "SDK_COMMIT_SHA1",
             // make it more friendly to configuration cache
-            "\"TODO_FIX\""
+            "\"TODO_FIX_2\""
         )
     }
 
