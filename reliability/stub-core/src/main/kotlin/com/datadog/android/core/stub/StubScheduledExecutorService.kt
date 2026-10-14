@@ -135,7 +135,7 @@ class StubScheduledExecutorService(
         period: Long,
         unit: TimeUnit?
     ): ScheduledFuture<*> {
-        TODO()
+        return neverTriggeredTask(command, initialDelay, unit)
     }
 
     override fun scheduleWithFixedDelay(
@@ -144,7 +144,17 @@ class StubScheduledExecutorService(
         delay: Long,
         unit: TimeUnit?
     ): ScheduledFuture<*> {
-        TODO()
+        return neverTriggeredTask(command, initialDelay, unit)
+    }
+
+    // Periodic tasks are never triggered, to keep the tests deterministic: tests needing their
+    // effect have to trigger it explicitly (e.g. by stopping the feature, which flushes).
+    private fun neverTriggeredTask(command: Runnable?, initialDelay: Long, unit: TimeUnit?): ScheduledFuture<*> {
+        return ScheduledFutureTask(
+            FutureTask(command, null),
+            nowProvider() + unit!!.toMillis(initialDelay),
+            nowProvider
+        )
     }
 
     /**
