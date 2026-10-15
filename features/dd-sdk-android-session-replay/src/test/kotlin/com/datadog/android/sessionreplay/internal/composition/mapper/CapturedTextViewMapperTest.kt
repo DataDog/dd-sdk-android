@@ -38,7 +38,9 @@ import org.junit.jupiter.params.provider.CsvSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -104,6 +106,41 @@ internal class CapturedTextViewMapperTest {
         // Then
         assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Text>().single().textStyle.color)
             .isEqualTo(fakeExpectedColor)
+    }
+
+    @Test
+    fun `M build exclusively from copied text and style W live view changes after capture`(
+        @Forgery fakeContext: CapturedMappingContext
+    ) {
+        // Given
+        val mockTextView: TextView = mock()
+        val fakeText = StringBuilder("original")
+        whenever(mockTextView.text).thenReturn(fakeText)
+        whenever(mockTextView.currentTextColor).thenReturn(0x112233)
+        whenever(mockTextView.textSize).thenReturn(20f)
+        whenever(mockTextView.paddingLeft).thenReturn(4)
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockTextView, 1f))
+            .thenReturn(GlobalBounds(0, 0, 100, 100))
+        whenever(mockColorStringFormatter.formatColorAsHexString(0x112233))
+            .thenReturn("#112233FF")
+        val fakeMappingContext = fakeContext.copy(screenDensity = 1f, bounds = null)
+        val copied = testedMapper.capture(mockTextView, fakeMappingContext)
+        fakeText.replace(0, fakeText.length, "changed")
+        whenever(mockTextView.currentTextColor).thenReturn(0xFFFFFF)
+        whenever(mockTextView.paddingLeft).thenReturn(40)
+        clearInvocations(mockTextView, mockViewBoundsResolver)
+
+        // When
+        val result = copied.map(fakeMappingContext) as CapturedViewMapperResult.Wireframes
+
+        // Then
+        verifyNoInteractions(mockTextView, mockViewBoundsResolver)
+        val text = result.wireframes
+            .filterIsInstance<CapturedWireframe.Text>().single()
+        assertThat(text.text).isEqualTo("original")
+        assertThat(text.textStyle.color).isEqualTo("#112233FF")
+        assertThat(text.textStyle.size).isEqualTo(20L)
+        assertThat(checkNotNull(checkNotNull(text.textPosition).padding).left).isEqualTo(4L)
     }
 
     @Test

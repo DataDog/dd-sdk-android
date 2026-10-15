@@ -21,6 +21,12 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.useCoreFactories()
 
         // Session Replay
+        forge.addFactory(CapturedNativeSnapshotForgeryFactory())
+        forge.addFactory(CapturedNativeWindowForgeryFactory())
+        forge.addFactory(CapturedNativeViewForgeryFactory())
+        forge.addFactory(CapturedWindowForgeryFactory())
+        forge.addFactory(CapturedBackgroundColorForgeryFactory())
+        forge.addFactory(CapturedMappingContextForgeryFactory())
         forge.addFactory(NodeForgeryFactory())
         forge.addFactory(SessionReplayRumContextForgeryFactory())
         forge.addFactory(TouchPrivacyScopeForgeryFactory())

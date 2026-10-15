@@ -86,6 +86,8 @@ internal class CompositionViewOnDrawInterceptor(
     }
 
     private class ListenerRegistration(
+        // Keep the original observer for reliable unregistration after detachment. Its other
+        // listeners may retain the View, so weak keys/listeners do not replace explicit cleanup.
         val observer: ViewTreeObserver,
         val listener: ViewTreeObserver.OnDrawListener
     )
