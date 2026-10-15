@@ -176,6 +176,7 @@ internal class CompositionPipelineFactoryTest {
     ) = DefaultCompositionPipelineFactory(
         sdkCore = mockSdkCore,
         internalCallback = mockInternalCallback,
+        touchPrivacyManager = mock(),
         dynamicOptimizationEnabled = dynamicOptimizationEnabled,
         snapshotProducerFactory = snapshotProducerFactory,
         recordingTimeBankFactory = recordingTimeBankFactory

@@ -17,19 +17,18 @@ internal class CompositionViewOnDrawInterceptor(
     private val internalLogger: InternalLogger
 ) {
     private val lock = Any()
-    private val interceptedViews = WeakHashMap<View, ViewTreeObserver.OnDrawListener>()
+    private val interceptedViews = WeakHashMap<View, ListenerRegistration>()
 
     fun intercept(decorViews: List<View>) {
         val staleViews = synchronized(lock) { interceptedViews.keys.filterNot(decorViews::contains) }
         staleViews.forEach(::removeListener)
         val newViews = synchronized(lock) { decorViews.filterNot(interceptedViews::containsKey) }
         newViews.forEach(::addListener)
-        windowSource.update(decorViews)
         // Per-frame draws are already reported by CompositionOnDrawListener.onDraw on each tracked
-        // view; this notifies only about the window *set* changing. Re-polling for untracked
+        // view; this notifies only about the window roots or their order changing. Re-polling for untracked
         // windows calls intercept() every second regardless of activity, so without this check an
         // idle screen would request a capture once a second forever.
-        if (staleViews.isNotEmpty() || newViews.isNotEmpty()) {
+        if (windowSource.update(decorViews)) {
             onWindowsChanged.onWindowsChanged(decorViews)
         }
     }
@@ -50,12 +49,18 @@ internal class CompositionViewOnDrawInterceptor(
     private fun addListener(view: View) {
         val observer = view.viewTreeObserver
         if (!observer.isAlive) return
-        val listener = CompositionOnDrawListener(view, onWindowsChanged)
+        // A retained listener must not capture this interceptor and its observer registrations.
+        val source = windowSource
+        val changeListener = onWindowsChanged
+        val listener = CompositionOnDrawListener(view) { roots ->
+            source.onDraw(roots)
+            changeListener.onWindowsChanged(roots)
+        }
         val reserved = synchronized(lock) {
             if (interceptedViews.containsKey(view)) {
                 false
             } else {
-                interceptedViews[view] = listener
+                interceptedViews[view] = ListenerRegistration(observer, listener)
                 true
             }
         }
@@ -69,15 +74,21 @@ internal class CompositionViewOnDrawInterceptor(
     }
 
     private fun removeListener(view: View) {
-        val listener = synchronized(lock) { interceptedViews.remove(view) } ?: return
-        val observer = view.viewTreeObserver
+        val registration = synchronized(lock) { interceptedViews.remove(view) } ?: return
+        // Cleanup uses the original observer; the view may no longer belong to the main looper.
+        val observer = registration.observer
         if (!observer.isAlive) return
         try {
-            observer.removeOnDrawListener(listener)
+            observer.removeOnDrawListener(registration.listener)
         } catch (e: IllegalStateException) {
             logListenerFailure("remove", e)
         }
     }
+
+    private class ListenerRegistration(
+        val observer: ViewTreeObserver,
+        val listener: ViewTreeObserver.OnDrawListener
+    )
 
     private fun logListenerFailure(operation: String, error: IllegalStateException) {
         internalLogger.log(

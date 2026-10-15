@@ -148,7 +148,8 @@ internal class CompositionCaptureConcurrencyTest {
             timeProvider = mock(),
             rumContextProvider = mock(),
             touchPrivacyManager = mock(),
-            internalLogger = mock()
+            internalLogger = mock(),
+            windowSource = ActiveWindowSource()
         )
         val failures = CopyOnWriteArrayList<Throwable>()
 
@@ -191,7 +192,8 @@ internal class CompositionCaptureConcurrencyTest {
             timeProvider = mock(),
             rumContextProvider = mock(),
             touchPrivacyManager = mock(),
-            internalLogger = mock()
+            internalLogger = mock(),
+            windowSource = ActiveWindowSource()
         )
         val failures = CopyOnWriteArrayList<Throwable>()
 
