@@ -100,3 +100,15 @@
 -keep class androidx.compose.ui.text.android.TextLayout{
     <fields>;
 }
+
+# Optional invalidation checks for the measured plain-text paragraph cache.
+-keep,allowoptimization class androidx.compose.foundation.text.modifiers.TextStringSimpleNode {
+    *** _layoutCache;
+    *** semanticsTextLayoutResult;
+}
+-keep,allowoptimization class androidx.compose.foundation.text.modifiers.ParagraphLayoutCache {
+    *** paragraph;
+    *** paragraphIntrinsics;
+    long prevConstraints;
+    long layoutSize;
+}
