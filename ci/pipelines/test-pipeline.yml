@@ -152,6 +152,13 @@ profile:rum-lint:
   timeout: 1h
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
+  cache:
+    key: test-debug-3-$CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/wrapper/
+      - cache/notifications/
+    policy: pull
   variables:
     GRADLE_JVM_XMX: "8g"
     GRADLE_MAX_WORKERS: "16"
@@ -164,7 +171,6 @@ profile:rum-lint:
     - >-
         ./gradlew
         :features:dd-sdk-android-rum:lintAnalyzeDebug
-        --rerun-tasks
         --no-build-cache
         --no-configuration-cache
         --no-daemon
