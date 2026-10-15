@@ -16,8 +16,11 @@ import android.util.DisplayMetrics
 import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.ScrollView
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
@@ -38,6 +41,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -86,8 +92,7 @@ internal class CapturedPixelFallbackMapperTest {
         )
     }
 
-    private fun eligibleView(width: Int = 100, height: Int = 100): View {
-        val mockView: View = mock()
+    private fun eligibleView(width: Int = 100, height: Int = 100, mockView: View = mock()): View {
         val resources: Resources = mock()
         val displayMetrics = DisplayMetrics().apply {
             widthPixels = 1000
@@ -103,6 +108,140 @@ internal class CapturedPixelFallbackMapperTest {
             true
         }
         return mockView
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "false, false, false, MASK_NONE",
+        "false, false, true, MASK_NONE",
+        "false, true, false, MASK_NONE",
+        "false, true, true, MASK_NONE",
+        "true, false, false, MASK_NONE",
+        "true, false, true, MASK_NONE",
+        "true, true, false, MASK_NONE",
+        "true, true, true, MASK_NONE",
+        "false, true, true, MASK_LARGE_ONLY",
+        "true, true, true, MASK_LARGE_ONLY"
+    )
+    fun `M capture image content with or without a background W map or capture`(
+        fakeButton: Boolean,
+        fakeBackground: Boolean,
+        fakeCapture: Boolean,
+        fakePrivacy: ImagePrivacy
+    ) {
+        // Given
+        val stubImage = imageView(fakeButton, fakeBackground)
+        val mockRasterizer: ViewRasterizer = mock()
+        whenever(mockRasterizer.rasterize(stubImage)).thenReturn(mockBitmap)
+        val testedImageMapper = imageFallbackMapper(mockRasterizer)
+        val fakePending = mutableListOf<PendingPixelCapture>()
+        val fakeContext = mappingContext(fakePrivacy, PendingPixelCaptureSink(fakePending::add))
+            .copy(bounds = CapturedBounds(10, 20, 50, 50))
+
+        // When
+        val fakeResult = if (fakeCapture) {
+            val fakeCopy = testedImageMapper.capture(stubImage, fakeContext)
+            assertThat(fakeCopy.isTerminal).isTrue()
+            fakeCopy.map(fakeContext)
+        } else {
+            testedImageMapper.map(stubImage, fakeContext)
+        } as CapturedViewMapperResult.Wireframes
+
+        // Then
+        val fakePixel = fakeResult.wireframes.single() as CapturedWireframe.Pixel
+        assertThat(fakePixel.bounds).isEqualTo(fakeContext.bounds)
+        assertThat(fakePixel.resource).isEqualTo(PixelResource.Unresolved)
+        assertThat(fakeResult.isTerminal).isTrue()
+        assertThat(fakePending).containsExactly(
+            PendingPixelCapture(
+                fakePixel.identity,
+                fakeContext.ownerIdentity,
+                mockBitmap,
+                isTextFree = false
+            )
+        )
+        verify(mockRasterizer).rasterize(stubImage)
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "false, MASK_ALL, 50",
+        "true, MASK_ALL, 50",
+        "false, MASK_LARGE_ONLY, 200",
+        "true, MASK_LARGE_ONLY, 200"
+    )
+    fun `M mask image content even with a solid background W capture`(
+        fakeButton: Boolean,
+        fakePrivacy: ImagePrivacy,
+        fakeSize: Int
+    ) {
+        // Given
+        val stubImage = imageView(fakeButton, true, fakeSize)
+        val mockRasterizer: ViewRasterizer = mock()
+        val testedImageMapper = imageFallbackMapper(mockRasterizer)
+        val fakePending = mutableListOf<PendingPixelCapture>()
+        val fakeContext = mappingContext(fakePrivacy, PendingPixelCaptureSink(fakePending::add))
+            .copy(bounds = CapturedBounds(0, 0, fakeSize.toLong(), fakeSize.toLong()))
+
+        // When
+        val fakeResult = testedImageMapper.capture(stubImage, fakeContext).map(fakeContext)
+            as CapturedViewMapperResult.Wireframes
+
+        // Then
+        val fakePlaceholder = fakeResult.wireframes.single() as CapturedWireframe.PrivacyPlaceholder
+        assertThat(fakePlaceholder.bounds).isEqualTo(fakeContext.bounds)
+        assertThat(fakeResult.isTerminal).isTrue()
+        assertThat(fakePending).isEmpty()
+        verifyNoInteractions(mockRasterizer)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M retain background only capture W capture { image has no drawable }`(fakeButton: Boolean) {
+        // Given
+        val stubImage = imageView(fakeButton, true)
+        whenever(stubImage.drawable).thenReturn(null)
+        val mockRasterizer: ViewRasterizer = mock()
+        val testedImageMapper = imageFallbackMapper(mockRasterizer)
+        val fakeContext = mappingContext(ImagePrivacy.MASK_ALL).copy(bounds = CapturedBounds(0, 0, 50, 50))
+
+        // When
+        val fakeCopy = testedImageMapper.capture(stubImage, fakeContext)
+        val fakeResult = fakeCopy.map(fakeContext) as CapturedViewMapperResult.Wireframes
+
+        // Then
+        assertThat(fakeCopy.isOcclusionBounded).isTrue()
+        assertThat(fakeCopy.hasOpaqueBackground).isTrue()
+        assertThat(fakeResult.wireframes.single()).isInstanceOf(CapturedWireframe.Shape::class.java)
+        verifyNoInteractions(mockRasterizer)
+    }
+
+    private fun imageView(fakeButton: Boolean, fakeBackground: Boolean, fakeSize: Int = 50): ImageView {
+        val stubImage = if (fakeButton) mock<ImageButton>() else mock<ImageView>()
+        eligibleView(fakeSize, fakeSize, stubImage)
+        val stubDrawable: Drawable = mock()
+        whenever(stubImage.drawable).thenReturn(stubDrawable)
+        if (fakeBackground) {
+            val stubBackground: ColorDrawable = mock()
+            whenever(stubBackground.opacity).thenReturn(PixelFormat.OPAQUE)
+            whenever(stubImage.background).thenReturn(stubBackground)
+        }
+        return stubImage
+    }
+
+    private fun imageFallbackMapper(mockRasterizer: ViewRasterizer): CapturedPixelFallbackMapper {
+        val mockColorMapper: DrawableToColorMapper = mock()
+        whenever(mockColorMapper.mapDrawableToColor(any(), any())).thenReturn(0xff112233.toInt())
+        return CapturedPixelFallbackMapper(
+            fallbackMapper = CapturedViewGroupFallbackMapper(
+                backgroundShapeStyleResolver = CapturedBackgroundShapeStyleResolver(
+                    drawableToColorMapper = mockColorMapper
+                ),
+                internalLogger = mockInternalLogger
+            ),
+            internalLogger = mockInternalLogger,
+            viewRasterizer = mockRasterizer
+        )
     }
 
     @Test

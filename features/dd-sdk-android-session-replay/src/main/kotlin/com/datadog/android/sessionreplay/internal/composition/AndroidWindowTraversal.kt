@@ -71,7 +71,9 @@ internal class AndroidWindowTraversal(
     private val drawingOrderResolver: ViewGroupDrawingOrderResolver = ViewGroupDrawingOrderResolver(internalLogger),
     private val rootImagePrivacy: ImagePrivacy = ImagePrivacy.MASK_ALL,
     private val rootTextAndInputPrivacy: TextAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
-    private val isComposeHost: (View) -> Boolean = ::isComposeHostByClassName
+    private val isComposeHost: (View) -> Boolean = ::isComposeHostByClassName,
+    private val pixelCapture: ViewPixelCapture = ViewPixelCapture(internalLogger),
+    private val foregroundCapture: ViewForegroundCapture = ViewForegroundCapture(internalLogger)
 ) {
     private val occlusionDetector = ViewOcclusionDetector(drawableToColorMapper, viewUtilsInternal, internalLogger)
 
@@ -161,9 +163,12 @@ internal class AndroidWindowTraversal(
         val kind = resolveLayerKind(item, state)
         val identity = resolveIdentity(item, kind, state)
         // Read geometry once. Retain the original pixels for coverage and derive the same replay bounds.
-        val pixels = resolvePixelBounds(view, state.locationOnScreen)
-        val bounds = pixels?.toNormalizedBounds(state.density)
-            ?: viewBoundsResolver.resolveViewGlobalBounds(view, state.density).toCaptured()
+        val hasTransform = ViewTransformResolver.hasSpatialTransform(view, item.inheritedScale)
+        val transform = if (hasTransform) ViewTransformResolver.resolve(view) else null
+        val viewScale = transform?.uniformScale ?: 1f
+        val requiresRaster = requiresRasterCapture(hasTransform, transform, kind)
+        val pixels = if (hasTransform) transform?.pixelBounds else resolvePixelBounds(view, state.locationOnScreen)
+        val bounds = resolveCapturedBounds(view, pixels, hasTransform, state.density)
         val ownPrivacy = resolveEffectivePrivacy(view, item.inheritedPrivacy, internalLogger)
         val mappingContext = CapturedMappingContext(
             state.identityFactory,
@@ -172,21 +177,22 @@ internal class AndroidWindowTraversal(
             bounds,
             imagePrivacy = ownPrivacy.imagePrivacy,
             textAndInputPrivacy = ownPrivacy.textAndInputPrivacy,
-            pendingPixelCaptureSink = PendingPixelCaptureSink { state.pendingPixelCaptures.add(it) }
+            pendingPixelCaptureSink = PendingPixelCaptureSink { state.pendingPixelCaptures.add(it) },
+            viewScale = viewScale
         )
         val hidden = view.getTag(R.id.datadog_hidden) == true
-        val composition = decomposeHost(view, kind, hidden, mappingContext, state, context)
+        val composition = if (hasTransform) null else decomposeHost(view, kind, hidden, mappingContext, state, context)
         if (!context.shouldContinue()) return
         val viewData = composition?.let { CapturedViewData.Mapped(CapturedViewMapperResult.None) }
-            ?: (if (hidden) hiddenViewMapper else mapperRegistry.resolve(view)).capture(view, mappingContext)
+            ?: captureViewData(item, mappingContext, hidden, requiresRaster, transform)
         val children = if (!hidden && composition == null && !viewData.isTerminal) view as? ViewGroup else null
         val clippingViewGroup = if (composition != null) view as? ViewGroup else children
-        val pixelPaddingClip = clippingViewGroup?.let { pixels?.paddingClip(it) }
+        val pixelPaddingClip = clippingViewGroup?.let { pixels?.paddingClip(it, transform) }
         val paddingClip = resolvePaddingClip(clippingViewGroup, pixelPaddingClip, state.density)
-        val pixelClip = pixels?.explicitClip(view)
-        val clip = resolveExplicitClip(view, pixels, pixelClip, state.density)
-        val geometryIsReliable = item.isGeometryReliable &&
-            view.hasReliableGeometry(if (kind == CapturedLayerKind.WINDOW_ROOT) -1 else 0)
+        // The transformed rasterizer bakes explicit clips in local coordinates into the bitmap.
+        val pixelClip = resolvePixelClip(view, pixels, transform, requiresRaster)
+        val clip = resolveExplicitClip(view, pixels, pixelClip, state.density, requiresRaster)
+        val geometryIsReliable = view.hasReliableGeometry(kind, item.isGeometryReliable, hasTransform)
         state.views += CapturedNativeView(
             identity,
             item.parentIndex,
@@ -201,9 +207,53 @@ internal class AndroidWindowTraversal(
             pixelPaddingClip,
             geometryIsReliable,
             kind,
-            composition
+            composition,
+            foreground = captureForeground(view, mappingContext, viewData, hidden),
+            viewScale = viewScale
         )
         pushNativeChildren(view, children, hidden, ownPrivacy, stack, state)
+    }
+
+    @UiThread
+    private fun captureForeground(
+        view: View,
+        context: CapturedMappingContext,
+        viewData: CapturedViewData,
+        hidden: Boolean
+    ): CapturedForeground? =
+        if (hidden || viewData.isTerminal) null else foregroundCapture.capture(view, context)
+
+    private fun requiresRasterCapture(
+        transformed: Boolean,
+        transform: ViewTransform?,
+        kind: CapturedLayerKind
+    ): Boolean = transformed && (transform?.uniformScale == null || kind == CapturedLayerKind.COMPOSE_HOST)
+
+    @UiThread
+    private fun resolveCapturedBounds(
+        view: View,
+        pixels: GlobalBounds?,
+        transformed: Boolean,
+        density: Float
+    ): CapturedBounds = when {
+        pixels == null -> viewBoundsResolver.resolveViewGlobalBounds(view, density).toCaptured()
+        transformed -> pixels.toTransformedReplayBounds(density)
+        else -> pixels.toNormalizedBounds(density)
+    }
+
+    @UiThread
+    private fun captureViewData(
+        item: WorkItem,
+        context: CapturedMappingContext,
+        hidden: Boolean,
+        transformed: Boolean,
+        transform: ViewTransform?
+    ): CapturedViewData = when {
+        hidden -> hiddenViewMapper.capture(item.view, context)
+        transformed -> CapturedViewData.Mapped(
+            pixelCapture.captureTransformed(item.view, context, transform, item.clipToBounds)
+        )
+        else -> mapperRegistry.resolve(item.view).capture(item.view, context)
     }
 
     @UiThread
@@ -218,9 +268,9 @@ internal class AndroidWindowTraversal(
     ) {
         val copied = state.views.last()
         if (children != null) {
-            pushChildren(children, state.views.lastIndex, copied.isGeometryReliable, inheritedPrivacy, stack, state)
-        } else if ((hidden || copied.viewData.isPixelFallbackTerminal) && view is ViewGroup && view !is WebView) {
-            pushTouchChildren(view, stack)
+            pushChildren(children, copied, inheritedPrivacy, stack, state)
+        } else if (view is ViewGroup && view !is WebView) {
+            if (hidden || copied.viewData.isPixelFallbackTerminal) pushTouchChildren(view, stack)
         }
     }
 
@@ -332,14 +382,34 @@ internal class AndroidWindowTraversal(
         view: View,
         pixels: GlobalBounds?,
         clip: GlobalBounds?,
-        density: Float
-    ): CapturedBounds? = if (pixels != null) clip?.toNormalizedClip(density) else view.clipBoundsOnScreen(density)
+        density: Float,
+        transformed: Boolean
+    ): CapturedBounds? = when {
+        transformed -> null
+        pixels != null -> clip?.toNormalizedClip(density)
+        else -> view.clipBoundsOnScreen(density)
+    }
+
+    @UiThread
+    private fun resolvePixelClip(
+        view: View,
+        pixels: GlobalBounds?,
+        transform: ViewTransform?,
+        rasterized: Boolean
+    ): GlobalBounds? = when {
+        rasterized -> null
+        transform != null -> view.clipBounds?.let {
+            transform.mapBounds(
+                GlobalBounds(it.left.toLong(), it.top.toLong(), it.width().toLong(), it.height().toLong())
+            )
+        }
+        else -> pixels?.explicitClip(view)
+    }
 
     @UiThread
     private fun pushChildren(
         viewGroup: ViewGroup,
-        parentIndex: Int,
-        geometryIsReliable: Boolean,
+        parent: CapturedNativeView,
         inheritedPrivacy: EffectivePrivacy,
         stack: ArrayDeque<WorkItem>,
         state: CopyState
@@ -353,11 +423,12 @@ internal class AndroidWindowTraversal(
             stack.addLast(
                 WorkItem(
                     drawingOrder.children[i],
-                    parentIndex,
+                    state.views.lastIndex,
                     clipChildren,
                     i in occluded,
-                    geometryIsReliable,
-                    inheritedPrivacy = inheritedPrivacy
+                    parent.isGeometryReliable,
+                    inheritedPrivacy = inheritedPrivacy,
+                    inheritedScale = parent.viewScale
                 )
             )
         }
@@ -372,12 +443,6 @@ internal class AndroidWindowTraversal(
             @Suppress("UnsafeThirdPartyFunctionCall") // Unbounded UI-owned deque.
             stack.addLast(WorkItem(children[i], -1, false, touchOnly = true))
         }
-    }
-
-    /** Visual hiding still allows descendant touch overrides; WebView internals remain opaque. */
-    @UiThread
-    private fun pushHiddenTouchChildren(view: View, hidden: Boolean, stack: ArrayDeque<WorkItem>) {
-        if (hidden && view is ViewGroup) pushTouchChildren(view, stack)
     }
 
     private class CopyState(
@@ -403,7 +468,8 @@ internal class AndroidWindowTraversal(
         val touchOnly: Boolean = false,
         val isGeometryReliable: Boolean = true,
         val expectedParent: ViewParent? = view.parent,
-        val inheritedPrivacy: EffectivePrivacy = EffectivePrivacy(ImagePrivacy.MASK_ALL, TextAndInputPrivacy.MASK_ALL)
+        val inheritedPrivacy: EffectivePrivacy = EffectivePrivacy(ImagePrivacy.MASK_ALL, TextAndInputPrivacy.MASK_ALL),
+        val inheritedScale: Float = 1f
     )
 }
 
@@ -464,11 +530,24 @@ private fun GlobalBounds.explicitClip(view: View): GlobalBounds? = view.clipBoun
 
 private fun View.sharesNativePaintOrder(): Boolean = this !is SurfaceView && this !is TextureView
 
-private fun View.hasReliableGeometry(parentIndex: Int): Boolean =
-    (parentIndex < 0 || !clipToOutline) && hasStableGeometry()
+private fun View.hasReliableGeometry(
+    kind: CapturedLayerKind,
+    parentIsReliable: Boolean,
+    transformed: Boolean
+): Boolean = !transformed && parentIsReliable &&
+    (kind == CapturedLayerKind.WINDOW_ROOT || !clipToOutline) && hasStableGeometry()
 
-private fun GlobalBounds.paddingClip(view: ViewGroup): GlobalBounds? =
-    if (view.clipToPadding && view.hasNonZeroPadding()) paddedBounds(view) else null
+private fun GlobalBounds.paddingClip(view: ViewGroup, transform: ViewTransform?): GlobalBounds? {
+    if (!view.clipToPadding || !view.hasNonZeroPadding()) return null
+    return transform?.mapBounds(
+        GlobalBounds(
+            view.paddingLeft.toLong(),
+            view.paddingTop.toLong(),
+            (view.width - view.paddingLeft - view.paddingRight).toLong(),
+            (view.height - view.paddingTop - view.paddingBottom).toLong()
+        )
+    ) ?: paddedBounds(view)
+}
 
 /** Detects Compose hosts without a compile-time dependency on Compose. */
 private fun isComposeHostByClassName(view: View): Boolean =

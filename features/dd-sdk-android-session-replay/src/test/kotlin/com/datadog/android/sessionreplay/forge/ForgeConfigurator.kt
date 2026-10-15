@@ -24,6 +24,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(CapturedNativeSnapshotForgeryFactory())
         forge.addFactory(CapturedNativeWindowForgeryFactory())
         forge.addFactory(CapturedNativeViewForgeryFactory())
+        forge.addFactory(CapturedForegroundForgeryFactory())
         forge.addFactory(CapturedWindowForgeryFactory())
         forge.addFactory(CapturedBackgroundColorForgeryFactory())
         forge.addFactory(CapturedMappingContextForgeryFactory())

@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.composition
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
@@ -49,5 +50,13 @@ internal data class CapturedNativeView(
     val pixelChildPaddingClip: GlobalBounds? = null,
     val isGeometryReliable: Boolean = false,
     val kind: CapturedLayerKind = if (parentIndex < 0) CapturedLayerKind.WINDOW_ROOT else CapturedLayerKind.NATIVE_VIEW,
-    val composition: CompositionHostDecomposeResult? = null
+    val composition: CompositionHostDecomposeResult? = null,
+    val foreground: CapturedForeground? = null,
+    val viewScale: Float = 1f
+)
+
+/** Owned foreground values, with a distinct identity from the view background. */
+internal data class CapturedForeground(
+    val identity: CapturedIdentity,
+    val wireframe: CapturedWireframe
 )

@@ -10,7 +10,9 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+import com.datadog.android.sessionreplay.internal.composition.CapturedForeground
 import com.datadog.android.sessionreplay.internal.composition.CapturedNativeSnapshot
 import com.datadog.android.sessionreplay.internal.composition.CapturedNativeView
 import com.datadog.android.sessionreplay.internal.composition.CapturedNativeWindow
@@ -94,6 +96,21 @@ internal class CapturedMappingContextForgeryFactory : ForgeryFactory<CapturedMap
             view.identity,
             forge.aFloat(min = 0.75f, max = 4f),
             view.bounds
+        )
+    }
+}
+
+internal class CapturedForegroundForgeryFactory : ForgeryFactory<CapturedForeground> {
+    override fun getForgery(forge: Forge): CapturedForeground {
+        val view = forge.getForgery<CapturedNativeView>()
+        val factory = DefaultCapturedIdentityFactory(view.identity.scope)
+        val identity = factory.layer(view.identity, "foreground")
+        return CapturedForeground(
+            identity,
+            CapturedWireframe.Shape(
+                factory.shapeWireframe(identity),
+                view.bounds
+            )
         )
     }
 }

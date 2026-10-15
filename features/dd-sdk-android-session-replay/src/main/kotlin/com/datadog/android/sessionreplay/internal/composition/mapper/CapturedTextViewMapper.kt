@@ -154,7 +154,7 @@ internal open class CapturedTextViewMapper<T : TextView>(
         val drawables = view.compoundDrawables
         if (drawables.all { it == null }) return emptyList()
 
-        val density = mappingContext.screenDensity
+        val density = mappingContext.screenDensity / mappingContext.viewScale
         val paddingStart = view.paddingStart.densityNormalized(density).toLong()
         val paddingTop = view.paddingTop.densityNormalized(density).toLong()
         val paddingEnd = view.paddingEnd.densityNormalized(density).toLong()
@@ -300,7 +300,7 @@ private data class CapturedTextViewData(
             )
         }
         wireframes += backgroundWireframes
-        val density = mappingContext.screenDensity
+        val density = mappingContext.screenDensity / mappingContext.viewScale
         wireframes += CapturedWireframe.Text(
             identity = mappingContext.identityFactory.textWireframe(mappingContext.ownerIdentity),
             bounds = bounds,

@@ -102,13 +102,29 @@ internal fun collectTouchOverrideArea(
     areas: MutableMap<Rect, TouchPrivacy>,
     internalLogger: InternalLogger
 ) {
-    val tag = view.getTag(R.id.datadog_touch_privacy) ?: return
-    val location = IntArray(2)
-    @Suppress("UnsafeThirdPartyFunctionCall") // The coordinate array always has two entries.
-    view.getLocationOnScreen(location)
-    val bounds = Rect(location[0], location[1], location[0] + view.width, location[1] + view.height)
+    val touchPrivacyTag = view.getTag(R.id.datadog_touch_privacy) ?: return
     try {
-        areas.putTouchOverrideArea(bounds, TouchPrivacy.valueOf(tag.toString().uppercase(Locale.US)))
+        val privacyLevel = TouchPrivacy.valueOf(touchPrivacyTag.toString().uppercase(Locale.US))
+        val transformed = ViewTransformResolver.hasTransformedAncestor(view)
+        val transform = if (transformed) ViewTransformResolver.resolve(view) else null
+        // A bounding box may safely over-mask HIDE, but cannot authorize SHOW outside a rotated view.
+        val canShow = transform?.isAxisAligned == true
+        if (transformed && privacyLevel == TouchPrivacy.SHOW && !canShow) {
+            return
+        }
+        val viewArea = if (transformed) {
+            transform?.pixelBounds?.let {
+                Rect(it.x.toInt(), it.y.toInt(), (it.x + it.width).toInt(), (it.y + it.height).toInt())
+            } ?: Rect(Int.MIN_VALUE, Int.MIN_VALUE, Int.MAX_VALUE, Int.MAX_VALUE)
+        } else {
+            val locationOnScreen = IntArray(2)
+            @Suppress("UnsafeThirdPartyFunctionCall") // Owned two-element coordinate array.
+            view.getLocationOnScreen(locationOnScreen)
+            val x = locationOnScreen[0]
+            val y = locationOnScreen[1]
+            Rect(x, y, x + view.width, y + view.height)
+        }
+        areas.putTouchOverrideArea(viewArea, privacyLevel)
     } catch (e: IllegalArgumentException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,

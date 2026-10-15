@@ -30,7 +30,8 @@ internal data class CapturedMappingContext(
     val bounds: CapturedBounds? = null,
     val imagePrivacy: ImagePrivacy = ImagePrivacy.MASK_ALL,
     val textAndInputPrivacy: TextAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
-    val pendingPixelCaptureSink: PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp
+    val pendingPixelCaptureSink: PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp,
+    val viewScale: Float = 1f
 )
 
 internal sealed interface CapturedViewMapperResult {

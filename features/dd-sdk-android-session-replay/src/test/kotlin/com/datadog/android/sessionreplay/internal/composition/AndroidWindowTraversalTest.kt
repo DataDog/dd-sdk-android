@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import android.content.res.Resources
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.graphics.drawable.ColorDrawable
@@ -16,6 +17,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewStub
 import android.webkit.WebView
+import android.widget.TextView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
@@ -28,6 +30,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedTextStyle
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -36,6 +39,7 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedVie
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedWebViewMapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.ViewRasterizer
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
@@ -58,6 +62,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -152,7 +159,9 @@ internal class AndroidWindowTraversalTest {
         fallback: CapturedViewMapper<View> = noOpFallback,
         typedMappers: List<CapturedMapperTypeWrapper<*>> = emptyList(),
         composeHostDecomposer: CompositionHostDecomposer? = null,
-        isComposeHost: (View) -> Boolean = { false }
+        isComposeHost: (View) -> Boolean = { false },
+        pixelCapture: ViewPixelCapture = ViewPixelCapture(mock()),
+        rootImagePrivacy: ImagePrivacy = ImagePrivacy.MASK_ALL
     ) = AndroidWindowTraversal(
         mapperRegistry = CapturedViewMapperRegistry(typedMappers, fallback, mock()),
         internalLogger = mock(),
@@ -161,8 +170,105 @@ internal class AndroidWindowTraversalTest {
         drawableToColorMapper = mockDrawableToColorMapper,
         viewUtilsInternal = ViewUtilsInternal(),
         composeHostDecomposer = composeHostDecomposer,
-        isComposeHost = isComposeHost
+        isComposeHost = isComposeHost,
+        pixelCapture = pixelCapture,
+        rootImagePrivacy = rootImagePrivacy
     )
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M capture transformed typed view or subtree once W traverseWindow`(fakeGroup: Boolean) {
+        // Given
+        val stubRoot = if (fakeGroup) {
+            mockViewGroup(GlobalBounds(0, 0, 100, 50))
+        } else {
+            mock<TextView>().also {
+                stubDefaults(it, GlobalBounds(0, 0, 100, 50))
+            }
+        }
+        val stubMatrix: Matrix = mock()
+        whenever(stubMatrix.getValues(any())).thenAnswer {
+            floatArrayOf(2f, 0f, 0f, 0f, 3f, 0f, 0f, 0f, 1f).copyInto(it.getArgument(0))
+            null
+        }
+        whenever(stubRoot.matrix).thenReturn(stubMatrix)
+        whenever(stubRoot.alpha).thenReturn(0.5f)
+        whenever(stubRoot.foreground).thenReturn(mock<ColorDrawable>())
+        if (stubRoot is ViewGroup) {
+            val stubChild = mockView(GlobalBounds(20, 10, 20, 20))
+            whenever(stubChild.parent).thenReturn(stubRoot)
+            whenever(stubChild.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.name)
+            whenever(stubRoot.childCount).thenReturn(1)
+            whenever(stubRoot.getChildAt(0)).thenReturn(stubChild)
+        }
+        val mockNormalMapper: CapturedViewMapper<View> = mock()
+        val testedTraversal = traversal(
+            fallback = mockNormalMapper,
+            typedMappers = listOf(CapturedMapperTypeWrapper(View::class.java, mockNormalMapper)),
+            pixelCapture = ViewPixelCapture(
+                mock(),
+                rasterizer = mock<ViewRasterizer>().also {
+                    whenever(it.rasterize(any(), any(), any())).thenReturn(mock())
+                }
+            ),
+            rootImagePrivacy = ImagePrivacy.MASK_NONE
+        )
+
+        // When
+        val fakeCopy = testedTraversal.traverseWindow(
+            stubRoot,
+            identityFactory.window("window"),
+            identityFactory,
+            fakeContext
+        ) as WindowCopyResult.Present
+        val fakeWindow = checkNotNull(CapturedNativeSnapshotBuilder().buildWindow(fakeCopy.window, fakeContext))
+
+        // Then
+        assertThat(fakeCopy.window.views).hasSize(1)
+        assertThat(fakeCopy.window.views.single().isGeometryReliable).isFalse()
+        assertThat(fakeCopy.window.views.single().foreground).isNull()
+        assertThat(fakeCopy.window.pendingPixelCaptures).hasSize(1)
+        assertThat(fakeWindow.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
+        assertThat(fakeWindow.wireframes.single().bounds).isEqualTo(fakeWindow.rootLayer.bounds)
+        assertThat(fakeWindow.rootLayer.modifiers).containsExactly(CapturedModifier.Opacity(0.5))
+        verify(mockNormalMapper, never()).capture(any(), any())
+        if (fakeGroup) assertThat(fakeCopy.touchOverrideAreas).containsEntry(Rect(40, 30, 80, 90), TouchPrivacy.HIDE)
+    }
+
+    @ParameterizedTest
+    @EnumSource(TouchPrivacy::class)
+    fun `M mask rotated touches conservatively W traverseWindow`(fakePrivacy: TouchPrivacy) {
+        // Given
+        val stubRoot = mockView(GlobalBounds(0, 0, 100, 100))
+        val stubMatrix: Matrix = mock()
+        whenever(stubMatrix.getValues(any())).thenAnswer {
+            floatArrayOf(0.70710677f, -0.70710677f, 0f, 0.70710677f, 0.70710677f, 0f, 0f, 0f, 1f)
+                .copyInto(it.getArgument(0))
+            null
+        }
+        whenever(stubRoot.matrix).thenReturn(stubMatrix)
+        whenever(stubRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(fakePrivacy.name)
+
+        // When
+        val fakeCopy = traversal().traverseWindow(
+            stubRoot,
+            identityFactory.window("window"),
+            identityFactory,
+            fakeContext
+        ) as WindowCopyResult.Present
+
+        // Then
+        if (fakePrivacy == TouchPrivacy.HIDE) {
+            assertThat(fakeCopy.touchOverrideAreas).containsEntry(Rect(-71, 0, 71, 142), TouchPrivacy.HIDE)
+        } else {
+            assertThat(fakeCopy.touchOverrideAreas).isEmpty()
+        }
+        val testedPrivacyReader = WindowTouchPrivacyReader(
+            timeProvider = CaptureTimeProvider { 0L },
+            isMainThreadWindow = { true }
+        )
+        assertThat(testedPrivacyReader.read(stubRoot)).isEqualTo(fakeCopy.touchOverrideAreas)
+    }
 
     /** These trees are tiny and the deadline is generous, so a call is expected to complete in one slice. */
     private fun WindowCopyResult.doneValue(): WindowWalkResult = buildWindow(fakeContext)
