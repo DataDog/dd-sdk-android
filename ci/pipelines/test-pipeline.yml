@@ -71,6 +71,7 @@ stages:
         DD_TAGS="test.configuration.variant:debug" ./gradlew
         --console=plain
         --continue
+        --no-daemon
         --scan
         -Dscan.uploadInBackground=false
         -PverificationBuildType=debug
@@ -120,6 +121,7 @@ stages:
       - "instrumented/integration/build/outputs/apk/androidTest/debug/*.apk"
       - "features/dd-sdk-android-ndk/build/outputs/apk/androidTest/debug/*.apk"
       - "build/reports/test-pyramid/coverage.txt"
+      - "profiles/verify-all.jfr"
     reports:
       junit:
         - "tools/**/build/test-results/test/*.xml"
@@ -131,8 +133,6 @@ verify:all:
   extends:
     - .verify-all
     - .cpu-memory-intensive-job
-  rules:
-    - when: never
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   cache:
@@ -144,10 +144,14 @@ verify:all:
     policy: pull-push
   before_script:
     - !reference [.snippets, source-secrets]
+    - mkdir -p "$CI_PROJECT_DIR/profiles"
+    - export GRADLE_JVM_EXTRA_ARGS="-XX:StartFlightRecording=filename=$CI_PROJECT_DIR/profiles/verify-all.jfr,settings=profile,dumponexit=true"
     - !reference [.snippets, setup-gradle]
 
 profile:rum-lint:
   extends: .cpu-memory-intensive-job
+  rules:
+    - when: never
   stage: verify
   timeout: 1h
   tags: [ "arch:amd64" ]
