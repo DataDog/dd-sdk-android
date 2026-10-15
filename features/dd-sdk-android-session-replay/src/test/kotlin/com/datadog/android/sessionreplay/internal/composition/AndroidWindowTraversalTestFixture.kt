@@ -14,6 +14,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
@@ -116,7 +117,9 @@ internal abstract class AndroidWindowTraversalTestFixture {
         fallback: CapturedViewMapper<View> = noOpFallback,
         typedMappers: List<CapturedMapperTypeWrapper<*>> = emptyList(),
         compositionHostDecomposer: CompositionHostDecomposer? = null,
-        internalLogger: InternalLogger = mock()
+        internalLogger: InternalLogger = mock(),
+        pixelCapture: ViewPixelCapture = ViewPixelCapture(mock()),
+        rootImagePrivacy: ImagePrivacy = ImagePrivacy.MASK_ALL
     ) = AndroidWindowTraversal(
         mapperRegistry = CapturedViewMapperRegistry(typedMappers, fallback, mock()),
         internalLogger = internalLogger,
@@ -125,7 +128,9 @@ internal abstract class AndroidWindowTraversalTestFixture {
         viewBoundsResolver = mockViewBoundsResolver,
         drawableToColorMapper = mockDrawableToColorMapper,
         viewUtilsInternal = ViewUtilsInternal(),
-        compositionHostDecomposer = compositionHostDecomposer
+        compositionHostDecomposer = compositionHostDecomposer,
+        pixelCapture = pixelCapture,
+        rootImagePrivacy = rootImagePrivacy
     )
 
     /** These trees are tiny and the deadline is generous, so a call is expected to complete in one slice. */

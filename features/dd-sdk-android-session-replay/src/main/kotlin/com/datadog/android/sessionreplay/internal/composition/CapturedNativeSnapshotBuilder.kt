@@ -79,7 +79,7 @@ internal class CapturedNativeSnapshotBuilder(
                 @Suppress("UnsafeThirdPartyFunctionCall") // Non-empty synchronous deque.
                 val pending = stack.last()
                 if (pending.index == view.parentIndex) break
-                finishLayer(stack, layers)
+                finishLayer(stack, layers, wireframes)
             }
             @Suppress("UnsafeThirdPartyFunctionCall") // Null returned for an empty owned deque.
             val parentClip = stack.lastOrNull()?.childClip
@@ -106,11 +106,11 @@ internal class CapturedNativeSnapshotBuilder(
                 }
             }
             @Suppress("UnsafeThirdPartyFunctionCall") // Unbounded worker-owned deque.
-            stack.addLast(PendingLayer(index, view, children, childClip))
+            stack.addLast(PendingLayer(index, view, children, clip, childClip))
         }
         while (stack.size > 0) {
             if (!generation.isActive()) return null
-            finishLayer(stack, layers)
+            finishLayer(stack, layers, wireframes)
         }
         if (!generation.isActive()) return null
         @Suppress("UnsafeThirdPartyFunctionCall") // Non-empty input contributes at least its root layer.
@@ -164,7 +164,9 @@ internal class CapturedNativeSnapshotBuilder(
         children: MutableList<CapturedChild>,
         wireframes: MutableList<CapturedWireframe>
     ) {
-        val mapping = view.viewData.map(CapturedMappingContext(identityFactory, view.identity, density))
+        val mapping = view.viewData.map(
+            CapturedMappingContext(identityFactory, view.identity, density, viewScale = view.viewScale)
+        )
         if (mapping !is CapturedViewMapperResult.Wireframes) return
         for (wireframe in mapping.wireframes) {
             val clipped = wireframe.withClip(wireframe.clip.intersectWith(clip?.clip(wireframe.bounds)))
@@ -173,10 +175,27 @@ internal class CapturedNativeSnapshotBuilder(
         }
     }
 
-    private fun finishLayer(stack: ArrayDeque<PendingLayer>, layers: MutableList<CapturedLayer>) {
+    private fun finishLayer(
+        stack: ArrayDeque<PendingLayer>,
+        layers: MutableList<CapturedLayer>,
+        wireframes: MutableList<CapturedWireframe>
+    ) {
         @Suppress("UnsafeThirdPartyFunctionCall") // Called only after non-empty checks on this owned deque.
         val pending = stack.removeLast()
         val view = pending.view
+        // Descendant coverage may cull the background, but never a foreground painted above it.
+        // Use the view's own clip: clipToPadding only constrains its children.
+        view.foreground?.let { foreground ->
+            val wireframe = foreground.wireframe.withClip(pending.clip?.clip(foreground.wireframe.bounds))
+            wireframes += wireframe
+            layers += CapturedLayer(
+                identity = foreground.identity,
+                kind = CapturedLayerKind.COMPOSITION_LAYER,
+                bounds = view.bounds,
+                children = listOf(CapturedChild.Wireframe(wireframe.identity))
+            )
+            pending.children += CapturedChild.Layer(foreground.identity)
+        }
 
         @Suppress("UnsafeThirdPartyFunctionCall") // listOf wraps a non-null copied opacity.
         val modifiers = if (view.alpha == 1.0) emptyList() else listOf(CapturedModifier.Opacity(view.alpha))
@@ -202,6 +221,7 @@ internal class CapturedNativeSnapshotBuilder(
         val index: Int,
         val view: CapturedNativeView,
         val children: MutableList<CapturedChild>,
+        val clip: ClipBounds?,
         val childClip: ClipBounds?
     )
 }
