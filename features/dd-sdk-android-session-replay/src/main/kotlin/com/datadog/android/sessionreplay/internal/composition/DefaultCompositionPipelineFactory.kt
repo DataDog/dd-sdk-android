@@ -7,14 +7,24 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import android.app.Application
+import android.webkit.WebView
+import android.widget.TextView
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedBackgroundShapeStyleResolver
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedTextViewMapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewGroupFallbackMapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedWebViewMapper
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.RecordingTimeBank
 import com.datadog.android.sessionreplay.internal.recorder.TimeBank
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 
 /**
  * Wires every collaborator scoped to one composition recording session: the orchestrator and its
@@ -25,8 +35,21 @@ internal class DefaultCompositionPipelineFactory(
     private val internalCallback: SessionReplayInternalCallback,
     private val touchPrivacyManager: TouchPrivacyManager,
     private val dynamicOptimizationEnabled: Boolean,
-    private val snapshotProducerFactory: (ActiveWindowSource) -> CapturedSnapshotProducer = {
-        NO_OP_CAPTURED_SNAPSHOT_PRODUCER
+    private val customDrawableMappers: List<DrawableToColorMapper> = emptyList(),
+    private val snapshotProducerFactory: (ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer = {
+            windowSource,
+            rumContextProvider
+        ->
+        AndroidCapturedSnapshotProducer(
+            windowSource = windowSource,
+            scopeProvider = DefaultRumViewScopeProvider(rumContextProvider),
+            timeProvider = sdkCore.timeProvider,
+            traversal = AndroidWindowTraversal(
+                mapperRegistry = builtInCapturedMappers(sdkCore.internalLogger, customDrawableMappers),
+                internalLogger = sdkCore.internalLogger
+            ),
+            touchPrivacyManager = touchPrivacyManager
+        )
     },
     private val recordingTimeBankFactory: () -> TimeBank = { RecordingTimeBank() }
 ) : CompositionPipelineFactory {
@@ -49,7 +72,7 @@ internal class DefaultCompositionPipelineFactory(
             internalLogger = internalLogger
         )
         val orchestrator = SnapshotCaptureOrchestrator(
-            producer = snapshotProducerFactory(windowSource),
+            producer = snapshotProducerFactory(windowSource, rumContextProvider),
             processor = ImmediateCapturedSnapshotProcessor(),
             consumer = completionQueue,
             timeProvider = CaptureTimeProvider { sdkCore.timeProvider.getDeviceElapsedTimeNanos() },
@@ -98,8 +121,33 @@ internal class DefaultCompositionPipelineFactory(
     }
 
     private companion object {
-        val NO_OP_CAPTURED_SNAPSHOT_PRODUCER: CapturedSnapshotProducer = NoOpCapturedSnapshotProducer()
         const val PROCESSING_EXECUTOR_NAME = "sr-composition-processing"
         const val EXPIRY_EXECUTOR_NAME = "sr-composition-expiry"
+
+        fun builtInCapturedMappers(
+            internalLogger: InternalLogger,
+            customDrawableMappers: List<DrawableToColorMapper>
+        ): CapturedViewMapperRegistry {
+            val backgroundResolver = CapturedBackgroundShapeStyleResolver(
+                drawableToColorMapper = DrawableToColorMapper.getDefault(customDrawableMappers)
+            )
+            return CapturedViewMapperRegistry(
+                mappers = listOf(
+                    CapturedMapperTypeWrapper(WebView::class.java, CapturedWebViewMapper()),
+                    CapturedMapperTypeWrapper(
+                        TextView::class.java,
+                        CapturedTextViewMapper(
+                            backgroundShapeStyleResolver = backgroundResolver,
+                            internalLogger = internalLogger
+                        )
+                    )
+                ),
+                fallbackMapper = CapturedViewGroupFallbackMapper(
+                    backgroundShapeStyleResolver = backgroundResolver,
+                    internalLogger = internalLogger
+                ),
+                internalLogger = internalLogger
+            )
+        }
     }
 }
