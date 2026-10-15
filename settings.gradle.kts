@@ -67,6 +67,7 @@ include(":reliability:stub-feature")
 // SINGLE FEATURE INTEGRATION TESTS
 include(":reliability:single-fit:logs")
 include(":reliability:single-fit:rum")
+include(":reliability:single-fit:flags")
 include(":reliability:single-fit:trace")
 include(":reliability:single-fit:okhttp")
 include(":reliability:single-fit:profiling")
