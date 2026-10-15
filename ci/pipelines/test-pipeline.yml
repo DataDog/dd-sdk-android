@@ -35,7 +35,7 @@ stages:
     - echo "org.gradle.logging.stacktrace=all" >> gradle.properties
     # Run Kotlin compilation in its dedicated daemon for faster compilation
     - echo "kotlin.compiler.execution.strategy=daemon" >> gradle.properties
-    - echo "kotlin.daemon.jvmargs=-Xmx${KOTLIN_DAEMON_JVM_XMX:-8g}" >> gradle.properties
+    - echo "kotlin.daemon.jvmargs=-Xmx${KOTLIN_DAEMON_JVM_XMX:-8g} ${KOTLIN_DAEMON_JVM_EXTRA_ARGS:-}" >> gradle.properties
     - echo "--- gradle.properties ---" && cat gradle.properties
 
   setup-macos-ami-runner:
@@ -76,6 +76,7 @@ stages:
         --continue
         --no-daemon
         --scan
+        --init-script ci/scripts/jfr-profiling.gradle
         -Dscan.uploadInBackground=false
         -PverificationBuildType=debug
         -Puse-api21-java-backport
@@ -155,7 +156,9 @@ verify:all:
   before_script:
     - !reference [.snippets, source-secrets]
     - mkdir -p "$CI_PROJECT_DIR/profiles"
-    - export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -XX:StartFlightRecording=name=ci,filename=$CI_PROJECT_DIR/profiles/,settings=profile,dumponexit=true,maxsize=1g"
+    - export JFR_PROFILE_DIR="$CI_PROJECT_DIR/profiles"
+    - export GRADLE_JVM_EXTRA_ARGS="-XX:ReservedCodeCacheSize=512m -XX:StartFlightRecording=name=ci,filename=$CI_PROJECT_DIR/profiles/gradle.jfr,settings=profile,dumponexit=true,maxsize=1g"
+    - export KOTLIN_DAEMON_JVM_EXTRA_ARGS="-XX:StartFlightRecording=name=ci,filename=$CI_PROJECT_DIR/profiles/,settings=profile,dumponexit=true,maxsize=1g"
     - !reference [.snippets, setup-gradle]
 
 profile:rum-lint:

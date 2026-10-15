@@ -1,0 +1,25 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+import org.gradle.api.tasks.testing.Test
+
+def profileDirectory = System.getenv("JFR_PROFILE_DIR")
+
+gradle.beforeProject { project ->
+    project.tasks.withType(Test).configureEach { testTask ->
+        if (profileDirectory) {
+            def taskName = testTask.path.substring(1).replace(":", "-")
+            testTask.jvmArgs(
+                "-XX:StartFlightRecording=" +
+                    "name=ci," +
+                    "filename=${profileDirectory}/test-${taskName}.jfr," +
+                    "settings=profile," +
+                    "dumponexit=true," +
+                    "maxsize=1g"
+            )
+        }
+    }
+}
