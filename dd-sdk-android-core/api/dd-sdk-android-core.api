@@ -1019,15 +1019,17 @@ public final class com/datadog/android/core/internal/remote/model/RemoteConfigur
 public final class com/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling {
 	public static final field Companion Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling$Companion;
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/Number;Ljava/lang/Number;)V
-	public synthetic fun <init> (Ljava/lang/Number;Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/Number;
 	public final fun component2 ()Ljava/lang/Number;
-	public final fun copy (Ljava/lang/Number;Ljava/lang/Number;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;
-	public static synthetic fun copy$default (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;Ljava/lang/Number;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;
+	public final fun component3 ()Ljava/lang/Boolean;
+	public final fun copy (Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Boolean;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;
+	public static synthetic fun copy$default (Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/core/internal/remote/model/RemoteConfiguration$Profiling;
+	public final fun getAnrTriggerEnabled ()Ljava/lang/Boolean;
 	public final fun getApplicationLaunchSampleRate ()Ljava/lang/Number;
 	public final fun getContinuousSampleRate ()Ljava/lang/Number;
 	public fun hashCode ()I

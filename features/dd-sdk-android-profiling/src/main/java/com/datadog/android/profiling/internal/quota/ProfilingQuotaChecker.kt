@@ -23,7 +23,7 @@ internal class ProfilingQuotaChecker(
     private val callFactory: Call.Factory,
     private val executor: ExecutorService,
     private val internalLogger: InternalLogger,
-    private val onResult: (QuotaResult) -> Unit = {}
+    private val onResult: (sessionId: String, result: QuotaResult) -> Unit = { _, _ -> }
 ) : QuotaChecker {
 
     private val pendingFuture = AtomicReference<Future<QuotaResult>?>()
@@ -44,7 +44,7 @@ internal class ProfilingQuotaChecker(
                 val result = performCheck(sessionId, datadogContext)
                 if (lastSessionId.get() == sessionId) {
                     lastResult = result
-                    onResult(result)
+                    onResult(sessionId, result)
                 }
                 result
             }

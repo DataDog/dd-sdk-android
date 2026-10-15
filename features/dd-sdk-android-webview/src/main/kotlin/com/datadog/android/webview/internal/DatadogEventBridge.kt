@@ -8,6 +8,8 @@ package com.datadog.android.webview.internal
 
 import android.webkit.JavascriptInterface
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.internal.sampling.DeterministicSampling
@@ -27,6 +29,7 @@ internal class DatadogEventBridge(
     private val allowedHosts: List<String>,
     private val privacyLevel: String,
     private val webViewRumFeature: WebViewRumFeature?,
+    private val sdkCore: FeatureSdkCore,
     internalLogger: InternalLogger
 ) {
 
@@ -74,6 +77,11 @@ internal class DatadogEventBridge(
      */
     @JavascriptInterface
     fun getCapabilities(): String {
+        // Checked on each call: the bridge outlives page loads and Session Replay may be enabled later.
+        val capabilities = JsonArray()
+        if (sdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME) != null) {
+            capabilities.add(RECORDS_CAPABILITY)
+        }
         return capabilities.toString()
     }
 
@@ -122,8 +130,6 @@ internal class DatadogEventBridge(
         private const val FALSE_STRING = "false"
         private const val NULL_STRING = "null"
 
-        internal val capabilities = JsonArray().apply {
-            add("records")
-        }
+        internal const val RECORDS_CAPABILITY = "records"
     }
 }

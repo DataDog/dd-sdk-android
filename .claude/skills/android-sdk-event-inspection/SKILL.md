@@ -18,10 +18,6 @@ The Android SDK uses `CurlInterceptor` to log every outgoing HTTP request as a `
 - Debugging why RUM/logs/traces/Session Replay/Profiling are not showing up in Datadog
 - Validating SDK behavior with the `sample/kotlin` app
 
-## Related Tools
-
-[mobile-mcp](https://github.com/mobile-next/mobile-mcp) — use alongside this skill to interact with the device and generate events (taps, navigation, actions) that you then observe via logcat.
-
 ## Setup
 
 ### 1. Enable Request Body Logging

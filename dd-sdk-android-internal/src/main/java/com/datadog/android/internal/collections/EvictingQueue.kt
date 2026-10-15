@@ -99,7 +99,7 @@ class EvictingQueue<T> constructor(
 
             else -> {
                 val spaceLeft = maxSize - size
-                for (index in 0 until elements.size - spaceLeft) {
+                repeat(elements.size - spaceLeft) {
                     delegate.poll()
                 }
 

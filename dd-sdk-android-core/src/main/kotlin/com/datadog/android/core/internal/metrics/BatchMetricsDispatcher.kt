@@ -148,7 +148,7 @@ internal class BatchMetricsDispatcher(
             logger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                { WRONG_FILE_NAME_MESSAGE_FORMAT.format(Locale.ENGLISH, this.name) }
+                { WRONG_FILE_NAME_MESSAGE_FORMAT.format(Locale.US, this.name) }
             )
         }
         return timestamp

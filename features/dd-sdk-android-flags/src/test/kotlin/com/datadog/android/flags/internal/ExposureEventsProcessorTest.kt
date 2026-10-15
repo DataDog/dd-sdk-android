@@ -10,6 +10,7 @@ import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.storage.RecordWriter
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ExposureEvent
+import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.time.TimeProvider
 import fr.xgouchet.elmyr.Forge
@@ -75,6 +76,21 @@ internal class ExposureEventsProcessorTest {
     }
 
     // region processEvent
+
+    @Test
+    fun `M not process duplicate exposure W processEvent() { only reason changes from CACHED }`() {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        val fakeCachedFlag = fakeFlag.copy(reason = ResolutionReason.CACHED.name)
+        val fakeNetworkFlag = fakeFlag.copy(reason = ResolutionReason.TARGETING_MATCH.name)
+
+        // When
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeCachedFlag)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeNetworkFlag)
+
+        // Then
+        verify(mockRecordWriter).write(any())
+    }
 
     @Test
     fun `M process first exposure W processEvent() { new key }`(forge: Forge) {

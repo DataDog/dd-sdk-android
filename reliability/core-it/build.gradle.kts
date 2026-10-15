@@ -69,7 +69,7 @@ dependencies {
         coreLibraryDesugaring(libs.androidDesugaringSdk)
     }
     implementation(project(":dd-sdk-android-core"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     // Testing
     androidTestImplementation(project(":tools:unit")) {

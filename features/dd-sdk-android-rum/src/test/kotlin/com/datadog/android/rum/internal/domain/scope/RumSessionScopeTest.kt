@@ -2058,6 +2058,105 @@ internal class RumSessionScopeTest {
     }
 
     @Test
+    fun `M expire session and stop timeseries W handleEvent { SessionExpiryCheck, session inactive }`(forge: Forge) {
+        // Given
+        initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val sessionId = testedScope.sessionId
+
+        // When
+        advanceTimeByMs(TEST_INACTIVITY_MS)
+        testedScope.handleEvent(
+            RumRawEvent.SessionExpiryCheck(currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        assertThat(testedScope.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
+        assertThat(testedScope.sessionId).isEqualTo(sessionId)
+        verify(mockTimeseriesCollector).onSessionStop(sessionId)
+        verify(mockTimeseriesCollector).onSessionStart(eq(sessionId), any())
+    }
+
+    @Test
+    fun `M not extend session W handleEvent { SessionExpiryCheck, session active }`(forge: Forge) {
+        // Given
+        initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        advanceTimeByMs(TEST_INACTIVITY_MS / 2)
+        testedScope.handleEvent(
+            RumRawEvent.SessionExpiryCheck(currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // When
+        advanceTimeByMs(TEST_INACTIVITY_MS / 2 + 1)
+        testedScope.handleEvent(
+            RumRawEvent.SessionExpiryCheck(currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        assertThat(testedScope.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
+    }
+
+    @Test
+    fun `M renew session W handleEvent { SessionExpiryCheck, max duration reached, session active }`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val initialSessionId = testedScope.sessionId
+        repeat((TEST_MAX_DURATION_MS / TEST_SLEEP_MS).toInt() - 1) {
+            advanceTimeByMs(TEST_SLEEP_MS)
+            testedScope.handleEvent(
+                forge.startActionEvent(continuous = false, eventTime = currentFakeTime()),
+                fakeDatadogContext,
+                mockEventWriteScope,
+                mockWriter
+            )
+        }
+        advanceTimeByMs(TEST_SLEEP_MS)
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.SessionExpiryCheck(currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        val context = testedScope.getRumContext()
+        assertThat(context.sessionId).isNotEqualTo(initialSessionId)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.MAX_DURATION)
+        verify(mockTimeseriesCollector).onSessionStop(initialSessionId)
+        verify(mockTimeseriesCollector).onSessionStart(eq(context.sessionId), any())
+    }
+
+    @Test
+    fun `M not send event downstream W handleEvent { SessionExpiryCheck }`() {
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.SessionExpiryCheck(currentFakeTime()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        verify(mockChildScope, never()).handleEvent(any(), any(), any(), any())
+    }
+
+    @Test
     fun `M stop timeseries W handleEvent { StopSession }`(forge: Forge) {
         // Given
         initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)

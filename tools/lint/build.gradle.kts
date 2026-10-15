@@ -17,7 +17,8 @@ plugins {
 }
 
 dependencies {
-    compileOnly(libs.kotlin)
+    // using Runtime version here, because this is a rule shipped with SDK
+    compileOnly(libs.kotlinRuntime)
     compileOnly(libs.androidLintApi)
     compileOnly(libs.androidLintChecks)
 

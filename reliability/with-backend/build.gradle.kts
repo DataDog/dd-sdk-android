@@ -68,7 +68,7 @@ dependencies {
     if (project.hasProperty(com.datadog.gradle.Properties.USE_DESUGARING)) {
         coreLibraryDesugaring(libs.androidDesugaringSdk)
     }
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     // Testing
     androidTestImplementation(libs.assertJ)

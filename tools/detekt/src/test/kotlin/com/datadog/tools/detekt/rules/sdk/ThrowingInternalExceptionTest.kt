@@ -6,10 +6,11 @@
 
 package com.datadog.tools.detekt.rules.sdk
 
+import dev.detekt.api.Config
+import dev.detekt.test.lint
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.gitlab.arturbosch.detekt.test.assertThat
-import io.gitlab.arturbosch.detekt.test.lint
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 
@@ -28,7 +29,7 @@ class ThrowingInternalExceptionTest {
             }
             """.trimIndent()
 
-        val findings = ThrowingInternalException().lint(code)
+        val findings = ThrowingInternalException(Config.empty).lint(code)
         assertThat(findings).hasSize(1)
     }
 
@@ -46,7 +47,7 @@ class ThrowingInternalExceptionTest {
             }
             """.trimIndent()
 
-        val findings = ThrowingInternalException().lint(code)
+        val findings = ThrowingInternalException(Config.empty).lint(code)
         assertThat(findings).hasSize(1)
     }
 
@@ -62,7 +63,7 @@ class ThrowingInternalExceptionTest {
             }
             """.trimIndent()
 
-        val findings = ThrowingInternalException().lint(code)
+        val findings = ThrowingInternalException(Config.empty).lint(code)
         assertThat(findings).hasSize(1)
     }
 
@@ -77,7 +78,7 @@ class ThrowingInternalExceptionTest {
             }
             """.trimIndent()
 
-        val findings = ThrowingInternalException().lint(code)
+        val findings = ThrowingInternalException(Config.empty).lint(code)
         assertThat(findings).hasSize(0)
     }
 }

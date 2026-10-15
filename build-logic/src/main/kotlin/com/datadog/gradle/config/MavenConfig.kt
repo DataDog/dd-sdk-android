@@ -7,9 +7,11 @@
 package com.datadog.gradle.config
 
 import com.android.build.api.dsl.LibraryExtension
+import com.datadog.gradle.utils.Version
 import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.authentication.aws.AwsImAuthentication
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.plugins.signing.SigningExtension
@@ -17,6 +19,8 @@ import org.gradle.plugins.signing.SigningExtension
 object MavenConfig {
     const val GROUP_ID = "com.datadoghq"
     const val PUBLICATION = "release"
+    const val DOGFOOD_REPOSITORY = "dogfood"
+    const val DOGFOOD_REPOSITORY_URL = "s3://binaries-ddbuild-io-prod/dd-sdk-android/dogfood"
 }
 
 internal fun Project.publishingConfig(
@@ -85,6 +89,20 @@ internal fun Project.publishingConfig(
                         url.set("https://github.com/DataDog/dd-sdk-android/")
                         connection.set("scm:git:git@github.com:Datadog/dd-sdk-android.git")
                         developerConnection.set("scm:git:git@github.com:Datadog/dd-sdk-android.git")
+                    }
+                }
+            }
+
+            // Dogfood builds go to binaries.ddbuild.io (internal only), using the CI runner's IAM role.
+            // Only registered for dogfood versions, so other builds can't be uploaded there.
+            if (AndroidConfig.VERSION.type is Version.Type.Dogfood) {
+                repositories {
+                    maven {
+                        name = MavenConfig.DOGFOOD_REPOSITORY
+                        url = uri(MavenConfig.DOGFOOD_REPOSITORY_URL)
+                        authentication {
+                            create<AwsImAuthentication>("awsIm")
+                        }
                     }
                 }
             }

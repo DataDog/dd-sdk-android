@@ -10,13 +10,17 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsClientEventListener
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.FlagsSubscription
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientEvent
+import com.datadog.android.flags.model.FlagsClientEventType
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.model.UnparsedFlag
@@ -54,6 +58,27 @@ internal class DatadogFlagsClient(
 ) : FlagsClient {
 
     override val state: StateObservable = flagStateManager
+
+    override fun onFirstFlags(listener: FlagsClientEventListener): FlagsSubscription {
+        val unsubscribe = flagsRepository.firstFlags.whenComplete { keys ->
+            val event = FlagsClientEvent(FlagsClientEventType.CONFIGURATION_CHANGED, keys)
+            try {
+                listener.onEvent(event)
+            } catch (
+                // Callbacks must not break other registrations or the delivering thread.
+                @Suppress("TooGenericExceptionCaught")
+                exception: Exception
+            ) {
+                featureSdkCore.internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    { "First flags callback failed" },
+                    exception
+                )
+            }
+        }
+        return FlagsSubscription(unsubscribe)
+    }
 
     // region FlagsClient
 

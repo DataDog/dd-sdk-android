@@ -343,7 +343,6 @@ internal class TracesViewModel(
 
         var activeSpanInMainThread: DatadogSpan? = null
 
-        @Suppress("CheckInternal")
         private val logger: Logger by lazy {
             Logger.Builder()
                 .setName("async_task")

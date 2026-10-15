@@ -7,6 +7,9 @@
 package com.datadog.android.webview.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -46,6 +49,9 @@ internal class DatadogEventBridgeTest {
     lateinit var mockWebViewRumFeature: WebViewRumFeature
 
     @Mock
+    lateinit var mockSdkCore: FeatureSdkCore
+
+    @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
@@ -55,6 +61,7 @@ internal class DatadogEventBridgeTest {
             emptyList(),
             fakePrivacyLevel,
             mockWebViewRumFeature,
+            mockSdkCore,
             mockInternalLogger
         )
     }
@@ -82,6 +89,7 @@ internal class DatadogEventBridgeTest {
             hosts,
             fakePrivacyLevel,
             mockWebViewRumFeature,
+            mockSdkCore,
             mockInternalLogger
         )
 
@@ -106,6 +114,7 @@ internal class DatadogEventBridgeTest {
             hosts,
             fakePrivacyLevel,
             mockWebViewRumFeature,
+            mockSdkCore,
             mockInternalLogger
         )
 
@@ -130,6 +139,7 @@ internal class DatadogEventBridgeTest {
             hosts,
             fakePrivacyLevel,
             mockWebViewRumFeature,
+            mockSdkCore,
             mockInternalLogger
         )
 
@@ -149,6 +159,7 @@ internal class DatadogEventBridgeTest {
             patterns,
             fakePrivacyLevel,
             mockWebViewRumFeature,
+            mockSdkCore,
             mockInternalLogger
         )
 
@@ -170,6 +181,7 @@ internal class DatadogEventBridgeTest {
             patterns,
             fakePrivacyLevel,
             mockWebViewRumFeature,
+            mockSdkCore,
             mockInternalLogger
         )
 
@@ -191,6 +203,7 @@ internal class DatadogEventBridgeTest {
             patterns,
             fakePrivacyLevel,
             mockWebViewRumFeature,
+            mockSdkCore,
             mockInternalLogger
         )
 
@@ -213,6 +226,7 @@ internal class DatadogEventBridgeTest {
             patterns,
             fakePrivacyLevel,
             mockWebViewRumFeature,
+            mockSdkCore,
             mockInternalLogger
         )
 
@@ -234,6 +248,7 @@ internal class DatadogEventBridgeTest {
             hosts,
             fakePrivacyLevel,
             mockWebViewRumFeature,
+            mockSdkCore,
             mockInternalLogger
         )
 
@@ -254,15 +269,48 @@ internal class DatadogEventBridgeTest {
     }
 
     @Test
-    fun `M return the supported capabilities W getCapabilities()`() {
+    fun `M return records capability W getCapabilities() { session replay enabled }`(
+        @Mock stubSessionReplayFeature: FeatureScope
+    ) {
         // Given
-        val expectedCapabilities = "[\"records\"]"
+        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME))
+            .thenReturn(stubSessionReplayFeature)
 
         // When
         val capabilities = testedDatadogEventBridge.getCapabilities()
 
         // Then
-        assertThat(capabilities).isEqualTo(expectedCapabilities)
+        assertThat(capabilities).isEqualTo("[\"records\"]")
+    }
+
+    @Test
+    fun `M return no capabilities W getCapabilities() { session replay not enabled }`() {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)).thenReturn(null)
+
+        // When
+        val capabilities = testedDatadogEventBridge.getCapabilities()
+
+        // Then
+        assertThat(capabilities).isEqualTo("[]")
+    }
+
+    @Test
+    fun `M return records capability W getCapabilities() { session replay enabled after bridge creation }`(
+        @Mock stubSessionReplayFeature: FeatureScope
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME))
+            .thenReturn(null)
+            .thenReturn(stubSessionReplayFeature)
+
+        // When
+        val capabilitiesBefore = testedDatadogEventBridge.getCapabilities()
+        val capabilitiesAfter = testedDatadogEventBridge.getCapabilities()
+
+        // Then
+        assertThat(capabilitiesBefore).isEqualTo("[]")
+        assertThat(capabilitiesAfter).isEqualTo("[\"records\"]")
     }
 
     @Test
@@ -316,6 +364,7 @@ internal class DatadogEventBridgeTest {
             emptyList(),
             fakePrivacyLevel,
             null,
+            mockSdkCore,
             mockInternalLogger
         )
 

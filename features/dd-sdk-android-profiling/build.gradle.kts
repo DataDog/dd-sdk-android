@@ -55,7 +55,7 @@ android {
 dependencies {
     api(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.androidXCore)
     implementation(libs.androidXCoreKtx)
     implementation(libs.gson)
@@ -78,7 +78,7 @@ dependencies {
     unmock(libs.robolectric)
 
     // Test Fixtures
-    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.kotlinRuntime)
     testFixturesImplementation(project(":dd-sdk-android-internal"))
     testFixturesImplementation(libs.androidXAnnotation)
 }

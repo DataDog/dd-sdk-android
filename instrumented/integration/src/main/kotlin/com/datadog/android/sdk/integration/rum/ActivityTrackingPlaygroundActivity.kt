@@ -20,7 +20,6 @@ import com.datadog.android.sdk.utils.getTrackingConsent
 
 internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
 
-    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

@@ -11,10 +11,12 @@ import com.google.devtools.ksp.processing.Dependencies
 import com.google.devtools.ksp.processing.SymbolProcessor
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
+import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
-import com.tschuchort.compiletesting.symbolProcessorProviders
+import com.tschuchort.compiletesting.configureKsp
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
@@ -22,6 +24,7 @@ import java.io.File
 import java.io.OutputStream
 import java.nio.file.FileAlreadyExistsException
 
+@OptIn(ExperimentalCompilerApi::class)
 internal class NoOpFactoryProviderTest {
 
     @ParameterizedTest
@@ -50,13 +53,18 @@ internal class NoOpFactoryProviderTest {
         val srcFile = File(checkNotNull(javaClass.getResource("/src/$srcFileName")).file)
         val experimentalApiAnnotationFile = File(checkNotNull(javaClass.getResource("/src/ExperimentalApi.kt")).file)
         val genFile = File(checkNotNull(javaClass.getResource("/gen/$genFileName")).file)
-        val kotlinSource = SourceFile.fromPath(srcFile)
-        val experimentalApiAnnotationSource = SourceFile.fromPath(experimentalApiAnnotationFile)
+        val kotlinSource = SourceFile.kotlin(srcFile.name, srcFile.readText())
+        val experimentalApiAnnotationSource = SourceFile.kotlin(
+            experimentalApiAnnotationFile.name,
+            experimentalApiAnnotationFile.readText()
+        )
 
         val result = KotlinCompilation().apply {
             inheritClassPath = true
             sources = listOf(kotlinSource, experimentalApiAnnotationSource)
-            symbolProcessorProviders = listOf(NoOpFactoryProvider())
+            configureKsp(useKsp2 = true) {
+                symbolProcessorProviders += NoOpFactoryProvider()
+            }
         }.compile()
 
         assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
@@ -72,12 +80,14 @@ internal class NoOpFactoryProviderTest {
     )
     fun `ignores invalid types`(srcFileName: String) {
         val srcFile = File(checkNotNull(javaClass.getResource("/src/$srcFileName")).file)
-        val kotlinSource = SourceFile.fromPath(srcFile)
+        val kotlinSource = SourceFile.kotlin(srcFile.name, srcFile.readText())
 
         val result = KotlinCompilation().apply {
             inheritClassPath = true
             sources = listOf(kotlinSource)
-            symbolProcessorProviders = listOf(NoOpFactoryProvider())
+            configureKsp(useKsp2 = true) {
+                symbolProcessorProviders += NoOpFactoryProvider()
+            }
         }.compile()
 
         assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
@@ -100,12 +110,14 @@ internal class NoOpFactoryProviderTest {
     )
     fun `ignores interfaces with restricted visibility`(srcFileName: String, noOpFileName: String) {
         val srcFile = File(checkNotNull(javaClass.getResource("/src/$srcFileName")).file)
-        val kotlinSource = SourceFile.fromPath(srcFile)
+        val kotlinSource = SourceFile.kotlin(srcFile.name, srcFile.readText())
 
         val result = KotlinCompilation().apply {
             inheritClassPath = true
             sources = listOf(kotlinSource)
-            symbolProcessorProviders = listOf(NoOpFactoryProvider())
+            configureKsp(useKsp2 = true) {
+                symbolProcessorProviders += NoOpFactoryProvider()
+            }
         }.compile()
 
         assertThat(result.exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
@@ -120,8 +132,10 @@ internal class NoOpFactoryProviderTest {
         // When
         val result = KotlinCompilation().apply {
             inheritClassPath = true
-            sources = listOf(SourceFile.fromPath(srcFile))
-            symbolProcessorProviders = listOf(NoOpFactoryProvider())
+            sources = listOf(SourceFile.kotlin(srcFile.name, srcFile.readText()))
+            configureKsp(useKsp2 = true) {
+                symbolProcessorProviders += NoOpFactoryProvider()
+            }
         }.compile()
 
         // Then
@@ -152,8 +166,10 @@ internal class NoOpFactoryProviderTest {
         // When
         val result = KotlinCompilation().apply {
             inheritClassPath = true
-            sources = listOf(SourceFile.fromPath(srcFile))
-            symbolProcessorProviders = listOf(NoOpFactoryProvider())
+            sources = listOf(SourceFile.kotlin(srcFile.name, srcFile.readText()))
+            configureKsp(useKsp2 = true) {
+                symbolProcessorProviders += NoOpFactoryProvider()
+            }
         }.compile()
 
         // Then
@@ -183,8 +199,10 @@ internal class NoOpFactoryProviderTest {
         // When
         val result = KotlinCompilation().apply {
             inheritClassPath = true
-            sources = listOf(SourceFile.fromPath(srcFile))
-            symbolProcessorProviders = listOf(NoOpFactoryProvider())
+            sources = listOf(SourceFile.kotlin(srcFile.name, srcFile.readText()))
+            configureKsp(useKsp2 = true) {
+                symbolProcessorProviders += NoOpFactoryProvider()
+            }
         }.compile()
 
         // Then
@@ -213,8 +231,10 @@ internal class NoOpFactoryProviderTest {
         // When
         val result = KotlinCompilation().apply {
             inheritClassPath = true
-            sources = listOf(SourceFile.fromPath(srcFile))
-            symbolProcessorProviders = listOf(NoOpFactoryProvider())
+            sources = listOf(SourceFile.kotlin(srcFile.name, srcFile.readText()))
+            configureKsp(useKsp2 = true) {
+                symbolProcessorProviders += NoOpFactoryProvider()
+            }
         }.compile()
 
         // Then
@@ -234,8 +254,10 @@ internal class NoOpFactoryProviderTest {
         // When
         val result = KotlinCompilation().apply {
             inheritClassPath = true
-            sources = listOf(SourceFile.fromPath(srcFile))
-            symbolProcessorProviders = listOf(ThrowingCodeGeneratorProvider())
+            sources = listOf(SourceFile.kotlin(srcFile.name, srcFile.readText()))
+            configureKsp(useKsp2 = true) {
+                symbolProcessorProviders += ThrowingCodeGeneratorProvider()
+            }
         }.compile()
 
         // Then
@@ -255,8 +277,10 @@ internal class NoOpFactoryProviderTest {
         // When
         val result = KotlinCompilation().apply {
             inheritClassPath = true
-            sources = listOf(SourceFile.fromPath(srcFile))
-            symbolProcessorProviders = listOf(ThrowingCodeGeneratorProvider())
+            sources = listOf(SourceFile.kotlin(srcFile.name, srcFile.readText()))
+            configureKsp(useKsp2 = true) {
+                symbolProcessorProviders += ThrowingCodeGeneratorProvider()
+            }
         }.compile()
 
         // Then
@@ -268,14 +292,14 @@ internal class NoOpFactoryProviderTest {
         )
     }
 
-    private fun KotlinCompilation.Result.assertNothingGenerated(
+    private fun JvmCompilationResult.assertNothingGenerated(
         generatedFileName: String
     ) {
         assertThat(sourceFor(generatedFileName))
             .isNull()
     }
 
-    private fun KotlinCompilation.Result.assertGeneratedFileEquals(
+    private fun JvmCompilationResult.assertGeneratedFileEquals(
         generatedFileName: String,
         expectedContent: String
     ) {
@@ -283,13 +307,13 @@ internal class NoOpFactoryProviderTest {
             .isEqualTo(expectedContent)
     }
 
-    private fun KotlinCompilation.Result.sourceFor(fileName: String): String? {
+    private fun JvmCompilationResult.sourceFor(fileName: String): String? {
         val kspGeneratedSources = getKspGeneratedSources()
         return kspGeneratedSources.find { it.name == fileName }
             ?.readText()
     }
 
-    private fun KotlinCompilation.Result.getKspGeneratedSources(): List<File> {
+    private fun JvmCompilationResult.getKspGeneratedSources(): List<File> {
         val workingDir = outputDirectory.parentFile
         val kspWorkingDir = workingDir.resolve("ksp")
         val kspGeneratedDir = kspWorkingDir.resolve("sources")

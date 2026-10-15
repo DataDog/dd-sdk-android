@@ -6,15 +6,11 @@
 
 package com.datadog.tools.detekt.rules.pyramid
 
+import dev.detekt.test.TestConfig
+import dev.detekt.test.lint
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.github.detekt.test.utils.KotlinCoreEnvironmentWrapper
-import io.github.detekt.test.utils.createEnvironment
-import io.gitlab.arturbosch.detekt.test.TestConfig
-import io.gitlab.arturbosch.detekt.test.assertThat
-import io.gitlab.arturbosch.detekt.test.compileAndLintWithContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import java.io.File
@@ -22,18 +18,10 @@ import java.io.File
 @ExtendWith(ForgeExtension::class)
 internal class ApiSurfaceTest {
 
-    lateinit var kotlinEnv: KotlinCoreEnvironmentWrapper
-
     val fileName = "apiSurfaceOutput.log"
-
-    @BeforeEach
-    fun setup() {
-        kotlinEnv = createEnvironment()
-    }
 
     @AfterEach
     fun tearDown() {
-        kotlinEnv.dispose()
         File(fileName).delete()
     }
 
@@ -55,7 +43,7 @@ internal class ApiSurfaceTest {
 
         // When
         val findings = ApiSurface(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lint(code)
 
         // Then
         assertThat(findings).hasSize(0)
@@ -85,7 +73,7 @@ internal class ApiSurfaceTest {
 
         // When
         val findings = ApiSurface(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lint(code)
 
         // Then
         assertThat(findings).hasSize(0)
@@ -115,7 +103,7 @@ internal class ApiSurfaceTest {
 
         // When
         val findings = ApiSurface(config)
-            .compileAndLintWithContext(kotlinEnv.env, code)
+            .lint(code)
 
         // Then
         assertThat(findings).hasSize(0)

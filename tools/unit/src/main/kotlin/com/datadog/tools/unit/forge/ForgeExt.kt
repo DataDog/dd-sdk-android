@@ -73,7 +73,6 @@ fun <K, V> Forge.aFilteredMap(
 }
 
 private fun assumeDifferenceIsNoMore(result: Int, base: Int, maxDifference: Float) {
-    @Suppress("CheckInternal")
     check(result <= base) {
         "Number of elements after filtering cannot exceed the number of original elements."
     }

@@ -8,17 +8,18 @@ package com.datadog.tools.detekt.rules.sdk
 
 import com.datadog.tools.detekt.ext.fqTypeName
 import com.datadog.tools.detekt.rules.AbstractCallExpressionRule
-import io.gitlab.arturbosch.detekt.api.CodeSmell
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Entity
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Severity
-import io.gitlab.arturbosch.detekt.api.config
-import io.gitlab.arturbosch.detekt.api.internal.RequiresTypeResolution
+import dev.detekt.api.Config
+import dev.detekt.api.Entity
+import dev.detekt.api.Finding
+import dev.detekt.api.config
+import org.jetbrains.kotlin.analysis.api.KaSession
+import org.jetbrains.kotlin.analysis.api.analyze
+import org.jetbrains.kotlin.analysis.api.symbols.KaClassSymbol
+import org.jetbrains.kotlin.analysis.api.types.KaClassType
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtTryExpression
-import org.jetbrains.kotlin.resolve.BindingContext
 import java.util.Stack
 
 /**
@@ -28,10 +29,14 @@ import java.util.Stack
  * Third party functions are detected based on an internal package prefix: any method which has a
  * package name with this prefix is considered first party, anything else is third party.
  */
-@RequiresTypeResolution
 class UnsafeThirdPartyFunctionCall(
     config: Config
-) : AbstractCallExpressionRule(config, includeTypeArguments = false) {
+) : AbstractCallExpressionRule(
+    config,
+    "This rule reports when a call to an unsafe third party method is made " +
+        "(i.e. a function throwing an uncaught exception).",
+    includeTypeArguments = false
+) {
 
     private val internalPackagePrefix: String by config(defaultValue = "")
     private val treatUnknownFunctionAsThrowing: Boolean by config(defaultValue = true)
@@ -44,7 +49,7 @@ class UnsafeThirdPartyFunctionCall(
     }
 
     private val knownThrowingCallsMap: Map<String, List<String>> by lazy {
-        knownThrowingCalls.map {
+        knownThrowingCalls.associate {
             val splitColon = it.split(':')
             val key = splitColon.first()
             if (splitColon.size == 1) {
@@ -52,30 +57,25 @@ class UnsafeThirdPartyFunctionCall(
             }
             val exceptions = splitColon[1].split(',').toList()
             key to exceptions
-        }.toMap()
+        }
     }
 
     private val caughtExceptions = Stack<List<String>>()
 
     // region Rule
 
-    override val issue: Issue = Issue(
-        javaClass.simpleName,
-        Severity.Defect,
-        "This rule reports when a call to an unsafe third party method is made " +
-            "(i.e. a function throwing an uncaught exception).",
-        Debt.TWENTY_MINS
-    )
-
     override fun visitTryExpression(expression: KtTryExpression) {
         val caughtTypes = expression.catchClauses
             .mapNotNull {
-                val typeReference = it.catchParameter?.typeReference
-                bindingContext.get(BindingContext.TYPE, typeReference)?.fqTypeName()
+                val typeReference = it.catchParameter?.typeReference ?: return@mapNotNull null
+                analyze(typeReference) { fqTypeName(typeReference.type) }
             }
+        // A catch clause only handles the exceptions thrown from the try block, not from catch or finally blocks
         caughtExceptions.push(caughtTypes)
-        super.visitTryExpression(expression)
+        expression.tryBlock.accept(this)
         caughtExceptions.pop()
+        expression.catchClauses.forEach { it.accept(this) }
+        expression.finallyBlock?.accept(this)
     }
 
     // endregion
@@ -114,20 +114,10 @@ class UnsafeThirdPartyFunctionCall(
         call: String,
         exceptions: List<String>
     ) {
-        val catchesAnyException = caughtExceptions.any { list ->
-            list.any { e -> e in topLevelExceptions }
+        val caughtTypes = caughtExceptions.flatten().toSet()
+        val uncaught = analyze(expression) {
+            exceptions.filterNot { isCaught(it, caughtTypes) }
         }
-        val catchesAnyError = caughtExceptions.any { list ->
-            list.any { e -> e in topLevelErrors }
-        }
-        val uncaught = exceptions.filter { exception ->
-            caughtExceptions.none { it.contains(exception) }
-        }
-            .filter {
-                val isUncaughtException = it.endsWith("Exception") && !catchesAnyException
-                val isUncaughtError = it.endsWith("Error") && !catchesAnyError
-                isUncaughtException || isUncaughtError
-            }
 
         if (uncaught.isEmpty()) {
             return
@@ -137,11 +127,46 @@ class UnsafeThirdPartyFunctionCall(
         reportUnsafeCall(expression, msg)
     }
 
+    /**
+     * An exception is caught by a catch clause on its own type or on any of its super types
+     * (e.g. a `FileNotFoundException` is caught by `catch (e: IOException)`).
+     */
+    private fun KaSession.isCaught(exception: String, caughtTypes: Set<String>): Boolean {
+        if (exception in caughtTypes) return true
+
+        val exceptionClass = findExceptionClass(exception)
+        if (exceptionClass == null) {
+            // Unknown class (e.g. missing from the classpath), only top level catch clauses can be checked
+            val catchesAnyException = caughtTypes.any { it in topLevelExceptions }
+            val catchesAnyError = caughtTypes.any { it in topLevelErrors }
+            val isUncaughtException = exception.endsWith("Exception") && !catchesAnyException
+            val isUncaughtError = exception.endsWith("Error") && !catchesAnyError
+            return !isUncaughtException && !isUncaughtError
+        }
+
+        return exceptionClass.defaultType.allSupertypes.any {
+            (it as? KaClassType)?.classId?.asSingleFqName()?.asString() in caughtTypes
+        }
+    }
+
+    /**
+     * A fully qualified name doesn't tell where the package ends, try each split until the class is found
+     * (e.g. `android.content.res.Resources.NotFoundException` is the nested class `Resources.NotFoundException`).
+     */
+    private fun KaSession.findExceptionClass(exception: String): KaClassSymbol? {
+        val segments = exception.split('.')
+        return (segments.size - 1 downTo 1).firstNotNullOfOrNull { packageSize ->
+            val packageName = FqName.fromSegments(segments.take(packageSize))
+            val className = FqName.fromSegments(segments.drop(packageSize))
+            findClass(ClassId(packageName, className, isLocal = false))
+        }
+    }
+
     private fun reportUnsafeCall(
         expression: KtCallExpression,
         message: String
     ) {
-        report(CodeSmell(issue, Entity.from(expression), message = message))
+        report(Finding(Entity.from(expression), message))
     }
 
     // endregion

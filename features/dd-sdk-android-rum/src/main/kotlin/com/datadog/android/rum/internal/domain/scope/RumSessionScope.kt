@@ -198,7 +198,8 @@ internal class RumSessionScope(
                     )
                 }
             }
-            is RumRawEvent.SdkInit -> {}
+            is RumRawEvent.SdkInit,
+            is RumRawEvent.SessionExpiryCheck -> {}
             else -> {
                 childScope =
                     childScope?.handleEvent(event, datadogContext, writeScope, actualWriter) as? RumViewManagerScope
@@ -264,7 +265,7 @@ internal class RumSessionScope(
         return !isActive && childScope == null
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("CyclomaticComplexMethod")
     private fun updateSession(event: RumRawEvent) {
         val nanoTime = sdkCore.timeProvider.getDeviceElapsedRealtimeNanos()
         val isNewSession = sessionId == RumContext.NULL_UUID

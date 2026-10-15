@@ -33,7 +33,7 @@ dependencies {
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-profiling"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     // Testing
     testImplementation(project(":tools:unit")) {

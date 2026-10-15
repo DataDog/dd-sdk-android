@@ -77,7 +77,6 @@ internal fun Intent.getSrSampleRate(): Float {
 
 internal const val FORGE_SEED_KEY = "forge_seed"
 
-@Suppress("CheckInternal")
 internal fun Intent.getForgeSeed(): Long {
     check(hasExtra(FORGE_SEED_KEY)) {
         "$FORGE_SEED_KEY value should be provided."

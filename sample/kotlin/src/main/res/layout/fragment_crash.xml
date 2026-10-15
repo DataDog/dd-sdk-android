@@ -4,120 +4,134 @@
   ~ Copyright 2016-Present Datadog, Inc.
   -->
 
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                                                   xmlns:app="http://schemas.android.com/apk/res-auto"
-                                                   xmlns:tools="http://schemas.android.com/tools"
-                                                   android:layout_width="match_parent"
-                                                   android:layout_height="match_parent"
-                                                   android:padding="10dp"
-                                                   tools:context=".NavActivity">
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".NavActivity">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="10dp">
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/java_crash"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:gravity="center_horizontal"
+            android:padding="16dp"
+            android:text="@string/msg_java_crash"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/action_java_crash"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/button_crash"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/java_crash" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/native_crash"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:gravity="center_horizontal"
+            android:padding="16dp"
+            android:text="@string/msg_native_crash"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/action_java_crash" />
 
 
-    <androidx.appcompat.widget.AppCompatTextView
-        android:id="@+id/java_crash"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:padding="16dp"
-        android:layout_margin="8dp"
-        android:text="@string/msg_java_crash"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
+        <androidx.appcompat.widget.AppCompatSpinner
+            android:id="@+id/signal_type_spinner"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:prompt="@string/prompt_signal_crash"
+            app:layout_constraintEnd_toStartOf="@id/action_ndk_crash"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/native_crash" />
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/action_java_crash"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:text="@string/button_crash"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/java_crash"/>
-
-    <androidx.appcompat.widget.AppCompatTextView
-        android:id="@+id/native_crash"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:padding="16dp"
-        android:layout_margin="8dp"
-        android:text="@string/msg_native_crash"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/action_java_crash"/>
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/action_ndk_crash"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/button_crash"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/signal_type_spinner"
+            app:layout_constraintTop_toBottomOf="@id/native_crash" />
 
 
-    <androidx.appcompat.widget.AppCompatSpinner
-        android:id="@+id/signal_type_spinner"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/native_crash"
-        app:layout_constraintEnd_toStartOf="@id/action_ndk_crash"
-        android:prompt="@string/prompt_signal_crash"/>
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/action_ndk_crash"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:text="@string/button_crash"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/signal_type_spinner"
-        app:layout_constraintTop_toBottomOf="@id/native_crash"/>
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/anr"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:gravity="center_horizontal"
+            android:padding="16dp"
+            android:text="@string/msg_anr"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/action_ndk_crash" />
 
 
-    <androidx.appcompat.widget.AppCompatTextView
-        android:id="@+id/anr"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:padding="16dp"
-        android:layout_margin="8dp"
-        android:text="@string/msg_anr"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/action_ndk_crash"/>
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/action_anr_cpu"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/button_anr_cpu"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/anr" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/action_anr_lock"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/button_anr_lock"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/action_anr_cpu" />
 
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/action_anr"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="@string/button_anr"
-        android:layout_margin="8dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/anr"/>
-
-
-    <androidx.appcompat.widget.AppCompatTextView
+        <androidx.appcompat.widget.AppCompatTextView
             android:id="@+id/oom"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_margin="8dp"
             android:gravity="center_horizontal"
             android:padding="16dp"
-            android:layout_margin="8dp"
             android:text="@string/msg_oom"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/action_anr"/>
+            app:layout_constraintTop_toBottomOf="@+id/action_anr_lock" />
 
 
-    <androidx.appcompat.widget.AppCompatButton
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/action_oom"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="@string/button_oom"
             android:layout_margin="8dp"
+            android:text="@string/button_oom"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/oom"/>
+            app:layout_constraintTop_toBottomOf="@id/oom" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

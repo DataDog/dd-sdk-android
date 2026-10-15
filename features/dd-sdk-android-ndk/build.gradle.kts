@@ -70,7 +70,7 @@ android {
 dependencies {
     implementation(project(":dd-sdk-android-internal"))
     api(project(":dd-sdk-android-core"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.okHttp)
 
     testImplementation(project(":tools:unit")) {

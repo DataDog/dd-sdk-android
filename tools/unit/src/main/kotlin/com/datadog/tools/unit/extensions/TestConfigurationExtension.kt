@@ -85,7 +85,6 @@ class TestConfigurationExtension :
 
     // region Internal
 
-    @Suppress("CheckInternal") // not an issue in unit tests
     private fun ExtensionContext.callTestConfigurations(
         reverseCallOrder: Boolean = false,
         operation: TestConfiguration.(Forge) -> Unit

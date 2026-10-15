@@ -456,7 +456,7 @@ interface RumMonitor {
      *
      * @see _RumInternalProxy
      */
-    @Suppress("FunctionName")
+    @Suppress("FunctionName", "FunctionNaming")
     @JvmSynthetic
     fun _getInternal(): _RumInternalProxy?
 }

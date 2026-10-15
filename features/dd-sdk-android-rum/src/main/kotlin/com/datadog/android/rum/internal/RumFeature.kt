@@ -191,7 +191,7 @@ internal class RumFeature(
     internal var debugActivityLifecycleListener =
         AtomicReference<Application.ActivityLifecycleCallbacks>(null)
     internal var frameStatesAggregator: Application.ActivityLifecycleCallbacks? = null
-    internal var timeseriesProcessLifecycleMonitor: ProcessLifecycleMonitor? = null
+    internal var processLifecycleMonitor: ProcessLifecycleMonitor? = null
     internal var sessionListener: RumSessionListener = NoOpRumSessionListener()
 
     internal var vitalExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
@@ -323,6 +323,8 @@ internal class RumFeature(
             }
         }
 
+        (appContext as? Application)?.registerProcessLifecycleMonitor()
+
         initRumAppStartupDetector()
 
         sdkCore.setEventReceiver(name, this)
@@ -339,20 +341,34 @@ internal class RumFeature(
             sdkCore = sdkCore,
             dataWriter = dataWriter,
             insightsCollector = insightsCollector,
-            enabledTypes = timeseriesConfiguration.enabledTypes,
             batteryInfoProvider = batteryInfoProvider,
-            displayInfoProvider = displayInfoProvider
+            displayInfoProvider = displayInfoProvider,
+            configuration = timeseriesConfiguration
         )
 
         timeseriesCollector = DefaultTimeseriesCollector(
             scheduledExecutorService = vitalExecutorService,
             pipelinesFactory = pipelinesFactory,
             internalLogger = sdkCore.internalLogger
-        ).also { collector ->
-            timeseriesProcessLifecycleMonitor = ProcessLifecycleMonitor(collector).apply {
-                appContext.registerActivityLifecycleCallbacks(this)
+        )
+    }
+
+    private fun Application.registerProcessLifecycleMonitor() {
+        processLifecycleMonitor = ProcessLifecycleMonitor(
+            object : ProcessLifecycleMonitor.Callback {
+                @MainThread
+                override fun onStarted() {
+                    (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.checkSessionExpiry()
+                    timeseriesCollector.onUiVisible()
+                }
+
+                @MainThread
+                override fun onStopped() = timeseriesCollector.onUiHidden()
+
+                override fun onResumed() = Unit
+                override fun onPaused() = Unit
             }
-        }
+        ).also { registerActivityLifecycleCallbacks(it) }
     }
 
     private fun Application.initializeFrameStatesAggregator(listeners: List<FrameStateListener>) {
@@ -414,11 +430,11 @@ internal class RumFeature(
         unregisterTrackingStrategies(appContext)
 
         timeseriesCollector = NoOpTimeseriesCollector()
-        timeseriesProcessLifecycleMonitor?.let {
+        processLifecycleMonitor?.let {
             (appContext as? Application)?.unregisterActivityLifecycleCallbacks(it)
         }
-        timeseriesProcessLifecycleMonitor = null
-        (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.stopTimeseries()
+        processLifecycleMonitor = null
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.stop()
 
         dataWriter = NoOpDataWriter()
 
