@@ -84,6 +84,8 @@ public final class com/datadog/android/_InternalProxy {
 
 public final class com/datadog/android/_InternalProxy$Companion {
 	public final fun allowClearTextHttp (Lcom/datadog/android/core/configuration/Configuration$Builder;)Lcom/datadog/android/core/configuration/Configuration$Builder;
+	public final fun getNetworkInstrumentationConfiguration (Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/internal/telemetry/NetworkInstrumentationConfiguration$Snapshot;
+	public final fun updateNetworkInstrumentationConfiguration (Lcom/datadog/android/api/SdkCore;Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ConfigurationUpdate;)Z
 }
 
 public final class com/datadog/android/_InternalProxy$_TelemetryProxy {

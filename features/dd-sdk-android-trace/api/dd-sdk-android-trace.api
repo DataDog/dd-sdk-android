@@ -138,6 +138,10 @@ public final class com/datadog/android/trace/internal/DatadogTraceExtKt {
 	public static final fun fromHex (Lcom/datadog/android/trace/api/trace/DatadogTraceId$Companion;Ljava/lang/String;)Lcom/datadog/android/trace/api/trace/DatadogTraceId;
 }
 
+public final class com/datadog/android/trace/internal/NetworkInstrumentationTelemetryExtKt {
+	public static final fun reportFirstPartyHostsConfiguration (Lcom/datadog/android/api/SdkCore;ZZLkotlin/jvm/functions/Function0;)V
+}
+
 public abstract class com/datadog/android/trace/internal/ParentContextSource {
 	public abstract fun getContext ()Lcom/datadog/android/trace/api/span/DatadogSpanContext;
 }

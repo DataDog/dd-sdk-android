@@ -37,6 +37,8 @@ class com.datadog.android._InternalProxy
   fun setCustomAppVersion(String)
   fun flushAndShutdownExecutors()
   companion object 
+    fun updateNetworkInstrumentationConfiguration(com.datadog.android.api.SdkCore, com.datadog.android.internal.telemetry.InternalTelemetryEvent.ConfigurationUpdate): Boolean
+    fun getNetworkInstrumentationConfiguration(com.datadog.android.api.SdkCore): com.datadog.android.internal.telemetry.NetworkInstrumentationConfiguration.Snapshot?
     fun allowClearTextHttp(com.datadog.android.core.configuration.Configuration.Builder): com.datadog.android.core.configuration.Configuration.Builder
 interface com.datadog.android.api.InternalLogger
   enum Level

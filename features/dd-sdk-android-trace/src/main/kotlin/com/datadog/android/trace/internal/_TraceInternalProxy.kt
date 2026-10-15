@@ -126,5 +126,8 @@ object _TraceInternalProxy {
     fun createApmNetworkInstrumentation(
         name: String,
         configuration: ApmNetworkInstrumentationConfiguration
-    ) = configuration.createInstrumentation(name)
+    ) = configuration.createInstrumentation(name).also {
+        // Capture configuration during integration setup, even when RUM is not enabled yet.
+        it.sdkCoreReference.get()
+    }
 }

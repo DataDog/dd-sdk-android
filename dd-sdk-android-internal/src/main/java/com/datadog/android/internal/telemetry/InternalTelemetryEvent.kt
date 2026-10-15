@@ -88,9 +88,17 @@ sealed class InternalTelemetryEvent {
         ) : ApiUsage(additionalProperties)
     }
 
-    object InterceptorInstantiated : InternalTelemetryEvent()
+    sealed class ConfigurationUpdate : InternalTelemetryEvent()
 
-    class ResourceHeadersTrackingConfigured(val mode: Mode) : InternalTelemetryEvent() {
+    object FirstPartyHostsConfigured : ConfigurationUpdate()
+
+    class NetworkInstrumentationConfigured(
+        val resourceHeadersTracking: ResourceHeadersTrackingConfigured.Mode?
+    ) : ConfigurationUpdate()
+
+    object InterceptorInstantiated : ConfigurationUpdate()
+
+    class ResourceHeadersTrackingConfigured(val mode: Mode) : ConfigurationUpdate() {
         enum class Mode {
             DEFAULT_HEADERS,
             CUSTOM

@@ -74,6 +74,9 @@ class ApmNetworkInstrumentation internal constructor(
     private val networkingLibraryName: String,
     val networkTracingScope: ApmNetworkTracingScope = ApmNetworkTracingScope.ALL
 ) {
+    // Configuration telemetry describes client-provided hosts, before remote overrides.
+    private val hasConfiguredFirstPartyHosts = !localFirstPartyHostHeaderTypeResolver.isEmpty()
+
     private val rcApplied = AtomicBoolean(false)
 
     private val rumContextPropagator = RumContextPropagator { internalSdkCore }
@@ -97,10 +100,11 @@ class ApmNetworkInstrumentation internal constructor(
                 trace.buildRcHostResolver()?.let { localFirstPartyHostHeaderTypeResolver = it }
             }
         }
-        if (localFirstPartyHostHeaderTypeResolver.isEmpty() && sdkCore.firstPartyHostResolver.isEmpty()) {
-            sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN, onlyOnce = true) {
-                WARNING_TRACING_NO_HOSTS.format(Locale.US, networkingLibraryName)
-            }
+        sdkCore.reportFirstPartyHostsConfiguration(
+            hasFirstPartyHosts = hasConfiguredFirstPartyHosts,
+            hasEffectiveLocalHosts = !localFirstPartyHostHeaderTypeResolver.isEmpty()
+        ) {
+            WARNING_TRACING_NO_HOSTS.format(Locale.US, networkingLibraryName)
         }
     }
 

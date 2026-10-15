@@ -63,7 +63,7 @@ object Datadog {
         configuration: Configuration,
         trackingConsent: TrackingConsent
     ): SdkCore? {
-        synchronized(registry) {
+        val (sdkCore, notifications) = synchronized(registry) {
             val existing = registry.getInstance(instanceName)
             if (existing != null) {
                 unboundInternalLogger.log(
@@ -98,10 +98,10 @@ object Datadog {
                 // moment Datadog.initialize is completed
                 coreFeature.trackingConsentProvider.setConsent(trackingConsent)
             }
-            registry.register(sdkInstanceName, sdkCore)
-
-            return sdkCore
+            sdkCore to registry.registerAndGetNotifications(sdkInstanceName, sdkCore)
         }
+        registry.notifyReferences(notifications)
+        return sdkCore
     }
 
     /**

@@ -11,7 +11,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.network.HttpSpec
@@ -105,7 +104,13 @@ open class DatadogInterceptor internal constructor(
     redacted404ResourceName,
     localTracerFactory,
     globalTracerProvider,
-    defaultTracerCheck
+    defaultTracerCheck,
+    onSdkInstanceCaptured = { sdkCore ->
+        sdkCore.reportNetworkInstrumentationConfigured(
+            type = InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP,
+            resourceHeadersExtractor = resourceHeadersExtractor
+        )
+    }
 ) {
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider =
         rumResourceAttributesProvider as? NoOpRumResourceAttributesProvider
@@ -190,14 +195,6 @@ open class DatadogInterceptor internal constructor(
         val rumFeature = (sdkCoreReference.get() as? FeatureSdkCore)
             ?.getFeature(Feature.RUM_FEATURE_NAME)
         return rumFeature == null
-    }
-
-    override fun onSdkInstanceReady(sdkCore: InternalSdkCore) {
-        super.onSdkInstanceReady(sdkCore)
-        (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.reportNetworkInstrumentationConfigured(
-            type = InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.LEGACY_OKHTTP,
-            resourceHeadersExtractor = resourceHeadersExtractor
-        )
     }
 
     // endregion

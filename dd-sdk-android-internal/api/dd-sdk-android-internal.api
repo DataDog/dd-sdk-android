@@ -589,7 +589,14 @@ public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$InterceptorInstantiated : com/datadog/android/internal/telemetry/InternalTelemetryEvent {
+public abstract class com/datadog/android/internal/telemetry/InternalTelemetryEvent$ConfigurationUpdate : com/datadog/android/internal/telemetry/InternalTelemetryEvent {
+}
+
+public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$FirstPartyHostsConfigured : com/datadog/android/internal/telemetry/InternalTelemetryEvent$ConfigurationUpdate {
+	public static final field INSTANCE Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$FirstPartyHostsConfigured;
+}
+
+public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$InterceptorInstantiated : com/datadog/android/internal/telemetry/InternalTelemetryEvent$ConfigurationUpdate {
 	public static final field INSTANCE Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$InterceptorInstantiated;
 }
 
@@ -626,7 +633,12 @@ public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured : com/datadog/android/internal/telemetry/InternalTelemetryEvent {
+public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$NetworkInstrumentationConfigured : com/datadog/android/internal/telemetry/InternalTelemetryEvent$ConfigurationUpdate {
+	public fun <init> (Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;)V
+	public final fun getResourceHeadersTracking ()Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;
+}
+
+public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured : com/datadog/android/internal/telemetry/InternalTelemetryEvent$ConfigurationUpdate {
 	public fun <init> (Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;)V
 	public final fun getMode ()Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;
 }
@@ -637,6 +649,18 @@ public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;
 	public static fun values ()[Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;
+}
+
+public final class com/datadog/android/internal/telemetry/NetworkInstrumentationConfiguration {
+	public fun <init> ()V
+	public final fun snapshot ()Lcom/datadog/android/internal/telemetry/NetworkInstrumentationConfiguration$Snapshot;
+	public final fun update (Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ConfigurationUpdate;)V
+}
+
+public final class com/datadog/android/internal/telemetry/NetworkInstrumentationConfiguration$Snapshot {
+	public final fun getResourceHeadersTracking ()Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ResourceHeadersTrackingConfigured$Mode;
+	public final fun getTrackNetworkRequests ()Z
+	public final fun getUseFirstPartyHosts ()Z
 }
 
 public final class com/datadog/android/internal/telemetry/TelemetryContext {

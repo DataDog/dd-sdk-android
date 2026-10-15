@@ -15,6 +15,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.NetworkInstrumentationConfiguration
 import com.datadog.android.lint.InternalApi
 
 /**
@@ -93,6 +94,19 @@ class _InternalProxy internal constructor(
     }
 
     companion object {
+        /** Returns false when the caller must retain the update for a non-Datadog core. */
+        fun updateNetworkInstrumentationConfiguration(
+            sdkCore: SdkCore,
+            event: InternalTelemetryEvent.ConfigurationUpdate
+        ): Boolean {
+            val core = sdkCore as? DatadogCore ?: return false
+            core.networkInstrumentationConfiguration.update(event)
+            return true
+        }
+
+        fun getNetworkInstrumentationConfiguration(sdkCore: SdkCore): NetworkInstrumentationConfiguration.Snapshot? =
+            (sdkCore as? DatadogCore)?.networkInstrumentationConfiguration?.snapshot()
+
         // TODO RUM-368 Expose it as public API? Needed for the integration tests at least,
         //  because OkHttp MockWebServer is HTTP based
         fun allowClearTextHttp(builder: Configuration.Builder): Configuration.Builder {

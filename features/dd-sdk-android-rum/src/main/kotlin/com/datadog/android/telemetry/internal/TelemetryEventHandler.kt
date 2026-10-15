@@ -7,6 +7,7 @@
 package com.datadog.android.telemetry.internal
 
 import androidx.annotation.AnyThread
+import com.datadog.android._InternalProxy
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
@@ -18,6 +19,7 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.NetworkInstrumentationConfiguration
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
@@ -25,6 +27,7 @@ import com.datadog.android.rum.internal.RumFeature.Configuration
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.net.toTelemetryValue
 import com.datadog.android.rum.internal.utils.HUNDRED
 import com.datadog.android.rum.internal.utils.percent
 import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
@@ -34,7 +37,6 @@ import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
-import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.TrackResourceHeaders
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
@@ -53,8 +55,7 @@ internal class TelemetryEventHandler(
     private val maxEventCountPerSession: Int = MAX_EVENTS_PER_SESSION
 ) : RumSessionListener {
 
-    private var trackNetworkRequests = false
-    private var trackResourceHeaders: TrackResourceHeaders? = null
+    private val fallbackNetworkConfiguration = NetworkInstrumentationConfiguration()
 
     private val eventIDsSeenInCurrentSession = mutableSetOf<TelemetryEventId>()
     private var totalEventsSeenInCurrentSession = 0
@@ -71,6 +72,69 @@ internal class TelemetryEventHandler(
         writer: DataWriter<Any>
     ) {
         val event = wrappedEvent.event
+        val createEvent: (DatadogContext, Long) -> Any = when (event) {
+            is InternalTelemetryEvent.ConfigurationUpdate -> {
+                if (!_InternalProxy.updateNetworkInstrumentationConfiguration(sdkCore, event)) {
+                    fallbackNetworkConfiguration.update(event)
+                }
+                return
+            }
+            is InternalTelemetryEvent.Log.Debug -> { datadogContext, timestamp ->
+                createDebugEvent(
+                    datadogContext = datadogContext,
+                    timestamp = timestamp,
+                    message = event.message,
+                    additionalProperties = event.additionalProperties,
+                    effectiveSampleRate = computeEffectiveSampleRate(event.additionalProperties)
+                )
+            }
+
+            is InternalTelemetryEvent.Metric -> { datadogContext, timestamp ->
+                createDebugEvent(
+                    datadogContext = datadogContext,
+                    timestamp = timestamp,
+                    message = event.message,
+                    additionalProperties = event.additionalProperties,
+                    effectiveSampleRate = computeEffectiveSampleRate(event.additionalProperties)
+                )
+            }
+
+            is InternalTelemetryEvent.Log.Error -> { datadogContext, timestamp ->
+                sessionEndedMetricDispatcher.onSdkErrorTracked(
+                    sessionId = datadogContext.rumContext().sessionId,
+                    errorKind = event.kind
+                )
+                createErrorEvent(
+                    datadogContext = datadogContext,
+                    timestamp = timestamp,
+                    message = event.message,
+                    stack = event.resolveStacktrace(),
+                    kind = event.resolveKind(),
+                    additionalProperties = event.additionalProperties,
+                    effectiveSampleRate = computeEffectiveSampleRate(event.additionalProperties)
+                )
+            }
+
+            is InternalTelemetryEvent.Configuration -> { datadogContext, timestamp ->
+                createConfigurationEvent(
+                    datadogContext = datadogContext,
+                    timestamp = timestamp,
+                    event = event,
+                    effectiveSampleRate = computeEffectiveSampleRate(
+                        eventSpecificSamplingRate = rumConfig?.telemetryConfigurationSampleRate
+                    )
+                )
+            }
+
+            is InternalTelemetryEvent.ApiUsage -> { datadogContext, timestamp ->
+                createApiUsageEvent(
+                    datadogContext = datadogContext,
+                    timestamp = timestamp,
+                    event = event,
+                    effectiveSampleRate = computeEffectiveSampleRate(event.additionalProperties)
+                )
+            }
+        }
         if (!canWrite(event)) return
 
         eventIDsSeenInCurrentSession.add(event.identity)
@@ -84,82 +148,9 @@ internal class TelemetryEventHandler(
             )
         ) { datadogContext, writeScope ->
             val timestamp = wrappedEvent.eventTime.timestamp + datadogContext.time.serverTimeOffsetMs
-            val telemetryEvent: Any? = when (event) {
-                is InternalTelemetryEvent.Log.Debug -> {
-                    createDebugEvent(
-                        datadogContext = datadogContext,
-                        timestamp = timestamp,
-                        message = event.message,
-                        additionalProperties = event.additionalProperties,
-                        effectiveSampleRate = computeEffectiveSampleRate(event.additionalProperties)
-                    )
-                }
-
-                is InternalTelemetryEvent.Metric -> {
-                    createDebugEvent(
-                        datadogContext = datadogContext,
-                        timestamp = timestamp,
-                        message = event.message,
-                        additionalProperties = event.additionalProperties,
-                        effectiveSampleRate = computeEffectiveSampleRate(event.additionalProperties)
-                    )
-                }
-
-                is InternalTelemetryEvent.Log.Error -> {
-                    sessionEndedMetricDispatcher.onSdkErrorTracked(
-                        sessionId = datadogContext.rumContext().sessionId,
-                        errorKind = event.kind
-                    )
-                    createErrorEvent(
-                        datadogContext = datadogContext,
-                        timestamp = timestamp,
-                        message = event.message,
-                        stack = event.resolveStacktrace(),
-                        kind = event.resolveKind(),
-                        additionalProperties = event.additionalProperties,
-                        effectiveSampleRate = computeEffectiveSampleRate(event.additionalProperties)
-                    )
-                }
-
-                is InternalTelemetryEvent.Configuration -> {
-                    createConfigurationEvent(
-                        datadogContext = datadogContext,
-                        timestamp = timestamp,
-                        event = event,
-                        effectiveSampleRate = computeEffectiveSampleRate(
-                            eventSpecificSamplingRate = rumConfig?.telemetryConfigurationSampleRate
-                        )
-                    )
-                }
-
-                is InternalTelemetryEvent.ApiUsage -> {
-                    createApiUsageEvent(
-                        datadogContext = datadogContext,
-                        timestamp = timestamp,
-                        event = event,
-                        effectiveSampleRate = computeEffectiveSampleRate(event.additionalProperties)
-                    )
-                }
-
-                is InternalTelemetryEvent.InterceptorInstantiated -> {
-                    trackNetworkRequests = true
-                    null
-                }
-
-                is InternalTelemetryEvent.ResourceHeadersTrackingConfigured -> {
-                    trackResourceHeaders = when (event.mode) {
-                        InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.DEFAULT_HEADERS ->
-                            TrackResourceHeaders.DEFAULT_HEADERS
-                        InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.CUSTOM ->
-                            TrackResourceHeaders.CUSTOM
-                    }
-                    null
-                }
-            }
-            if (telemetryEvent != null) {
-                writeScope {
-                    writer.write(it, telemetryEvent, EventType.TELEMETRY)
-                }
+            val telemetryEvent = createEvent(datadogContext, timestamp)
+            writeScope {
+                writer.write(it, telemetryEvent, EventType.TELEMETRY)
             }
         }
     }
@@ -318,6 +309,8 @@ internal class TelemetryEventHandler(
         event: InternalTelemetryEvent.Configuration,
         effectiveSampleRate: Float
     ): TelemetryConfigurationEvent {
+        val networkConfigurationSnapshot = _InternalProxy.getNetworkInstrumentationConfiguration(sdkCore)
+            ?: fallbackNetworkConfiguration.snapshot()
         val traceFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         val sessionReplayFeatureContext = datadogContext.featuresContext[Feature.SESSION_REPLAY_FEATURE_NAME].orEmpty()
         val sessionReplaySampleRate = sessionReplayFeatureContext[SESSION_REPLAY_SAMPLE_RATE_KEY]
@@ -407,7 +400,15 @@ internal class TelemetryEventHandler(
                     useTracing = useTracing,
                     tracerApi = tracerApi?.name,
                     tracerApiVersion = openTelemetryApiVersion,
-                    trackNetworkRequests = trackNetworkRequests,
+                    trackNetworkRequests = networkConfigurationSnapshot.trackNetworkRequests,
+                    useFirstPartyHosts = if (
+                        !sdkCore.firstPartyHostResolver.isEmpty() ||
+                        networkConfigurationSnapshot.useFirstPartyHosts
+                    ) {
+                        true
+                    } else {
+                        false.takeIf { datadogContext.source == "android" }
+                    },
                     sessionReplaySampleRate = sessionReplaySampleRate,
                     imagePrivacyLevel = sessionReplayImagePrivacy,
                     touchPrivacyLevel = sessionReplayTouchPrivacy,
@@ -420,7 +421,7 @@ internal class TelemetryEventHandler(
                     numberOfDisplays = datadogContext.deviceInfo.numberOfDisplays?.toLong(),
                     traceSampleRate = okhttpInterceptorSampleRate?.toLong(),
                     selectedTracingPropagators = tracingHeaderTypes?.toSelectedTracingPropagators(),
-                    trackResourceHeaders = trackResourceHeaders,
+                    trackResourceHeaders = networkConfigurationSnapshot.resourceHeadersTracking.toTelemetryValue(),
                     useClientSideStats = useClientSideStats,
                     remoteConfigurationId = datadogContext.remoteConfigurationId,
                     profilingSampleRate = profilingSampleRate,

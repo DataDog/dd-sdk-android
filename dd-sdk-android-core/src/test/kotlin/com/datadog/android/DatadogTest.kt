@@ -11,6 +11,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.core.SdkReference
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.DatadogCore
@@ -58,6 +59,8 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -125,6 +128,30 @@ internal class DatadogTest {
 
         // Then
         assertThat(instance).isSameAs(initialized)
+    }
+
+    @Test
+    fun `M allow another thread to access registry W initialize {capture callback}`() {
+        // Given
+        val fakeExecutor = Executors.newSingleThreadExecutor()
+        var fakeCapturedCore: SdkCore? = null
+        val testedReference = SdkReference {
+            fakeCapturedCore = fakeExecutor.submit<SdkCore> { Datadog.getInstance() }
+                .get(5, TimeUnit.SECONDS)
+        }
+        testedReference.get()
+
+        // When
+        try {
+            val instance = Datadog.initialize(appContext.mockInstance, fakeConfiguration, fakeConsent)
+
+            // Then
+            assertThat(instance).isNotNull()
+            assertThat(fakeCapturedCore).isSameAs(instance)
+            assertThat(testedReference.get()).isSameAs(instance)
+        } finally {
+            fakeExecutor.shutdownNow()
+        }
     }
 
     @Test

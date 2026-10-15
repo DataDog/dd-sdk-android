@@ -7,10 +7,12 @@
 package com.datadog.android.okhttp.utils.config
 
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.internal.telemetry.NetworkInstrumentationConfiguration
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
+import com.datadog.android.tests.config.createMockSdkCore
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import fr.xgouchet.elmyr.Forge
 import org.mockito.kotlin.mock
@@ -24,9 +26,12 @@ internal class GlobalRumMonitorTestConfiguration(
 
     lateinit var mockSdkCore: InternalSdkCore
 
+    lateinit var mockNetworkConfiguration: NetworkInstrumentationConfiguration
+
     override fun setUp(forge: Forge) {
         super.setUp(forge)
-        mockSdkCore = datadogSingletonTestConfiguration?.mockInstance ?: mock()
+        mockNetworkConfiguration = datadogSingletonTestConfiguration?.mockNetworkConfiguration ?: mock()
+        mockSdkCore = datadogSingletonTestConfiguration?.mockInstance ?: createMockSdkCore(mockNetworkConfiguration)
         GlobalRumMonitor::class.declaredFunctions.first { it.name == "registerIfAbsent" }.apply {
             isAccessible = true
             call(GlobalRumMonitor::class.objectInstance, mockInstance, mockSdkCore)

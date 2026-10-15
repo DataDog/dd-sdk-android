@@ -6,6 +6,7 @@
 
 package com.datadog.android.telemetry.internal
 
+import com.datadog.android._InternalProxy
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.DeviceInfo
@@ -16,11 +17,13 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.remote.model.RemoteConfigSyncMetadata
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.NetworkInstrumentationConfiguration
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.internal.RumFeature
@@ -48,6 +51,7 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
+import com.datadog.android.tests.config.createMockSdkCore
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.utils.verifyLog
@@ -71,6 +75,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -113,8 +118,10 @@ internal class TelemetryEventHandlerTest {
     @Mock
     lateinit var mockConfigurationSampler: Sampler<InternalTelemetryEvent>
 
-    @Mock
     lateinit var mockSdkCore: InternalSdkCore
+
+    @Mock
+    lateinit var mockFirstPartyHostResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -167,6 +174,8 @@ internal class TelemetryEventHandlerTest {
     @StringForgery
     lateinit var fakeAdditionalPropertyValue: String
 
+    private lateinit var fakeNetworkConfiguration: NetworkInstrumentationConfiguration
+
     private var fakeServerOffset: Long = 0L
 
     @Forgery
@@ -174,6 +183,8 @@ internal class TelemetryEventHandlerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeNetworkConfiguration = NetworkInstrumentationConfiguration()
+        mockSdkCore = createMockSdkCore(fakeNetworkConfiguration)
         whenever(mockDeviceInfo.architecture).thenReturn(fakeDeviceArchitecture)
         whenever(mockDeviceInfo.deviceBrand).thenReturn(fakeDeviceBrand)
         whenever(mockDeviceInfo.deviceModel).thenReturn(fakeDeviceModel)
@@ -202,6 +213,8 @@ internal class TelemetryEventHandlerTest {
             deviceInfo = mockDeviceInfo
         )
 
+        whenever(mockSdkCore.firstPartyHostResolver) doReturn mockFirstPartyHostResolver
+        whenever(mockFirstPartyHostResolver.isEmpty()) doReturn true
         whenever(mockSampler.sample(any())) doReturn true
         whenever(mockConfigurationSampler.sample(any())) doReturn true
 
@@ -737,6 +750,225 @@ internal class TelemetryEventHandlerTest {
             )
             assertThat(firstValue)
                 .hasTrackNetworkRequests(trackNetworkRequests)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("networkSetupEvents")
+    fun `M retain network configuration W handleEvent() {setup is sampled out}`(
+        fakeSetupEvent: InternalTelemetryEvent,
+        expectedNetworkTracking: Boolean,
+        expectedHeaderTracking: TelemetryConfigurationEvent.TrackResourceHeaders?,
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
+    ) {
+        // Given
+        whenever(mockSampler.sample(fakeSetupEvent)) doReturn false
+
+        // When
+        testedTelemetryHandler.handleEvent(RumRawEvent.TelemetryEventWrapper(fakeSetupEvent, fakeEventTime), mockWriter)
+        testedTelemetryHandler.handleEvent(
+            RumRawEvent.TelemetryEventWrapper(fakeConfiguration, fakeEventTime),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue).hasTrackNetworkRequests(expectedNetworkTracking)
+            assertThat(firstValue).hasTrackResourceHeaders(expectedHeaderTracking)
+            assertThat(
+                firstValue
+            ).hasUseFirstPartyHosts(fakeSetupEvent is InternalTelemetryEvent.FirstPartyHostsConfigured)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("networkSetupEvents")
+    fun `M retain network configuration W handleEvent() {event limit reached}`(
+        fakeSetupEvent: InternalTelemetryEvent,
+        expectedNetworkTracking: Boolean,
+        expectedHeaderTracking: TelemetryConfigurationEvent.TrackResourceHeaders?,
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration,
+        forge: Forge
+    ) {
+        // Given
+        repeat(MAX_EVENTS_PER_SESSION_TEST) {
+            val fakeMetric = forge.getForgery<InternalTelemetryEvent.Metric>()
+            testedTelemetryHandler.handleEvent(RumRawEvent.TelemetryEventWrapper(fakeMetric, fakeEventTime), mockWriter)
+        }
+
+        // When
+        testedTelemetryHandler.handleEvent(RumRawEvent.TelemetryEventWrapper(fakeSetupEvent, fakeEventTime), mockWriter)
+        testedTelemetryHandler.handleEvent(
+            RumRawEvent.TelemetryEventWrapper(fakeConfiguration, fakeEventTime),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter, times(MAX_EVENTS_PER_SESSION_TEST + 1))
+                .write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            val fakeWrittenConfiguration = lastValue as TelemetryConfigurationEvent
+            assertThat(fakeWrittenConfiguration).hasTrackNetworkRequests(expectedNetworkTracking)
+            assertThat(fakeWrittenConfiguration).hasTrackResourceHeaders(expectedHeaderTracking)
+            assertThat(fakeWrittenConfiguration)
+                .hasUseFirstPartyHosts(fakeSetupEvent is InternalTelemetryEvent.FirstPartyHostsConfigured)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("networkSetupEvents")
+    fun `M preserve event budget W handleEvent() {network setup signals}`(
+        fakeSetupEvent: InternalTelemetryEvent,
+        expectedNetworkTracking: Boolean,
+        expectedHeaderTracking: TelemetryConfigurationEvent.TrackResourceHeaders?,
+        @Forgery fakeMetric: InternalTelemetryEvent.Metric,
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
+    ) {
+        // Given
+        repeat(MAX_EVENTS_PER_SESSION_TEST) {
+            testedTelemetryHandler.handleEvent(
+                RumRawEvent.TelemetryEventWrapper(fakeSetupEvent, fakeEventTime),
+                mockWriter
+            )
+        }
+
+        // When
+        testedTelemetryHandler.handleEvent(RumRawEvent.TelemetryEventWrapper(fakeMetric, fakeEventTime), mockWriter)
+        testedTelemetryHandler.handleEvent(
+            RumRawEvent.TelemetryEventWrapper(fakeConfiguration, fakeEventTime),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue).isInstanceOf(TelemetryDebugEvent::class.java)
+            val fakeWrittenConfiguration = lastValue as TelemetryConfigurationEvent
+            assertThat(fakeWrittenConfiguration).hasTrackNetworkRequests(expectedNetworkTracking)
+            assertThat(fakeWrittenConfiguration).hasTrackResourceHeaders(expectedHeaderTracking)
+            assertThat(fakeWrittenConfiguration)
+                .hasUseFirstPartyHosts(fakeSetupEvent is InternalTelemetryEvent.FirstPartyHostsConfigured)
+        }
+    }
+
+    @Test
+    fun `M retain setup events W handleEvent() {non-Datadog core}`(
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
+    ) {
+        // Given
+        val stubLegacyCore = object : InternalSdkCore by mockSdkCore {}
+        testedTelemetryHandler = TelemetryEventHandler(
+            stubLegacyCore,
+            mockSampler,
+            mockConfigurationSampler,
+            sessionEndedMetricDispatcher,
+            MAX_EVENTS_PER_SESSION_TEST
+        )
+        val fakeSetupEvents = listOf(
+            InternalTelemetryEvent.InterceptorInstantiated,
+            InternalTelemetryEvent.FirstPartyHostsConfigured,
+            InternalTelemetryEvent.ResourceHeadersTrackingConfigured(
+                InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.CUSTOM
+            )
+        )
+
+        // When
+        fakeSetupEvents.forEach {
+            _InternalProxy.updateNetworkInstrumentationConfiguration(stubLegacyCore, it)
+            testedTelemetryHandler.handleEvent(RumRawEvent.TelemetryEventWrapper(it, fakeEventTime), mockWriter)
+        }
+        testedTelemetryHandler.handleEvent(
+            RumRawEvent.TelemetryEventWrapper(fakeConfiguration, fakeEventTime),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue).hasTrackNetworkRequests(true)
+            assertThat(firstValue).hasUseFirstPartyHosts(true)
+            assertThat(firstValue).hasTrackResourceHeaders(TelemetryConfigurationEvent.TrackResourceHeaders.CUSTOM)
+        }
+    }
+
+    @Test
+    fun `M use one network snapshot W handleEvent() {setup changes during configuration construction}`(
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
+    ) {
+        // Given
+        whenever(mockFirstPartyHostResolver.isEmpty()) doAnswer {
+            fakeNetworkConfiguration.update(
+                InternalTelemetryEvent.NetworkInstrumentationConfigured(
+                    InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.CUSTOM
+                )
+            )
+            true
+        }
+
+        // When
+        testedTelemetryHandler.handleEvent(
+            RumRawEvent.TelemetryEventWrapper(fakeConfiguration, fakeEventTime),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue).hasTrackNetworkRequests(false)
+            assertThat(firstValue).hasTrackResourceHeaders(null)
+        }
+        assertThat(fakeNetworkConfiguration.snapshot().trackNetworkRequests).isTrue()
+    }
+
+    @ParameterizedTest
+    @MethodSource("firstPartyHostsConfigurations")
+    fun `M report first party hosts W handleEvent() {configuration}`(
+        hasGlobalHosts: Boolean,
+        hasLocalHosts: Boolean,
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
+    ) {
+        // Given
+        whenever(mockFirstPartyHostResolver.isEmpty()) doReturn !hasGlobalHosts
+        if (hasLocalHosts) {
+            _InternalProxy.updateNetworkInstrumentationConfiguration(
+                mockSdkCore,
+                InternalTelemetryEvent.FirstPartyHostsConfigured
+            )
+        }
+
+        // When
+        testedTelemetryHandler.handleEvent(
+            RumRawEvent.TelemetryEventWrapper(fakeConfiguration, fakeEventTime),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue).hasUseFirstPartyHosts(hasGlobalHosts || hasLocalHosts)
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["flutter", "react-native"])
+    fun `M omit unknown host usage W handleEvent() {cross platform source}`(
+        source: String,
+        @Forgery fakeConfiguration: InternalTelemetryEvent.Configuration
+    ) {
+        // Given
+        fakeDatadogContext = fakeDatadogContext.copy(source = source)
+
+        // When
+        testedTelemetryHandler.handleEvent(
+            RumRawEvent.TelemetryEventWrapper(fakeConfiguration, fakeEventTime),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.TELEMETRY))
+            assertThat(firstValue).hasUseFirstPartyHosts(null)
         }
     }
 
@@ -1955,6 +2187,49 @@ internal class TelemetryEventHandlerTest {
             ),
             Arguments.of(false, null, null, true),
             Arguments.of(false, null, null, false)
+        )
+
+        @JvmStatic
+        fun networkSetupEvents() = listOf(
+            Arguments.of(InternalTelemetryEvent.NetworkInstrumentationConfigured(null), true, null),
+            Arguments.of(
+                InternalTelemetryEvent.NetworkInstrumentationConfigured(
+                    InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.DEFAULT_HEADERS
+                ),
+                true,
+                TelemetryConfigurationEvent.TrackResourceHeaders.DEFAULT_HEADERS
+            ),
+            Arguments.of(
+                InternalTelemetryEvent.NetworkInstrumentationConfigured(
+                    InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.CUSTOM
+                ),
+                true,
+                TelemetryConfigurationEvent.TrackResourceHeaders.CUSTOM
+            ),
+            Arguments.of(InternalTelemetryEvent.InterceptorInstantiated, true, null),
+            Arguments.of(InternalTelemetryEvent.FirstPartyHostsConfigured, false, null),
+            Arguments.of(
+                InternalTelemetryEvent.ResourceHeadersTrackingConfigured(
+                    InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.DEFAULT_HEADERS
+                ),
+                false,
+                TelemetryConfigurationEvent.TrackResourceHeaders.DEFAULT_HEADERS
+            ),
+            Arguments.of(
+                InternalTelemetryEvent.ResourceHeadersTrackingConfigured(
+                    InternalTelemetryEvent.ResourceHeadersTrackingConfigured.Mode.CUSTOM
+                ),
+                false,
+                TelemetryConfigurationEvent.TrackResourceHeaders.CUSTOM
+            )
+        )
+
+        @JvmStatic
+        fun firstPartyHostsConfigurations() = listOf(
+            Arguments.of(false, false),
+            Arguments.of(false, true),
+            Arguments.of(true, false),
+            Arguments.of(true, true)
         )
 
         private const val MAX_EVENTS_PER_SESSION_TEST = 10
