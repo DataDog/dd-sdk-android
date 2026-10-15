@@ -13,6 +13,8 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 @ExtendWith(ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -636,6 +638,47 @@ internal class CapturedTreeValidatorTest {
             CaptureValidationErrorCode.DANGLING_LAYER_REFERENCE,
             CaptureValidationErrorCode.DANGLING_WIREFRAME_REFERENCE
         )
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M validate deep hierarchy without stack overflow W validate`(fakeHasCycle: Boolean) {
+        // Given: keep identities flat, as native traversal does, with depth carried by child references.
+        val fakeTree = compositionTestTree()
+        val fakeIdentities = List(10_000) { fakeTree.factory.view(fakeTree.window, "deep-$it") }
+        val fakeLayers = fakeIdentities.mapIndexed { index, identity ->
+            val child = fakeIdentities.getOrNull(index + 1)
+                ?: fakeIdentities.first().takeIf { fakeHasCycle }
+            layer(identity, CapturedLayerKind.NATIVE_VIEW, listOfNotNull(child?.let(CapturedChild::Layer)))
+        }
+        val fakeSnapshot = fakeTree.snapshot.copy(
+            root = fakeTree.root.copy(children = listOf(CapturedChild.Layer(fakeIdentities.first()))),
+            layers = fakeLayers.asReversed(),
+            wireframes = emptyList()
+        )
+
+        // When
+        val result = testedValidator.validate(fakeSnapshot)
+
+        // Then
+        if (fakeHasCycle) {
+            assertThat(result.codes()).contains(CaptureValidationErrorCode.CYCLE)
+        } else {
+            assertThat(result).isEqualTo(CaptureValidationResult.Valid)
+        }
+    }
+
+    @Test
+    fun `M not report cycle W validate { completed layer referenced again }`() {
+        // Given
+        val fakeTree = compositionTestTree()
+        val fakeRoot = fakeTree.root.copy(children = fakeTree.root.children + fakeTree.root.children)
+
+        // When
+        val result = testedValidator.validate(fakeTree.snapshot.copy(root = fakeRoot))
+
+        // Then
+        assertThat(result.codes()).containsExactly(CaptureValidationErrorCode.MULTIPLE_PARENTS)
     }
 
     @Test

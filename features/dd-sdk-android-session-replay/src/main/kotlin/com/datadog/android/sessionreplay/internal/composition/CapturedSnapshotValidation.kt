@@ -349,29 +349,47 @@ internal class CapturedSnapshotValidation(
         if (!valid) failures += validationFailure(CaptureValidationErrorCode.INVALID_GRADIENT, identity)
     }
 
-    // Set membership operations cannot fail for these locally owned mutable sets.
-    @Suppress("UnsafeThirdPartyFunctionCall")
+    @Suppress("UnsafeThirdPartyFunctionCall") // Membership in a locally owned set cannot fail.
     private fun validateAcyclic(layers: List<CapturedLayer>, layersById: Map<Long, CapturedLayer>) {
-        val visiting = mutableSetOf<Long>()
         val visited = mutableSetOf<Long>()
-
-        fun visit(layer: CapturedLayer) {
-            if (!visiting.add(layer.identity.wireId)) {
-                failures += validationFailure(CaptureValidationErrorCode.CYCLE, layer.identity)
-                return
-            }
+        // Check disconnected components too, including cycles unreachable from the snapshot root.
+        for (layer in layers) {
             if (visited.add(layer.identity.wireId)) {
-                layer.children.filterIsInstance<CapturedChild.Layer>().forEach {
-                    layersById[it.identity.wireId]?.let(::visit)
+                validateAcyclicComponent(layer, layersById, visited)
+            }
+        }
+    }
+
+    // Collections are locally owned; stack access and iterator advancement are guarded below.
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    private fun validateAcyclicComponent(
+        root: CapturedLayer,
+        layersById: Map<Long, CapturedLayer>,
+        visited: MutableSet<Long>
+    ) {
+        val visiting = mutableSetOf(root.identity.wireId)
+        // An explicit DFS stack keeps deep snapshots off the call stack.
+        val stack = ArrayDeque<LayerVisit>()
+        stack.addLast(LayerVisit(root))
+        while (stack.isNotEmpty()) {
+            val current = stack.last()
+            if (!current.children.hasNext()) {
+                visiting.remove(current.layer.identity.wireId)
+                stack.removeLast()
+                continue
+            }
+            val child = current.children.next() as? CapturedChild.Layer
+            val childLayer = child?.let { layersById[it.identity.wireId] }
+            if (childLayer != null) {
+                val childId = childLayer.identity.wireId
+                if (childId in visiting) {
+                    failures += validationFailure(CaptureValidationErrorCode.CYCLE, childLayer.identity)
+                } else if (visited.add(childId)) {
+                    visiting.add(childId)
+                    stack.addLast(LayerVisit(childLayer))
                 }
             }
-            visiting.remove(layer.identity.wireId)
         }
-        // Every layer is checked as a potential DFS root, not just the tree root, so a cycle among
-        // layers unreachable from root (e.g. two layers that only reference each other) is still
-        // caught - such a component would otherwise have every node reporting a valid one-parent
-        // count without ever being visited by a root-only traversal.
-        layers.filterNot { it.identity.wireId in visited }.forEach(::visit)
     }
 
     private fun PixelResource.isResolved(): Boolean =
@@ -428,6 +446,11 @@ internal class CapturedSnapshotValidation(
         const val COLOR_MATRIX_SIZE = 20
         const val MIN_GRADIENT_STOPS = 2
         val HEX_COLOR = Regex("^#[A-Fa-f0-9]{6}([A-Fa-f0-9]{2})?$")
+    }
+
+    private class LayerVisit(val layer: CapturedLayer) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // Iterates an immutable captured child list.
+        val children: Iterator<CapturedChild> = layer.children.iterator()
     }
 
     private data class IdentityDefinitionKey(
