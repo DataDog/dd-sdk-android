@@ -307,14 +307,20 @@ class FlagsEvaluationTest {
         val restartedSdkCore = createStubSdkCore(forge)
         restartedSdkCore.stubDataStore(Feature.FLAGS_FEATURE_NAME, dataStore)
         restartedSdkCore.stubNetworkResponses { null }
-
-        // When
         val client = enableFlagsAndBuildClient(sdkCore = restartedSdkCore)
 
-        // Then
+        // When
         val details = client.resolve(fakeFlagKey, !fakeValue)
+
+        // Then
         assertThat(details.value).isEqualTo(fakeValue)
         assertThat(details.reason).isEqualTo(ResolutionReason.CACHED)
+        assertThat(details.variant).isEqualTo(fakeVariationKey)
+        val exposure = JSONObject(restartedSdkCore.eventsWritten(Feature.FLAGS_FEATURE_NAME).single().eventData)
+        assertThat(exposure.getJSONObject("flag").getString("key")).isEqualTo(fakeFlagKey)
+        assertThat(exposure.getJSONObject("subject").getString("id")).isEqualTo(fakeTargetingKey)
+        assertThat(exposure.getJSONObject("variant").getString("key")).isEqualTo(fakeVariationKey)
+        assertThat(exposure.getJSONObject("allocation").getString("key")).isEqualTo(fakeAllocationKey)
     }
 
     // endregion
