@@ -177,6 +177,33 @@ internal class GranularComposeDecomposer(
         private var aborted = false
         private val pendingCaptures = mutableListOf<PendingCapture>()
 
+        // These immutable values can be shared within this capture without retaining any UI nodes or text.
+        private val resolvedColors = mutableMapOf<Long, String>()
+        private var lastTextStyle: CapturedTextStyle? = null
+        private var lastTextColor: ULong = 0uL
+        private var lastTextSize = 0L
+
+        private fun resolveColor(rawColor: Long): String? {
+            resolvedColors[rawColor]?.let { return it }
+            return convertColor(rawColor)?.also { color ->
+                if (resolvedColors.size < MAX_CACHED_COLORS) resolvedColors[rawColor] = color
+            }
+        }
+
+        private fun textStyleOf(info: TextLayoutInfo): CapturedTextStyle {
+            val previous = lastTextStyle
+            if (previous != null && lastTextColor == info.color && lastTextSize == info.fontSize) return previous
+            return CapturedTextStyle(
+                family = DEFAULT_FONT_FAMILY,
+                size = info.fontSize,
+                color = resolveColor(info.color.toLong()) ?: DEFAULT_TEXT_COLOR
+            ).also {
+                lastTextStyle = it
+                lastTextColor = info.color
+                lastTextSize = info.fontSize
+            }
+        }
+
         @Suppress("ReturnCount")
         fun run(): CompositionHostDecomposeResult? {
             val root = semanticsUtils.findRootSemanticsNode(hostView) ?: return null
@@ -398,11 +425,7 @@ internal class GranularComposeDecomposer(
                 identity = identity,
                 bounds = bounds,
                 text = textLayoutInfo.text,
-                textStyle = CapturedTextStyle(
-                    family = DEFAULT_FONT_FAMILY,
-                    size = textLayoutInfo.fontSize,
-                    color = convertColor(textLayoutInfo.color.toLong()) ?: DEFAULT_TEXT_COLOR
-                )
+                textStyle = textStyleOf(textLayoutInfo)
             )
         }
 
@@ -424,7 +447,7 @@ internal class GranularComposeDecomposer(
                 identity = request.identityFactory.shapeWireframe(nodeIdentity),
                 bounds = bounds,
                 style = CapturedShapeStyle(
-                    backgroundColor = convertColor(colorLong),
+                    backgroundColor = resolveColor(colorLong),
                     cornerRadius = cornerRadius?.toDouble()
                 )
             )
@@ -585,6 +608,7 @@ internal class GranularComposeDecomposer(
         const val COMPOSE_COLOR_SHIFT = 32
         const val NODES_PER_CHECKPOINT = 200
         const val MIN_CULLING_SIBLINGS = 32
+        const val MAX_CACHED_COLORS = 64
 
         /** Defensive cap on pixel captures per Compose host per cycle - see [NodeInspection.isPixelCaptureCandidate]. */
         const val MAX_PIXEL_CAPTURES_PER_HOST = 100
@@ -848,11 +872,13 @@ internal class DefaultComposeHostCaptureRasterizer(
         }
         val hostBitmap = rasterize(hostView) ?: return regions.map { null }
         return try {
+            // One crop canvas and two temporary rectangles per batch, never shared with nested captures.
+            val canvas = Canvas()
+            val source = Rect()
+            val destination = Rect()
             regions.map {
                 if (shouldContinue()) {
-                    val crop = cropSafely(hostBitmap, it)
-                    // Returned captures must never alias a buffer that will be cleared or reused.
-                    if (crop === hostBitmap) crop.copy(Bitmap.Config.ARGB_8888, false) else crop
+                    cropSafely(hostBitmap, it, canvas, source, destination)
                 } else {
                     null
                 }
@@ -891,18 +917,23 @@ internal class DefaultComposeHostCaptureRasterizer(
         }
     }
 
-    private fun cropSafely(bitmap: Bitmap, boundsPx: Rect): Bitmap? {
-        val clamped = Rect(
+    @Suppress("UnsafeThirdPartyFunctionCall") // Owned rectangle set from dimensions clamped to the source bitmap.
+    private fun cropSafely(
+        bitmap: Bitmap,
+        boundsPx: Rect,
+        canvas: Canvas,
+        source: Rect,
+        destination: Rect
+    ): Bitmap? {
+        source.set(
             boundsPx.left.coerceIn(0, bitmap.width),
             boundsPx.top.coerceIn(0, bitmap.height),
             boundsPx.right.coerceIn(0, bitmap.width),
             boundsPx.bottom.coerceIn(0, bitmap.height)
         )
-        if (clamped.width() <= 0 || clamped.height() <= 0) return null
+        if (source.width() <= 0 || source.height() <= 0) return null
         return try {
-            // out-of-bounds region throws IllegalArgumentException, caught below
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            Bitmap.createBitmap(bitmap, clamped.left, clamped.top, clamped.width(), clamped.height())
+            copyCrop(bitmap, canvas, source, destination)
         } catch (e: IllegalArgumentException) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -913,6 +944,28 @@ internal class DefaultComposeHostCaptureRasterizer(
             null
         }
     }
+
+    // Source is our own sRGB ARGB_8888 software bitmap; each crop owns independent pixels.
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    private fun copyCrop(bitmap: Bitmap, canvas: Canvas, source: Rect, destination: Rect): Bitmap {
+        val crop = Bitmap.createBitmap(source.width(), source.height(), Bitmap.Config.ARGB_8888)
+        var copied = false
+        try {
+            crop.density = bitmap.density
+            crop.setHasAlpha(bitmap.hasAlpha())
+            crop.isPremultiplied = bitmap.isPremultiplied
+            destination.set(0, 0, crop.width, crop.height)
+            canvas.setBitmap(crop)
+            canvas.drawBitmap(bitmap, source, destination, null)
+            copied = true
+            return crop
+        } finally {
+            // Detach before releasing either bitmap, including when a copy fails.
+            canvas.setBitmap(null)
+            if (!copied) crop.recycle()
+        }
+    }
+
     private companion object {
         const val ARGB_BYTES_PER_PIXEL = 4
         const val MAX_REUSABLE_BITMAP_BYTES = 16_777_216L // 16 MiB per rasterizer, weakly held.
