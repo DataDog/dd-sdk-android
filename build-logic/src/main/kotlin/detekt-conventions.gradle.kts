@@ -24,6 +24,7 @@ val detektConfigFiles = listOf(
 val verificationBuildType = providers.gradleProperty("verificationBuildType").getOrElse("debug")
 
 detekt {
+    parallel = true
     config.setFrom(detektConfigFiles)
     ignoredVariants = listOf("debug", "release").filterNot { it == verificationBuildType }
 }
