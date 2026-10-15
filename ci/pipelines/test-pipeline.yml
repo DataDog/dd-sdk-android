@@ -26,7 +26,7 @@ stages:
 
   setup-gradle:
     - export GRADLE_USER_HOME="cache/"
-    - echo "org.gradle.jvmargs=-Xmx${GRADLE_JVM_XMX:-4096m} -javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG" >> gradle.properties
+    - echo "org.gradle.jvmargs=-Xmx${GRADLE_JVM_XMX:-4096m} -javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG ${GRADLE_JVM_EXTRA_ARGS:-}" >> gradle.properties
     # Set max workers to keep memory under control
     - echo "org.gradle.workers.max=${GRADLE_MAX_WORKERS:-8}" >> gradle.properties
     # Disable cache clean up if we won't upload the cache anywhere
@@ -131,6 +131,8 @@ verify:all:
   extends:
     - .verify-all
     - .cpu-memory-intensive-job
+  rules:
+    - when: never
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   cache:
@@ -143,6 +145,37 @@ verify:all:
   before_script:
     - !reference [.snippets, source-secrets]
     - !reference [.snippets, setup-gradle]
+
+profile:rum-lint:
+  extends: .cpu-memory-intensive-job
+  stage: verify
+  timeout: 1h
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  variables:
+    GRADLE_JVM_XMX: "8g"
+    GRADLE_MAX_WORKERS: "16"
+    GRADLE_JVM_EXTRA_ARGS: "-XX:StartFlightRecording=filename=profiles/rum-lint.jfr,settings=profile,dumponexit=true"
+  before_script:
+    - !reference [.snippets, source-secrets]
+    - !reference [.snippets, setup-gradle]
+  script:
+    - mkdir -p profiles
+    - >-
+        ./gradlew
+        :features:dd-sdk-android-rum:lintAnalyzeDebug
+        --rerun-tasks
+        --no-build-cache
+        --no-configuration-cache
+        --no-daemon
+        --console=plain
+        --scan
+        -Dscan.uploadInBackground=false
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - profiles/rum-lint.jfr
 
 verify:all_mac:
   extends: .verify-all
