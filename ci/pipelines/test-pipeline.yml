@@ -56,6 +56,7 @@ stages:
     GRADLE_JVM_XMX: "8g"
     GRADLE_MAX_WORKERS: "16"
     DD_CIVISIBILITY_CODE_COVERAGE_ENABLED: "false"
+    DD_CIVISIBILITY_CODE_COVERAGE_REPORT_UPLOAD_ENABLED: "false"
     TRANSFER_METER_FREQUENCY: "1s"
     CACHE_FALLBACK_KEY: ""
   id_tokens:
@@ -76,7 +77,6 @@ stages:
         --continue
         --no-daemon
         --scan
-        --init-script ci/scripts/jfr-profiling.gradle
         -Dscan.uploadInBackground=false
         -PverificationBuildType=debug
         -Puse-api21-java-backport
@@ -114,13 +114,6 @@ stages:
         :features:dd-sdk-android-ndk:assembleDebugAndroidTest
         || gradle_exit_code=$?
     - dd-sts exchange --policy dd-sdk-android -- datadog-ci coverage upload . || true
-    # Kotlin daemons can outlive the Gradle invocation, so dump their active recordings explicitly.
-    - |
-        for kotlin_daemon_pid in $(env -u JAVA_TOOL_OPTIONS jps -l | awk '/KotlinCompileDaemon/ { print $1 }'); do
-          if ! env -u JAVA_TOOL_OPTIONS jcmd "$kotlin_daemon_pid" JFR.dump name=ci filename="$CI_PROJECT_DIR/profiles/kotlin-$kotlin_daemon_pid.jfr"; then
-            echo "Failed to dump JFR for Kotlin daemon $kotlin_daemon_pid"
-          fi
-        done
     - exit "$gradle_exit_code"
   artifacts:
     when: always
@@ -132,7 +125,6 @@ stages:
       - "instrumented/integration/build/outputs/apk/androidTest/debug/*.apk"
       - "features/dd-sdk-android-ndk/build/outputs/apk/androidTest/debug/*.apk"
       - "build/reports/test-pyramid/coverage.txt"
-      - "profiles/*.jfr"
     reports:
       junit:
         - "tools/**/build/test-results/test/*.xml"
@@ -155,10 +147,7 @@ verify:all:
     policy: pull
   before_script:
     - !reference [.snippets, source-secrets]
-    - mkdir -p "$CI_PROJECT_DIR/profiles"
-    - export JFR_PROFILE_DIR="$CI_PROJECT_DIR/profiles"
-    - export GRADLE_JVM_EXTRA_ARGS="-XX:ReservedCodeCacheSize=512m -XX:StartFlightRecording=name=ci,filename=$CI_PROJECT_DIR/profiles/gradle.jfr,settings=profile,dumponexit=true,maxsize=1g"
-    - export KOTLIN_DAEMON_JVM_EXTRA_ARGS="-XX:StartFlightRecording=name=ci,filename=$CI_PROJECT_DIR/profiles/,settings=profile,dumponexit=true,maxsize=1g"
+    - export GRADLE_JVM_EXTRA_ARGS="-XX:ReservedCodeCacheSize=768m"
     - !reference [.snippets, setup-gradle]
 
 profile:rum-lint:
