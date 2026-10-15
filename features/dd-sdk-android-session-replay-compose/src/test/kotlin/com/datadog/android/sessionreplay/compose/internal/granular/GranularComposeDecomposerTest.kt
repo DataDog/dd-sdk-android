@@ -35,6 +35,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedWireframeK
 import com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
@@ -42,6 +43,7 @@ import com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptur
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
 import com.datadog.android.sessionreplay.recorder.composition.CompositionNativeSubtree
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -832,6 +834,67 @@ internal class GranularComposeDecomposerTest {
         assertThat(result).isNull()
         assertThat(testedGate.isAvailable()).isTrue()
         verify(mockSemanticsUtils, never()).resolveInnerBounds(eq(root.children[2]), any())
+    }
+
+    @Test
+    fun `M preserve text size and color W decompose() { adjacent text shares and changes styles }`() {
+        // Given
+        val fakeText = TextLayoutInfo("First", Color.Blue.value, 12L, null)
+        val fakeTexts = listOf(
+            fakeText,
+            fakeText.copy(text = "Second"),
+            fakeText.copy(text = "Third", color = Color.Red.value),
+            fakeText.copy(text = "Fourth", fontSize = 18L),
+            fakeText.copy(text = "Fifth")
+        )
+        val stubNodes = fakeTexts.map { info ->
+            mockLeafNode().also { node ->
+                whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any(), any())).thenReturn(info)
+            }
+        }
+        val stubRoot = mockRoot(stubNodes)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        val texts = result?.wireframes?.filterIsInstance<CapturedWireframe.Text>()
+        assertThat(texts?.map { it.text }).isEqualTo(fakeTexts.map { it.text })
+        assertThat(texts?.map { it.textStyle.size }).containsExactly(12L, 12L, 12L, 18L, 12L)
+        val blue = DefaultColorStringFormatter.formatColorAsHexString(Color.Blue.toArgb())
+        val red = DefaultColorStringFormatter.formatColorAsHexString(Color.Red.toArgb())
+        assertThat(texts?.map { it.textStyle.color }).containsExactly(blue, blue, red, blue, blue)
+    }
+
+    @Test
+    fun `M resolve colors afresh W decompose() { capture changes with repeated styles }`() {
+        // Given
+        val fakeText = TextLayoutInfo("Current", Color.Blue.value, 12L, null)
+        val stubNodes = List(2) { mockLeafNode() }
+        stubNodes.forEach { node ->
+            whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any(), any())).thenReturn(fakeText)
+        }
+        val stubRoot = mockRoot(stubNodes)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
+        val mockFormatter: ColorStringFormatter = mock()
+        whenever(mockFormatter.formatColorAndAlphaAsHexString(any(), any())).thenReturn("first", "second")
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            colorStringFormatter = mockFormatter,
+            compatibilityGate = testedGate
+        )
+
+        // When
+        val first = testedDecomposer.decompose(mockView, realRequest())
+        val second = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        assertThat(first?.wireframes?.filterIsInstance<CapturedWireframe.Text>()?.map { it.textStyle.color })
+            .containsExactly("first", "first")
+        assertThat(second?.wireframes?.filterIsInstance<CapturedWireframe.Text>()?.map { it.textStyle.color })
+            .containsExactly("second", "second")
     }
 
     // region clip modifier
