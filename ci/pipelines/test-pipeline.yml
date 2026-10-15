@@ -112,6 +112,14 @@ stages:
         :features:dd-sdk-android-ndk:assembleDebugAndroidTest
         || gradle_exit_code=$?
     - dd-sts exchange --policy dd-sdk-android -- datadog-ci coverage upload . || true
+    # Kotlin daemons can outlive the Gradle invocation, so dump their active recordings explicitly.
+    - >-
+        for kotlin_daemon_pid in $(env -u JAVA_TOOL_OPTIONS jps -l | awk '/KotlinCompileDaemon/ { print $1 }'); do
+          env -u JAVA_TOOL_OPTIONS jcmd "$kotlin_daemon_pid" JFR.dump
+          name=ci
+          filename="$CI_PROJECT_DIR/profiles/kotlin-$kotlin_daemon_pid.jfr"
+          || true;
+        done
     - exit "$gradle_exit_code"
   artifacts:
     when: always
@@ -123,7 +131,7 @@ stages:
       - "instrumented/integration/build/outputs/apk/androidTest/debug/*.apk"
       - "features/dd-sdk-android-ndk/build/outputs/apk/androidTest/debug/*.apk"
       - "build/reports/test-pyramid/coverage.txt"
-      - "profiles/verify-all.jfr"
+      - "profiles/*.jfr"
     reports:
       junit:
         - "tools/**/build/test-results/test/*.xml"
@@ -147,7 +155,7 @@ verify:all:
   before_script:
     - !reference [.snippets, source-secrets]
     - mkdir -p "$CI_PROJECT_DIR/profiles"
-    - export GRADLE_JVM_EXTRA_ARGS="-XX:StartFlightRecording=filename=$CI_PROJECT_DIR/profiles/verify-all.jfr,settings=profile,dumponexit=true"
+    - export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -XX:StartFlightRecording=name=ci,filename=$CI_PROJECT_DIR/profiles/,settings=profile,dumponexit=true,maxsize=1g"
     - !reference [.snippets, setup-gradle]
 
 profile:rum-lint:
