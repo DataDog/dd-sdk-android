@@ -104,6 +104,14 @@ internal class DefaultFlagsRepository(
         }
     }
 
+    override fun clearFlagsIfContextChanged(context: EvaluationContext) {
+        do {
+            val currentState = atomicState.get() ?: return
+            if (currentState.context == context) return
+            val clearedState = FlagsState(context, emptyMap())
+        } while (!atomicState.compareAndSet(currentState, clearedState))
+    }
+
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
         waitForPersistenceLoad()
         val state = atomicState.get()

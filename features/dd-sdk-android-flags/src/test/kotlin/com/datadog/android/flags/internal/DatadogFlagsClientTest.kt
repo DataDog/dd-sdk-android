@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -177,6 +178,41 @@ internal class DatadogFlagsClientTest {
     }
 
     // region resolveBooleanValue()
+
+    @ParameterizedTest
+    @CsvSource("false, false", "false, true", "true, false", "true, true")
+    fun `M isolate listener failures W onFirstFlags()`(completeBeforeRegistration: Boolean, throwsError: Boolean) {
+        // Given
+        val latch = FirstFlagsLatch()
+        whenever(mockFlagsRepository.firstFlags) doReturn latch
+        val fakeKeys = listOf(fakeDefaultValue)
+        val failure = if (throwsError) AssertionError(fakeJsonKey) else IllegalStateException(fakeJsonKey)
+        val deliveries = ArrayDeque<Runnable>()
+        val events = mutableListOf<FlagsClientEvent>()
+        if (completeBeforeRegistration) latch.complete(fakeKeys)
+
+        // When
+        testedClient.onFirstFlags { throw failure }
+        testedClient.onFirstFlags { events.add(it) }
+        if (!completeBeforeRegistration) {
+            latch.complete(fakeKeys) { deliveries.add(it) }
+            deliveries.removeFirst().run()
+        }
+
+        // Then
+        assertThat(events.map { it.flagsChanged }).containsExactly(fakeKeys)
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(failure),
+                any(),
+                anyOrNull()
+            )
+            assertThat(firstValue()).isEqualTo("First flags callback failed")
+        }
+    }
 
     @Test
     fun `M expose cached reason in details W resolving a restored assignment`(forge: Forge) {

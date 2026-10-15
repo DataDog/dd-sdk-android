@@ -22,6 +22,10 @@ internal interface FlagsRepository {
         flags: Map<String, PrecomputedFlag>,
         onInstalled: () -> Unit = {}
     )
+
+    /** Clears installed assignments from another context without persisting or publishing a configuration. */
+    fun clearFlagsIfContextChanged(context: EvaluationContext)
+
     fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>?
     val firstFlags: FirstFlagsLatch
     fun hasFlags(): Boolean
