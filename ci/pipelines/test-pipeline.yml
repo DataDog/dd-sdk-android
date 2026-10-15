@@ -55,6 +55,7 @@ stages:
   variables:
     GRADLE_JVM_XMX: "8g"
     GRADLE_MAX_WORKERS: "16"
+    DD_CIVISIBILITY_CODE_COVERAGE_ENABLED: "false"
     TRANSFER_METER_FREQUENCY: "1s"
     CACHE_FALLBACK_KEY: ""
   id_tokens:
