@@ -155,12 +155,12 @@ profile:rum-lint:
   variables:
     GRADLE_JVM_XMX: "8g"
     GRADLE_MAX_WORKERS: "16"
-    GRADLE_JVM_EXTRA_ARGS: "-XX:StartFlightRecording=filename=profiles/rum-lint.jfr,settings=profile,dumponexit=true"
   before_script:
     - !reference [.snippets, source-secrets]
+    - mkdir -p "$CI_PROJECT_DIR/profiles"
+    - export GRADLE_JVM_EXTRA_ARGS="-XX:StartFlightRecording=filename=$CI_PROJECT_DIR/profiles/rum-lint.jfr,settings=profile,dumponexit=true"
     - !reference [.snippets, setup-gradle]
   script:
-    - mkdir -p profiles
     - >-
         ./gradlew
         :features:dd-sdk-android-rum:lintAnalyzeDebug
