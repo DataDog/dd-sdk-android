@@ -10,6 +10,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Rect
 import android.view.View
+import androidx.compose.ui.draw.DrawModifier
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -18,7 +19,7 @@ import androidx.compose.ui.graphics.RenderEffect
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asAndroidColorFilter
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.node.DrawModifierNode
+import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.unit.Density
@@ -62,9 +63,8 @@ import android.graphics.ColorMatrixColorFilter as AndroidColorMatrixColorFilter
  *
  * Preserves text content and resolvable background/shape styling, extracts `graphicsLayer` alpha as
  * [CapturedModifier.Opacity], and hands embedded interop `View`s back to native traversal. A node
- * with a real drawing effect of its own that can't be flattened to a plain shape (a custom
- * `drawBehind`/`drawWithContent`/`Canvas`, an `Image`/`Icon`, a shadow) - or a childless leaf with
- * nothing else resolved for it - is pixel-captured instead (see [isPixelCaptureCandidate] and
+ * with a recognized custom drawing modifier and no resolved text/background, or a childless leaf
+ * with nothing else resolved for it, is pixel-captured (see [NodeInspection.isPixelCaptureCandidate] and
  * [resolvePendingCaptures]): redrawn via [View.draw] into a bitmap-backed software canvas, exactly
  * like the native View pixel-fallback path, rather than reconstructed property-by-property via
  * reflection into Compose's internal drawing/painter state. Whatever a pixel capture bakes in -
@@ -136,6 +136,31 @@ internal class GranularComposeDecomposer(
         val hostBoundsPx: Rect
     )
 
+    /** Copies only the graphics properties the capture understands, without an intermediate map. */
+    private class GraphicsLayerProperties(modifier: InspectableValue) {
+        var clip = false
+        var shape: Shape? = null
+        var colorFilter: ColorFilter? = null
+        var shadowElevation: Float? = null
+        var spotShadowColor: Color? = null
+        var renderEffect: RenderEffect? = null
+        var alpha: Float? = null
+
+        init {
+            for (property in modifier.inspectableElements) {
+                when (property.name) {
+                    CLIP_PROPERTY_NAME -> clip = property.value as? Boolean == true
+                    SHAPE_PROPERTY_NAME -> shape = property.value as? Shape
+                    COLOR_FILTER_PROPERTY_NAME -> colorFilter = property.value as? ColorFilter
+                    SHADOW_ELEVATION_PROPERTY_NAME -> shadowElevation = property.value as? Float
+                    SPOT_SHADOW_COLOR_PROPERTY_NAME -> spotShadowColor = property.value as? Color
+                    RENDER_EFFECT_PROPERTY_NAME -> renderEffect = property.value as? RenderEffect
+                    ALPHA_PROPERTY_NAME -> alpha = property.value as? Float
+                }
+            }
+        }
+    }
+
     /** One [decompose] call's state - a fresh instance per call, so this class itself stays stateless. */
     @Suppress("TooManyFunctions") // Keep the decomposition phases and deadline checkpoint in one capture session.
     private inner class DecomposeSession(
@@ -164,7 +189,7 @@ internal class GranularComposeDecomposer(
             // rule. Skipping it here degrades this generation the same way an aborted node walk
             // already does: no partial tree, the caller's own post-call re-check discards the window.
             if (pendingCaptures.isNotEmpty() && !request.shouldContinue()) return null
-            resolvePendingCaptures()
+            if (!resolvePendingCaptures()) return null
             return CompositionHostDecomposeResult(rootChildren, nodes, wireframes)
         }
 
@@ -197,7 +222,10 @@ internal class GranularComposeDecomposer(
                 }
             }
 
-            val textLayoutInfo = semanticsUtils.resolveTextLayoutInfo(node, internalLogger)
+            // ModifierInfo and children getters rebuild Compose-owned lists; read each once in this UI turn.
+            val inspection = NodeInspection(node, resolvedChildren)
+            val modifiers = inspection.modifiers
+            val textLayoutInfo = semanticsUtils.resolveTextLayoutInfo(node, internalLogger, modifiers)
             if (textLayoutInfo != null) {
                 val textId = request.identityFactory.textWireframe(nodeIdentity)
                 wireframes += toTextWireframe(textId, bounds, textLayoutInfo)
@@ -205,22 +233,23 @@ internal class GranularComposeDecomposer(
                     nodeIdentity,
                     bounds,
                     listOf(CapturedChild.Wireframe(textId)),
-                    modifiers = resolveModifiers(node, bounds)
+                    modifiers = resolveModifiers(node, bounds, modifiers)
                 )
             }
 
-            val shapeWireframe = resolveShapeWireframe(node, nodeIdentity, bounds)
-            tryQueuePixelCapture(node, nodeIdentity, bounds, shapeWireframe)?.let { return it }
+            val shapeWireframe = resolveShapeWireframe(node, nodeIdentity, bounds, modifiers)
+            tryQueuePixelCapture(node, nodeIdentity, bounds, shapeWireframe, inspection)
+                ?.let { return it }
 
             val children = mutableListOf<CapturedChild>()
             shapeWireframe?.let { shape ->
                 wireframes += shape
                 children += CapturedChild.Wireframe(shape.identity)
             }
-            walkChildren(resolvedChildren ?: node.children, children)
+            walkChildren(inspection.children, children)
             if (aborted) return null
 
-            return registerLayer(nodeIdentity, bounds, children, modifiers = resolveModifiers(node, bounds))
+            return registerLayer(nodeIdentity, bounds, children, modifiers = resolveModifiers(node, bounds, modifiers))
         }
 
         /** Poll the caller's deadline between bounded node operations; never return a partial tree. */
@@ -249,8 +278,8 @@ internal class GranularComposeDecomposer(
         /**
          * Queues [node] for the single per-host batched capture in [resolvePendingCaptures] when it
          * has no [shapeWireframe] of its own and is a capture candidate (see
-         * [isPixelCaptureCandidate]) - a node with a real drawing effect of its own (a
-         * `DrawModifierNode` - `drawBehind`/`drawWithContent`/`Canvas`/shadow) can't be split into
+         * [NodeInspection.isPixelCaptureCandidate]) - a node with a recognized drawing element
+         * (`drawBehind`/`drawWithContent`/`drawWithCache` or a legacy [DrawModifier]) can't be split into
          * its children without losing that effect, so it's captured atomically instead, background
          * and all descendants (including any text) baked into the same image; that's also why a
          * queued node never recurses into its own children (see the call site in [walkNode]).
@@ -264,11 +293,12 @@ internal class GranularComposeDecomposer(
             node: SemanticsNode,
             nodeIdentity: CapturedIdentity,
             bounds: CapturedBounds,
-            shapeWireframe: CapturedWireframe.Shape?
+            shapeWireframe: CapturedWireframe.Shape?,
+            inspection: NodeInspection
         ): CapturedChild? {
             if (shapeWireframe != null ||
                 pendingCaptures.size >= MAX_PIXEL_CAPTURES_PER_HOST ||
-                !isPixelCaptureCandidate(node)
+                !inspection.isPixelCaptureCandidate(reflectionUtils)
             ) {
                 return null
             }
@@ -285,23 +315,22 @@ internal class GranularComposeDecomposer(
          * crops" contract - see [ComposeHostCaptureRasterizer]'s own doc for why that's a
          * correctness requirement here, not just a performance optimization.
          */
-        private fun resolvePendingCaptures() {
-            if (pendingCaptures.isEmpty()) return
+        @Suppress("ReturnCount") // Empty batches and expired draws leave no partial capture.
+        private fun resolvePendingCaptures(): Boolean {
+            if (pendingCaptures.isEmpty()) return true
             val eligible = pendingCaptures.filter { request.pixelCapturePlaceholderLabelFor(it.bounds) == null }
-            val crops = if (eligible.isEmpty()) {
-                emptyMap()
+            val bitmaps = if (eligible.isEmpty()) {
+                emptyList()
             } else {
-                val bitmaps = hostRasterizer.captureRegions(hostView, eligible.map { it.hostBoundsPx })
-
-                // zip pairs elements positionally and never throws; hostRasterizer.captureRegions
-                // returns exactly one bitmap per requested region, in the same order, so the two
-                // lists are always the same size.
-                @Suppress("UnsafeThirdPartyFunctionCall")
-                val paired = eligible.map { it.nodeIdentity }.zip(bitmaps)
-                paired.toMap()
+                hostRasterizer.captureRegions(hostView, eligible.map { it.hostBoundsPx }, request.shouldContinue)
             }
+            if (eligible.isNotEmpty() && !request.shouldContinue()) return false
+            var eligibleIndex = 0
             pendingCaptures.forEach { pending ->
-                val wireframe = resolveOneCapture(pending, crops[pending.nodeIdentity])
+                // Eligible captures retain their original order and object identity.
+                val isEligible = eligible.getOrNull(eligibleIndex) === pending
+                val crop = if (isEligible) bitmaps.getOrNull(eligibleIndex++) else null
+                val wireframe = resolveOneCapture(pending, crop)
                 wireframes += wireframe
                 nodes += CapturedLayer(
                     identity = pending.nodeIdentity,
@@ -310,6 +339,7 @@ internal class GranularComposeDecomposer(
                     children = listOf(CapturedChild.Wireframe(wireframe.identity))
                 )
             }
+            return true
         }
 
         private fun resolveOneCapture(pending: PendingCapture, cropped: Bitmap?): CapturedWireframe {
@@ -378,10 +408,11 @@ internal class GranularComposeDecomposer(
         private fun resolveShapeWireframe(
             node: SemanticsNode,
             nodeIdentity: CapturedIdentity,
-            bounds: CapturedBounds
+            bounds: CapturedBounds,
+            modifiers: List<ModifierInfo>
         ): CapturedWireframe.Shape? {
-            val colorLong = semanticsUtils.resolveBackgroundColor(node) ?: return null
-            val cornerRadius = semanticsUtils.resolveBackgroundShape(node)?.let { shape ->
+            val colorLong = semanticsUtils.resolveBackgroundColor(modifiers) ?: return null
+            val cornerRadius = semanticsUtils.resolveBackgroundShape(modifiers)?.let { shape ->
                 semanticsUtils.resolveCornerRadius(
                     shape,
                     GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height),
@@ -411,9 +442,13 @@ internal class GranularComposeDecomposer(
          * clip/shadow before opacity to match the iOS composition pipeline's own documented
          * modifier ordering (clip, filters, shadow, opacity, mask).
          */
-        private fun resolveModifiers(node: SemanticsNode, bounds: CapturedBounds): List<CapturedModifier> {
+        private fun resolveModifiers(
+            node: SemanticsNode,
+            bounds: CapturedBounds,
+            modifierInfo: List<ModifierInfo>
+        ): List<CapturedModifier> {
             val modifiers = mutableListOf<CapturedModifier>()
-            for (info in node.layoutInfo.getModifierInfo()) {
+            for (info in modifierInfo) {
                 val modifier = info.modifier
                 if (modifier is InspectableValue && modifier.nameFallback == GRAPHICS_LAYER_NAME_FALLBACK) {
                     modifiers += resolveGraphicsLayerModifiers(modifier, node, bounds)
@@ -422,33 +457,31 @@ internal class GranularComposeDecomposer(
             return modifiers
         }
 
-        // associate only throws for a null key, and ValueElement.name is a non-null Kotlin String.
-        @Suppress("UnsafeThirdPartyFunctionCall")
         private fun resolveGraphicsLayerModifiers(
             modifier: InspectableValue,
             node: SemanticsNode,
             bounds: CapturedBounds
         ): List<CapturedModifier> {
-            val properties = modifier.inspectableElements.associate { it.name to it.value }
+            val properties = GraphicsLayerProperties(modifier)
+            val density = node.layoutInfo.density
             val modifiers = mutableListOf<CapturedModifier>()
-            if (properties[CLIP_PROPERTY_NAME] as? Boolean == true) {
-                val shape = properties[SHAPE_PROPERTY_NAME] as? Shape
-                resolveClipModifier(shape, bounds, node.layoutInfo.density)?.let { modifiers += it }
+            if (properties.clip) {
+                resolveClipModifier(properties.shape, bounds, density)?.let { modifiers += it }
             }
             resolveColorMatrixModifier(
-                platformColorMatrixValues(properties[COLOR_FILTER_PROPERTY_NAME] as? ColorFilter)
+                platformColorMatrixValues(properties.colorFilter)
             )
                 ?.let { modifiers += it }
             resolveShadowModifier(
-                properties[SHADOW_ELEVATION_PROPERTY_NAME] as? Float,
-                properties[SPOT_SHADOW_COLOR_PROPERTY_NAME] as? Color,
-                node.layoutInfo.density
+                properties.shadowElevation,
+                properties.spotShadowColor,
+                density
             )?.let { modifiers += it }
             resolveBlurModifier(
-                properties[RENDER_EFFECT_PROPERTY_NAME] as? RenderEffect,
-                node.layoutInfo.density
+                properties.renderEffect,
+                density
             )?.let { modifiers += it }
-            val alpha = properties[ALPHA_PROPERTY_NAME] as? Float
+            val alpha = properties.alpha
             if (alpha != null && alpha < 1f) {
                 modifiers += CapturedModifier.Opacity(alpha.toDouble())
             }
@@ -552,7 +585,7 @@ internal class GranularComposeDecomposer(
         const val NODES_PER_CHECKPOINT = 200
         const val MIN_CULLING_SIBLINGS = 32
 
-        /** Defensive cap on pixel captures per Compose host per cycle - see [isPixelCaptureCandidate]. */
+        /** Defensive cap on pixel captures per Compose host per cycle - see [NodeInspection.isPixelCaptureCandidate]. */
         const val MAX_PIXEL_CAPTURES_PER_HOST = 100
 
         /** The Material Design elevation table's shared "key" shadow opacity - see [resolveShadowModifier]. */
@@ -599,23 +632,28 @@ internal class GranularComposeDecomposer(
 }
 
 /**
- * A node with a real drawing effect of its own (a `DrawModifierNode` - `drawBehind`/
- * `drawWithContent`/`Canvas`/shadow) can't be split into its children without losing that effect -
- * captured atomically instead, background and all descendants (including any text) baked into the
- * same image, which is why capture-candidate nodes never recurse into their own children (see the
- * call site in [GranularComposeDecomposer]'s `walkNode`). A childless leaf with no text and no
- * resolvable background (an `Image`/`Icon`, or any other composable this decomposer has no
- * structural mapping for) is also a candidate - `Modifier.paint()` (what `Image`/`Icon` use
- * internally) doesn't attach a `DrawModifierNode` and has no other public, reflection-free signal
- * this decomposer can check for, so a childless node with real bounds and nothing else resolved for
- * it is the fallback signal instead. This can occasionally capture a genuinely empty leaf (e.g. a
- * bare `Spacer`) as a small blank image; the existing hash-based resource dedup means every such
- * capture across a whole snapshot collapses to one cheap, already-cached resource rather than N
- * uploads.
+ * Reuses Compose-owned modifier and child lists within one capture; the next capture reads them afresh.
+ * Once text and background resolution have failed, recognized drawing elements make the node a pixel
+ * candidate so its drawing and descendants are preserved together. A recognized platform overscroll
+ * modifier with every edge effect finished only forwards content, so its children can be traversed.
+ * Otherwise a childless node is the fallback for content without a structural mapping, such as
+ * Image/Icon; empty leaves may also qualify.
  */
-private fun isPixelCaptureCandidate(node: SemanticsNode): Boolean {
-    val hasDrawingEffect = node.layoutInfo.getModifierInfo().any { it.modifier is DrawModifierNode }
-    return hasDrawingEffect || node.children.isEmpty()
+private class NodeInspection(node: SemanticsNode, initialChildren: List<SemanticsNode>?) {
+    val modifiers = node.layoutInfo.getModifierInfo()
+    private val node = node
+    private var resolvedChildren = initialChildren
+
+    val children: List<SemanticsNode>
+        get() = resolvedChildren ?: node.children.also { resolvedChildren = it }
+
+    @Suppress("DEPRECATION") // Older Compose runtimes can still expose legacy DrawModifier elements.
+    fun isPixelCaptureCandidate(reflectionUtils: ReflectionUtils): Boolean =
+        modifiers.any {
+            (it.modifier is DrawModifier && !reflectionUtils.isInactiveOverscrollModifier(it.modifier)) ||
+                reflectionUtils.isDrawModifierElement(it.modifier)
+        } ||
+            children.isEmpty()
 }
 
 /**
@@ -759,16 +797,30 @@ private fun brightnessColorMatrix(brightness: Float): FloatArray {
  */
 internal fun interface ComposeHostCaptureRasterizer {
     fun captureRegions(hostView: View, regions: List<Rect>): List<Bitmap?>
+
+    fun captureRegions(hostView: View, regions: List<Rect>, shouldContinue: () -> Boolean): List<Bitmap?> =
+        captureRegions(hostView, regions)
 }
 
 internal class DefaultComposeHostCaptureRasterizer(
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND
 ) : ComposeHostCaptureRasterizer {
 
-    override fun captureRegions(hostView: View, regions: List<Rect>): List<Bitmap?> {
+    override fun captureRegions(hostView: View, regions: List<Rect>): List<Bitmap?> =
+        captureRegions(hostView, regions) { true }
+
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Owned regions; skip bitmap work after expiry.
+    override fun captureRegions(hostView: View, regions: List<Rect>, shouldContinue: () -> Boolean): List<Bitmap?> {
+        if (!shouldContinue() || regions.none { intersectsHost(it, hostView.width, hostView.height) }) {
+            return regions.map { null }
+        }
         val hostBitmap = rasterize(hostView) ?: return regions.map { null }
-        return regions.map { cropSafely(hostBitmap, it) }
+        return regions.map { if (shouldContinue()) cropSafely(hostBitmap, it) else null }
     }
+
+    private fun intersectsHost(region: Rect, width: Int, height: Int): Boolean =
+        width > 0 && height > 0 && region.left.coerceIn(0, width) < region.right.coerceIn(0, width) &&
+            region.top.coerceIn(0, height) < region.bottom.coerceIn(0, height)
 
     @Suppress("TooGenericExceptionCaught")
     private fun rasterize(view: View): Bitmap? {

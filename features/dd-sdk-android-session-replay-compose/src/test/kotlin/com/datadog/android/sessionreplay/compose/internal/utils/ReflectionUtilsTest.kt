@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.compose.internal.utils
 
+import androidx.compose.ui.draw.DrawModifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -38,6 +39,18 @@ internal class ReflectionUtilsTest {
     }
 
     // region getBrushColors
+
+    @Test
+    fun `M retain raster fallback W isInactiveOverscrollModifier() { unrecognized draw modifier }`() {
+        // Given
+        val stubModifier = mock<DrawModifier>()
+
+        // When
+        val result = testedReflectionUtils.isInactiveOverscrollModifier(stubModifier)
+
+        // Then
+        assertThat(result).isFalse()
+    }
 
     @Test
     fun `M return single-element list W getBrushColors { SolidColor }`() {

@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
 import android.view.View
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -15,6 +16,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.VectorPainter
+import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
@@ -69,6 +71,12 @@ internal class SemanticsUtils(
 
     internal fun resolveBackgroundColor(semanticsNode: SemanticsNode): Long? =
         backgroundResolver.resolveBackgroundColor(semanticsNode)
+
+    internal fun resolveBackgroundColor(modifiers: List<ModifierInfo>): Long? =
+        backgroundResolver.resolveBackgroundColor(modifiers)
+
+    internal fun resolveBackgroundShape(modifiers: List<ModifierInfo>): Shape? =
+        backgroundResolver.resolveBackgroundShape(modifiers)
 
     internal fun resolveBackgroundShape(semanticsNode: SemanticsNode): Shape? =
         backgroundResolver.resolveBackgroundShape(semanticsNode)
@@ -136,11 +144,23 @@ internal class SemanticsUtils(
         }
     }
 
-    internal fun resolveTextLayoutInfo(semanticsNode: SemanticsNode, internalLogger: InternalLogger): TextLayoutInfo? {
+    internal fun resolveTextLayoutInfo(semanticsNode: SemanticsNode, internalLogger: InternalLogger): TextLayoutInfo? =
+        resolveTextLayoutInfo(semanticsNode, internalLogger) { semanticsNode.layoutInfo.getModifierInfo() }
+
+    internal fun resolveTextLayoutInfo(
+        semanticsNode: SemanticsNode,
+        internalLogger: InternalLogger,
+        modifiers: List<ModifierInfo>
+    ): TextLayoutInfo? = resolveTextLayoutInfo(semanticsNode, internalLogger) { modifiers }
+
+    private fun resolveTextLayoutInfo(
+        semanticsNode: SemanticsNode,
+        internalLogger: InternalLogger,
+        modifiers: () -> List<ModifierInfo>
+    ): TextLayoutInfo? {
+        val action = semanticsNode.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action ?: return null
         val textLayoutResults = mutableListOf<TextLayoutResult>()
-        semanticsNode.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(
-            textLayoutResults
-        )
+        action.invoke(textLayoutResults)
         return textLayoutResults.firstOrNull()?.let { textLayoutResult ->
             val layoutInput = textLayoutResult.layoutInput
             val multiParagraphCapturedText = if (textLayoutResult.didOverflowHeight) {
@@ -148,8 +168,10 @@ internal class SemanticsUtils(
             } else {
                 null
             }
-            val modifierColor = resolveModifierColor(semanticsNode)
-            val textOverflow = resolveTextStringSimpleElementOverflow(semanticsNode, internalLogger)
+            val textModifier = modifiers().firstOrNull { reflectionUtils.isTextStringSimpleElement(it.modifier) }
+                ?.modifier
+            val modifierColor = textModifier?.let { reflectionUtils.getColorProducerColor(it) }
+            val textOverflow = resolveTextStringSimpleElementOverflow(textModifier, internalLogger)
             convertTextLayoutInfo(layoutInput, multiParagraphCapturedText, modifierColor, textOverflow)
         }
     }
@@ -257,23 +279,11 @@ internal class SemanticsUtils(
         )
     }
 
-    private fun resolveModifierColor(semanticsNode: SemanticsNode): Color? {
-        val modifier = semanticsNode.layoutInfo.getModifierInfo().firstOrNull {
-            reflectionUtils.isTextStringSimpleElement(it.modifier)
-        }?.modifier
-        return modifier?.let {
-            reflectionUtils.getColorProducerColor(it)
-        }
-    }
-
     private fun resolveTextStringSimpleElementOverflow(
-        semanticsNode: SemanticsNode,
+        modifier: Modifier?,
         internalLogger: InternalLogger
     ): MobileSegment.TruncationMode? {
-        val modifier = semanticsNode.layoutInfo.getModifierInfo()
-            .firstOrNull { reflectionUtils.isTextStringSimpleElement(it.modifier) }
-            ?.modifier ?: return null
-
+        if (modifier == null) return null
         val overflowValue = reflectionUtils.getTextStringSimpleElementOverflow(modifier)
         return overflowValue?.let { overflow ->
             when (overflow) {

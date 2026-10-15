@@ -10,6 +10,8 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.view.View
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.DrawModifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorMatrix
@@ -18,7 +20,6 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.layout.ModifierInfo
-import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.platform.ValueElement
 import androidx.compose.ui.semantics.SemanticsNode
@@ -59,6 +60,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -172,7 +174,7 @@ internal class GranularComposeDecomposerTest {
         assertThat(outsideResult?.nodes).isEmpty()
         assertThat(outsideResult?.wireframes).isEmpty()
         assertThat(testedGate.isAvailable()).isTrue()
-        verify(mockSemanticsUtils, never()).resolveTextLayoutInfo(eq(stubLeaf), any())
+        verify(mockSemanticsUtils, never()).resolveTextLayoutInfo(eq(stubLeaf), any(), any())
 
         // When
         whenever(mockSemanticsUtils.resolveInnerBounds(eq(stubLeaf), any()))
@@ -182,7 +184,7 @@ internal class GranularComposeDecomposerTest {
         // Then
         assertThat(enteringResult?.nodes).hasSize(1)
         assertThat(enteringResult?.nodes?.single()?.bounds?.y).isEqualTo(90L)
-        verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(stubLeaf), any())
+        verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(stubLeaf), any(), any())
     }
 
     @Test
@@ -198,7 +200,7 @@ internal class GranularComposeDecomposerTest {
         // Then
         assertThat(result?.nodes).hasSize(2)
         assertThat(testedGate.isAvailable()).isTrue()
-        verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(stubChild), any())
+        verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(stubChild), any(), any())
     }
 
     @Test
@@ -212,7 +214,7 @@ internal class GranularComposeDecomposerTest {
 
         // Then
         assertThat(result?.nodes).hasSize(32)
-        verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(stubLeaf), any())
+        verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(stubLeaf), any(), any())
     }
 
     @Test
@@ -244,7 +246,7 @@ internal class GranularComposeDecomposerTest {
 
         // Then
         assertThat(result?.nodes).hasSize(32)
-        stubLeaves.forEach { verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(it), any()) }
+        stubLeaves.forEach { verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(it), any(), any()) }
     }
 
     @Test
@@ -260,8 +262,8 @@ internal class GranularComposeDecomposerTest {
 
         // Then
         assertThat(result?.nodes).hasSize(2)
-        stubOffscreenLeaves.forEach { verify(mockSemanticsUtils, never()).resolveTextLayoutInfo(eq(it), any()) }
-        verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(stubVisibleLeaf), any())
+        stubOffscreenLeaves.forEach { verify(mockSemanticsUtils, never()).resolveTextLayoutInfo(eq(it), any(), any()) }
+        verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(stubVisibleLeaf), any(), any())
     }
 
     @Test
@@ -282,7 +284,7 @@ internal class GranularComposeDecomposerTest {
 
         // Then
         assertThat(result?.nodes).hasSize(5)
-        stubLeaves.forEach { verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(it), any()) }
+        stubLeaves.forEach { verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(it), any(), any()) }
     }
 
     @Test
@@ -298,7 +300,7 @@ internal class GranularComposeDecomposerTest {
         // Then
         assertThat(result?.nodes).hasSize(1)
         assertThat(result?.wireframes).hasSize(1)
-        verify(mockSemanticsUtils, never()).resolveTextLayoutInfo(eq(stubLeaf), any())
+        verify(mockSemanticsUtils, never()).resolveTextLayoutInfo(eq(stubLeaf), any(), any())
         verify(mockReflectionUtils, never()).getInteropView(stubLeaf)
     }
 
@@ -325,7 +327,7 @@ internal class GranularComposeDecomposerTest {
 
         // Then
         assertThat(result?.nodes).containsExactly(fakeRoot)
-        verify(mockSemanticsUtils, never()).resolveTextLayoutInfo(eq(stubLeaf), any())
+        verify(mockSemanticsUtils, never()).resolveTextLayoutInfo(eq(stubLeaf), any(), any())
     }
 
     private fun mockNode(bounds: GlobalBounds, children: List<SemanticsNode> = emptyList()): SemanticsNode {
@@ -343,7 +345,7 @@ internal class GranularComposeDecomposerTest {
             )
         )
         whenever(mockSemanticsUtils.resolveInnerBounds(eq(stubNode), any())).thenReturn(bounds)
-        whenever(mockSemanticsUtils.resolveBackgroundColor(stubNode)).thenReturn(null)
+        whenever(mockSemanticsUtils.resolveBackgroundColor(any<List<ModifierInfo>>())).thenReturn(null)
         return stubNode
     }
 
@@ -394,8 +396,8 @@ internal class GranularComposeDecomposerTest {
         whenever(node.children).thenReturn(emptyList())
         whenever(mockSemanticsUtils.isNodeHidden(node)).thenReturn(false)
         whenever(mockReflectionUtils.getInteropView(node)).thenReturn(null)
-        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any())).thenReturn(null)
-        whenever(mockSemanticsUtils.resolveBackgroundColor(node)).thenReturn(null)
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any(), any())).thenReturn(null)
+        whenever(mockSemanticsUtils.resolveBackgroundColor(any<List<ModifierInfo>>())).thenReturn(null)
         whenever(mockSemanticsUtils.resolveInnerBounds(eq(node), any())).thenReturn(GlobalBounds(0, 0, 10, 10))
         whenever(node.boundsInRoot).thenReturn(androidx.compose.ui.geometry.Rect(0f, 0f, 10f, 10f))
         return node
@@ -474,22 +476,124 @@ internal class GranularComposeDecomposerTest {
             semanticsUtils = mockSemanticsUtils,
             reflectionUtils = mockReflectionUtils,
             compatibilityGate = testedGate,
-            nodesPerCheckpoint = 2
+            nodesPerCheckpoint = 2,
+            hostRasterizer = ComposeHostCaptureRasterizer { _, regions -> regions.map { null } }
         )
         var checkpointCalls = 0
 
         // When
         testedDecomposer.decompose(mockView, realRequest(shouldContinue = { checkpointCalls++; true }))
 
-        // Then - 6 nodes / checkpoint-every-2 = 3, plus 1 more for the pre-batched-draw re-check
+        // Then - 6 nodes / checkpoint-every-2 = 3, plus the pre- and post-batched-draw checks
         // that fires because every childless mockLeafNode() here is itself a pixel-capture
         // candidate (see the "pixel capture" test region below).
-        assertThat(checkpointCalls).isEqualTo(4)
+        assertThat(checkpointCalls).isEqualTo(5)
     }
 
     // endregion
 
+    @Test
+    fun `M inspect modifiers and children once W decompose() { nonterminal container }`() {
+        // Given
+        val node = mockLeafNode()
+        val child = mockLeafNode()
+        whenever(node.children).thenReturn(listOf(child))
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        assertThat(result).isNotNull()
+        verify(node.layoutInfo).getModifierInfo()
+        verify(node).children
+    }
+
+    @Test
+    fun `M refresh children W decompose() { subsequent capture }`() {
+        // Given
+        val node = mockLeafNode()
+        val firstChild = mockLeafNode()
+        val secondChild = mockLeafNode()
+        whenever(node.children).thenReturn(listOf(firstChild))
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+
+        // When
+        val first = testedDecomposer.decompose(mockView, realRequest())
+        whenever(node.children).thenReturn(listOf(firstChild, secondChild))
+        val second = testedDecomposer.decompose(mockView, realRequest())
+
+        // Then
+        assertThat(first!!.nodes).hasSize(2)
+        assertThat(second!!.nodes).hasSize(3)
+        verify(node.layoutInfo, times(2)).getModifierInfo()
+    }
+
+    @Test
+    fun `M discard expired raster output W decompose() { draw consumes deadline }`() {
+        // Given
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        var active = true
+        val rasterizer = ComposeHostCaptureRasterizer { _, regions ->
+            active = false
+            regions.map { mock<Bitmap>() }
+        }
+        val registered = mutableListOf<PendingPixelCapture>()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = rasterizer
+        )
+
+        // When
+        val result = testedDecomposer.decompose(
+            mockView,
+            realRequest(
+                shouldContinue = { active },
+                pendingPixelCaptureSink = PendingPixelCaptureSink { registered += it }
+            )
+        )
+
+        // Then
+        assertThat(result).isNull()
+        assertThat(registered).isEmpty()
+        assertThat(testedGate.isAvailable()).isTrue()
+    }
+
     // region pixel capture
+
+    @Test
+    fun `M inspect overscroll state on every capture W decompose() { legacy drawing container }`() {
+        // Given
+        val stubContainer = mockLeafNode()
+        val children = listOf(mockLeafNode(), mockLeafNode())
+        val stubModifier: DrawModifier = mock()
+        val stubModifierInfo: ModifierInfo = mock()
+        val stubRoot = mockRoot(listOf(stubContainer))
+        whenever(stubModifierInfo.modifier).thenReturn(stubModifier)
+        whenever(stubContainer.layoutInfo.getModifierInfo()).thenReturn(listOf(stubModifierInfo))
+        whenever(stubContainer.children).thenReturn(children)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
+        val fakeRasterizer = FakeComposeHostCaptureRasterizer()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = fakeRasterizer
+        )
+
+        // When / Then - custom, active and unrecognized drawing modifiers retain whole-container capture.
+        assertThat(testedDecomposer.decompose(mockView, realRequest())?.wireframes).hasSize(1)
+        whenever(mockReflectionUtils.isInactiveOverscrollModifier(stubModifier)).thenReturn(true)
+        assertThat(testedDecomposer.decompose(mockView, realRequest())?.wireframes).hasSize(2)
+        whenever(mockReflectionUtils.isInactiveOverscrollModifier(stubModifier)).thenReturn(false)
+        assertThat(testedDecomposer.decompose(mockView, realRequest())?.wireframes).hasSize(1)
+    }
 
     @Test
     fun `M rasterize only visible leaves W decompose() { culling precedes pixel capture }`() {
@@ -528,7 +632,7 @@ internal class GranularComposeDecomposerTest {
         }
     }
 
-    /** A node with a real drawing effect - a [DrawModifierNode] in its modifier chain. */
+    /** A real drawBehind element; the node created by it is not the ModifierInfo element. */
     private fun mockDrawingEffectNode(): SemanticsNode {
         val node = mockLeafNode()
         // A node with its own drawing effect commonly has children too (e.g. a Card wrapping
@@ -538,7 +642,8 @@ internal class GranularComposeDecomposerTest {
         // argument corrupts Mockito's stubbing recorder (see the block-7 fix for this same mistake
         // earlier in this file).
         val childNode = mockLeafNode()
-        val drawModifier = mock<Modifier>(extraInterfaces = arrayOf(DrawModifierNode::class))
+        val drawModifier = Modifier.drawBehind {}
+        whenever(mockReflectionUtils.isDrawModifierElement(drawModifier)).thenReturn(true)
         val modifierInfo: ModifierInfo = mock()
         whenever(modifierInfo.modifier).thenReturn(drawModifier)
         whenever(node.layoutInfo.getModifierInfo()).thenReturn(listOf(modifierInfo))
