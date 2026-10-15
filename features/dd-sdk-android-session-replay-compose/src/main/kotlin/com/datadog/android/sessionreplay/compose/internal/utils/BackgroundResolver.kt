@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.unit.Density
@@ -62,16 +63,22 @@ internal class BackgroundResolver(
         return backgroundInfoList
     }
 
-    internal fun resolveBackgroundColor(semanticsNode: SemanticsNode): Long? {
+    internal fun resolveBackgroundColor(semanticsNode: SemanticsNode): Long? =
+        resolveBackgroundColor(semanticsNode.layoutInfo.getModifierInfo())
+
+    internal fun resolveBackgroundColor(modifiers: List<ModifierInfo>): Long? {
         val topmostBackground =
-            semanticsNode.layoutInfo.getModifierInfo().lastOrNull { modifierInfo ->
+            modifiers.lastOrNull { modifierInfo ->
                 reflectionUtils.isBackgroundElement(modifierInfo.modifier)
             }
         return topmostBackground?.let { resolveBackgroundElementColor(it.modifier) }
     }
 
-    internal fun resolveBackgroundShape(semanticsNode: SemanticsNode): Shape? {
-        val backgroundModifier = semanticsNode.layoutInfo.getModifierInfo().lastOrNull {
+    internal fun resolveBackgroundShape(semanticsNode: SemanticsNode): Shape? =
+        resolveBackgroundShape(semanticsNode.layoutInfo.getModifierInfo())
+
+    internal fun resolveBackgroundShape(modifiers: List<ModifierInfo>): Shape? {
+        val backgroundModifier = modifiers.lastOrNull {
             reflectionUtils.isBackgroundElement(it.modifier)
         }?.modifier
         return backgroundModifier?.let { reflectionUtils.getShape(it) }

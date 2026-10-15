@@ -26,6 +26,16 @@
 -keep class androidx.compose.ui.draw.DrawBehindElement {
      <fields>;
 }
+# Used to classify drawing modifiers for composition-tree pixel capture.
+-keep class androidx.compose.ui.draw.DrawWithContentElement
+-keep class androidx.compose.ui.draw.DrawWithCacheElement
+# Optional recognition of the platform overscroll modifier when all eight edge effects are finished.
+-keep,allowoptimization class androidx.compose.foundation.DrawOverscrollModifier {
+    <fields>;
+}
+-keep,allowoptimization class androidx.compose.foundation.AndroidEdgeEffectOverscrollEffect {
+    <fields>;
+}
 -keepclassmembers class androidx.compose.foundation.BackgroundElement {
      <fields>;
 }

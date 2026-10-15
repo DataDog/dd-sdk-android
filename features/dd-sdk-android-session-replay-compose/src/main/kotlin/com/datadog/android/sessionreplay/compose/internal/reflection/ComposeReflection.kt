@@ -68,6 +68,22 @@ internal object ComposeReflection {
     val SweepGradientColorsField = SweepGradientClass?.getDeclaredFieldSafe("colors", isCritical = false)
 
     val DrawBehindElementClass = getClassSafe("androidx.compose.ui.draw.DrawBehindElement")
+    val DrawWithContentElementClass = getClassSafe("androidx.compose.ui.draw.DrawWithContentElement", false)
+    val DrawWithCacheElementClass = getClassSafe("androidx.compose.ui.draw.DrawWithCacheElement", false)
+    val DrawOverscrollModifierClass = getClassSafe("androidx.compose.foundation.DrawOverscrollModifier", false)
+    val OverscrollEffectField = DrawOverscrollModifierClass?.getDeclaredFieldSafe("overscrollEffect", false)
+    private val AndroidOverscrollEffectClass =
+        getClassSafe("androidx.compose.foundation.AndroidEdgeEffectOverscrollEffect", false)
+    val OverscrollEdgeFields = listOf(
+        "leftEffect",
+        "topEffect",
+        "rightEffect",
+        "bottomEffect",
+        "leftEffectNegation",
+        "topEffectNegation",
+        "rightEffectNegation",
+        "bottomEffectNegation"
+    ).map { AndroidOverscrollEffectClass?.getDeclaredFieldSafe(it, false) }
     val CheckboxKtClass = getClassSafe("androidx.compose.material.CheckboxKt\$CheckboxImpl\$1\$1", false)
     val RadioButtonKtClass = getClassSafe("androidx.compose.material.RadioButtonKt\$RadioButton\$2\$1", false)
     val CheckDrawingCacheClass = getClassSafe("androidx.compose.material.CheckDrawingCache")

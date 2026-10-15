@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.compose.internal.utils
 import android.graphics.Bitmap
 import android.text.StaticLayout
 import android.view.View
+import android.widget.EdgeEffect
 import androidx.compose.animation.core.AnimationState
 import androidx.compose.runtime.Composition
 import androidx.compose.ui.Alignment
@@ -88,6 +89,26 @@ internal class ReflectionUtils {
 
     fun isDrawBehindElementClass(modifier: Modifier): Boolean {
         return ComposeReflection.DrawBehindElementClass?.isInstance(modifier) == true
+    }
+
+    /** ModifierInfo contains elements, rather than the DrawModifierNodes those elements create. */
+    fun isDrawModifierElement(modifier: Modifier): Boolean =
+        isDrawBehindElementClass(modifier) ||
+            ComposeReflection.DrawWithContentElementClass?.isInstance(modifier) == true ||
+            ComposeReflection.DrawWithCacheElementClass?.isInstance(modifier) == true
+
+    /** An inactive platform overscroll modifier only forwards drawContent; unknown versions still rasterize. */
+    fun isInactiveOverscrollModifier(modifier: Modifier): Boolean {
+        val effect = if (ComposeReflection.DrawOverscrollModifierClass?.isInstance(modifier) == true) {
+            ComposeReflection.OverscrollEffectField?.getSafe(modifier)
+        } else {
+            null
+        }
+        if (effect == null) return false
+        // Include negation effects: a release may still need to clear the previous stretch.
+        return ComposeReflection.OverscrollEdgeFields.all { field ->
+            (field?.getSafe(effect) as? EdgeEffect)?.isFinished == true
+        }
     }
 
     fun getOwner(composition: Composition): Any? {
