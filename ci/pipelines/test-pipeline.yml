@@ -136,6 +136,8 @@ verify:all:
   extends:
     - .verify-all
     - .cpu-memory-intensive-job
+  rules:
+    - when: never
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   cache:
@@ -150,10 +152,8 @@ verify:all:
     - export GRADLE_JVM_EXTRA_ARGS="-XX:ReservedCodeCacheSize=768m"
     - !reference [.snippets, setup-gradle]
 
-profile:rum-lint:
+profile:rum-detekt:
   extends: .cpu-memory-intensive-job
-  rules:
-    - when: never
   stage: verify
   timeout: 1h
   tags: [ "arch:amd64" ]
@@ -171,12 +171,12 @@ profile:rum-lint:
   before_script:
     - !reference [.snippets, source-secrets]
     - mkdir -p "$CI_PROJECT_DIR/profiles"
-    - export GRADLE_JVM_EXTRA_ARGS="-XX:StartFlightRecording=filename=$CI_PROJECT_DIR/profiles/rum-lint.jfr,settings=profile,dumponexit=true"
+    - export GRADLE_JVM_EXTRA_ARGS="-XX:ReservedCodeCacheSize=768m -XX:StartFlightRecording=filename=$CI_PROJECT_DIR/profiles/rum-detekt.jfr,settings=profile,dumponexit=true"
     - !reference [.snippets, setup-gradle]
   script:
     - >-
         ./gradlew
-        :features:dd-sdk-android-rum:lintAnalyzeDebug
+        :features:dd-sdk-android-rum:detektDebugUnitTest
         --no-build-cache
         --no-configuration-cache
         --no-daemon
@@ -187,7 +187,7 @@ profile:rum-lint:
     when: always
     expire_in: 1 week
     paths:
-      - profiles/rum-lint.jfr
+      - profiles/rum-detekt.jfr
 
 verify:all_mac:
   extends: .verify-all
