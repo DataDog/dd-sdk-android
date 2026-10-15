@@ -113,12 +113,11 @@ stages:
         || gradle_exit_code=$?
     - dd-sts exchange --policy dd-sdk-android -- datadog-ci coverage upload . || true
     # Kotlin daemons can outlive the Gradle invocation, so dump their active recordings explicitly.
-    - >-
+    - |
         for kotlin_daemon_pid in $(env -u JAVA_TOOL_OPTIONS jps -l | awk '/KotlinCompileDaemon/ { print $1 }'); do
-          env -u JAVA_TOOL_OPTIONS jcmd "$kotlin_daemon_pid" JFR.dump
-          name=ci
-          filename="$CI_PROJECT_DIR/profiles/kotlin-$kotlin_daemon_pid.jfr"
-          || true;
+          if ! env -u JAVA_TOOL_OPTIONS jcmd "$kotlin_daemon_pid" JFR.dump name=ci filename="$CI_PROJECT_DIR/profiles/kotlin-$kotlin_daemon_pid.jfr"; then
+            echo "Failed to dump JFR for Kotlin daemon $kotlin_daemon_pid"
+          fi
         done
     - exit "$gradle_exit_code"
   artifacts:
