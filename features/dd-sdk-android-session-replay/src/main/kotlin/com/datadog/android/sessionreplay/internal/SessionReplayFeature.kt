@@ -461,6 +461,7 @@ internal class SessionReplayFeature(
         if (!isRecording.get()) {
             return
         }
+        sessionReplayRecorder.onRumViewChanged()
         val activeSlotIds = embeddedContentSlotRegistry.activeSlotIds()
         if (activeSlotIds.isNotEmpty()) {
             sessionReplayRecorder.requestCapture(activeSlotIds)

@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import android.content.Context
+import android.graphics.Point
 import android.view.MotionEvent
 import android.view.Window
 import androidx.annotation.MainThread
@@ -38,13 +39,15 @@ internal class CompositionWindowTouchCallback(
     private val rumContextProvider: RumContextProvider,
     touchPrivacyManager: TouchPrivacyManager,
     private val internalLogger: InternalLogger,
+    private val touchRecordingScope: () -> TouchPrivacyScope?,
     copyEvent: (MotionEvent) -> MotionEvent = {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         MotionEvent.obtain(it)
     },
     motionEventUtils: MotionEventUtils = MotionEventUtils,
     motionUpdateThresholdInNs: Long = PointerInteractionRecorder.MOTION_UPDATE_DELAY_THRESHOLD_NS,
-    flushPositionBufferThresholdInNs: Long = PointerInteractionRecorder.FLUSH_BUFFER_THRESHOLD_NS
+    flushPositionBufferThresholdInNs: Long = PointerInteractionRecorder.FLUSH_BUFFER_THRESHOLD_NS,
+    shouldRecordTouch: (Point) -> Boolean = touchPrivacyManager::shouldRecordTouch
 ) : FixedWindowCallback(wrappedCallback) {
 
     // Set once this callback has been unwrapped, even when a third party has since nested it
@@ -52,6 +55,7 @@ internal class CompositionWindowTouchCallback(
     // would keep recording and writing touches indefinitely after recording is meant to have
     // stopped. See CompositionWindowTouchInterceptor.unwrap.
     private var isActive = true
+    private var gestureScope: TouchPrivacyScope? = null
 
     private val pointerInteractionRecorder = PointerInteractionRecorder(
         pixelsDensity = appContext.resources.displayMetrics.density,
@@ -62,7 +66,8 @@ internal class CompositionWindowTouchCallback(
         copyEvent = copyEvent,
         motionEventUtils = motionEventUtils,
         motionUpdateThresholdInNs = motionUpdateThresholdInNs,
-        flushPositionBufferThresholdInNs = flushPositionBufferThresholdInNs
+        flushPositionBufferThresholdInNs = flushPositionBufferThresholdInNs,
+        shouldRecordTouch = shouldRecordTouch
     )
 
     @MainThread
@@ -82,7 +87,20 @@ internal class CompositionWindowTouchCallback(
             return EVENT_CONSUMED
         }
 
-        if (isActive) pointerInteractionRecorder.recordTouchEvent(event)
+        if (isActive) {
+            val readyScope = touchRecordingScope()
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                if (gestureScope != readyScope) pointerInteractionRecorder.pointerInteractions.clear()
+                gestureScope = readyScope
+            }
+            if (readyScope == null || readyScope != gestureScope) {
+                // Never retain a gesture tail across initialization, navigation or a changed privacy policy.
+                gestureScope = null
+                pointerInteractionRecorder.pointerInteractions.clear()
+            } else {
+                pointerInteractionRecorder.recordTouchEvent(event)
+            }
+        }
 
         @Suppress("SwallowedException")
         return try {

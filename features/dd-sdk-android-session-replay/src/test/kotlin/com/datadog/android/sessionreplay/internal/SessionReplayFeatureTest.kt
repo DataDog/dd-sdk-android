@@ -155,6 +155,26 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
+    fun `M notify native recorder W RUM view changes { no embedded slots }`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val contextReceiver = argumentCaptor<FeatureContextUpdateReceiver>().also {
+            verify(mockSdkCore).setContextUpdateReceiver(it.capture())
+        }.firstValue
+        testedFeature.startRecording()
+
+        // When
+        contextReceiver.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+        )
+
+        // Then
+        verify(mockRecorder).onRumViewChanged()
+        verify(mockRecorder, never()).requestCapture(any())
+    }
+
+    @Test
     fun `M request embedded capture W RUM view changes { recording active }`() {
         // Given
         val fakeRegistration = EmbeddedContentSlotRegistration(FAKE_EMBEDDED_SLOT_ID)
@@ -224,6 +244,8 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(mockRecorder, never()).requestCapture(any())
+
+        verify(mockRecorder, never()).onRumViewChanged()
 
         // Cleanup
         testedFeature.embeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
