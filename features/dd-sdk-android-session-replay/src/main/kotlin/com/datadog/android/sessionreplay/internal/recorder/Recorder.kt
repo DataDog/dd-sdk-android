@@ -18,6 +18,9 @@ internal interface Recorder {
 
     fun resumeRecorders()
 
+    /** A composition snapshot is also needed when navigation changes scope without redrawing. */
+    fun onRumViewChanged() = Unit
+
     fun requestCapture(slotIds: Set<String>)
 
     /**

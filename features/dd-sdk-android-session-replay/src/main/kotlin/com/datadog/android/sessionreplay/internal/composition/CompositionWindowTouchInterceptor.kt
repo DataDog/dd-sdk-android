@@ -15,6 +15,7 @@ import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.recorder.callback.NoOpWindowCallback
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
+import java.lang.ref.WeakReference
 import java.util.WeakHashMap
 
 /**
@@ -31,33 +32,40 @@ internal class CompositionWindowTouchInterceptor(
     private val timeProvider: TimeProvider,
     private val rumContextProvider: RumContextProvider,
     private val touchPrivacyManager: TouchPrivacyManager,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val windowSource: ActiveWindowSource
 ) {
     private val lock = Any()
     private val wrappedWindows = WeakHashMap<Window, CompositionWindowTouchCallback>()
+    private val scopeProvider = DefaultRumViewScopeProvider(rumContextProvider)
 
     @MainThread
     fun intercept(windows: List<Window>) {
         val staleWindows = synchronized(lock) { wrappedWindows.keys.filterNot(windows::contains) }
         staleWindows.forEach(::unwrap)
-        val newWindows = synchronized(lock) { windows.filterNot(wrappedWindows::containsKey) }
-        newWindows.forEach(::wrap)
+        windows.forEach(::wrap)
     }
 
     @MainThread
     fun stop() {
         val wrappedWindowsSnapshot = synchronized(lock) { wrappedWindows.keys.toList() }
         wrappedWindowsSnapshot.forEach(::unwrap)
+        // A resumed screen must not inherit SHOW regions from the previous capture.
+        windowSource.clearTouchPrivacy()
+        touchPrivacyManager.replaceCurrentTouchOverrideAreas(emptyMap())
     }
 
-    /**
-     * [intercept] only decides which windows are new under [lock]; the actual registration below
-     * must reserve the window under the same lock before touching its callback, otherwise two
-     * concurrent [intercept] calls that both see the same window as new would both wrap it, and
-     * only one would ever be found again to unwrap.
-     */
+    /** Reserve against the previously observed registration, including when replacing a stale wrapper. */
+    @MainThread
     private fun wrap(window: Window) {
-        val toWrap = window.callback ?: NoOpWindowCallback()
+        val previous = synchronized(lock) { wrappedWindows[window] }
+        val installed = window.callback
+        if (previous != null && previous === installed) return
+        // Discovery may precede decor creation; a later lifecycle poll will retry this window.
+        val decorView = window.peekDecorView() ?: return
+        val toWrap = installed ?: NoOpWindowCallback()
+        // The callback is a value in a weak-key map; it must not retain the Window through its root.
+        val root = WeakReference(decorView)
         val callback = CompositionWindowTouchCallback(
             appContext = appContext,
             wrappedCallback = toWrap,
@@ -65,12 +73,24 @@ internal class CompositionWindowTouchInterceptor(
             timeProvider = timeProvider,
             rumContextProvider = rumContextProvider,
             touchPrivacyManager = touchPrivacyManager,
-            internalLogger = internalLogger
+            internalLogger = internalLogger,
+            touchRecordingScope = {
+                scopeProvider.currentScope()?.scope?.let { scope ->
+                    windowSource.currentTouchPrivacyScope(root.get(), scope)
+                }
+            },
+            shouldRecordTouch = { point ->
+                val scope = scopeProvider.currentScope()?.scope
+                val areas = scope?.let { windowSource.currentTouchOverrideAreas(root.get(), it) }
+                areas != null && touchPrivacyManager.shouldRecordTouch(point, areas)
+            }
         )
         val reserved = synchronized(lock) {
-            if (wrappedWindows.containsKey(window)) {
+            if (wrappedWindows[window] !== previous) {
                 false
             } else {
+                // A replacement may still delegate to the old wrapper. Only the new one may record.
+                previous?.deactivate()
                 wrappedWindows[window] = callback
                 true
             }

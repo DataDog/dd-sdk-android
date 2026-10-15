@@ -20,6 +20,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -130,6 +132,32 @@ internal class AndroidSnapshotCaptureLifecycleTest {
 
         // Then
         verify(mockObserver, never()).removeOnDrawListener(any())
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M remove transferred listener W stop() or intercept() { window attaches }`(fakeStop: Boolean) {
+        // Given
+        val mockOriginalObserver = mock<ViewTreeObserver>()
+        val mockAttachedObserver = mock<ViewTreeObserver>()
+        whenever(mockOriginalObserver.isAlive).thenReturn(true)
+        whenever(mockAttachedObserver.isAlive).thenReturn(true)
+        val mockView = mock<View>()
+        whenever(mockView.viewTreeObserver).thenReturn(mockOriginalObserver)
+        val testedInterceptor = CompositionViewOnDrawInterceptor(ActiveWindowSource(), { }, mock())
+        testedInterceptor.intercept(listOf(mockView))
+        val addedListener = argumentCaptor<ViewTreeObserver.OnDrawListener>()
+        verify(mockOriginalObserver).addOnDrawListener(addedListener.capture())
+        // Attachment transfers the listener and kills the original observer.
+        whenever(mockOriginalObserver.isAlive).thenReturn(false)
+        whenever(mockView.viewTreeObserver).thenReturn(mockAttachedObserver)
+
+        // When
+        if (fakeStop) testedInterceptor.stop() else testedInterceptor.intercept(emptyList())
+
+        // Then
+        verify(mockOriginalObserver, never()).removeOnDrawListener(any())
+        verify(mockAttachedObserver).removeOnDrawListener(addedListener.firstValue)
     }
 
     @Test

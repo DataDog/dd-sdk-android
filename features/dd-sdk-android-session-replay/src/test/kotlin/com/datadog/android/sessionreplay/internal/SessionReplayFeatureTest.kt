@@ -176,6 +176,7 @@ internal class SessionReplayFeatureTest {
         fakeContextReceiver.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
 
         // Then
+        verify(mockRecorder, times(2)).onRumViewChanged()
         verify(mockRecorder, times(if (fakeSchedulingEnabled) 2 else 0)).onViewTransition()
     }
 
@@ -196,6 +197,26 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(mockSdkCore).setContextUpdateReceiver(any())
+    }
+
+    @Test
+    fun `M notify native recorder W onContextUpdate() { no embedded slots }`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val fakeContextReceiver = argumentCaptor<FeatureContextUpdateReceiver>().also {
+            verify(mockSdkCore).setContextUpdateReceiver(it.capture())
+        }.firstValue
+        testedFeature.startRecording()
+
+        // When
+        fakeContextReceiver.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(FeatureContextKeys.RUM_CONTEXT to fakeRumContext)
+        )
+
+        // Then
+        verify(mockRecorder).onRumViewChanged()
+        verify(mockRecorder, never()).requestCapture(any())
     }
 
     @Test
@@ -268,6 +289,8 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(mockRecorder, never()).requestCapture(any())
+
+        verify(mockRecorder, never()).onRumViewChanged()
 
         // Cleanup
         testedFeature.embeddedContentSlotRegistry.notifySlotChanged(fakeRegistration, null)
