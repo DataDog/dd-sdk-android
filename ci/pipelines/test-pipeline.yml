@@ -35,7 +35,7 @@ stages:
     - echo "org.gradle.logging.stacktrace=all" >> gradle.properties
     # Run Kotlin compilation in its dedicated daemon for faster compilation
     - echo "kotlin.compiler.execution.strategy=daemon" >> gradle.properties
-    - echo "kotlin.daemon.jvmargs=-Xmx${KOTLIN_DAEMON_JVM_XMX:-8g} ${KOTLIN_DAEMON_JVM_EXTRA_ARGS:-}" >> gradle.properties
+    - echo "kotlin.daemon.jvmargs=-Xmx${KOTLIN_DAEMON_JVM_XMX:-8g}${KOTLIN_DAEMON_JVM_EXTRA_ARGS:+ $KOTLIN_DAEMON_JVM_EXTRA_ARGS}" >> gradle.properties
     - echo "--- gradle.properties ---" && cat gradle.properties
 
   setup-macos-ami-runner:
