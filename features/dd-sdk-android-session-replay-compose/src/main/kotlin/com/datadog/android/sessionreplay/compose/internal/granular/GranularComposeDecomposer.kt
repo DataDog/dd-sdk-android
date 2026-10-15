@@ -35,6 +35,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedTextStyle
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
+import com.datadog.android.sessionreplay.compose.internal.utils.ComposeTextCaptureCache
 import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.resolveComposeWindowOffset
@@ -79,7 +80,7 @@ import android.graphics.ColorMatrixColorFilter as AndroidColorMatrixColorFilter
  * and native interop retain their existing paths; every capture resolves current geometry.
  */
 internal class GranularComposeDecomposer(
-    private val semanticsUtils: SemanticsUtils = SemanticsUtils(),
+    private val semanticsUtils: SemanticsUtils = SemanticsUtils(textCaptureCache = ComposeTextCaptureCache()),
     private val reflectionUtils: ReflectionUtils = ReflectionUtils(),
     private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter,
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND,
@@ -805,6 +806,37 @@ internal fun interface ComposeHostCaptureRasterizer {
 internal class DefaultComposeHostCaptureRasterizer(
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND
 ) : ComposeHostCaptureRasterizer {
+    private var scratch: java.lang.ref.WeakReference<Bitmap>? = null
+    private var scratchInUse = false
+
+    @Synchronized
+    @Suppress("UnsafeThirdPartyFunctionCall") // Positive dimensions; failures are caught by rasterize.
+    private fun acquire(width: Int, height: Int): Bitmap {
+        // The weak, blank buffer is reclaimable under pressure. Nested captures get their own buffer.
+        if (!scratchInUse && width.toLong() * height * ARGB_BYTES_PER_PIXEL <= MAX_REUSABLE_BITMAP_BYTES) {
+            var current = scratch?.get()
+            if (current == null || current.width != width || current.height != height) {
+                current?.recycle()
+                current = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                scratch = java.lang.ref.WeakReference(current)
+            }
+            scratchInUse = true
+            return current
+        }
+        return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    }
+
+    @Synchronized
+    @Suppress("UnsafeThirdPartyFunctionCall") // Only this rasterizer owns and recycles the scratch bitmap.
+    private fun release(bitmap: Bitmap) {
+        if (bitmap === scratch?.get()) {
+            // Do not retain pixels from a previous screen in the reusable buffer.
+            bitmap.eraseColor(android.graphics.Color.TRANSPARENT)
+            scratchInUse = false
+        } else {
+            bitmap.recycle()
+        }
+    }
 
     override fun captureRegions(hostView: View, regions: List<Rect>): List<Bitmap?> =
         captureRegions(hostView, regions) { true }
@@ -815,7 +847,19 @@ internal class DefaultComposeHostCaptureRasterizer(
             return regions.map { null }
         }
         val hostBitmap = rasterize(hostView) ?: return regions.map { null }
-        return regions.map { if (shouldContinue()) cropSafely(hostBitmap, it) else null }
+        return try {
+            regions.map {
+                if (shouldContinue()) {
+                    val crop = cropSafely(hostBitmap, it)
+                    // Returned captures must never alias a buffer that will be cleared or reused.
+                    if (crop === hostBitmap) crop.copy(Bitmap.Config.ARGB_8888, false) else crop
+                } else {
+                    null
+                }
+            }
+        } finally {
+            release(hostBitmap)
+        }
     }
 
     private fun intersectsHost(region: Rect, width: Int, height: Int): Boolean =
@@ -825,10 +869,14 @@ internal class DefaultComposeHostCaptureRasterizer(
     @Suppress("TooGenericExceptionCaught")
     private fun rasterize(view: View): Bitmap? {
         if (view.width <= 0 || view.height <= 0) return null
+        var acquired: Bitmap? = null
+        var drawn = false
         return try {
-            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            val bitmap = acquire(view.width, view.height)
+            acquired = bitmap
             @Suppress("UnsafeThirdPartyFunctionCall") // view.draw runs arbitrary custom draw code; caught below
             view.draw(Canvas(bitmap))
+            drawn = true
             bitmap
         } catch (e: Exception) {
             internalLogger.log(
@@ -838,6 +886,8 @@ internal class DefaultComposeHostCaptureRasterizer(
                 e
             )
             null
+        } finally {
+            if (!drawn) acquired?.let { release(it) }
         }
     }
 
@@ -862,6 +912,10 @@ internal class DefaultComposeHostCaptureRasterizer(
             )
             null
         }
+    }
+    private companion object {
+        const val ARGB_BYTES_PER_PIXEL = 4
+        const val MAX_REUSABLE_BITMAP_BYTES = 16_777_216L // 16 MiB per rasterizer, weakly held.
     }
 }
 

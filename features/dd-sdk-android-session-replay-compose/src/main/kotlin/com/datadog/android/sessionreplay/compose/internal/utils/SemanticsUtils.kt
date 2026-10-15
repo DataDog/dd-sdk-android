@@ -44,7 +44,8 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 @Suppress("TooManyFunctions")
 internal class SemanticsUtils(
     private val reflectionUtils: ReflectionUtils = ReflectionUtils(),
-    private val sampler: RateBasedSampler<Unit> = RateBasedSampler(BITMAP_TELEMETRY_SAMPLE_RATE)
+    private val sampler: RateBasedSampler<Unit> = RateBasedSampler(BITMAP_TELEMETRY_SAMPLE_RATE),
+    private val textCaptureCache: ComposeTextCaptureCache? = null
 ) {
     private val backgroundResolver = BackgroundResolver(
         reflectionUtils,
@@ -153,12 +154,24 @@ internal class SemanticsUtils(
         modifiers: List<ModifierInfo>
     ): TextLayoutInfo? = resolveTextLayoutInfo(semanticsNode, internalLogger) { modifiers }
 
+    @Suppress("ReturnCount") // Missing actions and valid cache hits avoid layout work.
     private fun resolveTextLayoutInfo(
         semanticsNode: SemanticsNode,
         internalLogger: InternalLogger,
         modifiers: () -> List<ModifierInfo>
     ): TextLayoutInfo? {
         val action = semanticsNode.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action ?: return null
+        val inspectedTextModifier = if (textCaptureCache != null) {
+            modifiers().firstOrNull { reflectionUtils.isTextStringSimpleElement(it.modifier) }?.modifier
+        } else {
+            null
+        }
+        val state = if (inspectedTextModifier != null) textCaptureCache?.state(semanticsNode, action) else null
+        textCaptureCache?.get(semanticsNode.id, state, inspectedTextModifier)?.let { cached ->
+            // ColorProducer can change without remeasurement or a new modifier instance.
+            val color = inspectedTextModifier?.let { reflectionUtils.getColorProducerColor(it) }?.value
+            return if (color != null && color != cached.color) cached.copy(color = color) else cached
+        }
         val textLayoutResults = mutableListOf<TextLayoutResult>()
         action.invoke(textLayoutResults)
         return textLayoutResults.firstOrNull()?.let { textLayoutResult ->
@@ -172,7 +185,9 @@ internal class SemanticsUtils(
                 ?.modifier
             val modifierColor = textModifier?.let { reflectionUtils.getColorProducerColor(it) }
             val textOverflow = resolveTextStringSimpleElementOverflow(textModifier, internalLogger)
-            convertTextLayoutInfo(layoutInput, multiParagraphCapturedText, modifierColor, textOverflow)
+            convertTextLayoutInfo(layoutInput, multiParagraphCapturedText, modifierColor, textOverflow).also {
+                textCaptureCache?.put(semanticsNode.id, state, textModifier, it)
+            }
         }
     }
 
