@@ -69,6 +69,8 @@ stages:
     - gradle_exit_code=0
     - >-
         DD_TAGS="test.configuration.variant:debug" ./gradlew
+        --no-build-cache
+        --no-configuration-cache
         --console=plain
         --continue
         --no-daemon
