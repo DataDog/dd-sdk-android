@@ -148,7 +148,8 @@ internal class CompositionCaptureConcurrencyTest {
             timeProvider = mock(),
             rumContextProvider = mock(),
             touchPrivacyManager = mock(),
-            internalLogger = mock()
+            internalLogger = mock(),
+            windowSource = ActiveWindowSource()
         )
         val failures = CopyOnWriteArrayList<Throwable>()
 
@@ -177,7 +178,7 @@ internal class CompositionCaptureConcurrencyTest {
         val enteredWindowCallback = CountDownLatch(1)
         val releaseWindowCallback = CountDownLatch(1)
         val blockNextAccess = AtomicBoolean(true)
-        val fakeWindow = mock<Window>()
+        val fakeWindow = touchableWindow()
         whenever(fakeWindow.callback).thenAnswer {
             if (blockNextAccess.compareAndSet(true, false)) {
                 enteredWindowCallback.countDown()
@@ -191,7 +192,8 @@ internal class CompositionCaptureConcurrencyTest {
             timeProvider = mock(),
             rumContextProvider = mock(),
             touchPrivacyManager = mock(),
-            internalLogger = mock()
+            internalLogger = mock(),
+            windowSource = ActiveWindowSource()
         )
         val failures = CopyOnWriteArrayList<Throwable>()
 
@@ -531,7 +533,9 @@ internal class CompositionCaptureConcurrencyTest {
         return mockView
     }
 
-    private fun touchableWindow(): Window = mock()
+    private fun touchableWindow(): Window = mock {
+        whenever(it.peekDecorView()).thenReturn(mock<View>())
+    }
 
     private fun touchableAppContext(): Application = mock { mockApplication ->
         val displayMetrics = DisplayMetrics()

@@ -38,6 +38,10 @@ internal class CompositionCapturePipeline(
         lifecycle.start()
     }
 
+    override fun onRumViewChanged() {
+        orchestrator.requestCapture()
+    }
+
     /** Embedded content is not captured by this pipeline yet, so the request is only reported. */
     override fun requestCapture(slotIds: Set<String>) {
         if (slotIds.isEmpty()) return
