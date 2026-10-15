@@ -143,7 +143,7 @@ verify:all:
       - cache/caches/
       - cache/wrapper/
       - cache/notifications/
-    policy: pull-push
+    policy: pull
   before_script:
     - !reference [.snippets, source-secrets]
     - mkdir -p "$CI_PROJECT_DIR/profiles"
