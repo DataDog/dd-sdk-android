@@ -178,6 +178,49 @@ internal class DatadogFlagsClientTest {
 
     // region resolveBooleanValue()
 
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M gate evaluation telemetry independently W setEvaluationTelemetryOptOut`(enabled: Boolean, forge: Forge) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeContext = forge.getForgery<EvaluationContext>()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = "true",
+            reason = ResolutionReason.TARGETING_MATCH.name,
+            doLog = true
+        )
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeKey)) doReturn (fakeFlag to fakeContext)
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
+            FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
+            mockEvaluationsFeature, mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = enabled
+        )
+
+        // When
+        testedClient.setEvaluationTelemetryOptOut(true)
+        val result = testedClient.resolve(fakeKey, false)
+
+        // Then
+        assertThat(result.value).isTrue()
+        verify(mockProcessor).processEvent(fakeKey, fakeContext, fakeFlag)
+        verifyNoInteractions(mockEvaluationsManager)
+        if (enabled) {
+            verifyNoInteractions(mockRumEvaluationLogger, mockEvaluationsFeature)
+        } else {
+            verify(mockEvaluationsFeature).processEvaluation(
+                fakeKey,
+                fakeContext,
+                fakeFlag.variationKey,
+                fakeFlag.allocationKey,
+                null,
+                null
+            )
+        }
+    }
+
     @Test
     fun `M expose cached reason in details W resolving a restored assignment`(forge: Forge) {
         // Given

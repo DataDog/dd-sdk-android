@@ -29,6 +29,26 @@ import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 @ForgeConfiguration(BaseConfigurator::class)
 internal class ConvertersTest {
 
+    @Test
+    fun `M exclude local control W toDatadogEvaluationContext`(forge: Forge) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeValue = forge.anAlphabeticalString()
+        val control = "dd_evaluation_telemetry_opt_out"
+        val context = ImmutableContext(
+            forge.anAlphabeticalString(),
+            mapOf(control to Value.Boolean(true), fakeKey to Value.String(fakeValue))
+        )
+
+        // When
+        val result = context.toDatadogEvaluationContext(excludedAttribute = control)
+        val defaultResult = context.toDatadogEvaluationContext()
+
+        // Then
+        assertThat(result.attributes).containsOnlyKeys(fakeKey).containsEntry(fakeKey, fakeValue)
+        assertThat(defaultResult.attributes).containsEntry(control, "true")
+    }
+
     // region toProviderEvaluation
 
     @Test

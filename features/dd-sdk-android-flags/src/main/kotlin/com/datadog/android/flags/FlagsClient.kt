@@ -238,6 +238,7 @@ interface FlagsClient {
     class Builder {
         private val name: String
         private val sdkCore: FeatureSdkCore
+        private var evaluationTelemetryOptOutParameterEnabled: Boolean = false
 
         /**
          * Creates a builder for a named [FlagsClient].
@@ -261,6 +262,20 @@ interface FlagsClient {
                 DEFAULT_CLIENT_NAME
             }
             this.sdkCore = sdkCore as FeatureSdkCore
+        }
+
+        /**
+         * Enables the local evaluation telemetry opt-out parameter for this client.
+         *
+         * Disabled by default. When enabled, [setEvaluationTelemetryOptOut] controls new evaluation
+         * telemetry and automatic RUM flag annotations. Flag values and exposures remain unchanged.
+         * OpenFeature accepts only Boolean `true` in `dd_evaluation_telemetry_opt_out`.
+         *
+         * @param enabled whether to enable the parameter.
+         * @return this [Builder] instance.
+         */
+        fun enableEvaluationTelemetryOptOutParameter(enabled: Boolean): Builder = apply {
+            evaluationTelemetryOptOutParameterEnabled = enabled
         }
 
         /**
@@ -318,7 +333,8 @@ interface FlagsClient {
                     featureSdkCore = sdkCore,
                     flagsFeature = flagsFeature,
                     evaluationsFeature = evaluationsFeature,
-                    name = name
+                    name = name,
+                    evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled
                 )
             }
         }
@@ -413,7 +429,8 @@ interface FlagsClient {
             featureSdkCore: FeatureSdkCore,
             flagsFeature: FlagsFeature,
             evaluationsFeature: EvaluationsFeature?,
-            name: String
+            name: String,
+            evaluationTelemetryOptOutParameterEnabled: Boolean = false
         ): FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
@@ -476,7 +493,8 @@ interface FlagsClient {
                 rumEvaluationLogger = rumEvaluationLogger,
                 exposureProcessor = flagsFeature.processor,
                 evaluationsFeature = evaluationsFeature,
-                flagStateManager = flagStateManager
+                flagStateManager = flagStateManager,
+                evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled
             )
         }
 

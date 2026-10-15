@@ -12,12 +12,14 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.openfeature.internal.adapters.convertToValue
 import com.datadog.android.flags.openfeature.internal.adapters.toDatadogEvaluationContext
 import com.datadog.android.flags.openfeature.internal.adapters.toOpenFeatureErrorCode
 import com.datadog.android.flags.openfeature.internal.adapters.toProviderEvaluation
 import com.datadog.android.flags.openfeature.internal.setEvaluationContextSuspend
+import com.datadog.android.flags.setEvaluationTelemetryOptOut
 import dev.openfeature.kotlin.sdk.FeatureProvider
 import dev.openfeature.kotlin.sdk.Hook
 import dev.openfeature.kotlin.sdk.ProviderEvaluation
@@ -49,9 +51,9 @@ import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationCont
  * // Create a FlagsClient and convert to OpenFeature provider
  * val provider = FlagsClient.Builder().build().asOpenFeatureProvider()
  *
- * // Or with custom configuration
+ * // Enable the context-based telemetry control for this client
  * val provider = FlagsClient.Builder("analytics")
- *     .useCustomExposureEndpoint("https://custom.endpoint.com")
+ *     .enableEvaluationTelemetryOptOutParameter(true)
  *     .build()
  *     .asOpenFeatureProvider()
  *
@@ -80,6 +82,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     FeatureProvider {
 
     private val internalLogger: InternalLogger = sdkCore.internalLogger
+    private val evaluationTelemetryOptOutParameterEnabled =
+        _FlagsInternalProxy(flagsClient).isEvaluationTelemetryOptOutParameterEnabled()
 
     override val metadata: ProviderMetadata = object : ProviderMetadata {
         override val name: String = PROVIDER_NAME
@@ -103,7 +107,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * without matching cached assignments
      */
     override suspend fun initialize(initialContext: OpenFeatureEvaluationContext?) {
-        val datadogContext = initialContext?.toDatadogEvaluationContext() ?: DatadogEvaluationContext.EMPTY
+        updateEvaluationTelemetryPolicy(initialContext)
+        val datadogContext = targetingContext(initialContext)
         flagsClient.setEvaluationContextSuspend(datadogContext)
     }
 
@@ -116,7 +121,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      *
      * Uses the callback API to wait for completion without manual listener management.
      *
-     * @param oldContext The previous evaluation context (unused)
+     * @param oldContext The previous evaluation context
      * @param newContext The new evaluation context to set
      * @throws OpenFeatureError if the provider is unable to set the new context.
      */
@@ -124,7 +129,15 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         oldContext: OpenFeatureEvaluationContext?,
         newContext: OpenFeatureEvaluationContext
     ) {
-        flagsClient.setEvaluationContextSuspend(newContext.toDatadogEvaluationContext())
+        updateEvaluationTelemetryPolicy(newContext)
+        val newTargetingContext = targetingContext(newContext)
+        val controlChanged = oldContext?.asMap()?.get(EVALUATION_TELEMETRY_OPT_OUT) !=
+            newContext.asMap()[EVALUATION_TELEMETRY_OPT_OUT]
+        val sameTargetingContext = oldContext != null && targetingContext(oldContext) == newTargetingContext
+        if (evaluationTelemetryOptOutParameterEnabled && controlChanged && sameTargetingContext) {
+            return
+        }
+        flagsClient.setEvaluationContextSuspend(newTargetingContext)
     }
 
     override fun getBooleanEvaluation(
@@ -243,8 +256,21 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         }
     }
 
+    private fun updateEvaluationTelemetryPolicy(context: OpenFeatureEvaluationContext?) {
+        if (evaluationTelemetryOptOutParameterEnabled) {
+            val value = context?.asMap()?.get(EVALUATION_TELEMETRY_OPT_OUT)
+            flagsClient.setEvaluationTelemetryOptOut(value == Value.Boolean(true))
+        }
+    }
+
+    private fun targetingContext(context: OpenFeatureEvaluationContext?): DatadogEvaluationContext =
+        context?.toDatadogEvaluationContext(
+            excludedAttribute = EVALUATION_TELEMETRY_OPT_OUT.takeIf { evaluationTelemetryOptOutParameterEnabled }
+        ) ?: DatadogEvaluationContext.EMPTY
+
     companion object {
         private const val PROVIDER_NAME = "Datadog Feature Flags Provider"
+        private const val EVALUATION_TELEMETRY_OPT_OUT = "dd_evaluation_telemetry_opt_out"
 
         /**
          * Sentinel default value used to avoid unnecessary Value-to-Map conversion.

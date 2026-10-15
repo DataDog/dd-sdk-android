@@ -44,6 +44,7 @@ import org.json.JSONObject
  * @param exposureProcessor responsible for writing exposure batches to be sent to flags backend.
  * @param evaluationsFeature the evaluations subfeature for accessing processor and context (optional).
  * @param flagStateManager channel for managing state change listeners
+ * @param evaluationTelemetryOptOutParameterEnabled whether this client accepts the local telemetry policy
  */
 @Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
 internal class DatadogFlagsClient(
@@ -54,8 +55,12 @@ internal class DatadogFlagsClient(
     private val rumEvaluationLogger: RumEvaluationLogger,
     private val exposureProcessor: EventsProcessor,
     private val evaluationsFeature: EvaluationsFeature?,
-    private val flagStateManager: FlagsStateManager
+    private val flagStateManager: FlagsStateManager,
+    internal val evaluationTelemetryOptOutParameterEnabled: Boolean = false
 ) : FlagsClient {
+
+    @Volatile
+    private var evaluationTelemetryOptOut: Boolean = false
 
     override val state: StateObservable = flagStateManager
 
@@ -99,7 +104,16 @@ internal class DatadogFlagsClient(
      * Invoked on a background executor thread. See [EvaluationContextCallback] for timeout behavior.
      */
     override fun setEvaluationContext(context: EvaluationContext, callback: EvaluationContextCallback?) {
-        evaluationsManager.updateEvaluationsForContext(context, callback)
+        val targetingContext = if (evaluationTelemetryOptOutParameterEnabled) {
+            context.copy(attributes = context.attributes - "dd_evaluation_telemetry_opt_out")
+        } else {
+            context
+        }
+        evaluationsManager.updateEvaluationsForContext(targetingContext, callback)
+    }
+
+    internal fun setEvaluationTelemetryOptOut(optOut: Boolean) {
+        evaluationTelemetryOptOut = evaluationTelemetryOptOutParameterEnabled && optOut
     }
 
     /**
@@ -487,6 +501,10 @@ internal class DatadogFlagsClient(
             }
         }
 
+        if (evaluationTelemetryOptOut) {
+            return
+        }
+
         // RUM feature flag tracking - fires for all successful evaluations with a variant key
         if (flagsConfiguration.rumIntegrationEnabled && flag.variationKey.isNotBlank()) {
             logEvaluation(flagKey, flag.variationKey)
@@ -506,7 +524,7 @@ internal class DatadogFlagsClient(
     }
 
     private fun <T : Any> trackErrorResolution(resolution: InternalResolution.Error<T>) {
-        if (!flagsConfiguration.trackEvaluations) {
+        if (evaluationTelemetryOptOut || !flagsConfiguration.trackEvaluations) {
             return
         }
 
