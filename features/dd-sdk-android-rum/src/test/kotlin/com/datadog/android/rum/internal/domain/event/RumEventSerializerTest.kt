@@ -1184,9 +1184,9 @@ internal class RumEventSerializerTest {
                     when (event.telemetry.usage) {
                         is TelemetryUsageEvent.Usage.AddViewLoadingTime -> {
                             val usage = event.telemetry.usage
-                            hasField("no_view", usage.noView)
-                            hasField("no_active_view", usage.noActiveView)
-                            hasField("overwritten", usage.overwritten)
+                            hasField("no_view", checkNotNull(usage.noView))
+                            hasField("no_active_view", checkNotNull(usage.noActiveView))
+                            hasField("overwritten", checkNotNull(usage.overwritten))
                         }
 
                         else -> {

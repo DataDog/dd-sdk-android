@@ -260,14 +260,14 @@ internal class RumSessionScopeStartupManagerTest {
         forge: Forge
     ) {
         // Given
-        val fakeQuotaReason = forge.anAlphabeticalString()
+        val fakeQuotaReason = forge.aValueFrom(VitalAppLaunchEvent.QuotaReason::class.java)
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to true,
-                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason.toJson().asString,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.sessionId
                     )
                 )
@@ -307,14 +307,14 @@ internal class RumSessionScopeStartupManagerTest {
         forge: Forge
     ) {
         // Given — profiling is not running and the quota API denied the session
-        val fakeQuotaReason = forge.anAlphabeticalString()
+        val fakeQuotaReason = forge.aValueFrom(VitalAppLaunchEvent.QuotaReason::class.java)
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to false,
-                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason.toJson().asString,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.sessionId
                     )
                 )
@@ -354,7 +354,7 @@ internal class RumSessionScopeStartupManagerTest {
         forge: Forge
     ) {
         // Given — a quota reason stamped with a session other than the current one
-        val fakeQuotaReason = forge.anAlphabeticalString()
+        val fakeQuotaReason = forge.aValueFrom(VitalAppLaunchEvent.QuotaReason::class.java)
         val fakeOtherSessionId = forge.anHexadecimalString()
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
@@ -362,7 +362,7 @@ internal class RumSessionScopeStartupManagerTest {
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to false,
-                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason.toJson().asString,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
                     )
                 )
@@ -402,14 +402,14 @@ internal class RumSessionScopeStartupManagerTest {
         forge: Forge
     ) {
         // Given — profiling is not running and the quota API denied the session
-        val fakeQuotaReason = forge.anAlphabeticalString()
+        val fakeQuotaReason = forge.aValueFrom(VitalAppLaunchEvent.QuotaReason::class.java)
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to false,
-                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason.toJson().asString,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.sessionId
                     )
                 )
@@ -457,14 +457,14 @@ internal class RumSessionScopeStartupManagerTest {
         forge: Forge
     ) {
         // Given — the profiler is still running but a quota-denied reason is also present
-        val fakeQuotaReason = forge.anAlphabeticalString()
+        val fakeQuotaReason = forge.aValueFrom(VitalAppLaunchEvent.QuotaReason::class.java)
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to true,
-                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason.toJson().asString,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to rumContext.sessionId
                     )
                 )
@@ -515,7 +515,7 @@ internal class RumSessionScopeStartupManagerTest {
         forge: Forge
     ) {
         // Given — a quota reason stamped with a session other than the current one
-        val fakeQuotaReason = forge.anAlphabeticalString()
+        val fakeQuotaReason = forge.aValueFrom(VitalAppLaunchEvent.QuotaReason::class.java)
         val fakeOtherSessionId = forge.anHexadecimalString()
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
@@ -523,7 +523,7 @@ internal class RumSessionScopeStartupManagerTest {
                     Feature.PROFILING_FEATURE_NAME,
                     mapOf(
                         FeatureContextKeys.PROFILER_IS_RUNNING to false,
-                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason.toJson().asString,
                         FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeOtherSessionId
                     )
                 )

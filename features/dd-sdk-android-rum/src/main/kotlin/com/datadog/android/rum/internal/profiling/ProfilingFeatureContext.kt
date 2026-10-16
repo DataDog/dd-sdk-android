@@ -31,3 +31,16 @@ internal fun DatadogContext.resolveProfilingQuotaReason(currentSessionId: String
     val quotaSessionId = profilingContext[FeatureContextKeys.PROFILING_QUOTA_SESSION_ID] as? String
     return reason.takeIf { quotaSessionId != null && quotaSessionId == currentSessionId }
 }
+
+/**
+ * Same as [resolveProfilingQuotaReason], mapped to an event-specific quota reason enum via [fromJson].
+ */
+internal fun <T> DatadogContext.resolveProfilingQuotaReason(currentSessionId: String?, fromJson: (String) -> T): T? {
+    val reason = resolveProfilingQuotaReason(currentSessionId) ?: return null
+    return try {
+        fromJson(reason)
+    } catch (@Suppress("SwallowedException") e: NoSuchElementException) {
+        // ponytail: profiling publishes values mirroring the schema enum; an unknown one is dropped
+        null
+    }
+}

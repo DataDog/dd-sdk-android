@@ -75,6 +75,16 @@
           "type": "boolean",
           "description": "Whether this session has a replay",
           "readOnly": true
+        },
+        "is_main_process": {
+          "type": "boolean",
+          "description": "Whether the SDK is initialised on the application's main or a secondary process",
+          "readOnly": true
+        },
+        "has_timeseries": {
+          "type": "boolean",
+          "description": "Whether this session has performance timeseries data",
+          "readOnly": true
         }
       },
       "readOnly": true
@@ -122,6 +132,11 @@
           "type": "string",
           "description": "User defined name of the view",
           "readOnly": false
+        },
+        "is_fake": {
+          "type": "boolean",
+          "description": "Whether this view was synthetically created to carry view-less events",
+          "readOnly": true
         }
       },
       "readOnly": true
@@ -510,6 +525,31 @@
           "readOnly": true
         }
       }
+    },
+    "execution_context": {
+      "type": "object",
+      "description": "Execution context properties",
+      "required": ["id", "type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID of the execution context",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+          "readOnly": true
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of the execution context",
+          "enum": ["main-process", "renderer-process", "utility-process"],
+          "readOnly": true
+        },
+        "name": {
+          "type": "string",
+          "description": "Execution context name",
+          "readOnly": false
+        }
+      },
+      "readOnly": true
     }
   }
 }

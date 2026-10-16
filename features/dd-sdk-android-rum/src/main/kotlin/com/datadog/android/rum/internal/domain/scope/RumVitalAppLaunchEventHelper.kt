@@ -39,7 +39,7 @@ internal class RumVitalAppLaunchEventHelper(
         scenario: RumStartupScenario,
         appLaunchMetric: VitalAppLaunchEvent.AppLaunchMetric,
         profilingStatus: VitalAppLaunchEvent.ProfilingStatus?,
-        profilingQuotaReason: String? = null
+        profilingQuotaReason: VitalAppLaunchEvent.QuotaReason? = null
     ): VitalAppLaunchEvent {
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||

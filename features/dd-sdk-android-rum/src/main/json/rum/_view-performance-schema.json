@@ -112,7 +112,7 @@
         "sub_parts": {
           "type": "object",
           "description": "Sub-parts of the INP",
-          "required": ["input_delay", "processing_time", "presentation_delay"],
+          "required": ["input_delay", "processing_duration", "presentation_delay"],
           "properties": {
             "input_delay": {
               "type": "integer",
@@ -120,7 +120,7 @@
               "minimum": 0,
               "readOnly": true
             },
-            "processing_time": {
+            "processing_duration": {
               "type": "integer",
               "description": "Event handler execution time",
               "minimum": 0,

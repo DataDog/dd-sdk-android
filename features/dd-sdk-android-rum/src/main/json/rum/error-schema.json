@@ -121,6 +121,7 @@
               "enum": [
                 "android",
                 "browser",
+                "browser+wasm",
                 "ios",
                 "react-native",
                 "flutter",
@@ -131,7 +132,8 @@
                 "windows",
                 "macos",
                 "linux",
-                "maui"
+                "maui",
+                "nodejs"
               ],
               "readOnly": true
             },
@@ -193,6 +195,10 @@
                       "readOnly": true
                     }
                   },
+                  "readOnly": true
+                },
+                "graphql": {
+                  "allOf": [{ "$ref": "_graphql-schema.json" }],
                   "readOnly": true
                 }
               },
@@ -265,6 +271,34 @@
                   "arch": {
                     "type": "string",
                     "description": "CPU architecture from the library.",
+                    "readOnly": true
+                  }
+                }
+              },
+              "readOnly": true
+            },
+            "wasm_modules": {
+              "type": "array",
+              "description": "WebAssembly modules available for stack trace symbolication.",
+              "items": {
+                "type": "object",
+                "description": "A WebAssembly module loaded by the application.",
+                "required": ["url", "build_id"],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "description": "URL identifying the WebAssembly module.",
+                    "readOnly": true
+                  },
+                  "build_id": {
+                    "type": "string",
+                    "description": "Build ID used to identify the WebAssembly debug symbols.",
+                    "readOnly": true
+                  },
+                  "debug_info_type": {
+                    "type": "string",
+                    "description": "Debug information format used to symbolicate the WebAssembly module.",
+                    "enum": ["dwarf", "sourcemap", "unknown"],
                     "readOnly": true
                   }
                 }
@@ -374,13 +408,38 @@
         "_dd": {
           "type": "object",
           "description": "Internal properties",
-          "properties": {
-            "profiling": {
-              "type": "object",
-              "description": "Profiling context",
-              "allOf": [{ "$ref": "./_profiling-internal-context-schema.json" }]
+          "allOf": [
+            { "$ref": "_trace-schema.json" },
+            {
+              "properties": {
+                "profiling": {
+                  "type": "object",
+                  "description": "Profiling context",
+                  "allOf": [{ "$ref": "./_profiling-internal-context-schema.json" }]
+                },
+                "debug_ids": {
+                  "type": "array",
+                  "description": "Mapping of source file URLs to their debug IDs for source map deobfuscation",
+                  "items": {
+                    "type": "object",
+                    "description": "Association between a source file URL and its debug ID",
+                    "required": ["url", "id"],
+                    "properties": {
+                      "url": {
+                        "type": "string",
+                        "description": "URL of the source file"
+                      },
+                      "id": {
+                        "type": "string",
+                        "description": "Debug ID (UUID) for the source file",
+                        "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+                      }
+                    }
+                  }
+                }
+              }
             }
-          },
+          ],
           "readOnly": true
         }
       }

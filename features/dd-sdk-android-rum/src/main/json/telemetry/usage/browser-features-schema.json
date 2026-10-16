@@ -96,6 +96,17 @@
           "const": "stop-resource"
         }
       }
+    },
+    {
+      "required": ["feature"],
+      "title": "SourceCodeContext",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "DD_SOURCE_CODE_CONTEXT global for microfrontends",
+          "const": "source-code-context"
+        }
+      }
     }
   ]
 }
