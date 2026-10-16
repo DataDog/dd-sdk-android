@@ -100,8 +100,11 @@ internal class DefaultSlowFramesListener(
             report.slowFramesDurationNs += frameDurationNs
             metricDispatcher.incrementSlowFrameCount(viewId)
             val previousSlowFrameRecord = report.lastSlowFrameRecord
+            val previousSlowFrameEndTimestampNs = previousSlowFrameRecord?.let {
+                it.startTimestampNs + it.durationNs
+            }
             val delaySinceLastUpdate = frameStartedTimestampNs -
-                (previousSlowFrameRecord?.startTimestampNs ?: frameStartedTimestampNs)
+                (previousSlowFrameEndTimestampNs ?: frameStartedTimestampNs)
 
             if (previousSlowFrameRecord == null ||
                 delaySinceLastUpdate > configuration.continuousSlowFrameThresholdNs

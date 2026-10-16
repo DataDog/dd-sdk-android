@@ -206,14 +206,14 @@ internal class DefaultSlowFramesListenerTest {
             )
         )
         val jank2 = forge.aFrameData(
-            frameStartNanos = jank1.frameStartNanos + continuousSlowFrameThresholdNs + 1,
+            frameStartNanos = jank1.frameStartNanos + jank1.frameDurationUiNanos + continuousSlowFrameThresholdNs + 1,
             frameDurationUiNanos = forge.aLong(min = 1, max = 100)
         )
 
         val testedListener = stubSlowFramesListener(
             SlowFramesConfiguration(
                 maxSlowFrameThresholdNs = Long.MAX_VALUE,
-                continuousSlowFrameThresholdNs = 16
+                continuousSlowFrameThresholdNs = continuousSlowFrameThresholdNs
             )
         )
         testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
@@ -227,6 +227,50 @@ internal class DefaultSlowFramesListenerTest {
         assertThat(report.slowFramesRecords).hasSize(2)
         assertThat(report.slowFramesRecords.first()).isEqualTo(jank1.toSlowFrame())
         assertThat(report.slowFramesRecords.last()).isEqualTo(jank2.toSlowFrame())
+    }
+
+    @Test
+    fun `M return report with single item W resolveReport { back-to-back janks longer than threshold }`(
+        @LongForgery(min = 16L, max = 1000) continuousSlowFrameThresholdNs: Long,
+        forge: Forge
+    ) {
+        // Given
+        val jank1 = forge.aFrameData(
+            frameStartNanos = viewCreatedTimestampNs,
+            frameDurationUiNanos = forge.aLong(
+                min = continuousSlowFrameThresholdNs + 1,
+                max = 2 * continuousSlowFrameThresholdNs
+            )
+        )
+        val jank2 = forge.aFrameData(
+            frameStartNanos = jank1.frameStartNanos + jank1.frameDurationUiNanos +
+                forge.aLong(min = 0, max = continuousSlowFrameThresholdNs),
+            frameDurationUiNanos = forge.aLong(
+                min = continuousSlowFrameThresholdNs + 1,
+                max = 2 * continuousSlowFrameThresholdNs
+            )
+        )
+
+        val testedListener = stubSlowFramesListener(
+            SlowFramesConfiguration(
+                maxSlowFrameThresholdNs = Long.MAX_VALUE,
+                continuousSlowFrameThresholdNs = continuousSlowFrameThresholdNs
+            )
+        )
+        testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
+        testedListener.onFrame(jank1)
+        testedListener.onFrame(jank2)
+
+        // When
+        val report = checkNotNull(testedListener.resolveReport(viewId, false, fakeViewDurationNs))
+
+        // Then
+        assertThat(report.slowFramesRecords).hasSize(1)
+        assertThat(report.slowFramesRecords.first()).isEqualTo(
+            jank1.toSlowFrame(
+                durationNs = jank1.frameDurationUiNanos + jank2.frameDurationUiNanos
+            )
+        )
     }
 
     private fun stubSlowFramesListener(
