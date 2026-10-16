@@ -59,6 +59,20 @@ class BenchmarkConfigTest {
     }
 
     @Test
+    fun `M build correct config W resolve bundle {scenario = 'timeseries', run = 'instrumented'}`() {
+        // Given
+        whenever(mockedBundle.getString("synthetics.benchmark.scenario")).thenReturn("timeseries")
+        whenever(mockedBundle.getString("synthetics.benchmark.run")).thenReturn("instrumented")
+
+        // When
+        val config = BenchmarkConfig.resolveSyntheticsBundle(mockedBundle)
+
+        // Then
+        Assertions.assertThat(config.scenario).isEqualTo(SyntheticsScenario.Timeseries)
+        Assertions.assertThat(config.run).isEqualTo(SyntheticsRun.Instrumented)
+    }
+
+    @Test
     fun `M build empty config W resolve invalid bundle`() {
         whenever(mockedBundle.getString("synthetics.benchmark.scenario")).thenReturn("")
         whenever(mockedBundle.getString("synthetics.benchmark.run")).thenReturn("")

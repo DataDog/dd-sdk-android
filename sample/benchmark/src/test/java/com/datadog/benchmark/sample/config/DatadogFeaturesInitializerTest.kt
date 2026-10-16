@@ -187,6 +187,40 @@ class DatadogFeaturesInitializerTest {
         }
     }
 
+    @Test
+    fun `M enable rum only W run is instrumented and scenario is timeseries`() {
+        // Given
+        val config = BenchmarkConfig(
+            run = SyntheticsRun.Instrumented,
+            scenario = SyntheticsScenario.Timeseries
+        )
+
+        mockAllAndCheck(config) {
+            // Then
+            sessionReplay.verifyNoInteractions()
+            rum.verifyRumEnabled()
+            logs.verifyNoInteractions()
+            profiling.verifyNoInteractions()
+        }
+    }
+
+    @Test
+    fun `M enable nothing W run is baseline and scenario is timeseries`() {
+        // Given
+        val config = BenchmarkConfig(
+            run = SyntheticsRun.Baseline,
+            scenario = SyntheticsScenario.Timeseries
+        )
+
+        mockAllAndCheck(config) {
+            // Then
+            sessionReplay.verifyNoInteractions()
+            rum.verifyNoInteractions()
+            logs.verifyNoInteractions()
+            profiling.verifyNoInteractions()
+        }
+    }
+
     private fun mockAllAndCheck(config: BenchmarkConfig, thenBlock: MockedStatics.() -> Unit) {
         val sessionReplayStatic = Mockito.mockStatic(SessionReplay::class.java)
         val rumStatic = Mockito.mockStatic(Rum::class.java)
