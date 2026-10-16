@@ -1,0 +1,137 @@
+stages:
+  - verify
+
+.snippets:
+  source-secrets:
+    - source ./ci/scripts/vault_config.sh
+    - source ./ci/scripts/get-secret.sh
+
+  setup-gradle:
+    - export GRADLE_USER_HOME="cache/"
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - |
+      gradle_jvm_args=(
+        "-Xmx8g"
+        "-XX:ReservedCodeCacheSize=768m"
+        "-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG"
+      )
+
+      kotlin_daemon_jvm_args=("-Xmx8g")
+
+      gradle_options=(
+        "-Dorg.gradle.jvmargs=${gradle_jvm_args[*]}"
+        "-Dorg.gradle.workers.max=16"
+        "-Dorg.gradle.logging.stacktrace=all"
+        "-Dorg.gradle.project.kotlin.compiler.execution.strategy=daemon"
+        "-Dorg.gradle.project.kotlin.daemon.jvmargs=${kotlin_daemon_jvm_args[*]}"
+      )
+
+      printf -v configured_gradle_options ' %q' "${gradle_options[@]}"
+      export GRADLE_OPTS="${GRADLE_OPTS:-}$configured_gradle_options"
+      echo "--- GRADLE_OPTS ---"
+      echo "$GRADLE_OPTS"
+
+.cpu-memory-intensive-job:
+  variables:
+    KUBERNETES_MEMORY_REQUEST: 32Gi
+    KUBERNETES_MEMORY_LIMIT: 32Gi
+    KUBERNETES_CPU_REQUEST: 16
+    KUBERNETES_CPU_LIMIT: 16
+
+.base-gradle-cache-job:
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/wrapper/
+      - cache/notifications/
+
+verify:all:
+  extends:
+    - .base-gradle-cache-job
+    - .cpu-memory-intensive-job
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  cache:
+    policy: pull-push
+  id_tokens:
+    DD_STS_OIDC_TOKEN:
+      aud: dd-sts
+  stage: verify
+  timeout: 1h
+  before_script:
+    - !reference [ .snippets, source-secrets ]
+    - mkdir -p "$CI_PROJECT_DIR/profiles"
+    # JDK_JAVA_OPTIONS applies to `java` processes without polluting JDK tools such as `jmod`.
+    - export JDK_JAVA_OPTIONS="${JDK_JAVA_OPTIONS:-} -XX:StartFlightRecording=name=ci,filename=$CI_PROJECT_DIR/profiles/,settings=profile,dumponexit=true,maxsize=1g"
+    - !reference [ .snippets, setup-gradle ]
+  script:
+    - >-
+        DD_TAGS="test.configuration.variant:debug" ./gradlew
+        --no-build-cache
+        --no-configuration-cache
+        --console=plain
+        --continue
+        --no-daemon
+        --scan
+        --init-script ci/gradle-cache-cleanup.init.gradle.kts
+        -Dscan.uploadInBackground=false
+        -DsdkCommitSha1=0000000000000000000000000000000000000000
+        -Puse-api21-java-backport
+        -Puse-desugaring
+        checkGeneratedFiles
+        ktlintCheck
+        :build-logic:ktlintCheck
+        detekt
+        lintDebug
+        :tools:lint:lint
+        :dd-sdk-android-core:testDebugUnitTest
+        :dd-sdk-android-internal:testDebugUnitTest
+        :unitTestDebugFeatures
+        :unitTestDebugIntegrations
+        :sample:benchmark:testDebugUnitTest
+        :tools:unit:testJvmDebugUnitTest
+        :tools:detekt:test
+        :tools:lint:test
+        :tools:noopfactory:test
+        :tools:benchmark:testDebugUnitTest
+        :build-logic:test
+        :dd-sdk-android-core:koverXmlReportDebug
+        :dd-sdk-android-internal:koverXmlReportDebug
+        :koverReportDebugFeatures
+        :koverReportDebugIntegrations
+        :reliability:single-fit:logs:testDebugUnitTest
+        :reliability:single-fit:rum:testDebugUnitTest
+        :reliability:single-fit:trace:testDebugUnitTest
+        :reliability:single-fit:okhttp:testDebugUnitTest
+        :reliability:single-fit:profiling:testDebugUnitTest
+        :reliability:single-fit:flags:testDebugUnitTest
+        checkTestPyramidCoverage
+        :reliability:core-it:assembleDebug
+        :reliability:core-it:assembleDebugAndroidTest
+        :instrumented:integration:assembleDebug
+        :instrumented:integration:assembleDebugAndroidTest
+        :features:dd-sdk-android-ndk:assembleDebugAndroidTest
+    - dd-sts exchange --policy dd-sdk-android -- datadog-ci coverage upload . || true
+  after_script:
+    # Kotlin daemons can outlive Gradle, so explicitly dump their active recordings.
+    - |
+      for kotlin_daemon_pid in $(env -u JAVA_TOOL_OPTIONS -u JDK_JAVA_OPTIONS jps -l | awk '/KotlinCompileDaemon/ { print $1 }'); do
+        if ! env -u JAVA_TOOL_OPTIONS -u JDK_JAVA_OPTIONS jcmd "$kotlin_daemon_pid" JFR.dump name=ci filename="$CI_PROJECT_DIR/profiles/kotlin-$kotlin_daemon_pid.jfr"; then
+          echo "Failed to dump JFR for Kotlin daemon $kotlin_daemon_pid"
+        fi
+      done
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - "reliability/core-it/build/outputs/apk/debug/*.apk"
+      - "reliability/core-it/build/outputs/apk/androidTest/debug/*.apk"
+      - "instrumented/integration/build/outputs/apk/debug/*.apk"
+      - "instrumented/integration/build/outputs/apk/androidTest/debug/*.apk"
+      - "features/dd-sdk-android-ndk/build/outputs/apk/androidTest/debug/*.apk"
+      - "build/reports/test-pyramid/coverage.txt"
+      - "profiles/*.jfr"
+    reports:
+      junit:
+        - "**/build/test-results/test*/*.xml"
