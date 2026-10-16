@@ -19,6 +19,7 @@ import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.sessionreplay.SessionReplay
@@ -96,6 +97,9 @@ internal class DatadogFeaturesInitializer @Inject constructor(
     private fun isProfilingScenario(config: BenchmarkConfig) =
         config.scenario == SyntheticsScenario.Profiling
 
+    private fun isTimeseriesScenario(config: BenchmarkConfig) =
+        config.scenario == SyntheticsScenario.Timeseries
+
     private fun needToEnableSessionReplay(config: BenchmarkConfig): Boolean {
         return isInstrumentedRun(config) && isSessionReplayScenario(config)
     }
@@ -166,6 +170,8 @@ internal class DatadogFeaturesInitializer @Inject constructor(
                 }
             )
             enableComposeActionTracking()
+
+            if (isTimeseriesScenario(config)) setTimeseriesConfiguration(TimeseriesConfiguration.DEFAULT)
         }.build()
     }
 
@@ -202,13 +208,15 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         SyntheticsScenario.LogsHeavyTraffic,
         SyntheticsScenario.RumAuto,
         SyntheticsScenario.Profiling,
+        SyntheticsScenario.Timeseries,
         null -> false
     }
 
     private fun isRumScenario(config: BenchmarkConfig) = when (config.scenario) {
         SyntheticsScenario.RumAuto,
         SyntheticsScenario.RumManual,
-        SyntheticsScenario.Profiling -> true
+        SyntheticsScenario.Profiling,
+        SyntheticsScenario.Timeseries -> true
 
         SyntheticsScenario.SessionReplay,
         SyntheticsScenario.SessionReplayCompose,
@@ -229,6 +237,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         SyntheticsScenario.Upload,
         SyntheticsScenario.RumAuto,
         SyntheticsScenario.Profiling,
+        SyntheticsScenario.Timeseries,
         null -> false
     }
 
