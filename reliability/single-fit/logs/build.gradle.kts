@@ -4,8 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     // Build
     id("com.android.library")
@@ -58,6 +56,6 @@ unMock {
 
 datadogBuild {
     applyAndroidLibraryConfig()
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyJunitConfig()
 }

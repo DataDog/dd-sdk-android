@@ -8,7 +8,6 @@
 import com.datadog.gradle.utils.cloneRumEventsFormat
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
 import com.datadog.gradle.utils.createRumSchemaCloneTask
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Build
@@ -125,7 +124,7 @@ createJsonModelsGenerationTask("generateProfilingModelsFromJson") {
 }
 
 datadogBuild {
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyAndroidLibraryConfig()
     applyJunitConfig()
     applyJavadocConfig()

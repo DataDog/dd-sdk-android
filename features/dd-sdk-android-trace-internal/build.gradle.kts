@@ -6,7 +6,6 @@
 @file:Suppress("StringLiteralDuplication")
 
 import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesTask
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Build
@@ -122,7 +121,7 @@ tasks.register<GitCloneDependenciesTask>("cloneDdTrace") {
 }
 
 datadogBuild {
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyAndroidLibraryConfig()
     applyJunitConfig()
     applyJavadocConfig()

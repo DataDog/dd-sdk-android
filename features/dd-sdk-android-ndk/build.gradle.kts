@@ -6,7 +6,6 @@
 
 import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Build
@@ -101,7 +100,7 @@ dependencies {
 }
 
 datadogBuild {
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyAndroidLibraryConfig()
     applyJunitConfig()
     applyJavadocConfig()
