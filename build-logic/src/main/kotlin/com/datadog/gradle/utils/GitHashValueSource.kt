@@ -16,6 +16,11 @@ abstract class GitHashValueSource @Inject constructor(
 ) : ValueSource<String, ValueSourceParameters.None> {
 
     override fun obtain(): String? {
-        return execOperations.execShell("git", "rev-parse", "HEAD").joinToString().trim()
+        return System.getProperty(SDK_COMMIT_SHA1_PROPERTY)
+            ?: execOperations.execShell("git", "rev-parse", "HEAD").joinToString().trim()
+    }
+
+    private companion object {
+        const val SDK_COMMIT_SHA1_PROPERTY = "sdkCommitSha1"
     }
 }
