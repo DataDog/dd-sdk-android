@@ -236,6 +236,32 @@ internal class ViewEventDiffTest {
         assertThat(result.session.isMainProcess).isEqualTo(newIsMainProcess)
     }
 
+    @Test
+    fun `M return null for session_has_timeseries W diffViewEvent { has_timeseries unchanged }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // When
+        val result = diffViewEvent(fakeEvent, fakeEvent.copy())
+
+        // Then
+        assertThat(result.session.hasTimeseries).isNull()
+    }
+
+    @Test
+    fun `M return new value for session_has_timeseries W diffViewEvent { has_timeseries changed }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // Given
+        val newHasTimeseries = fakeEvent.session.hasTimeseries?.not() ?: true
+        val newEvent = fakeEvent.copy(session = fakeEvent.session.copy(hasTimeseries = newHasTimeseries))
+
+        // When
+        val result = diffViewEvent(fakeEvent, newEvent)
+
+        // Then
+        assertThat(result.session.hasTimeseries).isEqualTo(newHasTimeseries)
+    }
+
     // endregion
 
     // region APPEND — accumulating arrays (only new elements)

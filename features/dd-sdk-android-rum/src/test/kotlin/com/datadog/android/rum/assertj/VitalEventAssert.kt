@@ -84,6 +84,15 @@ internal class VitalEventAssert(
             .isEqualTo(expected)
     }
 
+    fun hasSessionTimeseries(expected: Boolean?) = apply {
+        assertThat(actual.session.hasTimeseries)
+            .overridingErrorMessage(
+                "Expected event to have session.has_timeseries:$expected " +
+                    "but was ${actual.session.hasTimeseries}"
+            )
+            .isEqualTo(expected)
+    }
+
     fun hasSessionType(expected: VitalOperationStepEventSessionType) = apply {
         assertThat(actual.session.type)
             .overridingErrorMessage(

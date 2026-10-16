@@ -44,7 +44,8 @@ internal class TimeseriesTrackingPlaygroundActivity : Activity() {
         val timeseriesConfiguration = TimeseriesConfiguration(
             setOf(TimeseriesType.CPU, TimeseriesType.MEMORY),
             bufferSize = BUFFER_SIZE,
-            intervalMs = TimeseriesConfiguration.DEFAULT_INTERVAL_MS
+            samplingIntervalMs = TimeseriesConfiguration.DEFAULT_SAMPLING_INTERVAL_MS,
+            viewTransitionDelayMs = TimeseriesConfiguration.BACKGROUND_TRANSITION_DELAY_MS
         )
 
         Rum.enable(
@@ -76,7 +77,7 @@ internal class TimeseriesTrackingPlaygroundActivity : Activity() {
     }
 
     companion object {
-        const val SAMPLE_INTERVAL_MS = TimeseriesConfiguration.DEFAULT_INTERVAL_MS
+        const val SAMPLE_INTERVAL_MS = TimeseriesConfiguration.DEFAULT_SAMPLING_INTERVAL_MS
 
         // The buffer must not fill before the session expires, at most SESSION_INACTIVITY_MS plus one
         // expiry check interval (a third of it) after the last RUM event, or a batch is written while still tracked.

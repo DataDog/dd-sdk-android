@@ -76,7 +76,8 @@ private fun diffSession(
             hasReplay = diffEquals(ViewEvent.ViewEventSession::hasReplay),
             isActive = diffEquals(ViewEvent.ViewEventSession::isActive),
             sampledForReplay = diffEquals(ViewEvent.ViewEventSession::sampledForReplay),
-            isMainProcess = diffEquals(ViewEvent.ViewEventSession::isMainProcess)
+            isMainProcess = diffEquals(ViewEvent.ViewEventSession::isMainProcess),
+            hasTimeseries = diffEquals(ViewEvent.ViewEventSession::hasTimeseries)
         )
     }
 }
