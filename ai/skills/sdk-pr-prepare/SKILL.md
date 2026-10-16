@@ -1,10 +1,10 @@
 ---
-name: dd-pr-prepare
+name: sdk-pr-prepare
 description: >-
-  Pre-PR preparation flow for the dd-sdk-android project — verifies branch naming, runs local CI checks (compile, tests, linter) and regenerates apiSurface/transitiveDependencies so CI passes on the first push. Accepts optional combinable arguments: lint, test, compile, api, dep, local. Use when the user asks to "prepare PR", "get ready for PR", "run pre-PR checks", or invokes /dd-pr-prepare before opening/pushing a pull request.
+  Pre-PR preparation flow for the dd-sdk-android project — verifies branch naming, runs local CI checks (compile, tests, linter) and regenerates apiSurface/transitiveDependencies so CI passes on the first push. Accepts optional combinable arguments: lint, test, compile, api, dep, local. Use when the user asks to "prepare PR", "get ready for PR", "run pre-PR checks", or invokes /sdk-pr-prepare before opening/pushing a pull request.
 ---
 
-# dd-pr-prepare — dd-sdk-android PR Preparation
+# sdk-pr-prepare — dd-sdk-android PR Preparation
 
 Run the steps below **in order**. Stop on the first failing step, surface the error, and do not proceed until the user resolves it.
 
@@ -23,14 +23,14 @@ The cache property is `org.gradle.caching`. `-Dorg.gradle.build-cache=false` is 
 
 ## Arguments
 
-Arguments are **combinable** — the user may pass several at once (e.g. `/dd-pr-prepare lint test`). Each argument selects which checks to run; they map to the steps below:
+Arguments are **combinable** — the user may pass several at once (e.g. `/sdk-pr-prepare lint test`). Each argument selects which checks to run; they map to the steps below:
 
 - `compile` — run Step 2 only (`./local_ci.sh -c -n`).
 - `test` — run Step 3's test part only (`./local_ci.sh -t`), with error fixing and restart on failure.
 - `lint` — run Step 3's lint part only: first `./local_ci.sh -a`, then apiSurface and transitiveDependencies validation, then `ktlint -F` for auto-fixing formatting.
 - `api` — run Step 4's apiSurface part only (regeneration + validation).
 - `dep` — run Step 4's transitive dependencies part only (regeneration).
-- `local` — local-only mode. **Skip Step 7 (push) and Step 8 (create draft PR)** regardless of which checks run. Use when the user invokes `/dd-pr-prepare local` or otherwise passes `local` in the arguments. In this mode, Step 9 reports that push/PR were intentionally skipped.
+- `local` — local-only mode. **Skip Step 7 (push) and Step 8 (create draft PR)** regardless of which checks run. Use when the user invokes `/sdk-pr-prepare local` or otherwise passes `local` in the arguments. In this mode, Step 9 reports that push/PR were intentionally skipped.
 
 **No arguments** — run the full default flow (Steps 2–4): first `./local_ci.sh -c -n`, then **in parallel** one subagent with `./local_ci.sh -a` and another with `./local_ci.sh -t` (with error fixing and restart as needed), then **sequentially** apiSurface validation followed by transitiveDependencies validation.
 
@@ -195,9 +195,9 @@ If the working tree is clean, skip to Step 7.
 
 Otherwise:
 
-1. **Load the sibling [dd-commit](../dd-commit/SKILL.md) skill** via the `Skill` tool or read its SKILL.md. All commit messages MUST follow its rules.
+1. **Load the sibling [sdk-commit](../sdk-commit/SKILL.md) skill** via the `Skill` tool or read its SKILL.md. All commit messages MUST follow its rules.
 2. Stage only files touched by the prepare-pr flow (typically `**/apiSurface`, `**/transitiveDependencies`, detekt config files, and any source edits you made to fix linter issues). Do not blind `git add -A` — other unrelated changes may still be in the tree.
-3. Draft a commit message per the `dd-commit` skill. The subject is imperative, English, ≤72 chars, and follows `<TICKET-ID>: <description>` (e.g. `RUM-1234: Regenerate apiSurface and fix detekt warnings`). If the ticket cannot be determined, ask the user before committing. The body lists what was regenerated / fixed and why.
+3. Draft a commit message per the `sdk-commit` skill. The subject is imperative, English, ≤72 chars, and follows `<TICKET-ID>: <description>` (e.g. `RUM-1234: Regenerate apiSurface and fix detekt warnings`). If the ticket cannot be determined, ask the user before committing. The body lists what was regenerated / fixed and why.
 4. Show the drafted message to the user via `AskUserQuestion` (Approve / Edit / Abort commit) before running `git commit`.
 5. Commit with HEREDOC so formatting survives:
    ```bash
@@ -224,7 +224,7 @@ If the push fails due to non-fast-forward (someone force-pushed upstream), surfa
 **Skip this step entirely if `local` was passed in the arguments.**
 
 1. Detect the base branch: use `git config --get branch.<current>.merge` or fall back to `develop` if it exists, otherwise `main`.
-2. **Load the sibling [dd-commit](../dd-commit/SKILL.md) skill** if it was not loaded in Step 6; otherwise reuse its rules for keeping PR descriptions separate from commit bodies.
+2. **Load the sibling [sdk-commit](../sdk-commit/SKILL.md) skill** if it was not loaded in Step 6; otherwise reuse its rules for keeping PR descriptions separate from commit bodies.
 3. Detect a PR template in the repo (in order):
    - `.github/PULL_REQUEST_TEMPLATE.md`
    - `.github/pull_request_template.md`
@@ -235,7 +235,7 @@ If the push fails due to non-fast-forward (someone force-pushed upstream), surfa
    - If a template exists: fill every section; do NOT delete or reorder any heading; write `N/A` for inapplicable sections. Following the template structure is not optional.
    - Otherwise: 2–4 sentences in English covering **what changed**, **why**, and **notes** (tests, migration, ticket reference). Append `Ref: <TICKET-ID>` on its own line when derivable from the branch name.
    - An empty or placeholder-only body is never acceptable — the user may edit wording but **may not approve a blank description**.
-5. Derive the PR title from the last commit on the branch (or from the ticket ID + short description). English, ≤72 chars. Same rules as `dd-commit`'s header section.
+5. Derive the PR title from the last commit on the branch (or from the ticket ID + short description). English, ≤72 chars. Same rules as `sdk-commit`'s header section.
 6. Show title + body to the user via `AskUserQuestion` (Approve / Edit / Abort) before creating the PR.
 7. Create the PR as a **draft**:
    ```bash
@@ -257,5 +257,5 @@ Print a concise summary:
 - Generated files (apiSurface / transitiveDependencies)
 - Fixed issues (tests / linter) with counts
 - Commit hash created in Step 6 (if any)
-- Draft PR URL from Step 8 — or, in `local` mode, an explicit note that push and PR creation were skipped and that the user can run `/dd-pr-prepare` (without `local`) to publish
+- Draft PR URL from Step 8 — or, in `local` mode, an explicit note that push and PR creation were skipped and that the user can run `/sdk-pr-prepare` (without `local`) to publish
 - Any remaining warnings the user should look at before marking the PR ready

@@ -1,5 +1,5 @@
 ---
-name: dd-pr-stack
+name: sdk-pr-stack
 description: >-
   Create or update Graphite PR stacks for dd-sdk-android. Use when splitting a
   feature branch into stacked PRs, restacking branches after committed changes,
@@ -10,7 +10,7 @@ when_to_use: >-
 argument-hint: "create | update"
 ---
 
-# dd-pr-stack — Graphite PR stacks
+# sdk-pr-stack — Graphite PR stacks
 
 ## Choose the action
 
@@ -19,22 +19,22 @@ unambiguous user request. The supported actions are:
 
 | Action | Invocation | Workflow |
 | --- | --- | --- |
-| `create` | `/dd-pr-stack create` | [references/create.md](references/create.md): split the current feature branch into stacked PRs, using existing commits or an approved auto-rebase plan. |
-| `update` | `/dd-pr-stack update` | [references/update.md](references/update.md): restack the existing Graphite stack and submit its updated PRs. |
+| `create` | `/sdk-pr-stack create` | [references/create.md](references/create.md): split the current feature branch into stacked PRs, using existing commits or an approved auto-rebase plan. |
+| `update` | `/sdk-pr-stack update` | [references/update.md](references/update.md): restack the existing Graphite stack and submit its updated PRs. |
 
 Load the selected workflow in full and follow only that workflow.
 
 - If the action is missing or the request is ambiguous, ask the user to choose
   `create` or `update` before starting either workflow.
 - If an explicit action is unsupported or both actions are supplied, show
-  `/dd-pr-stack create` and `/dd-pr-stack update` as valid usage and stop.
+  `/sdk-pr-stack create` and `/sdk-pr-stack update` as valid usage and stop.
 - Do not choose `create` merely because `update` cannot find an existing stack.
 
 ## Shared rules
 
 - Follow the repository's `AGENTS.md` for ticket IDs, branch names, commit
   headers, and PR templates. The default PR base in this repository is `develop`.
-- In `create` mode, load the sibling [dd-commit](../dd-commit/SKILL.md) before
+- In `create` mode, load the sibling [sdk-commit](../sdk-commit/SKILL.md) before
   generating commit messages or PR titles. Pass those rules to any analysis subagent.
 - In `update` mode, preserve file contents and commit messages. Do not commit,
   amend, split commits, or run the create workflow.

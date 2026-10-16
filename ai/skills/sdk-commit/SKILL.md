@@ -1,15 +1,15 @@
 ---
-name: dd-commit
+name: sdk-commit
 description: >-
   Commit-message conventions for dd-sdk-android. Use when drafting or reviewing
   commit messages and PR titles, making a requested commit, or generating messages
-  during dd-pr-prepare or dd-pr-stack create.
+  during sdk-pr-prepare or sdk-pr-stack create.
 when_to_use: >-
   Writing commit subjects and bodies, formatting a requested Git commit,
   or preparing commit messages and PR titles for a Graphite stack.
 ---
 
-# dd-commit — Commit Message Format
+# sdk-commit — Commit Message Format
 
 ## Structure
 
@@ -53,7 +53,7 @@ Every file touched by a commit must end with exactly one blank line. Before comm
 The commit body and the GitHub PR description serve different audiences and must NOT be conflated.
 
 - **Commit body** (what goes in git history): a brief 1–3 line description of *what* changed and *why*, written for a future reader of `git log`. Keep it technical and concise — it is not a PR description.
-- **PR description** (what goes on GitHub): a separate artifact. The sibling `dd-pr-stack create` workflow generates PR descriptions independently and applies them via `gh pr edit` after `gt submit`. Do NOT embed PR descriptions in commit bodies.
+- **PR description** (what goes on GitHub): a separate artifact. The sibling `sdk-pr-stack create` workflow generates PR descriptions independently and applies them via `gh pr edit` after `gt submit`. Do NOT embed PR descriptions in commit bodies.
 
 **When to add a body to the commit:**
 

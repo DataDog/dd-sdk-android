@@ -1,8 +1,8 @@
-# dd-pr-stack create — Stacked PR creation via Graphite with optional auto-rebase
+# sdk-pr-stack create — Stacked PR creation via Graphite with optional auto-rebase
 
 Follow the shared rules in [../SKILL.md](../SKILL.md), then execute this workflow.
 
-All commit messages and PR titles produced by this skill MUST follow the sibling `dd-commit` skill at [../../dd-commit/SKILL.md](../../dd-commit/SKILL.md). Before generating any commit message (in Steps 3.1, 3.4, and 4.2), invoke that skill via the `Skill` tool to load its current rules, then apply them to every subject/body you generate. Do this once at the start of a generation step and reuse the loaded rules for all commits in that step.
+All commit messages and PR titles produced by this skill MUST follow the sibling `sdk-commit` skill at [../../sdk-commit/SKILL.md](../../sdk-commit/SKILL.md). Before generating any commit message (in Steps 3.1, 3.4, and 4.2), invoke that skill via the `Skill` tool to load its current rules, then apply them to every subject/body you generate. Do this once at the start of a generation step and reuse the loaded rules for all commits in that step.
 
 This skill turns the current feature branch into a series of stacked pull requests via the [Graphite CLI (`gt`)](https://graphite.com/docs/graphite-cli). It supports two modes:
 
@@ -242,7 +242,7 @@ Commits are grouped into PRs — do not create one PR per commit.
 
 Large diffs would otherwise pollute the main context and degrade later decisions. Always delegate, regardless of diff size — consistency matters more than a few saved tokens.
 
-**Before invoking the subagent, load the `dd-commit` skill** (via the `Skill` tool) and read the full text of its SKILL.md. You MUST inline the commit skill rules verbatim into the subagent prompt (below the TASK section, in a `## dd-commit convention` block) so the subagent formats every `title` and `pr_title` accordingly. Do not paraphrase — copy the rules as-is.
+**Before invoking the subagent, load the `sdk-commit` skill** (via the `Skill` tool) and read the full text of its SKILL.md. You MUST inline the commit skill rules verbatim into the subagent prompt (below the TASK section, in a `## sdk-commit convention` block) so the subagent formats every `title` and `pr_title` accordingly. Do not paraphrase — copy the rules as-is.
 
 Gather inputs (excluding `$EXCLUDED` files if any):
 
@@ -283,11 +283,11 @@ Within each PR, split changes into atomic commits where it makes sense:
 Return ONLY a JSON array of PRs, no prose:
 [
   {
-    "pr_title": "<imperative subject for the PR, conforming to dd-commit convention>",
+    "pr_title": "<imperative subject for the PR, conforming to sdk-commit convention>",
     "pr_slug": "<kebab-case slug derived from pr_title without ticket prefix, ≤40 chars, ASCII>",
     "commits": [
       {
-        "title": "<imperative commit subject, conforming to dd-commit convention>",
+        "title": "<imperative commit subject, conforming to sdk-commit convention>",
         "files": ["path/one", "path/two"],
         "hunks": [ {"file": "path/one", "hunk_header": "@@ -10,5 +10,8 @@"} ]
       }
@@ -302,8 +302,8 @@ Rules:
 - Prefer file-granular splits when hunks inside a file are logically inseparable.
 - NEVER add Co-authored-by trailers.
 
-## dd-commit convention
-<INLINED dd-commit SKILL RULES VERBATIM HERE>
+## sdk-commit convention
+<INLINED sdk-commit SKILL RULES VERBATIM HERE>
 ```
 
 Parse the returned JSON. If parsing fails, retry once with a stricter prompt. If still failing, abort.
@@ -473,7 +473,7 @@ Show the planned (prefix+slug) list. Use `AskUserQuestion`:
 
 ### 4.2 Reconstruct the stack with gt
 
-**Before this step**, load the `dd-commit` skill via the `Skill` tool (if not already loaded) and read its full rules. Every commit message created in this step MUST be generated using those rules: extract the ticket ID from the current branch name, write an imperative header, and add a brief body when the change warrants it. Do NOT write bare titles or copy PR descriptions into commit bodies.
+**Before this step**, load the `sdk-commit` skill via the `Skill` tool (if not already loaded) and read its full rules. Every commit message created in this step MUST be generated using those rules: extract the ticket ID from the current branch name, write an imperative header, and add a brief body when the change warrants it. Do NOT write bare titles or copy PR descriptions into commit bodies.
 
 ```
 git checkout "$BASE"
@@ -497,7 +497,7 @@ For each **PR** in the plan (oldest→newest):
       ```
       git add -A
       ```
-   c. Generate the commit message using the `dd-commit` skill rules:
+   c. Generate the commit message using the `sdk-commit` skill rules:
       - Read `git diff --cached --stat` to understand what is staged.
       - Extract the ticket ID from `$SRC_BRANCH` (or `$STAGING` in auto-rebase mode) per the commit skill header rule.
       - The planned commit title is a starting point; rewrite it into a conforming imperative header with the ticket prefix.

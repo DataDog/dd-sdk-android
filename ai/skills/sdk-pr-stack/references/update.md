@@ -1,4 +1,4 @@
-# dd-pr-stack update — Restack and Submit a Graphite PR Stack
+# sdk-pr-stack update — Restack and Submit a Graphite PR Stack
 
 Follow the shared rules in [../SKILL.md](../SKILL.md), then execute this workflow. Do not run the create workflow or rebuild the stack from scratch.
 

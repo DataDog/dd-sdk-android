@@ -1,5 +1,5 @@
 ---
-name: dd-code
+name: sdk-code
 description: >-
   Coding conventions and architecture for dd-sdk-android. Use when implementing,
   modifying, debugging, refactoring, or reviewing production SDK code.
@@ -14,8 +14,8 @@ when_to_use: >-
 
 - **NEVER commit on your own.** Only commit when the user explicitly asks for it.
 - **NEVER edit `detekt.yml`.** This is the shared lint config — changing a rule's `active` flag to silence a warning hides the underlying issue instead of fixing it. Fix the code, not the linter.
-- **ALWAYS write tests** for any code you create or modify. Load the sibling `dd-tests` skill (via the `Skill` tool) whenever you write or touch test files, and follow its conventions exactly.
-- **PAY attention to review concerns.** Before making any design or implementation decision, check whether the sibling [dd-revirew](../dd-revirew/SKILL.md) skill or the current PR review has raised a concern about that area. Prefer the reviewer's guidance over your own default.
+- **ALWAYS write tests** for any code you create or modify. Load the sibling `sdk-tests` skill (via the `Skill` tool) whenever you write or touch test files, and follow its conventions exactly.
+- **PAY attention to review concerns.** Before making any design or implementation decision, check whether the sibling [sdk-revirew](../sdk-revirew/SKILL.md) skill or the current PR review has raised a concern about that area. Prefer the reviewer's guidance over your own default.
 
 ---
 

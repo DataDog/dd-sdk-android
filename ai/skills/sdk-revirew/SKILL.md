@@ -1,5 +1,5 @@
 ---
-name: dd-revirew
+name: sdk-revirew
 description: >-
   Code review for dd-sdk-android. Use when reviewing a feature branch or pull
   request for performance issues, binary compatibility, threading bugs,
@@ -9,7 +9,7 @@ when_to_use: >-
   compatibility, or requesting another review pass.
 ---
 
-# dd-revirew — dd-sdk-android Code Review
+# sdk-revirew — dd-sdk-android Code Review
 
 Run the steps below **in order**. Use `AskUserQuestion` for every decision that can be expressed as a closed choice — only fall back to free-form prompts when the user must type something (e.g. a branch name).
 

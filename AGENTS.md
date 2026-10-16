@@ -141,7 +141,7 @@ These are rules that reviewers repeatedly enforce. Follow them when writing code
 
 # Testing
 
-Before creating, editing, or reviewing test code, load and follow the project `dd-tests` skill from `.agents/skills/dd-tests/SKILL.md`.
+Before creating, editing, or reviewing test code, load and follow the project `sdk-tests` skill from `.agents/skills/sdk-tests/SKILL.md`.
 
 ## Unit Tests
 

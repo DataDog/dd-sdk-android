@@ -1,5 +1,5 @@
 ---
-name: dd-tests
+name: sdk-tests
 description: >-
   Unit-test conventions for dd-sdk-android. Use when creating, editing, or reviewing
   Kotlin unit tests and test fixtures with JUnit 5, Mockito, Elmyr Forge, and AssertJ.
