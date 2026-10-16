@@ -51,10 +51,11 @@ interface PeekableBodyInfo {
 fun HttpRequestInfo.peekBody(
     maxBytes: Long = HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES
 ): HttpBodySnapshot? {
+    if (maxBytes <= 0) return null
     // bound to the interface type on purpose: calling peekBody() on `this` would resolve back to
     // this very extension and recurse
-    val peekable = this as? PeekableBodyInfo ?: return null
-    return peekable.peekBody(maxBytes.coerceAtMost(HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES))
+    val peekable = this as? PeekableBodyInfo
+    return peekable?.peekBody(maxBytes.coerceAtMost(HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES))
 }
 
 /**
@@ -86,8 +87,9 @@ fun HttpRequestInfo.peekBody(
 fun HttpResponseInfo.peekBody(
     maxBytes: Long = HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES
 ): HttpBodySnapshot? {
+    if (maxBytes <= 0) return null
     // bound to the interface type on purpose: calling peekBody() on `this` would resolve back to
     // this very extension and recurse
-    val peekable = this as? PeekableBodyInfo ?: return null
-    return peekable.peekBody(maxBytes.coerceAtMost(HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES))
+    val peekable = this as? PeekableBodyInfo
+    return peekable?.peekBody(maxBytes.coerceAtMost(HttpBodySnapshot.DEFAULT_MAX_BODY_BYTES))
 }

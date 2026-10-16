@@ -1030,7 +1030,6 @@ datadog:
       - "kotlin.String.toMediaTypeOrNull()"
       - "kotlin.String.toMethod()"
       - "kotlin.String.trim()"
-      - "kotlin.String.trim(kotlin.CharArray)"
       - "kotlin.String.trimEnd(kotlin.CharArray)"
       - "kotlin.String.trimStart()"
       - "kotlin.String.uppercase(java.util.Locale)"

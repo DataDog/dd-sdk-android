@@ -15,12 +15,48 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 @Extensions(
     ExtendWith(ForgeExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 internal class PeekableBodyInfoTest {
+
+    @ParameterizedTest
+    @ValueSource(longs = [Long.MIN_VALUE, -1, 0])
+    fun `M return null without delegating W request peekBody() { non positive limit }`(
+        fakeLimit: Long,
+        @StringForgery fakePayload: String
+    ) {
+        // Given
+        val testedInfo = PeekableRequestInfo(HttpBodySnapshot(fakePayload.toByteArray()))
+
+        // When
+        val result = (testedInfo as HttpRequestInfo).peekBody(fakeLimit)
+
+        // Then
+        assertThat(result).isNull()
+        assertThat(testedInfo.lastMaxBytes).isNull()
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = [Long.MIN_VALUE, -1, 0])
+    fun `M return null without delegating W response peekBody() { non positive limit }`(
+        fakeLimit: Long,
+        @StringForgery fakePayload: String
+    ) {
+        // Given
+        val testedInfo = PeekableResponseInfo(HttpBodySnapshot(fakePayload.toByteArray()))
+
+        // When
+        val result = (testedInfo as HttpResponseInfo).peekBody(fakeLimit)
+
+        // Then
+        assertThat(result).isNull()
+        assertThat(testedInfo.lastMaxBytes).isNull()
+    }
 
     @Test
     fun `M cap limit and delegate W request peekBody() { capability supported }`(

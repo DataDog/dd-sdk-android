@@ -61,6 +61,7 @@ internal fun identifyRequest(request: Request): String {
         val contentLength = try {
             body.contentLength()
         } catch (@Suppress("SwallowedException") _: java.io.IOException) {
+            // TODO RUM-19010 Use -1 for unknown length after checking request identity compatibility.
             0
         }
         val contentType = body.contentType()
