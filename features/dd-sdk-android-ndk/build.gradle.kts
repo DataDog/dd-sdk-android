@@ -71,6 +71,7 @@ dependencies {
     implementation(project(":dd-sdk-android-internal"))
     api(project(":dd-sdk-android-core"))
     implementation(libs.kotlinRuntime)
+    debugImplementation(libs.jetbrainsAnnotations)
     implementation(libs.okHttp)
 
     testImplementation(project(":tools:unit")) {

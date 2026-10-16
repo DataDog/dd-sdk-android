@@ -8,6 +8,7 @@ gson = "2.10.1"
 # Buildscript runtime dependency; another is for the SDK compile/runtime classpath.
 kotlinBuildscript = "2.2.10"
 kotlinRuntime = "2.0.21"
+jetbrainsAnnotations = "23.0.0"
 kotlinSP = "2.2.10-2.0.2"
 kronosNTP = "0.0.1-alpha11"
 kotlinxSerialization = "1.6.3"
@@ -129,6 +130,7 @@ roomCompiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 
 kotlinRuntime = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlinRuntime" }
 kotlinBuildscript = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlinBuildscript" }
+jetbrainsAnnotations = { module = "org.jetbrains:annotations", version.ref = "jetbrainsAnnotations" }
 kotlinxSerializationJson = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
 okHttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okHttp" }
