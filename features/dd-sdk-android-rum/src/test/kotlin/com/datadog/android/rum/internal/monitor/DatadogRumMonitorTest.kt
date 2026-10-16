@@ -40,6 +40,7 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
@@ -2380,7 +2381,9 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M not schedule any task W executor service shutdown()`() {
+    fun `M not schedule any task W executor service shutdown()`(
+        @Forgery fakeEventTime: Time
+    ) {
         // Given
         val mockExecutorService: ExecutorService = mock()
         testedMonitor = DatadogRumMonitor(
@@ -2417,7 +2420,7 @@ internal class DatadogRumMonitorTest {
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
         // When
-        testedMonitor.handleEvent(mock())
+        testedMonitor.handleEvent(RumRawEvent.FakeOnlyForTestEvent(eventTime = fakeEventTime))
 
         // Then
         verify(mockExecutorService, never()).execute(any())

@@ -213,7 +213,12 @@ internal class RumActionScopeAttributePropagationTest {
         expectedAttributes.putAll(fakeActionAttributes)
 
         // When
-        testedScope.handleEvent(mockEvent(TEST_INACTIVITY_MS * 2), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            createFakeEvent(TEST_INACTIVITY_MS * 2),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
 
         // Then
         argumentCaptor<ActionEvent> {
@@ -227,10 +232,8 @@ internal class RumActionScopeAttributePropagationTest {
 
     // region Internal
 
-    private fun mockEvent(timeOffset: Long = 0L): RumRawEvent {
-        val event: RumRawEvent = mock()
-        whenever(event.eventTime) doReturn timeWithOffset(timeOffset)
-        return event
+    private fun createFakeEvent(timeOffset: Long = 0L): RumRawEvent {
+        return RumRawEvent.FakeOnlyForTestEvent(eventTime = timeWithOffset(timeOffset))
     }
 
     private fun timeWithOffset(offsetMs: Long): Time {
