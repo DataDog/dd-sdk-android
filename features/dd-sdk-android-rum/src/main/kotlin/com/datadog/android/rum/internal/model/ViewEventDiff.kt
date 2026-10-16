@@ -75,7 +75,8 @@ private fun diffSession(
             type = diffRequired(ViewEvent.ViewEventSession::type).toViewUpdate(),
             hasReplay = diffEquals(ViewEvent.ViewEventSession::hasReplay),
             isActive = diffEquals(ViewEvent.ViewEventSession::isActive),
-            sampledForReplay = diffEquals(ViewEvent.ViewEventSession::sampledForReplay)
+            sampledForReplay = diffEquals(ViewEvent.ViewEventSession::sampledForReplay),
+            isMainProcess = diffEquals(ViewEvent.ViewEventSession::isMainProcess)
         )
     }
 }

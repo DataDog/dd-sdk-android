@@ -75,6 +75,15 @@ internal class VitalEventAssert(
             .isEqualTo(expected)
     }
 
+    fun hasIsMainProcess(expected: Boolean?) = apply {
+        assertThat(actual.session.isMainProcess)
+            .overridingErrorMessage(
+                "Expected event to have session.is_main_process:$expected " +
+                    "but was ${actual.session.isMainProcess}"
+            )
+            .isEqualTo(expected)
+    }
+
     fun hasSessionType(expected: VitalOperationStepEventSessionType) = apply {
         assertThat(actual.session.type)
             .overridingErrorMessage(
