@@ -99,7 +99,7 @@ internal class EvaluationsManager(
      *
      * This method asynchronously fetches precomputed flag evaluations for the given context
      * and atomically updates both the context and flag data in the repository. A failed or unreadable
-     * response keeps the last known good flags and their context.
+     * response keeps the last known good flags only when their context matches the requested context.
      *
      * The operation is performed on the configured executor service and will not block the
      * calling thread. Errors are logged but do not propagate to the caller.
@@ -144,8 +144,7 @@ internal class EvaluationsManager(
                         )
 
                         val throwable = NetworkRequestFailedException(message)
-                        // Lifecycle is Stale only when retained flags match the requested context.
-                        // Failed fetches do not replace the installed flags or their context.
+                        flagsRepository.clearFlagsIfContextChanged(context)
                         val completionCallback = synchronized(initializationTerminalLock) {
                             val result = initializationCompletion?.take()?.callback
                                 ?: if (initializationCompletion == null) callback else null

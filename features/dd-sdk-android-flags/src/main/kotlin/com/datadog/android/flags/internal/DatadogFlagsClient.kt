@@ -67,13 +67,13 @@ internal class DatadogFlagsClient(
             } catch (
                 // Callbacks must not break other registrations or the delivering thread.
                 @Suppress("TooGenericExceptionCaught")
-                exception: Exception
+                throwable: Throwable
             ) {
                 featureSdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
                     { "First flags callback failed" },
-                    exception
+                    throwable
                 )
             }
         }

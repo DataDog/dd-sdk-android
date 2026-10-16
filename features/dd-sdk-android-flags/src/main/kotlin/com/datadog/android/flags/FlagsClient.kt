@@ -71,7 +71,7 @@ interface FlagsClient {
      * even after subsequent flag updates.
      * Replaying an available result reads retained memory and does not perform I/O.
      * If the first result is available, delivery is immediate on the calling thread; otherwise it runs
-     * on a dedicated background thread. Exceptions from callbacks are logged and isolated; Errors are not caught.
+     * on a dedicated background thread. Callback failures, including errors, are logged and isolated.
      * Pending callbacks are retained until delivery or cancellation. Unsubscribe the returned subscription
      * when the owner is destroyed to release captured references if flags never become available.
      * Unsubscription is thread-safe and idempotent. A callback already claimed
