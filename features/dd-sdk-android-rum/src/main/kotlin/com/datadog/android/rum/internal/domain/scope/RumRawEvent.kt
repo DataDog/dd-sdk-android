@@ -290,4 +290,12 @@ internal sealed class RumRawEvent {
     internal class AppStartTTFDEvent(
         override val eventTime: Time
     ) : RumRawEvent()
+
+    // this is kind of hack and used only in tests it exists because we need _some_ event in tests, but overlapping
+    // with any existing can trigger unwanted logic. This is effectively no-op.
+    // it is not possible to mock sealed classes when targeting JVM 17+ bytecode.
+    // TODO RUM-19015 Remove this and re-work the tests using it.
+    internal class FakeOnlyForTestEvent(
+        override val eventTime: Time
+    ) : RumRawEvent()
 }

@@ -5,8 +5,7 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.java11
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import com.datadog.gradle.config.java17
 
 plugins {
     // Build
@@ -32,7 +31,7 @@ android {
     namespace = "com.datadog.tools.unit"
 
     compileOptions {
-        java11()
+        java17()
     }
 
     sourceSets.named("main") {
@@ -82,6 +81,6 @@ unMock {
 // Cannot inline bytecode built with JVM target 17 into bytecode that is being built with JVM target 11
 
 datadogBuild {
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyJunitConfig()
 }

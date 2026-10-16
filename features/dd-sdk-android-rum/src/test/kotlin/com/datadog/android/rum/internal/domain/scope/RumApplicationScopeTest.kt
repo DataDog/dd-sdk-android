@@ -81,9 +81,6 @@ internal class RumApplicationScopeTest {
     lateinit var mockChildScope: RumSessionScope
 
     @Mock
-    lateinit var mockEvent: RumRawEvent
-
-    @Mock
     lateinit var mockAccessibilityInfoProvider: InfoProvider<AccessibilityInfo>
 
     @Mock
@@ -298,10 +295,11 @@ internal class RumApplicationScopeTest {
     fun `delegates all events to child scope`() {
         testedScope.childScopes.clear()
         testedScope.childScopes.add(mockChildScope)
+        val fakeEvent = RumRawEvent.FakeOnlyForTestEvent(eventTime = fakeEventTime)
 
-        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
-        verify(mockChildScope).handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+        verify(mockChildScope).handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         verifyNoInteractions(mockWriter)
     }
 

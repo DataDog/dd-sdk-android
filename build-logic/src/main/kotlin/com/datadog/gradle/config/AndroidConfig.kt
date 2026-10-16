@@ -23,12 +23,6 @@ object AndroidConfig {
     val VERSION = Version(3, 16, 0, Version.Type.Snapshot).forCi()
 }
 
-// TODO RUM-628 Switch to Java 17 bytecode
-fun CompileOptions.java11() {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-}
-
 fun CompileOptions.java17() {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
@@ -52,7 +46,7 @@ internal fun Project.androidLibraryConfig() {
         }
 
         compileOptions {
-            java11()
+            java17()
         }
 
         sourceSets.all {
