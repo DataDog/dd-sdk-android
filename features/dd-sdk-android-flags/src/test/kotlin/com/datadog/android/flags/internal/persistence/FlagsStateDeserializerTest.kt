@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -39,6 +40,40 @@ internal class FlagsStateDeserializerTest {
     @BeforeEach
     fun `set up`() {
         testedDeserializer = FlagsStateDeserializer(mockInternalLogger)
+    }
+
+    @Test
+    fun `M reject malformed encoded keys W deserialize() {valid descriptor}`(forge: Forge) {
+        // Given
+        val json = JSONObject(buildStateJson(forge.anAlphabeticalString(), JSONObject()))
+            .put("obfuscated", true)
+            .put(
+                "obfuscation",
+                JSONObject().put("scheme", "flag-key-sha256-v1")
+                    .put("salt", "000102030405060708090a0b0c0d0e0f")
+            )
+            .put("encodedFlags", JSONObject().put("plaintext-key", buildFlagJson()))
+
+        // When
+        val actual = testedDeserializer.deserialize(json.toString())
+
+        // Then
+        assertThat(actual).isNull()
+    }
+
+    @ParameterizedTest
+    @MethodSource("com.datadog.android.flags.internal.serialization.FlagsJsonTest#invalidMetadata")
+    fun `M reject invalid metadata W deserialize() {encoded cache}`(metadata: String, forge: Forge) {
+        // Given
+        val json = JSONObject(buildStateJson(forge.anAlphabeticalString(), JSONObject()))
+        val descriptor = JSONObject(metadata)
+        descriptor.keys().forEach { json.put(it, descriptor.get(it)) }
+
+        // When
+        val actual = testedDeserializer.deserialize(json.toString())
+
+        // Then
+        assertThat(actual).isNull()
     }
 
     @Test

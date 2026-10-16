@@ -15,7 +15,14 @@
     "encodedFlags": { "type": "object", "additionalProperties": true },
     "lastUpdateTimestamp": { "type": "integer" },
     "obfuscated": { "type": "boolean" },
-    "obfuscation": { "$ref": "obfuscation.json" }
+    "obfuscation": {
+      "type": "object",
+      "properties": {
+        "scheme": { "type": "string" },
+        "salt": { "type": "string" }
+      },
+      "required": ["scheme", "salt"]
+    }
   },
   "required": ["evaluationContext", "lastUpdateTimestamp"]
 }

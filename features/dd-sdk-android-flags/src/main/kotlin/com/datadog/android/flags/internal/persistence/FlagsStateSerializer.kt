@@ -9,9 +9,9 @@ package com.datadog.android.flags.internal.persistence
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
+import com.datadog.android.flags.internal.model.FlagsState
 import com.datadog.android.flags.internal.model.FlagsStateEntry
-import com.datadog.android.flags.internal.model.PrecomputedFlagJson
-import com.datadog.android.flags.internal.model.generated.FlagsState
+import com.datadog.android.flags.internal.serialization.FlagsJson
 import com.google.gson.JsonParseException
 
 /** Maps evaluator state to the generated disk-cache model. */
@@ -20,7 +20,7 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
     override fun serialize(model: FlagsStateEntry): String = try {
         val flags = FlagsState.Flags(
             model.flags.mapValues {
-                PrecomputedFlagJson.write(it.value).toJson()
+                FlagsJson.writeAssignment(it.value).toJson()
             }.toMutableMap()
         )
         FlagsState(

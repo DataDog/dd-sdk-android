@@ -7,11 +7,10 @@
 package com.datadog.android.flags.internal.repository.net
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.flags.internal.model.FlagKeyObfuscation
+import com.datadog.android.flags.internal.model.AssignmentsResponse
 import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.model.PrecomputedFlag
-import com.datadog.android.flags.internal.model.PrecomputedFlagJson
-import com.datadog.android.flags.internal.model.generated.AssignmentsResponse
+import com.datadog.android.flags.internal.serialization.FlagsJson
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
@@ -27,11 +26,11 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
                 add(key, value as? JsonElement)
             }
         }
-        val obfuscation = FlagKeyObfuscation.read(metadata)
+        val obfuscation = FlagsJson.readObfuscation(metadata)
         val flags = attributes.flags.additionalProperties
-        if (obfuscation != null) FlagKeyObfuscation.validateKeys(flags.keys.iterator())
+        if (obfuscation != null) FlagsJson.validateKeys(flags.keys.iterator())
         PrecomputedAssignments(
-            flags.mapValues { PrecomputedFlagJson.read(PrecomputedFlagJson.objectValue(it.value)) },
+            flags.mapValues { FlagsJson.readAssignment(FlagsJson.objectValue(it.value)) },
             obfuscation
         )
     } catch (e: JsonParseException) {

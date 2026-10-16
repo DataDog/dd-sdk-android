@@ -117,6 +117,7 @@ internal class EvaluationsManager(
 
         sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
             ?.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) { datadogContext ->
+                // React Native looks up keys in JavaScript snapshots. Native code cannot reverse the hashes.
                 val supportsObfuscation = datadogContext.source == "android"
                 flagsRepository.setObfuscationSupported(supportsObfuscation)
                 executorService.executeSafe(

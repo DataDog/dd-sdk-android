@@ -8,11 +8,9 @@ package com.datadog.android.flags.internal.persistence
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
-import com.datadog.android.flags.internal.model.PrecomputedFlagJson
-import com.datadog.android.flags.internal.model.generated.FlagsState
+import com.datadog.android.flags.internal.serialization.FlagsJson
 import com.datadog.android.flags.model.EvaluationContext
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -23,29 +21,18 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
     Deserializer<String, FlagsStateEntry> {
 
     override fun deserialize(model: String): FlagsStateEntry? = try {
-        val json = PrecomputedFlagJson.objectValue(JsonParser.parseString(model))
-        val obfuscation = FlagKeyObfuscation.read(json)
-        // As before, only the map selected by the encoding descriptor is read.
-        json.remove(if (obfuscation == null) "encodedFlags" else "flags")
-        val contextJson = PrecomputedFlagJson.objectValue(json.get("evaluationContext"))
-        if (contextJson.get("attributes") !is JsonObject) contextJson.remove("attributes")
-        contextJson.get("targetingKey")?.let {
-            contextJson.addProperty("targetingKey", PrecomputedFlagJson.stringValue(it))
-        }
-        if (json.get("lastUpdateTimestamp")?.isJsonPrimitive != true) {
-            @Suppress("ThrowingInternalException") // Caught below and reported as an invalid cache.
-            throw JsonParseException("Invalid persisted flag timestamp")
-        }
-        val state = FlagsState.fromJsonObject(json)
+        val json = FlagsJson.objectValue(JsonParser.parseString(model))
+        val obfuscation = FlagsJson.readObfuscation(json)
+        val state = FlagsJson.readState(json, obfuscation)
         val assignments = (if (obfuscation == null) state.flags else state.encodedFlags)?.additionalProperties
         if (assignments == null) {
             @Suppress("ThrowingInternalException") // Caught below and reported as an invalid cache.
             throw JsonParseException("Missing persisted assignments")
         }
-        if (obfuscation != null) FlagKeyObfuscation.validateKeys(assignments.keys.iterator())
+        if (obfuscation != null) FlagsJson.validateKeys(assignments.keys.iterator())
         val flags = assignments.mapNotNull { (key, value) ->
             // A malformed object can be skipped; a non-object entry invalidates the cache, as before.
-            deserializePrecomputedFlag(PrecomputedFlagJson.objectValue(value))?.let { key to it }
+            deserializePrecomputedFlag(FlagsJson.objectValue(value))?.let { key to it }
         }.toMap()
 
         // A nonempty cache with no readable flags is not a valid empty configuration.
@@ -56,7 +43,7 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
                 evaluationContext = EvaluationContext(
                     state.evaluationContext.targetingKey,
                     state.evaluationContext.attributes?.additionalProperties.orEmpty().mapValues {
-                        PrecomputedFlagJson.stringValue(it.value as JsonElement)
+                        FlagsJson.stringValue(it.value as JsonElement)
                     }
                 ),
                 flags = flags,
@@ -84,7 +71,7 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
     }
 
     private fun deserializePrecomputedFlag(flagJson: JsonObject): PrecomputedFlag? = try {
-        PrecomputedFlagJson.read(flagJson)
+        FlagsJson.readAssignment(flagJson)
     } catch (e: JsonParseException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,

@@ -35,7 +35,7 @@ internal class DefaultFlagsRepository(
         val obfuscation: FlagKeyObfuscation?,
         val restoredFromCache: Boolean = false
     ) {
-        fun get(key: String): PrecomputedFlag? =
+        operator fun get(key: String): PrecomputedFlag? =
             if (obfuscation == null) flags[key] else obfuscation.encode(key)?.let { flags[it] }
     }
     private val atomicState = AtomicReference<FlagsState?>(null)
@@ -140,7 +140,7 @@ internal class DefaultFlagsRepository(
         waitForPersistenceLoad()
         val state = readableState
         if (state != null) {
-            return state.get(key)
+            return state[key]
         }
         internalLogger.log(
             InternalLogger.Level.WARN,
@@ -184,7 +184,7 @@ internal class DefaultFlagsRepository(
     override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? {
         waitForPersistenceLoad()
         val state = readableState ?: return null
-        val flag = state.get(key) ?: return null
+        val flag = state[key] ?: return null
         return flag to state.context
     }
 

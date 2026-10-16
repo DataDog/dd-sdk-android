@@ -7,13 +7,11 @@
 package com.datadog.android.flags.internal.model
 
 import androidx.collection.LruCache
-import com.datadog.android.flags.internal.model.generated.Obfuscation
-import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import java.security.MessageDigest
 import java.util.Locale
 
-/** Encoding metadata validated by read(). */
+/** Salt validated before lookup hashes are computed. */
 // Keep copy() private so callers cannot bypass salt validation.
 @ConsistentCopyVisibility
 internal data class FlagKeyObfuscation private constructor(val salt: String) {
@@ -47,47 +45,15 @@ internal data class FlagKeyObfuscation private constructor(val salt: String) {
         const val CAPABILITY = "assignment-encoding-flag-key-256-v1"
         private const val SALT_BYTES = 16
         private const val HEX_RADIX = 16
-        private const val DIGEST_BYTES = 32
         private const val LOOKUP_CACHE_LIMIT = 1024
 
-        /** Throws for unsupported or inconsistent descriptors, including explicit JSON null. */
-        // JSON errors propagate to the response or cache parser, where they are caught.
         @Throws(JsonParseException::class)
-        @Suppress("ThrowsCount")
-        fun read(json: JsonObject): FlagKeyObfuscation? {
-            val obfuscated = json.get("obfuscated")
-            val isBoolean = obfuscated?.isJsonPrimitive == true && obfuscated.asJsonPrimitive.isBoolean
-            val isPlaintext = obfuscated == null || (isBoolean && !obfuscated.asBoolean)
-            if (isPlaintext && !json.has("obfuscation")) return null
-            if (!isBoolean || !obfuscated.asBoolean) {
-                @Suppress("ThrowingInternalException") // Caught by the response or cache parser.
-                throw JsonParseException("Invalid flag-key obfuscation metadata")
-            }
-            val descriptor = PrecomputedFlagJson.objectValue(json.get("obfuscation"))
-            val scheme = descriptor.get("scheme")
-            if (scheme?.isJsonPrimitive != true || !scheme.asJsonPrimitive.isString || scheme.asString != SCHEME) {
-                @Suppress("ThrowingInternalException") // Caught by the response or cache parser.
-                throw JsonParseException("Unsupported flag-key obfuscation scheme")
-            }
-            val salt = descriptor.get("salt")
-            if (salt?.isJsonPrimitive != true || !salt.asJsonPrimitive.isString ||
-                !isLowercaseHex(salt.asString, SALT_BYTES)
-            ) {
+        fun fromSalt(salt: String): FlagKeyObfuscation {
+            if (!isLowercaseHex(salt, SALT_BYTES)) {
                 @Suppress("ThrowingInternalException") // Caught by the response or cache parser.
                 throw JsonParseException("Flag-key salt must contain 32 lowercase hexadecimal characters")
             }
-            return FlagKeyObfuscation(Obfuscation.fromJsonObject(descriptor).salt)
-        }
-
-        // Caught by the response or cache parser.
-        @Throws(JsonParseException::class)
-        fun validateKeys(keys: Iterator<String>) {
-            keys.forEach {
-                if (!isLowercaseHex(it, DIGEST_BYTES)) {
-                    @Suppress("ThrowingInternalException") // Caught by the response or cache parser.
-                    throw JsonParseException("Invalid encoded flag key")
-                }
-            }
+            return FlagKeyObfuscation(salt)
         }
 
         private fun isLowercaseHex(value: String, bytes: Int): Boolean =

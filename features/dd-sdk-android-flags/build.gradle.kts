@@ -42,11 +42,13 @@ plugins {
 createJsonModelsGenerationTask("generateFlagsModelsFromJson") {
     inputDirPath = "src/main/json/flags"
     targetPackageName = "com.datadog.android.flags.model"
+    ignoredFiles.set(listOf("assignment.json", "assignments-response.json", "flags-state.json"))
 }
 
 createJsonModelsGenerationTask("generateFlagsInternalModelsFromJson") {
-    inputDirPath = "src/main/json/internal"
-    targetPackageName = "com.datadog.android.flags.internal.model.generated"
+    inputDirPath = "src/main/json/flags"
+    targetPackageName = "com.datadog.android.flags.internal.model"
+    ignoredFiles.set(listOf("exposure-event-schema.json", "flag-evaluation-schema.json"))
     internalModels.set(true)
 }
 
