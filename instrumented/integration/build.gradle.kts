@@ -108,6 +108,7 @@ dependencies {
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":integrations:dd-sdk-android-cronet"))
+    debugImplementation(libs.jetbrainsAnnotations)
     implementation(libs.okHttp)
     implementation(libs.cronetPlayServices)
 
