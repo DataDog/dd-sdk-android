@@ -605,7 +605,7 @@ internal class RumSessionScopeStartupManagerTest {
                 ProfilerEvent.RumVitalEvent(
                     rumContext = ProfilingRumContext(
                         applicationId = rumContext.applicationId,
-                        sessionId = rumContext.sessionId,
+                        sessionId = checkNotNull(rumContext.sessionId),
                         viewId = rumContext.viewId,
                         viewName = rumContext.viewName
                     ),
@@ -670,7 +670,7 @@ internal class RumSessionScopeStartupManagerTest {
                 ProfilerEvent.RumVitalEvent(
                     rumContext = ProfilingRumContext(
                         applicationId = rumContext.applicationId,
-                        sessionId = rumContext.sessionId,
+                        sessionId = checkNotNull(rumContext.sessionId),
                         viewId = rumContext.viewId,
                         viewName = rumContext.viewName
                     ),

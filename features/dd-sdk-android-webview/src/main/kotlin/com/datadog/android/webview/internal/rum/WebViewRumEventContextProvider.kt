@@ -13,35 +13,30 @@ import com.datadog.android.webview.internal.rum.domain.RumContext
 
 internal class WebViewRumEventContextProvider(private val internalLogger: InternalLogger) {
 
-    private var rumFeatureDisabled = false
-
-    @Suppress("ComplexCondition")
     fun getRumContext(datadogContext: DatadogContext): RumContext? {
-        if (rumFeatureDisabled) {
-            return null
-        }
-
         val rumContext = datadogContext.featuresContext[Feature.RUM_FEATURE_NAME]
         val rumApplicationId = rumContext?.get("application_id") as? String
-        val rumSessionId = rumContext?.get("session_id") as? String
+        val rumSessionId = (rumContext?.get("session_id") as? String)
+            ?.takeUnless { it.isBlank() || it == RumContext.NULL_UUID }
         val rumSessionState = rumContext?.get("session_state") as? String
 
-        return if (rumApplicationId == null ||
-            rumApplicationId == RumContext.NULL_UUID ||
-            rumSessionId == null ||
-            rumSessionId == RumContext.NULL_UUID ||
-            rumSessionState.isNullOrBlank()
+        if (rumApplicationId == null ||
+            rumApplicationId == RumContext.NULL_UUID
         ) {
-            rumFeatureDisabled = true
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                { RUM_NOT_INITIALIZED_WARNING_MESSAGE }
+                { RUM_NOT_INITIALIZED_WARNING_MESSAGE },
+                onlyOnce = true
             )
-            null
-        } else {
-            RumContext(rumApplicationId, rumSessionId, rumSessionState)
+            return null
         }
+
+        return RumContext(
+            rumApplicationId,
+            rumSessionId,
+            rumSessionState?.takeUnless { it.isBlank() }?.takeIf { rumSessionId != null }
+        )
     }
 
     companion object {

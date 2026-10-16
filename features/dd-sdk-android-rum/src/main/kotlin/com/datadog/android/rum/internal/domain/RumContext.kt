@@ -12,15 +12,15 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewType
 
 internal data class RumContext(
-    val applicationId: String = NULL_UUID,
-    val sessionId: String = NULL_UUID,
+    val applicationId: String,
+    val sessionId: String? = null,
     val isSessionActive: Boolean = false,
     val viewId: String? = null,
     val viewName: String? = null,
     val viewUrl: String? = null,
     val actionId: String? = null,
-    val sessionState: RumSessionScope.State = RumSessionScope.State.NOT_TRACKED,
-    val sessionStartReason: RumSessionScope.StartReason = RumSessionScope.StartReason.USER_APP_LAUNCH,
+    val sessionState: RumSessionScope.State? = null,
+    val sessionStartReason: RumSessionScope.StartReason? = null,
     val viewType: RumViewType = RumViewType.NONE,
     val syntheticsTestId: String? = null,
     val syntheticsResultId: String? = null,
@@ -31,12 +31,13 @@ internal data class RumContext(
 ) {
 
     fun toMap(): Map<String, Any?> {
+        if (sessionId == null) return mapOf(APPLICATION_ID to applicationId)
         return mapOf(
             APPLICATION_ID to applicationId,
             SESSION_ID to sessionId,
             SESSION_ACTIVE to isSessionActive,
-            SESSION_STATE to sessionState.asString,
-            SESSION_START_REASON to sessionStartReason.asString,
+            SESSION_STATE to sessionState?.asString,
+            SESSION_START_REASON to sessionStartReason?.asString,
             VIEW_ID to viewId,
             VIEW_NAME to viewName,
             VIEW_URL to viewUrl,
@@ -74,9 +75,11 @@ internal data class RumContext(
         const val VIEW_TIMESTAMP_OFFSET = "view_timestamp_offset"
         const val SESSION_SAMPLE_RATE = FeatureContextKeys.RUM_SESSION_SAMPLE_RATE
 
-        fun fromFeatureContext(featureContext: Map<String, Any?>): RumContext {
-            val applicationId = featureContext[APPLICATION_ID] as? String
-            val sessionId = featureContext[SESSION_ID] as? String
+        @Suppress("ReturnCount")
+        fun fromFeatureContext(featureContext: Map<String, Any?>): RumContext? {
+            val applicationId = featureContext[APPLICATION_ID] as? String ?: return null
+            val sessionId = (featureContext[SESSION_ID] as? String)?.takeUnless { it.isBlank() || it == NULL_UUID }
+                ?: return RumContext(applicationId = applicationId)
             val isSessionActive = featureContext[SESSION_ACTIVE] as? Boolean
             val sessionState = RumSessionScope.State.fromString(
                 featureContext[SESSION_STATE] as? String
@@ -97,11 +100,11 @@ internal data class RumContext(
             val sampleRate = (featureContext[SESSION_SAMPLE_RATE] as? Number)?.toFloat() ?: SAMPLE_ALL_RATE
 
             return RumContext(
-                applicationId = applicationId ?: NULL_UUID,
-                sessionId = sessionId ?: NULL_UUID,
+                applicationId = applicationId,
+                sessionId = sessionId,
                 isSessionActive = isSessionActive ?: false,
-                sessionState = sessionState ?: RumSessionScope.State.NOT_TRACKED,
-                sessionStartReason = sessionStartReason ?: RumSessionScope.StartReason.USER_APP_LAUNCH,
+                sessionState = sessionState,
+                sessionStartReason = sessionStartReason,
                 viewId = viewId,
                 viewName = viewName,
                 viewUrl = viewUrl,

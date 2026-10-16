@@ -231,6 +231,11 @@ internal class RumResourceScope(
         val rulePsr = resourceAttributes.remove(RumAttributes.RULE_PSR) as? Number
 
         val rumContext = getRumContext()
+        val sessionId = rumContext.sessionId
+        if (sessionId == null) {
+            sent = true
+            return
+        }
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
             rumContext.syntheticsResultId.isNullOrBlank()
@@ -345,7 +350,7 @@ internal class RumResourceScope(
                     currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
                 ),
                 session = ResourceEvent.ResourceEventSession(
-                    id = rumContext.sessionId,
+                    id = sessionId,
                     type = sessionType,
                     hasReplay = hasReplay
                 ),
@@ -377,7 +382,7 @@ internal class RumResourceScope(
                     spanId = spanId,
                     rulePsr = rulePsr,
                     session = ResourceEvent.DdSession(
-                        sessionPrecondition = rumContext.sessionStartReason.toResourceSessionPrecondition()
+                        sessionPrecondition = rumContext.sessionStartReason?.toResourceSessionPrecondition()
                     ),
                     configuration = ResourceEvent.Configuration(sessionSampleRate = sampleRate)
                 ),
@@ -439,6 +444,11 @@ internal class RumResourceScope(
     ) {
         val errorFingerprint = resourceAttributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
         val rumContext = getRumContext()
+        val sessionId = rumContext.sessionId
+        if (sessionId == null) {
+            sent = true
+            return
+        }
 
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
@@ -511,7 +521,7 @@ internal class RumResourceScope(
                 connectivity = networkInfo.toErrorConnectivity(),
                 application = ErrorEvent.Application(rumContext.applicationId),
                 session = ErrorEvent.ErrorEventSession(
-                    id = rumContext.sessionId,
+                    id = sessionId,
                     type = sessionType,
                     hasReplay = hasReplay
                 ),
@@ -538,7 +548,7 @@ internal class RumResourceScope(
                 context = ErrorEvent.Context(additionalProperties = getCustomAttributes().toMutableMap()),
                 dd = ErrorEvent.Dd(
                     session = ErrorEvent.DdSession(
-                        sessionPrecondition = rumContext.sessionStartReason.toErrorSessionPrecondition()
+                        sessionPrecondition = rumContext.sessionStartReason?.toErrorSessionPrecondition()
                     ),
                     configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
                 ),

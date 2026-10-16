@@ -8,11 +8,16 @@ package com.datadog.android.rum.internal.domain
 
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.RepeatedTest
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.NullSource
+import org.junit.jupiter.params.provider.ValueSource
 
 @ExtendWith(ForgeExtension::class)
 @ForgeConfiguration(Configurator::class)
@@ -27,5 +32,56 @@ internal class RumContextTest {
 
         // Then
         assertThat(anotherRumContext).isEqualTo(fakeRumContext)
+    }
+
+    @Test
+    fun `M return no context W fromFeatureContext() {application id missing}`(
+        @Forgery fakeRumContext: RumContext
+    ) {
+        // Given
+        val featureContext = fakeRumContext.toMap() - RumContext.APPLICATION_ID
+
+        // When
+        val context = RumContext.fromFeatureContext(featureContext)
+
+        // Then
+        assertThat(context).isNull()
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = [RumContext.NULL_UUID, "", " "])
+    fun `M retain application without session W fromFeatureContext() {session absent}`(
+        sessionId: String?,
+        @StringForgery fakeApplicationId: String
+    ) {
+        // Given
+        val featureContext =
+            mapOf(
+                RumContext.APPLICATION_ID to fakeApplicationId,
+                RumContext.SESSION_ID to sessionId,
+                RumContext.VIEW_ID to "stale-view",
+                RumContext.ACTION_ID to "stale-action"
+            )
+
+        // When
+        val context = RumContext.fromFeatureContext(featureContext)
+
+        // Then
+        assertThat(context).isEqualTo(RumContext(applicationId = fakeApplicationId))
+    }
+
+    @Test
+    fun `M publish only application W toMap() {session absent}`(
+        @Forgery fakeRumContext: RumContext
+    ) {
+        // Given
+        val context = fakeRumContext.copy(sessionId = null)
+
+        // When
+        val featureContext = context.toMap()
+
+        // Then
+        assertThat(featureContext).isEqualTo(mapOf(RumContext.APPLICATION_ID to fakeRumContext.applicationId))
     }
 }

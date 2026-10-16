@@ -34,7 +34,7 @@ internal class RumContextAssert(actual: RumContext) :
         return this
     }
 
-    fun hasSessionId(expected: String): RumContextAssert {
+    fun hasSessionId(expected: String?): RumContextAssert {
         assertThat(actual.sessionId)
             .overridingErrorMessage(
                 "Expected context to have sessionId $expected but was ${actual.sessionId}"

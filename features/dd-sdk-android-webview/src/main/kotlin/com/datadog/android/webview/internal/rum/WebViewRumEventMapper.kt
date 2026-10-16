@@ -59,7 +59,7 @@ internal class WebViewRumEventMapper(
             }
         }
 
-        if (rumContext != null) {
+        if (rumContext?.sessionId != null) {
             val application = event.getAsJsonObject(APPLICATION_KEY_NAME)?.asJsonObject
                 ?: JsonObject()
             val session = event.getAsJsonObject(SESSION_KEY_NAME)?.asJsonObject ?: JsonObject()
