@@ -4,6 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -48,6 +49,13 @@ createJsonModelsGenerationTask("generateFlagsModelsFromJson") {
 @Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.flags"
+    buildFeatures {
+        buildConfig = true
+    }
+    defaultConfig {
+        // Use the same release input as this artifact's Maven publication.
+        buildConfigField("String", "SDK_VERSION_NAME", "\"${AndroidConfig.VERSION.name}\"")
+    }
 }
 
 dependencies {

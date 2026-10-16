@@ -20,6 +20,7 @@ import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.evaluation.InitializationTimeoutScheduler
 import com.datadog.android.flags.internal.net.ExposuresRequestFactory
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
+import com.datadog.android.flags.internal.net.WrapperSdkSource
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.flags.internal.storage.RecordWriter
@@ -36,7 +37,8 @@ internal typealias LogWithPolicy = (String, InternalLogger.Level) -> Unit
 
 internal class FlagsFeature(
     private val sdkCore: FeatureSdkCore,
-    internal val flagsConfiguration: FlagsConfiguration
+    internal val flagsConfiguration: FlagsConfiguration,
+    wrapperSource: WrapperSdkSource? = null
 ) : StorageBackedFeature {
 
     @Volatile
@@ -78,7 +80,8 @@ internal class FlagsFeature(
     internal val precomputedRequestFactory =
         PrecomputedAssignmentsRequestFactory(
             internalLogger = sdkCore.internalLogger,
-            customFlagEndpoint = flagsConfiguration.customFlagEndpoint
+            customFlagEndpoint = flagsConfiguration.customFlagEndpoint,
+            wrapperSource = wrapperSource
         )
 
     internal val initializationTimeoutScheduler = InitializationTimeoutScheduler { timeoutMs, action ->

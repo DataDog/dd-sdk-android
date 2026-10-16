@@ -11,6 +11,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.internal.EvaluationsFeature
 import com.datadog.android.flags.internal.FlagsFeature
+import com.datadog.android.flags.internal.net.WrapperSdkSource
 
 /**
  * Entry point for the Flags feature.
@@ -31,6 +32,14 @@ object Flags {
         configuration: FlagsConfiguration = FlagsConfiguration.default,
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
+        enable(configuration, sdkCore, null)
+    }
+
+    internal fun enable(
+        configuration: FlagsConfiguration,
+        sdkCore: SdkCore,
+        wrapperSource: WrapperSdkSource?
+    ) {
         if (configuration.trackEvaluations) {
             val evaluationsFeature = EvaluationsFeature(
                 sdkCore = sdkCore as FeatureSdkCore,
@@ -41,7 +50,8 @@ object Flags {
 
         val flagsFeature = FlagsFeature(
             sdkCore = sdkCore as FeatureSdkCore,
-            flagsConfiguration = configuration
+            flagsConfiguration = configuration,
+            wrapperSource = wrapperSource
         )
         sdkCore.registerFeature(flagsFeature)
     }
