@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import java.util.concurrent.TimeUnit
+import kotlin.math.ceil
 import kotlin.math.min
 
 /**
@@ -39,6 +40,10 @@ internal class RecordingTimeBank(
         lastCheckTime = timestamp
         return recordingTimeBalanceInNano >= 0
     }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // Arithmetic helpers operate on local finite balance values.
+    override fun timeUntilAvailableInNs(): Long =
+        ceil((-recordingTimeBalanceInNano.toDouble() / balanceFactor).coerceAtLeast(0.0)).toLong()
 
     private fun increaseTimeBank(timestamp: Long) {
         val timePassedSinceLastExecution = timestamp - lastCheckTime
