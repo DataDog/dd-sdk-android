@@ -27,7 +27,7 @@ android {
 
 dependencies {
     implementation(project(":dd-sdk-android-core"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     // Testing
     implementation(libs.bundles.jUnit5)

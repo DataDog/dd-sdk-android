@@ -9,9 +9,11 @@ package com.datadog.android.core.stub
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.api.storage.datastore.DataStoreHandler
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockingDetails
 import org.mockito.kotlin.any
@@ -19,10 +21,12 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
 
-@Suppress("CheckInternal", "UnsafeThirdPartyFunctionCall")
+@Suppress("UnsafeThirdPartyFunctionCall")
 internal class StubFeatureScope(
     private val feature: Feature,
     private val datadogContextProvider: () -> DatadogContext,
+    private val dataStoreProvider: () -> DataStoreHandler? = { null },
+    private val eventReceiverProvider: () -> FeatureEventReceiver? = { null },
     private val mockFeatureScope: FeatureScope = mock()
 ) : FeatureScope by mockFeatureScope {
 
@@ -57,6 +61,9 @@ internal class StubFeatureScope(
 
     // region FeatureScope
 
+    override val dataStore: DataStoreHandler
+        get() = dataStoreProvider() ?: mockFeatureScope.dataStore
+
     override fun withWriteContext(
         withFeatureContexts: Set<String>,
         callback: (DatadogContext, EventWriteScope) -> Unit
@@ -84,6 +91,7 @@ internal class StubFeatureScope(
 
     override fun sendEvent(event: Any) {
         eventsReceived.add(event)
+        eventReceiverProvider()?.onReceive(event)
     }
 
     override fun <T : Feature> unwrap(): T {

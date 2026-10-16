@@ -64,7 +64,8 @@ android {
 }
 
 dependencies {
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
+    implementation(libs.kotlinReflect)
     implementation(libs.bundles.jUnit5)
     implementation(libs.bundles.testTools)
     implementation(libs.gson)

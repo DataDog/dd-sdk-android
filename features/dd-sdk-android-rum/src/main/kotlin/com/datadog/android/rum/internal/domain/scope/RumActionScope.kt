@@ -228,7 +228,7 @@ internal class RumActionScope(
         longTaskCount++
     }
 
-    @Suppress("LongMethod", "ComplexMethod")
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     private fun sendAction(
         endNanos: Long,
         datadogContext: DatadogContext,
@@ -273,7 +273,7 @@ internal class RumActionScope(
             frustrations.add(ActionEvent.Type.ERROR_TAP)
         }
 
-        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+        sdkCore.newRumEventWriteOperation(writeScope, writer) {
             val user = datadogContext.userInfo
             val hasReplay = featuresContextResolver.resolveViewHasReplay(
                 datadogContext,

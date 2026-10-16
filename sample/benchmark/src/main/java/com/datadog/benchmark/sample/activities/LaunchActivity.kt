@@ -9,7 +9,6 @@ package com.datadog.benchmark.sample.activities
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import coil.Coil
 import coil.ImageLoader
 import com.datadog.benchmark.sample.BenchmarkConfigHolder
@@ -25,7 +24,7 @@ import okhttp3.OkHttpClient
 import javax.inject.Inject
 
 @SuppressLint("CustomSplashScreen")
-internal class LaunchActivity : AppCompatActivity() {
+internal class LaunchActivity : BaseBenchmarkActivity() {
     @Inject
     internal lateinit var benchmarkConfigHolder: BenchmarkConfigHolder
 

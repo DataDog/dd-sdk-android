@@ -115,7 +115,7 @@ dependencies {
     compileOnly(libs.androidXComposeRuntime)
 
     implementation(libs.gson)
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.bundles.androidXSupportBase)
     implementation(libs.elmyr)
     implementation(libs.leakCanaryAndroid)

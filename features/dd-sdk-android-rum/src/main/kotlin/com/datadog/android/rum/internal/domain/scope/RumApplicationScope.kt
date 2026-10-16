@@ -138,7 +138,9 @@ internal class RumApplicationScope(
             startNewSession(event, datadogContext, writeScope, writer)
         }
 
-        if (event !is RumRawEvent.SdkInit && !isAppStartedEventSent) {
+        // SessionExpiryCheck is synthetic and may run before the first real event, so it must not mark the app start.
+        val isAppStartCandidate = event !is RumRawEvent.SdkInit && event !is RumRawEvent.SessionExpiryCheck
+        if (isAppStartCandidate && !isAppStartedEventSent) {
             sendApplicationStartEvent(event.eventTime, datadogContext, writeScope, writer)
         }
 

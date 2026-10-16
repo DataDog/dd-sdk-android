@@ -1,0 +1,46 @@
+datadog:
+  active: true
+  CheckInternal:
+    active: false
+  InvalidStringFormat:
+    active: false
+  PackageNameVisibility:
+    active: false
+    withBreakingChanges: true
+    ignoredAnnotations: []
+  PreferTimeProvider:
+    active: false
+    allowedFiles:
+      - '.*DdRumContentProvider.*'
+      - '.*TimeProvider.*'
+  RequireInternal:
+    active: false
+  ThreadSafety:
+    active: false
+    workerThreadSwitchingCalls: []
+    mainThreadSwitchingCalls: []
+  ThrowingInternalException:
+    active: false
+  TodoWithoutTask:
+    active: false
+    deprecatedPrefixes: []
+  UnsafeThirdPartyFunctionCall:
+    active: false
+    internalPackagePrefix: ''
+    treatUnknownFunctionAsThrowing: true
+    knownThrowingCalls: []
+    knownSafeAndroidCalls: []
+    knownSafeThirdPartyCalls: []
+
+datadog-test-pyramid:
+  active: false
+  ApiSurface:
+    active: false
+    outputFileName: 'apiSurface.log'
+    internalPackagePrefix: ''
+    ignoredAnnotations: []
+    ignoredClasses: []
+  ApiUsage:
+    active: false
+    outputFileName: 'apiUsage.log'
+    internalPackagePrefix: ''

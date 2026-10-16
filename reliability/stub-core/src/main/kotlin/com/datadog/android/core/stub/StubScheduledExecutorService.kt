@@ -32,8 +32,8 @@ class StubScheduledExecutorService(
         println("Stubbing a ScheduledExecutorService with context: $executorContext")
     }
 
-    override fun execute(command: Runnable?) {
-        command?.run()
+    override fun execute(command: Runnable) {
+        command.run()
     }
 
     override fun shutdown() {
@@ -55,51 +55,51 @@ class StubScheduledExecutorService(
         return isTerminated
     }
 
-    override fun awaitTermination(timeout: Long, unit: TimeUnit?): Boolean {
+    override fun awaitTermination(timeout: Long, unit: TimeUnit): Boolean {
         return false
     }
 
-    override fun <T : Any?> submit(task: Callable<T>?): Future<T> {
+    override fun <T> submit(task: Callable<T>): Future<T> {
         val futureTask = FutureTask(task)
         futureTask.run()
         return futureTask
     }
 
-    override fun <T : Any?> submit(task: Runnable?, result: T): Future<T> {
+    override fun <T> submit(task: Runnable, result: T): Future<T> {
         val futureTask = FutureTask(task, result)
         futureTask.run()
         return futureTask
     }
 
-    override fun submit(task: Runnable?): Future<*> {
+    override fun submit(task: Runnable): Future<*> {
         val futureTask = FutureTask(task, null)
         futureTask.run()
         return futureTask
     }
 
-    override fun <T : Any?> invokeAll(tasks: MutableCollection<out Callable<T>>?): MutableList<Future<T>> {
+    override fun <T> invokeAll(tasks: MutableCollection<out Callable<T>>): MutableList<Future<T>> {
         TODO()
     }
 
-    override fun <T : Any?> invokeAll(
-        tasks: MutableCollection<out Callable<T>>?,
+    override fun <T> invokeAll(
+        tasks: MutableCollection<out Callable<T>>,
         timeout: Long,
-        unit: TimeUnit?
+        unit: TimeUnit
     ): MutableList<Future<T>> {
         TODO()
     }
 
-    override fun <T : Any?> invokeAny(tasks: MutableCollection<out Callable<T>>?): T {
+    override fun <T> invokeAny(tasks: MutableCollection<out Callable<T>>): T {
         TODO()
     }
 
-    override fun <T : Any?> invokeAny(tasks: MutableCollection<out Callable<T>>?, timeout: Long, unit: TimeUnit?): T {
+    override fun <T> invokeAny(tasks: MutableCollection<out Callable<T>>, timeout: Long, unit: TimeUnit): T {
         TODO()
     }
 
-    override fun schedule(command: Runnable?, delay: Long, unit: TimeUnit?): ScheduledFuture<*> {
+    override fun schedule(command: Runnable, delay: Long, unit: TimeUnit): ScheduledFuture<*> {
         val futureTask = FutureTask(command, null)
-        val delayMs = unit!!.toMillis(delay)
+        val delayMs = unit.toMillis(delay)
         val triggerTimestamp = nowProvider() + delayMs
         val scheduledFutureTask = ScheduledFutureTask(
             futureTask,
@@ -113,9 +113,9 @@ class StubScheduledExecutorService(
         return scheduledFutureTask
     }
 
-    override fun <V : Any?> schedule(callable: Callable<V>?, delay: Long, unit: TimeUnit?): ScheduledFuture<V> {
+    override fun <V> schedule(callable: Callable<V>, delay: Long, unit: TimeUnit): ScheduledFuture<V> {
         val futureTask = FutureTask(callable)
-        val delayMs = unit!!.toMillis(delay)
+        val delayMs = unit.toMillis(delay)
         val triggerTimestamp = nowProvider() + delayMs
         val scheduledFutureTask = ScheduledFutureTask(
             futureTask,
@@ -130,21 +130,31 @@ class StubScheduledExecutorService(
     }
 
     override fun scheduleAtFixedRate(
-        command: Runnable?,
+        command: Runnable,
         initialDelay: Long,
         period: Long,
-        unit: TimeUnit?
+        unit: TimeUnit
     ): ScheduledFuture<*> {
-        TODO()
+        return neverTriggeredTask(command, initialDelay, unit)
     }
 
     override fun scheduleWithFixedDelay(
-        command: Runnable?,
+        command: Runnable,
         initialDelay: Long,
         delay: Long,
-        unit: TimeUnit?
+        unit: TimeUnit
     ): ScheduledFuture<*> {
-        TODO()
+        return neverTriggeredTask(command, initialDelay, unit)
+    }
+
+    // Periodic tasks are never triggered, to keep the tests deterministic: tests needing their
+    // effect have to trigger it explicitly (e.g. by stopping the feature, which flushes).
+    private fun neverTriggeredTask(command: Runnable, initialDelay: Long, unit: TimeUnit): ScheduledFuture<*> {
+        return ScheduledFutureTask(
+            FutureTask(command, null),
+            nowProvider() + unit.toMillis(initialDelay),
+            nowProvider
+        )
     }
 
     /**
@@ -165,9 +175,9 @@ class StubScheduledExecutorService(
             return (delay - otherDelay).sign
         }
 
-        override fun getDelay(unit: TimeUnit?): Long {
+        override fun getDelay(unit: TimeUnit): Long {
             val delayMs = triggerTimestamp - nowProvider()
-            return unit!!.convert(delayMs, TimeUnit.MILLISECONDS)
+            return unit.convert(delayMs, TimeUnit.MILLISECONDS)
         }
     }
 }

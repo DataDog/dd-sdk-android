@@ -38,7 +38,7 @@ android {
 dependencies {
     implementation(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.okHttp)
     implementation(libs.openTelemetryApi)
     implementation(libs.openTelemetrySdk)

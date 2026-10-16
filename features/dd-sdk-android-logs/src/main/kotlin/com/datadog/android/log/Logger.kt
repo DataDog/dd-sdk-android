@@ -49,7 +49,7 @@ internal constructor(internal var handler: LogHandler) {
      * @param attributes a map of attributes to include only for this message. If an attribute with
      * the same key already exist in this logger, it will be overridden (just for this message)
      */
-    @Suppress("FunctionMinLength")
+    @Suppress("FunctionNameMinLength")
     @JvmOverloads
     fun v(
         message: String,
@@ -66,7 +66,7 @@ internal constructor(internal var handler: LogHandler) {
      * @param attributes a map of attributes to include only for this message. If an attribute with
      * the same key already exist in this logger, it will be overridden (just for this message)
      */
-    @Suppress("FunctionMinLength")
+    @Suppress("FunctionNameMinLength")
     @JvmOverloads
     fun d(
         message: String,
@@ -83,7 +83,7 @@ internal constructor(internal var handler: LogHandler) {
      * @param attributes a map of attributes to include only for this message. If an attribute with
      * the same key already exist in this logger, it will be overridden (just for this message)
      */
-    @Suppress("FunctionMinLength")
+    @Suppress("FunctionNameMinLength")
     @JvmOverloads
     fun i(
         message: String,
@@ -100,7 +100,7 @@ internal constructor(internal var handler: LogHandler) {
      * @param attributes a map of attributes to include only for this message. If an attribute with
      * the same key already exist in this logger, it will be overridden (just for this message)
      */
-    @Suppress("FunctionMinLength")
+    @Suppress("FunctionNameMinLength")
     @JvmOverloads
     fun w(
         message: String,
@@ -117,7 +117,7 @@ internal constructor(internal var handler: LogHandler) {
      * @param attributes a map of attributes to include only for this message. If an attribute with
      * the same key already exist in this logger, it will be overridden (just for this message)
      */
-    @Suppress("FunctionMinLength")
+    @Suppress("FunctionNameMinLength")
     @JvmOverloads
     fun e(
         message: String,
@@ -134,7 +134,7 @@ internal constructor(internal var handler: LogHandler) {
      * @param attributes a map of attributes to include only for this message. If an attribute with
      * the same key already exist in this logger, it will be overridden (just for this message)
      */
-    @Suppress("FunctionMinLength")
+    @Suppress("FunctionNameMinLength")
     @JvmOverloads
     fun wtf(
         message: String,

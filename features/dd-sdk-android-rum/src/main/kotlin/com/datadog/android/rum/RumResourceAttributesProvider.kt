@@ -37,6 +37,14 @@ interface RumResourceAttributesProvider {
     /**
      * Offers a possibility to create custom attributes collection which later will be attached to
      * the RUM resource event associated with the request.
+     *
+     * Payloads are available through the `HttpRequestInfo.peekBody` and `HttpResponseInfo.peekBody`
+     * extensions, which copy the beginning of a payload without consuming it. Nothing is read
+     * unless one of them is called, and they return null for networking libraries that cannot
+     * expose a payload without consuming it. Response peeking is intended only for finite,
+     * non-streaming payloads and may block while bytes arrive; known streaming response types are
+     * rejected and return null.
+     *
      * @param request the intercepted [HttpRequestInfo]
      * @param response the [HttpResponseInfo] representing the response in case of any
      * @param throwable in case an error occurred during the request

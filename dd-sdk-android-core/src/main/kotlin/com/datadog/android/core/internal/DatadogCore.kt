@@ -569,7 +569,7 @@ internal class DatadogCore(
         )
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("CyclomaticComplexMethod")
     private fun applyAdditionalConfiguration(
         additionalConfiguration: Map<String, Any>
     ) {

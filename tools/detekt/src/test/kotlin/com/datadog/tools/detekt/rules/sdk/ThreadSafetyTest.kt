@@ -6,46 +6,26 @@
 
 package com.datadog.tools.detekt.rules.sdk
 
-import android.webkit.JavascriptInterface
-import androidx.annotation.MainThread
-import io.github.detekt.test.utils.KotlinCoreEnvironmentWrapper
-import io.github.detekt.test.utils.createEnvironment
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.test.TestConfig
-import io.gitlab.arturbosch.detekt.test.assertThat
-import io.gitlab.arturbosch.detekt.test.compileAndLintWithContext
-import org.junit.jupiter.api.AfterEach
+import dev.detekt.api.Config
+import dev.detekt.test.TestConfig
+import dev.detekt.test.lintWithContext
+import dev.detekt.test.utils.KotlinEnvironmentContainer
+import dev.detekt.test.utils.createEnvironment
+import org.assertj.core.api.Assertions.assertThat
+import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.io.File
 
 class ThreadSafetyTest {
 
-    lateinit var kotlinEnv: KotlinCoreEnvironmentWrapper
+    lateinit var kotlinEnv: KotlinEnvironmentContainer
 
     lateinit var fakeConfig: Config
 
     @BeforeEach
     fun setup() {
         fakeConfig = TestConfig()
-        kotlinEnv = createEnvironment(
-            // by some reason all Android-related classes are not discovered by DetektKt compiler,
-            // so need to add them explicitly
-            additionalRootPaths = listOf(
-                MainThread::class,
-                // alternatively we could get it by reading sdk.dir property and pulling android.jar
-                // for the right API, but since we need only a single annotation symbol, let's just
-                // import robolectric instead
-                JavascriptInterface::class
-            ).map {
-                File(it.java.protectionDomain.codeSource.location.path)
-            }
-        )
-    }
-
-    @AfterEach
-    fun tearDown() {
-        kotlinEnv.dispose()
+        kotlinEnv = createEnvironment()
     }
 
     @Test
@@ -66,7 +46,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -89,7 +69,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -112,7 +92,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -135,7 +115,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -158,7 +138,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -179,7 +159,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -202,7 +182,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -224,7 +204,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -247,7 +227,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -270,7 +250,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -293,7 +273,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -314,7 +294,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -337,7 +317,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -360,7 +340,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -383,7 +363,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -405,7 +385,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -428,7 +408,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -449,7 +429,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -472,7 +452,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -495,7 +475,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -517,7 +497,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -540,7 +520,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -563,7 +543,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -584,7 +564,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(1)
     }
 
@@ -607,7 +587,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -630,7 +610,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -653,7 +633,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -676,7 +656,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -698,7 +678,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -719,7 +699,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -740,7 +720,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -761,7 +741,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -782,7 +762,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -803,7 +783,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -824,7 +804,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -842,7 +822,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -869,7 +849,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -901,7 +881,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -933,7 +913,7 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
     }
 
@@ -960,7 +940,39 @@ class ThreadSafetyTest {
             }
             """.trimIndent()
 
-        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = ThreadSafety(fakeConfig).lintWithContext(kotlinEnv, code, *ANDROID_STUBS)
         assertThat(findings).hasSize(0)
+    }
+
+    companion object {
+        // The Analysis API test engine only provides the JDK and the Kotlin stdlib, stub the Android symbols we need
+        @Language("kotlin")
+        private val ANDROID_STUBS = arrayOf(
+            """
+            package androidx.annotation
+
+            annotation class AnyThread
+            annotation class MainThread
+            annotation class UiThread
+            annotation class WorkerThread
+            """.trimIndent(),
+            """
+            package android.webkit
+
+            annotation class JavascriptInterface
+            """.trimIndent(),
+            """
+            package android.view
+
+            open class View {
+                fun post(action: Runnable): Boolean = true
+            }
+            """.trimIndent(),
+            """
+            package android.widget
+
+            open class LinearLayout : android.view.View()
+            """.trimIndent()
+        )
     }
 }

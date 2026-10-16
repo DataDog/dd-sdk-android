@@ -101,7 +101,7 @@ class ApiSurfacePlugin : Plugin<Project> {
     private fun Project.createParserConfiguration(): Configuration {
         val kotlinVersion = extensions.getByType<VersionCatalogsExtension>()
             .named("libs")
-            .findVersion("kotlin")
+            .findVersion("kotlinBuildscript")
             .orElseThrow { IllegalStateException("No `kotlin` version found in the version catalog") }
         return configurations.create(CONFIGURATION_PARSER) {
             isCanBeConsumed = false

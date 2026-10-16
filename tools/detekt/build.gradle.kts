@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+
 plugins {
     // Build
     id("org.jetbrains.kotlin.jvm")
@@ -14,18 +16,18 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.kotlin)
-    implementation(libs.kotlinReflect)
-    implementation(libs.androidXAnnotation)
+    compileOnly(libs.kotlinBuildscript)
     compileOnly(libs.detektApi)
 
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.detektTest)
-    testImplementation(libs.robolectric)
 }
 
 datadogBuild {
-    applyKotlinConfig()
+    applyKotlinConfig(
+        kotlinApiVersion = KotlinVersion.KOTLIN_2_2,
+        kotlinLanguageVersion = KotlinVersion.KOTLIN_2_2
+    )
     applyJunitConfig()
 }

@@ -47,7 +47,7 @@ android {
 }
 
 dependencies {
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.okHttp)
     implementation(libs.androidXAnnotation)
     implementation(project(":dd-sdk-android-internal"))

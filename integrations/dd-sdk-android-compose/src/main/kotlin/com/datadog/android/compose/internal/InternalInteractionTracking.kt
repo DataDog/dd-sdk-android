@@ -7,7 +7,6 @@
 package com.datadog.android.compose.internal
 
 import android.util.Log
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.ScrollableState
@@ -85,6 +84,9 @@ internal suspend fun trackScroll(
     )
 }
 
+// we re-throw CancellationException immediately, there is no violation
+// by some reason suppression cannot be applied at the catch block
+@Suppress("SuspendFunSwallowedCancellation")
 internal suspend fun <T> trackDragInteraction(
     interactionSource: InteractionSource,
     onStart: (
@@ -235,7 +237,6 @@ private fun resolveDragDirection(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Suppress("LongParameterList")
 private fun reportSwipeInteraction(
     rumMonitor: RumMonitor,

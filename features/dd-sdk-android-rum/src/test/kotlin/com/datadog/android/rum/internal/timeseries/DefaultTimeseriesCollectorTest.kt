@@ -161,7 +161,7 @@ internal class DefaultTimeseriesCollectorTest {
     )
 
     private fun DefaultTimeseriesCollector.startInForeground() {
-        onStarted()
+        onUiVisible()
     }
 
     private fun DefaultTimeseriesCollector.startSession(
@@ -227,19 +227,6 @@ internal class DefaultTimeseriesCollectorTest {
         // Then
         verify(mockExecutor).schedule(any<Runnable>(), eq(fakeIntervalAMs), eq(TimeUnit.MILLISECONDS))
         verify(mockExecutor).schedule(any<Runnable>(), eq(fakeIntervalBMs), eq(TimeUnit.MILLISECONDS))
-    }
-
-    @Test
-    fun `M not start collection W onResumed() { process not started }`() {
-        // Given
-        val collector = createTimeseries()
-        collector.startSession()
-
-        // When
-        collector.onResumed()
-
-        // Then
-        verifyNoInteractions(mockExecutor)
     }
 
     @Test
@@ -518,31 +505,12 @@ internal class DefaultTimeseriesCollectorTest {
     }
 
     @Test
-    fun `M keep collection running W onPaused() + sample tick { process remains started }`(forge: Forge) {
-        // Given
-        whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
-        testedTimeseriesCollector.startSession()
-        val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
-
-        // When
-        testedTimeseriesCollector.onPaused()
-        runnableA.run()
-
-        // Then
-        verify(mockReaderA).read()
-        verify(mockExecutor, times(2))
-            .schedule(any<Runnable>(), eq(fakeIntervalAMs), eq(TimeUnit.MILLISECONDS))
-        verify(mockExecutor, never())
-            .schedule(any<Runnable>(), eq(DefaultTimeseriesCollector.BACKGROUND_TRANSITION_DELAY), any())
-    }
-
-    @Test
     fun `M suspend chain W sample tick { suspend fired after stopped }`(forge: Forge) {
         // Given
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
         testedTimeseriesCollector.startSession()
         val runnableA = captureScheduledRunnableForInterval(fakeIntervalAMs)
-        testedTimeseriesCollector.onStopped()
+        testedTimeseriesCollector.onUiHidden()
         runScheduledSuspend()
 
         // When
@@ -574,7 +542,7 @@ internal class DefaultTimeseriesCollectorTest {
         ) doReturn fakeJson
         testedTimeseriesCollector.startSession()
         captureScheduledRunnableForInterval(fakeIntervalAMs).run()
-        testedTimeseriesCollector.onStopped()
+        testedTimeseriesCollector.onUiHidden()
 
         // When
         runScheduledSuspend()
@@ -597,11 +565,11 @@ internal class DefaultTimeseriesCollectorTest {
         val fakeForegroundContext = fakeRumContextOf(RumViewType.FOREGROUND)
         val mockPipeline = mock<Pipeline<Double>>()
         val testedCollector = createTimeseries(listOf(mockPipeline))
-        testedCollector.onStarted()
+        testedCollector.onUiVisible()
         testedCollector.startSession()
 
         // When
-        testedCollector.onStopped()
+        testedCollector.onUiHidden()
         testedCollector.onRumContextUpdate(
             fakeForegroundContext.copy(viewId = forge.getForgery<UUID>().toString())
         )
@@ -629,7 +597,7 @@ internal class DefaultTimeseriesCollectorTest {
         )
         collector.startInForeground()
         collector.startSession(sessionId = fakePreviousSessionId)
-        collector.onStopped()
+        collector.onUiHidden()
 
         // When — the session is stopped and renewed while the background transition is still pending,
         // replacing collector.pipelines before the delayed suspend runs
@@ -652,7 +620,7 @@ internal class DefaultTimeseriesCollectorTest {
         whenever(mockEventFactoryA.create(any(), any(), any())) doReturn JsonObject()
         testedTimeseriesCollector.startSession()
         captureScheduledRunnableForInterval(fakeIntervalAMs).run()
-        testedTimeseriesCollector.onStopped()
+        testedTimeseriesCollector.onUiHidden()
 
         // When
         testedTimeseriesCollector.onSessionStop(fakeRumContext.sessionId)
@@ -666,14 +634,14 @@ internal class DefaultTimeseriesCollectorTest {
     }
 
     @Test
-    fun `M schedule suspend but not flush yet W onStopped()`(forge: Forge) {
+    fun `M schedule suspend but not flush yet W onUiHidden()`(forge: Forge) {
         // Given
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
         testedTimeseriesCollector.startSession()
         captureScheduledRunnableForInterval(fakeIntervalAMs).run()
 
         // When
-        testedTimeseriesCollector.onStopped()
+        testedTimeseriesCollector.onUiHidden()
 
         // Then
         verify(mockExecutor)
@@ -693,7 +661,7 @@ internal class DefaultTimeseriesCollectorTest {
         testedTimeseriesCollector = createTimeseriesWithBuffer(mockBuffer)
         testedTimeseriesCollector.startInForeground()
         testedTimeseriesCollector.startSession()
-        testedTimeseriesCollector.onStopped()
+        testedTimeseriesCollector.onUiHidden()
         testedTimeseriesCollector.onSessionStop(fakeRumContext.sessionId)
 
         // When
@@ -710,7 +678,7 @@ internal class DefaultTimeseriesCollectorTest {
         val testedCollector = createTimeseries(listOf(mockPipeline))
         testedCollector.startInForeground()
         testedCollector.startSession()
-        testedCollector.onStopped()
+        testedCollector.onUiHidden()
 
         // When — onSessionStop closes the gate (sessionActive: true -> false) right away, so by the
         // time the debounced suspend runs, setForeground(false) is no longer an open -> closed
@@ -724,16 +692,16 @@ internal class DefaultTimeseriesCollectorTest {
     }
 
     @Test
-    fun `M keep collection running W onStarted() + sample tick { stopped transition pending }`(forge: Forge) {
+    fun `M keep collection running W onUiVisible() + sample tick { hidden transition pending }`(forge: Forge) {
         // Given
         whenever(mockReaderA.read()) doReturn forge.getForgery<DataPoint<Double>>()
         testedTimeseriesCollector.startSession()
         val sampleRunnable = captureScheduledRunnableForInterval(fakeIntervalAMs)
-        testedTimeseriesCollector.onStopped()
+        testedTimeseriesCollector.onUiHidden()
         val suspendRunnable = captureScheduledSuspendRunnable()
 
         // When
-        testedTimeseriesCollector.onStarted()
+        testedTimeseriesCollector.onUiVisible()
         suspendRunnable.run()
         sampleRunnable.run()
 
@@ -744,17 +712,17 @@ internal class DefaultTimeseriesCollectorTest {
     }
 
     @Test
-    fun `M resume scheduling W onStarted() { after stopped }`() {
+    fun `M resume scheduling W onUiVisible() { after hidden }`() {
         // Given
         testedTimeseriesCollector.startSession()
-        testedTimeseriesCollector.onStopped()
+        testedTimeseriesCollector.onUiHidden()
         runScheduledSuspend()
         captureScheduledRunnableForInterval(fakeIntervalAMs).run()
         verify(mockExecutor, times(1))
             .schedule(any<Runnable>(), eq(fakeIntervalAMs), eq(TimeUnit.MILLISECONDS))
 
         // When
-        testedTimeseriesCollector.onStarted()
+        testedTimeseriesCollector.onUiVisible()
 
         // Then
         verify(mockExecutor, times(2))
@@ -767,10 +735,10 @@ internal class DefaultTimeseriesCollectorTest {
     fun `M not sample nor reschedule W stale tick fires { new generation is running }`() {
         // Given
         testedTimeseriesCollector.startSession()
-        testedTimeseriesCollector.onStopped()
+        testedTimeseriesCollector.onUiHidden()
         runScheduledSuspend()
         val staleRunnableB = captureScheduledRunnableForInterval(fakeIntervalBMs)
-        testedTimeseriesCollector.onStarted()
+        testedTimeseriesCollector.onUiVisible()
 
         // When
         staleRunnableB.run()
