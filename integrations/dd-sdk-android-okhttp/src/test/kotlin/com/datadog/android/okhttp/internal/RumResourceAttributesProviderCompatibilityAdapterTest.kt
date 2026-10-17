@@ -80,7 +80,7 @@ internal class RumResourceAttributesProviderCompatibilityAdapterTest {
         fakeAttributes = forge.exhaustiveAttributes()
         fakeThrowable = forge.aNullable { forge.aThrowable() }
         testedProvider = RumResourceAttributesProviderCompatibilityAdapter(mockDelegate, mockSdkReference)
-        requestInfo = OkHttpRequestInfo(mockOkHttpRequest)
+        requestInfo = OkHttpRequestInfo(mockOkHttpRequest, mockInternalLogger)
         responseInfo = OkHttpResponseInfo(mockOkHttpResponse, mockInternalLogger)
     }
 

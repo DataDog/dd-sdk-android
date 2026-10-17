@@ -7,25 +7,36 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    // Build
     id("com.android.library")
+    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
+    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
     id("ktlint")
     kotlin("android")
     id("datadogBuildConfig")
+
+    // Analysis tools
     id("test-pyramid-api-usage")
+
+    // Tests
     id("de.mobilej.unmock")
 }
 
+// TODO RUM-18189 Support new AGP DSL
 @Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.flags.integration"
 }
 
 dependencies {
-    testImplementation(project(":dd-sdk-android-core"))
-    testImplementation(project(":dd-sdk-android-internal"))
-    testImplementation(project(":features:dd-sdk-android-flags"))
+    implementation(project(":dd-sdk-android-core"))
+    implementation(project(":dd-sdk-android-internal"))
+    implementation(project(":features:dd-sdk-android-rum"))
+    implementation(project(":features:dd-sdk-android-flags"))
+    implementation(libs.kotlinRuntime)
+
+    // Testing
     testImplementation(project(":features:dd-sdk-android-flags-openfeature"))
-    testImplementation(project(":features:dd-sdk-android-rum"))
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -35,6 +46,7 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(project(":reliability:stub-core"))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
@@ -48,6 +60,7 @@ dependencies {
 unMock {
     keepStartingWith("android.os")
     keepStartingWith("org.json")
+    keep("android.util.LruCache")
 }
 
 datadogBuild {
