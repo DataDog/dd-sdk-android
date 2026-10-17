@@ -174,7 +174,7 @@ internal class DatadogFlagsClientTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M gate evaluation telemetry independently W setEvaluationTelemetryOptOut`(enabled: Boolean, forge: Forge) {
+    fun `M gate evaluation telemetry W resolve() {opt-out set}`(enabled: Boolean, forge: Forge) {
         // Given
         val fakeKey = forge.anAlphabeticalString()
         val fakeContext = forge.getForgery<EvaluationContext>()
@@ -193,8 +193,9 @@ internal class DatadogFlagsClientTest {
             evaluationTelemetryOptOutParameterEnabled = enabled
         )
 
-        // When
         testedClient.setEvaluationTelemetryOptOut(true)
+
+        // When
         val result = testedClient.resolve(fakeKey, false)
 
         // Then
