@@ -15,6 +15,7 @@ import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.openfeature.asOpenFeatureProvider
 import com.datadog.android.flags.setEvaluationTelemetryOptOut
 import com.datadog.android.rum.GlobalRumMonitor
+import com.google.gson.JsonParser
 import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.Value
 import fr.xgouchet.elmyr.Forge
@@ -32,6 +33,36 @@ import org.junit.jupiter.api.extension.ExtendWith
 @ExtendWith(ForgeExtension::class)
 @ForgeConfiguration(FlagsIntegrationForgeConfigurator::class)
 internal class EvaluationTelemetryTest {
+    @Test
+    fun `M retain targeting and exposure attributes W activated provider opt out`(forge: Forge) = runBlocking<Unit> {
+        // Given
+        FlagsRuntime(forge).use { runtime ->
+            val provider = FlagsClient.Builder("provider", runtime.core)
+                .enableEvaluationTelemetryOptOutParameter(true).build().asOpenFeatureProvider()
+            runtime.assignments()
+            provider.initialize(
+                ImmutableContext("subject", mapOf(FlagsRuntime.CONTROL to Value.Boolean(true)))
+            )
+
+            // When
+            assertThat(provider.getBooleanEvaluation("enabled", false, null).value).isTrue()
+            runtime.flush()
+
+            // Then
+            assertThat(runtime.server.takeRequest().body.readUtf8())
+                .describedAs("[negative-control: activated attribute must reach targeting]")
+                .contains("\"${FlagsRuntime.CONTROL}\":\"true\"")
+            val exposures = runtime.events(Feature.FLAGS_FEATURE_NAME)
+            assertThat(exposures).hasSize(1)
+            assertThat(
+                exposures.single().getAsJsonObject("subject").getAsJsonObject("attributes")
+                    .get(FlagsRuntime.CONTROL).asString
+            ).isEqualTo("true")
+            assertThat(runtime.events(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)).isEmpty()
+            assertThat(runtime.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).isEmpty()
+        }
+    }
+
     @Test
     fun `M emit baseline telemetry W native and provider resolution`(forge: Forge) = runBlocking<Unit> {
         // Given
@@ -104,7 +135,13 @@ internal class EvaluationTelemetryTest {
                 ).describedAs("control=%s", control).isEqualTo(if (suppressed) 0 else 4)
                 assertThat(runtime.events(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
                 assertThat(runtime.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).hasSize(if (suppressed) 0 else 2)
-                assertThat(runtime.server.takeRequest().body.readUtf8()).doesNotContain(FlagsRuntime.CONTROL)
+                val requestAttributes = JsonParser.parseString(runtime.server.takeRequest().body.readUtf8())
+                    .asJsonObject.getAsJsonObject("data").getAsJsonObject("attributes")
+                    .getAsJsonObject("subject").getAsJsonObject("targeting_attributes")
+                assertThat(requestAttributes.has(FlagsRuntime.CONTROL)).isEqualTo(control != null)
+                val exposureAttributes = runtime.events(Feature.FLAGS_FEATURE_NAME).single()
+                    .getAsJsonObject("subject").getAsJsonObject("attributes")
+                assertThat(exposureAttributes).isEqualTo(requestAttributes)
             }
         }
     }
@@ -171,33 +208,40 @@ internal class EvaluationTelemetryTest {
         FlagsRuntime(forge).use { runtime ->
             val provider = FlagsClient.Builder("provider", runtime.core)
                 .enableEvaluationTelemetryOptOutParameter(true).build().asOpenFeatureProvider()
-            val original = ImmutableContext("original")
-            val failedOptOut = ImmutableContext("failed", mapOf(FlagsRuntime.CONTROL to Value.Boolean(true)))
-            val failedOptIn = ImmutableContext("failed", mapOf(FlagsRuntime.CONTROL to Value.Boolean(false)))
-            val pendingOptOut = ImmutableContext("pending", mapOf(FlagsRuntime.CONTROL to Value.Boolean(true)))
-            val pendingOptIn = ImmutableContext("pending", mapOf(FlagsRuntime.CONTROL to Value.Boolean(false)))
+            val original = ImmutableContext("subject")
+            val optedOut = ImmutableContext("subject", mapOf(FlagsRuntime.CONTROL to Value.Boolean(true)))
+            val optedIn = ImmutableContext("subject", mapOf(FlagsRuntime.CONTROL to Value.Boolean(false)))
             runtime.assignments()
             provider.initialize(original)
 
             // When
             runtime.server.enqueue(MockResponse().setResponseCode(500))
-            assertThat(runCatching { provider.onContextSet(original, failedOptOut) }.isFailure).isTrue()
+            assertThat(runCatching { provider.onContextSet(original, optedOut) }.isFailure).isTrue()
             assertThat(provider.getBooleanEvaluation("enabled", false, null).value).isTrue()
             runtime.flush()
             assertThat(runtime.events(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)).isEmpty()
-            provider.onContextSet(failedOptOut, failedOptIn)
+            runtime.server.enqueue(MockResponse().setResponseCode(500))
+            assertThat(runCatching { provider.onContextSet(optedOut, optedIn) }.isFailure).isTrue()
             assertThat(provider.getBooleanEvaluation("enabled", false, null).value).isTrue()
             runtime.pauseAssignments = true
             runtime.assignments()
             val pending = launch(start = CoroutineStart.UNDISPATCHED) {
-                provider.onContextSet(failedOptIn, pendingOptOut)
+                provider.onContextSet(optedIn, optedOut)
             }
             assertThat(pending.isCompleted).isFalse()
             assertThat(provider.getBooleanEvaluation("enabled", false, null).value).isTrue()
-            provider.onContextSet(pendingOptOut, pendingOptIn)
+            runtime.assignments()
+            val latest = launch(start = CoroutineStart.UNDISPATCHED) {
+                provider.onContextSet(optedOut, optedIn)
+            }
+            assertThat(latest.isCompleted).isFalse()
+            assertThat(provider.getBooleanEvaluation("enabled", false, null).value).isTrue()
+            runtime.completeNextAssignment()
+            pending.join()
+            assertThat(latest.isCompleted).isFalse()
             assertThat(provider.getBooleanEvaluation("enabled", false, null).value).isTrue()
             runtime.completeAssignments()
-            pending.join()
+            latest.join()
             assertThat(provider.getBooleanEvaluation("enabled", false, null).value).isTrue()
             runtime.flush()
 
@@ -206,9 +250,10 @@ internal class EvaluationTelemetryTest {
                 runtime.events(Feature.FLAGS_EVALUATIONS_FEATURE_NAME).sumOf {
                     it["evaluation_count"].asInt
                 }
-            ).isEqualTo(3)
-            assertThat(runtime.events(Feature.FLAGS_FEATURE_NAME)).hasSize(2)
-            assertThat(runtime.server.requestCount).isEqualTo(3)
+            ).isEqualTo(4)
+            assertThat(runtime.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).hasSize(4)
+            assertThat(runtime.events(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
+            assertThat(runtime.server.requestCount).isEqualTo(5)
         }
     }
 
@@ -255,7 +300,7 @@ internal class EvaluationTelemetryTest {
         FlagsRuntime(forge).use { runtime ->
             val initial = FlagsClient.Builder("cached", runtime.core).build()
             runtime.assignments()
-            initial.setEvaluationContext(EvaluationContext("subject"))
+            initial.setEvaluationContext(EvaluationContext("subject", mapOf(FlagsRuntime.CONTROL to "true")))
             val original = initial.resolve("enabled", false)
             runtime.restartFlags()
             val restored = FlagsClient.Builder("cached", runtime.core)
@@ -272,12 +317,16 @@ internal class EvaluationTelemetryTest {
             assertThat(result.reason).isEqualTo(ResolutionReason.CACHED)
             assertThat(runtime.events(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)).isEmpty()
             assertThat(runtime.events(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
+            assertThat(
+                runtime.events(Feature.FLAGS_FEATURE_NAME).single().getAsJsonObject("subject")
+                    .getAsJsonObject("attributes").get(FlagsRuntime.CONTROL).asString
+            ).isEqualTo("true")
             assertThat(runtime.server.requestCount).isEqualTo(1)
         }
     }
 
     @Test
-    fun `M update policy locally W same subject control toggles`(forge: Forge) = runBlocking<Unit> {
+    fun `M refresh assignments W same subject attribute toggles`(forge: Forge) = runBlocking<Unit> {
         // Given
         FlagsRuntime(forge).use { runtime ->
             val client = FlagsClient.Builder("provider", runtime.core)
@@ -299,6 +348,7 @@ internal class EvaluationTelemetryTest {
             )) {
                 val attributes = value?.let { mapOf(FlagsRuntime.CONTROL to it) } ?: emptyMap()
                 val newContext = ImmutableContext("subject", attributes)
+                runtime.assignments()
                 provider.onContextSet(oldContext, newContext)
                 assertThat(provider.getBooleanEvaluation("enabled", false, null).value).isTrue()
                 proxy.trackFlagSnapshotEvaluation("enabled", flag, EvaluationContext("subject"))
@@ -314,7 +364,7 @@ internal class EvaluationTelemetryTest {
             ).isEqualTo(6)
             assertThat(runtime.events(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
             assertThat(runtime.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).hasSize(6)
-            assertThat(runtime.server.requestCount).isEqualTo(1)
+            assertThat(runtime.server.requestCount).isEqualTo(6)
         }
     }
 
@@ -342,10 +392,59 @@ internal class EvaluationTelemetryTest {
                 }
             ).isEqualTo(2)
             assertThat(runtime.events(Feature.FLAGS_FEATURE_NAME)).hasSize(2)
-            assertThat(runtime.server.takeRequest().body.readUtf8())
-                .contains("premium").doesNotContain(FlagsRuntime.CONTROL)
-            assertThat(runtime.server.takeRequest().body.readUtf8())
-                .contains("premium", FlagsRuntime.CONTROL)
+            repeat(2) {
+                assertThat(runtime.server.takeRequest().body.readUtf8())
+                    .contains("premium", "\"${FlagsRuntime.CONTROL}\":\"true\"")
+            }
+            runtime.events(Feature.FLAGS_FEATURE_NAME).forEach {
+                assertThat(
+                    it.getAsJsonObject("subject").getAsJsonObject("attributes")
+                        .get(FlagsRuntime.CONTROL).asString
+                ).isEqualTo("true")
+            }
+            assertThat(runtime.server.requestCount).isEqualTo(2)
+        }
+    }
+
+    @Test
+    fun `M update values and exposures W attribute changes targeting`(forge: Forge) = runBlocking<Unit> {
+        // Given
+        FlagsRuntime(forge).use { runtime ->
+            val provider = FlagsClient.Builder("provider", runtime.core)
+                .enableEvaluationTelemetryOptOutParameter(true).build().asOpenFeatureProvider()
+            val original = ImmutableContext("subject", mapOf(FlagsRuntime.CONTROL to Value.Boolean(false)))
+            val updated = ImmutableContext("subject", mapOf(FlagsRuntime.CONTROL to Value.Boolean(true)))
+            runtime.assignments(enabled = false)
+            provider.initialize(original)
+            assertThat(provider.getBooleanEvaluation("enabled", true, null).value).isFalse()
+
+            // When
+            runtime.assignments(enabled = true)
+            provider.onContextSet(original, updated)
+            assertThat(provider.getBooleanEvaluation("enabled", false, null).value).isTrue()
+            assertThat(provider.getBooleanEvaluation("enabled", false, null).variant).isEqualTo("on")
+            runtime.flush()
+
+            // Then
+            val exposures = runtime.events(Feature.FLAGS_FEATURE_NAME)
+            assertThat(exposures).hasSize(2)
+            assertThat(exposures.map { it.getAsJsonObject("variant").get("key").asString })
+                .containsExactly("off", "on")
+            assertThat(
+                exposures.map {
+                    it.getAsJsonObject("subject").getAsJsonObject("attributes").get(FlagsRuntime.CONTROL).asString
+                }
+            ).containsExactly("false", "true")
+            for (value in listOf("false", "true")) {
+                assertThat(runtime.server.takeRequest().body.readUtf8())
+                    .contains("\"${FlagsRuntime.CONTROL}\":\"$value\"")
+            }
+            assertThat(
+                runtime.events(Feature.FLAGS_EVALUATIONS_FEATURE_NAME).sumOf {
+                    it["evaluation_count"].asInt
+                }
+            ).isEqualTo(1)
+            assertThat(runtime.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).hasSize(1)
             assertThat(runtime.server.requestCount).isEqualTo(2)
         }
     }

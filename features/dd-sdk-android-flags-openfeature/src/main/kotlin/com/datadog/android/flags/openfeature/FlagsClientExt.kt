@@ -44,8 +44,9 @@ import dev.openfeature.kotlin.sdk.FeatureProvider
  * ```
  *
  * When enabled, only Boolean `true` in `dd_evaluation_telemetry_opt_out` suppresses new evaluation
- * telemetry and automatic RUM flag annotations. Exposures and flag values remain unchanged.
- * The provider consumes this attribute locally. Control-only changes do not fetch assignments.
+ * telemetry and automatic RUM flag annotations. Suppression does not change exposure logging or flag values.
+ * The attribute remains available for targeting and exposures. Context changes use the normal assignment refresh path.
+ * The telemetry decision applies immediately, including while an assignment refresh is pending or fails.
  *
  * @return A [FeatureProvider] that delegates to this [FlagsClient]
  * @see FlagsClient.Builder for configuring the underlying flags client

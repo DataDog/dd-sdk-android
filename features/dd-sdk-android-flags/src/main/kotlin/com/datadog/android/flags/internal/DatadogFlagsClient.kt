@@ -104,12 +104,7 @@ internal class DatadogFlagsClient(
      * Invoked on a background executor thread. See [EvaluationContextCallback] for timeout behavior.
      */
     override fun setEvaluationContext(context: EvaluationContext, callback: EvaluationContextCallback?) {
-        val targetingContext = if (evaluationTelemetryOptOutParameterEnabled) {
-            context.copy(attributes = context.attributes - "dd_evaluation_telemetry_opt_out")
-        } else {
-            context
-        }
-        evaluationsManager.updateEvaluationsForContext(targetingContext, callback)
+        evaluationsManager.updateEvaluationsForContext(context, callback)
     }
 
     internal fun setEvaluationTelemetryOptOut(optOut: Boolean) {

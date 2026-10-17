@@ -130,14 +130,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         newContext: OpenFeatureEvaluationContext
     ) {
         updateEvaluationTelemetryPolicy(newContext)
-        val newTargetingContext = targetingContext(newContext)
-        val controlChanged = oldContext?.asMap()?.get(EVALUATION_TELEMETRY_OPT_OUT) !=
-            newContext.asMap()[EVALUATION_TELEMETRY_OPT_OUT]
-        val sameTargetingContext = oldContext != null && targetingContext(oldContext) == newTargetingContext
-        if (evaluationTelemetryOptOutParameterEnabled && controlChanged && sameTargetingContext) {
-            return
-        }
-        flagsClient.setEvaluationContextSuspend(newTargetingContext)
+        flagsClient.setEvaluationContextSuspend(targetingContext(newContext))
     }
 
     override fun getBooleanEvaluation(
@@ -264,9 +257,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     }
 
     private fun targetingContext(context: OpenFeatureEvaluationContext?): DatadogEvaluationContext =
-        context?.toDatadogEvaluationContext(
-            excludedAttribute = EVALUATION_TELEMETRY_OPT_OUT.takeIf { evaluationTelemetryOptOutParameterEnabled }
-        ) ?: DatadogEvaluationContext.EMPTY
+        context?.toDatadogEvaluationContext() ?: DatadogEvaluationContext.EMPTY
 
     companion object {
         private const val PROVIDER_NAME = "Datadog Feature Flags Provider"

@@ -112,9 +112,11 @@ val enabled = OpenFeatureAPI.getClient().getBooleanValue("new-feature", false)
 
 Only boolean `true` suppresses new evaluation events, counts, and automatic RUM flag annotations. Missing, false, null, strings, numbers, and other types preserve telemetry. Activation defaults to disabled.
 
-Update the decision through `OpenFeatureAPI.setEvaluationContext`. When only this reserved attribute changes, the update applies locally without fetching assignments or clearing cached values. The provider consumes the attribute before converting targeting attributes to strings.
+Update the decision through `OpenFeatureAPI.setEvaluationContext`. The attribute remains available for targeting and exposure reporting. The provider converts it to a string for targeting, like other attributes. Attribute changes use the normal assignment refresh path.
 
-Flag values, exposures, customer hooks, manual annotations, and unrelated telemetry remain unchanged. This control does not remove previously recorded events or existing RUM annotations. Exposure events can still contain subject data.
+The telemetry decision applies immediately, including while an assignment refresh is pending or fails. Suppression does not change flag values or exposure logging. Targeting rules can still change assignments, and normal exposure deduplication applies.
+
+Customer hooks, manual annotations, and unrelated telemetry remain unchanged. This control does not remove previously recorded events or existing RUM annotations. Exposure events can still contain subject data.
 
 Each named client retains its original configuration. Use a different client name if you need a different activation setting.
 
@@ -191,7 +193,7 @@ If RUM is not enabled, the OpenFeature provider will continue to work normally, 
 - **Consistent targeting keys**: Use consistent targeting keys (user ID) to ensure users see consistent feature flag values across sessions.
 - **Provide meaningful defaults**: Always provide sensible default values that maintain core functionality if flag evaluation fails.
 - **Set context early**: Set the evaluation context as early as possible in your application lifecycle, typically after user authentication.
-- **Attribute types**: The provider converts targeting attributes to strings. Supply `dd_evaluation_telemetry_opt_out` as `Value.Boolean`; the enabled control consumes it before conversion.
+- **Attribute types**: The provider converts targeting attributes to strings. Supply `dd_evaluation_telemetry_opt_out` as `Value.Boolean` to control telemetry. The provider reads its type before conversion and retains the attribute for targeting and exposures.
 
 ## Differences from direct FlagsClient usage
 

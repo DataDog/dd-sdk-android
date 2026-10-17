@@ -19,13 +19,10 @@ import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 /**
  * Converts an OpenFeature [EvaluationContext] to a Datadog [EvaluationContext].
  */
-internal fun OpenFeatureEvaluationContext.toDatadogEvaluationContext(
-    excludedAttribute: String? = null
-): EvaluationContext {
+internal fun OpenFeatureEvaluationContext.toDatadogEvaluationContext(): EvaluationContext {
     val targetingKey = this.getTargetingKey()
 
     val stringAttributes = this.asMap()
-        .filterKeys { it != excludedAttribute }
         .mapValues { (_, value) ->
             when (value) {
                 is Value.String -> value.asString() ?: value.toString()

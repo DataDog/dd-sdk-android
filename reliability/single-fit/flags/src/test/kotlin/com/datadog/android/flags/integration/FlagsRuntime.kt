@@ -113,8 +113,13 @@ internal class FlagsRuntime(forge: Forge) : AutoCloseable {
         )
     }
 
-    fun assignments() {
-        server.enqueue(MockResponse().setBody(ASSIGNMENTS))
+    fun assignments(enabled: Boolean = true) {
+        val assignments = JsonParser.parseString(ASSIGNMENTS).asJsonObject
+        val flag = assignments.getAsJsonObject("data").getAsJsonObject("attributes")
+            .getAsJsonObject("flags").getAsJsonObject("enabled")
+        flag.addProperty("variationValue", enabled)
+        flag.addProperty("variationKey", if (enabled) "on" else "off")
+        server.enqueue(MockResponse().setBody(assignments.toString()))
     }
 
     fun flush() {
@@ -125,8 +130,12 @@ internal class FlagsRuntime(forge: Forge) : AutoCloseable {
     fun completeAssignments() {
         pauseAssignments = false
         while (pendingAssignments.isNotEmpty()) {
-            pendingAssignments.removeFirst().run()
+            completeNextAssignment()
         }
+    }
+
+    fun completeNextAssignment() {
+        pendingAssignments.removeFirst().run()
     }
 
     fun events(feature: String): List<JsonObject> = stubCore.eventsWritten(feature).map {

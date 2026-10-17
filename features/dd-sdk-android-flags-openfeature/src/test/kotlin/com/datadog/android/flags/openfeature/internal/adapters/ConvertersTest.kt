@@ -30,7 +30,7 @@ import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 internal class ConvertersTest {
 
     @Test
-    fun `M exclude local control W toDatadogEvaluationContext`(forge: Forge) {
+    fun `M retain telemetry attribute W toDatadogEvaluationContext`(forge: Forge) {
         // Given
         val fakeKey = forge.anAlphabeticalString()
         val fakeValue = forge.anAlphabeticalString()
@@ -41,12 +41,11 @@ internal class ConvertersTest {
         )
 
         // When
-        val result = context.toDatadogEvaluationContext(excludedAttribute = control)
-        val defaultResult = context.toDatadogEvaluationContext()
+        val result = context.toDatadogEvaluationContext()
 
         // Then
-        assertThat(result.attributes).containsOnlyKeys(fakeKey).containsEntry(fakeKey, fakeValue)
-        assertThat(defaultResult.attributes).containsEntry(control, "true")
+        assertThat(result.attributes).containsOnlyKeys(fakeKey, control)
+            .containsEntry(fakeKey, fakeValue).containsEntry(control, "true")
     }
 
     // region toProviderEvaluation
