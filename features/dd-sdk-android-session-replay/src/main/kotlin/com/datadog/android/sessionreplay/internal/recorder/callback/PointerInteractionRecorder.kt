@@ -29,7 +29,7 @@ internal class PointerInteractionRecorder(
     private val pixelsDensity: Float,
     private val timeProvider: TimeProvider,
     private val rumContextProvider: RumContextProvider,
-    private val touchPrivacyManager: TouchPrivacyManager,
+    touchPrivacyManager: TouchPrivacyManager,
     private val onFlush: (List<MobileSegment.MobileRecord>) -> Boolean,
     private val copyEvent: (MotionEvent) -> MotionEvent = {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
@@ -37,7 +37,8 @@ internal class PointerInteractionRecorder(
     },
     private val motionEventUtils: MotionEventUtils = MotionEventUtils,
     private val motionUpdateThresholdInNs: Long = MOTION_UPDATE_DELAY_THRESHOLD_NS,
-    private val flushPositionBufferThresholdInNs: Long = FLUSH_BUFFER_THRESHOLD_NS
+    private val flushPositionBufferThresholdInNs: Long = FLUSH_BUFFER_THRESHOLD_NS,
+    private val shouldRecordTouch: (Point) -> Boolean = touchPrivacyManager::shouldRecordTouch
 ) {
     internal val pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
     private var lastOnMoveUpdateTimeInNs: Long = 0L
@@ -54,7 +55,7 @@ internal class PointerInteractionRecorder(
                 motionEventUtils.getPointerAbsoluteX(event, 0).toInt(),
                 motionEventUtils.getPointerAbsoluteY(event, 0).toInt()
             )
-            shouldRecordMotion = touchPrivacyManager.shouldRecordTouch(touchLocation)
+            shouldRecordMotion = shouldRecordTouch(touchLocation)
         }
         if (!shouldRecordMotion) return
 

@@ -96,6 +96,7 @@ internal class CompositionWindowTouchCallbackTest {
 
     @LongForgery(min = 0L)
     private var fakeElapsedTimeNs: Long = 0L
+    private var fakeReadyScope: TouchPrivacyScope? = TouchPrivacyScope(RumViewIdentityScope("view"), 0L)
 
     @BeforeEach
     fun `set up`() {
@@ -311,6 +312,50 @@ internal class CompositionWindowTouchCallbackTest {
         assertThat(captor.secondValue.records).isEqualTo(fakeMoveRecords2)
     }
 
+    @Test
+    fun `M discard a gesture and its buffer W privacy scope changes`(forge: Forge) {
+        // Given
+        testedCallback.dispatchTouchEvent(forge.touchRecords(MobileSegment.PointerEventType.DOWN).asMotionEvent())
+
+        // When: the new scope is ready without an intervening event during initialization.
+        fakeReadyScope = TouchPrivacyScope(RumViewIdentityScope("next-view"), 0L)
+        testedCallback.dispatchTouchEvent(forge.touchRecords(MobileSegment.PointerEventType.UP).asMotionEvent())
+
+        // Then
+        verify(mockRecordWriter, never()).write(any(), any())
+        val fakeDownRecords = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
+        val fakeUpRecords = forge.touchRecords(MobileSegment.PointerEventType.UP)
+        testedCallback.dispatchTouchEvent(fakeDownRecords.asMotionEvent())
+        testedCallback.dispatchTouchEvent(fakeUpRecords.asMotionEvent())
+        val captor = argumentCaptor<EnrichedRecord>()
+        verify(mockRecordWriter).write(captor.capture(), any())
+        assertThat(captor.firstValue.records).isEqualTo(fakeDownRecords + fakeUpRecords)
+    }
+
+    @Test
+    fun `M discard buffered gesture W privacy revision changes in the same RUM view`(
+        @Forgery fakePrivacyScope: TouchPrivacyScope,
+        forge: Forge
+    ) {
+        // Given
+        fakeReadyScope = fakePrivacyScope
+        testedCallback.dispatchTouchEvent(forge.touchRecords(MobileSegment.PointerEventType.DOWN).asMotionEvent())
+
+        // When: a fresh map becomes ready without any touch event during the dirty interval.
+        fakeReadyScope = fakePrivacyScope.copy(version = fakePrivacyScope.version + 1)
+        testedCallback.dispatchTouchEvent(forge.touchRecords(MobileSegment.PointerEventType.UP).asMotionEvent())
+
+        // Then
+        verify(mockRecordWriter, never()).write(any(), any())
+        val fakeDownRecords = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
+        val fakeUpRecords = forge.touchRecords(MobileSegment.PointerEventType.UP)
+        testedCallback.dispatchTouchEvent(fakeDownRecords.asMotionEvent())
+        testedCallback.dispatchTouchEvent(fakeUpRecords.asMotionEvent())
+        val captor = argumentCaptor<EnrichedRecord>()
+        verify(mockRecordWriter).write(captor.capture(), any())
+        assertThat(captor.firstValue.records).isEqualTo(fakeDownRecords + fakeUpRecords)
+    }
+
     private fun buildCallback() = CompositionWindowTouchCallback(
         appContext = mockContext,
         wrappedCallback = mockWrappedCallback,
@@ -319,6 +364,7 @@ internal class CompositionWindowTouchCallbackTest {
         rumContextProvider = mockRumContextProvider,
         touchPrivacyManager = mockTouchPrivacyManager,
         internalLogger = mockInternalLogger,
+        touchRecordingScope = { fakeReadyScope },
         copyEvent = { it },
         motionEventUtils = mockEventUtils,
         motionUpdateThresholdInNs = TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS,
