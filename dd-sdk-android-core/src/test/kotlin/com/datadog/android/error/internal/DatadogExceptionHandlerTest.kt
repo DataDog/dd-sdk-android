@@ -46,6 +46,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.ArgumentMatchers
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -378,6 +380,56 @@ internal class DatadogExceptionHandlerTest {
     // endregion
 
     // region Resilience
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M report original crash without threads W uncaughtException() {thread dump OOM}`(
+        loggingThrows: Boolean,
+        @StringForgery fakeThreadName: String,
+        @StringForgery fakeFailureMessage: String,
+        @StringForgery fakeLoggingFailureMessage: String
+    ) {
+        // Given
+        val fakeFailure = OutOfMemoryError(fakeFailureMessage)
+        val stubThread: Thread = mock()
+        whenever(stubThread.name) doReturn fakeThreadName
+        whenever(stubThread.state) doThrow fakeFailure
+        val fakeOriginalStackTrace = fakeThrowable.stackTrace
+        if (loggingThrows) {
+            whenever(
+                mockInternalLogger.log(
+                    eq(InternalLogger.Level.ERROR),
+                    eq(InternalLogger.Target.MAINTAINER),
+                    any(),
+                    eq(fakeFailure),
+                    eq(true),
+                    eq(null)
+                )
+            ) doThrow OutOfMemoryError(fakeLoggingFailureMessage)
+        }
+
+        // When
+        testedHandler.uncaughtException(stubThread, fakeThrowable)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            assertThat(lastValue).isInstanceOf(JvmCrash.Rum::class.java)
+            val crashEvent = lastValue as JvmCrash.Rum
+            assertThat(crashEvent.throwable).isSameAs(fakeThrowable)
+            assertThat(crashEvent.message).isEqualTo(fakeThrowable.message)
+            assertThat(crashEvent.threads).isEmpty()
+        }
+        assertThat(fakeThrowable.stackTrace).containsExactly(*fakeOriginalStackTrace)
+        verify(mockPreviousHandler).uncaughtException(stubThread, fakeThrowable)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            "Failed to collect crash thread dumps.",
+            fakeFailure,
+            onlyOnce = true
+        )
+    }
 
     @Test
     fun `M call previous handler W uncaughtException() { exception ingestion throws }`(

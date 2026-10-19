@@ -64,7 +64,22 @@ internal class DatadogExceptionHandler(
     // region Internal
 
     private fun ingestUncaughtException(t: Thread, e: Throwable) {
-        val threads = getThreadDumps(t, e)
+        val threads = try {
+            getThreadDumps(t, e)
+        } catch (failure: OutOfMemoryError) {
+            try {
+                sdkCore.internalLogger.log(
+                    level = InternalLogger.Level.ERROR,
+                    target = InternalLogger.Target.MAINTAINER,
+                    messageBuilder = { "Failed to collect crash thread dumps." },
+                    throwable = failure,
+                    onlyOnce = true
+                )
+            } catch (@Suppress("TooGenericExceptionCaught", "SwallowedException") _: Throwable) {
+                // Diagnostic logging must not prevent reporting the original crash.
+            }
+            emptyList()
+        }
 
         // write a RUM Error too
         val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
