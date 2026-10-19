@@ -152,6 +152,7 @@ verify:all:
         --console=plain
         --continue
         --no-daemon
+        --no-build-cache
         --init-script ci/gradle-cache-cleanup.init.gradle.kts
         -DsdkCommitSha1=0000000000000000000000000000000000000000
         -Puse-api21-java-backport
