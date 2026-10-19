@@ -1358,7 +1358,7 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M clear pending RUM events W continuous profiling failed`() {
+    fun `M clear pending RUM events W onFailure() {continuous profiling}`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         testedFeature.onInitialize(mockContext)
