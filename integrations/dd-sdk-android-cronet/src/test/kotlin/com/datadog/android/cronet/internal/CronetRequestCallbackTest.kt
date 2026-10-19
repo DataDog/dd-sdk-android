@@ -70,9 +70,6 @@ internal class CronetRequestCallbackTest {
     lateinit var mockUrlResponseInfo: UrlResponseInfo
 
     @Mock
-    lateinit var mockByteBuffer: ByteBuffer
-
-    @Mock
     lateinit var mockCronetException: CronetException
 
     @Mock
@@ -421,11 +418,14 @@ internal class CronetRequestCallbackTest {
 
     @Test
     fun `M delegate onReadCompleted W onReadCompleted()`() {
+        // Given
+        val fakeByteBuffer = ByteBuffer.allocate(1024)
+
         // When
-        testedCallback.onReadCompleted(mockUrlRequest, mockUrlResponseInfo, mockByteBuffer)
+        testedCallback.onReadCompleted(mockUrlRequest, mockUrlResponseInfo, fakeByteBuffer)
 
         // Then
-        verify(mockDelegate).onReadCompleted(mockUrlRequest, mockUrlResponseInfo, mockByteBuffer)
+        verify(mockDelegate).onReadCompleted(mockUrlRequest, mockUrlResponseInfo, fakeByteBuffer)
     }
 
     // endregion

@@ -101,18 +101,15 @@ inline fun <reified T, R : Any> R.getFieldValue(
 @SuppressWarnings("PrintStackTrace")
 private fun <R> setFieldValue(instance: Any?, field: Field, fieldValue: R): Boolean {
     field.isAccessible = true
-    // Make it non final
     try {
-        // Android JVM does not use the JDK sources for reflection therefore the property access type
-        // field is named `accessFlags` instead of `modifiers` as in a default JVM
+        // Final fields can't be written the same way on ART and on the JVM.
         // Because these methods are being shared between JUnit and AndroidJUnit runtimes we will
         // have to support both implementations.
-        RemoveFinalModifier.remove(field)
+        FieldWriter.set(instance, field, fieldValue)
     } catch (e: NoSuchFieldException) {
         e.printStackTrace()
         return false
     }
-    field.set(instance, fieldValue)
     return true
 }
 
