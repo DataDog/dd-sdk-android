@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.flags.internal.diagnostics.FlagsRequestDiagnostics
 import com.datadog.android.flags.internal.getFlagsEndpoint
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.model.EvaluationContext
@@ -38,18 +39,23 @@ internal class PrecomputedAssignmentsRequestFactory(
      * @param context The evaluation context containing targeting key and custom attributes
      *                for flag evaluation
      * @param datadogContext The [DatadogContext] holding common information about SDK
+     * @param diagnostics Optional snapshot for the logical fetch that created this request.
      * @return A fully-formed OkHttp Request ready for execution, or null if the request
      *         cannot be constructed (e.g., invalid endpoint, JSON serialization error)
      */
     @Suppress("ReturnCount")
-    fun create(context: EvaluationContext, datadogContext: DatadogContext): Request? {
+    fun create(
+        context: EvaluationContext,
+        datadogContext: DatadogContext,
+        diagnostics: FlagsRequestDiagnostics? = null
+    ): Request? {
         val url = customFlagEndpoint
             ?: datadogContext.site.getFlagsEndpoint(PREVIEW_CUSTOMER_DOMAIN)
             ?: return null
 
         val headers = buildHeaders(datadogContext) ?: return null
 
-        val body = buildRequestBody(context, datadogContext) ?: return null
+        val body = buildRequestBody(context, datadogContext, diagnostics) ?: return null
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Safe: inputs validated, caller handles null
         return Request.Builder()
@@ -91,7 +97,11 @@ internal class PrecomputedAssignmentsRequestFactory(
         return headersBuilder.build()
     }
 
-    private fun buildRequestBody(context: EvaluationContext, datadogContext: DatadogContext): RequestBody? = try {
+    private fun buildRequestBody(
+        context: EvaluationContext,
+        datadogContext: DatadogContext,
+        diagnostics: FlagsRequestDiagnostics?
+    ): RequestBody? = try {
         val attributeObj = buildStringifiedAttributes(context)
 
         val subject = JSONObject()
@@ -108,6 +118,26 @@ internal class PrecomputedAssignmentsRequestFactory(
             .put("attributes", attributes)
         val body = JSONObject()
             .put("data", data)
+
+        if (diagnostics != null) {
+            @Suppress("TooGenericExceptionCaught") // Optional third-party JSON conversion must not fail assignments.
+            try {
+                body.put(
+                    "diagnostics",
+                    JSONObject(
+                        mapOf(
+                            "sdk" to mapOf("instance_id" to diagnostics.instanceId),
+                            "fetch" to mapOf(
+                                "sequence" to diagnostics.sequence,
+                                "trigger" to diagnostics.trigger.wireValue
+                            )
+                        )
+                    )
+                )
+            } catch (_: Exception) {
+                // Optional diagnostics must not prevent fetching assignments.
+            }
+        }
 
         // String.toRequestBody() can internally throw IOException/ArrayIndexOutOfBoundsException,
         // but not in this context with a valid JSON string from JSONObject.toString()

@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.net
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.flags.internal.diagnostics.FlagsRequestDiagnostics
 import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Call
 import okhttp3.Request
@@ -28,11 +29,11 @@ internal class PrecomputedAssignmentsDownloader(
 ) : PrecomputedAssignmentsReader {
 
     @WorkerThread
-    override fun readPrecomputedFlags(context: EvaluationContext, datadogContext: DatadogContext): String? {
-        val request = requestFactory.create(context, datadogContext) ?: return null
-
-        return executeDownloadRequest(request)
-    }
+    override fun readPrecomputedFlags(
+        context: EvaluationContext,
+        datadogContext: DatadogContext,
+        diagnostics: FlagsRequestDiagnostics?
+    ): String? = requestFactory.create(context, datadogContext, diagnostics)?.let(::executeDownloadRequest)
 
     @Suppress("TooGenericExceptionCaught")
     private fun executeDownloadRequest(request: Request): String? = try {
