@@ -430,7 +430,7 @@ interface FlagsClient {
             flagsFeature: FlagsFeature,
             evaluationsFeature: EvaluationsFeature?,
             name: String,
-            evaluationTelemetryOptOutParameterEnabled: Boolean = false
+            evaluationTelemetryOptOutParameterEnabled: Boolean
         ): FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME

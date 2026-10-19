@@ -56,7 +56,7 @@ internal class DatadogFlagsClient(
     private val exposureProcessor: EventsProcessor,
     private val evaluationsFeature: EvaluationsFeature?,
     private val flagStateManager: FlagsStateManager,
-    internal val evaluationTelemetryOptOutParameterEnabled: Boolean = false
+    internal val evaluationTelemetryOptOutParameterEnabled: Boolean
 ) : FlagsClient {
 
     @Volatile
