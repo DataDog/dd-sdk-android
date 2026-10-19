@@ -18,11 +18,8 @@ internal sealed class ProfilingTelemetryEvent {
         val resultCallbackDelayMs: Long,
         val stopReason: String,
         val bufferSizeKb: Int,
-        val samplingFrequencyHz: Int
-    ) : ProfilingTelemetryEvent()
-
-    data class Blocked(
-        val startReason: String
+        val samplingFrequencyHz: Int,
+        val hasNoStackSamples: Boolean
     ) : ProfilingTelemetryEvent()
 
     data class AnrTriggerResult(

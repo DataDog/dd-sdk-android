@@ -51,7 +51,6 @@ internal class ProfilingTelemetry {
         when (event) {
             is ProfilingTelemetryEvent.SessionEnd -> dispatchSessionEnd(logger, event)
             is ProfilingTelemetryEvent.AnrTriggerResult -> dispatchAnrTriggerResult(logger, event)
-            is ProfilingTelemetryEvent.Blocked -> dispatchBlocked(logger, event)
         }
     }
 
@@ -71,30 +70,12 @@ internal class ProfilingTelemetry {
                     KEY_ERROR_MESSAGE to event.errorMessage,
                     KEY_FILE_SIZE to event.fileSize,
                     KEY_STOPPED_REASON to event.stopReason,
-                    KEY_APP_START_INFO to event.appStartInfo
+                    KEY_APP_START_INFO to event.appStartInfo,
+                    KEY_NO_STACK_SAMPLES to event.hasNoStackSamples
                 ),
                 KEY_PROFILING_CONFIG to mapOf(
                     KEY_BUFFER_SIZE to event.bufferSizeKb,
                     KEY_SAMPLING_FREQUENCY to event.samplingFrequencyHz,
-                    KEY_PROFILING_PACKAGE_VERSION_CODE to profilingPackageVersionCode
-                )
-            ),
-            samplingRate = MethodCallSamplingRate.ALL.rate
-        )
-    }
-
-    private fun dispatchBlocked(
-        logger: InternalLogger,
-        event: ProfilingTelemetryEvent.Blocked
-    ) {
-        logger.logMetric(
-            messageBuilder = { TELEMETRY_MSG_PROFILING_SESSION },
-            additionalProperties = mapOf(
-                KEY_METRIC_TYPE to METRIC_TYPE_PROFILING_BLOCKED,
-                KEY_PROFILING_SESSION to mapOf(
-                    KEY_START_REASON to event.startReason
-                ),
-                KEY_PROFILING_CONFIG to mapOf(
                     KEY_PROFILING_PACKAGE_VERSION_CODE to profilingPackageVersionCode
                 )
             ),
@@ -142,13 +123,13 @@ internal class ProfilingTelemetry {
         internal const val KEY_PROFILING_PACKAGE_VERSION_CODE = "profiling_package_version_code"
         internal const val KEY_STOPPED_REASON = "stopped_reason"
         internal const val KEY_APP_START_INFO = "app_start_info"
+        internal const val KEY_NO_STACK_SAMPLES = "no_stack_samples"
         internal const val KEY_BUFFER_SIZE = "buffer_size"
         internal const val KEY_SAMPLING_FREQUENCY = "sampling_frequency"
         internal const val KEY_DROPPED_AS_STALE = "dropped_as_stale"
 
         internal const val METRIC_TYPE_PROFILING_SESSION = "profiling session"
         internal const val METRIC_TYPE_PROFILING_TRIGGER = "profiling trigger"
-        internal const val METRIC_TYPE_PROFILING_BLOCKED = "profiling blocked"
         internal const val ANR_PROFILING_TRIGGER_START_REASON = "anr_profiling_trigger"
 
         internal const val STOPPED_REASON_MANUAL = "manual"
