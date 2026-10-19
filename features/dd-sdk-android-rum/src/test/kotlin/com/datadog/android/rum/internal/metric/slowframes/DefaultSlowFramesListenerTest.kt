@@ -23,6 +23,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -30,6 +33,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
+import java.util.stream.Stream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -309,40 +313,43 @@ internal class DefaultSlowFramesListenerTest {
         assertThat(report.slowFramesRecords).isEmpty()
     }
 
-    @Test
-    fun `M return report with total duration less than frozen W resolveReport`(
-        @LongForgery(min = 700, max = 1000) frozenFrameThresholdNs: Long,
-        forge: Forge
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("slowFrameScenarios")
+    fun `M group jank frames W resolveReport { default thresholds }`(
+        scenario: String,
+        inputFramesMs: List<Pair<Long, Long>>,
+        expectedRecordsMs: List<Pair<Long, Long>>
     ) {
         // Given
-        val jankDuration = frozenFrameThresholdNs - 1
-        val jank1 = forge.aFrameData(
-            frameStartNanos = viewCreatedTimestampNs,
-            frameDurationUiNanos = jankDuration
-        )
-        val jank2 = forge.aFrameData(
-            frameStartNanos = viewCreatedTimestampNs + jankDuration,
-            frameDurationUiNanos = jankDuration
-        )
-
         val testedListener = stubSlowFramesListener(
-            SlowFramesConfiguration(
-                maxSlowFrameThresholdNs = frozenFrameThresholdNs,
-                continuousSlowFrameThresholdNs = Long.MAX_VALUE
-            )
+            SlowFramesConfiguration.DEFAULT
         )
-        testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
-        testedListener.onFrame(jank1)
-        testedListener.onFrame(jank2)
+        testedListener.onViewCreated(viewId, 0L)
+        inputFramesMs.forEach { (startMs, durationMs) ->
+            testedListener.onFrame(
+                FrameData(
+                    frameStartNanos = startMs * NANOSECONDS_IN_MILLISECOND,
+                    frameDurationUiNanos = durationMs * NANOSECONDS_IN_MILLISECOND,
+                    isJank = true,
+                    states = emptyList()
+                )
+            )
+        }
 
         // When
         val report = checkNotNull(testedListener.resolveReport(viewId, false, fakeViewDurationNs))
 
         // Then
-        assertThat(report.slowFramesRecords).hasSize(1)
-        assertThat(report.slowFramesRecords.first()).isEqualTo(
-            jank1.toSlowFrame(durationNs = frozenFrameThresholdNs - 1)
-        )
+        assertThat(report.slowFramesRecords)
+            .describedAs(scenario)
+            .containsExactlyElementsOf(
+                expectedRecordsMs.map { (startMs, durationMs) ->
+                    SlowFrameRecord(
+                        startTimestampNs = startMs * NANOSECONDS_IN_MILLISECOND,
+                        durationNs = durationMs * NANOSECONDS_IN_MILLISECOND
+                    )
+                }
+            )
     }
 
     @Test
@@ -639,5 +646,30 @@ internal class DefaultSlowFramesListenerTest {
     companion object {
         // clip max values to avoid Long overflow
         const val MAX_DURATION_NS = 1_000_000_000_000
+        private const val NANOSECONDS_IN_MILLISECOND = 1_000_000L
+
+        @JvmStatic
+        fun slowFrameScenarios(): Stream<Arguments> = Stream.of(
+            Arguments.of(
+                "merge adjacent frames",
+                listOf(0L to 40L, 40L to 40L),
+                listOf(0L to 80L)
+            ),
+            Arguments.of(
+                "merge a sequence separated by continuous gaps",
+                listOf(0L to 40L, 50L to 40L, 100L to 40L),
+                listOf(0L to 120L)
+            ),
+            Arguments.of(
+                "start a new record instead of truncating the duration",
+                listOf(0L to 400L, 400L to 400L),
+                listOf(0L to 400L, 400L to 400L)
+            ),
+            Arguments.of(
+                "keep frames with a non-continuous gap separate",
+                listOf(0L to 40L, 100L to 40L),
+                listOf(0L to 40L, 100L to 40L)
+            )
+        )
     }
 }
