@@ -259,6 +259,7 @@ internal class ProfilingFeature(
             continuousProfilingScheduler?.onAppLaunchProfilingComplete()
         } else if (startReason == ProfilingStartReason.CONTINUOUS) {
             continuousProfilingScheduler?.onActiveWindowEnded()
+            pendingRumEvents.clear()
         }
     }
 

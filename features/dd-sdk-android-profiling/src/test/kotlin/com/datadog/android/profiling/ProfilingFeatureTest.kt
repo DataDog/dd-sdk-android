@@ -1358,6 +1358,24 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M clear pending RUM events W continuous profiling failed`() {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.pendingRumEvents.add(fakeRumLongTaskEvent)
+        testedFeature.pendingRumEvents.add(fakeRumAnrEvent)
+        testedFeature.pendingRumEvents.add(fakeTTID)
+
+        // When
+        testedFeature.onFailure(ProfilingStartReason.CONTINUOUS)
+
+        // Then
+        assertThat(testedFeature.pendingRumEvents.pendingLongTasks).isEmpty()
+        assertThat(testedFeature.pendingRumEvents.pendingAnrEvents).isEmpty()
+        assertThat(testedFeature.pendingRumEvents.pendingVitalEvents).isEmpty()
+    }
+
+    @Test
     fun `M not accumulate RUM events after launch window closed W RUM events after launch write`(
         @Forgery fakePerfettoResult: PerfettoResult
     ) {
