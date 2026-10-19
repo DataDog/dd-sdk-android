@@ -147,6 +147,7 @@ verify:all:
     - !reference [ .snippets, source-secrets ]
     - !reference [ .snippets, setup-gradle ]
   script:
+    - du -ah cache/caches | sort -h | tail -100
     - >-
         DD_TAGS="test.configuration.variant:debug" ./gradlew
         --console=plain
