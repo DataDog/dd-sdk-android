@@ -75,7 +75,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -99,7 +98,6 @@ internal class RumResourceScopeTest {
     @Mock
     lateinit var mockParentScope: RumScope
 
-    @Mock
     lateinit var mockEvent: RumRawEvent
 
     @Mock
@@ -193,7 +191,7 @@ internal class RumResourceScopeTest {
         fakeServerOffset =
             forge.aLong(min = minLimit, max = maxLimit)
         fakeResourceAttributes = forge.exhaustiveAttributes()
-        mockEvent = mockEvent()
+        mockEvent = createFakeEvent()
         fakeSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 
         whenever(rumMonitor.mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
@@ -3889,10 +3887,8 @@ internal class RumResourceScopeTest {
 
     // region Internal
 
-    private fun mockEvent(): RumRawEvent {
-        val event: RumRawEvent = mock()
-        whenever(event.eventTime) doReturn fakeEventTime
-        return event
+    private fun createFakeEvent(): RumRawEvent {
+        return RumRawEvent.FakeOnlyForTestEvent(eventTime = fakeEventTime)
     }
 
     private fun timeWithOffset(offsetMs: Long): Time {

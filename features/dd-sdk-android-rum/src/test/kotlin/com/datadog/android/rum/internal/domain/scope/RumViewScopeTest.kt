@@ -371,7 +371,7 @@ internal class RumViewScopeTest {
         fakeEventTime = Time(fakeTimestamp, fakeNanos)
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.getForgery()
-        fakeEvent = mockEvent()
+        fakeEvent = createFakeEvent()
         fakeUrl = fakeKey.url.replace('.', '/')
 
         fakeSlowRecords = forge.aList {
@@ -2735,7 +2735,7 @@ internal class RumViewScopeTest {
     fun `M returns null W handleEvent(any) on stopped view {no pending event}`() {
         // Given
         testedScope.stopped = true
-        fakeEvent = mock()
+        fakeEvent = createFakeEvent()
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2754,7 +2754,7 @@ internal class RumViewScopeTest {
         val fakeSessionReplayContext = forge.exhaustiveAttributes()
             .apply { put(testedScope.viewId, forge.aBool()) }
         testedScope.stopped = true
-        fakeEvent = mock()
+        fakeEvent = createFakeEvent()
 
         // When
         testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2776,7 +2776,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope.stopped = true
         testedScope.pendingActionCount = pendingEvents
-        fakeEvent = mock()
+        fakeEvent = createFakeEvent()
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2798,7 +2798,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope.stopped = true
         testedScope.pendingResourceCount = pendingEvents
-        fakeEvent = mock()
+        fakeEvent = createFakeEvent()
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2820,7 +2820,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope.stopped = true
         testedScope.pendingErrorCount = pendingEvents
-        fakeEvent = mock()
+        fakeEvent = createFakeEvent()
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2842,7 +2842,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope.stopped = true
         testedScope.pendingLongTaskCount = pendingEvents
-        fakeEvent = mock()
+        fakeEvent = createFakeEvent()
 
         // When
         val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -11000,10 +11000,8 @@ internal class RumViewScopeTest {
         return attributes to expectedAttributes
     }
 
-    private fun mockEvent(): RumRawEvent {
-        val event: RumRawEvent = mock()
-        whenever(event.eventTime) doReturn fakeEventTime
-        return event
+    private fun createFakeEvent(): RumRawEvent {
+        return RumRawEvent.FakeOnlyForTestEvent(eventTime = fakeEventTime)
     }
 
     private fun extractWriter(scope: RumViewScope): RumViewEventWriter {

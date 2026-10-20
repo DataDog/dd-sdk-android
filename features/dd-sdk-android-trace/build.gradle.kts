@@ -6,7 +6,6 @@
 @file:Suppress("StringLiteralDuplication")
 
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.nio.file.Paths
 
 plugins {
@@ -109,7 +108,7 @@ createJsonModelsGenerationTask("generateTraceModelsFromJson") {
 }
 
 datadogBuild {
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyAndroidLibraryConfig()
     applyJunitConfig()
     applyJavadocConfig()

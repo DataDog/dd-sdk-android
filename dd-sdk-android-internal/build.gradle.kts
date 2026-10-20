@@ -4,8 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.java11
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import com.datadog.gradle.config.java17
 
 plugins {
     // Build
@@ -43,7 +42,7 @@ plugins {
 android {
     namespace = "com.datadog.android.internal"
     compileOptions {
-        java11()
+        java17()
     }
 
     testFixtures {
@@ -80,7 +79,7 @@ dependencies {
 }
 
 datadogBuild {
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyAndroidLibraryConfig()
     applyJunitConfig()
     applyJavadocConfig()

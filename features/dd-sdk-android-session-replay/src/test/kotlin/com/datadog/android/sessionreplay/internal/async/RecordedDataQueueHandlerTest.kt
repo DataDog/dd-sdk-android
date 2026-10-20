@@ -130,7 +130,7 @@ internal class RecordedDataQueueHandlerTest {
             )
         )
 
-        fakeTouchData = forge.aList { mock() }
+        fakeTouchData = forge.aList { getForgery<MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord>() }
 
         fakeNodeData = forge.aList { mock() }
 

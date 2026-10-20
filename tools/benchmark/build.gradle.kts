@@ -5,7 +5,7 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.java11
+import com.datadog.gradle.config.java17
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -32,7 +32,7 @@ android {
     }
     namespace = "com.datadog.tools.benchmark"
     compileOptions {
-        java11()
+        java17()
     }
 }
 
