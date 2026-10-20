@@ -86,14 +86,17 @@ internal class CapturedNativeSnapshotBuilder(
             val childClip = clip.intersectOptional(view.childPaddingClip)
             view.composition?.let { composition ->
                 // Compose leaf culling relies on this unconditional intersection with copied host bounds.
-                addComposition(
-                    composition,
-                    childClip.intersectWith(view.bounds),
-                    children,
-                    layers,
-                    wireframes,
-                    generation
-                )
+                if (!addComposition(
+                        composition,
+                        childClip.intersectWith(view.bounds),
+                        children,
+                        layers,
+                        wireframes,
+                        generation
+                    )
+                ) {
+                    return null
+                }
             }
             @Suppress("UnsafeThirdPartyFunctionCall") // Unbounded worker-owned deque.
             stack.addLast(PendingLayer(index, view, children, clip, childClip))
@@ -107,7 +110,7 @@ internal class CapturedNativeSnapshotBuilder(
         return CapturedWindow(layers.last(), layers, wireframes)
     }
 
-    @Suppress("LongParameterList", "UnsafeThirdPartyFunctionCall") // Appends only owned decomposition values.
+    @Suppress("LongParameterList", "UnsafeThirdPartyFunctionCall", "ReturnCount") // Expiry discards copied values.
     private fun addComposition(
         composition: CompositionHostDecomposeResult,
         clip: ClipBounds,
@@ -115,16 +118,23 @@ internal class CapturedNativeSnapshotBuilder(
         layers: MutableList<CapturedLayer>,
         wireframes: MutableList<CapturedWireframe>,
         generation: CaptureGenerationContext
-    ) {
+    ): Boolean {
         for (layer in composition.nodes) {
-            if (!generation.isActive()) return
+            if (!generation.isActive()) return false
             layers += layer
         }
         for (wireframe in composition.wireframes) {
-            if (!generation.isActive()) return
+            if (!generation.isActive()) return false
             wireframes += wireframe.withClip(clip.clip(wireframe.bounds))
         }
         children += composition.rootChildren
+        for (subtree in composition.nativeSubtrees) {
+            if (!generation.isActive()) return false
+            val resolved = subtree.resolve?.invoke() ?: return false
+            layers += resolved.layers
+            wireframes += resolved.wireframes.map { it.withClip(clip.clip(it.bounds)) }
+        }
+        return true
     }
 
     private fun addWireframes(

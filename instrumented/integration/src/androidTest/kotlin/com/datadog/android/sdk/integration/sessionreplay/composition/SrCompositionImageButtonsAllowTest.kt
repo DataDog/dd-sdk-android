@@ -14,7 +14,7 @@ import com.datadog.android.sdk.integration.sessionreplay.SessionReplayCompositio
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.SR_PRIVACY_LEVEL
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
-import com.datadog.android.sessionreplay.WIREFRAME_TYPE_PLACEHOLDER
+import com.datadog.android.sessionreplay.WIREFRAME_TYPE_IMAGE
 import com.datadog.tools.unit.ConditionWatcher
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -27,12 +27,8 @@ import org.junit.Test
  * legacy pipeline. Prior to this test the pipeline had no automated coverage beyond unit tests
  * exercising hand-built fixtures, not a real View hierarchy.
  *
- * Unlike the legacy pipeline, composition's pixel-fallback path always fails closed to a
- * placeholder when no [com.datadog.android.sessionreplay.recorder.privacy.TextDetector] is
- * configured (it can't otherwise verify a captured bitmap has no readable text baked into it) -
- * this module doesn't depend on the optional text-detection module, so ALLOW privacy here still
- * resolves to `placeholder` wireframes, not `image` ones. That fail-closed behavior is itself
- * part of what this test verifies.
+ * Source image drawables must remain recordable without the optional text-detection module.
+ * This asserts the same image behavior as the legacy fixture, through the composition pipeline.
  */
 internal class SrCompositionImageButtonsAllowTest :
     BaseSessionReplayTest<SessionReplayCompositionImageButtonsActivity>() {
@@ -55,17 +51,23 @@ internal class SrCompositionImageButtonsAllowTest :
 
             val wireframes = extractWireframesFromRequests(requests)
 
-            val imageButtonPlaceholders = wireframes.filter { wireframe ->
-                wireframe.get("type")?.asString == WIREFRAME_TYPE_PLACEHOLDER &&
-                    wireframe.get("label")?.asString == "Image"
+            val imageWireframes = wireframes.filter { wireframe ->
+                wireframe.get("type")?.asString == WIREFRAME_TYPE_IMAGE
             }
 
-            assertThat(imageButtonPlaceholders)
+            assertThat(imageWireframes)
                 .describedAs(
-                    "Composition pipeline should capture image buttons via the pixel-fallback " +
-                        "path, failing closed to a placeholder without a text detector configured"
+                    "Composition pipeline should record source image buttons without a text detector"
                 )
                 .hasSizeGreaterThanOrEqualTo(2)
+
+            val resourceIds = imageWireframes.mapNotNull { it.get("resourceId")?.asString }
+            assertThat(resourceIds).isNotEmpty()
+            resourceIds.forEach { id ->
+                assertThat(requests.any { it.textBody?.contains("filename=\"$id\"") == true })
+                    .describedAs("Image resource %s should reach the local intake", id)
+                    .isTrue()
+            }
 
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)

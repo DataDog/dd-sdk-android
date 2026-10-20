@@ -64,7 +64,13 @@ internal open class CapturedTextViewMapper<T : TextView>(
         val background = backgroundShapeStyleResolver.capture(view, internalLogger)
         return CapturedTextViewData(
             bounds = bounds,
-            text = resolveCapturedText(view, mappingContext.textAndInputPrivacy),
+            text = if (mappingContext.hasOptionSelectorParent &&
+                mappingContext.textAndInputPrivacy != TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+            ) {
+                "***"
+            } else {
+                resolveCapturedText(view, mappingContext.textAndInputPrivacy)
+            },
             background = background,
             backgroundWireframes = if (background == null) {
                 resolveBackgroundWireframe(view, mappingContext, bounds)

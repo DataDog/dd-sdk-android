@@ -133,6 +133,130 @@ internal class ActiveWindowSourceTest {
             .containsExactlyEntriesOf(fakeHiddenAreas)
     }
 
+    @Test
+    fun `M await custom policy capture W redraw() { fast refresh cannot run mapper logic }`() {
+        // Given
+        val fixture = Fixture()
+        fixture.publish(requiresCapture = true)
+        fixture.testedSource.onDraw(listOf(fixture.mockRoot))
+        fixture.fakeAreas = mapOf(fixture.fakeBounds to TouchPrivacy.HIDE)
+
+        // When / Then
+        assertThat(fixture.testedSource.currentTouchOverrideAreas(fixture.mockRoot, fixture.fakeScope)).isNull()
+        assertThat(fixture.fakeReadCount).isZero()
+        fixture.publish(requiresCapture = true)
+        assertThat(fixture.testedSource.currentTouchOverrideAreas(fixture.mockRoot, fixture.fakeScope))
+            .containsExactlyEntriesOf(fixture.fakeAreas)
+    }
+
+    @Test
+    fun `M deny custom candidate W redraw overtakes first publication`() {
+        // Given
+        val fixture = Fixture()
+        val fakeSnapshot = fixture.testedSource.snapshot()
+        fixture.testedSource.onDraw(listOf(fixture.mockRoot))
+
+        // When
+        fixture.testedSource.publishTouchPrivacy(
+            fakeSnapshot,
+            listOf(fixture.mockRoot),
+            fixture.fakeScope,
+            mapOf(fixture.mockRoot to fixture.fakeAreas),
+            setOf(fixture.mockRoot)
+        ) {}
+
+        // Then
+        assertThat(fixture.testedSource.currentTouchOverrideAreas(fixture.mockRoot, fixture.fakeScope)).isNull()
+        assertThat(fixture.fakeReadCount).isZero()
+    }
+
+    @Test
+    fun `M retain custom refresh requirement W redraw overtakes replacement`() {
+        // Given
+        val fixture = Fixture()
+        fixture.publish()
+        val fakeSnapshot = fixture.testedSource.snapshot()
+        fixture.testedSource.onDraw(listOf(fixture.mockRoot))
+
+        // When
+        fixture.testedSource.publishTouchPrivacy(
+            fakeSnapshot,
+            listOf(fixture.mockRoot),
+            fixture.fakeScope,
+            mapOf(fixture.mockRoot to fixture.fakeAreas),
+            setOf(fixture.mockRoot)
+        ) {}
+
+        // Then
+        assertThat(fixture.testedSource.currentTouchOverrideAreas(fixture.mockRoot, fixture.fakeScope)).isNull()
+        assertThat(fixture.fakeReadCount).isZero()
+    }
+
+    @Test
+    fun `M restore fast refresh W custom mapper is removed`() {
+        // Given
+        val fixture = Fixture()
+        fixture.publish(requiresCapture = true)
+        fixture.testedSource.onDraw(listOf(fixture.mockRoot))
+        fixture.publish()
+
+        // When
+        fixture.testedSource.onDraw(listOf(fixture.mockRoot))
+
+        // Then
+        assertThat(fixture.testedSource.currentTouchOverrideAreas(fixture.mockRoot, fixture.fakeScope))
+            .containsExactlyEntriesOf(fixture.fakeAreas)
+        assertThat(fixture.fakeReadCount).isEqualTo(1)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M clear custom policy state W stop or window removal`(fakeRemove: Boolean) {
+        // Given
+        val fixture = Fixture()
+        fixture.publish(requiresCapture = true)
+        if (fakeRemove) {
+            fixture.testedSource.update(emptyList())
+            fixture.testedSource.update(listOf(fixture.mockRoot))
+        } else {
+            fixture.testedSource.clearTouchPrivacy()
+        }
+        assertThat(fixture.testedSource.currentTouchOverrideAreas(fixture.mockRoot, fixture.fakeScope)).isNull()
+
+        // When
+        fixture.publish()
+        fixture.testedSource.onDraw(listOf(fixture.mockRoot))
+
+        // Then
+        assertThat(fixture.testedSource.currentTouchOverrideAreas(fixture.mockRoot, fixture.fakeScope))
+            .containsExactlyEntriesOf(fixture.fakeAreas)
+        assertThat(fixture.fakeReadCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `M refresh unrelated window W custom mapper privacy is dirty`() {
+        // Given
+        val fixture = Fixture()
+        val mockSecondRoot: View = mock()
+        fixture.testedSource.update(listOf(fixture.mockRoot, mockSecondRoot))
+        fixture.testedSource.publishTouchPrivacy(
+            fixture.testedSource.snapshot(),
+            listOf(fixture.mockRoot, mockSecondRoot),
+            fixture.fakeScope,
+            mapOf(fixture.mockRoot to fixture.fakeAreas, mockSecondRoot to fixture.fakeAreas),
+            setOf(fixture.mockRoot)
+        ) {}
+
+        // When
+        fixture.testedSource.onDraw(listOf(fixture.mockRoot, mockSecondRoot))
+
+        // Then
+        assertThat(fixture.testedSource.currentTouchOverrideAreas(fixture.mockRoot, fixture.fakeScope)).isNull()
+        assertThat(fixture.testedSource.currentTouchOverrideAreas(mockSecondRoot, fixture.fakeScope))
+            .containsExactlyEntriesOf(fixture.fakeAreas)
+        assertThat(fixture.fakeReadCount).isEqualTo(1)
+    }
+
     private class Fixture {
         val mockRoot: View = mock()
         val fakeScope = RumViewIdentityScope("view")
@@ -147,12 +271,13 @@ internal class ActiveWindowSourceTest {
             fakeAreas.takeIf { fakeReadAllowed }
         }.apply { update(listOf(mockRoot)) }
 
-        fun publish() {
+        fun publish(requiresCapture: Boolean = false) {
             testedSource.publishTouchPrivacy(
                 testedSource.snapshot(),
                 listOf(mockRoot),
                 fakeScope,
-                mapOf(mockRoot to fakeAreas)
+                mapOf(mockRoot to fakeAreas),
+                if (requiresCapture) setOf(mockRoot) else emptySet()
             ) {}
         }
     }

@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.recorder.composition
 
+import android.graphics.Rect
 import android.view.View
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
@@ -15,6 +16,9 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
 import com.datadog.android.lint.InternalApi
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink
 
 /**
@@ -46,6 +50,10 @@ interface CompositionHostDecomposer {
      */
     @InternalApi
     fun decompose(view: View, request: CompositionHostDecomposeRequest): CompositionHostDecomposeResult?
+
+    /** Reads current Compose touch overrides without drawing or waiting for visual capture. Null fails closed. */
+    @InternalApi
+    fun readTouchPrivacy(view: View, shouldContinue: () -> Boolean): Map<Rect, TouchPrivacy>? = emptyMap()
 }
 
 /**
@@ -82,6 +90,11 @@ interface CompositionHostDecomposer {
  * describe structurally, once [pixelCapturePlaceholderLabelFor] has permitted it - mirrors the
  * native path's own `CapturedMappingContext.pendingPixelCaptureSink`. Defaults to a no-op sink for
  * callers that don't pixel-capture.
+ * @param imagePrivacy Effective image policy inherited from the native host.
+ * @param textAndInputPrivacy Effective text and input policy inherited from the native host.
+ * @param nativeViewHandoffWithPrivacy Native handoff carrying the composable's effective overrides.
+ * @param pixelCapturePlaceholderLabelForPrivacy Checks a composable's own image policy before rasterization.
+ * @param hasOptionSelectorParent Whether the host is inside a selectable input container.
  */
 @InternalApi
 class CompositionHostDecomposeRequest @JvmOverloads constructor(
@@ -92,7 +105,14 @@ class CompositionHostDecomposeRequest @JvmOverloads constructor(
     val nativeViewHandoff: (view: View, childIdentity: CapturedIdentity) -> CompositionNativeSubtree?,
     val shouldContinue: () -> Boolean = { true },
     val pixelCapturePlaceholderLabelFor: (bounds: CapturedBounds) -> String? = { null },
-    val pendingPixelCaptureSink: PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp
+    val pendingPixelCaptureSink: PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp,
+    val imagePrivacy: ImagePrivacy = ImagePrivacy.MASK_ALL,
+    val textAndInputPrivacy: TextAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
+    val nativeViewHandoffWithPrivacy: (
+        (View, CapturedIdentity, ImagePrivacy, TextAndInputPrivacy) -> CompositionNativeSubtree?
+    )? = null,
+    val pixelCapturePlaceholderLabelForPrivacy: ((ImagePrivacy, CapturedBounds) -> String?)? = null,
+    val hasOptionSelectorParent: Boolean = false
 ) {
     /** Preserves callers that do not supply a copied host clip. */
     @JvmOverloads
@@ -124,12 +144,15 @@ class CompositionHostDecomposeRequest @JvmOverloads constructor(
  * separately so the decomposer can reference it as a child in its own output without searching.
  * @param layers Every layer this subtree contains, [rootLayer] included.
  * @param wireframes Every wireframe this subtree contains.
+ * @param resolve Builds copied native values after asynchronous mapper work completes.
  */
 @InternalApi
-class CompositionNativeSubtree(
+class CompositionNativeSubtree @JvmOverloads constructor(
     val rootLayer: CapturedLayer,
     val layers: List<CapturedLayer>,
-    val wireframes: List<CapturedWireframe>
+    val wireframes: List<CapturedWireframe>,
+    /** Resolves a copied native subtree on the construction worker after mapper jobs finish. */
+    val resolve: (() -> CompositionNativeSubtree?)? = null
 )
 
 /**
@@ -142,10 +165,12 @@ class CompositionNativeSubtree(
  * every [CompositionNativeSubtree.layers] entry the decomposer chose to splice in.
  * @param wireframes Every leaf [CapturedWireframe] the decomposer produced (text, shape, or
  * an embedded native subtree's own wireframes), referenced from [rootChildren]/[nodes] by identity.
+ * @param nativeSubtrees Native interop copies awaiting construction after their mapper jobs finish.
  */
 @InternalApi
-class CompositionHostDecomposeResult(
+class CompositionHostDecomposeResult @JvmOverloads constructor(
     val rootChildren: List<CapturedChild>,
     val nodes: List<CapturedLayer>,
-    val wireframes: List<CapturedWireframe>
+    val wireframes: List<CapturedWireframe>,
+    val nativeSubtrees: List<CompositionNativeSubtree> = emptyList()
 )

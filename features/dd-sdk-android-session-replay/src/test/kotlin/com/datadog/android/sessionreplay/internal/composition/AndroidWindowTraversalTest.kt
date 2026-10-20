@@ -1343,7 +1343,8 @@ internal class AndroidWindowTraversalTest {
                 return CompositionHostDecomposeResult(
                     rootChildren = listOf(CapturedChild.Layer(subtree.rootLayer.identity)),
                     nodes = subtree.layers,
-                    wireframes = subtree.wireframes
+                    wireframes = subtree.wireframes,
+                    nativeSubtrees = listOf(subtree)
                 )
             }
         }
@@ -1498,7 +1499,8 @@ internal class AndroidWindowTraversalTest {
             CompositionHostDecomposeResult(
                 listOf(CapturedChild.Layer(subtree.rootLayer.identity)),
                 subtree.layers,
-                subtree.wireframes
+                subtree.wireframes,
+                nativeSubtrees = listOf(subtree)
             )
         }
 
@@ -1727,7 +1729,8 @@ internal class AndroidWindowTraversalTest {
                 return CompositionHostDecomposeResult(
                     rootChildren = listOf(CapturedChild.Layer(subtree.rootLayer.identity)),
                     nodes = subtree.layers,
-                    wireframes = subtree.wireframes
+                    wireframes = subtree.wireframes,
+                    nativeSubtrees = listOf(subtree)
                 )
             }
         }

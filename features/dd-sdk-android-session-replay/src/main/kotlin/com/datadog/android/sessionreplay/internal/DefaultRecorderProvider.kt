@@ -77,7 +77,10 @@ internal class DefaultRecorderProvider(
     private val compositionTreeRecordingEnabled: Boolean,
     private val compositionHostDecomposer: CompositionHostDecomposer? = null,
     private val textDetector: TextDetector? = null,
-    private val compositionPipelineFactory: CompositionPipelineFactory = DefaultCompositionPipelineFactory(
+    private val compositionPipelineFactory: CompositionPipelineFactory? = null
+) : RecorderProvider {
+
+    private fun defaultCompositionPipelineFactory() = DefaultCompositionPipelineFactory(
         sdkCore = sdkCore,
         internalCallback = internalCallback,
         touchPrivacyManager = touchPrivacyManager,
@@ -86,9 +89,11 @@ internal class DefaultRecorderProvider(
         compositionHostDecomposer = compositionHostDecomposer,
         textDetector = textDetector,
         dynamicOptimizationEnabled = dynamicOptimizationEnabled,
-        customDrawableMappers = customDrawableMappers
+        customDrawableMappers = customDrawableMappers,
+        customMappers = customMappers,
+        builtInMappers = builtInMappers(),
+        customOptionSelectorDetectors = customOptionSelectorDetectors
     )
-) : RecorderProvider {
 
     override fun provideSessionReplayRecorder(
         resourceDataStoreManager: ResourceDataStoreManager,
@@ -102,7 +107,7 @@ internal class DefaultRecorderProvider(
         return CapturePipelineSelector(
             compositionEnabled = compositionTreeRecordingEnabled,
             compositionFactory = {
-                compositionPipelineFactory.create(
+                (compositionPipelineFactory ?: defaultCompositionPipelineFactory()).create(
                     resourceDataStoreManager,
                     resourceWriter,
                     recordWriter,

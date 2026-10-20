@@ -13,6 +13,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
+import com.datadog.android.sessionreplay.internal.composition.mapper.PendingViewMapping
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
@@ -33,7 +34,8 @@ internal data class CapturedNativeWindow(
     val screenDensity: Float,
     val views: List<CapturedNativeView>,
     val isDrawingOrderReliable: Boolean = true,
-    val pendingPixelCaptures: List<PendingPixelCapture> = emptyList()
+    val pendingPixelCaptures: List<PendingPixelCapture> = emptyList(),
+    val pendingMappings: List<PendingViewMapping> = emptyList()
 )
 
 internal data class CapturedNativeView(

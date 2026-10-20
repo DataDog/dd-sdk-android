@@ -11,9 +11,13 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
+import com.datadog.android.sessionreplay.internal.composition.mapper.PendingViewMapping
+import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -26,6 +30,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.util.concurrent.Executor
 import java.util.concurrent.RejectedExecutionException
@@ -49,6 +54,130 @@ internal class ExecutorCapturedSnapshotProcessorTest {
             window.copy(views = window.views.map { it.copy(viewData = viewData) })
         }
     )
+
+    @Test
+    fun `M wait without occupying the worker W process() { asynchronous mapper }`() {
+        // Given
+        val fakeMapping = PendingViewMapping(true)
+        val fakeImage = MobileSegment.Wireframe.ImageWireframe(1, 0, 0, 10, 10)
+        fakeMapping.jobStarted()
+        fakeMapping.mapped(listOf(fakeImage))
+        val fakeInput = snapshot(fakeMapping).let { input ->
+            input.copy(
+                windows = input.windows.map {
+                    it.copy(pendingMappings = listOf(fakeMapping))
+                }
+            )
+        }
+        val fakeQueue = mutableListOf<Runnable>()
+        val fakeResults = mutableListOf<SnapshotProcessingResult>()
+        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(fakeQueue::add), mock())
+
+        // When
+        testedProcessor.process(SnapshotProcessingRequest(fakeContext, fakeInput), fakeResults::add)
+
+        // Then
+        assertThat(fakeQueue).isEmpty()
+        val fakeCallbackThread = Thread {
+            fakeImage.resourceId = "resolved"
+            fakeImage.isEmpty = false
+            fakeMapping.jobFinished()
+        }
+        fakeCallbackThread.start()
+        fakeCallbackThread.join()
+        assertThat(fakeQueue).hasSize(1)
+        fakeQueue.single().run()
+        val result = (fakeResults.single() as SnapshotProcessingResult.Completed).snapshot
+        assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Pixel>()).isNotEmpty().allMatch {
+            it.resource == PixelResource.Resolved("resolved")
+        }
+    }
+
+    @Test
+    fun `M ignore late mapper callbacks W cancel() { construction waiting }`() {
+        // Given
+        val fakeMapping = PendingViewMapping(true)
+        fakeMapping.jobStarted()
+        fakeMapping.mapped(emptyList())
+        val fakeInput = snapshot(fakeMapping).let { input ->
+            input.copy(
+                windows = input.windows.map {
+                    it.copy(pendingMappings = listOf(fakeMapping))
+                }
+            )
+        }
+        val fakeQueue = mutableListOf<Runnable>()
+        val fakeResults = mutableListOf<SnapshotProcessingResult>()
+        val mockRecapture: RecaptureTrigger = mock()
+        val testedProcessor = ExecutorCapturedSnapshotProcessor(
+            Executor(fakeQueue::add),
+            mock(),
+            recaptureTrigger = mockRecapture
+        )
+        val work = testedProcessor.process(SnapshotProcessingRequest(fakeContext, fakeInput), fakeResults::add)
+
+        // When
+        work.cancel()
+        fakeMapping.jobFinished()
+        fakeMapping.jobFinished()
+
+        // Then
+        assertThat(fakeQueue).isEmpty()
+        assertThat(fakeResults).isEmpty()
+        assertThat(fakeContext.isActive()).isFalse()
+        verifyNoInteractions(mockRecapture)
+    }
+
+    @Test
+    fun `M bound late mapper retries W process() { reset after a successful capture }`() {
+        // Given
+        var fakeNow = 0L
+        var fakeRecaptures = 0
+        val testedProcessor = ExecutorCapturedSnapshotProcessor(
+            Executor(Runnable::run),
+            mock(),
+            recaptureTrigger = RecaptureTrigger { fakeRecaptures++ }
+        )
+        val fakeResults = mutableListOf<SnapshotProcessingResult>()
+        fun completeLate() {
+            fakeNow = 0L
+            val fakeGeneration = CaptureGenerationContext(1L, 0L, 100L, CaptureTimeProvider { fakeNow })
+            val fakeMapping = PendingViewMapping(true)
+            fakeMapping.jobStarted()
+            fakeMapping.mapped(emptyList())
+            val fakeInput = snapshot().let { input ->
+                input.copy(windows = input.windows.map { it.copy(pendingMappings = listOf(fakeMapping)) })
+            }
+            testedProcessor.process(SnapshotProcessingRequest(fakeGeneration, fakeInput), fakeResults::add)
+            fakeNow = 100L
+            fakeMapping.jobFinished()
+            fakeMapping.jobFinished()
+        }
+
+        // When / Then
+        repeat(3) { completeLate() }
+        assertThat(fakeRecaptures).isEqualTo(1)
+        assertThat(fakeResults).isEmpty()
+        testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), fakeResults::add)
+        assertThat(fakeResults).hasSize(1)
+        completeLate()
+        assertThat(fakeRecaptures).isEqualTo(2)
+    }
+
+    @Test
+    fun `M contain linkage errors W process() { copied mapper is incompatible }`() {
+        // Given
+        val mockMapping: CapturedViewData = mock()
+        whenever(mockMapping.map(any())).thenThrow(NoClassDefFoundError("Extension dependency"))
+        val fakeResults = mutableListOf<SnapshotProcessingResult>()
+        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(Runnable::run), mock())
+
+        // When
+        testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot(mockMapping)), fakeResults::add)
+
+        // Then
+        assertThat(fakeResults).containsExactly(SnapshotProcessingResult.Failed(fakeContext.id))
+    }
 
     @Test
     fun `M build on the executor W process`() {

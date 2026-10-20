@@ -12,6 +12,11 @@ import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
+import android.widget.AbsSeekBar
+import android.widget.CheckedTextView
+import android.widget.CompoundButton
+import android.widget.EditText
+import android.widget.NumberPicker
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
@@ -19,6 +24,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
 import com.datadog.android.sessionreplay.internal.composition.mapper.DefaultViewRasterizer
@@ -139,10 +145,11 @@ internal class ViewPixelCapture(
         stack.addLast(view to EffectivePrivacy(context.imagePrivacy, context.textAndInputPrivacy))
         val visited = IdentityHashMap<View, Boolean>()
         while (stack.isNotEmpty()) {
+            if (!context.shouldContinue()) return true
             val (current, parentPrivacy) = stack.removeLast()
             if (visited.put(current, true) != null || current.visibility != View.VISIBLE) continue
             val privacy = resolveEffectivePrivacy(current, parentPrivacy, internalLogger)
-            if (isRestricted(current, privacy, context.screenDensity, bounds.takeIf { current === view })) return true
+            if (isRestricted(current, privacy, context, bounds.takeIf { current === view })) return true
             if (current is ViewGroup) {
                 for (index in 0 until current.childCount) stack.addLast(current.getChildAt(index) to privacy)
             }
@@ -154,24 +161,18 @@ internal class ViewPixelCapture(
     private fun isRestricted(
         view: View,
         privacy: EffectivePrivacy,
-        density: Float,
+        context: CapturedMappingContext,
         copiedBounds: CapturedBounds?
     ): Boolean {
         val unsupported = view is SurfaceView || view is TextureView || view is WebView
         if (unsupported || view.getTag(R.id.datadog_hidden) == true) return true
-        return when (privacy.imagePrivacy) {
-            ImagePrivacy.MASK_ALL -> true
-            ImagePrivacy.MASK_NONE -> false
-            ImagePrivacy.MASK_LARGE_ONLY -> {
-                val bounds =
-                    copiedBounds ?: ViewTransformResolver.resolve(view)?.pixelBounds?.toTransformedReplayBounds(density)
-                        ?: viewBoundsResolver.resolveViewGlobalBounds(view, density).toCaptured()
-                PixelCaptureEligibility.placeholderLabelFor(
-                    privacy.imagePrivacy,
-                    GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
-                ) != null
-            }
-        }
+        // Native raster inspection cannot inspect Compose semantics or redact non-text input state.
+        if (isComposeHostByClassName(view)) return true
+        val maskedInput = privacy.textAndInputPrivacy != TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+        if (view is EditText || (maskedInput && isInputControl(view))) return true
+        if (maskedInput && context.hasOptionSelectorParent) return true
+        if (maskedInput && view is ViewGroup && context.isOptionSelector(view)) return true
+        return isImageRestricted(view, privacy.imagePrivacy, context, copiedBounds, viewBoundsResolver)
     }
 
     @UiThread
@@ -196,3 +197,29 @@ internal class ViewPixelCapture(
 
 @UiThread
 private fun View.pixelSize() = GlobalBounds(0, 0, width.toLong(), height.toLong())
+
+private fun isInputControl(view: View): Boolean = when (view) {
+    is CompoundButton, is CheckedTextView, is AbsSeekBar, is NumberPicker -> true
+    else -> false
+}
+
+@UiThread
+private fun isImageRestricted(
+    view: View,
+    privacy: ImagePrivacy,
+    context: CapturedMappingContext,
+    copiedBounds: CapturedBounds?,
+    boundsResolver: ViewBoundsResolver
+): Boolean = when (privacy) {
+    ImagePrivacy.MASK_ALL -> true
+    ImagePrivacy.MASK_NONE -> false
+    ImagePrivacy.MASK_LARGE_ONLY -> {
+        val bounds = copiedBounds
+            ?: ViewTransformResolver.resolve(view)?.pixelBounds?.toTransformedReplayBounds(context.screenDensity)
+            ?: boundsResolver.resolveViewGlobalBounds(view, context.screenDensity).toCaptured()
+        PixelCaptureEligibility.placeholderLabelFor(
+            privacy,
+            GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
+        ) != null
+    }
+}

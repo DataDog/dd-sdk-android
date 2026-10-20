@@ -21,7 +21,9 @@ import android.webkit.WebView
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.utils.isValidTapTarget
@@ -36,10 +38,14 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedVie
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
+import com.datadog.android.sessionreplay.internal.composition.mapper.LegacyCapturedViewMapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.PendingViewMapping
 import com.datadog.android.sessionreplay.internal.composition.mapper.PixelCaptureEligibility
 import com.datadog.android.sessionreplay.internal.putTouchOverrideArea
+import com.datadog.android.sessionreplay.internal.recorder.DefaultOptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.HeatmapIdentifierResolver
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
+import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
@@ -57,7 +63,8 @@ import kotlin.math.roundToInt
 internal sealed interface WindowCopyResult {
     data class Present(
         val window: CapturedNativeWindow,
-        val touchOverrideAreas: Map<Rect, TouchPrivacy>
+        val touchOverrideAreas: Map<Rect, TouchPrivacy>,
+        val requiresTouchPrivacyCapture: Boolean = false
     ) : WindowCopyResult
     object Filtered : WindowCopyResult
     object Aborted : WindowCopyResult
@@ -85,7 +92,8 @@ internal class AndroidWindowTraversal(
     private val pixelCapture: ViewPixelCapture = ViewPixelCapture(internalLogger),
     private val foregroundCapture: ViewForegroundCapture = ViewForegroundCapture(internalLogger),
     private val heatmapResolver: HeatmapIdentifierResolver? = null,
-    private val embeddedContentMapper: CapturedEmbeddedContentMapper? = null
+    private val embeddedContentMapper: CapturedEmbeddedContentMapper? = null,
+    private val optionSelectorDetector: OptionSelectorDetector = DefaultOptionSelectorDetector()
 ) {
     private val occlusionDetector = ViewOcclusionDetector(drawableToColorMapper, viewUtilsInternal, internalLogger)
 
@@ -119,7 +127,8 @@ internal class AndroidWindowTraversal(
                 windowRoot,
                 -1,
                 clipToBounds = state.rootKind == CapturedLayerKind.WINDOW_ROOT,
-                inheritedPrivacy = state.rootPrivacy
+                inheritedPrivacy = state.rootPrivacy,
+                hasOptionSelectorParent = state.rootHasOptionSelectorParent
             )
         )
         while (stack.size > 0) {
@@ -130,8 +139,17 @@ internal class AndroidWindowTraversal(
             // Separate surfaces remain uncertain even inside a subtree omitted by sibling culling.
             state.isDrawingOrderReliable = state.isDrawingOrderReliable && item.view.sharesNativePaintOrder()
             collectTouchOverrideArea(item.view, state.touchOverrideAreas, internalLogger)
+            collectComposeTouchOverrides(item.view, state.touchOverrideAreas, context)
             if (item.touchOnly) {
-                (item.view as? ViewGroup)?.let { pushTouchChildren(it, stack) }
+                captureTouchOnlyCustomMapper(item, state, context, mapperRegistry, internalLogger)
+                (item.view as? ViewGroup)?.let {
+                    pushTouchChildren(
+                        it,
+                        stack,
+                        resolveEffectivePrivacy(it, item.inheritedPrivacy, internalLogger),
+                        item.hasOptionSelectorParent || isOptionSelector(it)
+                    )
+                }
             } else {
                 copyView(item, stack, state, context)
             }
@@ -147,10 +165,36 @@ internal class AndroidWindowTraversal(
                     state.density,
                     state.views,
                     state.isDrawingOrderReliable,
-                    state.pendingPixelCaptures
+                    state.pendingPixelCaptures,
+                    state.pendingMappings
                 ),
-                state.touchOverrideAreas
+                state.touchOverrideAreas,
+                state.requiresTouchPrivacyCapture
             )
+        }
+    }
+
+    @UiThread
+    private fun collectComposeTouchOverrides(
+        view: View,
+        overrides: MutableMap<Rect, TouchPrivacy>,
+        context: CaptureGenerationContext
+    ) {
+        if (composeHostDecomposer == null || !isComposeHost(view)) return
+        val areas = readComposeTouchPrivacy(view, context, composeHostDecomposer, internalLogger)
+        if (areas == null || ViewTransformResolver.hasTransformedAncestor(view)) {
+            val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, 1f)
+            overrides.putTouchOverrideArea(
+                Rect(
+                    bounds.x.toInt(),
+                    bounds.y.toInt(),
+                    (bounds.x + bounds.width).toInt(),
+                    (bounds.y + bounds.height).toInt()
+                ),
+                TouchPrivacy.HIDE
+            )
+        } else {
+            areas.forEach { (rect, privacy) -> overrides.putTouchOverrideArea(rect, privacy) }
         }
     }
 
@@ -185,25 +229,15 @@ internal class AndroidWindowTraversal(
         val bounds = resolveCapturedBounds(view, pixels, hasTransform, state.density)
         val ownPrivacy = resolveEffectivePrivacy(view, item.inheritedPrivacy, internalLogger)
         val heatmapIdentity = resolveHeatmapIdentity(view, item, state.heatmapContext)
-        val mappingContext = CapturedMappingContext(
-            state.identityFactory,
-            identity,
-            state.density,
-            bounds,
-            imagePrivacy = ownPrivacy.imagePrivacy,
-            textAndInputPrivacy = ownPrivacy.textAndInputPrivacy,
-            pendingPixelCaptureSink = PendingPixelCaptureSink { state.pendingPixelCaptures.add(it) },
-            viewScale = viewScale
-        )
+        val mappingContext = mappingContext(item, identity, bounds, ownPrivacy, viewScale, state, context)
         val hidden = view.getTag(R.id.datadog_hidden) == true
         val composition = if (canTryComposition(view, hasTransform)) {
-            decomposeHost(view, kind, hidden, mappingContext, state, context)
+            safelyDecomposeHost(view, kind, hidden, mappingContext, state, context)
         } else {
             null
         }
         if (!context.shouldContinue()) return
-        val viewData = composition?.let { CapturedViewData.Mapped(CapturedViewMapperResult.None) }
-            ?: captureViewData(item, mappingContext, hidden, requiresRaster, transform)
+        val viewData = captureViewData(item, mappingContext, hidden, requiresRaster, transform, composition != null)
         val children = if (!hidden && composition == null && !viewData.isTerminal) view as? ViewGroup else null
         val clippingViewGroup = if (composition != null) view as? ViewGroup else children
         val pixelPaddingClip = clippingViewGroup?.let { pixels?.paddingClip(it, transform) }
@@ -231,12 +265,45 @@ internal class AndroidWindowTraversal(
             permanentId = heatmapIdentity?.identifier?.rawValue,
             modifiers = captureNativeModifiers(view, bounds, state.density, internalLogger)
         )
-        pushNativeChildren(view, children, hidden, ownPrivacy, stack, state, heatmapIdentity?.viewPath ?: item.nodePath)
+        pushNativeChildren(
+            view,
+            children,
+            hidden,
+            ownPrivacy,
+            stack,
+            state,
+            heatmapIdentity?.viewPath ?: item.nodePath,
+            item.hasOptionSelectorParent || isOptionSelector(view)
+        )
     }
 
     @UiThread
+    @Suppress("LongParameterList", "UnsafeThirdPartyFunctionCall") // Sinks append to owned, unbounded lists.
+    private fun mappingContext(
+        item: WorkItem,
+        identity: CapturedIdentity,
+        bounds: CapturedBounds,
+        privacy: EffectivePrivacy,
+        scale: Float,
+        state: CopyState,
+        generation: CaptureGenerationContext
+    ) = CapturedMappingContext(
+        state.identityFactory, identity, state.density, bounds,
+        imagePrivacy = privacy.imagePrivacy,
+        textAndInputPrivacy = privacy.textAndInputPrivacy,
+        pendingPixelCaptureSink = PendingPixelCaptureSink { state.pendingPixelCaptures.add(it) },
+        viewScale = scale,
+        shouldContinue = generation::shouldContinue,
+        pendingMappingSink = { state.pendingMappings.add(it) },
+        hasOptionSelectorParent = item.hasOptionSelectorParent,
+        isOptionSelector = { isOptionSelector(it) },
+        customTouchPrivacySink = state::collectCustomTouchPrivacy
+    )
+
+    @UiThread
     private fun canTryComposition(view: View, hasTransform: Boolean): Boolean =
-        !hasTransform && embeddedContentMapper?.hasSlotId(view) != true
+        !hasTransform && embeddedContentMapper?.hasSlotId(view) != true &&
+            mapperRegistry.resolve(view) !is LegacyCapturedViewMapper<*>
 
     /**
      * A slot-tagged view is never dropped for invisibility - it still needs an explicit hidden
@@ -288,12 +355,6 @@ internal class AndroidWindowTraversal(
     ): CapturedForeground? =
         if (hidden || viewData.isTerminal) null else foregroundCapture.capture(view, context)
 
-    private fun requiresRasterCapture(
-        transformed: Boolean,
-        transform: ViewTransform?,
-        kind: CapturedLayerKind
-    ): Boolean = transformed && (transform?.uniformScale == null || kind == CapturedLayerKind.COMPOSE_HOST)
-
     @UiThread
     private fun resolveCapturedBounds(
         view: View,
@@ -307,13 +368,16 @@ internal class AndroidWindowTraversal(
     }
 
     @UiThread
+    @Suppress("LongParameterList")
     private fun captureViewData(
         item: WorkItem,
         context: CapturedMappingContext,
         hidden: Boolean,
         transformed: Boolean,
-        transform: ViewTransform?
+        transform: ViewTransform?,
+        decomposed: Boolean
     ): CapturedViewData = when {
+        decomposed -> CapturedViewData.Mapped(CapturedViewMapperResult.None)
         hidden -> hiddenViewMapper.capture(item.view, context)
         embeddedContentMapper?.hasSlotId(
             item.view
@@ -333,13 +397,16 @@ internal class AndroidWindowTraversal(
         inheritedPrivacy: EffectivePrivacy,
         stack: ArrayDeque<WorkItem>,
         state: CopyState,
-        nodePath: List<String>
+        nodePath: List<String>,
+        hasOptionSelectorParent: Boolean
     ) {
         val copied = state.views.last()
         if (children != null) {
-            pushChildren(children, copied, inheritedPrivacy, stack, state, nodePath)
+            pushChildren(children, copied, inheritedPrivacy, stack, state, nodePath, hasOptionSelectorParent)
         } else if (view is ViewGroup && view !is WebView) {
-            if (hidden || copied.viewData.isPixelFallbackTerminal) pushTouchChildren(view, stack)
+            if (hidden || copied.viewData.isTerminal) {
+                pushTouchChildren(view, stack, inheritedPrivacy, hasOptionSelectorParent)
+            }
         }
     }
 
@@ -362,7 +429,26 @@ internal class AndroidWindowTraversal(
     }
 
     @UiThread
-    @Suppress("LongParameterList")
+    @Suppress("TooGenericExceptionCaught", "LongParameterList")
+    private fun safelyDecomposeHost(
+        view: View,
+        kind: CapturedLayerKind,
+        hidden: Boolean,
+        mappingContext: CapturedMappingContext,
+        state: CopyState,
+        context: CaptureGenerationContext
+    ): CompositionHostDecomposeResult? = try {
+        decomposeHost(view, kind, hidden, mappingContext, state, context)
+    } catch (e: Exception) {
+        logDecompositionFailure(internalLogger, e)
+        null
+    } catch (e: LinkageError) {
+        logDecompositionFailure(internalLogger, e)
+        null
+    }
+
+    @UiThread
+    @Suppress("LongParameterList", "ReturnCount", "UnsafeThirdPartyFunctionCall")
     private fun decomposeHost(
         view: View,
         kind: CapturedLayerKind,
@@ -372,35 +458,106 @@ internal class AndroidWindowTraversal(
         context: CaptureGenerationContext
     ): CompositionHostDecomposeResult? {
         val decomposer = composeHostDecomposer
-            ?.takeIf { !hidden && kind == CapturedLayerKind.COMPOSE_HOST && it.canDecompose(view) }
+            ?.takeIf {
+                !hidden && (
+                    kind == CapturedLayerKind.COMPOSE_HOST ||
+                        (kind == CapturedLayerKind.WINDOW_ROOT && isComposeHost(view))
+                    ) && it.canDecompose(view)
+            }
             ?: return null
-        val request = CompositionHostDecomposeRequest(
-            identityFactory = state.identityFactory,
-            hostIdentity = mappingContext.ownerIdentity,
-            screenDensity = state.density,
-            hostBounds = mappingContext.bounds,
-            nativeViewHandoff = { interopView, childIdentity ->
-                captureNativeSubtree(
-                    interopView,
-                    childIdentity,
-                    state,
-                    EffectivePrivacy(mappingContext.imagePrivacy, mappingContext.textAndInputPrivacy),
-                    context
-                )
-            },
-            shouldContinue = context::shouldContinue,
-            pixelCapturePlaceholderLabelFor = { bounds ->
-                PixelCaptureEligibility.placeholderLabelFor(
-                    mappingContext.imagePrivacy,
-                    GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
-                )
-            },
-            pendingPixelCaptureSink = PendingPixelCaptureSink { state.pendingPixelCaptures.add(it) }
+        val hostIdentity = if (kind == CapturedLayerKind.WINDOW_ROOT) {
+            state.identityFactory.composeHost(state.windowIdentity, "root-host")
+        } else {
+            mappingContext.ownerIdentity
+        }
+        // A failed decomposition must not leave native handoff jobs or touches in the real capture.
+        val handoffState = CopyState(
+            state.density,
+            state.windowIdentity,
+            state.identityFactory,
+            state.rootPrivacy,
+            visited = IdentityHashMap(state.visited)
         )
-        return decomposer.decompose(view, request)
+        val request = decomposeRequest(hostIdentity, mappingContext, handoffState, context)
+        val result = decomposer.decompose(view, request) ?: return null
+        state.pendingPixelCaptures += handoffState.pendingPixelCaptures
+        state.pendingMappings += handoffState.pendingMappings
+        state.requiresTouchPrivacyCapture =
+            state.requiresTouchPrivacyCapture || handoffState.requiresTouchPrivacyCapture
+        handoffState.touchOverrideAreas.forEach { (rect, privacy) ->
+            state.touchOverrideAreas.putTouchOverrideArea(rect, privacy)
+        }
+        state.visited.putAll(handoffState.visited)
+        state.isDrawingOrderReliable = state.isDrawingOrderReliable && handoffState.isDrawingOrderReliable
+        return if (kind == CapturedLayerKind.WINDOW_ROOT) {
+            CompositionHostDecomposeResult(
+                listOf(CapturedChild.Layer(hostIdentity)),
+                result.nodes + CapturedLayer(
+                    hostIdentity,
+                    CapturedLayerKind.COMPOSE_HOST,
+                    mappingContext.bounds ?: CapturedBounds(0, 0, 0, 0),
+                    result.rootChildren
+                ),
+                result.wireframes,
+                result.nativeSubtrees
+            )
+        } else {
+            result
+        }
     }
 
-    /** The extension API needs a mapped native subtree synchronously; final host clipping stays on the worker. */
+    @UiThread
+    @Suppress("UnsafeThirdPartyFunctionCall") // Capture-owned sinks only append to unbounded lists.
+    private fun decomposeRequest(
+        hostIdentity: CapturedIdentity,
+        mappingContext: CapturedMappingContext,
+        handoffState: CopyState,
+        context: CaptureGenerationContext
+    ) = CompositionHostDecomposeRequest(
+        identityFactory = handoffState.identityFactory,
+        hostIdentity = hostIdentity,
+        screenDensity = handoffState.density,
+        hostBounds = mappingContext.bounds,
+        nativeViewHandoff = { interopView, childIdentity ->
+            captureNativeSubtree(
+                interopView,
+                childIdentity,
+                handoffState,
+                EffectivePrivacy(mappingContext.imagePrivacy, mappingContext.textAndInputPrivacy),
+                context,
+                mappingContext.hasOptionSelectorParent
+            )
+        },
+        shouldContinue = context::shouldContinue,
+        pixelCapturePlaceholderLabelFor = { bounds ->
+            PixelCaptureEligibility.placeholderLabelFor(
+                mappingContext.imagePrivacy,
+                GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
+            )
+        },
+        pendingPixelCaptureSink = PendingPixelCaptureSink { handoffState.pendingPixelCaptures.add(it) },
+        imagePrivacy = mappingContext.imagePrivacy,
+        textAndInputPrivacy = mappingContext.textAndInputPrivacy,
+        nativeViewHandoffWithPrivacy = { interopView, childIdentity, imagePrivacy, textPrivacy ->
+            captureNativeSubtree(
+                interopView,
+                childIdentity,
+                handoffState,
+                EffectivePrivacy(imagePrivacy, textPrivacy),
+                context,
+                mappingContext.hasOptionSelectorParent
+            )
+        },
+        pixelCapturePlaceholderLabelForPrivacy = { imagePrivacy, bounds ->
+            PixelCaptureEligibility.placeholderLabelFor(
+                imagePrivacy,
+                GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
+            )
+        },
+        hasOptionSelectorParent = mappingContext.hasOptionSelectorParent
+    )
+
+    /** Copies native interop now; construction waits for mapper jobs on the worker. */
     @UiThread
     // Filtered/expired subtrees contribute nothing; the identity map copies synchronous, capture-owned state.
     @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall")
@@ -409,7 +566,8 @@ internal class AndroidWindowTraversal(
         identity: CapturedIdentity,
         outerState: CopyState,
         inheritedPrivacy: EffectivePrivacy,
-        context: CaptureGenerationContext
+        context: CaptureGenerationContext,
+        hasOptionSelectorParent: Boolean = false
     ): CompositionNativeSubtree? {
         val state = CopyState(
             outerState.density,
@@ -420,16 +578,30 @@ internal class AndroidWindowTraversal(
             rootKind = CapturedLayerKind.NATIVE_VIEW,
             // Seed ancestor visits to prevent re-entry, but keep tentative handoffs isolated so
             // a null decomposition can still traverse the same native children in its fallback.
-            visited = IdentityHashMap(outerState.visited)
+            visited = IdentityHashMap(outerState.visited),
+            rootHasOptionSelectorParent = hasOptionSelectorParent
         )
         val copy = copyWindow(view, state, context) as? WindowCopyResult.Present ?: return null
-        val built = CapturedNativeSnapshotBuilder().buildWindow(copy.window, context) ?: return null
         copy.touchOverrideAreas.forEach { (bounds, privacy) ->
             outerState.touchOverrideAreas.putTouchOverrideArea(bounds, privacy)
         }
         outerState.pendingPixelCaptures += copy.window.pendingPixelCaptures
+        outerState.pendingMappings += copy.window.pendingMappings
+        outerState.requiresTouchPrivacyCapture =
+            outerState.requiresTouchPrivacyCapture || copy.requiresTouchPrivacyCapture
+        outerState.visited.putAll(state.visited)
         outerState.isDrawingOrderReliable = outerState.isDrawingOrderReliable && copy.window.isDrawingOrderReliable
-        return CompositionNativeSubtree(built.rootLayer, built.layers, built.wireframes)
+        val root = copy.window.views.firstOrNull() ?: return null
+        return CompositionNativeSubtree(
+            CapturedLayer(root.identity, root.kind, root.bounds, emptyList()),
+            emptyList(),
+            emptyList(),
+            resolve = {
+                CapturedNativeSnapshotBuilder().buildWindow(copy.window, context)?.let {
+                    CompositionNativeSubtree(it.rootLayer, it.layers, it.wireframes)
+                }
+            }
+        )
     }
 
     @UiThread
@@ -490,7 +662,8 @@ internal class AndroidWindowTraversal(
         inheritedPrivacy: EffectivePrivacy,
         stack: ArrayDeque<WorkItem>,
         state: CopyState,
-        nodePath: List<String>
+        nodePath: List<String>,
+        hasOptionSelectorParent: Boolean
     ) {
         val drawingOrder = drawingOrderResolver.resolve(viewGroup)
         val childTypeIndices = IdentityHashMap<View, Int>()
@@ -512,7 +685,8 @@ internal class AndroidWindowTraversal(
                     inheritedPrivacy = inheritedPrivacy,
                     inheritedScale = parent.viewScale,
                     nodePath = nodePath,
-                    typeIndex = childTypeIndices[drawingOrder.children[i]] ?: 0
+                    typeIndex = childTypeIndices[drawingOrder.children[i]] ?: 0,
+                    hasOptionSelectorParent = hasOptionSelectorParent
                 )
             )
         }
@@ -520,44 +694,32 @@ internal class AndroidWindowTraversal(
 
     // Occlusion affects drawing, not touch delivery: keep collecting tags throughout covered subtrees.
     @UiThread
-    private fun pushTouchChildren(viewGroup: ViewGroup, stack: ArrayDeque<WorkItem>) {
+    private fun pushTouchChildren(
+        viewGroup: ViewGroup,
+        stack: ArrayDeque<WorkItem>,
+        inheritedPrivacy: EffectivePrivacy,
+        hasOptionSelectorParent: Boolean
+    ) {
         if (viewGroup is WebView) return
         val children = drawingOrderResolver.resolve(viewGroup).children
         for (i in children.indices.reversed()) {
             @Suppress("UnsafeThirdPartyFunctionCall") // Unbounded UI-owned deque.
-            stack.addLast(WorkItem(children[i], -1, false, touchOnly = true))
+            stack.addLast(
+                WorkItem(
+                    children[i],
+                    -1,
+                    false,
+                    touchOnly = true,
+                    inheritedPrivacy = inheritedPrivacy,
+                    hasOptionSelectorParent = hasOptionSelectorParent
+                )
+            )
         }
     }
 
-    private class CopyState(
-        val density: Float,
-        val windowIdentity: CapturedIdentity,
-        val identityFactory: CapturedIdentityFactory,
-        val rootPrivacy: EffectivePrivacy,
-        val rootIdentity: CapturedIdentity = windowIdentity,
-        val rootKind: CapturedLayerKind = CapturedLayerKind.WINDOW_ROOT,
-        val visited: IdentityHashMap<View, Boolean> = IdentityHashMap(),
-        val heatmapContext: HeatmapIdentifierResolver.TraversalContext? = null
-    ) {
-        var isDrawingOrderReliable = true
-        val locationOnScreen = IntArray(2)
-        val views = mutableListOf<CapturedNativeView>()
-        val touchOverrideAreas = mutableMapOf<Rect, TouchPrivacy>()
-        val pendingPixelCaptures = mutableListOf<PendingPixelCapture>()
-    }
-
-    private data class WorkItem(
-        val view: View,
-        val parentIndex: Int,
-        val clipToBounds: Boolean,
-        val touchOnly: Boolean = false,
-        val isGeometryReliable: Boolean = true,
-        val expectedParent: ViewParent? = view.parent,
-        val inheritedPrivacy: EffectivePrivacy = EffectivePrivacy(ImagePrivacy.MASK_ALL, TextAndInputPrivacy.MASK_ALL),
-        val inheritedScale: Float = 1f,
-        val nodePath: List<String> = emptyList(),
-        val typeIndex: Int = 0
-    )
+    @UiThread
+    private fun isOptionSelector(view: View): Boolean =
+        view is ViewGroup && optionSelectorDetector.isOptionSelectorSafely(view, internalLogger)
 }
 
 /** Explicit view clips apply to the view and its whole subtree, regardless of clipChildren. */
@@ -637,8 +799,20 @@ private fun GlobalBounds.paddingClip(view: ViewGroup, transform: ViewTransform?)
 }
 
 /** Detects Compose hosts without a compile-time dependency on Compose. */
-private fun isComposeHostByClassName(view: View): Boolean =
-    view.javaClass.name == "androidx.compose.ui.platform.ComposeView"
+internal fun isComposeHostByClassName(view: View): Boolean {
+    var type: Class<*>? = view.javaClass
+    while (type != null) {
+        val name = type.name
+        if (name == "androidx.compose.ui.platform.ComposeView" ||
+            name == "androidx.compose.ui.platform.AndroidComposeView" ||
+            name == "androidx.compose.ui.platform.AbstractComposeView"
+        ) {
+            return true
+        }
+        type = type.superclass
+    }
+    return false
+}
 
 @UiThread
 private fun captureNativeModifiers(
@@ -805,3 +979,129 @@ private val MATERIAL_KEY_SHADOW_DP = listOf(
     11.0 to 14.0,
     11.0 to 15.0
 )
+
+private data class WorkItem(
+    val view: View,
+    val parentIndex: Int,
+    val clipToBounds: Boolean,
+    val touchOnly: Boolean = false,
+    val isGeometryReliable: Boolean = true,
+    val expectedParent: ViewParent? = view.parent,
+    val inheritedPrivacy: EffectivePrivacy = EffectivePrivacy(ImagePrivacy.MASK_ALL, TextAndInputPrivacy.MASK_ALL),
+    val inheritedScale: Float = 1f,
+    val nodePath: List<String> = emptyList(),
+    val typeIndex: Int = 0,
+    val hasOptionSelectorParent: Boolean = false
+)
+
+/** An unavailable custom detector must conservatively mask selectable inputs. */
+@UiThread
+@Suppress("TooGenericExceptionCaught") // Optional extensions must not crash application drawing.
+internal fun OptionSelectorDetector.isOptionSelectorSafely(view: ViewGroup, internalLogger: InternalLogger): Boolean =
+    try {
+        isOptionSelector(view)
+    } catch (e: Exception) {
+        logSelectorFailure(internalLogger, e)
+        true
+    } catch (e: LinkageError) {
+        logSelectorFailure(internalLogger, e)
+        true
+    }
+
+private fun logSelectorFailure(internalLogger: InternalLogger, error: Throwable) {
+    internalLogger.log(
+        InternalLogger.Level.ERROR,
+        InternalLogger.Target.TELEMETRY,
+        { "Unable to detect an option selector" },
+        error,
+        onlyOnce = true
+    )
+}
+
+private class CopyState(
+    val density: Float,
+    val windowIdentity: CapturedIdentity,
+    val identityFactory: CapturedIdentityFactory,
+    val rootPrivacy: EffectivePrivacy,
+    val rootIdentity: CapturedIdentity = windowIdentity,
+    val rootKind: CapturedLayerKind = CapturedLayerKind.WINDOW_ROOT,
+    val visited: IdentityHashMap<View, Boolean> = IdentityHashMap(),
+    val heatmapContext: HeatmapIdentifierResolver.TraversalContext? = null,
+    val rootHasOptionSelectorParent: Boolean = false
+) {
+    var isDrawingOrderReliable = true
+    var requiresTouchPrivacyCapture = false
+    val locationOnScreen = IntArray(2)
+    val views = mutableListOf<CapturedNativeView>()
+    val touchOverrideAreas = mutableMapOf<Rect, TouchPrivacy>()
+    val pendingPixelCaptures = mutableListOf<PendingPixelCapture>()
+    val pendingMappings = mutableListOf<PendingViewMapping>()
+
+    fun collectCustomTouchPrivacy(areas: Map<Rect, TouchPrivacy>?) {
+        requiresTouchPrivacyCapture = true
+        val overrides = areas ?: mapOf(
+            Rect(Int.MIN_VALUE, Int.MIN_VALUE, Int.MAX_VALUE, Int.MAX_VALUE) to TouchPrivacy.HIDE
+        )
+        overrides.forEach { (rect, privacy) -> touchOverrideAreas.putTouchOverrideArea(rect, privacy) }
+    }
+}
+
+@UiThread
+@Suppress("TooGenericExceptionCaught")
+private fun readComposeTouchPrivacy(
+    view: View,
+    context: CaptureGenerationContext,
+    composeHostDecomposer: CompositionHostDecomposer?,
+    internalLogger: InternalLogger
+): Map<Rect, TouchPrivacy>? = try {
+    composeHostDecomposer?.readTouchPrivacy(view, context::shouldContinue)
+} catch (e: Exception) {
+    logDecompositionFailure(internalLogger, e)
+    null
+} catch (e: LinkageError) {
+    logDecompositionFailure(internalLogger, e)
+    null
+}
+
+private fun logDecompositionFailure(internalLogger: InternalLogger, error: Throwable) = internalLogger.log(
+    InternalLogger.Level.ERROR,
+    InternalLogger.Target.TELEMETRY,
+    { "Unable to decompose a composition host" },
+    error,
+    onlyOnce = true
+)
+
+private fun requiresRasterCapture(
+    transformed: Boolean,
+    transform: ViewTransform?,
+    kind: CapturedLayerKind
+): Boolean = transformed && (transform?.uniformScale == null || kind == CapturedLayerKind.COMPOSE_HOST)
+
+/** Custom touch rules may exist inside hidden or visually occluded native subtrees too. */
+@UiThread
+private fun captureTouchOnlyCustomMapper(
+    item: WorkItem,
+    state: CopyState,
+    context: CaptureGenerationContext,
+    registry: CapturedViewMapperRegistry,
+    internalLogger: InternalLogger
+) {
+    val mapper = registry.resolve(item.view)
+    if (mapper !is LegacyCapturedViewMapper<*> || !mapper.collectTouchPrivacy) return
+    @Suppress("UNCHECKED_CAST") // The registry checked that this mapper supports the view's class.
+    val customMapper = mapper as LegacyCapturedViewMapper<View>
+    val privacy = resolveEffectivePrivacy(item.view, item.inheritedPrivacy, internalLogger)
+    customMapper.captureTouchPrivacy(
+        item.view,
+        CapturedMappingContext(
+            state.identityFactory,
+            state.windowIdentity,
+            state.density,
+            imagePrivacy = privacy.imagePrivacy,
+            textAndInputPrivacy = privacy.textAndInputPrivacy,
+            hasOptionSelectorParent = item.hasOptionSelectorParent,
+            shouldContinue = context::shouldContinue,
+            customTouchPrivacySink = state::collectCustomTouchPrivacy
+        )
+    )
+}

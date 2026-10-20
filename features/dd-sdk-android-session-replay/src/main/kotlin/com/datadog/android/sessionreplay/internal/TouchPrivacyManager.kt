@@ -17,9 +17,16 @@ import com.datadog.android.sessionreplay.TouchPrivacy
  * Manager to handle touch privacy area.
  */
 @InternalApi
-class TouchPrivacyManager(
-    private val globalTouchPrivacy: TouchPrivacy
+class TouchPrivacyManager private constructor(
+    private val globalTouchPrivacy: TouchPrivacy,
+    private val overrideAreaSink: ((Rect, TouchPrivacy) -> Unit)?
 ) {
+    constructor(globalTouchPrivacy: TouchPrivacy) : this(globalTouchPrivacy, null)
+
+    /** Keeps extension capture separate from the legacy recorder's staging and published maps. */
+    internal fun withOverrideAreaSink(sink: (Rect, TouchPrivacy) -> Unit): TouchPrivacyManager =
+        TouchPrivacyManager(globalTouchPrivacy, sink)
+
     // areas on screen where overrides are applied
     private val currentOverrideAreas = HashMap<Rect, TouchPrivacy>()
 
@@ -51,7 +58,8 @@ class TouchPrivacyManager(
      */
     @UiThread
     fun addTouchOverrideArea(bounds: Rect, touchPrivacy: TouchPrivacy) {
-        currentPass().putTouchOverrideArea(bounds, touchPrivacy)
+        val sink = overrideAreaSink
+        if (sink == null) currentPass().putTouchOverrideArea(bounds, touchPrivacy) else sink(bounds, touchPrivacy)
     }
 
     @UiThread

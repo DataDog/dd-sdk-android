@@ -63,6 +63,25 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class CapturedTextViewMapperTest {
 
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(TextAndInputPrivacy::class)
+    fun `M mask selector values W capture() { option selector ancestor }`(fakePrivacy: TextAndInputPrivacy) {
+        // Given
+        val stubView = textView()
+        whenever(stubView.text).thenReturn("selected value")
+        val fakeContext = mappingContext("selector", 1f).copy(
+            textAndInputPrivacy = fakePrivacy,
+            hasOptionSelectorParent = true
+        )
+
+        // When
+        val result = testedMapper.capture(stubView, fakeContext).map(fakeContext) as CapturedViewMapperResult.Wireframes
+
+        // Then
+        assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Text>().single().text)
+            .isEqualTo(if (fakePrivacy == TextAndInputPrivacy.MASK_SENSITIVE_INPUTS) "selected value" else "***")
+    }
+
     private val mockViewBoundsResolver: ViewBoundsResolver = mock()
     private val mockColorStringFormatter: ColorStringFormatter = mock()
     private val mockDrawableToColorMapper: DrawableToColorMapper = mock()

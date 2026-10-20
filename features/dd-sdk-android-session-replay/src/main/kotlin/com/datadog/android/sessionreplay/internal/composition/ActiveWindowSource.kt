@@ -79,6 +79,7 @@ internal class ActiveWindowSource(
         views: List<View>,
         scope: RumViewIdentityScope,
         overridesByWindow: Map<View, Map<Rect, TouchPrivacy>> = emptyMap(),
+        windowsRequiringTouchPrivacyCapture: Set<View> = emptySet(),
         publishAreas: () -> Unit
     ) {
         synchronized(lock) {
@@ -88,18 +89,25 @@ internal class ActiveWindowSource(
                 val nextOverrides = views.map { view ->
                     val previous = privacyOverrides.firstOrNull { it.root.get() === view }
                     if (!sameDraw && privacyScope?.rumViewScope == scope && previous != null) {
-                        previous
+                        WindowTouchOverrides(
+                            WeakReference(view),
+                            previous.areas,
+                            drawVersion,
+                            previous.requiresCapture || view in windowsRequiringTouchPrivacyCapture
+                        )
                     } else {
                         WindowTouchOverrides(
                             WeakReference(view),
                             overridesByWindow[view].orEmpty().toMap(),
-                            if (sameDraw) null else drawVersion
+                            if (sameDraw) null else drawVersion,
+                            view in windowsRequiringTouchPrivacyCapture
                         )
                     }
                 }
                 val samePolicy = nextOverrides.size == privacyOverrides.size && nextOverrides.all { next ->
                     privacyOverrides.any { previous ->
-                        previous.root.get() === next.root.get() && previous.areas == next.areas
+                        previous.root.get() === next.root.get() && previous.areas == next.areas &&
+                            previous.requiresCapture == next.requiresCapture
                     }
                 }
                 if (privacyScope?.rumViewScope != scope || !samePolicy) {
@@ -134,6 +142,8 @@ internal class ActiveWindowSource(
             if (privacyScope?.rumViewScope != scope) return null
             val entry = privacyOverrides.firstOrNull { it.root.get() === root } ?: return null
             if (entry.dirtyRevision == null) return entry.areas
+            // Arbitrary mapper logic has no touch-only API; a fresh capture must establish its policy.
+            if (entry.requiresCapture) return null
             entry to entry.dirtyRevision
         }
         // Read live Views outside the membership lock and only on the window's UI thread.
@@ -169,7 +179,8 @@ internal class ActiveWindowSource(
     private class WindowTouchOverrides(
         val root: WeakReference<View>,
         var areas: Map<Rect, TouchPrivacy>,
-        var dirtyRevision: Long?
+        var dirtyRevision: Long?,
+        val requiresCapture: Boolean
     )
 
     internal data class Snapshot(

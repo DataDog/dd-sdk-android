@@ -43,6 +43,7 @@ import com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptur
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
+import com.datadog.android.sessionreplay.recorder.composition.CompositionNativeSubtree
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -172,6 +173,7 @@ internal class GranularComposeDecomposer(
         private val hostClip = request.hostBounds
         private val nodes = mutableListOf<CapturedLayer>()
         private val wireframes = mutableListOf<CapturedWireframe>()
+        private val nativeSubtrees = mutableListOf<CompositionNativeSubtree>()
         private var culledLeaf = false
         private var nodesVisited = 0
         private var aborted = false
@@ -218,7 +220,7 @@ internal class GranularComposeDecomposer(
             // already does: no partial tree, the caller's own post-call re-check discards the window.
             if (pendingCaptures.isNotEmpty() && !request.shouldContinue()) return null
             if (!resolvePendingCaptures()) return null
-            return CompositionHostDecomposeResult(rootChildren, nodes, wireframes)
+            return CompositionHostDecomposeResult(rootChildren, nodes, wireframes, nativeSubtrees)
         }
 
         @Suppress("ReturnCount")
@@ -234,8 +236,12 @@ internal class GranularComposeDecomposer(
             val interopView = reflectionUtils.getInteropView(node)
             if (interopView != null) {
                 val subtree = request.nativeViewHandoff(interopView, nodeIdentity) ?: return null
-                nodes += subtree.layers
-                wireframes += subtree.wireframes
+                if (subtree.resolve != null) {
+                    nativeSubtrees += subtree
+                } else {
+                    nodes += subtree.layers
+                    wireframes += subtree.wireframes
+                }
                 return CapturedChild.Layer(subtree.rootLayer.identity)
             }
 

@@ -6,13 +6,16 @@
 
 package com.datadog.android.sessionreplay.internal.composition.mapper
 
+import android.graphics.Rect
 import android.view.View
+import android.view.ViewGroup
 import androidx.annotation.UiThread
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.composition.CapturedIdentityFactory
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink
 
@@ -31,7 +34,13 @@ internal data class CapturedMappingContext(
     val imagePrivacy: ImagePrivacy = ImagePrivacy.MASK_ALL,
     val textAndInputPrivacy: TextAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
     val pendingPixelCaptureSink: PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp,
-    val viewScale: Float = 1f
+    val viewScale: Float = 1f,
+    val hasOptionSelectorParent: Boolean = false,
+    val shouldContinue: () -> Boolean = { true },
+    val pendingMappingSink: (PendingViewMapping) -> Unit = {},
+    val isOptionSelector: (ViewGroup) -> Boolean = { false },
+    // A null result means the extension failed before its touch policy could be established.
+    val customTouchPrivacySink: (Map<Rect, TouchPrivacy>?) -> Unit = {}
 )
 
 internal sealed interface CapturedViewMapperResult {

@@ -79,7 +79,8 @@ internal class AndroidCapturedSnapshotProducer(
             windowSnapshot,
             captured.roots,
             rumViewScope.scope,
-            captured.touchOverridesByWindow
+            captured.touchOverridesByWindow,
+            captured.windowsRequiringTouchPrivacyCapture
         ) {
             touchPrivacyManager.replaceCurrentTouchOverrideAreas(captured.touchOverrideAreas)
         }
@@ -114,6 +115,7 @@ internal class AndroidCapturedSnapshotProducer(
         val pendingPixelCaptures = mutableListOf<PendingPixelCapture>()
         val touchOverrideAreas = mutableMapOf<Rect, TouchPrivacy>()
         val touchOverridesByWindow = mutableMapOf<View, Map<Rect, TouchPrivacy>>()
+        val windowsRequiringTouchPrivacyCapture = mutableSetOf<View>()
 
         fun absorb(root: View, result: WindowCopyResult.Present) {
             windows += result.window
@@ -123,6 +125,7 @@ internal class AndroidCapturedSnapshotProducer(
                 touchOverrideAreas.putTouchOverrideArea(bounds, privacy)
             }
             touchOverridesByWindow[root] = result.touchOverrideAreas
+            if (result.requiresTouchPrivacyCapture) windowsRequiringTouchPrivacyCapture += root
         }
     }
 
