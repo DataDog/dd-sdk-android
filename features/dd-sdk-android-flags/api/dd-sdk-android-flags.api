@@ -97,7 +97,7 @@ public final class com/datadog/android/flags/_FlagsInternalProxy {
 	public fun <init> (Lcom/datadog/android/flags/FlagsClient;)V
 	public final fun getFlagAssignmentsSnapshot ()Ljava/util/Map;
 	public final fun isEvaluationTelemetryOptOutParameterEnabled ()Z
-	public final fun setSubjectEvaluationTelemetryOptOut (Ljava/lang/String;Z)V
+	public final fun setEvaluationContext (Lcom/datadog/android/flags/model/EvaluationContext;Lcom/datadog/android/flags/EvaluationContextCallback;Z)V
 	public final fun trackFlagSnapshotEvaluation (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;)V
 }
 

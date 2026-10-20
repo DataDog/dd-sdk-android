@@ -41,6 +41,9 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
 
 @ExtendWith(ForgeExtension::class, TestConfigurationExtension::class)
 @ForgeConfiguration(FlagsIntegrationForgeConfigurator::class)
@@ -55,6 +58,52 @@ internal class EvaluationTelemetryTest {
     @AfterEach
     fun `tear down`() {
         fixture.close()
+    }
+
+    @ParameterizedTest
+    @MethodSource("interleavedContextUpdates")
+    fun `M bind policy to submitted context W context update() {concurrent conversion}`(
+        initializing: Boolean,
+        optedOut: Boolean
+    ) = runBlocking<Unit> {
+        // Given
+        val provider = newClient().asOpenFeatureProvider()
+        val original = context(Value.Boolean(false))
+        provider.initialize(original)
+        val requested = context(Value.Boolean(optedOut))
+        val competing = context(Value.Boolean(!optedOut))
+        val executor = Executors.newSingleThreadExecutor()
+        var interleavedUpdates = 0
+        val interleaved = object : OpenFeatureEvaluationContext by requested {
+            override fun getTargetingKey(): String {
+                // Complete another update while this caller is converting its context.
+                // The old provider publishes its policy before its final conversion.
+                executor.submit { runBlocking { provider.onContextSet(original, competing) } }
+                    .get(5, TimeUnit.SECONDS)
+                interleavedUpdates++
+                return requested.getTargetingKey()
+            }
+        }
+
+        try {
+            // When
+            if (initializing) provider.initialize(interleaved) else provider.onContextSet(original, interleaved)
+            val result = provider.getBooleanEvaluation("enabled", false, null)
+            fixture.flush()
+
+            // Then
+            assertThat(interleavedUpdates).isPositive()
+            assertThat(result.value).isTrue()
+            val attributes = fixture.stubCore.requestsSent().last().bodyAsJson()
+                .getJSONObject("data").getJSONObject("attributes")
+                .getJSONObject("subject").getJSONObject("targeting_attributes")
+            assertThat(attributes.getString(CONTROL)).isEqualTo(optedOut.toString())
+            assertThat(fixture.evaluationCount()).isEqualTo(if (optedOut) 0 else 1)
+            assertThat(fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).hasSize(if (optedOut) 0 else 1)
+            assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
+        } finally {
+            executor.shutdownNow()
+        }
     }
 
     @Test
@@ -564,6 +613,11 @@ internal class EvaluationTelemetryTest {
         ).getJSONObject("attributes").getJSONObject("subject").getJSONObject("targeting_attributes")
 
     companion object {
+        @JvmStatic
+        fun interleavedContextUpdates(): List<Arguments> = listOf(false, true).flatMap { initializing ->
+            listOf(false, true).map { optedOut -> Arguments.of(initializing, optedOut) }
+        }
+
         @JvmStatic
         fun controls(): List<Arguments> = listOf(
             null, Value.Null, Value.Boolean(false), Value.Boolean(true), Value.String("true"),

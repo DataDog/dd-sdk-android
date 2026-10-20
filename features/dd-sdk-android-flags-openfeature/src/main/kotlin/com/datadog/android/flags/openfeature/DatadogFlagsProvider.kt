@@ -106,9 +106,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * without matching cached assignments
      */
     override suspend fun initialize(initialContext: OpenFeatureEvaluationContext?) {
-        updateEvaluationTelemetryPolicy(initialContext)
-        val datadogContext = targetingContext(initialContext)
-        flagsClient.setEvaluationContextSuspend(datadogContext)
+        setEvaluationContext(initialContext)
     }
 
     /**
@@ -128,8 +126,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         oldContext: OpenFeatureEvaluationContext?,
         newContext: OpenFeatureEvaluationContext
     ) {
-        updateEvaluationTelemetryPolicy(newContext)
-        flagsClient.setEvaluationContextSuspend(targetingContext(newContext))
+        setEvaluationContext(newContext)
     }
 
     override fun getBooleanEvaluation(
@@ -248,14 +245,14 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         }
     }
 
-    private fun updateEvaluationTelemetryPolicy(context: OpenFeatureEvaluationContext?) {
-        if (evaluationTelemetryOptOutParameterEnabled) {
-            val value = context?.asMap()?.get(EVALUATION_TELEMETRY_OPT_OUT)
-            _FlagsInternalProxy(flagsClient).setSubjectEvaluationTelemetryOptOut(
-                targetingContext(context).targetingKey,
-                value == Value.Boolean(true)
-            )
+    private suspend fun setEvaluationContext(context: OpenFeatureEvaluationContext?) {
+        val datadogContext = targetingContext(context)
+        val telemetryOptedOut = if (evaluationTelemetryOptOutParameterEnabled) {
+            context?.asMap()?.get(EVALUATION_TELEMETRY_OPT_OUT) == Value.Boolean(true)
+        } else {
+            null
         }
+        flagsClient.setEvaluationContextSuspend(datadogContext, telemetryOptedOut)
     }
 
     private fun targetingContext(context: OpenFeatureEvaluationContext?): DatadogEvaluationContext =

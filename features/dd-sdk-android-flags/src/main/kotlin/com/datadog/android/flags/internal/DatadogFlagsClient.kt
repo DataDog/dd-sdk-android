@@ -108,11 +108,21 @@ internal class DatadogFlagsClient(
      * Invoked on a background executor thread. See [EvaluationContextCallback] for timeout behavior.
      */
     override fun setEvaluationContext(context: EvaluationContext, callback: EvaluationContextCallback?) {
+        setEvaluationContext(context, callback, null)
+    }
+
+    internal fun setEvaluationContext(
+        context: EvaluationContext,
+        callback: EvaluationContextCallback?,
+        telemetryOptedOut: Boolean?
+    ) {
         if (!evaluationTelemetryOptOutParameterEnabled) {
             evaluationsManager.updateEvaluationsForContext(context, callback)
             return
         }
         synchronized(telemetryLock) {
+            // Register the typed decision and its request together, before any callbacks or dispatch.
+            if (telemetryOptedOut != null) subjectOptOut[context.targetingKey] = telemetryOptedOut
             requestedSubject = context.targetingKey
             pendingSubjects[context.targetingKey] = (pendingSubjects[context.targetingKey] ?: 0) + 1
         }
@@ -132,15 +142,6 @@ internal class DatadogFlagsClient(
 
     internal fun setEvaluationTelemetryOptOut(optOut: Boolean) {
         evaluationTelemetryOptOut = evaluationTelemetryOptOutParameterEnabled && optOut
-    }
-
-    internal fun setSubjectEvaluationTelemetryOptOut(subject: String, optOut: Boolean) {
-        if (evaluationTelemetryOptOutParameterEnabled) {
-            synchronized(telemetryLock) {
-                requestedSubject = subject
-                subjectOptOut[subject] = optOut
-            }
-        }
     }
 
     private fun isSubjectOptedOut(subject: String?): Boolean =
