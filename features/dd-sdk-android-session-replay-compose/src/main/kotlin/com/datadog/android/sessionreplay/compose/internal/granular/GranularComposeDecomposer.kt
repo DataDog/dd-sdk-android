@@ -272,6 +272,26 @@ internal class GranularComposeDecomposer(
         return CapturedModifier.GaussianBlur(radius = (radiusXPx / density.density).toDouble())
     }
 
+    private fun imageClip(
+        bounds: GlobalBounds,
+        visible: GlobalBounds,
+        viewport: GlobalBounds = bounds
+    ): CapturedClip? {
+        val top = (maxOf(visible.y, viewport.y) - bounds.y).coerceIn(0L, bounds.height)
+        val bottom = (bounds.y + bounds.height - minOf(visible.y + visible.height, viewport.y + viewport.height))
+            .coerceIn(0L, bounds.height)
+        val left = (maxOf(visible.x, viewport.x) - bounds.x).coerceIn(0L, bounds.width)
+        val right = (bounds.x + bounds.width - minOf(visible.x + visible.width, viewport.x + viewport.width))
+            .coerceIn(0L, bounds.width)
+        if (maxOf(top, bottom) == 0L && maxOf(left, right) == 0L) return null
+        return CapturedClip(
+            top.takeIf { it > 0 },
+            bottom.takeIf { it > 0 },
+            left.takeIf { it > 0 },
+            right.takeIf { it > 0 }
+        )
+    }
+
     /** Copies only the graphics properties the capture understands, without an intermediate map. */
     private class GraphicsLayerProperties(modifier: InspectableValue) {
         var clip = false
@@ -530,8 +550,10 @@ internal class GranularComposeDecomposer(
             privacy: NodePrivacy,
             modifiers: List<ModifierInfo>
         ): CapturedChild {
-            val bounds = boundsOf(node)
-            val painterBounds = GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
+            val layoutBounds = semanticsUtils.resolveUnclippedBounds(node, windowOffset)
+            val painterBounds = semanticsUtils.resolvePainterBounds(node, modifiers, windowOffset)
+            val visibleBounds = semanticsUtils.resolveVisibleBounds(node, windowOffset)
+            val bounds = CapturedBounds(layoutBounds.x, layoutBounds.y, layoutBounds.width, layoutBounds.height)
             // Resolve the same painter and scaling metadata as the existing Compose image mapper.
             // This is a source bitmap, never a screenshot of this node or its descendants.
             val image = if (privacy.image == ImagePrivacy.MASK_ALL) {
@@ -561,24 +583,95 @@ internal class GranularComposeDecomposer(
                 CapturedWireframe.Pixel(
                     pixelId,
                     CapturedBounds(scaled.bounds.x, scaled.bounds.y, scaled.bounds.width, scaled.bounds.height),
-                    scaled.clipping?.let { CapturedClip(it.top, it.bottom, it.left, it.right) },
+                    imageClip(scaled.bounds, visibleBounds, painterBounds),
                     resource = PixelResource.Unresolved
                 )
             } else {
                 CapturedWireframe.PrivacyPlaceholder(
                     request.identityFactory.placeholderWireframe(identity),
                     CapturedBounds(painterBounds.x, painterBounds.y, painterBounds.width, painterBounds.height),
+                    clip = imageClip(painterBounds, visibleBounds),
                     label = if (privacy.image == ImagePrivacy.MASK_LARGE_ONLY) "Content Image" else "Image"
                 )
             }
-            val children = mutableListOf<CapturedChild>()
-            resolveShapeWireframe(node, identity, bounds, modifiers)?.let {
-                wireframes += it
-                children += CapturedChild.Wireframe(it.identity)
+            return captureImageModifiers(node, identity, bounds, visibleBounds, modifiers, wireframe)
+        }
+
+        /** Rebuild only the image's drawing modifiers, from the painter outwards, in draw order. */
+        @Suppress("UnsafeThirdPartyFunctionCall") // Owned immutable child lists and bounded modifier traversal.
+        private fun captureImageModifiers(
+            node: SemanticsNode,
+            identity: CapturedIdentity,
+            bounds: CapturedBounds,
+            visibleBounds: GlobalBounds,
+            modifiers: List<ModifierInfo>,
+            image: CapturedWireframe
+        ): CapturedChild {
+            val backgrounds = linkedMapOf<CapturedIdentity, CapturedWireframe.Shape>()
+            var children = listOf<CapturedChild>(CapturedChild.Wireframe(image.identity))
+            for (index in modifiers.indices.reversed()) {
+                val info = modifiers[index]
+                val modifier = info.modifier
+                val graphicsLayer =
+                    modifier is InspectableValue && modifier.nameFallback == GRAPHICS_LAYER_NAME_FALLBACK
+                if (!graphicsLayer && !reflectionUtils.isBackgroundElement(modifier)) continue
+                val globalBounds = semanticsUtils.resolveModifierBounds(node, info, windowOffset)
+                    ?: GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
+                val modifierBounds = CapturedBounds(
+                    globalBounds.x,
+                    globalBounds.y,
+                    globalBounds.width,
+                    globalBounds.height
+                )
+                if (graphicsLayer) {
+                    children = wrapImageModifier(
+                        node,
+                        request.identityFactory.composeNode(identity, "image-modifier:$index"),
+                        modifier as InspectableValue,
+                        modifierBounds,
+                        children,
+                        backgrounds
+                    )
+                } else {
+                    val backgroundIdentity = request.identityFactory.composeNode(identity, "image-background:$index")
+                    resolveShapeWireframe(node, backgroundIdentity, modifierBounds, listOf(info))?.let { shape ->
+                        backgrounds[shape.identity] = shape.copy(clip = imageClip(globalBounds, visibleBounds))
+                        children = listOf(CapturedChild.Wireframe(shape.identity)) + children
+                    }
+                }
             }
-            wireframes += wireframe
-            children += CapturedChild.Wireframe(wireframe.identity)
-            return registerLayer(identity, bounds, children, resolveModifiers(node, bounds, modifiers))
+            wireframes += backgrounds.values.reversed()
+            wireframes += image
+            return registerLayer(identity, bounds, children)
+        }
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // Owned immutable child list.
+        private fun wrapImageModifier(
+            node: SemanticsNode,
+            identity: CapturedIdentity,
+            modifier: InspectableValue,
+            bounds: CapturedBounds,
+            children: List<CapturedChild>,
+            backgrounds: MutableMap<CapturedIdentity, CapturedWireframe.Shape>
+        ): List<CapturedChild> {
+            val properties = GraphicsLayerProperties(modifier)
+            val captured = resolveGraphicsLayerModifiers(modifier, node, bounds, properties)
+            if (captured.isEmpty()) return children
+            val background = children.firstOrNull()?.identity?.let { backgrounds[it] }
+            // Preserve rounding in the flat shape representation as well as the composition clip.
+            if (properties.clip && background?.bounds == bounds) {
+                val radius = properties.shape?.let {
+                    semanticsUtils.resolveCornerRadius(
+                        it,
+                        GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height),
+                        node.layoutInfo.density
+                    )
+                }
+                backgrounds[background.identity] = background.copy(
+                    style = background.style?.copy(cornerRadius = radius?.toDouble())
+                )
+            }
+            return listOf(registerLayer(identity, bounds, children, captured))
         }
 
         @Suppress("UnsafeThirdPartyFunctionCall") // isFinite operates on primitive floats.

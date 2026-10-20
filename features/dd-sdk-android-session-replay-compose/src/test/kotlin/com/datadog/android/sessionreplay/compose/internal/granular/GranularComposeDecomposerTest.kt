@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.RenderEffect
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.platform.InspectableValue
@@ -173,6 +174,95 @@ internal class GranularComposeDecomposerTest {
         assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
         assertThat(captures.single().isSourceImage).isTrue()
         assertThat(captures.single().isTextFree).isFalse()
+    }
+
+    @Test
+    fun `M crop source images without resizing W decompose() { image scrolls outside viewport }`() {
+        // Given
+        val stubImage = mockLeafNode()
+        val stubRoot = mockRoot(listOf(stubImage))
+        val stubBitmap: Bitmap = mock()
+        whenever(stubBitmap.width).thenReturn(100)
+        whenever(stubBitmap.height).thenReturn(100)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
+        whenever(mockSemanticsUtils.isImage(stubImage)).thenReturn(true)
+        whenever(mockSemanticsUtils.resolveSemanticsPainter(eq(stubImage), any()))
+            .thenReturn(BitmapInfo(stubBitmap, false))
+        val fakeLayoutBounds = GlobalBounds(0, 0, 160, 160)
+        whenever(mockSemanticsUtils.resolveUnclippedBounds(eq(stubImage), any())).thenReturn(fakeLayoutBounds)
+
+        // When
+        val fakeImages = listOf(fakeLayoutBounds, GlobalBounds(0, 60, 160, 100), fakeLayoutBounds).map { visible ->
+            whenever(mockSemanticsUtils.resolveVisibleBounds(eq(stubImage), any())).thenReturn(visible)
+            testedDecomposer.decompose(mockView, realRequest())!!.wireframes.single() as CapturedWireframe.Pixel
+        }
+
+        // Then
+        assertThat(fakeImages.map { it.bounds }).containsOnly(CapturedBounds(0, 0, 160, 160))
+        assertThat(fakeImages.map { it.clip?.top }).containsExactly(null, 60L, null)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M preserve image padding W decompose() { outer semantics and partial clipping }`(masked: Boolean) {
+        // Given
+        val stubImage = mockLeafNode()
+        val stubRoot = mockRoot(listOf(stubImage))
+        val stubBitmap: Bitmap = mock()
+        whenever(stubBitmap.width).thenReturn(100)
+        whenever(stubBitmap.height).thenReturn(100)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
+        whenever(mockSemanticsUtils.isImage(stubImage)).thenReturn(true)
+        whenever(mockSemanticsUtils.resolveSemanticsPainter(eq(stubImage), any()))
+            .thenReturn(BitmapInfo(stubBitmap, false))
+        whenever(mockSemanticsUtils.resolveUnclippedBounds(eq(stubImage), any()))
+            .thenReturn(GlobalBounds(0, 0, 224, 224))
+        whenever(mockSemanticsUtils.resolvePainterBounds(eq(stubImage), any(), any()))
+            .thenReturn(GlobalBounds(32, 32, 160, 160))
+        whenever(mockSemanticsUtils.resolveVisibleBounds(eq(stubImage), any()))
+            .thenReturn(GlobalBounds(0, 64, 224, 160))
+
+        // When
+        val result = testedDecomposer.decompose(
+            mockView,
+            realRequest(imagePrivacy = if (masked) ImagePrivacy.MASK_ALL else ImagePrivacy.MASK_NONE)
+        )!!
+
+        // Then
+        val image = result.wireframes.single()
+        assertThat(image.bounds).isEqualTo(CapturedBounds(32, 32, 160, 160))
+        assertThat(image.clip?.top).isEqualTo(32L)
+        assertThat(image.clip?.left).isNull()
+        assertThat(result.nodes.single().bounds).isEqualTo(CapturedBounds(0, 0, 224, 224))
+        if (masked) verify(mockSemanticsUtils, never()).resolveSemanticsPainter(any(), any())
+    }
+
+    @Test
+    fun `M crop image to painter viewport W decompose() { crop inside padding }`() {
+        // Given
+        val stubImage = mockLeafNode()
+        val stubRoot = mockRoot(listOf(stubImage))
+        val stubBitmap: Bitmap = mock()
+        whenever(stubBitmap.width).thenReturn(200)
+        whenever(stubBitmap.height).thenReturn(100)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
+        whenever(mockSemanticsUtils.isImage(stubImage)).thenReturn(true)
+        whenever(mockSemanticsUtils.resolveSemanticsPainter(eq(stubImage), any()))
+            .thenReturn(BitmapInfo(stubBitmap, false, ContentScale.Crop))
+        whenever(mockSemanticsUtils.resolveUnclippedBounds(eq(stubImage), any()))
+            .thenReturn(GlobalBounds(0, 0, 224, 224))
+        whenever(mockSemanticsUtils.resolvePainterBounds(eq(stubImage), any(), any()))
+            .thenReturn(GlobalBounds(32, 32, 160, 160))
+        whenever(mockSemanticsUtils.resolveVisibleBounds(eq(stubImage), any()))
+            .thenReturn(GlobalBounds(0, 0, 224, 224))
+
+        // When
+        val image = testedDecomposer.decompose(mockView, realRequest())!!.wireframes.single()
+
+        // Then
+        assertThat(image.bounds).isEqualTo(CapturedBounds(-48, 32, 320, 160))
+        assertThat(image.clip?.left).isEqualTo(80L)
+        assertThat(image.clip?.right).isEqualTo(80L)
     }
 
     @Test
@@ -694,6 +784,15 @@ internal class GranularComposeDecomposerTest {
         whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any(), any())).thenReturn(null)
         whenever(mockSemanticsUtils.resolveBackgroundColor(any<List<ModifierInfo>>())).thenReturn(null)
         whenever(mockSemanticsUtils.resolveInnerBounds(eq(node), any())).thenReturn(GlobalBounds(0, 0, 10, 10))
+        whenever(mockSemanticsUtils.resolveUnclippedBounds(eq(node), any())).thenAnswer {
+            mockSemanticsUtils.resolveInnerBounds(node, it.getArgument(1))
+        }
+        whenever(mockSemanticsUtils.resolvePainterBounds(eq(node), any(), any())).thenAnswer {
+            mockSemanticsUtils.resolveUnclippedBounds(node, it.getArgument(2))
+        }
+        whenever(mockSemanticsUtils.resolveVisibleBounds(eq(node), any())).thenAnswer {
+            mockSemanticsUtils.resolveInnerBounds(node, it.getArgument(1))
+        }
         whenever(node.boundsInRoot).thenReturn(androidx.compose.ui.geometry.Rect(0f, 0f, 10f, 10f))
         return node
     }

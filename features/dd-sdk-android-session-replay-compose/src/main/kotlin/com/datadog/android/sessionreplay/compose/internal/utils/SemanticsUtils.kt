@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.layout.ModifierInfo
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
@@ -143,6 +144,68 @@ internal class SemanticsUtils(
         } else {
             null
         }
+    }
+
+    /** Composition image scaling needs the layout size, even when scrolling clips most of it. */
+    internal fun resolveUnclippedBounds(
+        semanticsNode: SemanticsNode,
+        windowOffset: ComposeWindowOffset
+    ): GlobalBounds {
+        val position = semanticsNode.positionInRoot
+        val size = semanticsNode.size
+        val density = semanticsNode.layoutInfo.density.density
+        return GlobalBounds(
+            (position.x / density).toLong() + windowOffset.xDp,
+            (position.y / density).toLong() + windowOffset.yDp,
+            (size.width / density).toLong(),
+            (size.height / density).toLong()
+        )
+    }
+
+    /** Image semantics may wrap padding (notably in Coil); scale within the painter's own layout. */
+    internal fun resolvePainterBounds(
+        semanticsNode: SemanticsNode,
+        modifiers: List<ModifierInfo>,
+        windowOffset: ComposeWindowOffset
+    ): GlobalBounds {
+        val painter = modifiers.firstOrNull { reflectionUtils.isImagePainterModifier(it.modifier) }
+        return painter?.let { resolveModifierBounds(semanticsNode, it, windowOffset) }
+            ?: resolveUnclippedBounds(semanticsNode, windowOffset)
+    }
+
+    /** Read each modifier's measured rectangle, including its own position within padding. */
+    @Suppress("UnsafeThirdPartyFunctionCall") // Attached coordinates, on UI thread, inside the compatibility gate.
+    internal fun resolveModifierBounds(
+        semanticsNode: SemanticsNode,
+        modifier: ModifierInfo,
+        windowOffset: ComposeWindowOffset
+    ): GlobalBounds? {
+        val coordinates = modifier.coordinates
+        if (!coordinates.isAttached) return null
+        val position = coordinates.positionInRoot()
+        val size = coordinates.size
+        val density = semanticsNode.layoutInfo.density.density
+        return GlobalBounds(
+            (position.x / density).toLong() + windowOffset.xDp,
+            (position.y / density).toLong() + windowOffset.yDp,
+            (size.width / density).toLong(),
+            (size.height / density).toLong()
+        )
+    }
+
+    /** The visible rectangle includes clipping imposed by Compose scroll containers. */
+    internal fun resolveVisibleBounds(
+        semanticsNode: SemanticsNode,
+        windowOffset: ComposeWindowOffset
+    ): GlobalBounds {
+        val bounds = semanticsNode.boundsInRoot
+        val density = semanticsNode.layoutInfo.density.density
+        return GlobalBounds(
+            (bounds.left / density).toLong() + windowOffset.xDp,
+            (bounds.top / density).toLong() + windowOffset.yDp,
+            (bounds.width / density).toLong(),
+            (bounds.height / density).toLong()
+        )
     }
 
     internal fun resolveTextLayoutInfo(semanticsNode: SemanticsNode, internalLogger: InternalLogger): TextLayoutInfo? =

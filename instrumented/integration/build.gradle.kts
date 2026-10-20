@@ -128,6 +128,9 @@ dependencies {
     androidTestImplementation(libs.androidXComposeUiTestJUnit4)
     debugImplementation(platform(libs.androidXComposeBom))
     debugImplementation(libs.androidXComposeMaterial)
+    // Keep Coil's Compose runtime dependencies aligned between the app and its instrumentation.
+    debugImplementation(libs.coilCompose)
+    debugImplementation(libs.coil3Compose)
     debugImplementation(libs.androidXComposeUiTestManifest)
     androidTestImplementation(libs.leakCanaryInstrumentation)
     androidTestImplementation(project(":tools:unit")) {

@@ -87,6 +87,15 @@ internal class ReflectionUtils {
         return ComposeReflection.AsyncImagePainterClass?.isInstance(painter) == true
     }
 
+    /** Painter coordinates exclude layout modifiers, such as padding, that precede the painter. */
+    fun isImagePainterModifier(modifier: Modifier): Boolean = when {
+        PainterElementClass?.isInstance(modifier) == true -> true
+        ContentPainterModifierClass?.isInstance(modifier) == true -> true
+        ContentPainterElementClass?.isInstance(modifier) == true -> true
+        ComposeReflection.ContentPainterElement3Class?.isInstance(modifier) == true -> true
+        else -> false
+    }
+
     fun isDrawBehindElementClass(modifier: Modifier): Boolean {
         return ComposeReflection.DrawBehindElementClass?.isInstance(modifier) == true
     }

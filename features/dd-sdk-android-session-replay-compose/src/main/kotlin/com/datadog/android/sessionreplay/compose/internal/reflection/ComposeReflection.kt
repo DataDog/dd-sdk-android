@@ -154,6 +154,11 @@ internal object ComposeReflection {
 
     // Region of Coil3
 
+    val ContentPainterElement3Class = getClassSafe(
+        "coil3.compose.internal.ContentPainterElement",
+        isCritical = false
+    )
+
     val PainterNodeClass = getClassSafe(
         "coil3.compose.internal.ContentPainterNode",
         isCritical = false

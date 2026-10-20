@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.layout.Placeable
@@ -44,6 +45,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
@@ -361,6 +363,77 @@ internal class SemanticsUtilsTest {
 
         // Then
         assertThat(result).isEqualTo(expected)
+    }
+
+    @Test
+    fun `M preserve layout size separately from viewport W resolveUnclippedBounds() { scrolling }`() {
+        // Given
+        whenever(mockLayoutInfo.density).thenReturn(Density(2f))
+        whenever(mockSemanticsNode.positionInRoot).thenReturn(Offset(40f, -80f))
+        whenever(mockSemanticsNode.size).thenReturn(IntSize(192, 192))
+        whenever(mockSemanticsNode.boundsInRoot).thenReturn(Rect(40f, 0f, 232f, 112f))
+        val fakeWindowOffset = ComposeWindowOffset(20, 20, 10, 10)
+
+        // When
+        val fakeLayoutBounds = testedSemanticsUtils.resolveUnclippedBounds(mockSemanticsNode, fakeWindowOffset)
+        val fakeVisibleBounds = testedSemanticsUtils.resolveVisibleBounds(mockSemanticsNode, fakeWindowOffset)
+
+        // Then
+        assertThat(fakeLayoutBounds).isEqualTo(GlobalBounds(30, -30, 96, 96))
+        assertThat(fakeVisibleBounds).isEqualTo(GlobalBounds(30, 10, 96, 56))
+        verify(mockReflectionUtils, never()).getPlaceable(any())
+    }
+
+    @Test
+    fun `M exclude outer padding W resolvePainterBounds() { semantics outside painter }`() {
+        // Given
+        val stubCoordinates: LayoutCoordinates = mock()
+        whenever(mockModifierInfo.coordinates).thenReturn(stubCoordinates)
+        whenever(mockReflectionUtils.isImagePainterModifier(mockModifier)).thenReturn(true)
+        whenever(stubCoordinates.isAttached).thenReturn(true)
+        whenever(stubCoordinates.localToRoot(Offset.Zero)).thenReturn(Offset(64f, -64f))
+        whenever(stubCoordinates.size).thenReturn(IntSize(320, 320))
+        whenever(mockLayoutInfo.density).thenReturn(Density(2f))
+        val fakeWindowOffset = ComposeWindowOffset(20, 20, 10, 10)
+
+        // When
+        val result = testedSemanticsUtils.resolvePainterBounds(
+            mockSemanticsNode,
+            listOf(mockModifierInfo),
+            fakeWindowOffset
+        )
+
+        // Then
+        assertThat(result).isEqualTo(GlobalBounds(42, -22, 160, 160))
+        verify(mockReflectionUtils, never()).getPlaceable(any())
+    }
+
+    @Test
+    fun `M fall back to layout bounds W resolvePainterBounds() { missing or detached painter }`() {
+        // Given
+        whenever(mockLayoutInfo.density).thenReturn(Density(2f))
+        whenever(mockSemanticsNode.positionInRoot).thenReturn(Offset(0f, -128f))
+        whenever(mockSemanticsNode.size).thenReturn(IntSize(448, 448))
+        val stubCoordinates: LayoutCoordinates = mock()
+        whenever(mockModifierInfo.coordinates).thenReturn(stubCoordinates)
+
+        // When
+        val missing = testedSemanticsUtils.resolvePainterBounds(
+            mockSemanticsNode,
+            listOf(mockModifierInfo),
+            ComposeWindowOffset.NONE
+        )
+        whenever(mockReflectionUtils.isImagePainterModifier(mockModifier)).thenReturn(true)
+        val detached = testedSemanticsUtils.resolvePainterBounds(
+            mockSemanticsNode,
+            listOf(mockModifierInfo),
+            ComposeWindowOffset.NONE
+        )
+
+        // Then
+        assertThat(missing).isEqualTo(GlobalBounds(0, -64, 224, 224))
+        assertThat(detached).isEqualTo(missing)
+        verify(stubCoordinates, never()).localToRoot(Offset.Zero)
     }
 
     @Test
