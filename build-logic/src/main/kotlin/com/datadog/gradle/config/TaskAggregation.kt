@@ -23,14 +23,11 @@ fun Project.registerSubModuleAggregationTask(
                 subProject.name.startsWith(subModuleNamePrefix) &&
                 subProject.path.startsWith(subModulePathPrefix)
             ) {
-                // Lazily depend on the task only when the submodule registers it: `tasks.names`
-                // reads registered task names without creating any task, and `named()` returns a
-                // lazy provider, so unrelated tasks are never configured. The membership check
-                // matters because not every submodule registers every aggregated task (e.g.
-                // koverXmlReportRelease only exists where kover is applied).
-                if (subModuleTaskName in subProject.tasks.names) {
-                    dependsOn(subProject.tasks.named(subModuleTaskName))
-                }
+                // Name-filtered live view: it is resolved only when the task graph is built, so it
+                // doesn't read the submodule's task container while that is still being populated
+                // (e.g. by parallel IDE sync), never configures unrelated tasks, and is simply
+                // empty when the submodule doesn't register the task (e.g. lintRelease on JVM modules).
+                dependsOn(subProject.tasks.named { it == subModuleTaskName })
             }
         }
         additionalConfiguration()
