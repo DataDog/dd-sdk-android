@@ -241,8 +241,16 @@ internal class CollapsingLowestDenseStoreTest {
     @Test
     fun `M produce identical bytes to reference proto encoding W writeTo() {accumulated counts}`() {
         // Given: index 0 added twice, index 1 added once → counts = [2.0, 1.0]
-        val ourStore = newStore { add(0); add(0); add(1) }
-        val refStore = RefCollapsingLowestDenseStore(1_000).also { it.add(0); it.add(0); it.add(1) }
+        val ourStore = newStore {
+            add(0)
+            add(0)
+            add(1)
+        }
+        val refStore = RefCollapsingLowestDenseStore(1_000).also {
+            it.add(0)
+            it.add(0)
+            it.add(1)
+        }
         val serializer = DDSketchSerializer(ourStore.serializedSize())
 
         // When

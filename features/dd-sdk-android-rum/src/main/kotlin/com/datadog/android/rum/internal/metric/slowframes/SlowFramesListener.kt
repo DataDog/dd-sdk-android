@@ -15,7 +15,6 @@ import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.vitals.FrameStateListener
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.math.min
 
 internal interface SlowFramesListener : FrameStateListener {
     fun onViewCreated(viewId: String, startedTimestampNs: Long)
@@ -100,14 +99,21 @@ internal class DefaultSlowFramesListener(
             report.slowFramesDurationNs += frameDurationNs
             metricDispatcher.incrementSlowFrameCount(viewId)
             val previousSlowFrameRecord = report.lastSlowFrameRecord
-            val delaySinceLastUpdate = frameStartedTimestampNs -
-                (previousSlowFrameRecord?.startTimestampNs ?: frameStartedTimestampNs)
+            val previousSlowFrameEndTimestampNs = report.lastSlowFrameEndTimestampNs
 
-            if (previousSlowFrameRecord == null ||
-                delaySinceLastUpdate > configuration.continuousSlowFrameThresholdNs
-            ) {
+            val maxSlowFrameRecordDurationNs = configuration.maxSlowFrameThresholdNs - 1
+
+            val isContinuous = previousSlowFrameEndTimestampNs != null &&
+                frameStartedTimestampNs - previousSlowFrameEndTimestampNs <=
+                configuration.continuousSlowFrameThresholdNs
+
+            val fitsInPreviousRecord = previousSlowFrameRecord != null &&
+                frameDurationNs <= maxSlowFrameRecordDurationNs - previousSlowFrameRecord.durationNs
+
+            if (previousSlowFrameRecord == null || !isContinuous || !fitsInPreviousRecord) {
                 // No previous slow frame record or amount of time since the last update
-                // is significant enough to consider it idle - adding a new slow frame record.
+                // is significant enough to consider it idle, or merging would exceed the
+                // maximum record duration - adding a new slow frame record.
                 if (frameDurationNs > 0) {
                     report.slowFramesRecords += SlowFrameRecord(
                         frameStartedTimestampNs,
@@ -117,12 +123,10 @@ internal class DefaultSlowFramesListener(
                 }
             } else {
                 // It's a continuous slow frame – increasing duration
-                previousSlowFrameRecord.durationNs = min(
-                    previousSlowFrameRecord.durationNs + frameDurationNs,
-                    configuration.maxSlowFrameThresholdNs - 1
-                )
+                previousSlowFrameRecord.durationNs += frameDurationNs
                 insightsCollector.onSlowFrame(frameDurationNs)
             }
+            report.lastSlowFrameEndTimestampNs = frameStartedTimestampNs + frameDurationNs
         }
     }
 
