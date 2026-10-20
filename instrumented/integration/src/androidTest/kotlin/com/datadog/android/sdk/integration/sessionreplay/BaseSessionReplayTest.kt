@@ -12,7 +12,7 @@ import androidx.test.espresso.matcher.ViewMatchers
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRumMonitor
-import com.datadog.android.sdk.integration.sessionreplay.SessionReplaySegmentUtils.extractSrSegmentAsJson
+import com.datadog.android.sdk.integration.sessionreplay.SessionReplaySegmentUtils.extractSrSegmentsAsJson
 import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.waitFor
@@ -54,7 +54,8 @@ internal abstract class BaseSessionReplayTest<R : Activity> {
 
     protected fun extractRecordsFromRequests(handledRequests: List<HandledRequest>): List<JsonObject> {
         return handledRequests
-            .mapNotNull { it.extractSrSegmentAsJson()?.asJsonObject }
+            .flatMap { it.extractSrSegmentsAsJson() }
+            .map { it.asJsonObject }
             .flatMap { it.getAsJsonArray("records") }
             .map { it.asJsonObject }
     }

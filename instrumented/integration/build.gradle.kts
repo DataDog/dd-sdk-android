@@ -126,6 +126,7 @@ dependencies {
     androidTestImplementation(libs.androidXComposeMaterial)
     androidTestImplementation(libs.androidXComposeUiTestJUnit4)
     debugImplementation(platform(libs.androidXComposeBom))
+    debugImplementation(libs.androidXComposeMaterial)
     debugImplementation(libs.androidXComposeUiTestManifest)
     androidTestImplementation(libs.leakCanaryInstrumentation)
     androidTestImplementation(project(":tools:unit")) {

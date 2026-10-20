@@ -30,15 +30,14 @@ internal object SessionReplaySegmentUtils {
      *
      * @return The parsed JSON element, or null if no segment found or parsing failed
      */
-    fun HandledRequest.extractSrSegmentAsJson(): JsonElement? {
-        // cloning the requestBuffer is critical, otherwise it causes timeouts on min/median api
-        val compressedSegmentBody = resolveSrSegmentBodyFromRequest(requestBuffer.clone())
-        if (compressedSegmentBody.isNotEmpty()) {
-            // decompress the segment binary
-            return JsonParser.parseString(String(decompressBytes(compressedSegmentBody)))
-        }
+    fun HandledRequest.extractSrSegmentAsJson(): JsonElement? = extractSrSegmentsAsJson().firstOrNull()
 
-        return null
+    /** Reads every segment: a single upload can contain several RUM views. */
+    fun HandledRequest.extractSrSegmentsAsJson(): List<JsonElement> {
+        // cloning the requestBuffer is critical, otherwise it causes timeouts on min/median api
+        return resolveSrSegmentBodiesFromRequest(requestBuffer.clone()).map { compressedSegmentBody ->
+            JsonParser.parseString(String(decompressBytes(compressedSegmentBody), Charsets.UTF_8))
+        }
     }
 
     /**
@@ -54,17 +53,18 @@ internal object SessionReplaySegmentUtils {
      * ```
      *
      * @param buffer The request buffer to parse
-     * @return The compressed segment bytes, or empty array if not found
+     * @return The compressed bodies of all segment parts, in upload order
      */
-    private fun resolveSrSegmentBodyFromRequest(buffer: Buffer): ByteArray {
+    private fun resolveSrSegmentBodiesFromRequest(buffer: Buffer): List<ByteArray> {
+        val segments = mutableListOf<ByteArray>()
         var line = buffer.readUtf8Line()
         while (line != null) {
             if (line.lowercase(Locale.US).matches(SEGMENT_FORM_DATA_REGEX)) {
-                return extractSegmentBody(buffer) ?: ByteArray(0)
+                extractSegmentBody(buffer)?.takeIf { it.isNotEmpty() }?.let(segments::add)
             }
             line = buffer.readUtf8Line()
         }
-        return ByteArray(0)
+        return segments
     }
 
     /**

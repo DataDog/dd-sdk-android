@@ -14,6 +14,8 @@ import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.log.Logger
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.sessionreplay.ExperimentalSessionReplayApi
+import com.datadog.android.sessionreplay.ExtensionSupport
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.TraceConfiguration
@@ -36,6 +38,10 @@ internal object RuntimeConfig {
     var tracesEndpointUrl: String = "$LOCALHOST/traces"
     var rumEndpointUrl: String = "$LOCALHOST/rum"
     var sessionReplayEndpointUrl: String = "$LOCALHOST/session-replay"
+
+    // Set by the instrumented test rule so the same scenarios can exercise either recorder.
+    var sessionReplayCompositionEnabled: Boolean = false
+    var sessionReplayExtensions: List<ExtensionSupport> = emptyList()
 
     val LONG_TASK_LARGE_THRESHOLD = Long.MAX_VALUE
 
@@ -77,9 +83,12 @@ internal object RuntimeConfig {
             .useCustomEndpoint(rumEndpointUrl)
     }
 
+    @OptIn(ExperimentalSessionReplayApi::class)
     fun sessionReplayConfigBuilder(sampleRate: Float): SessionReplayConfiguration.Builder {
         return SessionReplayConfiguration.Builder(sampleRate)
             .useCustomEndpoint(sessionReplayEndpointUrl)
+            .setCompositionTreeRecordingEnabled(sessionReplayCompositionEnabled)
+            .apply { sessionReplayExtensions.forEach(::addExtensionSupport) }
     }
 
     fun logsConfigBuilder(): LogsConfiguration.Builder {

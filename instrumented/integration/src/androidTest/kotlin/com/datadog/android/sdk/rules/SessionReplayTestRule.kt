@@ -12,9 +12,11 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.Stage
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.integration.sessionreplay.ACTIVITY_TEARDOWN_TIMEOUT_MS
 import com.datadog.android.sdk.integration.sessionreplay.overrideProcessImportance
 import com.datadog.android.sdk.utils.addExtras
+import com.datadog.android.sessionreplay.ExtensionSupport
 import com.datadog.tools.unit.ConditionWatcher
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -22,12 +24,17 @@ internal open class SessionReplayTestRule<T : Activity>(
     activityClass: Class<T>,
     keepRequests: Boolean = false,
     trackingConsent: TrackingConsent = TrackingConsent.PENDING,
-    private val intentExtras: Map<String, Any?> = emptyMap()
+    private val intentExtras: Map<String, Any?> = emptyMap(),
+    private val extensions: List<ExtensionSupport> = emptyList(),
+    private val compositionEnabled: Boolean? = null
 ) : LifecycleCallbackTestRule<T>(activityClass, keepRequests, trackingConsent) {
 
     // region ActivityTestRule
 
     override fun beforeActivityLaunched() {
+        RuntimeConfig.sessionReplayCompositionEnabled = compositionEnabled ?: InstrumentationRegistry.getArguments()
+            .getString("sessionReplayCompositionEnabled").toBoolean()
+        RuntimeConfig.sessionReplayExtensions = extensions
         // wait for the previous activity to be removed. Espresso seems to have moments
         // when it tries to launch the new activity while the previous one is still somehow
         // in the process of being removed. This creates an issue with our SR recorder which
@@ -40,8 +47,13 @@ internal open class SessionReplayTestRule<T : Activity>(
     }
 
     override fun afterActivityFinished() {
-        removeCallbacks(listOf(Class.forName(SESSION_REPLAY_LIFECYCLE_CALLBACK_CLASS_NAME)))
-        super.afterActivityFinished()
+        try {
+            removeCallbacks(listOf(Class.forName(SESSION_REPLAY_LIFECYCLE_CALLBACK_CLASS_NAME)))
+            super.afterActivityFinished()
+        } finally {
+            RuntimeConfig.sessionReplayCompositionEnabled = false
+            RuntimeConfig.sessionReplayExtensions = emptyList()
+        }
     }
 
     override fun getActivityIntent(): Intent {
