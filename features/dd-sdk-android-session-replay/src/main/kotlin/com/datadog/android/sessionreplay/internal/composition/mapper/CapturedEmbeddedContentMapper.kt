@@ -12,6 +12,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.internal.composition.toCaptured
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
@@ -46,8 +47,8 @@ internal class CapturedEmbeddedContentMapper(
 
     /** Call once before walking any window for a new capture generation. */
     @UiThread
-    fun beginCapture() {
-        cache.beginCapture()
+    fun beginCapture(scope: RumViewIdentityScope) {
+        cache.beginCapture(scope)
     }
 
     /**
@@ -108,10 +109,17 @@ internal class CapturedEmbeddedContentMapper(
         private data class Entry(val identity: CapturedIdentity, val lastSeenCapture: Long)
 
         private val entries = mutableMapOf<String, Entry>()
+        private var scope: RumViewIdentityScope? = null
         private var currentCapture: Long = 0
 
         @UiThread
-        fun beginCapture() {
+        fun beginCapture(scope: RumViewIdentityScope) {
+            // A new view starts with a full snapshot; absent slots have no prior geometry there.
+            // Keeping their old identities would invalidate the new view's entire snapshot.
+            if (this.scope != scope) {
+                entries.clear()
+                this.scope = scope
+            }
             currentCapture++
         }
 

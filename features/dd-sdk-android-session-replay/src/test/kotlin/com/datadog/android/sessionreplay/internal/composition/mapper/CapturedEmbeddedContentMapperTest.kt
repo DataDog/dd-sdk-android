@@ -147,7 +147,7 @@ internal class CapturedEmbeddedContentMapperTest {
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity)) doReturn fakeBounds
 
         // When
-        testedMapper.beginCapture()
+        testedMapper.beginCapture(factoryOwner.scope)
         testedMapper.map(view, mappingContext)
 
         // Then
@@ -163,12 +163,12 @@ internal class CapturedEmbeddedContentMapperTest {
         val view = taggedView(fakeSlotId)
         whenever(mockViewUtilsInternal.isNotVisible(view)) doReturn false
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity)) doReturn fakeBounds
-        testedMapper.beginCapture()
+        testedMapper.beginCapture(factoryOwner.scope)
         testedMapper.map(view, mappingContext)
         testedMapper.finishCapture()
 
         // When
-        testedMapper.beginCapture()
+        testedMapper.beginCapture(factoryOwner.scope)
         val hidden = testedMapper.finishCapture()
 
         // Then
@@ -189,17 +189,45 @@ internal class CapturedEmbeddedContentMapperTest {
         val registration = view.getTag(R.id.datadog_session_replay_slot_registration) as EmbeddedContentSlotRegistration
         whenever(mockViewUtilsInternal.isNotVisible(view)) doReturn false
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity)) doReturn fakeBounds
-        testedMapper.beginCapture()
+        testedMapper.beginCapture(factoryOwner.scope)
         testedMapper.map(view, mappingContext)
         testedMapper.finishCapture()
 
         // When: the app explicitly detaches the slot.
         embeddedContentSlotRegistry.notifySlotChanged(registration, null)
-        testedMapper.beginCapture()
+        testedMapper.beginCapture(factoryOwner.scope)
         val hidden = testedMapper.finishCapture()
 
         // Then: no hidden placeholder - the wireframe is dropped from the next capture entirely,
         // matching setEmbeddedContentSlotId(view, null)'s own documented contract.
         assertThat(hidden).isEmpty()
+    }
+
+    @Test
+    fun `M discard old identities W beginCapture() { active slot absent after view change }`(
+        @StringForgery fakeSlotId: String,
+        @Forgery fakeBounds: GlobalBounds
+    ) {
+        // Given
+        val fakeView = taggedView(fakeSlotId)
+        whenever(mockViewUtilsInternal.isNotVisible(fakeView)) doReturn false
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(fakeView, mappingContext.screenDensity)) doReturn
+            fakeBounds
+        testedMapper.beginCapture(factoryOwner.scope)
+        testedMapper.map(fakeView, mappingContext)
+        testedMapper.finishCapture()
+        val fakeFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope(factoryOwner.scope.value + "-next"))
+
+        // When: the slot remains registered, but its host is temporarily detached in the new view.
+        testedMapper.beginCapture(fakeFactory.scope)
+
+        // Then: the new full snapshot cannot include identities from the previous view.
+        assertThat(testedMapper.finishCapture()).isEmpty()
+        val fakeOwner = fakeFactory.view(fakeFactory.window("window"), "embedded-content-owner")
+        testedMapper.beginCapture(fakeFactory.scope)
+        testedMapper.map(fakeView, mappingContext.copy(identityFactory = fakeFactory, ownerIdentity = fakeOwner))
+        testedMapper.finishCapture()
+        testedMapper.beginCapture(fakeFactory.scope)
+        assertThat(testedMapper.finishCapture().single().identity.scope).isEqualTo(fakeFactory.scope)
     }
 }

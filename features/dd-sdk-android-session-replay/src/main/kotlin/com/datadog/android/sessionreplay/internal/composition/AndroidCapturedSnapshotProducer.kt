@@ -56,7 +56,7 @@ internal class AndroidCapturedSnapshotProducer(
             return null
         }
         val identityFactory = identityFactoryFor(rumViewScope.scope)
-        embeddedContentMapper?.beginCapture()
+        embeddedContentMapper?.beginCapture(rumViewScope.scope)
         val captured = copyWindows(windows, identityFactory, context, rumViewScope.viewUrl) {
             canContinueCapture(context, rumViewScope, windowSnapshot)
         } ?: return null

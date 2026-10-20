@@ -160,7 +160,6 @@ internal class DefaultCompositionPipelineFactory(
             ),
             completionQueue = completionQueue,
             constructionExecutor = constructionExecutor,
-            internalLogger = internalLogger,
             resourceResolver = resourceResolverBundle.resourceResolver,
             resourceDataQueueHandler = resourceResolverBundle.dataQueueHandler
         )

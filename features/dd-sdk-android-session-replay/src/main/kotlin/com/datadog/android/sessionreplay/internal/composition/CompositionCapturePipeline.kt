@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
@@ -20,7 +19,6 @@ internal class CompositionCapturePipeline(
     private val lifecycle: CompositionCaptureLifecycle,
     private val completionQueue: SnapshotCompletionQueue,
     private val constructionExecutor: ExecutorService,
-    private val internalLogger: InternalLogger,
     private val resourceResolver: ResourceResolver? = null,
     private val resourceDataQueueHandler: DataQueueHandler? = null
 ) : Recorder {
@@ -50,25 +48,14 @@ internal class CompositionCapturePipeline(
         orchestrator.requestCapture()
     }
 
-    /** Embedded content is not captured by this pipeline yet, so the request is only reported. */
+    /** A full generation includes current slot geometry, including slots in otherwise idle hosts. */
     override fun requestCapture(slotIds: Set<String>) {
         if (slotIds.isEmpty()) return
-        internalLogger.log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            { EMBEDDED_CONTENT_UNSUPPORTED_WITH_COMPOSITION_RECORDING_MESSAGE },
-            onlyOnce = true
-        )
+        orchestrator.requestCapture()
     }
 
     override fun stopRecorders() {
         lifecycle.stop()
         orchestrator.stop()
-    }
-
-    internal companion object {
-        internal const val EMBEDDED_CONTENT_UNSUPPORTED_WITH_COMPOSITION_RECORDING_MESSAGE = "Embedded content is " +
-            "not supported by the composition-tree recording pipeline yet. No embedded content will be recorded " +
-            "for this session."
     }
 }

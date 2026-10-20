@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay.internal.composition
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
-import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -156,8 +155,7 @@ internal class CompositionCapturePipelineTest {
             mockOrchestrator,
             mockLifecycle,
             mockCompletionQueue,
-            mockConstructionExecutor,
-            mockInternalLogger
+            mockConstructionExecutor
         )
 
         // When
@@ -182,7 +180,7 @@ internal class CompositionCapturePipelineTest {
     }
 
     @Test
-    fun `M warn the user W requestCapture { embedded content slots requested }`(
+    fun `M request a generation W requestCapture { embedded content slots requested }`(
         @StringForgery fakeSlotIds: Set<String>
     ) {
         // Given
@@ -193,48 +191,37 @@ internal class CompositionCapturePipelineTest {
             mockOrchestrator,
             mockLifecycle,
             mockCompletionQueue,
-            mockConstructionExecutor,
-            mockInternalLogger
+            mockConstructionExecutor
         )
 
         // When
         testedPipeline.requestCapture(fakeSlotIds)
 
         // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            CompositionCapturePipeline.EMBEDDED_CONTENT_UNSUPPORTED_WITH_COMPOSITION_RECORDING_MESSAGE,
-            onlyOnce = true
-        )
-        verifyNoInteractions(mockOrchestrator, mockLifecycle, mockCompletionQueue)
+        verify(mockOrchestrator).requestCapture()
+        verifyNoInteractions(mockInternalLogger, mockLifecycle, mockCompletionQueue)
     }
 
     @Test
-    fun `M delegate warning deduplication to the logger W requestCapture { repeated requests }`(
+    fun `M delegate request coalescing to orchestration W requestCapture { repeated requests }`(
         @StringForgery fakeSlotIds: Set<String>,
         @IntForgery(min = 2, max = 10) fakeRequestCount: Int
     ) {
         // Given
+        val mockOrchestrator = mock<SnapshotCaptureOrchestrator>()
         val testedPipeline = CompositionCapturePipeline(
-            mock<SnapshotCaptureOrchestrator>(),
+            mockOrchestrator,
             mock<CompositionCaptureLifecycle>(),
             mock<SnapshotCompletionQueue>(),
-            mockConstructionExecutor,
-            mockInternalLogger
+            mockConstructionExecutor
         )
 
         // When
         repeat(fakeRequestCount) { testedPipeline.requestCapture(fakeSlotIds) }
 
         // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            CompositionCapturePipeline.EMBEDDED_CONTENT_UNSUPPORTED_WITH_COMPOSITION_RECORDING_MESSAGE,
-            onlyOnce = true,
-            mode = times(fakeRequestCount)
-        )
+        verify(mockOrchestrator, times(fakeRequestCount)).requestCapture()
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test
@@ -244,8 +231,7 @@ internal class CompositionCapturePipelineTest {
             mock<SnapshotCaptureOrchestrator>(),
             mock<CompositionCaptureLifecycle>(),
             mock<SnapshotCompletionQueue>(),
-            mockConstructionExecutor,
-            mockInternalLogger
+            mockConstructionExecutor
         )
 
         // When

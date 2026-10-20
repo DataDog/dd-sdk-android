@@ -205,8 +205,7 @@ internal class CompositionProcessingIsolationTest {
                     testedOrchestrator,
                     mock(),
                     completionQueue,
-                    mockConstructionExecutor,
-                    mock()
+                    mockConstructionExecutor
                 )
         }
 
