@@ -59,6 +59,7 @@ stages:
 
 verify:all:
   extends: .experiment-gradle-job
+  parallel: 5
   id_tokens:
     DD_STS_OIDC_TOKEN:
       aud: dd-sts
@@ -123,6 +124,7 @@ verify:all:
 
 experiment:kover:
   extends: .experiment-gradle-job
+  parallel: 5
   script:
     - >-
         DD_TAGS="test.configuration.variant:release" ./gradlew
@@ -142,6 +144,7 @@ experiment:kover:
 
 experiment:apk-build:
   extends: .experiment-gradle-job
+  parallel: 5
   script:
     - >-
         ./gradlew
@@ -159,6 +162,7 @@ experiment:apk-build:
 
 experiment:android-lint:
   extends: .experiment-gradle-job
+  parallel: 5
   script:
     - >-
         ./gradlew
@@ -171,6 +175,7 @@ experiment:android-lint:
 
 experiment:detekt:
   extends: .experiment-gradle-job
+  parallel: 5
   script:
     - >-
         ./gradlew
