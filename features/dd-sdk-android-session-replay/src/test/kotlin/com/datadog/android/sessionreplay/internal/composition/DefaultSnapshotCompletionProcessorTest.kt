@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -23,6 +24,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -38,6 +41,81 @@ import org.mockito.kotlin.whenever
 )
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class DefaultSnapshotCompletionProcessorTest {
+
+    @ParameterizedTest
+    @CsvSource("true,false,false", "false,true,false", "true,true,false", "true,false,true")
+    fun `M keep tree references resolvable after each record W process() { wireframes added or removed }`(
+        fakeAdd: Boolean,
+        fakeRemove: Boolean,
+        fakeReorder: Boolean
+    ) {
+        // Given
+        val fakeTree = compositionTestTree()
+        val fakeAddedIdentity = fakeTree.factory.shapeWireframe(fakeTree.factory.layer(fakeTree.window, "added"))
+        val fakeAddedWireframe = (fakeTree.wireframe as CapturedWireframe.Shape).copy(identity = fakeAddedIdentity)
+        val fakeBaseWireframes = buildList {
+            add(fakeTree.wireframe)
+            if (fakeReorder) {
+                val fakeSecondLayer = fakeTree.factory.layer(fakeTree.window, "second")
+                val fakeSecondIdentity = fakeTree.factory.shapeWireframe(fakeSecondLayer)
+                add(fakeTree.wireframe.copy(identity = fakeSecondIdentity))
+            }
+        }
+        val fakeBaseSnapshot = fakeTree.snapshot.copy(
+            layers = listOf(
+                fakeTree.layer.copy(children = fakeBaseWireframes.map { CapturedChild.Wireframe(it.identity) })
+            ),
+            wireframes = fakeBaseWireframes
+        )
+        val fakeWireframes = buildList {
+            if (!fakeRemove) addAll(fakeBaseWireframes)
+            if (fakeAdd) add(fakeAddedWireframe)
+        }.let { if (fakeReorder) it.reversed() else it }
+        val fakeNextSnapshot = fakeTree.snapshot.copy(
+            timestamp = fakeTree.snapshot.timestamp + 1,
+            layers = listOf(
+                fakeTree.layer.copy(children = fakeWireframes.map { CapturedChild.Wireframe(it.identity) })
+            ),
+            wireframes = fakeWireframes
+        )
+        val fixture = Fixture(
+            fakeTree.scope.value,
+            "application",
+            "session",
+            wireMapper = DefaultCapturedTreeWireMapper()
+        )
+
+        // When
+        fixture.processor.process(fixture.capture(fakeBaseSnapshot))
+        fixture.processor.process(fixture.capture(fakeNextSnapshot))
+
+        // Then: a player applying records one at a time never sees a reference to a missing wireframe.
+        val fakeWrites = argumentCaptor<EnrichedRecord>()
+        verify(fixture.writer, times(2)).write(fakeWrites.capture(), any())
+        val fakeRecords = fakeWrites.allValues.last().records
+        val fakeAvailableIds = fakeBaseWireframes.mapTo(mutableSetOf()) { it.identity.wireId }
+        var fakeReferencedIds = fakeAvailableIds.toSet()
+        fakeRecords.forEach { record ->
+            val fakeData = (record as MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord).data
+            when (fakeData) {
+                is MobileSegment.MobileIncrementalData.MobileMutationData -> {
+                    fakeData.removes.forEach { fakeAvailableIds -= it.id }
+                    fakeData.adds.forEach {
+                        fakeAvailableIds += (it.wireframe as MobileSegment.Wireframe.ShapeWireframe).id
+                    }
+                }
+                is MobileSegment.MobileIncrementalData.CompositionTreeMutationData -> {
+                    val fakeChildren = fakeData.updates.orEmpty().lastOrNull()?.children
+                    fakeReferencedIds = fakeChildren?.map { it.id }?.toSet() ?: fakeReferencedIds
+                }
+                else -> error("Unexpected incremental record")
+            }
+            assertThat(fakeAvailableIds).containsAll(fakeReferencedIds)
+        }
+        assertThat(fakeAvailableIds).containsExactlyInAnyOrderElementsOf(fakeWireframes.map { it.identity.wireId })
+        assertThat(fakeReferencedIds).isEqualTo(fakeAvailableIds)
+        assertThat(fakeRecords).hasSize(if (fakeAdd && fakeRemove) 3 else 2)
+    }
 
     @Test
     fun `M emit a mutation on the second cycle W process { nothing changed }`(
@@ -434,10 +512,10 @@ internal class DefaultSnapshotCompletionProcessorTest {
         initialViewId: String,
         applicationId: String,
         sessionId: String,
-        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry? = null
+        embeddedContentSlotRegistry: EmbeddedContentSlotRegistry? = null,
+        val wireMapper: CapturedTreeWireMapper = mock()
     ) {
         val writer: RecordWriter = mock()
-        val wireMapper: CapturedTreeWireMapper = mock()
         val timeProvider = FakeTimeProvider()
         val orientationProvider = FakeOrientationProvider()
         val clock = FakeClock()

@@ -197,9 +197,13 @@ internal class DefaultSnapshotCompletionProcessor(
 
         return when (val mutationMapping = wireMapper.mapMutation(mutation, retainedState.snapshot)) {
             is CaptureWireMappingResult.Success -> {
-                val records = mutableListOf<MobileSegment.MobileRecord>(mutationMapping.value)
-                wireMapper.mapWireframeMutation(retainedState.snapshot, snapshot)?.let(records::add)
-                CaptureWireMappingResult.Success(records)
+                CaptureWireMappingResult.Success(
+                    orderedMutationRecords(
+                        mutationMapping.value,
+                        wireMapper.mapWireframeMutation(retainedState.snapshot, snapshot),
+                        snapshot
+                    )
+                )
             }
             is CaptureWireMappingResult.Invalid -> {
                 internalLogger.log(
@@ -213,6 +217,40 @@ internal class DefaultSnapshotCompletionProcessor(
                     )
                 )
                 wireMapper.mapFullSnapshot(snapshot).asRecordList()
+            }
+        }
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // Collections contain only this pipeline's immutable wire records.
+    private fun orderedMutationRecords(
+        treeMutation: MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord,
+        wireframeMutation: MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord?,
+        snapshot: CapturedFullSnapshot
+    ): List<MobileSegment.MobileRecord> {
+        val data = wireframeMutation?.data as? MobileSegment.MobileIncrementalData.MobileMutationData
+        if (wireframeMutation == null || data == null) return listOfNotNull(treeMutation, wireframeMutation)
+        val currentIds = if (data.removes.isEmpty()) {
+            emptySet()
+        } else {
+            snapshot.wireframes.mapTo(mutableSetOf()) { it.identity.wireId }
+        }
+        // Legacy mutations also represent moves/replacements by removing and adding the same id.
+        // Keep those operations together so a deferred removal cannot delete the replacement.
+        val (replacements, removals) = data.removes.partition { it.id in currentIds }
+
+        // Players can apply these records separately even though their timestamps match. Add new
+        // wireframes before the tree references them, and remove old ones after it drops them.
+        return buildList {
+            if (data.adds.isNotEmpty() || data.updates.isNotEmpty()) {
+                add(wireframeMutation.copy(data = data.copy(removes = replacements)))
+            }
+            add(treeMutation)
+            if (removals.isNotEmpty()) {
+                add(
+                    wireframeMutation.copy(
+                        data = data.copy(adds = emptyList(), removes = removals, updates = emptyList())
+                    )
+                )
             }
         }
     }
