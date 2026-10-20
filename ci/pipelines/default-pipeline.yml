@@ -227,6 +227,7 @@ test:debug:
         DD_TAGS="test.configuration.variant:debug" ./gradlew
         :dd-sdk-android-core:testDebugUnitTest
         :dd-sdk-android-internal:testDebugUnitTest
+        :reliability:stub-core:testDebugUnitTest
         :unitTestDebugFeatures
         :unitTestDebugIntegrations
         :unitTestDebugSamples
