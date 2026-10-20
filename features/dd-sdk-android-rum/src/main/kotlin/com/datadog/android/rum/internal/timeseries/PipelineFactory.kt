@@ -29,7 +29,8 @@ internal class PipelineFactory(
     private val insightsCollector: InsightsCollector,
     private val configuration: TimeseriesConfiguration,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
-    private val displayInfoProvider: InfoProvider<DisplayInfo>
+    private val displayInfoProvider: InfoProvider<DisplayInfo>,
+    private val crossPlatformTraceSampleRate: Float?
 ) {
     private val typesFactory = mapOf(
         TimeseriesType.CPU to ::createCpuPipeline,
@@ -65,7 +66,8 @@ internal class PipelineFactory(
                 timeProvider = sdkCore.timeProvider,
                 batteryInfoProvider = batteryInfoProvider,
                 displayInfoProvider = displayInfoProvider,
-                internalLogger = sdkCore.internalLogger
+                internalLogger = sdkCore.internalLogger,
+                crossPlatformTraceSampleRate = crossPlatformTraceSampleRate
             ),
             dataWriter = dataWriter,
             insightsCollector = insightsCollector,
@@ -86,7 +88,8 @@ internal class PipelineFactory(
             timeProvider = sdkCore.timeProvider,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            internalLogger = sdkCore.internalLogger
+            internalLogger = sdkCore.internalLogger,
+            crossPlatformTraceSampleRate = crossPlatformTraceSampleRate
         ),
         dataWriter = dataWriter,
         insightsCollector = insightsCollector,

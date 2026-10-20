@@ -106,7 +106,8 @@ internal class CsvCollector(
                             timeProvider = timeProvider,
                             batteryInfoProvider = FixedInfoProvider(batteryInfo),
                             displayInfoProvider = FixedInfoProvider(displayInfo),
-                            internalLogger = internalLogger
+                            internalLogger = internalLogger,
+                            crossPlatformTraceSampleRate = null
                         )
                     ),
                     Triple(
@@ -117,7 +118,8 @@ internal class CsvCollector(
                             timeProvider = timeProvider,
                             batteryInfoProvider = FixedInfoProvider(batteryInfo),
                             displayInfoProvider = FixedInfoProvider(displayInfo),
-                            internalLogger = internalLogger
+                            internalLogger = internalLogger,
+                            crossPlatformTraceSampleRate = null
                         )
                     )
                 )

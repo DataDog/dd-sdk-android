@@ -75,6 +75,7 @@ internal class ConfigurationRumForgeryFactory :
             composeActionTrackingStrategy = mock(),
             slowFramesConfiguration = forge.getForgery(),
             rumSessionTypeOverride = forge.aNullable { aValueFrom(RumSessionType::class.java) },
+            crossPlatformTraceSampleRate = forge.aNullable { aFloat(min = 0f, max = 100f) },
             collectAccessibility = forge.aBool(),
             disableJankStats = false,
             insightsCollector = mock(),

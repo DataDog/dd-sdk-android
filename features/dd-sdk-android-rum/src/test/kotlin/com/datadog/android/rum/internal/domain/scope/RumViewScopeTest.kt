@@ -42,6 +42,7 @@ import com.datadog.android.rum.assertj.VitalOperationPropertiesAssert
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -95,6 +96,7 @@ import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.DoubleForgery
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -915,6 +917,35 @@ internal class RumViewScopeTest {
                     hasTraceSampleRate(fakeTraceSampleRate)
                     hasSampleRate(fakeSampleRate)
                 }
+        }
+    }
+
+    @Test
+    fun `M send view event with cross-platform traceSampleRate W handleEvent(StopView) { no tracing context }`(
+        @FloatForgery(min = 0f, max = 100f) fakeTraceSampleRate: Float,
+        @Forgery fakeRumConfiguration: RumFeature.Configuration
+    ) {
+        // Given
+        val mockRumFeatureScope = mock<FeatureScope>()
+        val mockRumFeature = mock<RumFeature>()
+        whenever(rumMonitorConfiguration.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn
+            mockRumFeatureScope
+        whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
+        whenever(mockRumFeature.configuration) doReturn
+            fakeRumConfiguration.copy(crossPlatformTraceSampleRate = fakeTraceSampleRate)
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap(), eventTime = fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue).hasTraceSampleRate(fakeTraceSampleRate)
         }
     }
 

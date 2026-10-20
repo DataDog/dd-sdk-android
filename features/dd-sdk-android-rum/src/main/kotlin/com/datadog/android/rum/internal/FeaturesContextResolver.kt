@@ -7,28 +7,37 @@
 package com.datadog.android.rum.internal
 
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.api.feature.Feature
+import com.datadog.android.rum.internal.domain.scope.SESSION_REPLAY_CONTEXT_NAMES
 
 internal class FeaturesContextResolver {
 
-    @Suppress("UNCHECKED_CAST")
     fun resolveViewHasReplay(datadogContext: DatadogContext, viewId: String): Boolean {
-        val sessionReplayContext =
-            datadogContext.featuresContext[Feature.SESSION_REPLAY_FEATURE_NAME] ?: return false
-        val sessionReplayMetadata = sessionReplayContext[viewId] as? Map<String, Any?>
-        return (sessionReplayMetadata?.get(HAS_REPLAY_KEY) as? Boolean) ?: false
+        return resolveViewMetadata(datadogContext, viewId, HAS_REPLAY_KEY) as? Boolean ?: false
+    }
+
+    fun resolveViewRecordsCount(datadogContext: DatadogContext, viewId: String): Long {
+        return resolveViewMetadata(datadogContext, viewId, VIEW_RECORDS_COUNT_KEY) as? Long ?: 0L
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun resolveViewRecordsCount(datadogContext: DatadogContext, viewId: String): Long {
-        val sessionReplayContext =
-            datadogContext.featuresContext[Feature.SESSION_REPLAY_FEATURE_NAME] ?: return 0L
-        val sessionReplayMetadata = sessionReplayContext[viewId] as? Map<String, Any?>
-        return (sessionReplayMetadata?.get(VIEW_RECORDS_COUNT_KEY) as? Long) ?: 0L
+    private fun resolveViewMetadata(datadogContext: DatadogContext, viewId: String, key: String): Any? {
+        return SESSION_REPLAY_CONTEXT_NAMES.firstNotNullOfOrNull {
+            val sessionReplayMetadata = datadogContext.featuresContext[it]?.get(viewId) as? Map<String, Any?>
+            sessionReplayMetadata?.get(key)
+        }
     }
 
     companion object {
         internal const val HAS_REPLAY_KEY = "has_replay"
         internal const val VIEW_RECORDS_COUNT_KEY = "records_count"
+
+        /**
+         * The feature cross-platform Session Replay registers under, so that it doesn't replace
+         * native Session Replay in hybrid apps. RUM reads Session Replay state from its context when
+         * native Session Replay publishes none.
+         *
+         * Must match FlutterSessionReplayFeature.FLUTTER_SESSION_REPLAY_FEATURE_NAME in dd-sdk-flutter.
+         */
+        internal const val CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME = "flutter-session-replay"
     }
 }

@@ -47,6 +47,7 @@ import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.CombinedRumSessionListener
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -966,7 +967,7 @@ internal class DatadogRumMonitor(
         if (event is RumRawEvent.AddError && event.isFatal) {
             val handled = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
                 ?.withWriteContextSync(
-                    withFeatureContexts = setOf(Feature.SESSION_REPLAY_FEATURE_NAME)
+                    withFeatureContexts = FATAL_ERROR_FEATURE_CONTEXTS
                 ) { datadogContext, eventWriteScope ->
                     synchronized(rootScope) {
                         @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
@@ -990,11 +991,7 @@ internal class DatadogRumMonitor(
         } else {
             sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
                 ?.withWriteContext(
-                    withFeatureContexts = setOf(
-                        Feature.SESSION_REPLAY_FEATURE_NAME,
-                        Feature.PROFILING_FEATURE_NAME,
-                        Feature.TRACING_FEATURE_NAME
-                    )
+                    withFeatureContexts = EVENT_FEATURE_CONTEXTS
                 ) { datadogContext, writeScope ->
                     // avoid trowing a RejectedExecutionException
                     if (!executorService.isShutdown) {
@@ -1122,6 +1119,18 @@ internal class DatadogRumMonitor(
     // endregion
 
     companion object {
+
+        private val FATAL_ERROR_FEATURE_CONTEXTS = setOf(
+            Feature.SESSION_REPLAY_FEATURE_NAME,
+            FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME
+        )
+
+        private val EVENT_FEATURE_CONTEXTS = setOf(
+            Feature.SESSION_REPLAY_FEATURE_NAME,
+            FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME,
+            Feature.PROFILING_FEATURE_NAME,
+            Feature.TRACING_FEATURE_NAME
+        )
 
         // should be aligned with CoreFeature#DRAIN_WAIT_SECONDS, but not a requirement
         internal const val DRAIN_WAIT_SECONDS = 10L

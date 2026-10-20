@@ -15,6 +15,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.instrumentation.insights.NoOpInsightsCollector
@@ -65,6 +66,7 @@ internal class Pipeline<T : Any>(
             ?.withWriteContext(
                 withFeatureContexts = setOf(
                     Feature.SESSION_REPLAY_FEATURE_NAME,
+                    FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME,
                     Feature.TRACING_FEATURE_NAME
                 )
             ) { datadogContext: DatadogContext, writeScope: EventWriteScope ->

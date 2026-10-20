@@ -34,6 +34,7 @@ internal class CpuEventFactory(
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val internalLogger: InternalLogger,
+    private val crossPlatformTraceSampleRate: Float?,
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver()
 ) : EventFactory<Double, TimeseriesCpuEvent> {
 
@@ -68,7 +69,7 @@ internal class CpuEventFactory(
                 configuration = TimeseriesCpuEvent.Configuration(
                     sessionSampleRate = rumContext.sessionSampleRate,
                     sessionReplaySampleRate = datadogContext.resolveSessionReplaySampleRate(),
-                    traceSampleRate = datadogContext.resolveTraceSampleRate()
+                    traceSampleRate = datadogContext.resolveTraceSampleRate(crossPlatformTraceSampleRate)
                 )
             ),
             application = TimeseriesCpuEvent.Application(

@@ -96,7 +96,8 @@ internal class PipelineFactoryTest {
         insightsCollector = mockInsightsCollector,
         configuration = TimeseriesConfiguration(enabledTypes, bufferSize, intervalMs),
         batteryInfoProvider = mockBatteryInfoProvider,
-        displayInfoProvider = mockDisplayInfoProvider
+        displayInfoProvider = mockDisplayInfoProvider,
+        crossPlatformTraceSampleRate = null
     )
 
     private fun Pipeline<*>.reader() = getFieldValue<Any, Pipeline<*>>("reader")
