@@ -1259,7 +1259,7 @@ internal class PerfettoProfilerTest {
         firstCaller.start()
         check(lookupStarted.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS)) { "lookup never started" }
         secondCaller.start()
-        Thread.sleep(CONTENTION_WINDOW_MS)
+        check(awaitBlocked(secondCaller)) { "second caller never waited for the lookup in flight" }
         releaseLookup.countDown()
         firstCaller.join(JOIN_TIMEOUT_MS)
         secondCaller.join(JOIN_TIMEOUT_MS)
@@ -1427,6 +1427,17 @@ internal class PerfettoProfilerTest {
         assertThat(traceFile).exists()
     }
 
+    /**
+     * Waits, at most [LATCH_TIMEOUT_SECONDS], until [thread] is blocked on a monitor held by another thread.
+     */
+    private fun awaitBlocked(thread: Thread): Boolean {
+        val deadlineNs = System.nanoTime() + TimeUnit.SECONDS.toNanos(LATCH_TIMEOUT_SECONDS)
+        while (thread.state != Thread.State.BLOCKED && System.nanoTime() < deadlineNs) {
+            Thread.yield()
+        }
+        return thread.state == Thread.State.BLOCKED
+    }
+
     private fun stubProfilingModuleVersionCode(versionCode: Long) {
         val mockPackageInfo = mock<PackageInfo> {
             on { longVersionCode } doReturn versionCode
@@ -1445,9 +1456,6 @@ internal class PerfettoProfilerTest {
 
         private const val LATCH_TIMEOUT_SECONDS = 5L
         private const val JOIN_TIMEOUT_MS = 5000L
-
-        // Time left to the second caller to reach the lookup while the first one holds it.
-        private const val CONTENTION_WINDOW_MS = 200L
     }
 
     private class StubTimeProvider : MutableTimeProvider {
