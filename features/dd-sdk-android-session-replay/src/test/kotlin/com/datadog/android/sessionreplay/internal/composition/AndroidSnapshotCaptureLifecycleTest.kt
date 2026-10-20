@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import android.app.Application
 import android.os.Handler
+import android.view.Display
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -72,6 +74,29 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         verify(observer).removeOnDrawListener(addedListener.firstValue)
         assertThat(source.currentWindows()).isEmpty()
         assertThat(changedWindows).containsExactly(listOf(view), emptyList())
+    }
+
+    @Test
+    fun `M request capture only for ordered root changes W intercept`() {
+        // Given
+        val fakeViews = List(2) {
+            val stubObserver: ViewTreeObserver = mock()
+            whenever(stubObserver.isAlive).thenReturn(true)
+            mock<View>().apply { whenever(viewTreeObserver).thenReturn(stubObserver) }
+        }
+        val changedWindows = mutableListOf<List<View>>()
+        val source = ActiveWindowSource()
+        val testedInterceptor = CompositionViewOnDrawInterceptor(source, { changedWindows += it }, mock())
+        testedInterceptor.intercept(fakeViews)
+
+        // When: discovery refreshes the same roots, then reverses their paint order.
+        testedInterceptor.intercept(fakeViews.toList())
+        testedInterceptor.intercept(fakeViews.reversed())
+
+        // Then: a pure reorder requests a new capture without adding duplicate listeners.
+        assertThat(changedWindows).containsExactly(fakeViews, fakeViews.reversed())
+        assertThat(source.currentWindows()).containsExactlyElementsOf(fakeViews.reversed())
+        fakeViews.forEach { verify(it.viewTreeObserver).addOnDrawListener(any()) }
     }
 
     @Test
@@ -214,6 +239,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val handler = immediateHandler()
         val views = listOf(mock<View>())
         val lifecycle = AndroidSnapshotCaptureLifecycle(
+            isMainThreadWindow = { true },
             application = application,
             interceptor = interceptor,
             touchInterceptor = mock(),
@@ -241,11 +267,12 @@ internal class AndroidSnapshotCaptureLifecycleTest {
     fun `M intercept the activity decor view W start { window manager reports no windows }`() {
         // Given
         // ActivityThread registers an activity's decor view with the window manager only after it
-        // has dispatched onActivityResumed, so the window manager legitimately reports nothing at
-        // the moment the pipeline starts. The tracked window must still be intercepted.
+        // has dispatched onActivityResumed. With ownership verified, a tracked window is included
+        // even if the window manager has not reported it yet. Attachment deferral is tested separately.
         val mockDecorView = mock<View>()
         val mockInterceptor = mock<CompositionViewOnDrawInterceptor>()
         val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            isMainThreadWindow = { true },
             application = mock(),
             interceptor = mockInterceptor,
             touchInterceptor = mock(),
@@ -269,6 +296,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val mockDialogDecorView = mock<View>()
         val mockInterceptor = mock<CompositionViewOnDrawInterceptor>()
         val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            isMainThreadWindow = { true },
             application = mock(),
             interceptor = mockInterceptor,
             touchInterceptor = mock(),
@@ -291,6 +319,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val mockDecorView = mock<View>()
         val mockInterceptor = mock<CompositionViewOnDrawInterceptor>()
         val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            isMainThreadWindow = { true },
             application = mock(),
             interceptor = mockInterceptor,
             touchInterceptor = mock(),
@@ -319,6 +348,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         whenever(mockWindow.peekDecorView()).thenReturn(mockDecorView)
         val mockInterceptor = mock<CompositionViewOnDrawInterceptor>()
         val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            isMainThreadWindow = { true },
             application = mock(),
             interceptor = mockInterceptor,
             touchInterceptor = mock(),
@@ -344,6 +374,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         whenever(mockWindow.peekDecorView()).thenReturn(mockDecorView)
         val mockInterceptor = mock<CompositionViewOnDrawInterceptor>()
         val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            isMainThreadWindow = { true },
             application = mock(),
             interceptor = mockInterceptor,
             touchInterceptor = mock(),
@@ -371,6 +402,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val mockInterceptor = mock<CompositionViewOnDrawInterceptor>()
         var reportedDecorViews = listOf(mockDecorView)
         val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            isMainThreadWindow = { true },
             application = mock(),
             interceptor = mockInterceptor,
             touchInterceptor = mock(),
@@ -402,6 +434,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val mockApplication = mock<Application>()
         val mockInterceptor = mock<CompositionViewOnDrawInterceptor>()
         val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            isMainThreadWindow = { true },
             application = mockApplication,
             interceptor = mockInterceptor,
             touchInterceptor = mock(),
@@ -432,6 +465,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val mockDialogWindow = mock<Window>()
         val mockTouchInterceptor = mock<CompositionWindowTouchInterceptor>()
         val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            isMainThreadWindow = { true },
             application = mock(),
             interceptor = mock(),
             touchInterceptor = mockTouchInterceptor,
@@ -449,12 +483,100 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         verify(mockTouchInterceptor).intercept(listOf(mockActivityWindow, mockDialogWindow))
     }
 
+    @ParameterizedTest
+    @CsvSource("0, true", "-1, true", "none, true", "1, false", "7, false", nullValues = ["none"])
+    fun `M apply traversal display policy to both interceptors W start`(
+        fakeDisplayId: Int?,
+        fakeSupported: Boolean
+    ) {
+        // Given: a tracked activity missing from global discovery, an untracked dialog, and a default-display window.
+        val stubDisplay = fakeDisplayId?.let { id ->
+            mock<Display>().also { whenever(it.displayId).thenReturn(id) }
+        }
+        val mockActivityRoot: View = mock()
+        val mockDialogRoot: View = mock()
+        whenever(mockActivityRoot.display).thenReturn(stubDisplay)
+        whenever(mockDialogRoot.display).thenReturn(stubDisplay)
+        val mockActivity = activityShowing(mockActivityRoot)
+        val mockDialogWindow: Window = mock()
+        val mockDefaultRoot: View = mock()
+        val stubDefaultDisplay: Display = mock()
+        whenever(stubDefaultDisplay.displayId).thenReturn(Display.DEFAULT_DISPLAY)
+        whenever(mockDefaultRoot.display).thenReturn(stubDefaultDisplay)
+        val mockDefaultWindow: Window = mock()
+        val fakeUntrackedWindows = mapOf(mockDialogRoot to mockDialogWindow, mockDefaultRoot to mockDefaultWindow)
+        val mockDrawInterceptor: CompositionViewOnDrawInterceptor = mock()
+        val mockTouchInterceptor: CompositionWindowTouchInterceptor = mock()
+        val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mock(),
+            interceptor = mockDrawInterceptor,
+            touchInterceptor = mockTouchInterceptor,
+            internalLogger = mock(),
+            currentActivity = mockActivity,
+            uiHandler = immediateHandler(),
+            windowProvider = { fakeUntrackedWindows.keys.toList() },
+            windowFromDecorView = { fakeUntrackedWindows[it] },
+            isMainThreadWindow = { true }
+        )
+
+        // When
+        testedLifecycle.start()
+
+        // Then: secondary-display windows reach neither draw nor touch interception.
+        val fakeExpectedRoots = if (fakeSupported) {
+            listOf(mockActivityRoot, mockDialogRoot, mockDefaultRoot)
+        } else {
+            listOf(mockDefaultRoot)
+        }
+        val fakeExpectedWindows = if (fakeSupported) {
+            listOf(mockActivity.window, mockDialogWindow, mockDefaultWindow)
+        } else {
+            listOf(mockDefaultWindow)
+        }
+        verify(mockDrawInterceptor).intercept(fakeExpectedRoots)
+        verify(mockTouchInterceptor).intercept(fakeExpectedWindows)
+    }
+
+    @Test
+    fun `M preserve global order W tracked and untracked windows are interleaved`() {
+        // Given: lifecycle notifications arrive in the opposite order to global window discovery.
+        val mockApplication = mock<Application>()
+        val fakeRoots = List(4) { mock<View>() }
+        val fakeActivities = fakeRoots.map(::activityShowing)
+        val fakeWindows = fakeActivities.map { it.window }
+        val mockDrawInterceptor = mock<CompositionViewOnDrawInterceptor>()
+        val mockTouchInterceptor = mock<CompositionWindowTouchInterceptor>()
+        val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mockApplication,
+            interceptor = mockDrawInterceptor,
+            touchInterceptor = mockTouchInterceptor,
+            internalLogger = mock(),
+            uiHandler = immediateHandler(),
+            windowProvider = { fakeRoots },
+            windowFromDecorView = { fakeWindows[fakeRoots.indexOf(it)] },
+            isMainThreadWindow = { true }
+        )
+        testedLifecycle.registerCallbacks()
+        val fakeCallbacks = argumentCaptor<Application.ActivityLifecycleCallbacks>()
+        verify(mockApplication).registerActivityLifecycleCallbacks(fakeCallbacks.capture())
+        fakeCallbacks.firstValue.onActivityResumed(fakeActivities[3])
+        fakeCallbacks.firstValue.onActivityResumed(fakeActivities[1])
+
+        // When
+        testedLifecycle.start()
+
+        // Then: both tracked and untracked roots stay in global order, without duplication.
+        verify(mockDrawInterceptor).intercept(fakeRoots)
+        verify(mockTouchInterceptor).intercept(fakeWindows)
+    }
+
     @Test
     fun `M skip an untracked window W start touch { window cannot be resolved }`() {
         // Given
         val mockDialogDecorView = mock<View>()
         val mockTouchInterceptor = mock<CompositionWindowTouchInterceptor>()
         val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            isMainThreadWindow = { true },
             application = mock(),
             interceptor = mock(),
             touchInterceptor = mockTouchInterceptor,
@@ -476,6 +598,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         // Given
         val mockTouchInterceptor = mock<CompositionWindowTouchInterceptor>()
         val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            isMainThreadWindow = { true },
             application = mock(),
             interceptor = mock(),
             touchInterceptor = mockTouchInterceptor,
@@ -497,6 +620,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         // Given
         val handler = immediateHandler()
         val lifecycle = AndroidSnapshotCaptureLifecycle(
+            isMainThreadWindow = { true },
             application = mock(),
             interceptor = mock(),
             touchInterceptor = mock(),
@@ -520,6 +644,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val delayedRunnable = argumentCaptor<Runnable>()
         var windows = emptyList<View>()
         val lifecycle = AndroidSnapshotCaptureLifecycle(
+            isMainThreadWindow = { true },
             application = mock(),
             interceptor = mockInterceptor,
             touchInterceptor = mock(),
@@ -545,6 +670,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val handler = immediateHandler()
         val delayedRunnable = argumentCaptor<Runnable>()
         val lifecycle = AndroidSnapshotCaptureLifecycle(
+            isMainThreadWindow = { true },
             application = mock(),
             interceptor = mock(),
             touchInterceptor = mock(),
@@ -569,6 +695,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val handler = immediateHandler()
         val delayedRunnable = argumentCaptor<Runnable>()
         val lifecycle = AndroidSnapshotCaptureLifecycle(
+            isMainThreadWindow = { true },
             application = mock(),
             interceptor = mockInterceptor,
             touchInterceptor = mock(),

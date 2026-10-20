@@ -7,13 +7,26 @@
 package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
+import android.content.res.Resources
+import android.graphics.drawable.Drawable
+import android.util.DisplayMetrics
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.composition.AndroidCapturedSnapshotProducer
+import com.datadog.android.sessionreplay.internal.composition.AndroidWindowTraversal
+import com.datadog.android.sessionreplay.internal.composition.CaptureGenerationContext
+import com.datadog.android.sessionreplay.internal.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.internal.composition.CompositionPipelineFactory
+import com.datadog.android.sessionreplay.internal.composition.DefaultCapturedIdentityFactory
+import com.datadog.android.sessionreplay.internal.composition.RumViewIdentityScope
+import com.datadog.android.sessionreplay.internal.composition.WindowWalkResult
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
@@ -21,7 +34,10 @@ import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreMan
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
+import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.utils.verifyLog
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -30,11 +46,15 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
+import org.mockito.Mockito.mockConstruction
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -128,6 +148,64 @@ internal class DefaultRecorderProviderTest {
         // Then
         assertThat(factoryArguments)
             .isEqualTo(Triple(mockRecordWriter, mockRumContextProvider, mockApplication))
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M capture custom drawable backgrounds W provideSessionReplayRecorder { composition enabled }`(
+        fakeTextView: Boolean,
+        @IntForgery fakeColor: Int,
+        @StringForgery fakeViewId: String
+    ) {
+        // Given: only the configured extension understands this drawable.
+        val fakeDrawable: Drawable = mock()
+        val mockDrawableMapper: DrawableToColorMapper = mock()
+        whenever(mockDrawableMapper.mapDrawableToColor(fakeDrawable, mockInternalLogger)).thenReturn(fakeColor)
+        val fakeView: View = if (fakeTextView) mock<TextView>() else mock<ViewGroup>()
+        val stubResources: Resources = mock()
+        whenever(stubResources.displayMetrics).thenReturn(DisplayMetrics().apply { density = 1f })
+        whenever(fakeView.resources).thenReturn(stubResources)
+        whenever(fakeView.isShown).thenReturn(true)
+        whenever(fakeView.width).thenReturn(100)
+        whenever(fakeView.height).thenReturn(100)
+        whenever(fakeView.background).thenReturn(fakeDrawable)
+        val traversals = mutableListOf<AndroidWindowTraversal>()
+
+        // Keep the provider and factory wiring real, then exercise the traversal they give the producer.
+        mockConstruction(AndroidCapturedSnapshotProducer::class.java) { _, context ->
+            traversals += context.arguments().filterIsInstance<AndroidWindowTraversal>().single()
+        }.use {
+            val testedProvider = DefaultRecorderProvider(
+                sdkCore = mockSdkCore,
+                textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
+                imagePrivacy = ImagePrivacy.MASK_ALL,
+                touchPrivacyManager = mock(),
+                customMappers = emptyList(),
+                customOptionSelectorDetectors = emptyList(),
+                customDrawableMappers = listOf(mockDrawableMapper),
+                dynamicOptimizationEnabled = false,
+                internalCallback = mock(),
+                heatmapsEnabled = false,
+                compositionTreeRecordingEnabled = true
+            )
+            val fakeIdentityFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeViewId))
+            val fakeContext = CaptureGenerationContext(1L, 0L, Long.MAX_VALUE, { 0L })
+
+            // When
+            testedProvider.provideRecorder()
+            val result = traversals.single().traverseWindow(
+                fakeView,
+                fakeIdentityFactory.window("window"),
+                fakeIdentityFactory,
+                fakeContext
+            )
+
+            // Then: both the text mapper and generic fallback retain the extension's background color.
+            val snapshot = result as WindowWalkResult.Present
+            assertThat(snapshot.wireframes.filterIsInstance<CapturedWireframe.Shape>().single().style?.backgroundColor)
+                .isEqualTo(DefaultColorStringFormatter.formatColorAsHexString(fakeColor))
+            verify(mockDrawableMapper).mapDrawableToColor(fakeDrawable, mockInternalLogger)
+        }
     }
 
     @Test
