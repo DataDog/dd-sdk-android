@@ -336,8 +336,7 @@ internal class ProfilingFeatureTest {
                 resultCallbackDelayMs = 0L,
                 stopReason = ProfilingTelemetry.STOPPED_REASON_ERROR,
                 bufferSizeKb = 0,
-                samplingFrequencyHz = 0,
-                hasNoStackSamples = false
+                samplingFrequencyHz = 0
             )
         )
         val feature = ProfilingFeature(

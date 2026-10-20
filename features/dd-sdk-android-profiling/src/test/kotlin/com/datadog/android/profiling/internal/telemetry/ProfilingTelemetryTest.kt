@@ -10,7 +10,7 @@ import android.os.ProfilingResult
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.profiling.internal.ProfilingStartReason
-import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -59,9 +59,10 @@ internal class ProfilingTelemetryTest {
         @StringForgery fakeErrorMessage: String,
         @LongForgery(min = 0L) fakeDuration: Long,
         @IntForgery(min = 1, max = 8) fakeErrorCode: Int,
-        @BoolForgery fakeHasNoStackSamples: Boolean
+        forge: Forge
     ) {
         // Given
+        val fakeHasNoStackSamples = forge.aNullable { aBool() }
         testedTelemetry.internalLogger = mockLogger
         val event = ProfilingTelemetryEvent.SessionEnd(
             startReason = ProfilingStartReason.APPLICATION_LAUNCH.value,

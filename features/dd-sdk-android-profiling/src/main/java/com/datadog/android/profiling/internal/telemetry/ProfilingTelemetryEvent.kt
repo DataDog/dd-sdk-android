@@ -19,7 +19,8 @@ internal sealed class ProfilingTelemetryEvent {
         val stopReason: String,
         val bufferSizeKb: Int,
         val samplingFrequencyHz: Int,
-        val hasNoStackSamples: Boolean
+        // Only set when the trace was checked for stack samples.
+        val hasNoStackSamples: Boolean? = null
     ) : ProfilingTelemetryEvent()
 
     data class AnrTriggerResult(

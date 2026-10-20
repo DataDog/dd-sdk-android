@@ -94,9 +94,6 @@ internal class PerfettoProfiler(
     private var profilingAppStartInfo: String? = null
 
     @Volatile
-    private var profilingAppContext: Context? = null
-
-    @Volatile
     private var profilingSamplingRateHz: Int = PROFILING_SAMPLING_RATE_APP_LAUNCH
 
     @Volatile
@@ -145,7 +142,7 @@ internal class PerfettoProfiler(
                 deliverResult(resultFilePath, startReason, resultCallbackTime)
             } else {
                 notifyCallbacks { onFailure(startReason) }
-                false
+                null
             }
             updateRunningStatus(false)
             profilingTelemetry.report(
@@ -212,7 +209,6 @@ internal class PerfettoProfiler(
             profilingStartElapsedMs = timeProvider.getDeviceElapsedRealtimeMillis()
             profilingStopElapsedMs = 0L
             profilingStartReason = startReason
-            profilingAppContext = appContext
             profilingAppStartInfo = additionalAttributes[ProfilingTelemetry.KEY_APP_START_INFO]
             requestProfiling(
                 appContext,
@@ -335,15 +331,16 @@ internal class PerfettoProfiler(
      * Delivers a successful profiling result to the callback, unless the trace is expected to hold stack samples
      * but has none: such a trace is deleted and reported as a failure, so that nothing relies on it.
      *
-     * @return true if the trace was discarded because it has no stack sample.
+     * @return true if the trace was discarded because it has no stack sample, false if it has some, or null if it
+     * was not checked.
      */
     private fun deliverResult(
         resultFilePath: String,
         startReason: ProfilingStartReason,
         resultCallbackTime: Long
-    ): Boolean {
+    ): Boolean? {
         val areStackSamplesMissing = checkHasNoStackSamples(resultFilePath, startReason)
-        if (areStackSamplesMissing) {
+        if (areStackSamplesMissing == true) {
             fileDeleteSafe(resultFilePath, internalLogger)
             notifyCallbacks { onFailure(startReason) }
         } else {
@@ -363,18 +360,17 @@ internal class PerfettoProfiler(
     }
 
     /**
-     * @return true if the trace is expected to hold stack samples but has none.
+     * @return true if the trace is expected to hold stack samples but has none, false if it has some, or null if it
+     * was not checked.
      */
-    private fun checkHasNoStackSamples(resultFilePath: String, startReason: ProfilingStartReason): Boolean {
-        val appContext = profilingAppContext
-        // The package version is only looked up for the profiles which can be checked.
+    private fun checkHasNoStackSamples(resultFilePath: String, startReason: ProfilingStartReason): Boolean? {
+        // Resolved during the feature initialization: until then, the version is unknown and the trace is not checked.
         val shouldCheck = startReason in EMPTY_TRACE_CHECKED_START_REASONS &&
-            appContext != null &&
-            canProfilingModuleRecordNoStackSamples(profilingPackageVersionCode(appContext))
+            canProfilingModuleRecordNoStackSamples(profilingTelemetry.profilingPackageVersionCode)
         return if (shouldCheck) {
             stackSampleDetector.hasNoStackSamples(File(resultFilePath), internalLogger ?: InternalLogger.UNBOUND)
         } else {
-            false
+            null
         }
     }
 

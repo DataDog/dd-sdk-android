@@ -234,7 +234,7 @@ internal class PerfettoProfilerTest {
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
                 "app_start_info" to null,
-                "no_stack_samples" to false
+                "no_stack_samples" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
@@ -298,7 +298,7 @@ internal class PerfettoProfilerTest {
                 "file_size" to 0L,
                 "stopped_reason" to "error",
                 "app_start_info" to null,
-                "no_stack_samples" to false
+                "no_stack_samples" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
@@ -363,7 +363,7 @@ internal class PerfettoProfilerTest {
                 "file_size" to 0L,
                 "stopped_reason" to "error",
                 "app_start_info" to null,
-                "no_stack_samples" to false
+                "no_stack_samples" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
@@ -804,7 +804,7 @@ internal class PerfettoProfilerTest {
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
                 "app_start_info" to fakeAppStartInfo,
-                "no_stack_samples" to false
+                "no_stack_samples" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
@@ -869,7 +869,7 @@ internal class PerfettoProfilerTest {
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
                 "app_start_info" to null,
-                "no_stack_samples" to false
+                "no_stack_samples" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
@@ -937,7 +937,7 @@ internal class PerfettoProfilerTest {
                 "file_size" to 0L,
                 "stopped_reason" to "manual",
                 "app_start_info" to null,
-                "no_stack_samples" to false
+                "no_stack_samples" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
@@ -1030,7 +1030,7 @@ internal class PerfettoProfilerTest {
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
                 "app_start_info" to null,
-                "no_stack_samples" to false
+                "no_stack_samples" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
@@ -1283,6 +1283,7 @@ internal class PerfettoProfilerTest {
             forge.anElementFrom(ProfilingStartReason.APPLICATION_LAUNCH, ProfilingStartReason.CONTINUOUS)
         val traceFile = File(tempDir, fakePath).apply { writeText(fakePath) }
         stubProfilingModuleVersionCode(fakeVersionCode)
+        testedProfiler.resolveProfilingPackageVersionCode(mockContext)
         whenever(mockStackSampleDetector.hasNoStackSamples(traceFile, mockInternalLogger)) doReturn true
 
         // When
@@ -1305,6 +1306,7 @@ internal class PerfettoProfilerTest {
             forge.anElementFrom(listOf(ProfilingStartReason.APPLICATION_LAUNCH, ProfilingStartReason.CONTINUOUS))
         val traceFile = File(tempDir, fakePath).apply { writeText(fakePath) }
         stubProfilingModuleVersionCode(fakeVersionCode)
+        testedProfiler.resolveProfilingPackageVersionCode(mockContext)
         whenever(mockStackSampleDetector.hasNoStackSamples(traceFile, mockInternalLogger)) doReturn false
 
         // When
@@ -1326,6 +1328,7 @@ internal class PerfettoProfilerTest {
             forge.anElementFrom(listOf(ProfilingStartReason.APPLICATION_LAUNCH, ProfilingStartReason.CONTINUOUS))
         val traceFile = File(tempDir, fakePath).apply { writeText(fakePath) }
         stubProfilingModuleVersionCode(fakeVersionCode)
+        testedProfiler.resolveProfilingPackageVersionCode(mockContext)
 
         // When
         finishProfiling(fakeStartReason, traceFile.absolutePath)
@@ -1333,7 +1336,7 @@ internal class PerfettoProfilerTest {
         // Then
         verifyNoInteractions(mockStackSampleDetector)
         assertSuccessNotified(fakeStartReason, traceFile)
-        assertNoStackSamplesReported(false)
+        assertNoStackSamplesReported(null)
     }
 
     @Test
@@ -1345,6 +1348,7 @@ internal class PerfettoProfilerTest {
             forge.anElementFrom(ProfilingStartReason.APPLICATION_LAUNCH, ProfilingStartReason.CONTINUOUS)
         val traceFile = File(tempDir, fakePath).apply { writeText(fakePath) }
         stubProfilingModuleVersionCode(0L)
+        testedProfiler.resolveProfilingPackageVersionCode(mockContext)
 
         // When
         finishProfiling(fakeStartReason, traceFile.absolutePath)
@@ -1352,7 +1356,7 @@ internal class PerfettoProfilerTest {
         // Then
         verifyNoInteractions(mockStackSampleDetector)
         assertSuccessNotified(fakeStartReason, traceFile)
-        assertNoStackSamplesReported(false)
+        assertNoStackSamplesReported(null)
     }
 
     @Test
@@ -1370,15 +1374,15 @@ internal class PerfettoProfilerTest {
         )
         val traceFile = File(tempDir, fakePath).apply { writeText(fakePath) }
         stubProfilingModuleVersionCode(fakeVersionCode)
+        testedProfiler.resolveProfilingPackageVersionCode(mockContext)
 
         // When
         finishProfiling(fakeStartReason, traceFile.absolutePath)
 
         // Then
         verifyNoInteractions(mockStackSampleDetector)
-        verify(mockPackageManager, never()).getPackageInfo(any<String>(), any<Int>())
         assertSuccessNotified(fakeStartReason, traceFile)
-        assertNoStackSamplesReported(false)
+        assertNoStackSamplesReported(null)
     }
 
     private fun finishProfiling(startReason: ProfilingStartReason, resultFilePath: String) {
@@ -1399,7 +1403,7 @@ internal class PerfettoProfilerTest {
         callbackCaptor.firstValue.accept(successResult)
     }
 
-    private fun assertNoStackSamplesReported(expected: Boolean) {
+    private fun assertNoStackSamplesReported(expected: Boolean?) {
         val messageCaptor = argumentCaptor<() -> String>()
         val propertiesCaptor = argumentCaptor<Map<String, Any?>>()
         verify(mockInternalLogger).logMetric(

@@ -28,10 +28,9 @@ internal class PerfettoStackSampleDetector : StackSampleDetector {
     override fun hasNoStackSamples(traceFile: File, internalLogger: InternalLogger): Boolean {
         return try {
             BufferedInputStream(traceFile.inputStream()).use { hasNoStackSamples(TraceStreamReader(it)) }
-        } catch (e: IOException) {
-            logUnreadableTrace(internalLogger, e)
-            false
-        } catch (e: SecurityException) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            // we are working with a pure byte stream without explicit .proto definition, so it is better
+            // to be over-protective
             logUnreadableTrace(internalLogger, e)
             false
         }
