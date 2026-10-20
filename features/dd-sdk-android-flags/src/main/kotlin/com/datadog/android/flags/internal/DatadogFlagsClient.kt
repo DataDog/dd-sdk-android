@@ -345,7 +345,7 @@ internal class DatadogFlagsClient(
 
     private fun readEvaluationSnapshot(flagKey: String): EvaluationSnapshot {
         val pair = flagsRepository.getPrecomputedFlagWithContext(flagKey)
-        val context = pair?.second ?: flagsRepository.getEvaluationContext()
+        val context = pair?.second
         return EvaluationSnapshot(
             context,
             pair?.first,

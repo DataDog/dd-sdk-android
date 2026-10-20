@@ -128,6 +128,19 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
+    fun `M retain context W getPrecomputedFlagWithContext() {flag missing}`(forge: Forge) {
+        // Given
+        testedRepository.setFlagsAndContext(testContext, emptyMap())
+
+        // When
+        val result = testedRepository.getPrecomputedFlagWithContext(forge.anAlphabeticalString())
+
+        // Then
+        assertThat(result?.first).isNull()
+        assertThat(result?.second).isEqualTo(testContext)
+    }
+
+    @Test
     fun `M return stored context W getEvaluationContext() { after setting context }`(forge: Forge) {
         // Given
         val context = EvaluationContext(

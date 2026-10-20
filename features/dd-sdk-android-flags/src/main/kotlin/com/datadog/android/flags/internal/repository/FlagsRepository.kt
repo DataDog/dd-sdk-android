@@ -22,7 +22,9 @@ internal interface FlagsRepository {
         flags: Map<String, PrecomputedFlag>,
         onInstalled: () -> Unit = {}
     )
-    fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>?
+
+    // Missing flags retain their context from the same atomic state read.
+    fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>?
     val firstFlags: FirstFlagsLatch
     fun hasFlags(): Boolean
     fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean

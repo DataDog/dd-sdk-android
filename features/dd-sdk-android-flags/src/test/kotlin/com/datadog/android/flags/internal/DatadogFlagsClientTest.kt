@@ -44,6 +44,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -867,8 +868,7 @@ internal class DatadogFlagsClientTest {
         )
         val mockEvaluationsFeature = mock<EvaluationsFeature>()
 
-        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
-        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeContext
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (null to fakeContext)
 
         val clientWithEvaluationTracking = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
@@ -933,6 +933,20 @@ internal class DatadogFlagsClientTest {
     }
 
     // endregion
+
+    @Test
+    fun `M read repository once W resolveBooleanValue() {repository not ready}`(forge: Forge) {
+        // Given
+        val key = forge.anAlphabeticalString()
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(key)) doReturn null
+
+        // When
+        assertThat(testedClient.resolveBooleanValue(key, false)).isFalse()
+
+        // Then: no second disk wait or context from a later repository state.
+        verify(mockFlagsRepository).getPrecomputedFlagWithContext(key)
+        verify(mockFlagsRepository, never()).getEvaluationContext()
+    }
 
     // region setEvaluationContext()
 

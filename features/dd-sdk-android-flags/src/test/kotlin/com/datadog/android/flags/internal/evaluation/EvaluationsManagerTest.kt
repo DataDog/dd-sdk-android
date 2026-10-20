@@ -10,9 +10,9 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsInitializationTimeoutException
@@ -91,7 +91,7 @@ internal class EvaluationsManagerTest {
     lateinit var mockFlagsStateManager: FlagsStateManager
 
     @Mock
-    lateinit var mockSdkCore: FeatureSdkCore
+    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockFlagsFeatureScope: FeatureScope
@@ -138,6 +138,7 @@ internal class EvaluationsManagerTest {
         )
 
         whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)) doReturn mockFlagsFeatureScope
+        whenever(mockSdkCore.getDatadogContext(setOf(Feature.RUM_FEATURE_NAME))) doReturn fakeDatadogContext
         whenever(
             mockFlagsFeatureScope.withContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any())
         ) doAnswer {
@@ -154,6 +155,21 @@ internal class EvaluationsManagerTest {
             val runnable = invocation.getArgument<Runnable>(0)
             runnable.run()
         }
+    }
+
+    @Test
+    fun `M release request state W updateEvaluationsForContext() {context dispatch unavailable}`() {
+        // Given: withContext silently drops callbacks when the core stops or dispatch is rejected.
+        doAnswer { null }.whenever(mockFlagsFeatureScope).withContext(any(), any())
+        whenever(mockSdkCore.getDatadogContext(setOf(Feature.RUM_FEATURE_NAME))) doReturn null
+        var finished = 0
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(EvaluationContext.EMPTY, null) { finished++ }
+
+        // Then
+        assertThat(finished).isEqualTo(1)
+        verify(mockAssignmentsDownloader, never()).readPrecomputedFlags(any(), any())
     }
 
     @AfterEach

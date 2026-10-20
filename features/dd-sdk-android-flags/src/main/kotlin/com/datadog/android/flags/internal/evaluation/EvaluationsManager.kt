@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.evaluation
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsInitializationTimeoutException
@@ -122,62 +123,66 @@ internal class EvaluationsManager(
         }
         if (initializationCompletion == null) flagStateManager.updateState(FlagsClientState.Reconciling)
 
-        sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
-            ?.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) { datadogContext ->
-                completionAwareExecutor(onFetchFinished).executeSafe(
-                    operationName = FETCH_AND_STORE_OPERATION_NAME,
-                    internalLogger = internalLogger
-                ) {
-                    try {
-                        internalLogger.log(
-                            InternalLogger.Level.DEBUG,
-                            InternalLogger.Target.MAINTAINER,
-                            { "Processing evaluation context: ${context.targetingKey}" }
-                        )
-
-                        val hadFlags = flagsRepository.hasFlags()
-                        matchingCachedAssignments.set(
-                            hadFlags && flagsRepository.getEvaluationContext() == context
-                        )
-                        val response = assignmentsReader.readPrecomputedFlags(context, datadogContext)
-                        val flagsMap = response?.let { precomputeMapper.map(it) }
-                        if (flagsMap != null) {
-                            installFlags(context, flagsMap, initializationCompletion, callback)
-                        } else {
-                            val message = if (response ==
-                                null
-                            ) {
-                                NETWORK_REQUEST_FAILED_MESSAGE
-                            } else {
-                                INVALID_RESPONSE_MESSAGE
-                            }
-                            internalLogger.log(
-                                InternalLogger.Level.WARN,
-                                InternalLogger.Target.USER,
-                                { message }
-                            )
-
-                            val throwable = NetworkRequestFailedException(message)
-                            // Lifecycle is Stale only when retained flags match the requested context.
-                            // Failed fetches do not replace the installed flags or their context.
-                            val completionCallback = synchronized(initializationTerminalLock) {
-                                val result = initializationCompletion?.take()?.callback
-                                    ?: if (initializationCompletion == null) callback else null
-                                if (matchingCachedAssignments.get()) {
-                                    flagStateManager.updateState(FlagsClientState.Stale)
-                                } else {
-                                    flagStateManager.updateState(FlagsClientState.Error(throwable))
-                                }
-                                result
-                            }
-                            completionCallback?.onFailure(throwable)
-                        }
-                    } finally {
-                        // Timeouts complete the public callback but do not stop this fetch.
-                        onFetchFinished()
-                    }
+        completionAwareExecutor(onFetchFinished).executeSafe(
+            operationName = FETCH_AND_STORE_OPERATION_NAME,
+            internalLogger = internalLogger
+        ) {
+            try {
+                // Read on the fetch executor so unavailable core context still reaches finally.
+                // withContext can silently skip its callback after shutdown or rejected dispatch.
+                val datadogContext = if (sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME) != null) {
+                    (sdkCore as? InternalSdkCore)?.getDatadogContext(setOf(Feature.RUM_FEATURE_NAME))
+                } else {
+                    null
                 }
-            } ?: onFetchFinished()
+                internalLogger.log(
+                    InternalLogger.Level.DEBUG,
+                    InternalLogger.Target.MAINTAINER,
+                    { "Processing evaluation context: ${context.targetingKey}" }
+                )
+
+                val hadFlags = flagsRepository.hasFlags()
+                matchingCachedAssignments.set(
+                    hadFlags && flagsRepository.getEvaluationContext() == context
+                )
+                val response = datadogContext?.let { assignmentsReader.readPrecomputedFlags(context, it) }
+                val flagsMap = response?.let { precomputeMapper.map(it) }
+                if (flagsMap != null) {
+                    installFlags(context, flagsMap, initializationCompletion, callback)
+                } else {
+                    val message = if (response ==
+                        null
+                    ) {
+                        NETWORK_REQUEST_FAILED_MESSAGE
+                    } else {
+                        INVALID_RESPONSE_MESSAGE
+                    }
+                    internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.USER,
+                        { message }
+                    )
+
+                    val throwable = NetworkRequestFailedException(message)
+                    // Lifecycle is Stale only when retained flags match the requested context.
+                    // Failed fetches do not replace the installed flags or their context.
+                    val completionCallback = synchronized(initializationTerminalLock) {
+                        val result = initializationCompletion?.take()?.callback
+                            ?: if (initializationCompletion == null) callback else null
+                        if (matchingCachedAssignments.get()) {
+                            flagStateManager.updateState(FlagsClientState.Stale)
+                        } else {
+                            flagStateManager.updateState(FlagsClientState.Error(throwable))
+                        }
+                        result
+                    }
+                    completionCallback?.onFailure(throwable)
+                }
+            } finally {
+                // Timeouts complete the public callback but do not stop this fetch.
+                onFetchFinished()
+            }
+        }
     }
 
     // Executor construction does not run the task. Rejection is rethrown only
