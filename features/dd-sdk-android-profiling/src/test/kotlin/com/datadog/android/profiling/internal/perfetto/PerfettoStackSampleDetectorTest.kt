@@ -103,6 +103,30 @@ internal class PerfettoStackSampleDetectorTest {
     }
 
     @Test
+    fun `M return false W hasNoStackSamples() {overflowing packet length}`() {
+        // Given
+        val traceFile = writeTrace(readFixture(EMPTY_PROFILE_FIXTURE) + OVERFLOWING_LENGTH_PACKET_HEADER)
+
+        // When
+        val result = testedDetector.hasNoStackSamples(traceFile, mockInternalLogger)
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `M return false W hasNoStackSamples() {overflowing perf_sample length}`() {
+        // Given
+        val traceFile = writeTrace(readFixture(EMPTY_PROFILE_FIXTURE) + OVERFLOWING_PERF_SAMPLE_PACKET)
+
+        // When
+        val result = testedDetector.hasNoStackSamples(traceFile, mockInternalLogger)
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
     fun `M return false W hasNoStackSamples() {packet larger than the maximum packet size}`() {
         // Given
         val traceFile = writeTrace(readFixture(EMPTY_PROFILE_FIXTURE) + OVERSIZED_PACKET_HEADER)
@@ -212,6 +236,15 @@ internal class PerfettoStackSampleDetectorTest {
 
         // Varint decoding to -1, which can only come from corrupted data.
         private val NEGATIVE_VARINT = ByteArray(9) { 0xFF.toByte() } + byteArrayOf(0x01)
+
+        // Ten-byte varint whose last byte overflows 64 bits, which would wrap around to 0.
+        private val OVERFLOWING_VARINT = ByteArray(9) { 0x80.toByte() } + byteArrayOf(0x02)
+
+        // `Trace.packet` (field 1) header with an overflowing length.
+        private val OVERFLOWING_LENGTH_PACKET_HEADER = byteArrayOf(0x0A) + OVERFLOWING_VARINT
+
+        // `Trace.packet` (field 1) holding a `perf_sample` (field 66) with an overflowing length.
+        private val OVERFLOWING_PERF_SAMPLE_PACKET = byteArrayOf(0x0A, 0x0C, 0x92.toByte(), 0x04) + OVERFLOWING_VARINT
 
         // `Trace.packet` (field 1) header declaring a 2 MiB packet.
         private val OVERSIZED_PACKET_HEADER = byteArrayOf(0x0A, 0x80.toByte(), 0x80.toByte(), 0x80.toByte(), 0x01)

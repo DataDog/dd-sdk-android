@@ -131,7 +131,7 @@ internal class PerfettoStackSampleDetector : StackSampleDetector {
 
         /**
          * @return the varint read, [END_OF_STREAM] if the stream ends before it, or [MALFORMED_VARINT] if the
-         * stream ends inside it, it is too long or it is negative.
+         * stream ends inside it, it is too long, it overflows 64 bits or it is negative.
          */
         @Throws(IOException::class)
         fun readVarint(): Long {
@@ -140,8 +140,11 @@ internal class PerfettoStackSampleDetector : StackSampleDetector {
             var byte = readByte()
             val isEndOfStream = byte < 0
             var isComplete = false
+            var isOverflowing = false
             while (byte >= 0 && shift < MAX_VARINT_BITS && !isComplete) {
-                result = result or ((byte and VARINT_PAYLOAD_MASK).toLong() shl shift)
+                val payload = byte and VARINT_PAYLOAD_MASK
+                isOverflowing = shift == LAST_VARINT_BYTE_SHIFT && payload > 1
+                result = result or (payload.toLong() shl shift)
                 isComplete = byte and VARINT_CONTINUATION_BIT == 0
                 shift += VARINT_SHIFT
                 if (!isComplete) byte = readByte()
@@ -149,7 +152,7 @@ internal class PerfettoStackSampleDetector : StackSampleDetector {
             return when {
                 isEndOfStream -> END_OF_STREAM
                 // Tags and lengths are never negative: a negative value can only come from corrupted data.
-                isComplete && result >= 0 -> result
+                isComplete && !isOverflowing && result >= 0 -> result
                 else -> MALFORMED_VARINT
             }
         }
@@ -197,7 +200,9 @@ internal class PerfettoStackSampleDetector : StackSampleDetector {
             var shift = 0
             while (position < end && shift < MAX_VARINT_BITS) {
                 val byte = bytes[position++].toInt()
-                result = result or ((byte and VARINT_PAYLOAD_MASK).toLong() shl shift)
+                val payload = byte and VARINT_PAYLOAD_MASK
+                if (shift == LAST_VARINT_BYTE_SHIFT && payload > 1) break
+                result = result or (payload.toLong() shl shift)
                 if (byte and VARINT_CONTINUATION_BIT == 0) return result
                 shift += VARINT_SHIFT
             }
@@ -267,5 +272,8 @@ internal class PerfettoStackSampleDetector : StackSampleDetector {
         private const val VARINT_CONTINUATION_BIT = 0x80
         private const val VARINT_SHIFT = 7
         private const val MAX_VARINT_BITS = 64
+
+        // A varint holds at most 64 bits: its tenth byte, shifted by 63 bits, can only carry the lowest bit.
+        private const val LAST_VARINT_BYTE_SHIFT = 63
     }
 }
