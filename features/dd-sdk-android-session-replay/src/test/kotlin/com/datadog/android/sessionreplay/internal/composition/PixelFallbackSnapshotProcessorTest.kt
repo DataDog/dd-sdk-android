@@ -203,7 +203,82 @@ internal class PixelFallbackSnapshotProcessorTest {
     }
 
     @Test
-    fun `M cache source images separately from masked pixels W process()`(@StringForgery fakeScope: String) {
+    fun `M discard resource results W cancel() { source resolution pending }`(@StringForgery fakeScope: String) {
+        // Given
+        val fakeFixture = Fixture(fakeScope)
+        val fakeCallbacks = mutableListOf<ResourceResolverCallback>()
+        doAnswer {
+            fakeCallbacks += it.getArgument<ResourceResolverCallback>(1)
+            null
+        }.whenever(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
+        val testedProcessor = PixelFallbackSnapshotProcessor(mockResourceResolver, null, immediateMainThreadExecutor)
+        val fakeResults = mutableListOf<SnapshotProcessingResult>()
+        val fakeWork = testedProcessor.process(
+            SnapshotProcessingRequest(
+                generationContext(),
+                fakeFixture.snapshot,
+                listOf(fakeFixture.pendingTextFree),
+                fakeFixture.identityFactory
+            ),
+            fakeResults::add
+        )
+
+        // When
+        fakeWork.cancel()
+        fakeCallbacks.single().onSuccess("resource")
+
+        // Then
+        assertThat(fakeResults).isEmpty()
+    }
+
+    @Test
+    fun `M ignore duplicate resource callbacks W process() { source images }`(@StringForgery fakeScope: String) {
+        // Given
+        val fakeFixture = Fixture(fakeScope)
+        val fakeCallbacks = mutableListOf<ResourceResolverCallback>()
+        doAnswer {
+            fakeCallbacks += it.getArgument<ResourceResolverCallback>(1)
+            null
+        }.whenever(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
+        val testedProcessor = PixelFallbackSnapshotProcessor(mockResourceResolver, null, immediateMainThreadExecutor)
+        val fakeResults = mutableListOf<SnapshotProcessingResult>()
+        val fakeSecondId = fakeFixture.identityFactory.imageWireframe(
+            fakeFixture.identityFactory.layer(fakeFixture.ownerIdentity, "second")
+        )
+        val fakePending = listOf(
+            PendingPixelCapture(
+                fakeFixture.pixelIdentity,
+                fakeFixture.ownerIdentity,
+                fakeFixture.bitmap,
+                isSourceImage = true
+            ),
+            PendingPixelCapture(fakeSecondId, fakeFixture.ownerIdentity, fakeFixture.bitmap, isSourceImage = true)
+        )
+        testedProcessor.process(
+            SnapshotProcessingRequest(
+                generationContext(),
+                fakeFixture.snapshot,
+                fakePending,
+                fakeFixture.identityFactory
+            ),
+            fakeResults::add
+        )
+
+        // When / Then
+        fakeCallbacks.first().onSuccess("resource")
+        fakeCallbacks.first().onFailure()
+        fakeCallbacks.first().onSuccess("duplicate")
+        assertThat(fakeResults).isEmpty()
+        fakeCallbacks.last().onSuccess("resource")
+        fakeCallbacks.last().onFailure()
+        assertThat(fakeResults).hasSize(1)
+        val fakePixel = (fakeResults.single() as SnapshotProcessingResult.Completed).snapshot.wireframes.single()
+            as CapturedWireframe.Pixel
+        assertThat(fakePixel.resource).isEqualTo(PixelResource.Resolved("resource", "image/webp"))
+    }
+
+    @Test
+    fun `M cache late source images separately from masked pixels W process()`(@StringForgery fakeScope: String) {
         // Given
         val fakeFixture = Fixture(fakeScope)
         val stubSignatureGenerator =
@@ -216,12 +291,14 @@ internal class PixelFallbackSnapshotProcessorTest {
             fakeCallbacks += it.getArgument<ResourceResolverCallback>(1)
             null
         }.whenever(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
+        var fakeRecaptures = 0
         val testedProcessor = PixelFallbackSnapshotProcessor(
             mockResourceResolver,
             mockDetector,
             immediateMainThreadExecutor,
             bitmapSignatureGenerator = stubSignatureGenerator,
-            resolvedContentCache = fakeMaskedCache
+            resolvedContentCache = fakeMaskedCache,
+            recaptureTrigger = RecaptureTrigger { fakeRecaptures++ }
         )
         val fakeSource = PendingPixelCapture(
             fakeFixture.pixelIdentity,
@@ -238,12 +315,15 @@ internal class PixelFallbackSnapshotProcessorTest {
 
         // When
         process(fakeGeneration, fakeSource)
+        fakeGeneration.expire()
         fakeCallbacks.single().onSuccess("source")
-        fakeResults.clear()
+        fakeCallbacks.single().onSuccess("duplicate")
+        assertThat(fakeResults).isEmpty()
         process(generationContext(), fakeSource)
         process(generationContext(), fakeFixture.pending)
 
         // Then
+        assertThat(fakeRecaptures).isEqualTo(1)
         assertThat(fakeCallbacks).hasSize(1)
         val fakeResources = fakeResults.map {
             val snapshot = (it as SnapshotProcessingResult.Completed).snapshot
@@ -254,6 +334,93 @@ internal class PixelFallbackSnapshotProcessorTest {
             PixelResource.Resolved("masked", "image/webp")
         )
         verify(mockDetector, never()).detectTextRegions(any(), any())
+    }
+
+    @Test
+    fun `M wait for all late glyphs before recapture W multiple new resources resolve`(
+        @StringForgery fakeScope: String
+    ) {
+        val fakeFixture = Fixture(fakeScope)
+        val stubSecondBitmap: Bitmap = mock()
+        val stubSignatureGenerator =
+            mock<com.datadog.android.sessionreplay.internal.recorder.resources.BitmapSignatureGenerator>()
+        whenever(stubSignatureGenerator.generateSignature(fakeFixture.bitmap)).thenReturn(1L)
+        whenever(stubSignatureGenerator.generateSignature(stubSecondBitmap)).thenReturn(2L)
+        val fakeCallbacks = mutableListOf<ResourceResolverCallback>()
+        doAnswer {
+            fakeCallbacks += it.getArgument<ResourceResolverCallback>(1)
+            null
+        }.whenever(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
+        var fakeRecaptures = 0
+        val testedProcessor = PixelFallbackSnapshotProcessor(
+            mockResourceResolver,
+            null,
+            immediateMainThreadExecutor,
+            bitmapSignatureGenerator = stubSignatureGenerator,
+            recaptureTrigger = RecaptureTrigger { fakeRecaptures++ }
+        )
+        val fakeGeneration = generationContext()
+        val fakeSecondOwner = fakeFixture.identityFactory.view(fakeFixture.identityFactory.window("window"), "second")
+        val fakeSecond = PendingPixelCapture(
+            fakeFixture.identityFactory.imageWireframe(fakeSecondOwner),
+            fakeSecondOwner,
+            stubSecondBitmap,
+            isTextFree = true
+        )
+        testedProcessor.process(
+            SnapshotProcessingRequest(
+                fakeGeneration,
+                fakeFixture.snapshot,
+                listOf(fakeFixture.pendingTextFree, fakeSecond),
+                fakeFixture.identityFactory
+            )
+        ) { }
+
+        fakeGeneration.expire()
+        fakeCallbacks.first().onSuccess("first")
+        assertThat(fakeRecaptures).isZero()
+        fakeCallbacks.last().onSuccess("second")
+
+        assertThat(fakeRecaptures).isEqualTo(1)
+    }
+
+    @Test
+    fun `M bound late image retries W process() { signature unavailable }`(@StringForgery fakeScope: String) {
+        // Given
+        val fakeFixture = Fixture(fakeScope)
+        val fakeCallbacks = mutableListOf<ResourceResolverCallback>()
+        doAnswer {
+            fakeCallbacks += it.getArgument<ResourceResolverCallback>(1)
+            null
+        }.whenever(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
+        var fakeRecaptures = 0
+        val testedProcessor = PixelFallbackSnapshotProcessor(
+            mockResourceResolver,
+            null,
+            immediateMainThreadExecutor,
+            recaptureTrigger = RecaptureTrigger { fakeRecaptures++ }
+        )
+        val fakeResults = mutableListOf<SnapshotProcessingResult>()
+
+        // When
+        repeat(3) {
+            val fakeGeneration = generationContext()
+            testedProcessor.process(
+                SnapshotProcessingRequest(
+                    fakeGeneration,
+                    fakeFixture.snapshot,
+                    listOf(fakeFixture.pendingTextFree),
+                    fakeFixture.identityFactory
+                ),
+                fakeResults::add
+            )
+            fakeGeneration.expire()
+            fakeCallbacks.last().onSuccess("resource")
+        }
+
+        // Then
+        assertThat(fakeRecaptures).isEqualTo(1)
+        assertThat(fakeResults).isEmpty()
     }
 
     @Test

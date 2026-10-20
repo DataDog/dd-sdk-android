@@ -119,6 +119,37 @@ internal class ChainedCapturedSnapshotProcessorTest {
     }
 
     @Test
+    fun `M enter pixel processing once W process() { duplicate construction completion }`() {
+        // Given
+        lateinit var fakeConstructionCallback: SnapshotProcessingCallback
+        var fakePixelCalls = 0
+        val fakeResults = mutableListOf<SnapshotProcessingResult>()
+        val testedProcessor = ChainedCapturedSnapshotProcessor(
+            CapturedSnapshotProcessor { _, callback ->
+                fakeConstructionCallback = callback
+                CancellableCaptureWork.NONE
+            },
+            CapturedSnapshotProcessor { _, _ ->
+                fakePixelCalls++
+                CancellableCaptureWork.NONE
+            }
+        )
+        testedProcessor.process(SnapshotProcessingRequest(fakeGeneration, fakeSnapshot), fakeResults::add)
+        val fakeCompleted = SnapshotProcessingResult.Completed(
+            fakeGeneration.id,
+            checkNotNull(CapturedNativeSnapshotBuilder().build(fakeSnapshot, fakeGeneration))
+        )
+
+        // When
+        fakeConstructionCallback.onProcessed(fakeCompleted)
+        fakeConstructionCallback.onProcessed(fakeCompleted)
+
+        // Then
+        assertThat(fakePixelCalls).isEqualTo(1)
+        assertThat(fakeResults).isEmpty()
+    }
+
+    @Test
     fun `M discard queued construction W cancel`() {
         // Given
         val fakeTasks = mutableListOf<Runnable>()
