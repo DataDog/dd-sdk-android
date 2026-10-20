@@ -347,7 +347,8 @@ internal class RumResourceScope(
                 session = ResourceEvent.ResourceEventSession(
                     id = rumContext.sessionId,
                     type = sessionType,
-                    hasReplay = hasReplay
+                    hasReplay = hasReplay,
+                    isMainProcess = datadogContext.processInfo.isMainProcess
                 ),
                 synthetics = syntheticsAttribute,
                 source = ResourceEvent.ResourceEventSource.tryFromSource(
@@ -513,7 +514,8 @@ internal class RumResourceScope(
                 session = ErrorEvent.ErrorEventSession(
                     id = rumContext.sessionId,
                     type = sessionType,
-                    hasReplay = hasReplay
+                    hasReplay = hasReplay,
+                    isMainProcess = datadogContext.processInfo.isMainProcess
                 ),
                 synthetics = syntheticsAttribute,
                 source = ErrorEvent.ErrorEventSource.tryFromSource(

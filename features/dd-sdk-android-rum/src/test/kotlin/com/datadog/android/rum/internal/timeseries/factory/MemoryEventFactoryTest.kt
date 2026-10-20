@@ -405,6 +405,15 @@ internal class MemoryEventFactoryTest {
     }
 
     @Test
+    fun `M fill session isMainProcess W create()`() {
+        // When
+        val event = createEvent()
+
+        // Then
+        assertThat(event.session.isMainProcess).isEqualTo(fakeDatadogContext.processInfo.isMainProcess)
+    }
+
+    @Test
     fun `M fill synthetics W create() { synthetics ids are set }`(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String
