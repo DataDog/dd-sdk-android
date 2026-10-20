@@ -37,13 +37,16 @@ import com.datadog.android.lint.InternalApi
  * @param bitmap the raster content captured synchronously during traversal
  * @param isTextFree true for captures structurally guaranteed not to contain text, skipping
  * text-region detection entirely
+ * @param isSourceImage true only for a source image allowed by image privacy, never mixed UI pixels
  */
 @InternalApi
-data class PendingPixelCapture(
+data class PendingPixelCapture @JvmOverloads constructor(
     val wireframeIdentity: CapturedIdentity,
     val ownerIdentity: CapturedIdentity,
     val bitmap: Bitmap,
-    val isTextFree: Boolean = false
+    val isTextFree: Boolean = false,
+    /** A source image permitted by image privacy, rather than a screenshot containing mixed UI content. */
+    val isSourceImage: Boolean = false
 )
 
 /**

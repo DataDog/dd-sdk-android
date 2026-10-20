@@ -435,6 +435,26 @@ internal class SemanticsUtils(
         return semanticsNode.config.getOrNull(SessionReplayHidePropertyKey) ?: false
     }
 
+    internal fun isEditable(semanticsNode: SemanticsNode): Boolean =
+        semanticsNode.config.contains(SemanticsActions.SetText)
+
+    internal fun isImage(semanticsNode: SemanticsNode): Boolean =
+        semanticsNode.config.getOrNull(SemanticsProperties.Role) == androidx.compose.ui.semantics.Role.Image
+
+    internal fun isAdjustable(semanticsNode: SemanticsNode): Boolean =
+        semanticsNode.config.contains(SemanticsActions.SetProgress)
+
+    internal fun isPassword(semanticsNode: SemanticsNode): Boolean =
+        semanticsNode.config.contains(SemanticsProperties.Password)
+
+    internal fun editableText(semanticsNode: SemanticsNode): String? =
+        semanticsNode.config.getOrNull(SemanticsProperties.EditableText)?.let(::resolveAnnotatedString)
+
+    internal fun hasInputState(semanticsNode: SemanticsNode): Boolean =
+        isEditable(semanticsNode) || semanticsNode.config.contains(SemanticsProperties.ToggleableState) ||
+            semanticsNode.config.contains(SemanticsProperties.Selected) ||
+            semanticsNode.config.contains(SemanticsProperties.ProgressBarRangeInfo)
+
     internal fun isNodePositionUnavailable(semanticsNode: SemanticsNode): Boolean {
         return semanticsNode.isLeafNode() && semanticsNode.isPositionedAtOrigin()
     }

@@ -67,6 +67,9 @@ internal class PixelFallbackSnapshotProcessor(
     @Suppress("UnsafeThirdPartyFunctionCall") // MAX_RESOLVED_CONTENT_CACHE_SIZE is a positive constant
     private val resolvedContentCache: LruCache<Long, String> = LruCache(MAX_RESOLVED_CONTENT_CACHE_SIZE)
 ) : CapturedSnapshotProcessor {
+    // Raw source images must never share cache entries with OCR-masked raster captures.
+    @Suppress("UnsafeThirdPartyFunctionCall") // Positive, bounded cache size.
+    private val rawContentCache = LruCache<Long, String>(MAX_RESOLVED_CONTENT_CACHE_SIZE)
 
     override fun process(
         request: SnapshotProcessingRequest,
@@ -121,8 +124,8 @@ internal class PixelFallbackSnapshotProcessor(
         generation: CaptureGenerationContext,
         onResolved: (PixelOutcome) -> Unit
     ) {
-        if (capture.isTextFree) {
-            resolveBitmap(capture.bitmap, identityFactory, capture.ownerIdentity, onResolved)
+        if (capture.isTextFree || capture.isSourceImage) {
+            resolveRawCapture(capture, identityFactory, onResolved)
             return
         }
 
@@ -202,6 +205,26 @@ internal class PixelFallbackSnapshotProcessor(
                         )
                     }
                 }
+            }
+        }
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // Bounded cache accepts non-null signatures and resource ids.
+    private fun resolveRawCapture(
+        capture: PendingPixelCapture,
+        identityFactory: CompositionIdentityFactory,
+        onResolved: (PixelOutcome) -> Unit
+    ) {
+        val signature = bitmapSignatureGenerator.generateSignature(capture.bitmap)
+        val cached = signature?.let { rawContentCache.get(it) }
+        if (cached != null) {
+            onResolved(PixelOutcome.Resolved(cached))
+        } else {
+            resolveBitmap(capture.bitmap, identityFactory, capture.ownerIdentity) { outcome ->
+                if (signature != null && outcome is PixelOutcome.Resolved) {
+                    rawContentCache.put(signature, outcome.resourceId)
+                }
+                onResolved(outcome)
             }
         }
     }

@@ -18,27 +18,43 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.RenderEffect
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asAndroidColorFilter
+import androidx.compose.ui.graphics.toAndroidRectF
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.text.font.GenericFontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
+import androidx.core.graphics.toRect
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.sessionreplay.composition.CapturedAlignment
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
+import com.datadog.android.internal.sessionreplay.composition.CapturedClip
+import com.datadog.android.internal.sessionreplay.composition.CapturedHorizontalAlignment
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
+import com.datadog.android.internal.sessionreplay.composition.CapturedPadding
 import com.datadog.android.internal.sessionreplay.composition.CapturedShapeStyle
+import com.datadog.android.internal.sessionreplay.composition.CapturedTextPosition
 import com.datadog.android.internal.sessionreplay.composition.CapturedTextStyle
+import com.datadog.android.internal.sessionreplay.composition.CapturedTruncationMode
+import com.datadog.android.internal.sessionreplay.composition.CapturedVerticalAlignment
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.TouchPrivacy
+import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.ImageSemanticsNodeMapper
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.compose.internal.utils.ComposeTextCaptureCache
 import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.resolveComposeWindowOffset
+import com.datadog.android.sessionreplay.compose.internal.utils.transformCapturedText
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCapture
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
@@ -71,9 +87,9 @@ import android.graphics.ColorMatrixColorFilter as AndroidColorMatrixColorFilter
  * like the native View pixel-fallback path, rather than reconstructed property-by-property via
  * reflection into Compose's internal drawing/painter state. Whatever a pixel capture bakes in -
  * gradients, alpha compositing, shadows, custom paint - is therefore already correct in the image
- * with no separate extraction needed; the only privacy-relevant step left is the same
- * image-privacy-eligibility check the native path applies, plus the same downstream text-masking
- * every pixel capture (native or Compose) already goes through.
+ * with no separate extraction needed. Raster capture is allowed only after checking inherited
+ * privacy and restricted descendants; mixed pixels still require downstream text masking.
+ * Supported source images use their existing image-privacy rules and do not require OCR.
  *
  * In sibling groups with at least 32 nodes, leaves outside the caller's copied host bounds are
  * omitted before style extraction. The native snapshot builder always clips composition output
@@ -89,6 +105,7 @@ internal class GranularComposeDecomposer(
     private val nodesPerCheckpoint: Int = NODES_PER_CHECKPOINT,
     private val hostRasterizer: ComposeHostCaptureRasterizer = DefaultComposeHostCaptureRasterizer(internalLogger)
 ) : CompositionHostDecomposer {
+    private val imageMapper = ImageSemanticsNodeMapper(colorStringFormatter, semanticsUtils)
 
     // Deliberately catches Throwable, not Exception: a Compose UI version outside this artifact's
     // tested range can fail with a LinkageError/NoSuchMethodError, which the gate must still catch
@@ -115,6 +132,43 @@ internal class GranularComposeDecomposer(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught", "ReturnCount", "UnsafeThirdPartyFunctionCall") // Owned, guarded deque.
+    override fun readTouchPrivacy(view: View, shouldContinue: () -> Boolean): Map<Rect, TouchPrivacy>? {
+        if (!compatibilityGate.isAvailable()) return null
+        return try {
+            val root = semanticsUtils.findRootSemanticsNode(view) ?: return null
+            val offset by lazy { view.resolveComposeWindowOffset(view.resources.displayMetrics.density) }
+            val pending = ArrayDeque<SemanticsNode>()
+            pending.addLast(root)
+            val areas = mutableMapOf<Rect, TouchPrivacy>()
+            while (pending.isNotEmpty()) {
+                if (!shouldContinue()) return null
+                val node = pending.removeLast()
+                node.children.forEach { pending.addLast(it) }
+                val privacy = semanticsUtils.getTouchPrivacyOverride(node) ?: continue
+                val rect = node.boundsInRoot.toAndroidRectF().toRect()
+                rect.offset(offset.xPx, offset.yPx)
+                if (areas[rect] != TouchPrivacy.HIDE) areas[rect] = privacy
+            }
+            areas
+        } catch (t: Throwable) {
+            compatibilityGate.markIncompatible(t, internalLogger)
+            null
+        }
+    }
+
+    private data class NodePrivacy(
+        val image: ImagePrivacy,
+        val text: TextAndInputPrivacy,
+        val contentColor: String? = null
+    )
+
+    private fun privacyOf(node: SemanticsNode, parent: NodePrivacy) = NodePrivacy(
+        semanticsUtils.getImagePrivacyOverride(node) ?: parent.image,
+        semanticsUtils.getTextAndInputPrivacyOverride(node) ?: parent.text,
+        parent.contentColor
+    )
+
     /**
      * Both [SemanticsUtils.resolveBackgroundColor] and the `color` carried by [TextLayoutInfo] are
      * the raw internal `Color.value` bit pattern (as a `Long`), not a plain packed 0xAARRGGBB value
@@ -135,8 +189,88 @@ internal class GranularComposeDecomposer(
     private class PendingCapture(
         val nodeIdentity: CapturedIdentity,
         val bounds: CapturedBounds,
-        val hostBoundsPx: Rect
+        val hostBoundsPx: Rect,
+        val privacy: NodePrivacy
     )
+
+    /**
+     * A shape without meaningful rounding clips to a plain rectangle, which the existing
+     * per-wireframe ancestor-bounds crop ([com.datadog.android.internal.sessionreplay.composition.CapturedClip])
+     * already represents - only a genuinely rounded (or otherwise non-rectangular) shape needs
+     * this layer-level modifier, since that's what the rectangular crop can't express. Only
+     * [androidx.compose.foundation.shape.RoundedCornerShape] (which `CircleShape` is itself an
+     * instance of) is resolved to a real radius today; any other [Shape] - a custom
+     * `GenericShape`, a cut/diagonal shape, etc. - is treated as unsupported and skipped, same
+     * as [com.datadog.android.sessionreplay.compose.internal.utils.BackgroundResolver.resolveCornerRadius].
+     */
+    @Suppress("ReturnCount") // Each guard bails out at the point it's no longer worth a Clip modifier.
+    private fun resolveClipModifier(
+        shape: Shape?,
+        bounds: CapturedBounds,
+        density: Density
+    ): CapturedModifier.Clip? {
+        if (shape == null) return null
+        val radius = semanticsUtils.resolveCornerRadius(
+            shape,
+            GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height),
+            density
+        )
+        if (radius <= 0f) return null
+        val clampedRadius = radius.toDouble().coerceAtMost(minOf(bounds.width, bounds.height) / 2.0)
+        return CapturedModifier.Clip(path = roundedRectPath(bounds.width, bounds.height, clampedRadius))
+    }
+
+    /**
+     * Android's elevation shadow is a geometric light-source simulation (see hwui/Skia's
+     * ambient+spot shadow renderer), not a simple offset/blur formula - there is no principled
+     * way to derive [CapturedModifier.Shadow]'s offset/radius from elevation directly. This
+     * instead looks up Google's own published Material Design elevation table (the same one
+     * Material Components Web/MUI use to replicate Android shadows in CSS), using only its
+     * dominant "key" (umbra) layer - the table's penumbra/ambient layers and its spread
+     * parameter have no equivalent in [CapturedModifier.Shadow]'s single-shadow model, so this
+     * is a visual approximation, not an exact reconstruction. Skipped entirely for
+     * zero/negative elevation - a flat node casts no shadow. [elevationPx] is raw pixels, same
+     * as `graphicsLayer`'s other size-shaped parameters.
+     */
+    @Suppress("ReturnCount") // Each guard bails out at the point it's no longer worth a Shadow modifier.
+    private fun resolveShadowModifier(
+        elevationPx: Float?,
+        spotColor: Color?,
+        density: Density
+    ): CapturedModifier.Shadow? {
+        if (elevationPx == null || elevationPx <= 0f) return null
+        val elevationDp = elevationPx / density.density
+        val level = elevationDp.roundToInt().coerceIn(1, MAX_ELEVATION_DP)
+        val (offsetYDp, blurDp) = MATERIAL_KEY_SHADOW_DP[level]
+        return CapturedModifier.Shadow(
+            color = formatShadowColor(spotColor ?: Color.Black),
+            offsetX = 0.0,
+            offsetY = offsetYDp,
+            radius = blurDp
+        )
+    }
+
+    private fun formatShadowColor(color: Color): String {
+        val alpha = (color.alpha * SHADOW_KEY_OPACITY.toFloat() * OPAQUE_ALPHA_VALUE).roundToInt()
+        return colorStringFormatter.formatColorAndAlphaAsHexString(color.toArgb(), alpha)
+    }
+
+    /**
+     * Only a [BlurEffect] has a [CapturedModifier.GaussianBlur] equivalent - any other
+     * [RenderEffect] (offset, chained, or a raw platform effect) has none and resolves to null.
+     * [CapturedModifier.GaussianBlur] has a single [radius][CapturedModifier.GaussianBlur.radius],
+     * so an elliptical blur (`radiusX != radiusY`) - not producible by [Modifier.blur]'s own
+     * single-radius overload, but possible via its two-radius one - is left unrecognized rather
+     * than guessed at. [radiusX]/[radiusY] are raw pixels, same as `graphicsLayer`'s other
+     * size-shaped parameters.
+     */
+    @Suppress("ReturnCount") // Each guard bails out at the point it's no longer worth a GaussianBlur modifier.
+    private fun resolveBlurModifier(renderEffect: RenderEffect?, density: Density): CapturedModifier.GaussianBlur? {
+        val blurEffect = renderEffect as? BlurEffect ?: return null
+        val (radiusXPx, radiusYPx) = reflectionUtils.getBlurRadii(blurEffect) ?: return null
+        if (radiusXPx != radiusYPx) return null
+        return CapturedModifier.GaussianBlur(radius = (radiusXPx / density.density).toDouble())
+    }
 
     /** Copies only the graphics properties the capture understands, without an intermediate map. */
     private class GraphicsLayerProperties(modifier: InspectableValue) {
@@ -173,17 +307,18 @@ internal class GranularComposeDecomposer(
         private val hostClip = request.hostBounds
         private val nodes = mutableListOf<CapturedLayer>()
         private val wireframes = mutableListOf<CapturedWireframe>()
-        private val nativeSubtrees = mutableListOf<CompositionNativeSubtree>()
         private var culledLeaf = false
         private var nodesVisited = 0
         private var aborted = false
         private val pendingCaptures = mutableListOf<PendingCapture>()
+        private val nativeSubtrees = mutableListOf<CompositionNativeSubtree>()
+        private val protectedRasterBounds = mutableListOf<CapturedBounds>()
 
         // These immutable values can be shared within this capture without retaining any UI nodes or text.
         private val resolvedColors = mutableMapOf<Long, String>()
         private var lastTextStyle: CapturedTextStyle? = null
-        private var lastTextColor: ULong = 0uL
-        private var lastTextSize = 0L
+        private var lastTextInfo: TextLayoutInfo? = null
+        private var lastFallbackColor: String? = null
 
         private fun resolveColor(rawColor: Long): String? {
             resolvedColors[rawColor]?.let { return it }
@@ -192,25 +327,47 @@ internal class GranularComposeDecomposer(
             }
         }
 
-        private fun textStyleOf(info: TextLayoutInfo): CapturedTextStyle {
+        private fun textStyleOf(info: TextLayoutInfo, fallbackColor: String?): CapturedTextStyle {
             val previous = lastTextStyle
-            if (previous != null && lastTextColor == info.color && lastTextSize == info.fontSize) return previous
+            val last = lastTextInfo
+            if (previous != null && last != null && matchesTextStyle(last, info, fallbackColor)
+            ) {
+                return previous
+            }
             return CapturedTextStyle(
-                family = DEFAULT_FONT_FAMILY,
+                family = (info.fontFamily as? GenericFontFamily)?.name ?: DEFAULT_FONT_FAMILY,
                 size = info.fontSize,
-                color = resolveColor(info.color.toLong()) ?: DEFAULT_TEXT_COLOR
+                color = resolveColor(info.color.toLong()) ?: fallbackColor ?: DEFAULT_TEXT_COLOR,
+                truncationMode = info.textOverflow?.let { CapturedTruncationMode.valueOf(it.name) }
             ).also {
                 lastTextStyle = it
-                lastTextColor = info.color
-                lastTextSize = info.fontSize
+                lastTextInfo = info
+                lastFallbackColor = fallbackColor
             }
+        }
+
+        private fun matchesTextStyle(last: TextLayoutInfo, info: TextLayoutInfo, fallbackColor: String?): Boolean {
+            val sameFont = last.fontFamily == info.fontFamily && last.fontSize == info.fontSize
+            val sameColor = last.color == info.color && lastFallbackColor == fallbackColor
+            return sameFont && sameColor && last.textOverflow == info.textOverflow
         }
 
         @Suppress("ReturnCount")
         fun run(): CompositionHostDecomposeResult? {
             val root = semanticsUtils.findRootSemanticsNode(hostView) ?: return null
             val rootChildren = mutableListOf<CapturedChild>()
-            walkChildren(root.children, rootChildren)
+            val privacy = privacyOf(root, NodePrivacy(request.imagePrivacy, request.textAndInputPrivacy)).copy(
+                contentColor = semanticsUtils.resolveBackgroundColor(root)?.let { resolveColor(it) }
+            )
+            if (semanticsUtils.isNodeHidden(root)) {
+                rootChildren +=
+                    captureHiddenNode(
+                        request.identityFactory.composeNode(request.hostIdentity, root.id.toString()),
+                        boundsOf(root)
+                    )
+            } else {
+                walkChildren(root.children, rootChildren, privacy)
+            }
             if (aborted || (rootChildren.isEmpty() && !culledLeaf)) return null
             // The batched draw itself is one potentially-expensive operation outside the per-node
             // checkpoint loop above, and (like any draw) can't be interrupted once started - so the
@@ -224,10 +381,12 @@ internal class GranularComposeDecomposer(
         }
 
         @Suppress("ReturnCount")
-        private fun walkNode(node: SemanticsNode, allowCulling: Boolean): CapturedChild? {
+        private fun walkNode(node: SemanticsNode, allowCulling: Boolean, inherited: NodePrivacy): CapturedChild? {
             if (!shouldVisitNode()) return null
             val nodeIdentity = request.identityFactory.composeNode(request.hostIdentity, node.id.toString())
             val bounds = boundsOf(node)
+            val privacy = privacyOf(node, inherited)
+            if (requiresSemanticCapture(node, privacy)) protectedRasterBounds += bounds
 
             if (semanticsUtils.isNodeHidden(node)) {
                 return captureHiddenNode(nodeIdentity, bounds)
@@ -235,14 +394,7 @@ internal class GranularComposeDecomposer(
 
             val interopView = reflectionUtils.getInteropView(node)
             if (interopView != null) {
-                val subtree = request.nativeViewHandoff(interopView, nodeIdentity) ?: return null
-                if (subtree.resolve != null) {
-                    nativeSubtrees += subtree
-                } else {
-                    nodes += subtree.layers
-                    wireframes += subtree.wireframes
-                }
-                return CapturedChild.Layer(subtree.rootLayer.identity)
+                return captureInterop(interopView, nodeIdentity, privacy)
             }
 
             // The native builder applies this same copied rectangle to all composition wireframes.
@@ -259,20 +411,10 @@ internal class GranularComposeDecomposer(
             // ModifierInfo and children getters rebuild Compose-owned lists; read each once in this UI turn.
             val inspection = NodeInspection(node, resolvedChildren)
             val modifiers = inspection.modifiers
-            val textLayoutInfo = semanticsUtils.resolveTextLayoutInfo(node, internalLogger, modifiers)
-            if (textLayoutInfo != null) {
-                val textId = request.identityFactory.textWireframe(nodeIdentity)
-                wireframes += toTextWireframe(textId, bounds, textLayoutInfo)
-                return registerLayer(
-                    nodeIdentity,
-                    bounds,
-                    listOf(CapturedChild.Wireframe(textId)),
-                    modifiers = resolveModifiers(node, bounds, modifiers)
-                )
-            }
+            captureSemanticNode(node, nodeIdentity, bounds, privacy, modifiers)?.let { return it }
 
             val shapeWireframe = resolveShapeWireframe(node, nodeIdentity, bounds, modifiers)
-            tryQueuePixelCapture(node, nodeIdentity, bounds, shapeWireframe, inspection)
+            tryQueuePixelCapture(node, nodeIdentity, bounds, shapeWireframe, inspection, privacy)
                 ?.let { return it }
 
             val children = mutableListOf<CapturedChild>()
@@ -280,10 +422,53 @@ internal class GranularComposeDecomposer(
                 wireframes += shape
                 children += CapturedChild.Wireframe(shape.identity)
             }
-            walkChildren(inspection.children, children)
+            walkChildren(
+                inspection.children,
+                children,
+                privacy.copy(
+                    contentColor =
+                    shapeWireframe?.style?.backgroundColor ?: privacy.contentColor
+                )
+            )
             if (aborted) return null
 
             return registerLayer(nodeIdentity, bounds, children, modifiers = resolveModifiers(node, bounds, modifiers))
+        }
+
+        private fun captureSemanticNode(
+            node: SemanticsNode,
+            identity: CapturedIdentity,
+            bounds: CapturedBounds,
+            privacy: NodePrivacy,
+            modifiers: List<ModifierInfo>
+        ): CapturedChild? {
+            if (semanticsUtils.isImage(node)) return captureSourceImage(node, identity, privacy, modifiers)
+            val progress = semanticsUtils.getProgressBarRangeInfo(node)
+            return if (progress != null) {
+                captureProgress(node, identity, bounds, privacy, progress, modifiers)
+            } else {
+                captureText(node, identity, bounds, privacy, modifiers)
+            }
+        }
+
+        private fun captureInterop(
+            view: View,
+            nodeIdentity: CapturedIdentity,
+            privacy: NodePrivacy
+        ): CapturedChild? {
+            val handoff = request.nativeViewHandoffWithPrivacy
+            val subtree = if (handoff != null) {
+                handoff(view, nodeIdentity, privacy.image, privacy.text)
+            } else {
+                request.nativeViewHandoff(view, nodeIdentity)
+            } ?: return null
+            if (subtree.resolve == null) {
+                nodes += subtree.layers
+                wireframes += subtree.wireframes
+            } else {
+                nativeSubtrees += subtree
+            }
+            return CapturedChild.Layer(subtree.rootLayer.identity)
         }
 
         /** Poll the caller's deadline between bounded node operations; never return a partial tree. */
@@ -294,19 +479,147 @@ internal class GranularComposeDecomposer(
             return !aborted
         }
 
-        private fun walkChildren(source: List<SemanticsNode>, destination: MutableList<CapturedChild>) {
+        private fun walkChildren(
+            source: List<SemanticsNode>,
+            destination: MutableList<CapturedChild>,
+            privacy: NodePrivacy
+        ) {
             // Use the child list already needed for traversal; no scan, cache, or extra View reads.
             val allowCulling = hostClip != null && source.size >= MIN_CULLING_SIBLINGS
             for (child in source) {
-                walkNode(child, allowCulling)?.let { destination += it }
+                walkNode(child, allowCulling, privacy)?.let { destination += it }
                 if (aborted) break
             }
+        }
+
+        private fun captureText(
+            node: SemanticsNode,
+            identity: CapturedIdentity,
+            bounds: CapturedBounds,
+            privacy: NodePrivacy,
+            modifiers: List<ModifierInfo>
+        ): CapturedChild? {
+            val layout = semanticsUtils.resolveTextLayoutInfo(node, internalLogger, modifiers)
+            if (layout == null && !semanticsUtils.isEditable(node)) return null
+            val info = layout ?: TextLayoutInfo(
+                semanticsUtils.editableText(node).orEmpty(),
+                Color.Black.value,
+                DEFAULT_FONT_SIZE,
+                null
+            )
+            val textId = request.identityFactory.textWireframe(identity)
+            val children = mutableListOf<CapturedChild>()
+            resolveShapeWireframe(node, identity, bounds, modifiers)?.let { shape ->
+                wireframes += shape
+                children += CapturedChild.Wireframe(shape.identity)
+            }
+            wireframes += toTextWireframe(textId, bounds, info, node, privacy)
+            children += CapturedChild.Wireframe(textId)
+            return registerLayer(identity, bounds, children, resolveModifiers(node, bounds, modifiers))
         }
 
         private fun captureHiddenNode(identity: CapturedIdentity, bounds: CapturedBounds): CapturedChild {
             val placeholderId = request.identityFactory.placeholderWireframe(identity)
             wireframes += CapturedWireframe.PrivacyPlaceholder(placeholderId, bounds, label = HIDDEN_LABEL)
             return registerLayer(identity, bounds, listOf(CapturedChild.Wireframe(placeholderId)))
+        }
+
+        private fun captureSourceImage(
+            node: SemanticsNode,
+            identity: CapturedIdentity,
+            privacy: NodePrivacy,
+            modifiers: List<ModifierInfo>
+        ): CapturedChild {
+            val bounds = boundsOf(node)
+            val painterBounds = GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
+            // Resolve the same painter and scaling metadata as the existing Compose image mapper.
+            // This is a source bitmap, never a screenshot of this node or its descendants.
+            val image = if (privacy.image == ImagePrivacy.MASK_ALL) {
+                null
+            } else {
+                semanticsUtils.resolveSemanticsPainter(node, internalLogger)
+            }
+
+            // SemanticsUtils already owns regular software copies; ALPHA_8 needs its own copy too.
+            @Suppress("UnsafeThirdPartyFunctionCall") // Copy to the bitmap's supported software configuration.
+            val bitmap = if (image?.bitmap?.config == Bitmap.Config.ALPHA_8) {
+                image.bitmap.copy(Bitmap.Config.ALPHA_8, false)
+            } else {
+                image?.bitmap
+            }
+            val contextualMasked = privacy.image == ImagePrivacy.MASK_LARGE_ONLY && image?.isContextualImage == true
+            val wireframe = if (image != null && bitmap != null && !contextualMasked) {
+                val scaled = imageMapper.calculateScaledImageBounds(
+                    painterBounds,
+                    image,
+                    request.screenDensity
+                )
+                val pixelId = request.identityFactory.imageWireframe(identity)
+                request.pendingPixelCaptureSink.register(
+                    PendingPixelCapture(pixelId, identity, bitmap, isSourceImage = true)
+                )
+                CapturedWireframe.Pixel(
+                    pixelId,
+                    CapturedBounds(scaled.bounds.x, scaled.bounds.y, scaled.bounds.width, scaled.bounds.height),
+                    scaled.clipping?.let { CapturedClip(it.top, it.bottom, it.left, it.right) },
+                    resource = PixelResource.Unresolved
+                )
+            } else {
+                CapturedWireframe.PrivacyPlaceholder(
+                    request.identityFactory.placeholderWireframe(identity),
+                    CapturedBounds(painterBounds.x, painterBounds.y, painterBounds.width, painterBounds.height),
+                    label = if (privacy.image == ImagePrivacy.MASK_LARGE_ONLY) "Content Image" else "Image"
+                )
+            }
+            val children = mutableListOf<CapturedChild>()
+            resolveShapeWireframe(node, identity, bounds, modifiers)?.let {
+                wireframes += it
+                children += CapturedChild.Wireframe(it.identity)
+            }
+            wireframes += wireframe
+            children += CapturedChild.Wireframe(wireframe.identity)
+            return registerLayer(identity, bounds, children, resolveModifiers(node, bounds, modifiers))
+        }
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // isFinite operates on primitive floats.
+        private fun captureProgress(
+            node: SemanticsNode,
+            identity: CapturedIdentity,
+            bounds: CapturedBounds,
+            privacy: NodePrivacy,
+            progress: androidx.compose.ui.semantics.ProgressBarRangeInfo,
+            modifiers: List<ModifierInfo>
+        ): CapturedChild {
+            val trackId = request.identityFactory.shapeWireframe(identity)
+            val trackHeight = TRACK_HEIGHT
+            val track = CapturedWireframe.Shape(
+                trackId,
+                CapturedBounds(bounds.x, bounds.y + (bounds.height - trackHeight) / 2, bounds.width, trackHeight),
+                style = CapturedShapeStyle(backgroundColor = DEFAULT_TEXT_COLOR, cornerRadius = 2L)
+            )
+            wireframes += track
+            val children = mutableListOf<CapturedChild>(CapturedChild.Wireframe(trackId))
+            val range = progress.range.endInclusive - progress.range.start
+            val canShowValue = !semanticsUtils.isAdjustable(node) ||
+                (privacy.text == TextAndInputPrivacy.MASK_SENSITIVE_INPUTS && !request.hasOptionSelectorParent)
+            val validRange = range > 0 && range.isFinite()
+            if (canShowValue && validRange && progress.current.isFinite()) {
+                val fraction = ((progress.current - progress.range.start) / range).coerceIn(0f, 1f)
+                val thumbOwner = request.identityFactory.composeNode(request.hostIdentity, "${node.id}:thumb")
+                val thumbId = request.identityFactory.shapeWireframe(thumbOwner)
+                wireframes += CapturedWireframe.Shape(
+                    thumbId,
+                    CapturedBounds(
+                        bounds.x + (fraction * bounds.width).toLong(),
+                        bounds.y + (bounds.height - THUMB_SIZE) / 2,
+                        THUMB_SIZE,
+                        THUMB_SIZE
+                    ),
+                    style = CapturedShapeStyle(backgroundColor = DEFAULT_TEXT_COLOR, cornerRadius = THUMB_SIZE / 2)
+                )
+                children += registerLayer(thumbOwner, bounds, listOf(CapturedChild.Wireframe(thumbId)))
+            }
+            return registerLayer(identity, bounds, children, resolveModifiers(node, bounds, modifiers))
         }
 
         /**
@@ -328,7 +641,8 @@ internal class GranularComposeDecomposer(
             nodeIdentity: CapturedIdentity,
             bounds: CapturedBounds,
             shapeWireframe: CapturedWireframe.Shape?,
-            inspection: NodeInspection
+            inspection: NodeInspection,
+            privacy: NodePrivacy
         ): CapturedChild? {
             if (shapeWireframe != null ||
                 pendingCaptures.size >= MAX_PIXEL_CAPTURES_PER_HOST ||
@@ -336,8 +650,15 @@ internal class GranularComposeDecomposer(
             ) {
                 return null
             }
+            if (captureLabel(privacy, bounds) != null) {
+                protectedRasterBounds += bounds
+                pendingCaptures += PendingCapture(nodeIdentity, bounds, Rect(), privacy)
+                return CapturedChild.Layer(nodeIdentity)
+            }
+            // Keep restricted descendants semantic: OCR cannot hide images, control state or native interop.
+            if (containsRestrictedDescendant(node, privacy)) return null
             val hostBoundsPx = hostRelativeBoundsPx(node) ?: return null
-            pendingCaptures += PendingCapture(nodeIdentity, bounds, hostBoundsPx)
+            pendingCaptures += PendingCapture(nodeIdentity, bounds, hostBoundsPx, privacy)
             return CapturedChild.Layer(nodeIdentity)
         }
 
@@ -352,7 +673,8 @@ internal class GranularComposeDecomposer(
         @Suppress("ReturnCount") // Empty batches and expired draws leave no partial capture.
         private fun resolvePendingCaptures(): Boolean {
             if (pendingCaptures.isEmpty()) return true
-            val eligible = pendingCaptures.filter { request.pixelCapturePlaceholderLabelFor(it.bounds) == null }
+            val eligible = pendingCaptures.filter { canRasterize(it) }
+            if (!request.shouldContinue()) return false
             val bitmaps = if (eligible.isEmpty()) {
                 emptyList()
             } else {
@@ -392,7 +714,7 @@ internal class GranularComposeDecomposer(
                     resource = PixelResource.Unresolved
                 )
             }
-            val placeholderLabel = request.pixelCapturePlaceholderLabelFor(pending.bounds) ?: CAPTURE_UNAVAILABLE_LABEL
+            val placeholderLabel = captureLabel(pending.privacy, pending.bounds) ?: CAPTURE_UNAVAILABLE_LABEL
             return CapturedWireframe.PrivacyPlaceholder(
                 identity = request.identityFactory.placeholderWireframe(pending.nodeIdentity),
                 bounds = pending.bounds,
@@ -425,14 +747,81 @@ internal class GranularComposeDecomposer(
         private fun toTextWireframe(
             identity: CapturedIdentity,
             bounds: CapturedBounds,
-            textLayoutInfo: TextLayoutInfo
+            textLayoutInfo: TextLayoutInfo,
+            node: SemanticsNode,
+            privacy: NodePrivacy
         ): CapturedWireframe.Text {
             return CapturedWireframe.Text(
                 identity = identity,
                 bounds = bounds,
-                text = textLayoutInfo.text,
-                textStyle = textStyleOf(textLayoutInfo)
+                text = if (semanticsUtils.isPassword(node)) {
+                    "***"
+                } else {
+                    transformCapturedText(
+                        semanticsUtils.editableText(node) ?: textLayoutInfo.text,
+                        privacy.text,
+                        semanticsUtils.isEditable(node) || request.hasOptionSelectorParent
+                    )
+                },
+                textStyle = textStyleOf(textLayoutInfo, privacy.contentColor),
+                textPosition = if (semanticsUtils.isEditable(node)) {
+                    CapturedTextPosition(
+                        CapturedPadding(left = (EDIT_TEXT_START_PADDING * request.screenDensity).toLong()),
+                        CapturedAlignment(CapturedHorizontalAlignment.LEFT, CapturedVerticalAlignment.CENTER)
+                    )
+                } else {
+                    CapturedTextPosition(
+                        alignment = CapturedAlignment(
+                            horizontal = when (textLayoutInfo.textAlign) {
+                                TextAlign.End, TextAlign.Right -> CapturedHorizontalAlignment.RIGHT
+                                TextAlign.Center, TextAlign.Justify -> CapturedHorizontalAlignment.CENTER
+                                else -> CapturedHorizontalAlignment.LEFT
+                            }
+                        )
+                    )
+                }
             )
+        }
+
+        private fun captureLabel(privacy: NodePrivacy, bounds: CapturedBounds): String? {
+            val resolver = request.pixelCapturePlaceholderLabelForPrivacy
+            if (resolver == null) return request.pixelCapturePlaceholderLabelFor(bounds)
+            return resolver(privacy.image, bounds)
+        }
+
+        @Suppress("UnsafeThirdPartyFunctionCall", "ReturnCount") // Owned deque; expiry and restrictions stop the scan.
+        private fun containsRestrictedDescendant(node: SemanticsNode, privacy: NodePrivacy): Boolean {
+            val pending = ArrayDeque<Pair<SemanticsNode, NodePrivacy>>()
+            pending.addLast(node to privacy)
+            while (pending.isNotEmpty()) {
+                if (!request.shouldContinue()) { aborted = true; return true }
+                val (current, inherited) = pending.removeLast()
+                val effective = privacyOf(current, inherited)
+                if (isRasterRestricted(current, effective)) return true
+                current.children.forEach { pending.addLast(it to effective) }
+            }
+            return false
+        }
+
+        private fun isRasterRestricted(node: SemanticsNode, privacy: NodePrivacy): Boolean =
+            requiresSemanticCapture(node, privacy) || captureLabel(privacy, boundsOf(node)) != null
+
+        // The shared host draw also paints siblings. Never crop protected sibling pixels into a resource.
+        // This session owns the bounds list; each comparison checks the deadline.
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        private fun canRasterize(capture: PendingCapture): Boolean =
+            captureLabel(capture.privacy, capture.bounds) == null &&
+                protectedRasterBounds.all {
+                    request.shouldContinue() && isFullyOutsideHostClip(capture.bounds, it)
+                }
+
+        private fun requiresSemanticCapture(node: SemanticsNode, privacy: NodePrivacy): Boolean {
+            val semanticContent = semanticsUtils.isNodeHidden(node) || reflectionUtils.getInteropView(node) != null ||
+                semanticsUtils.isImage(node)
+            val maskedState =
+                semanticsUtils.hasInputState(node) && privacy.text != TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+            val restrictedInput = maskedState || semanticsUtils.isPassword(node)
+            return semanticContent || restrictedInput
         }
 
         private fun resolveShapeWireframe(
@@ -490,9 +879,9 @@ internal class GranularComposeDecomposer(
         private fun resolveGraphicsLayerModifiers(
             modifier: InspectableValue,
             node: SemanticsNode,
-            bounds: CapturedBounds
+            bounds: CapturedBounds,
+            properties: GraphicsLayerProperties = GraphicsLayerProperties(modifier)
         ): List<CapturedModifier> {
-            val properties = GraphicsLayerProperties(modifier)
             val density = node.layoutInfo.density
             val modifiers = mutableListOf<CapturedModifier>()
             if (properties.clip) {
@@ -517,88 +906,13 @@ internal class GranularComposeDecomposer(
             }
             return modifiers
         }
-
-        /**
-         * A shape without meaningful rounding clips to a plain rectangle, which the existing
-         * per-wireframe ancestor-bounds crop ([com.datadog.android.internal.sessionreplay.composition.CapturedClip])
-         * already represents - only a genuinely rounded (or otherwise non-rectangular) shape needs
-         * this layer-level modifier, since that's what the rectangular crop can't express. Only
-         * [androidx.compose.foundation.shape.RoundedCornerShape] (which `CircleShape` is itself an
-         * instance of) is resolved to a real radius today; any other [Shape] - a custom
-         * `GenericShape`, a cut/diagonal shape, etc. - is treated as unsupported and skipped, same
-         * as [com.datadog.android.sessionreplay.compose.internal.utils.BackgroundResolver.resolveCornerRadius].
-         */
-        @Suppress("ReturnCount") // Each guard bails out at the point it's no longer worth a Clip modifier.
-        private fun resolveClipModifier(
-            shape: Shape?,
-            bounds: CapturedBounds,
-            density: Density
-        ): CapturedModifier.Clip? {
-            if (shape == null) return null
-            val radius = semanticsUtils.resolveCornerRadius(
-                shape,
-                GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height),
-                density
-            )
-            if (radius <= 0f) return null
-            val clampedRadius = radius.toDouble().coerceAtMost(minOf(bounds.width, bounds.height) / 2.0)
-            return CapturedModifier.Clip(path = roundedRectPath(bounds.width, bounds.height, clampedRadius))
-        }
-
-        /**
-         * Android's elevation shadow is a geometric light-source simulation (see hwui/Skia's
-         * ambient+spot shadow renderer), not a simple offset/blur formula - there is no principled
-         * way to derive [CapturedModifier.Shadow]'s offset/radius from elevation directly. This
-         * instead looks up Google's own published Material Design elevation table (the same one
-         * Material Components Web/MUI use to replicate Android shadows in CSS), using only its
-         * dominant "key" (umbra) layer - the table's penumbra/ambient layers and its spread
-         * parameter have no equivalent in [CapturedModifier.Shadow]'s single-shadow model, so this
-         * is a visual approximation, not an exact reconstruction. Skipped entirely for
-         * zero/negative elevation - a flat node casts no shadow. [elevationPx] is raw pixels, same
-         * as `graphicsLayer`'s other size-shaped parameters.
-         */
-        @Suppress("ReturnCount") // Each guard bails out at the point it's no longer worth a Shadow modifier.
-        private fun resolveShadowModifier(
-            elevationPx: Float?,
-            spotColor: Color?,
-            density: Density
-        ): CapturedModifier.Shadow? {
-            if (elevationPx == null || elevationPx <= 0f) return null
-            val elevationDp = elevationPx / density.density
-            val level = elevationDp.roundToInt().coerceIn(1, MAX_ELEVATION_DP)
-            val (offsetYDp, blurDp) = MATERIAL_KEY_SHADOW_DP[level]
-            return CapturedModifier.Shadow(
-                color = formatShadowColor(spotColor ?: Color.Black),
-                offsetX = 0.0,
-                offsetY = offsetYDp,
-                radius = blurDp
-            )
-        }
-
-        private fun formatShadowColor(color: Color): String {
-            val alpha = (color.alpha * SHADOW_KEY_OPACITY.toFloat() * OPAQUE_ALPHA_VALUE).roundToInt()
-            return colorStringFormatter.formatColorAndAlphaAsHexString(color.toArgb(), alpha)
-        }
-
-        /**
-         * Only a [BlurEffect] has a [CapturedModifier.GaussianBlur] equivalent - any other
-         * [RenderEffect] (offset, chained, or a raw platform effect) has none and resolves to null.
-         * [CapturedModifier.GaussianBlur] has a single [radius][CapturedModifier.GaussianBlur.radius],
-         * so an elliptical blur (`radiusX != radiusY`) - not producible by [Modifier.blur]'s own
-         * single-radius overload, but possible via its two-radius one - is left unrecognized rather
-         * than guessed at. [radiusX]/[radiusY] are raw pixels, same as `graphicsLayer`'s other
-         * size-shaped parameters.
-         */
-        @Suppress("ReturnCount") // Each guard bails out at the point it's no longer worth a GaussianBlur modifier.
-        private fun resolveBlurModifier(renderEffect: RenderEffect?, density: Density): CapturedModifier.GaussianBlur? {
-            val blurEffect = renderEffect as? BlurEffect ?: return null
-            val (radiusXPx, radiusYPx) = reflectionUtils.getBlurRadii(blurEffect) ?: return null
-            if (radiusXPx != radiusYPx) return null
-            return CapturedModifier.GaussianBlur(radius = (radiusXPx / density.density).toDouble())
-        }
     }
 
     private companion object {
+        const val EDIT_TEXT_START_PADDING = 4L
+        const val DEFAULT_FONT_SIZE = 12L
+        const val TRACK_HEIGHT = 4L
+        const val THUMB_SIZE = 8L
         const val HIDDEN_LABEL = "Hidden"
         const val CAPTURE_UNAVAILABLE_LABEL = "Content"
         const val DEFAULT_FONT_FAMILY = "roboto, sans-serif"

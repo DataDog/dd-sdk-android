@@ -203,6 +203,60 @@ internal class PixelFallbackSnapshotProcessorTest {
     }
 
     @Test
+    fun `M cache source images separately from masked pixels W process()`(@StringForgery fakeScope: String) {
+        // Given
+        val fakeFixture = Fixture(fakeScope)
+        val stubSignatureGenerator =
+            mock<com.datadog.android.sessionreplay.internal.recorder.resources.BitmapSignatureGenerator>()
+        whenever(stubSignatureGenerator.generateSignature(fakeFixture.bitmap)).thenReturn(1L)
+        val fakeMaskedCache = LruCache<Long, String>(10).apply { put(1L, "masked") }
+        val mockDetector: TextDetector = mock()
+        val fakeCallbacks = mutableListOf<ResourceResolverCallback>()
+        doAnswer {
+            fakeCallbacks += it.getArgument<ResourceResolverCallback>(1)
+            null
+        }.whenever(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
+        val testedProcessor = PixelFallbackSnapshotProcessor(
+            mockResourceResolver,
+            mockDetector,
+            immediateMainThreadExecutor,
+            bitmapSignatureGenerator = stubSignatureGenerator,
+            resolvedContentCache = fakeMaskedCache
+        )
+        val fakeSource = PendingPixelCapture(
+            fakeFixture.pixelIdentity,
+            fakeFixture.ownerIdentity,
+            fakeFixture.bitmap,
+            isSourceImage = true
+        )
+        val fakeGeneration = generationContext()
+        val fakeResults = mutableListOf<SnapshotProcessingResult>()
+        fun process(generation: CaptureGenerationContext, capture: PendingPixelCapture) = testedProcessor.process(
+            SnapshotProcessingRequest(generation, fakeFixture.snapshot, listOf(capture), fakeFixture.identityFactory),
+            fakeResults::add
+        )
+
+        // When
+        process(fakeGeneration, fakeSource)
+        fakeCallbacks.single().onSuccess("source")
+        fakeResults.clear()
+        process(generationContext(), fakeSource)
+        process(generationContext(), fakeFixture.pending)
+
+        // Then
+        assertThat(fakeCallbacks).hasSize(1)
+        val fakeResources = fakeResults.map {
+            val snapshot = (it as SnapshotProcessingResult.Completed).snapshot
+            (snapshot.wireframes.single() as CapturedWireframe.Pixel).resource
+        }
+        assertThat(fakeResources).containsExactly(
+            PixelResource.Resolved("source", "image/webp"),
+            PixelResource.Resolved("masked", "image/webp")
+        )
+        verify(mockDetector, never()).detectTextRegions(any(), any())
+    }
+
+    @Test
     fun `M downgrade to a placeholder W process { detector reports Unavailable }`(@StringForgery fakeScope: String) {
         // Given
         val fixture = Fixture(fakeScope)

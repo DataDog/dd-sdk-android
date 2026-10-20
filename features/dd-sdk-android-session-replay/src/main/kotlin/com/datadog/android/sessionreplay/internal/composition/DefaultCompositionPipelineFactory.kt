@@ -88,7 +88,12 @@ internal class DefaultCompositionPipelineFactory(
         heatmapIdentifierRegistry: HeatmapIdentifierRegistry?
     ): Recorder {
         val internalLogger = sdkCore.internalLogger
-        val windowSource = ActiveWindowSource(WindowTouchPrivacyReader(internalLogger = internalLogger)::read)
+        val windowSource = ActiveWindowSource(
+            WindowTouchPrivacyReader(
+                internalLogger = internalLogger,
+                composeHostDecomposer = compositionHostDecomposer
+            )::read
+        )
         val heatmapResolver = heatmapIdentifierRegistry?.let {
             HeatmapIdentifierResolver(application.packageName, it, internalLogger)
         }

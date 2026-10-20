@@ -23,24 +23,32 @@ import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.platform.ValueElement
 import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedHorizontalAlignment
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentityKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
+import com.datadog.android.internal.sessionreplay.composition.CapturedTruncationMode
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframeKind
 import com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCapture
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink
+import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
 import com.datadog.android.sessionreplay.recorder.composition.CompositionNativeSubtree
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -56,6 +64,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -82,6 +92,289 @@ internal class GranularComposeDecomposerTest {
     private lateinit var testedGate: GranularComposeCompatibilityGate
     private lateinit var testedDecomposer: GranularComposeDecomposer
     private val mockView: View = mock()
+
+    @Test
+    fun `M apply inherited and local privacy W decompose() { cached layout text is unchanged }`() {
+        // Given
+        val stubText = mockLeafNode()
+        val stubInput = mockLeafNode()
+        val stubPassword = mockLeafNode()
+        val stubRoot = mockRoot(listOf(stubText, stubInput, stubPassword))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
+        listOf(stubText, stubInput, stubPassword).forEach { node ->
+            whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any(), any()))
+                .thenReturn(TextLayoutInfo("secret", Color.Black.value, 12L, null))
+        }
+        whenever(
+            mockSemanticsUtils.getTextAndInputPrivacyOverride(stubRoot)
+        ).thenReturn(TextAndInputPrivacy.MASK_ALL_INPUTS)
+        whenever(mockSemanticsUtils.isEditable(stubInput)).thenReturn(true)
+        whenever(mockSemanticsUtils.isPassword(stubPassword)).thenReturn(true)
+
+        // When
+        val first = testedDecomposer.decompose(mockView, realRequest())!!
+        whenever(mockSemanticsUtils.getTextAndInputPrivacyOverride(stubText)).thenReturn(TextAndInputPrivacy.MASK_ALL)
+        val second = testedDecomposer.decompose(mockView, realRequest())!!
+
+        // Then
+        assertThat(first.wireframes.filterIsInstance<CapturedWireframe.Text>().map { it.text })
+            .containsExactly("secret", "***", "***")
+        val masked = second.wireframes.filterIsInstance<CapturedWireframe.Text>().map { it.text }
+        assertThat(masked.first()).doesNotContain("secret")
+        assertThat(masked.drop(1)).containsExactly("***", "***")
+    }
+
+    @Test
+    fun `M preserve font alignment and truncation W decompose()`() {
+        // Given
+        val node = mockLeafNode()
+        val stubRoot = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any(), any())).thenReturn(
+            TextLayoutInfo(
+                "text",
+                Color.Black.value,
+                18,
+                FontFamily.Monospace,
+                TextAlign.Right,
+                MobileSegment.TruncationMode.TAIL
+            )
+        )
+
+        // When
+        val text = testedDecomposer.decompose(mockView, realRequest())!!.wireframes.single() as CapturedWireframe.Text
+
+        // Then
+        assertThat(text.textStyle.family).isEqualTo("monospace")
+        assertThat(text.textStyle.truncationMode).isEqualTo(CapturedTruncationMode.TAIL)
+        assertThat(text.textPosition?.alignment?.horizontal).isEqualTo(CapturedHorizontalAlignment.RIGHT)
+    }
+
+    @Test
+    fun `M capture a permitted source image W decompose() { no OCR extension }`() {
+        // Given
+        val node = mockLeafNode()
+        val stubBitmap: Bitmap = mock()
+        whenever(stubBitmap.width).thenReturn(20)
+        whenever(stubBitmap.height).thenReturn(20)
+        val stubRoot = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
+        whenever(mockSemanticsUtils.isImage(node)).thenReturn(true)
+        whenever(mockSemanticsUtils.resolveSemanticsPainter(eq(node), any())).thenReturn(BitmapInfo(stubBitmap, false))
+        val captures = mutableListOf<PendingPixelCapture>()
+
+        // When
+        val result = testedDecomposer.decompose(
+            mockView,
+            realRequest(pendingPixelCaptureSink = PendingPixelCaptureSink(captures::add))
+        )!!
+
+        // Then
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
+        assertThat(captures.single().isSourceImage).isTrue()
+        assertThat(captures.single().isTextFree).isFalse()
+    }
+
+    @Test
+    fun `M retain editable field background W decompose() { no text layout and masked input }`() {
+        // Given
+        val stubField = mockLeafNode()
+        val stubRoot = mockRoot(listOf(stubField))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
+        whenever(mockSemanticsUtils.isEditable(stubField)).thenReturn(true)
+        whenever(mockSemanticsUtils.editableText(stubField)).thenReturn("secret")
+        whenever(
+            mockSemanticsUtils.resolveBackgroundColor(any<List<ModifierInfo>>())
+        ).thenReturn(Color.White.value.toLong())
+
+        // When
+        val result = testedDecomposer.decompose(
+            mockView,
+            realRequest(textPrivacy = TextAndInputPrivacy.MASK_ALL_INPUTS)
+        )!!
+
+        // Then
+        assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Shape>()).hasSize(1)
+        val text = result.wireframes.filterIsInstance<CapturedWireframe.Text>().single()
+        assertThat(text.text).isEqualTo("***")
+        assertThat(text.textPosition?.padding?.left).isEqualTo(4L)
+        assertThat(result.nodes.single().children.map { it.identity })
+            .containsExactlyElementsOf(result.wireframes.map { it.identity })
+    }
+
+    @Test
+    fun `M own alpha bitmap pixels W decompose() { source image }`() {
+        // Given
+        val stubImage = mockLeafNode()
+        val stubRoot = mockRoot(listOf(stubImage))
+        val stubOriginal: Bitmap = mock()
+        val stubCopy: Bitmap = mock()
+        whenever(stubOriginal.config).thenReturn(Bitmap.Config.ALPHA_8)
+        whenever(stubOriginal.width).thenReturn(20)
+        whenever(stubOriginal.height).thenReturn(20)
+        whenever(stubOriginal.copy(Bitmap.Config.ALPHA_8, false)).thenReturn(stubCopy)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
+        whenever(mockSemanticsUtils.isImage(stubImage)).thenReturn(true)
+        whenever(mockSemanticsUtils.resolveSemanticsPainter(eq(stubImage), any()))
+            .thenReturn(BitmapInfo(stubOriginal, false))
+        val fakeCaptures = mutableListOf<PendingPixelCapture>()
+
+        // When
+        testedDecomposer.decompose(
+            mockView,
+            realRequest(pendingPixelCaptureSink = PendingPixelCaptureSink(fakeCaptures::add))
+        )
+
+        // Then
+        assertThat(fakeCaptures.single().bitmap).isSameAs(stubCopy)
+        verify(stubOriginal).copy(Bitmap.Config.ALPHA_8, false)
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["hidden", "password", "input", "image", "interop"])
+    fun `M exclude restricted descendants from parent raster W decompose()`(fakeRestriction: String) {
+        // Given
+        val stubParent = mockDrawingEffectNode()
+        val stubChild = mockLeafNode()
+        val stubRoot = mockRoot(listOf(stubParent))
+        whenever(stubParent.children).thenReturn(listOf(stubChild))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
+        when (fakeRestriction) {
+            "hidden" -> whenever(mockSemanticsUtils.isNodeHidden(stubChild)).thenReturn(true)
+            "password" -> whenever(mockSemanticsUtils.isPassword(stubChild)).thenReturn(true)
+            "input" -> {
+                whenever(mockSemanticsUtils.hasInputState(stubChild)).thenReturn(true)
+                whenever(mockSemanticsUtils.isEditable(stubChild)).thenReturn(true)
+            }
+            "image" -> {
+                whenever(mockSemanticsUtils.isImage(stubChild)).thenReturn(true)
+                whenever(mockSemanticsUtils.getImagePrivacyOverride(stubChild)).thenReturn(ImagePrivacy.MASK_ALL)
+            }
+            "interop" -> whenever(mockReflectionUtils.getInteropView(stubChild)).thenReturn(mockView)
+        }
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(stubChild), any(), any()))
+            .thenReturn(TextLayoutInfo("secret", Color.Black.value, 12L, null))
+        val fakeRasterizer = FakeComposeHostCaptureRasterizer()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = fakeRasterizer
+        )
+        val fakeCaptures = mutableListOf<PendingPixelCapture>()
+
+        // When
+        val result = testedDecomposer.decompose(
+            mockView,
+            realRequest(
+                textPrivacy = TextAndInputPrivacy.MASK_ALL_INPUTS,
+                pendingPixelCaptureSink = PendingPixelCaptureSink(fakeCaptures::add)
+            )
+        )
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(fakeRasterizer.callCount).isZero()
+        assertThat(fakeCaptures).isEmpty()
+        assertThat(result!!.wireframes.filterIsInstance<CapturedWireframe.Text>()).allMatch { it.text != "secret" }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M exclude protected siblings from raster crops W decompose()`(fakeOverlap: Boolean) {
+        // Given
+        val stubDrawing = mockDrawingEffectNode()
+        val stubHidden = mockLeafNode()
+        val stubRoot = mockRoot(listOf(stubDrawing, stubHidden))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
+        whenever(mockSemanticsUtils.isNodeHidden(stubHidden)).thenReturn(true)
+        whenever(mockSemanticsUtils.resolveInnerBounds(eq(stubHidden), any()))
+            .thenReturn(GlobalBounds(if (fakeOverlap) 0 else 20, 0, 10, 10))
+        val fakeRasterizer = FakeComposeHostCaptureRasterizer()
+        val fakeCaptures = mutableListOf<PendingPixelCapture>()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = fakeRasterizer
+        )
+
+        // When
+        val result = testedDecomposer.decompose(
+            mockView,
+            realRequest(pendingPixelCaptureSink = PendingPixelCaptureSink(fakeCaptures::add))
+        )!!
+
+        // Then
+        assertThat(fakeRasterizer.callCount).isEqualTo(if (fakeOverlap) 0 else 1)
+        assertThat(fakeCaptures).hasSize(if (fakeOverlap) 0 else 1)
+        assertThat(result.wireframes.filterIsInstance<CapturedWireframe.PrivacyPlaceholder>())
+            .hasSize(if (fakeOverlap) 2 else 1)
+    }
+
+    @Test
+    fun `M apply current image privacy W decompose() { source was captured previously }`() {
+        // Given
+        val stubImage = mockLeafNode()
+        val stubRoot = mockRoot(listOf(stubImage))
+        val stubBitmap: Bitmap = mock()
+        whenever(stubBitmap.width).thenReturn(20)
+        whenever(stubBitmap.height).thenReturn(20)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
+        whenever(mockSemanticsUtils.isImage(stubImage)).thenReturn(true)
+        whenever(
+            mockSemanticsUtils.resolveSemanticsPainter(eq(stubImage), any())
+        ).thenReturn(BitmapInfo(stubBitmap, false))
+        val fakeCaptures = mutableListOf<PendingPixelCapture>()
+        val fakeRequest = realRequest(pendingPixelCaptureSink = PendingPixelCaptureSink(fakeCaptures::add))
+        testedDecomposer.decompose(mockView, fakeRequest)
+        assertThat(fakeCaptures).hasSize(1)
+        fakeCaptures.clear()
+
+        // When
+        whenever(mockSemanticsUtils.getImagePrivacyOverride(stubImage)).thenReturn(ImagePrivacy.MASK_ALL)
+        val result = testedDecomposer.decompose(mockView, fakeRequest)!!
+
+        // Then
+        assertThat(fakeCaptures).isEmpty()
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
+    }
+
+    @Test
+    fun `M propagate inherited and local privacy W decompose() { native interop }`() {
+        // Given
+        val stubInterop = mockLeafNode()
+        val stubRoot = mockRoot(listOf(stubInterop))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
+        whenever(mockReflectionUtils.getInteropView(stubInterop)).thenReturn(mockView)
+        whenever(mockSemanticsUtils.getTextAndInputPrivacyOverride(stubRoot))
+            .thenReturn(TextAndInputPrivacy.MASK_ALL_INPUTS)
+        whenever(mockSemanticsUtils.getImagePrivacyOverride(stubInterop)).thenReturn(ImagePrivacy.MASK_ALL)
+        val fakeFactory = FakeCompositionIdentityFactory()
+        val fakePrivacy = mutableListOf<Pair<ImagePrivacy, TextAndInputPrivacy>>()
+        val fakeRequest = CompositionHostDecomposeRequest(
+            fakeFactory,
+            fakeFactory.anyIdentity(),
+            1f,
+            hostBounds = null,
+            nativeViewHandoff = { _, _ -> error("Expected privacy-aware handoff") },
+            imagePrivacy = ImagePrivacy.MASK_NONE,
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
+            nativeViewHandoffWithPrivacy = { _, identity, image, text ->
+                fakePrivacy += image to text
+                val layer =
+                    CapturedLayer(identity, CapturedLayerKind.NATIVE_VIEW, CapturedBounds(0, 0, 10, 10), emptyList())
+                CompositionNativeSubtree(layer, listOf(layer), emptyList())
+            }
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, fakeRequest)
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(fakePrivacy).containsExactly(ImagePrivacy.MASK_ALL to TextAndInputPrivacy.MASK_ALL_INPUTS)
+    }
 
     @BeforeEach
     fun `set up`() {
@@ -408,6 +701,7 @@ internal class GranularComposeDecomposerTest {
     private fun mockRoot(children: List<SemanticsNode>): SemanticsNode {
         val root: SemanticsNode = mock()
         whenever(root.children).thenReturn(children)
+        whenever(mockSemanticsUtils.resolveBackgroundColor(root)).thenReturn(null)
         return root
     }
 
@@ -416,17 +710,22 @@ internal class GranularComposeDecomposerTest {
         pixelCapturePlaceholderLabelFor: (
             bounds: com.datadog.android.internal.sessionreplay.composition.CapturedBounds
         ) -> String? = { null },
-        pendingPixelCaptureSink: PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp
+        pendingPixelCaptureSink: PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp,
+        textPrivacy: TextAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
+        imagePrivacy: ImagePrivacy = ImagePrivacy.MASK_NONE
     ): CompositionHostDecomposeRequest {
         val identityFactory = FakeCompositionIdentityFactory()
         return CompositionHostDecomposeRequest(
             identityFactory = identityFactory,
             hostIdentity = identityFactory.anyIdentity(),
             screenDensity = 1f,
+            hostBounds = null,
             nativeViewHandoff = { _, _ -> null },
             shouldContinue = shouldContinue,
             pixelCapturePlaceholderLabelFor = pixelCapturePlaceholderLabelFor,
-            pendingPixelCaptureSink = pendingPixelCaptureSink
+            pendingPixelCaptureSink = pendingPixelCaptureSink,
+            textAndInputPrivacy = textPrivacy,
+            imagePrivacy = imagePrivacy
         )
     }
 
@@ -486,10 +785,10 @@ internal class GranularComposeDecomposerTest {
         // When
         testedDecomposer.decompose(mockView, realRequest(shouldContinue = { checkpointCalls++; true }))
 
-        // Then - 6 nodes / checkpoint-every-2 = 3, plus the pre- and post-batched-draw checks
+        // Then - 3 walk checkpoints, 6 raster privacy checks, and 3 eligibility/draw checks.
         // that fires because every childless mockLeafNode() here is itself a pixel-capture
         // candidate (see the "pixel capture" test region below).
-        assertThat(checkpointCalls).isEqualTo(5)
+        assertThat(checkpointCalls).isEqualTo(12)
     }
 
     // endregion

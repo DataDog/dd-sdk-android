@@ -17,6 +17,7 @@ import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.putTouchOverrideArea
 import com.datadog.android.sessionreplay.internal.recorder.SnapshotProducer.Companion.INVALID_PRIVACY_LEVEL_ERROR
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
+import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -29,7 +30,8 @@ internal class WindowTouchPrivacyReader(
     private val timeProvider: CaptureTimeProvider = CaptureTimeProvider(System::nanoTime),
     private val budgetNs: Long = DEFAULT_BUDGET_NS,
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND,
-    private val isMainThreadWindow: (View) -> Boolean = ::isAttachedToMainLooper
+    private val isMainThreadWindow: (View) -> Boolean = ::isAttachedToMainLooper,
+    private val composeHostDecomposer: CompositionHostDecomposer? = null
 ) {
     private val viewUtils = ViewUtilsInternal()
 
@@ -49,6 +51,15 @@ internal class WindowTouchPrivacyReader(
             e
         )
         null
+    } catch (e: LinkageError) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            { "Unable to refresh composition touch privacy" },
+            e,
+            onlyOnce = true
+        )
+        null
     }
 
     @UiThread
@@ -65,11 +76,29 @@ internal class WindowTouchPrivacyReader(
             val view = pending.removeLast()
             if (isFiltered(view)) continue
             collectTouchOverrideArea(view, areas, internalLogger)
+            if (!collectComposeOverrides(view, areas, startedAtNs)) return null
             if (!enqueueChildren(view, pending, startedAtNs)) return null
         }
         return areas.takeIf {
             timeProvider.elapsedRealtimeNanos() - startedAtNs < budgetNs && isMainThreadWindow(root)
         }
+    }
+
+    @UiThread
+    @Suppress("ReturnCount") // Unsupported or over-budget semantics cannot authorize a touch.
+    private fun collectComposeOverrides(
+        view: View,
+        areas: MutableMap<Rect, TouchPrivacy>,
+        startedAtNs: Long
+    ): Boolean {
+        val decomposer = composeHostDecomposer ?: return true
+        if (!isComposeHostByClassName(view)) return true
+        val overrides = decomposer.readTouchPrivacy(view) {
+            timeProvider.elapsedRealtimeNanos() - startedAtNs < budgetNs
+        } ?: return false
+        if (overrides.isNotEmpty() && ViewTransformResolver.hasTransformedAncestor(view)) return false
+        overrides.forEach { (rect, privacy) -> areas.putTouchOverrideArea(rect, privacy) }
+        return true
     }
 
     /** Hidden and occluded containers have touchable descendants; WebView internals remain opaque. */

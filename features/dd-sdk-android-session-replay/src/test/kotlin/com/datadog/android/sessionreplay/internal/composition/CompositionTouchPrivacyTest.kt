@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import android.content.Context
+import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.Point
 import android.graphics.Rect
@@ -16,6 +17,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.view.Window
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.R
@@ -24,11 +26,16 @@ import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
+import com.datadog.android.sessionreplay.internal.composition.mapper.LegacyCapturedViewMapper
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.recorder.callback.MotionEventUtils
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
+import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.MappingContext
+import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
+import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
@@ -50,6 +57,117 @@ import java.util.concurrent.FutureTask
 import java.util.concurrent.TimeUnit
 
 internal class CompositionTouchPrivacyTest {
+
+    @Test
+    fun `M publish custom mapper overrides W capture() { separate from legacy staging }`() {
+        // Given
+        val fixture = Fixture(TouchPrivacy.SHOW, useCustomMapper = true)
+        fixture.onMap = {}
+        fixture.onCustomTouch = { _, manager ->
+            manager.addTouchOverrideArea(Rect(0, 0, 100, 100), TouchPrivacy.HIDE)
+        }
+
+        // When
+        fixture.startCapture()
+
+        // Then
+        val areas = fixture.windowSource.currentTouchOverrideAreas(fixture.root, RumViewIdentityScope("view"))
+        assertThat(areas).containsEntry(Rect(0, 0, 100, 100), TouchPrivacy.HIDE)
+        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(), checkNotNull(areas))).isFalse()
+        assertThat(fixture.touchPrivacyManager.getNextOverrideAreas()).isEmpty()
+    }
+
+    @Test
+    fun `M refresh custom policy W redraw and capture() { policy changes }`() {
+        // Given
+        val fixture = Fixture(TouchPrivacy.HIDE, useCustomMapper = true)
+        fixture.onMap = {}
+        var fakePolicy = TouchPrivacy.HIDE
+        var fakeMapperCalls = 0
+        fixture.onCustomTouch = { view, manager ->
+            if (view === fixture.root) {
+                fakeMapperCalls++
+                manager.addTouchOverrideArea(Rect(0, 0, 100, 100), fakePolicy)
+            }
+        }
+        fixture.startCapture()
+        val fakeScope = RumViewIdentityScope("view")
+
+        // When / Then
+        fixture.draw()
+        fakePolicy = TouchPrivacy.SHOW
+        assertThat(fixture.windowSource.currentTouchOverrideAreas(fixture.root, fakeScope)).isNull()
+        assertThat(fakeMapperCalls).isEqualTo(1)
+        fixture.startCapture()
+        val areas = checkNotNull(fixture.windowSource.currentTouchOverrideAreas(fixture.root, fakeScope))
+        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(), areas)).isTrue()
+        assertThat(fakeMapperCalls).isEqualTo(2)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M retain custom descendant privacy W capture() { visual subtree skipped }`(fakeHidden: Boolean) {
+        // Given
+        val fixture = Fixture(TouchPrivacy.SHOW, useCustomMapper = true)
+        fixture.onMap = {}
+        whenever(fixture.root.getTag(R.id.datadog_hidden)).thenReturn(fakeHidden)
+        fixture.onCustomTouch = { view, manager ->
+            if (view !== fixture.root) manager.addTouchOverrideArea(Rect(0, 0, 100, 100), TouchPrivacy.HIDE)
+        }
+
+        // When
+        fixture.startCapture()
+
+        // Then
+        val areas =
+            checkNotNull(fixture.windowSource.currentTouchOverrideAreas(fixture.root, RumViewIdentityScope("view")))
+        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(), areas)).isFalse()
+        assertThat(fixture.touchPrivacyManager.getNextOverrideAreas()).isEmpty()
+    }
+
+    @Test
+    fun `M isolate custom policy W capture() { overlapping windows }`() {
+        // Given
+        val fixture = Fixture(TouchPrivacy.HIDE, useCustomMapper = true)
+        val fakeSecond = fixture.window(0)
+        fixture.windowSource.update(listOf(fixture.root, fakeSecond))
+        fixture.onMap = {}
+        fixture.onCustomTouch = { view, manager ->
+            manager.addTouchOverrideArea(
+                Rect(0, 0, 100, 100),
+                if (view === fixture.root) TouchPrivacy.HIDE else TouchPrivacy.SHOW
+            )
+        }
+
+        // When
+        fixture.startCapture()
+
+        // Then
+        val fakeScope = RumViewIdentityScope("view")
+        val hidden = checkNotNull(fixture.windowSource.currentTouchOverrideAreas(fixture.root, fakeScope))
+        val shown = checkNotNull(fixture.windowSource.currentTouchOverrideAreas(fakeSecond, fakeScope))
+        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(), hidden)).isFalse()
+        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(), shown)).isTrue()
+    }
+
+    @Test
+    fun `M deny custom touch policy W capture() { mapper fails after allowing touches }`() {
+        // Given
+        val fixture = Fixture(TouchPrivacy.SHOW, useCustomMapper = true)
+        fixture.onMap = {}
+        fixture.onCustomTouch = { _, manager ->
+            manager.addTouchOverrideArea(Rect(0, 0, 100, 100), TouchPrivacy.SHOW)
+            error("Extension")
+        }
+
+        // When
+        fixture.startCapture()
+
+        // Then
+        val areas =
+            checkNotNull(fixture.windowSource.currentTouchOverrideAreas(fixture.root, RumViewIdentityScope("view")))
+        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(), areas)).isFalse()
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
@@ -805,7 +923,7 @@ internal class CompositionTouchPrivacyTest {
     fun `M capture new RUM view W onRumViewChanged { native copy in progress }`() {
         // Given
         val fixture = Fixture()
-        val testedPipeline = CompositionCapturePipeline(fixture.orchestrator, mock(), mock(), mock(), mock())
+        val testedPipeline = CompositionCapturePipeline(fixture.orchestrator, mock(), mock(), mock())
         fixture.onMap = { view ->
             if (view === fixture.root) {
                 fixture.rumViewScope = CapturedRumViewScope(RumViewIdentityScope("next-view"), 0L)
@@ -841,7 +959,8 @@ internal class CompositionTouchPrivacyTest {
 
     private class Fixture(
         globalTouchPrivacy: TouchPrivacy = TouchPrivacy.HIDE,
-        deferProcessing: Boolean = false
+        deferProcessing: Boolean = false,
+        useCustomMapper: Boolean = false
     ) {
         var nowNs = 0L
         var captureAllowed = true
@@ -870,12 +989,41 @@ internal class CompositionTouchPrivacyTest {
             onPrivacyRead()
             if (privacyReadAllowed) privacyReader.read(view) else null
         }.apply { update(listOf(root)) }
+        var onCustomTouch: (View, TouchPrivacyManager) -> Unit = { _, _ -> }
         var onMap: (View) -> Unit = { view -> if (view === root) nowNs += SLICE_BUDGET_NS }
 
         init {
             whenever(root.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
             whenever(root.childCount).thenReturn(1)
             whenever(root.getChildAt(0)).thenReturn(child)
+        }
+
+        private val mapper: CapturedViewMapper<View> = if (useCustomMapper) {
+            LegacyCapturedViewMapper(
+                object : WireframeMapper<View> {
+                    override fun map(
+                        view: View,
+                        mappingContext: MappingContext,
+                        asyncJobStatusCallback: AsyncJobStatusCallback,
+                        internalLogger: InternalLogger
+                    ): List<MobileSegment.Wireframe> {
+                        onMap(view)
+                        onCustomTouch(view, mappingContext.touchPrivacyManager)
+                        return emptyList()
+                    }
+                },
+                emptyList(),
+                mock(),
+                mock(),
+                touchPrivacyManager,
+                mock(),
+                mock()
+            )
+        } else {
+            CapturedViewMapper { view, _ ->
+                onMap(view)
+                CapturedViewMapperResult.None
+            }
         }
 
         private val producer = AndroidCapturedSnapshotProducer(
@@ -885,10 +1033,7 @@ internal class CompositionTouchPrivacyTest {
             traversal = AndroidWindowTraversal(
                 mapperRegistry = CapturedViewMapperRegistry(
                     emptyList(),
-                    CapturedViewMapper { view, _ ->
-                        onMap(view)
-                        CapturedViewMapperResult.None
-                    },
+                    mapper,
                     mock()
                 ),
                 internalLogger = mock(),
@@ -942,6 +1087,7 @@ internal class CompositionTouchPrivacyTest {
             val view: ViewGroup = mock()
             val resources: Resources = mock()
             whenever(resources.displayMetrics).thenReturn(DisplayMetrics().apply { density = 1f })
+            whenever(resources.configuration).thenReturn(Configuration())
             whenever(view.resources).thenReturn(resources)
             val stubObserver: ViewTreeObserver = mock()
             whenever(stubObserver.isAlive).thenReturn(true)
