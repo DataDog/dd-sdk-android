@@ -49,7 +49,10 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -173,6 +176,51 @@ internal class DatadogFlagsClientTest {
     }
 
     // region resolveBooleanValue()
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M allow concurrent waits and context updates W resolve() {persistence pending}`(
+        enabled: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeContext = forge.getForgery<EvaluationContext>()
+        val firstWaitEntered = CountDownLatch(1)
+        val bothWaitsEntered = CountDownLatch(2)
+        val persistenceFinished = CountDownLatch(1)
+        whenever(mockFlagsRepository.waitForPersistenceLoad()).thenAnswer {
+            firstWaitEntered.countDown()
+            bothWaitsEntered.countDown()
+            check(persistenceFinished.await(5, TimeUnit.SECONDS))
+        }
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
+            FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
+            null, mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = enabled
+        )
+        val executor = Executors.newFixedThreadPool(3)
+
+        try {
+            // When
+            val first = executor.submit<Boolean> { testedClient.resolveBooleanValue(fakeKey, false) }
+            assertThat(firstWaitEntered.await(1, TimeUnit.SECONDS)).isTrue()
+            val second = executor.submit<Boolean> { testedClient.resolveBooleanValue(fakeKey, false) }
+            val update = executor.submit { testedClient.setEvaluationContext(fakeContext, null, true) }
+
+            // Then: both readers wait independently, without blocking a policy update.
+            assertThat(bothWaitsEntered.await(1, TimeUnit.SECONDS)).isTrue()
+            update.get(1, TimeUnit.SECONDS)
+            persistenceFinished.countDown()
+            assertThat(first.get(1, TimeUnit.SECONDS)).isFalse()
+            assertThat(second.get(1, TimeUnit.SECONDS)).isFalse()
+        } finally {
+            persistenceFinished.countDown()
+            executor.shutdownNow()
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue()
+        }
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
@@ -944,6 +992,7 @@ internal class DatadogFlagsClientTest {
         assertThat(testedClient.resolveBooleanValue(key, false)).isFalse()
 
         // Then: no second disk wait or context from a later repository state.
+        verify(mockFlagsRepository).waitForPersistenceLoad()
         verify(mockFlagsRepository).getPrecomputedFlagWithContext(key)
         verify(mockFlagsRepository, never()).getEvaluationContext()
     }

@@ -147,15 +147,13 @@ internal class DefaultFlagsRepository(
         return state?.context == context && state.flags.isNotEmpty()
     }
 
-    @Suppress("ReturnCount")
     override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>? {
-        waitForPersistenceLoad()
         val state = atomicState.get() ?: return null
         val flag = state.flags[key]
         return flag to state.context
     }
 
-    private fun waitForPersistenceLoad() {
+    override fun waitForPersistenceLoad() {
         try {
             persistenceLoadedLatch.await(persistenceLoadTimeoutMs, TimeUnit.MILLISECONDS)
         } catch (e: InterruptedException) {

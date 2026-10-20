@@ -335,8 +335,9 @@ internal class DatadogFlagsClient(
     )
 
     private fun evaluationSnapshot(flagKey: String): EvaluationSnapshot {
+        flagsRepository.waitForPersistenceLoad()
         // Keep the subject decision alive until it has been captured with the
-        // assignments. Do not invoke telemetry sinks while holding this lock.
+        // assignments. Repository reads inside this lock must not wait for persistence.
         return if (evaluationTelemetryOptOutParameterEnabled) {
             synchronized(telemetryLock) { readEvaluationSnapshot(flagKey) }
         } else {
