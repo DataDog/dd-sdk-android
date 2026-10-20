@@ -575,6 +575,8 @@ internal class RumResourceScope(
 
     private fun resolveDomain(url: String): String {
         return try {
+            // URL(String) is deprecated since JDK 20, but not on Android
+            @Suppress("DEPRECATION")
             URL(url).host
         } catch (_: MalformedURLException) {
             url

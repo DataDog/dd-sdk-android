@@ -132,7 +132,10 @@ internal class DatadogEventBridgeTest {
         ) hosts: List<String>
     ) {
         // Given
-        val expectedHosts = hosts.map { URL(it).host }
+        val expectedHosts = hosts.map {
+            @Suppress("DEPRECATION")
+            URL(it).host
+        }
             .joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
         testedDatadogEventBridge = DatadogEventBridge(
             mockWebViewEventConsumer,
