@@ -111,6 +111,15 @@ internal class EvaluationsManagerTest {
     private lateinit var mockWebServer: MockWebServer
     private lateinit var evaluationsManager: EvaluationsManager
 
+    @Test
+    fun `M release request state W updateEvaluationsForContext() {executor rejects fetch}`() {
+        doThrow(java.util.concurrent.RejectedExecutionException())
+            .whenever(mockExecutorService).execute(any())
+        var finished = 0
+        evaluationsManager.updateEvaluationsForContext(EvaluationContext.EMPTY, null) { finished++ }
+        assertThat(finished).isEqualTo(1)
+    }
+
     @BeforeEach
     fun setUp() {
         mockWebServer = MockWebServer()

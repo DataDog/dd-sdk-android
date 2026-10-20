@@ -19,7 +19,6 @@ import com.datadog.android.flags.openfeature.internal.adapters.toDatadogEvaluati
 import com.datadog.android.flags.openfeature.internal.adapters.toOpenFeatureErrorCode
 import com.datadog.android.flags.openfeature.internal.adapters.toProviderEvaluation
 import com.datadog.android.flags.openfeature.internal.setEvaluationContextSuspend
-import com.datadog.android.flags.setEvaluationTelemetryOptOut
 import dev.openfeature.kotlin.sdk.FeatureProvider
 import dev.openfeature.kotlin.sdk.Hook
 import dev.openfeature.kotlin.sdk.ProviderEvaluation
@@ -252,7 +251,10 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     private fun updateEvaluationTelemetryPolicy(context: OpenFeatureEvaluationContext?) {
         if (evaluationTelemetryOptOutParameterEnabled) {
             val value = context?.asMap()?.get(EVALUATION_TELEMETRY_OPT_OUT)
-            flagsClient.setEvaluationTelemetryOptOut(value == Value.Boolean(true))
+            _FlagsInternalProxy(flagsClient).setSubjectEvaluationTelemetryOptOut(
+                targetingContext(context).targetingKey,
+                value == Value.Boolean(true)
+            )
         }
     }
 

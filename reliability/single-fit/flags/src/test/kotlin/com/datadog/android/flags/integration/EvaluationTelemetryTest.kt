@@ -57,6 +57,84 @@ internal class EvaluationTelemetryTest {
         fixture.close()
     }
 
+    @Test
+    fun `M retain subject opt-out W getBooleanEvaluation() {different subject refresh pending}`() = runBlocking<Unit> {
+        // Given
+        val provider = newClient().asOpenFeatureProvider()
+        val original = context(Value.Boolean(true), "A")
+        val requested = context(Value.Boolean(false), "B")
+        provider.initialize(original)
+        fixture.pauseAssignments = true
+        val pending = launch(start = CoroutineStart.UNDISPATCHED) {
+            provider.onContextSet(original, requested)
+        }
+
+        // When
+        val previous = provider.getBooleanEvaluation("enabled", false, null)
+        val rumWhilePending = fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME).size
+        fixture.completeNextAssignment()
+        pending.join()
+        val updated = provider.getBooleanEvaluation("enabled", false, null)
+        fixture.flush()
+
+        // Then
+        assertThat(previous.value).isTrue()
+        assertThat(updated.value).isTrue()
+        assertThat(rumWhilePending).isZero()
+        assertThat(fixture.evaluationCount()).isEqualTo(1)
+        assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).hasSize(2)
+    }
+
+    @Test
+    fun `M retain subject opt-out W getBooleanEvaluation() {different subject refresh fails}`() = runBlocking<Unit> {
+        // Given
+        val provider = newClient().asOpenFeatureProvider()
+        val original = context(Value.Boolean(true), "A")
+        provider.initialize(original)
+        fixture.failAssignments()
+        val refresh = runCatching {
+            provider.onContextSet(original, context(Value.Boolean(false), "B"))
+        }
+
+        // When
+        val result = provider.getBooleanEvaluation("enabled", false, null)
+        fixture.flush()
+
+        // Then
+        assertThat(refresh.isFailure).isTrue()
+        assertThat(result.value).isTrue()
+        assertThat(fixture.evaluationCount()).isZero()
+        assertThat(fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).isEmpty()
+        assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
+    }
+
+    @Test
+    fun `M keep subject opt-in W getBooleanEvaluation() {B refresh pending}`() = runBlocking<Unit> {
+        // Given
+        val provider = newClient().asOpenFeatureProvider()
+        val optedOut = context(Value.Boolean(true), "A")
+        val optedIn = context(Value.Boolean(false), "A")
+        provider.initialize(optedOut)
+        fixture.pauseAssignments = true
+        val first = launch(start = CoroutineStart.UNDISPATCHED) { provider.onContextSet(optedOut, optedIn) }
+        val second = launch(start = CoroutineStart.UNDISPATCHED) {
+            provider.onContextSet(optedIn, context(Value.Boolean(false), "B"))
+        }
+
+        // When
+        val result = provider.getBooleanEvaluation("enabled", false, null)
+        fixture.completeNextAssignment()
+        fixture.completeNextAssignment()
+        first.join()
+        second.join()
+        fixture.flush()
+
+        // Then
+        assertThat(result.value).isTrue()
+        assertThat(fixture.evaluationCount()).isEqualTo(1)
+        assertThat(fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).hasSize(1)
+    }
+
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
     fun `M retain targeting and exposure attributes W getBooleanEvaluation() {activation varies}`(
@@ -475,8 +553,8 @@ internal class EvaluationTelemetryTest {
         setEvaluationContext(EvaluationContext("subject"))
     }
 
-    private fun context(control: Value?) = ImmutableContext(
-        "subject",
+    private fun context(control: Value?, subject: String = "subject") = ImmutableContext(
+        subject,
         control?.let { mapOf(CONTROL to it) } ?: emptyMap()
     )
 

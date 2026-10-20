@@ -955,7 +955,8 @@ internal class DatadogFlagsClientTest {
         val contextCaptor = argumentCaptor<EvaluationContext>()
         verify(mockEvaluationsManager).updateEvaluationsForContext(
             contextCaptor.capture(),
-            anyOrNull()
+            anyOrNull(),
+            any()
         )
 
         val capturedContext = contextCaptor.firstValue
@@ -981,7 +982,8 @@ internal class DatadogFlagsClientTest {
         val contextCaptor = argumentCaptor<EvaluationContext>()
         verify(mockEvaluationsManager).updateEvaluationsForContext(
             contextCaptor.capture(),
-            anyOrNull()
+            anyOrNull(),
+            any()
         )
 
         val capturedContext = contextCaptor.firstValue
@@ -1001,7 +1003,8 @@ internal class DatadogFlagsClientTest {
         val contextCaptor = argumentCaptor<EvaluationContext>()
         verify(mockEvaluationsManager).updateEvaluationsForContext(
             contextCaptor.capture(),
-            anyOrNull()
+            anyOrNull(),
+            any()
         )
 
         val capturedContext = contextCaptor.firstValue
