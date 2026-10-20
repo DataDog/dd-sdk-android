@@ -49,14 +49,10 @@ stages:
         "-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG"
       )
 
-      kotlin_daemon_jvm_args=("-Xmx8g")
-
       gradle_options=(
         "-Dorg.gradle.jvmargs=${gradle_jvm_args[*]}"
         "-Dorg.gradle.workers.max=16"
         "-Dorg.gradle.logging.stacktrace=all"
-        "-Dorg.gradle.project.kotlin.compiler.execution.strategy=daemon"
-        "-Dorg.gradle.project.kotlin.daemon.jvmargs=${kotlin_daemon_jvm_args[*]}"
       )
 
       printf -v configured_gradle_options ' %q' "${gradle_options[@]}"
