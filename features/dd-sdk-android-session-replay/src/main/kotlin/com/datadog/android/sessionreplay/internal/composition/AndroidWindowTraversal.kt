@@ -59,6 +59,7 @@ internal sealed interface WindowWalkResult {
  * An explicit work stack keeps deep hierarchies off the call stack. The synchronous main-thread
  * pass checks the generation's absolute deadline before every work item.
  */
+@Suppress("TooManyFunctions") // Keep both completion entry points without allocating finish items for leaves.
 internal class AndroidWindowTraversal(
     private val mapperRegistry: CapturedViewMapperRegistry,
     private val internalLogger: InternalLogger,
@@ -101,14 +102,14 @@ internal class AndroidWindowTraversal(
         return runStack(stack, state, context)
     }
 
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // isNotEmpty only checks this walk's deque size.
     @UiThread
     private fun runStack(
         stack: ArrayDeque<WorkItem>,
         state: TraversalState,
         context: CaptureGenerationContext
     ): WindowWalkResult {
-        while (stack.isNotStackEmpty()) {
+        while (stack.isNotEmpty()) {
             if (!context.shouldContinue()) return WindowWalkResult.Aborted
             when (val item = stack.pop()) {
                 is WorkItem.Visit -> {
@@ -116,17 +117,7 @@ internal class AndroidWindowTraversal(
                     if (aborted) return WindowWalkResult.Aborted
                 }
                 is WorkItem.VisitTouchPrivacy -> visitTouchPrivacy(item, stack, state)
-                is WorkItem.Finish -> {
-                    completeLayer(
-                        item.ownIdentity,
-                        item.ownKind,
-                        item.bounds,
-                        item.children,
-                        item.sink,
-                        state,
-                        item.alpha
-                    )
-                }
+                is WorkItem.Finish -> completeLayer(item, state)
             }
         }
         // The root Visit is the only one with a Root sink and always completes a layer, setting
@@ -187,6 +178,18 @@ internal class AndroidWindowTraversal(
             }
         }
         return false
+    }
+
+    private fun completeLayer(item: WorkItem.Finish, state: TraversalState) {
+        completeLayer(
+            identity = item.ownIdentity,
+            kind = item.ownKind,
+            bounds = item.bounds,
+            children = item.children,
+            sink = item.sink,
+            state = state,
+            alpha = item.alpha
+        )
     }
 
     private fun completeLayer(
@@ -271,11 +274,15 @@ internal class AndroidWindowTraversal(
     }
 
     @UiThread
-    private fun tryVisit(view: View, expectedParent: ViewParent?, state: TraversalState): Boolean =
-        !viewUtilsInternal.isNotVisible(view) &&
-            !viewUtilsInternal.isSystemNoise(view) &&
-            !viewUtilsInternal.isOnSecondaryDisplay(view) &&
-            state.tryVisit(view, expectedParent)
+    private fun tryVisit(view: View, expectedParent: ViewParent?, state: TraversalState): Boolean {
+        if (viewUtilsInternal.isNotVisible(view) ||
+            viewUtilsInternal.isSystemNoise(view) ||
+            viewUtilsInternal.isOnSecondaryDisplay(view)
+        ) {
+            return false
+        }
+        return state.tryVisit(view, expectedParent)
+    }
 
     /**
      * A visually occluded view contributes nothing to the final image, so it's never mapped or
@@ -354,7 +361,7 @@ internal class AndroidWindowTraversal(
             val expectedParent: ViewParent? = view.parent
         ) : WorkItem
 
-        data class Finish(
+        class Finish(
             val ownIdentity: CapturedIdentity,
             val ownKind: CapturedLayerKind,
             val bounds: CapturedBounds,
@@ -365,7 +372,7 @@ internal class AndroidWindowTraversal(
     }
 
     private sealed interface ResultSink {
-        data class ChildOf(val list: MutableList<CapturedChild>) : ResultSink
+        class ChildOf(val list: MutableList<CapturedChild>) : ResultSink
         object Root : ResultSink
     }
 
@@ -405,11 +412,8 @@ private fun <T> newWorkStack(): ArrayDeque<T> {
 @Suppress("UnsafeThirdPartyFunctionCall") // an unbounded ArrayDeque's addLast never throws
 private fun <T> ArrayDeque<T>.push(item: T) = addLast(item)
 
-@Suppress("UnsafeThirdPartyFunctionCall") // only ever called guarded by a prior isNotStackEmpty() check
+@Suppress("UnsafeThirdPartyFunctionCall") // only ever called guarded by a prior isNotEmpty() check
 private fun <T> ArrayDeque<T>.pop(): T = removeLast()
-
-@Suppress("UnsafeThirdPartyFunctionCall") // pure size check, cannot throw
-private fun <T> ArrayDeque<T>.isNotStackEmpty(): Boolean = isNotEmpty()
 
 /**
  * Detected by class name only, deliberately with no compile-time `androidx.compose` dependency from

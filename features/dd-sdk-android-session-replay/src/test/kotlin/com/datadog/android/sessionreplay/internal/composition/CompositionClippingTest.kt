@@ -440,9 +440,7 @@ internal class CompositionClippingTest {
                 identities[view] = identity
                 onMapped(view)
                 CapturedViewMapperResult.Wireframes(
-                    listOf(
-                        CapturedWireframe.Shape(identity, wireframeBounds[view] ?: bounds.getValue(view).toCaptured())
-                    )
+                    CapturedWireframe.Shape(identity, wireframeBounds[view] ?: bounds.getValue(view).toCaptured())
                 )
             }
             val testedTraversal = AndroidWindowTraversal(

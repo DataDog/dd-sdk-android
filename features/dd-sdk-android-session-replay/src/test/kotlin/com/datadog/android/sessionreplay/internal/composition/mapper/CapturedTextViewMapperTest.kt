@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.composition.mapper
 
 import android.content.res.ColorStateList
+import android.graphics.Typeface
 import android.text.Layout
 import android.view.Gravity
 import android.widget.TextView
@@ -23,6 +24,8 @@ import com.datadog.android.sessionreplay.internal.composition.RumViewIdentitySco
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
+import com.datadog.android.utils.verifyLog
+import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -34,11 +37,17 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.Mockito.mockStatic
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -56,9 +65,82 @@ internal class CapturedTextViewMapperTest {
     private val testedMapper = CapturedTextViewMapper(
         viewBoundsResolver = mockViewBoundsResolver,
         colorStringFormatter = mockColorStringFormatter,
-        backgroundShapeStyleResolver = CapturedBackgroundShapeStyleResolver(),
+        backgroundShapeStyleResolver = CapturedBackgroundShapeStyleResolver(mockInternalLogger),
         internalLogger = mockInternalLogger
     )
+
+    @Test
+    fun `M report font fallback once W map { null then unsupported fonts across views and frames }`() {
+        // Given
+        val mockTextView = textView()
+        captureText(mockTextView)
+        verifyNoInteractions(mockInternalLogger)
+        val stubTypeface: Typeface = mock()
+        whenever(mockTextView.typeface).thenReturn(stubTypeface)
+        val mockOtherTextView = textView()
+        whenever(mockOtherTextView.typeface).thenReturn(mock<Typeface>())
+
+        // When
+        val first = captureText(mockTextView)
+        val repeated = captureText(mockTextView)
+        val other = captureText(mockOtherTextView)
+
+        // Then
+        assertThat(listOf(first, repeated, other).map { it.textStyle.family })
+            .containsOnly("roboto, sans-serif")
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.TELEMETRY,
+            "Unable to resolve text font family; using sans-serif fallback",
+            onlyOnce = true
+        )
+        verifyNoMoreInteractions(mockInternalLogger)
+    }
+
+    @ParameterizedTest
+    @MethodSource("builtInFonts")
+    fun `M preserve built-in font families without telemetry W map`(
+        fakeConstant: String,
+        fakeOriginalTypeface: Typeface?,
+        fakeFamily: String
+    ) {
+        // Given: Android's static Typeface fields need explicit values in JVM tests.
+        val stubTypeface: Typeface = mock()
+        Typeface::class.java.setStaticValue(fakeConstant, stubTypeface)
+        try {
+            val mockTextView = textView()
+            whenever(mockTextView.typeface).thenReturn(stubTypeface)
+
+            // When
+            val captured = captureText(mockTextView)
+
+            // Then
+            assertThat(captured.textStyle.family).isEqualTo(fakeFamily)
+            verifyNoInteractions(mockInternalLogger)
+        } finally {
+            Typeface::class.java.setStaticValue(fakeConstant, fakeOriginalTypeface)
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = [Typeface.NORMAL, Typeface.BOLD, Typeface.ITALIC, Typeface.BOLD_ITALIC])
+    fun `M skip telemetry for default font styles W map`(fakeStyle: Int) {
+        // Given
+        val stubTypeface: Typeface = mock()
+        whenever(stubTypeface.style).thenReturn(fakeStyle)
+        val mockTextView = textView()
+        whenever(mockTextView.typeface).thenReturn(stubTypeface)
+        mockStatic(Typeface::class.java).use { mockedTypeface ->
+            mockedTypeface.`when`<Typeface> { Typeface.defaultFromStyle(fakeStyle) }.thenReturn(stubTypeface)
+
+            // When
+            val captured = captureText(mockTextView)
+
+            // Then
+            assertThat(captured.textStyle.family).isEqualTo("roboto, sans-serif")
+            verifyNoInteractions(mockInternalLogger)
+        }
+    }
 
     @ParameterizedTest
     @CsvSource(
@@ -90,6 +172,7 @@ internal class CapturedTextViewMapperTest {
         }
         val testedColorMapper = CapturedTextViewMapper(
             viewBoundsResolver = mockViewBoundsResolver,
+            backgroundShapeStyleResolver = CapturedBackgroundShapeStyleResolver(mockInternalLogger),
             internalLogger = mockInternalLogger
         )
         val fakeFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope("view"))
@@ -328,15 +411,17 @@ internal class CapturedTextViewMapperTest {
     private fun captureAlignment(view: TextView): CapturedAlignment =
         requireNotNull(captureTextPosition(view).alignment)
 
-    private fun captureTextPosition(view: TextView): CapturedTextPosition {
+    private fun captureTextPosition(view: TextView): CapturedTextPosition =
+        requireNotNull(captureText(view).textPosition)
+
+    private fun captureText(view: TextView): CapturedWireframe.Text {
         val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope("view"))
         val owner = factory.view(factory.window("window"), "text")
         val result = testedMapper.map(
             view,
             CapturedMappingContext(factory, owner, 1f)
         ) as CapturedViewMapperResult.Wireframes
-        val text = result.wireframes.filterIsInstance<CapturedWireframe.Text>().single()
-        return requireNotNull(text.textPosition)
+        return result.wireframes.filterIsInstance<CapturedWireframe.Text>().single()
     }
 
     enum class RelativeAlignment(val value: Int) {
@@ -351,5 +436,16 @@ internal class CapturedTextViewMapperTest {
         START(
             Gravity.START
         ), END(Gravity.END), LEFT(Gravity.LEFT), RIGHT(Gravity.RIGHT), CENTER_HORIZONTAL(Gravity.CENTER_HORIZONTAL)
+    }
+
+    companion object {
+        @JvmStatic
+        fun builtInFonts(): List<Arguments> = listOf(
+            Arguments.of("DEFAULT", Typeface.DEFAULT, "roboto, sans-serif"),
+            Arguments.of("DEFAULT_BOLD", Typeface.DEFAULT_BOLD, "roboto, sans-serif"),
+            Arguments.of("SANS_SERIF", Typeface.SANS_SERIF, "roboto, sans-serif"),
+            Arguments.of("MONOSPACE", Typeface.MONOSPACE, "monospace"),
+            Arguments.of("SERIF", Typeface.SERIF, "serif")
+        )
     }
 }

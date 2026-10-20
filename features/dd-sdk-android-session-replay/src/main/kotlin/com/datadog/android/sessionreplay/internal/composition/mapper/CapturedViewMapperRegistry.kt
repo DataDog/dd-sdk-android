@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition.mapper
 
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 
 /**
@@ -20,21 +21,31 @@ internal class CapturedViewMapperRegistry(
     private val fallbackMapper: CapturedViewMapper<View>,
     private val internalLogger: InternalLogger
 ) {
+    private val reportedViewTypes = mutableSetOf<String>()
+
+    @UiThread
     fun resolve(view: View): CapturedViewMapper<View> {
         val mapper = mappers.firstOrNull { it.supportsView(view) }?.getUnsafeMapper()
         if (mapper != null) return mapper
 
         if (view !is ViewGroup) {
-            val viewType = view.javaClass.canonicalName ?: view.javaClass.name
-            internalLogger.log(
-                level = InternalLogger.Level.INFO,
-                target = InternalLogger.Target.TELEMETRY,
-                messageBuilder = { "No mapper found for view $viewType" },
-                throwable = null,
-                onlyOnce = true,
-                additionalProperties = mapOf("replay.widget.type" to viewType)
-            )
+            reportUnmappedViewType(view)
         }
         return fallbackMapper
+    }
+
+    @UiThread
+    private fun reportUnmappedViewType(view: View) {
+        val viewType = view.javaClass.canonicalName ?: view.javaClass.name
+        // Deduplicate before constructing telemetry properties or its message builder.
+        if (!reportedViewTypes.add(viewType)) return
+        internalLogger.log(
+            level = InternalLogger.Level.INFO,
+            target = InternalLogger.Target.TELEMETRY,
+            messageBuilder = { "No mapper found for view $viewType" },
+            throwable = null,
+            onlyOnce = true,
+            additionalProperties = mapOf("replay.widget.type" to viewType)
+        )
     }
 }

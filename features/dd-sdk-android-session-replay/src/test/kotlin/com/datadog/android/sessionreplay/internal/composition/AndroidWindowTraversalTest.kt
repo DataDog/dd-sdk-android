@@ -75,11 +75,9 @@ internal class AndroidWindowTraversalTest {
     private val markerMapper = CapturedViewMapper<View> { view, mappingContext ->
         val bounds = mockViewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity)
         CapturedViewMapperResult.Wireframes(
-            listOf(
-                CapturedWireframe.Shape(
-                    identity = mappingContext.identityFactory.shapeWireframe(mappingContext.ownerIdentity),
-                    bounds = CapturedBounds(bounds.x, bounds.y, bounds.width, bounds.height)
-                )
+            CapturedWireframe.Shape(
+                identity = mappingContext.identityFactory.shapeWireframe(mappingContext.ownerIdentity),
+                bounds = CapturedBounds(bounds.x, bounds.y, bounds.width, bounds.height)
             )
         )
     }
@@ -499,12 +497,10 @@ internal class AndroidWindowTraversalTest {
         val fakeRoot = mockViewGroup(GlobalBounds(0, 0, 100, 100))
         val fakeMapper = CapturedViewMapper<View> { _, context ->
             CapturedViewMapperResult.Wireframes(
-                listOf(
-                    CapturedWireframe.Shape(
-                        context.identityFactory.shapeWireframe(context.ownerIdentity),
-                        CapturedBounds(0, 0, 100, 100),
-                        clip = CapturedClip(left = 20)
-                    )
+                CapturedWireframe.Shape(
+                    context.identityFactory.shapeWireframe(context.ownerIdentity),
+                    CapturedBounds(0, 0, 100, 100),
+                    clip = CapturedClip(left = 20)
                 )
             )
         }
@@ -523,12 +519,10 @@ internal class AndroidWindowTraversalTest {
         val fakeRoot = mockViewGroup(GlobalBounds(0, 0, 100, 100))
         val fakeMapper = CapturedViewMapper<View> { _, context ->
             CapturedViewMapperResult.Wireframes(
-                listOf(
-                    CapturedWireframe.Shape(
-                        context.identityFactory.shapeWireframe(context.ownerIdentity),
-                        CapturedBounds(-10, -20, 130, 150),
-                        clip = CapturedClip(top = 5, bottom = 40, left = 25, right = 5)
-                    )
+                CapturedWireframe.Shape(
+                    context.identityFactory.shapeWireframe(context.ownerIdentity),
+                    CapturedBounds(-10, -20, 130, 150),
+                    clip = CapturedClip(top = 5, bottom = 40, left = 25, right = 5)
                 )
             )
         }

@@ -48,10 +48,10 @@ internal class CapturedViewGroupFallbackMapperTest {
     private val testedMapper = CapturedViewGroupFallbackMapper(
         viewBoundsResolver = mockViewBoundsResolver,
         backgroundShapeStyleResolver = CapturedBackgroundShapeStyleResolver(
-            mockColorStringFormatter,
-            mockDrawableToColorMapper
-        ),
-        internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            colorStringFormatter = mockColorStringFormatter,
+            drawableToColorMapper = mockDrawableToColorMapper
+        )
     )
 
     @Test

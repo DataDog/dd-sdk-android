@@ -14,6 +14,7 @@ import android.widget.TextView
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedBackgroundShapeStyleResolver
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedTextViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewGroupFallbackMapper
@@ -92,9 +93,17 @@ internal class AndroidCapturedSnapshotProducerTest {
     private fun traversal() = AndroidWindowTraversal(
         mapperRegistry = CapturedViewMapperRegistry(
             mappers = listOf(
-                CapturedMapperTypeWrapper(TextView::class.java, CapturedTextViewMapper(internalLogger = mock()))
+                CapturedMapperTypeWrapper(
+                    TextView::class.java,
+                    CapturedTextViewMapper(
+                        backgroundShapeStyleResolver = CapturedBackgroundShapeStyleResolver(mock()),
+                        internalLogger = mock()
+                    )
+                )
             ),
-            fallbackMapper = CapturedViewGroupFallbackMapper(internalLogger = mock()),
+            fallbackMapper = CapturedViewGroupFallbackMapper(
+                backgroundShapeStyleResolver = CapturedBackgroundShapeStyleResolver(mock())
+            ),
             internalLogger = mock()
         ),
         internalLogger = mock(),

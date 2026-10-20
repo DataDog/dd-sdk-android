@@ -24,12 +24,10 @@ internal class CapturedHiddenViewMapper(
         val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity)
         val identity = mappingContext.identityFactory.placeholderWireframe(mappingContext.ownerIdentity)
         return CapturedViewMapperResult.Wireframes(
-            listOf(
-                CapturedWireframe.PrivacyPlaceholder(
-                    identity = identity,
-                    bounds = bounds.toCaptured(),
-                    label = HIDDEN_VIEW_PLACEHOLDER_TEXT
-                )
+            CapturedWireframe.PrivacyPlaceholder(
+                identity = identity,
+                bounds = bounds.toCaptured(),
+                label = HIDDEN_VIEW_PLACEHOLDER_TEXT
             )
         )
     }
