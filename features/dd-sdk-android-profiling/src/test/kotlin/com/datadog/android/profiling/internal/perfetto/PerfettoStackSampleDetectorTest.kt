@@ -127,6 +127,18 @@ internal class PerfettoStackSampleDetectorTest {
     }
 
     @Test
+    fun `M return false W hasNoStackSamples() {invalid field number}`() {
+        // Given
+        val traceFile = writeTrace(readFixture(EMPTY_PROFILE_FIXTURE) + INVALID_FIELD_NUMBER_PACKET)
+
+        // When
+        val result = testedDetector.hasNoStackSamples(traceFile, mockInternalLogger)
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
     fun `M return false W hasNoStackSamples() {packet larger than the maximum packet size}`() {
         // Given
         val traceFile = writeTrace(readFixture(EMPTY_PROFILE_FIXTURE) + OVERSIZED_PACKET_HEADER)
@@ -245,6 +257,9 @@ internal class PerfettoStackSampleDetectorTest {
 
         // `Trace.packet` (field 1) holding a `perf_sample` (field 66) with an overflowing length.
         private val OVERFLOWING_PERF_SAMPLE_PACKET = byteArrayOf(0x0A, 0x0C, 0x92.toByte(), 0x04) + OVERFLOWING_VARINT
+
+        // `Trace.packet` (field 1) holding a varint field with the invalid field number 0.
+        private val INVALID_FIELD_NUMBER_PACKET = byteArrayOf(0x0A, 0x02, 0x00, 0x00)
 
         // `Trace.packet` (field 1) header declaring a 2 MiB packet.
         private val OVERSIZED_PACKET_HEADER = byteArrayOf(0x0A, 0x80.toByte(), 0x80.toByte(), 0x80.toByte(), 0x01)

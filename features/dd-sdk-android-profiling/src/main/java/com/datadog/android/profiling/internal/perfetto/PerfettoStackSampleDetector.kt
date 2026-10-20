@@ -76,7 +76,7 @@ internal class PerfettoStackSampleDetector : StackSampleDetector {
         val reader = ProtoReader(trace, start, end)
         var content = PacketContent.NO_STACK_SAMPLE
         while (reader.hasRemaining && content == PacketContent.NO_STACK_SAMPLE) {
-            val tag = reader.readVarint()
+            val tag = reader.readTag()
             val field = tag ushr TAG_FIELD_SHIFT
             val wireType = (tag and TAG_WIRE_TYPE_MASK).toInt()
             when {
@@ -107,7 +107,7 @@ internal class PerfettoStackSampleDetector : StackSampleDetector {
         val reader = ProtoReader(trace, start, end)
         var hasCallstack = false
         while (reader.hasRemaining && !hasCallstack) {
-            val tag = reader.readVarint()
+            val tag = reader.readTag()
             val wireType = (tag and TAG_WIRE_TYPE_MASK).toInt()
             hasCallstack = !reader.isMalformed &&
                 tag ushr TAG_FIELD_SHIFT == FIELD_CALLSTACK_IID &&
@@ -210,6 +210,12 @@ internal class PerfettoStackSampleDetector : StackSampleDetector {
             return 0L
         }
 
+        fun readTag(): Long {
+            val tag = readVarint()
+            if (tag ushr TAG_FIELD_SHIFT !in MIN_FIELD_NUMBER..MAX_FIELD_NUMBER) isMalformed = true
+            return tag
+        }
+
         fun readLength(): Int {
             val length = readVarint()
             if (isMalformed || length < 0 || length > end - position) {
@@ -264,6 +270,8 @@ internal class PerfettoStackSampleDetector : StackSampleDetector {
         private const val WIRE_TYPE_FIXED32 = 5
 
         private const val TAG_FIELD_SHIFT = 3
+        private const val MIN_FIELD_NUMBER = 1L
+        private const val MAX_FIELD_NUMBER = (1L shl 29) - 1
         private const val TAG_WIRE_TYPE_MASK = 0x07L
         private const val FIXED64_SIZE = 8
         private const val FIXED32_SIZE = 4
