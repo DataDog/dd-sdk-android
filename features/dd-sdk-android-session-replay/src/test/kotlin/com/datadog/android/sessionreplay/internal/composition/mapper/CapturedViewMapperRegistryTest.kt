@@ -8,16 +8,20 @@ package com.datadog.android.sessionreplay.internal.composition.mapper
 
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoMoreInteractions
 
 internal class CapturedViewMapperRegistryTest {
 
@@ -43,15 +47,20 @@ internal class CapturedViewMapperRegistryTest {
     }
 
     @Test
-    fun `M resolve the fallback and log once W resolve { unmapped leaf view }`() {
+    fun `M resolve the fallback and log once per type W resolve { repeated unmapped leaf views }`() {
         // Given
         val mockView: View = mock()
+        val mockAnotherView: View = mock()
 
         // When
         val resolved = testedRegistry.resolve(mockView)
+        val resolvedAgain = testedRegistry.resolve(mockView)
+        val resolvedAnother = testedRegistry.resolve(mockAnotherView)
 
         // Then
         assertThat(resolved).isEqualTo(fallbackMapper)
+        assertThat(resolvedAgain).isEqualTo(fallbackMapper)
+        assertThat(resolvedAnother).isEqualTo(fallbackMapper)
         verify(mockInternalLogger).log(
             level = eq(InternalLogger.Level.INFO),
             target = eq(InternalLogger.Target.TELEMETRY),
@@ -60,6 +69,37 @@ internal class CapturedViewMapperRegistryTest {
             onlyOnce = eq(true),
             additionalProperties = any()
         )
+        verifyNoMoreInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M report each unmapped type with structured properties W resolve { distinct leaf types }`() {
+        // Given
+        val mockView: View = mock()
+        val mockImageView: ImageView = mock()
+
+        // When
+        testedRegistry.resolve(mockView)
+        testedRegistry.resolve(mockImageView)
+        testedRegistry.resolve(mockView)
+        testedRegistry.resolve(mockImageView)
+
+        // Then
+        val properties = argumentCaptor<Map<String, Any?>>()
+        verify(mockInternalLogger, times(2)).log(
+            level = eq(InternalLogger.Level.INFO),
+            target = eq(InternalLogger.Target.TELEMETRY),
+            messageBuilder = any(),
+            throwable = eq(null),
+            onlyOnce = eq(true),
+            additionalProperties = properties.capture()
+        )
+        assertThat(properties.allValues.map { it["replay.widget.type"] })
+            .containsExactly(
+                mockView.javaClass.canonicalName ?: mockView.javaClass.name,
+                mockImageView.javaClass.canonicalName ?: mockImageView.javaClass.name
+            )
+        verifyNoMoreInteractions(mockInternalLogger)
     }
 
     @Test

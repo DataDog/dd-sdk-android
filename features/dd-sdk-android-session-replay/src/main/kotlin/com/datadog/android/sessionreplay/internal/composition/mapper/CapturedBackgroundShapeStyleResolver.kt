@@ -20,10 +20,11 @@ import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
  * belonging to a different wireframe model hierarchy.
  */
 internal class CapturedBackgroundShapeStyleResolver(
+    private val internalLogger: InternalLogger,
     private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter,
     private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
 ) {
-    fun resolve(view: View, internalLogger: InternalLogger): CapturedShapeStyle? {
+    fun resolve(view: View): CapturedShapeStyle? {
         val color = view.background?.let { drawableToColorMapper.mapDrawableToColor(it, internalLogger) }
             ?: return null
         return CapturedShapeStyle(

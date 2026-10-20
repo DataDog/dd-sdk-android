@@ -37,17 +37,19 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 internal class CapturedTextViewMapper(
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
     private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter,
-    private val backgroundShapeStyleResolver: CapturedBackgroundShapeStyleResolver =
-        CapturedBackgroundShapeStyleResolver(),
+    private val backgroundShapeStyleResolver: CapturedBackgroundShapeStyleResolver,
     private val internalLogger: InternalLogger
 ) : CapturedViewMapper<TextView> {
+
+    // The mapper belongs to one recording session and is accessed by UI-thread traversal.
+    private var hasReportedUnsupportedFont = false
 
     override fun map(view: TextView, mappingContext: CapturedMappingContext): CapturedViewMapperResult {
         val wireframes = mutableListOf<CapturedWireframe>()
         val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity)
         val capturedBounds = bounds.toCaptured()
 
-        backgroundShapeStyleResolver.resolve(view, internalLogger)?.let { style ->
+        backgroundShapeStyleResolver.resolve(view)?.let { style ->
             wireframes += CapturedWireframe.Shape(
                 identity = mappingContext.identityFactory.shapeWireframe(mappingContext.ownerIdentity),
                 bounds = capturedBounds,
@@ -97,7 +99,23 @@ internal class CapturedTextViewMapper(
             Typeface.SANS_SERIF -> SANS_SERIF_FAMILY_NAME
             Typeface.MONOSPACE -> MONOSPACE_FAMILY_NAME
             Typeface.SERIF -> SERIF_FAMILY_NAME
-            else -> SANS_SERIF_FAMILY_NAME
+            null, Typeface.DEFAULT, Typeface.DEFAULT_BOLD -> SANS_SERIF_FAMILY_NAME
+            else -> {
+                @Suppress("UnsafeThirdPartyFunctionCall") // Typeface.style is a valid defaultFromStyle index.
+                val shouldReportFallback = !hasReportedUnsupportedFont &&
+                    typeface != Typeface.defaultFromStyle(typeface.style)
+                if (shouldReportFallback) {
+                    // Guard before logging so later frames create no messages or telemetry properties.
+                    hasReportedUnsupportedFont = true
+                    internalLogger.log(
+                        level = InternalLogger.Level.INFO,
+                        target = InternalLogger.Target.TELEMETRY,
+                        messageBuilder = { "Unable to resolve text font family; using sans-serif fallback" },
+                        onlyOnce = true
+                    )
+                }
+                SANS_SERIF_FAMILY_NAME
+            }
         }
     }
 
@@ -120,6 +138,8 @@ internal class CapturedTextViewMapper(
     }
 
     private fun resolvePadding(textView: TextView, pixelsDensity: Float): CapturedPadding {
+        // Total padding includes layout-dependent gravity offsets and compound drawables.
+        // Without a layout, use ordinary padding and resolve vertical gravity separately.
         return if (textView.layout != null) {
             CapturedPadding(
                 top = textView.totalPaddingTop.densityNormalized(pixelsDensity).toLong(),

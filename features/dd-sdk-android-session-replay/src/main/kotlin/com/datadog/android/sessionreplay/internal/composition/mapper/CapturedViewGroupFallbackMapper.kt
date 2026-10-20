@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay.internal.composition.mapper
 
 import android.view.View
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.internal.composition.toCaptured
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
@@ -21,23 +20,19 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
  */
 internal class CapturedViewGroupFallbackMapper(
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
-    private val backgroundShapeStyleResolver: CapturedBackgroundShapeStyleResolver =
-        CapturedBackgroundShapeStyleResolver(),
-    private val internalLogger: InternalLogger
+    private val backgroundShapeStyleResolver: CapturedBackgroundShapeStyleResolver
 ) : CapturedViewMapper<View> {
 
     override fun map(view: View, mappingContext: CapturedMappingContext): CapturedViewMapperResult {
-        val style = backgroundShapeStyleResolver.resolve(view, internalLogger)
+        val style = backgroundShapeStyleResolver.resolve(view)
             ?: return CapturedViewMapperResult.None
         val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity)
         val identity = mappingContext.identityFactory.shapeWireframe(mappingContext.ownerIdentity)
         return CapturedViewMapperResult.Wireframes(
-            listOf(
-                CapturedWireframe.Shape(
-                    identity = identity,
-                    bounds = bounds.toCaptured(),
-                    style = style
-                )
+            CapturedWireframe.Shape(
+                identity = identity,
+                bounds = bounds.toCaptured(),
+                style = style
             )
         )
     }

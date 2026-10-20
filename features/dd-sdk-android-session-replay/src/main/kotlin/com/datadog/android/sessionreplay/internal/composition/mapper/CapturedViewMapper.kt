@@ -29,7 +29,11 @@ internal sealed interface CapturedViewMapperResult {
     data class Wireframes(
         val wireframes: List<CapturedWireframe>,
         val isTerminal: Boolean = false
-    ) : CapturedViewMapperResult
+    ) : CapturedViewMapperResult {
+        @Suppress("UnsafeThirdPartyFunctionCall") // listOf wraps a non-null captured wireframe.
+        constructor(wireframe: CapturedWireframe, isTerminal: Boolean = false) : this(listOf(wireframe), isTerminal)
+    }
+
     object None : CapturedViewMapperResult
 }
 

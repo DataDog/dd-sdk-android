@@ -129,6 +129,7 @@ internal class DefaultCompositionPipelineFactory(
             customDrawableMappers: List<DrawableToColorMapper>
         ): CapturedViewMapperRegistry {
             val backgroundResolver = CapturedBackgroundShapeStyleResolver(
+                internalLogger = internalLogger,
                 drawableToColorMapper = DrawableToColorMapper.getDefault(customDrawableMappers)
             )
             return CapturedViewMapperRegistry(
@@ -143,8 +144,7 @@ internal class DefaultCompositionPipelineFactory(
                     )
                 ),
                 fallbackMapper = CapturedViewGroupFallbackMapper(
-                    backgroundShapeStyleResolver = backgroundResolver,
-                    internalLogger = internalLogger
+                    backgroundShapeStyleResolver = backgroundResolver
                 ),
                 internalLogger = internalLogger
             )
