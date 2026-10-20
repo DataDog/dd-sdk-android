@@ -703,20 +703,24 @@ public final class com/datadog/android/rum/model/ActionEvent$ActionEventActionTy
 
 public final class com/datadog/android/rum/model/ActionEvent$ActionEventSession {
 	public static final field Companion Lcom/datadog/android/rum/model/ActionEvent$ActionEventSession$Companion;
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$ActionEventSessionType;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$ActionEventSessionType;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$ActionEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$ActionEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lcom/datadog/android/rum/model/ActionEvent$ActionEventSessionType;
 	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$ActionEventSessionType;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/ActionEvent$ActionEventSession;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ActionEvent$ActionEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$ActionEventSessionType;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ActionEvent$ActionEventSession;
+	public final fun component4 ()Ljava/lang/Boolean;
+	public final fun component5 ()Ljava/lang/Boolean;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$ActionEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/ActionEvent$ActionEventSession;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ActionEvent$ActionEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/ActionEvent$ActionEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ActionEvent$ActionEventSession;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ActionEvent$ActionEventSession;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ActionEvent$ActionEventSession;
 	public final fun getHasReplay ()Ljava/lang/Boolean;
+	public final fun getHasTimeseries ()Ljava/lang/Boolean;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getType ()Lcom/datadog/android/rum/model/ActionEvent$ActionEventSessionType;
 	public fun hashCode ()I
+	public final fun isMainProcess ()Ljava/lang/Boolean;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
 }
@@ -2251,20 +2255,24 @@ public final class com/datadog/android/rum/model/ErrorEvent$Error$Companion {
 
 public final class com/datadog/android/rum/model/ErrorEvent$ErrorEventSession {
 	public static final field Companion Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSession$Companion;
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSessionType;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSessionType;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSessionType;
 	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSessionType;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSession;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSessionType;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSession;
+	public final fun component4 ()Ljava/lang/Boolean;
+	public final fun component5 ()Ljava/lang/Boolean;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSession;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSession;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSession;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSession;
 	public final fun getHasReplay ()Ljava/lang/Boolean;
+	public final fun getHasTimeseries ()Ljava/lang/Boolean;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getType ()Lcom/datadog/android/rum/model/ErrorEvent$ErrorEventSessionType;
 	public fun hashCode ()I
+	public final fun isMainProcess ()Ljava/lang/Boolean;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
 }
@@ -3451,20 +3459,24 @@ public final class com/datadog/android/rum/model/LongTaskEvent$LongTask$Companio
 
 public final class com/datadog/android/rum/model/LongTaskEvent$LongTaskEventSession {
 	public static final field Companion Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSession$Companion;
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSessionType;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSessionType;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSessionType;
 	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSessionType;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSession;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSessionType;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSession;
+	public final fun component4 ()Ljava/lang/Boolean;
+	public final fun component5 ()Ljava/lang/Boolean;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSession;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSession;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSession;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSession;
 	public final fun getHasReplay ()Ljava/lang/Boolean;
+	public final fun getHasTimeseries ()Ljava/lang/Boolean;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getType ()Lcom/datadog/android/rum/model/LongTaskEvent$LongTaskEventSessionType;
 	public fun hashCode ()I
+	public final fun isMainProcess ()Ljava/lang/Boolean;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
 }
@@ -4831,20 +4843,24 @@ public final class com/datadog/android/rum/model/ResourceEvent$Resource$Companio
 
 public final class com/datadog/android/rum/model/ResourceEvent$ResourceEventSession {
 	public static final field Companion Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSession$Companion;
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSessionType;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSessionType;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSessionType;
 	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSessionType;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSession;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSessionType;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSession;
+	public final fun component4 ()Ljava/lang/Boolean;
+	public final fun component5 ()Ljava/lang/Boolean;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSession;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSession;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSession;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSession;
 	public final fun getHasReplay ()Ljava/lang/Boolean;
+	public final fun getHasTimeseries ()Ljava/lang/Boolean;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getType ()Lcom/datadog/android/rum/model/ResourceEvent$ResourceEventSessionType;
 	public fun hashCode ()I
+	public final fun isMainProcess ()Ljava/lang/Boolean;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
 }
@@ -5808,20 +5824,24 @@ public final class com/datadog/android/rum/model/TimeseriesCpuEvent$Timeseries$C
 
 public final class com/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSession {
 	public static final field Companion Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSession$Companion;
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSessionType;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSessionType;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSessionType;
 	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSessionType;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSession;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSessionType;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSession;
+	public final fun component4 ()Ljava/lang/Boolean;
+	public final fun component5 ()Ljava/lang/Boolean;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSession;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSession;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSession;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSession;
 	public final fun getHasReplay ()Ljava/lang/Boolean;
+	public final fun getHasTimeseries ()Ljava/lang/Boolean;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getType ()Lcom/datadog/android/rum/model/TimeseriesCpuEvent$TimeseriesCpuEventSessionType;
 	public fun hashCode ()I
+	public final fun isMainProcess ()Ljava/lang/Boolean;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
 }
@@ -6588,20 +6608,24 @@ public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$Timeserie
 
 public final class com/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSession {
 	public static final field Companion Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSession$Companion;
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSessionType;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSessionType;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSessionType;
 	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSessionType;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSession;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSessionType;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSession;
+	public final fun component4 ()Ljava/lang/Boolean;
+	public final fun component5 ()Ljava/lang/Boolean;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSession;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSession;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSession;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSession;
 	public final fun getHasReplay ()Ljava/lang/Boolean;
+	public final fun getHasTimeseries ()Ljava/lang/Boolean;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getType ()Lcom/datadog/android/rum/model/TimeseriesMemoryEvent$TimeseriesMemoryEventSessionType;
 	public fun hashCode ()I
+	public final fun isMainProcess ()Ljava/lang/Boolean;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
 }
@@ -8170,24 +8194,28 @@ public final class com/datadog/android/rum/model/ViewEvent$Usr$Companion {
 
 public final class com/datadog/android/rum/model/ViewEvent$ViewEventSession {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession$Companion;
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lcom/datadog/android/rum/model/ViewEvent$ViewEventSessionType;
 	public final fun component3 ()Ljava/lang/Boolean;
 	public final fun component4 ()Ljava/lang/Boolean;
 	public final fun component5 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;
+	public final fun component6 ()Ljava/lang/Boolean;
+	public final fun component7 ()Ljava/lang/Boolean;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewEvent$ViewEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent$ViewEventSession;
 	public final fun getHasReplay ()Ljava/lang/Boolean;
+	public final fun getHasTimeseries ()Ljava/lang/Boolean;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getSampledForReplay ()Ljava/lang/Boolean;
 	public final fun getType ()Lcom/datadog/android/rum/model/ViewEvent$ViewEventSessionType;
 	public fun hashCode ()I
 	public final fun isActive ()Ljava/lang/Boolean;
+	public final fun isMainProcess ()Ljava/lang/Boolean;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
 }
@@ -9822,24 +9850,28 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$Usr$Companion {
 
 public final class com/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSession {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSession$Companion;
-	public fun <init> (Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSessionType;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSessionType;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/Boolean;
 	public final fun component2 ()Ljava/lang/Boolean;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSessionType;
 	public final fun component5 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSessionType;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSession;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSession;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSessionType;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSession;
+	public final fun component6 ()Ljava/lang/Boolean;
+	public final fun component7 ()Ljava/lang/Boolean;
+	public final fun copy (Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSession;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSession;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSession;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSession;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSession;
 	public final fun getHasReplay ()Ljava/lang/Boolean;
+	public final fun getHasTimeseries ()Ljava/lang/Boolean;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getSampledForReplay ()Ljava/lang/Boolean;
 	public final fun getType ()Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSessionType;
 	public fun hashCode ()I
 	public final fun isActive ()Ljava/lang/Boolean;
+	public final fun isMainProcess ()Ljava/lang/Boolean;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
 }
@@ -10824,20 +10856,24 @@ public final class com/datadog/android/rum/model/VitalAppLaunchEvent$Vital$Compa
 
 public final class com/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSession {
 	public static final field Companion Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSession$Companion;
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSessionType;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSessionType;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSessionType;
 	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSessionType;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSession;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSessionType;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSession;
+	public final fun component4 ()Ljava/lang/Boolean;
+	public final fun component5 ()Ljava/lang/Boolean;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSession;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSession;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSession;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSession;
 	public final fun getHasReplay ()Ljava/lang/Boolean;
+	public final fun getHasTimeseries ()Ljava/lang/Boolean;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getType ()Lcom/datadog/android/rum/model/VitalAppLaunchEvent$VitalAppLaunchEventSessionType;
 	public fun hashCode ()I
+	public final fun isMainProcess ()Ljava/lang/Boolean;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
 }
@@ -11705,20 +11741,24 @@ public final class com/datadog/android/rum/model/VitalOperationStepEvent$Vital$C
 
 public final class com/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSession {
 	public static final field Companion Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSession$Companion;
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSessionType;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSessionType;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSessionType;
 	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSessionType;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSession;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSessionType;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSession;
+	public final fun component4 ()Ljava/lang/Boolean;
+	public final fun component5 ()Ljava/lang/Boolean;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSession;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSession;Ljava/lang/String;Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSession;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSession;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSession;
 	public final fun getHasReplay ()Ljava/lang/Boolean;
+	public final fun getHasTimeseries ()Ljava/lang/Boolean;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getType ()Lcom/datadog/android/rum/model/VitalOperationStepEvent$VitalOperationStepEventSessionType;
 	public fun hashCode ()I
+	public final fun isMainProcess ()Ljava/lang/Boolean;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public fun toString ()Ljava/lang/String;
 }
