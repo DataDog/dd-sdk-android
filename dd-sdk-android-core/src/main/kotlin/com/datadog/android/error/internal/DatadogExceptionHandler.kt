@@ -130,7 +130,7 @@ internal class DatadogExceptionHandler(
                 ThreadDump(
                     name = thread.name,
                     state = thread.state.asString(),
-                    stack = stackTrace.loggableStackTrace(),
+                    stack = stackTrace.joinToString(separator = "\n", limit = MAX_STACK_TRACE_FRAMES) { "at $it" },
                     crashed = false
                 )
             }
@@ -154,6 +154,7 @@ internal class DatadogExceptionHandler(
     // endregion
 
     companion object {
+        private const val MAX_STACK_TRACE_FRAMES = 1024
         internal const val MESSAGE = "Application crash detected"
         internal const val MAX_WAIT_FOR_IDLE_TIME_IN_MS = 100L
         internal const val EXECUTOR_NOT_IDLED_WARNING_MESSAGE =

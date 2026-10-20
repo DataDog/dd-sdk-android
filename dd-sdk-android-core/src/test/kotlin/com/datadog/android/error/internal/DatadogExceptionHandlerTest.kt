@@ -375,6 +375,45 @@ internal class DatadogExceptionHandlerTest {
         verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
     }
 
+    @Test
+    fun `M limit other thread stack traces W uncaughtException() {deep calling stack}`(
+        @StringForgery fakeThreadName: String,
+        @Forgery fakeThreadState: Thread.State
+    ) {
+        // Given
+        val stubCrashedThread: Thread = mock()
+        whenever(stubCrashedThread.name) doReturn fakeThreadName
+        whenever(stubCrashedThread.state) doReturn fakeThreadState
+        val currentThread = Thread.currentThread()
+        fun reportWithDeepStack(depth: Int) {
+            if (depth == 0) {
+                testedHandler.uncaughtException(stubCrashedThread, fakeThrowable)
+            } else {
+                reportWithDeepStack(depth - 1)
+            }
+        }
+
+        // When
+        reportWithDeepStack(1024)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            val crashEvent = lastValue as JvmCrash.Rum
+            val callingThreadDump = crashEvent.threads.single { !it.crashed && it.name == currentThread.name }
+            val lines = callingThreadDump.stack.lines()
+            assertThat(lines).hasSize(1025)
+            assertThat(lines.take(1024)).allSatisfy { frame ->
+                assertThat(frame).startsWith("at ")
+            }
+            assertThat(lines.last()).isEqualTo("...")
+            assertThat(crashEvent.throwable).isSameAs(fakeThrowable)
+            assertThat(crashEvent.threads.single { it.crashed }.stack)
+                .isEqualTo(fakeThrowable.loggableStackTrace())
+        }
+        verify(mockPreviousHandler).uncaughtException(stubCrashedThread, fakeThrowable)
+    }
+
     // endregion
 
     // region Resilience
