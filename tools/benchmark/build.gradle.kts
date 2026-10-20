@@ -5,6 +5,7 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.PublishingDestination
 import com.datadog.gradle.config.java11
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -68,6 +69,7 @@ datadogBuild {
     applyAndroidLibraryConfig()
     applyPublishingConfig(
         projectDescription = "An internal benchmarking tool to measure the overhead of Datadog SDK",
-        customArtifactId = "dd-sdk-android-benchmark-internal"
+        customArtifactId = "dd-sdk-android-benchmark-internal",
+        destination = PublishingDestination.INTERNAL_BENCHMARK
     )
 }
