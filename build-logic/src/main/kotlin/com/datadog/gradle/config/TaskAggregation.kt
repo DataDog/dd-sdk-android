@@ -23,11 +23,20 @@ fun Project.registerSubModuleAggregationTask(
                 subProject.name.startsWith(subModuleNamePrefix) &&
                 subProject.path.startsWith(subModulePathPrefix)
             ) {
-                // Name-filtered live view: it is resolved only when the task graph is built, so it
-                // doesn't read the submodule's task container while that is still being populated
-                // (e.g. by parallel IDE sync), never configures unrelated tasks, and is simply
-                // empty when the submodule doesn't register the task (e.g. lintRelease on JVM modules).
-                dependsOn(subProject.tasks.named { it == subModuleTaskName })
+                // The provider defers the name check until the task graph is built, so it doesn't
+                // read the submodule's task container while that is still being populated (e.g. by
+                // parallel IDE sync). `tasks.names` and `named()` don't create unrelated tasks,
+                // unlike iterating `tasks.named { }`. The check matters because not every submodule
+                // registers every aggregated task (e.g. lintRelease on JVM modules).
+                dependsOn(
+                    project.provider {
+                        if (subModuleTaskName in subProject.tasks.names) {
+                            listOf(subProject.tasks.named(subModuleTaskName))
+                        } else {
+                            emptyList()
+                        }
+                    }
+                )
             }
         }
         additionalConfiguration()
