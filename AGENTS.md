@@ -1,3 +1,19 @@
+# Start here
+
+Read the [contributor guide](CONTRIBUTING.md) for setup and contribution procedures.
+Use the [documentation map](docs/README.md) to select current SDK guidance and
+Foundation validation commands. Follow the module rules and validation tasks below.
+
+Include necessary documentation with each implementation change. Review accuracy,
+reader purpose, navigation, and instruction scope. Record actual validation evidence.
+For staged documentation validation, use a provisioned FactoryKit environment:
+
+```sh
+python ci/scripts/foundation_check.py --snapshot index --against HEAD --format json
+```
+
+This manual gate supplements the existing module validation tasks.
+
 # Module Map
 
 - `dd-sdk-android-core` — SDK core: `Datadog`, `InternalLogger`, storage/upload, shared executors (`CoreFeature`).
