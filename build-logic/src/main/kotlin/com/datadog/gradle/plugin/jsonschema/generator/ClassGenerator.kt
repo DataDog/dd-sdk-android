@@ -28,7 +28,8 @@ import com.squareup.kotlinpoet.TypeSpec
 
 class ClassGenerator(
     packageName: String,
-    knownTypes: MutableSet<KotlinTypeWrapper>
+    knownTypes: MutableSet<KotlinTypeWrapper>,
+    private val generateConstructorDefaults: Boolean
 ) : TypeSpecGenerator<TypeDefinition.Class>(
     packageName,
     knownTypes
@@ -324,11 +325,15 @@ class ClassGenerator(
                 val propertyType = notNullableType.copy(nullable = isNullable)
                 constructorBuilder.addParameter(
                     ParameterSpec.builder(propertyName, propertyType)
-                        .withDefaultValue(
-                            p = p,
-                            rootTypeName = rootTypeName,
-                            isRequired = isRequired
-                        )
+                        .apply {
+                            if (generateConstructorDefaults) {
+                                withDefaultValue(
+                                    p = p,
+                                    rootTypeName = rootTypeName,
+                                    isRequired = isRequired
+                                )
+                            }
+                        }
                         .build()
                 )
             }
@@ -341,7 +346,11 @@ class ClassGenerator(
             )
             constructorBuilder.addParameter(
                 ParameterSpec.builder(Identifier.PARAM_ADDITIONAL_PROPS, mapType)
-                    .defaultValue(if (definition.additionalProperties.readOnly) "mapOf()" else "mutableMapOf()")
+                    .apply {
+                        if (generateConstructorDefaults) {
+                            defaultValue(if (definition.additionalProperties.readOnly) "mapOf()" else "mutableMapOf()")
+                        }
+                    }
                     .build()
             )
         }

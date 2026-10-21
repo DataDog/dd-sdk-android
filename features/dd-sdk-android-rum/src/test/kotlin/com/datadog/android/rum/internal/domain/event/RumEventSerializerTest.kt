@@ -2509,7 +2509,13 @@ internal class RumEventSerializerTest {
             2 -> this.getForgery(ViewUpdateEvent::class.java).let {
                 it.copy(
                     context = ViewUpdateEvent.FeatureFlags(additionalProperties = attributes),
-                    usr = (it.usr ?: ViewUpdateEvent.Usr()).copy(additionalProperties = userAttributes)
+                    usr = it.usr?.copy(additionalProperties = userAttributes) ?: ViewUpdateEvent.Usr(
+                        id = null,
+                        name = null,
+                        email = null,
+                        anonymousId = null,
+                        additionalProperties = userAttributes
+                    )
                 )
             }
 
