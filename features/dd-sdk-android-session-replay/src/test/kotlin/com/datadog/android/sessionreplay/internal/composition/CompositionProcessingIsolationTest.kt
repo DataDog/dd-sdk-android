@@ -160,6 +160,7 @@ internal class CompositionProcessingIsolationTest {
             val completionQueue = SnapshotCompletionQueue(
                 mockCompletionExecutor,
                 DefaultSnapshotCompletionProcessor(
+                    orientationProvider = mock(),
                     rumContextProvider = mockRumContextProvider,
                     recordWriter = mockWriter,
                     internalLogger = mock(),

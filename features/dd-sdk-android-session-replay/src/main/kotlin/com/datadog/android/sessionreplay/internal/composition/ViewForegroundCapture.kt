@@ -23,7 +23,7 @@ import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 internal class ViewForegroundCapture(
     private val internalLogger: InternalLogger,
     private val rasterizer: ViewForegroundRasterizer = DefaultViewForegroundRasterizer(internalLogger),
-    private val colorResolver: ForegroundColorResolver = DefaultForegroundColorResolver(internalLogger),
+    private val colorResolver: ForegroundColorResolver = DefaultForegroundColorResolver(),
     private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter,
     private val pixelCapture: ViewPixelCapture = ViewPixelCapture(internalLogger)
 ) {
@@ -73,23 +73,26 @@ internal class DefaultViewForegroundRasterizer(private val internalLogger: Inter
     @UiThread
     @Suppress("TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall") // Draw failures caught below.
     override fun rasterize(view: View): Bitmap? {
-        var bitmap: Bitmap? = null
+        val captured = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+        var completed = false
         return try {
-            val captured = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-            bitmap = captured
             val canvas = Canvas(captured)
             canvas.translate(-view.scrollX.toFloat(), -view.scrollY.toFloat())
-            view.onDrawForeground(canvas)
-            captured
-        } catch (e: Exception) {
-            bitmap?.recycle()
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.TELEMETRY,
-                { "Failed to rasterize view foreground" },
-                e
-            )
-            null
+            try {
+                view.onDrawForeground(canvas)
+                completed = true
+                captured
+            } catch (e: Exception) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.TELEMETRY,
+                    { "Failed to rasterize view foreground" },
+                    e
+                )
+                null
+            }
+        } finally {
+            if (!completed) captured.recycle()
         }
     }
 }
@@ -99,32 +102,22 @@ internal fun interface ForegroundColorResolver {
 }
 
 /** Sampling a uniform drawable preserves tint and drawable alpha without multiplying the view alpha. */
-internal class DefaultForegroundColorResolver(private val internalLogger: InternalLogger) : ForegroundColorResolver {
+internal class DefaultForegroundColorResolver : ForegroundColorResolver {
     @UiThread
-    @Suppress("TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall") // Draw failures caught below.
+    @Suppress("UnsafeThirdPartyFunctionCall") // Sample an owned software bitmap and always restore the drawable.
     override fun resolve(drawable: ColorDrawable): Int? {
-        var bitmap: Bitmap? = null
+        val originalBounds = drawable.copyBounds()
+        val bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
         return try {
-            val captured = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
-            bitmap = captured
-            val originalBounds = drawable.copyBounds()
-            try {
-                drawable.setBounds(0, 0, 1, 1)
-                drawable.draw(Canvas(captured))
-                captured.getPixel(0, 0)
-            } finally {
-                drawable.bounds = originalBounds
-            }
-        } catch (e: Exception) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.TELEMETRY,
-                { "Failed to resolve foreground color" },
-                e
-            )
-            null
+            drawable.setBounds(0, 0, 1, 1)
+            drawable.draw(Canvas(bitmap))
+            bitmap.getPixel(0, 0)
         } finally {
-            bitmap?.recycle()
+            try {
+                drawable.bounds = originalBounds
+            } finally {
+                bitmap.recycle()
+            }
         }
     }
 }

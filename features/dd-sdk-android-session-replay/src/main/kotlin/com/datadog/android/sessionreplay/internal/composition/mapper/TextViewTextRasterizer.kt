@@ -11,17 +11,14 @@ import android.graphics.Canvas
 import android.text.Spanned
 import android.text.style.ReplacementSpan
 import android.widget.TextView
-import com.datadog.android.api.InternalLogger
 
 internal fun interface TextViewTextRasterizer {
     fun rasterize(view: TextView): Bitmap?
 }
 
 /** Draw the text layout alone; compound drawables and the View hierarchy are never included. */
-internal class DefaultTextViewTextRasterizer(
-    private val internalLogger: InternalLogger
-) : TextViewTextRasterizer {
-    @Suppress("ReturnCount", "TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall")
+internal class DefaultTextViewTextRasterizer : TextViewTextRasterizer {
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall")
     override fun rasterize(view: TextView): Bitmap? {
         val layout = view.layout ?: return null
         val text = layout.text
@@ -30,36 +27,20 @@ internal class DefaultTextViewTextRasterizer(
         val width = view.width
         val height = view.height
         if (width <= 0 || height <= 0 || width.toLong() * height > MAX_TEXT_PIXELS) return null
-        var bitmap: Bitmap? = null
+        val pixels = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        var completed = false
         return try {
-            val pixels = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            bitmap = pixels
             val canvas = Canvas(pixels)
             canvas.translate(
                 (view.totalPaddingLeft - view.scrollX).toFloat(),
                 (view.totalPaddingTop - view.scrollY).toFloat()
             )
             layout.draw(canvas)
+            completed = true
             pixels
-        } catch (e: Exception) {
-            bitmap?.recycle()
-            logFailure(e)
-            null
-        } catch (e: OutOfMemoryError) {
-            bitmap?.recycle()
-            logFailure(e)
-            null
+        } finally {
+            if (!completed) pixels.recycle()
         }
-    }
-
-    private fun logFailure(error: Throwable) {
-        internalLogger.log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
-            { "Unable to rasterize the text layout." },
-            error,
-            onlyOnce = true
-        )
     }
 
     private companion object {

@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.ChecksSdkIntAtLeast
 import com.datadog.android.api.InternalLogger
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 
 /** Children in back-to-front painting order, shared by traversal and occlusion for one parent. */
@@ -48,7 +49,8 @@ internal class ViewGroupDrawingOrderResolver(
 
     // Both reflection and an app-defined drawing-order callback may throw. An unreadable/invalid
     // order must retain every child and disable culling, rather than silently drop visible content.
-    @Suppress("TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall")
+    // The guard isolates app callbacks; reflected fatal errors are unwrapped and rethrown.
+    @Suppress("TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall", "ThrowingInternalException")
     private fun resolveCustomOrder(viewGroup: ViewGroup, children: List<View>): List<View>? {
         if (children.size < 2) return children
         return try {
@@ -72,6 +74,11 @@ internal class ViewGroupDrawingOrderResolver(
                 false -> children
                 null -> null
             }
+        } catch (@Suppress("SwallowedException") e: InvocationTargetException) {
+            // Reflection wraps callback failures, including fatal errors that must keep propagating.
+            val cause = e.cause
+            if (cause is Error) throw cause
+            null
         } catch (_: Exception) {
             null
         }

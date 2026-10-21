@@ -268,18 +268,13 @@ internal fun getClassSafe(className: String, isCritical: Boolean = true): Class<
     }
 }
 
-@Suppress("TooGenericExceptionCaught")
+@Suppress("UnsafeThirdPartyFunctionCall") // Kotlin guarantees a non-null field name.
 internal fun Class<*>.getDeclaredFieldSafe(fieldName: String, isCritical: Boolean = true): Field? {
     return try {
         getDeclaredField(fieldName).accessible()
     } catch (e: SecurityException) {
         if (isCritical) {
             logSecurityException(fieldName, LOG_TYPE_FIELD, e)
-        }
-        null
-    } catch (e: NullPointerException) {
-        if (isCritical) {
-            logNullPointerException(fieldName, LOG_TYPE_FIELD, e)
         }
         null
     } catch (e: NoSuchFieldException) {
@@ -290,7 +285,7 @@ internal fun Class<*>.getDeclaredFieldSafe(fieldName: String, isCritical: Boolea
     }
 }
 
-@Suppress("TooGenericExceptionCaught")
+@Suppress("UnsafeThirdPartyFunctionCall") // Kotlin guarantees a non-null method name.
 internal fun Class<*>.getDeclaredMethodSafe(
     methodName: String,
     isCritical: Boolean = true
@@ -300,11 +295,6 @@ internal fun Class<*>.getDeclaredMethodSafe(
     } catch (e: SecurityException) {
         if (isCritical) {
             logSecurityException(methodName, LOG_TYPE_METHOD, e)
-        }
-        null
-    } catch (e: NullPointerException) {
-        if (isCritical) {
-            logNullPointerException(methodName, LOG_TYPE_METHOD, e)
         }
         null
     } catch (e: NoSuchMethodException) {
@@ -317,10 +307,6 @@ internal fun Class<*>.getDeclaredMethodSafe(
 
 private fun logSecurityException(name: String, type: String, e: SecurityException) {
     logReflectionException(name = name, type = type, reason = LOG_REASON_SECURITY, e = e)
-}
-
-private fun logNullPointerException(name: String, type: String, e: NullPointerException) {
-    logReflectionException(name = name, type = type, reason = "$name is null", e = e)
 }
 
 private fun logNoSuchException(name: String, type: String, e: ReflectiveOperationException) {

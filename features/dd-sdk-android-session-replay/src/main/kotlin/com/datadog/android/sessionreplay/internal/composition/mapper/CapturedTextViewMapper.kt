@@ -54,7 +54,7 @@ internal open class CapturedTextViewMapper<T : TextView>(
     private val backgroundRasterizer: ViewBackgroundRasterizer = DefaultViewBackgroundRasterizer(),
     private val compoundDrawableRasterizer: CompoundDrawableRasterizer = DefaultCompoundDrawableRasterizer(),
     private val internalLogger: InternalLogger,
-    private val textRasterizer: TextViewTextRasterizer = DefaultTextViewTextRasterizer(internalLogger),
+    private val textRasterizer: TextViewTextRasterizer = DefaultTextViewTextRasterizer(),
     private val isStandardTypeface: (Typeface) -> Boolean = ::isStandardTextTypeface
 ) : CapturedViewMapper<T> {
 
@@ -443,29 +443,36 @@ internal class DefaultViewBackgroundRasterizer(
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND
 ) : ViewBackgroundRasterizer {
 
-    @Suppress("TooGenericExceptionCaught")
+    // Allocation and canvas failures propagate; only the app drawable's draw callback is isolated.
+    @Suppress("TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall")
     override fun rasterize(view: View): Bitmap? {
         val background = view.background ?: return null
+        val originalBounds = background.copyBounds()
+        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+        var completed = false
         return try {
-            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-            val originalBounds = background.copyBounds()
-            background.setBounds(0, 0, view.width, view.height)
-            try {
-                background.draw(Canvas(bitmap))
+            val canvas = Canvas(bitmap)
+            val captured = try {
+                background.setBounds(0, 0, view.width, view.height)
+                try {
+                    background.draw(canvas)
+                    bitmap
+                } catch (e: Exception) {
+                    internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.TELEMETRY,
+                        { "Failed to rasterize view background for pixel-fallback capture" },
+                        e
+                    )
+                    null
+                }
             } finally {
-                // background is the live Drawable instance the real View still uses for its own
-                // rendering - its bounds must be restored, not left at whatever this capture needed.
                 background.bounds = originalBounds
             }
-            bitmap
-        } catch (e: Exception) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.TELEMETRY,
-                { "Failed to rasterize view background for pixel-fallback capture" },
-                e
-            )
-            null
+            completed = captured != null
+            captured
+        } finally {
+            if (!completed) bitmap.recycle()
         }
     }
 }
@@ -482,28 +489,35 @@ internal class DefaultCompoundDrawableRasterizer(
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND
 ) : CompoundDrawableRasterizer {
 
-    @Suppress("TooGenericExceptionCaught")
+    // Allocation and canvas failures propagate; only the app drawable's draw callback is isolated.
+    @Suppress("TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall")
     override fun rasterize(drawable: Drawable, widthPx: Int, heightPx: Int): Bitmap? {
+        val originalBounds = drawable.copyBounds()
+        val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
+        var completed = false
         return try {
-            val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
-            val originalBounds = drawable.copyBounds()
-            drawable.setBounds(0, 0, widthPx, heightPx)
-            try {
-                drawable.draw(Canvas(bitmap))
+            val canvas = Canvas(bitmap)
+            val captured = try {
+                drawable.setBounds(0, 0, widthPx, heightPx)
+                try {
+                    drawable.draw(canvas)
+                    bitmap
+                } catch (e: Exception) {
+                    internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.TELEMETRY,
+                        { "Failed to rasterize compound drawable for pixel-fallback capture" },
+                        e
+                    )
+                    null
+                }
             } finally {
-                // drawable is the live instance the real View still uses for its own rendering -
-                // its bounds must be restored, not left at whatever this capture needed.
                 drawable.bounds = originalBounds
             }
-            bitmap
-        } catch (e: Exception) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.TELEMETRY,
-                { "Failed to rasterize compound drawable for pixel-fallback capture" },
-                e
-            )
-            null
+            completed = captured != null
+            captured
+        } finally {
+            if (!completed) bitmap.recycle()
         }
     }
 }

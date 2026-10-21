@@ -196,11 +196,11 @@ internal class DefaultViewRasterizer(
     @UiThread
     @Suppress("TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall") // App drawing failures are isolated.
     private fun draw(view: View, transform: ViewTransform?, clipToBounds: Boolean): Bitmap? {
-        var bitmap: Bitmap? = null
+        val width = transform?.pixelBounds?.width?.toInt() ?: view.width
+        val height = transform?.pixelBounds?.height?.toInt() ?: view.height
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        var completed = false
         return try {
-            val width = transform?.pixelBounds?.width?.toInt() ?: view.width
-            val height = transform?.pixelBounds?.height?.toInt() ?: view.height
-            bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
             if (transform != null) {
                 canvas.translate(-transform.pixelBounds.x.toFloat(), -transform.pixelBounds.y.toFloat())
@@ -210,17 +210,21 @@ internal class DefaultViewRasterizer(
             // Match the scroll translation normally applied by the parent before View.draw.
             canvas.translate(-view.scrollX.toFloat(), -view.scrollY.toFloat())
             view.clipBounds?.let(canvas::clipRect)
-            view.draw(canvas)
-            bitmap
-        } catch (e: Exception) {
-            bitmap?.recycle()
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.TELEMETRY,
-                { "Failed to rasterize view for pixel-fallback capture" },
-                e
-            )
-            null
+            try {
+                view.draw(canvas)
+                completed = true
+                bitmap
+            } catch (e: Exception) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.TELEMETRY,
+                    { "Failed to rasterize view for pixel-fallback capture" },
+                    e
+                )
+                null
+            }
+        } finally {
+            if (!completed) bitmap.recycle()
         }
     }
 }

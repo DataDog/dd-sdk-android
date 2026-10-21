@@ -61,6 +61,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -628,10 +629,36 @@ internal class GranularComposeDecomposerTest {
         assertThat(result).isFalse()
     }
 
+    @ParameterizedTest
+    @CsvSource(
+        "probe,exception", "probe,assertion", "probe,oom",
+        "capture,exception", "capture,assertion", "capture,oom",
+        "privacy,exception", "privacy,assertion", "privacy,oom"
+    )
+    fun `M propagate non-linkage failures W capture entry points`(entryPoint: String, kind: String) {
+        // Given
+        val failure = when (kind) {
+            "oom" -> OutOfMemoryError("simulated allocation failure")
+            "assertion" -> AssertionError("simulated assertion failure")
+            else -> IllegalStateException("simulated bug")
+        }
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenAnswer { throw failure }
+
+        // When + Then
+        assertThatThrownBy {
+            when (entryPoint) {
+                "probe" -> testedDecomposer.canDecompose(mockView)
+                "privacy" -> testedDecomposer.readTouchPrivacy(mockView) { true }
+                else -> testedDecomposer.decompose(mockView, realRequest())
+            }
+        }.isSameAs(failure)
+        assertThat(testedGate.isAvailable()).isTrue()
+    }
+
     @Test
     fun `M return false W canDecompose() { gate already tripped }`() {
         // Given
-        testedGate.markIncompatible(Throwable(), mock())
+        testedGate.markIncompatible(LinkageError(), mock())
 
         // When
         val result = testedDecomposer.canDecompose(mockView)
@@ -644,7 +671,7 @@ internal class GranularComposeDecomposerTest {
     @Test
     fun `M return null W decompose() { gate already tripped }`() {
         // Given
-        testedGate.markIncompatible(Throwable(), mock())
+        testedGate.markIncompatible(LinkageError(), mock())
         val request: CompositionHostDecomposeRequest = mock()
 
         // When

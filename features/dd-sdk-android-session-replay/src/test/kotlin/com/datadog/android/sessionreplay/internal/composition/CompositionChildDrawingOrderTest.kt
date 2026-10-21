@@ -31,6 +31,7 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
@@ -416,6 +417,21 @@ internal class CompositionChildDrawingOrderTest {
 
         // Then
         assertThat(result.rootLayer.children.map { it.identity.localId }).containsExactly("1", "2")
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = [28, 29])
+    fun `M propagate fatal callback failures W resolve { reflected or direct drawing order }`(sdkInt: Int) {
+        // Given
+        val fixture = Fixture(childCount = 2, sdkInt = sdkInt)
+        fixture.customOrder(1, 0)
+        val failure = OutOfMemoryError("simulated")
+        whenever(fixture.root.getChildDrawingOrder(any(), any())).thenThrow(failure)
+        whenever(fixture.root.getChildDrawingOrder(any())).thenThrow(failure)
+
+        // When + Then
+        assertThatThrownBy { ViewGroupDrawingOrderResolver(mock(), sdkInt).resolve(fixture.root) }
+            .isSameAs(failure)
     }
 
     @Test

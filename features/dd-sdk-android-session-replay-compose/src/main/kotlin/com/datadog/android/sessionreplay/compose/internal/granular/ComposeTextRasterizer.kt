@@ -19,7 +19,6 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.unit.toSize
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOffset
 import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
@@ -38,44 +37,42 @@ internal fun interface ComposeTextRasterizer {
 }
 
 internal class DefaultComposeTextRasterizer(
-    private val reflectionUtils: ReflectionUtils = ReflectionUtils(),
-    private val internalLogger: InternalLogger = InternalLogger.UNBOUND
+    private val reflectionUtils: ReflectionUtils = ReflectionUtils()
 ) : ComposeTextRasterizer {
-    @Suppress("ReturnCount", "TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall")
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall")
     override fun rasterize(
         node: SemanticsNode,
         text: TextLayoutInfo,
         modifiers: List<ModifierInfo>,
         windowOffset: ComposeWindowOffset
     ): RasterizedComposeText? {
-        var bitmap: Bitmap? = null
+        val action = node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action ?: return null
+        val results = mutableListOf<TextLayoutResult>()
+        action.invoke(results)
+        val layout = results.firstOrNull() ?: return null
+        // The privacy decision was made for this exact text on the same main-thread traversal.
+        val originalText = layout.layoutInput.text.text
+        if (originalText != text.text &&
+            !(layout.didOverflowHeight && originalText.startsWith(text.text))
+        ) {
+            return null
+        }
+        val size = layout.size
+        if (size.width <= 0 || size.height <= 0 || size.width.toLong() * size.height > MAX_TEXT_PIXELS) return null
+        val coordinates = modifiers.firstOrNull {
+            reflectionUtils.isTextStringSimpleElement(it.modifier)
+        }?.coordinates
+        val position = if (coordinates?.isAttached == true) coordinates.positionInRoot() else node.positionInRoot
+        val density = node.layoutInfo.density
+        val bounds = GlobalBounds(
+            (position.x / density.density).toLong() + windowOffset.xDp,
+            (position.y / density.density).toLong() + windowOffset.yDp,
+            (size.width / density.density).toLong(),
+            (size.height / density.density).toLong()
+        )
+        val pixels = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888)
+        var completed = false
         return try {
-            val action = node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action ?: return null
-            val results = mutableListOf<TextLayoutResult>()
-            action.invoke(results)
-            val layout = results.firstOrNull() ?: return null
-            // The privacy decision was made for this exact text on the same main-thread traversal.
-            val originalText = layout.layoutInput.text.text
-            if (originalText != text.text &&
-                !(layout.didOverflowHeight && originalText.startsWith(text.text))
-            ) {
-                return null
-            }
-            val size = layout.size
-            if (size.width <= 0 || size.height <= 0 || size.width.toLong() * size.height > MAX_TEXT_PIXELS) return null
-            val coordinates = modifiers.firstOrNull {
-                reflectionUtils.isTextStringSimpleElement(it.modifier)
-            }?.coordinates
-            val position = if (coordinates?.isAttached == true) coordinates.positionInRoot() else node.positionInRoot
-            val density = node.layoutInfo.density
-            val bounds = GlobalBounds(
-                (position.x / density.density).toLong() + windowOffset.xDp,
-                (position.y / density.density).toLong() + windowOffset.yDp,
-                (size.width / density.density).toLong(),
-                (size.height / density.density).toLong()
-            )
-            val pixels = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888)
-            bitmap = pixels
             CanvasDrawScope().draw(
                 density,
                 layout.layoutInput.layoutDirection,
@@ -85,26 +82,12 @@ internal class DefaultComposeTextRasterizer(
                 val color = if (layout.layoutInput.style.brush != null) Color.Unspecified else Color(text.color)
                 drawText(layout, color = color)
             }
-            RasterizedComposeText(pixels, bounds)
-        } catch (e: Exception) {
-            bitmap?.recycle()
-            logFailure(e)
-            null
-        } catch (e: OutOfMemoryError) {
-            bitmap?.recycle()
-            logFailure(e)
-            null
+            val captured = RasterizedComposeText(pixels, bounds)
+            completed = true
+            captured
+        } finally {
+            if (!completed) pixels.recycle()
         }
-    }
-
-    private fun logFailure(error: Throwable) {
-        internalLogger.log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
-            { "Unable to rasterize the Compose text layout." },
-            error,
-            onlyOnce = true
-        )
     }
 
     private companion object {

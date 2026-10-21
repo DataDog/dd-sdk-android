@@ -45,6 +45,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
@@ -1754,15 +1755,15 @@ internal class SemanticsUtilsTest {
          */
         private const val UNKNOWN_TEXT_OVERFLOW_ORDINAL = 99
 
-        /**
-         * Mock class that simulates TextOverflow value class structure (has "value" field).
-         * Used to test reflection-based extraction of Int value from value class instances.
-         */
-        private class MockTextOverflowValueClass(val value: Int)
+        /** Creates actual boxed overflow values, including modes absent from the compile-time Compose version. */
+        private fun boxedTextOverflow(value: Int): Any =
+            TextOverflow::class.java.getDeclaredConstructor(Int::class.javaPrimitiveType)
+                .apply { isAccessible = true }
+                .newInstance(value)
 
         /**
-         * Mock object without a "value" field to simulate reflection extraction failure.
-         * Used to test error handling when reflection fails to extract the Int value.
+         * Unrelated object that must not be inspected as a boxed TextOverflow.
+         * Used to verify that unexpected overflow types remain unsupported.
          */
         private class MockOverflowWithoutValueField {
             override fun toString() = "MockOverflowWithoutValueField"
@@ -1783,25 +1784,25 @@ internal class SemanticsUtilsTest {
                     SemanticsUtils.TEXT_OVERFLOW_ELLIPSIS_MIDDLE,
                     MobileSegment.TruncationMode.MIDDLE
                 ),
-                // Value class instances (boxed) - simulates TextOverflow value class
+                // Actual boxed TextOverflow value class instances
                 Arguments.of(
-                    MockTextOverflowValueClass(SemanticsUtils.TEXT_OVERFLOW_CLIP),
+                    boxedTextOverflow(SemanticsUtils.TEXT_OVERFLOW_CLIP),
                     MobileSegment.TruncationMode.CLIP
                 ),
                 Arguments.of(
-                    MockTextOverflowValueClass(SemanticsUtils.TEXT_OVERFLOW_ELLIPSE),
+                    boxedTextOverflow(SemanticsUtils.TEXT_OVERFLOW_ELLIPSE),
                     MobileSegment.TruncationMode.TAIL
                 ),
                 Arguments.of(
-                    MockTextOverflowValueClass(SemanticsUtils.TEXT_OVERFLOW_VISIBLE),
+                    boxedTextOverflow(SemanticsUtils.TEXT_OVERFLOW_VISIBLE),
                     null
                 ),
                 Arguments.of(
-                    MockTextOverflowValueClass(SemanticsUtils.TEXT_OVERFLOW_ELLIPSIS_START),
+                    boxedTextOverflow(SemanticsUtils.TEXT_OVERFLOW_ELLIPSIS_START),
                     MobileSegment.TruncationMode.HEAD
                 ),
                 Arguments.of(
-                    MockTextOverflowValueClass(SemanticsUtils.TEXT_OVERFLOW_ELLIPSIS_MIDDLE),
+                    boxedTextOverflow(SemanticsUtils.TEXT_OVERFLOW_ELLIPSIS_MIDDLE),
                     MobileSegment.TruncationMode.MIDDLE
                 ),
                 // Edge cases
@@ -1810,7 +1811,7 @@ internal class SemanticsUtilsTest {
                 Arguments.of(
                     MockOverflowWithoutValueField(),
                     null
-                ), // Reflection extraction failure (triggers logReflectionExtractionFailure)
+                ), // Unexpected type without a value field
                 Arguments.of(null, null) // No overflow modifier
             )
         }

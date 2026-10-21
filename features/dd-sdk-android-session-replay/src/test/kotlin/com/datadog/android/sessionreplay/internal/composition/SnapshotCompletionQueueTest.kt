@@ -299,6 +299,7 @@ internal class SnapshotCompletionQueueTest {
             .thenReturn(CaptureWireMappingResult.Success(mockRecord))
         val mockRecordWriter = mock<RecordWriter>()
         val testedProcessor = DefaultSnapshotCompletionProcessor(
+            orientationProvider = mock(),
             rumContextProvider = stubRumContextProvider(fakeApplicationId, fakeSessionId, fakeTree.scope.value),
             recordWriter = mockRecordWriter,
             internalLogger = mock(),
@@ -361,6 +362,7 @@ internal class SnapshotCompletionQueueTest {
         )
         val resourceDataQueueHandler = mock<DataQueueHandler>()
         val processor = DefaultSnapshotCompletionProcessor(
+            orientationProvider = mock(),
             rumContextProvider = rumContextProvider,
             recordWriter = mock(),
             internalLogger = mock(),
@@ -387,6 +389,7 @@ internal class SnapshotCompletionQueueTest {
         whenever(rumContextProvider.getRumContext()).thenReturn(SessionReplayRumContext())
         val resourceDataQueueHandler = mock<DataQueueHandler>()
         val processor = DefaultSnapshotCompletionProcessor(
+            orientationProvider = mock(),
             rumContextProvider = rumContextProvider,
             recordWriter = mock(),
             internalLogger = mock(),
@@ -422,6 +425,7 @@ internal class SnapshotCompletionQueueTest {
             SessionReplayRumContext(fakeApplicationId, fakeSessionId, tree.scope.value)
         )
         val processor = DefaultSnapshotCompletionProcessor(
+            orientationProvider = mock(),
             rumContextProvider = rumContextProvider,
             recordWriter = writer,
             internalLogger = mock(),
@@ -463,6 +467,7 @@ internal class SnapshotCompletionQueueTest {
             SessionReplayRumContext(fakeApplicationId, fakeSessionId, tree.scope.value)
         )
         val processor = DefaultSnapshotCompletionProcessor(
+            orientationProvider = mock(),
             rumContextProvider = rumContextProvider,
             recordWriter = writer,
             internalLogger = mock(),
@@ -531,6 +536,7 @@ internal class SnapshotCompletionQueueTest {
         val mockRecordWriter = mock<RecordWriter>()
         val mockWireMapper = mock<CapturedTreeWireMapper>()
         val testedProcessor = DefaultSnapshotCompletionProcessor(
+            orientationProvider = mock(),
             rumContextProvider = stubRumContextProvider(fakeApplicationId, fakeSessionId, fakeOtherViewId),
             recordWriter = mockRecordWriter,
             internalLogger = mock(),
@@ -570,6 +576,7 @@ internal class SnapshotCompletionQueueTest {
         val mockRecordWriter = mock<RecordWriter>()
         val mockInternalLogger = mock<InternalLogger>()
         val testedProcessor = DefaultSnapshotCompletionProcessor(
+            orientationProvider = mock(),
             rumContextProvider = stubRumContextProvider(fakeApplicationId, fakeSessionId, fakeTree.scope.value),
             recordWriter = mockRecordWriter,
             internalLogger = mockInternalLogger,
@@ -610,6 +617,7 @@ internal class SnapshotCompletionQueueTest {
             .thenReturn(CaptureWireMappingResult.Success(mockRecord))
         val mockRecordWriter = mock<RecordWriter>()
         val testedProcessor = DefaultSnapshotCompletionProcessor(
+            orientationProvider = mock(),
             rumContextProvider = stubRumContextProvider(applicationId, sessionId, fakeTree.scope.value),
             recordWriter = mockRecordWriter,
             internalLogger = mock(),

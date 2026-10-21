@@ -25,7 +25,7 @@ internal class GranularComposeCompatibilityGate {
 
     fun isAvailable(): Boolean = !incompatible
 
-    fun markIncompatible(throwable: Throwable, internalLogger: InternalLogger) {
+    fun markIncompatible(throwable: LinkageError, internalLogger: InternalLogger) {
         if (incompatible) return
         incompatible = true
         internalLogger.log(

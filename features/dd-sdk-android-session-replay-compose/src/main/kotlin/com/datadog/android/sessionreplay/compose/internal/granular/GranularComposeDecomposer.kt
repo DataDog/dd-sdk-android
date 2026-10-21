@@ -106,36 +106,33 @@ internal class GranularComposeDecomposer(
     private val compatibilityGate: GranularComposeCompatibilityGate = GranularComposeCompatibilityGate.SHARED,
     private val nodesPerCheckpoint: Int = NODES_PER_CHECKPOINT,
     private val hostRasterizer: ComposeHostCaptureRasterizer = DefaultComposeHostCaptureRasterizer(internalLogger),
-    private val textRasterizer: ComposeTextRasterizer = DefaultComposeTextRasterizer(reflectionUtils, internalLogger)
+    private val textRasterizer: ComposeTextRasterizer = DefaultComposeTextRasterizer(reflectionUtils)
 ) : CompositionHostDecomposer {
     private val imageMapper = ImageSemanticsNodeMapper(colorStringFormatter, semanticsUtils)
 
-    // Deliberately catches Throwable, not Exception: a Compose UI version outside this artifact's
-    // tested range can fail with a LinkageError/NoSuchMethodError, which the gate must still catch
-    // to disable granular decomposition rather than crash the host application.
-    @Suppress("TooGenericExceptionCaught")
+    // Only runtime linkage failures indicate an unsupported Compose binary. Ordinary bugs and
+    // fatal VM errors must not permanently disable the process-wide compatibility gate.
     override fun canDecompose(view: View): Boolean {
         if (!compatibilityGate.isAvailable()) return false
         return try {
             semanticsUtils.findRootSemanticsNode(view) != null
-        } catch (t: Throwable) {
+        } catch (t: LinkageError) {
             compatibilityGate.markIncompatible(t, internalLogger)
             false
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun decompose(view: View, request: CompositionHostDecomposeRequest): CompositionHostDecomposeResult? {
         if (!compatibilityGate.isAvailable()) return null
         return try {
             DecomposeSession(view, request).run()
-        } catch (t: Throwable) {
+        } catch (t: LinkageError) {
             compatibilityGate.markIncompatible(t, internalLogger)
             null
         }
     }
 
-    @Suppress("TooGenericExceptionCaught", "ReturnCount", "UnsafeThirdPartyFunctionCall") // Owned, guarded deque.
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Owned, guarded deque.
     override fun readTouchPrivacy(view: View, shouldContinue: () -> Boolean): Map<Rect, TouchPrivacy>? {
         if (!compatibilityGate.isAvailable()) return null
         return try {
@@ -154,7 +151,7 @@ internal class GranularComposeDecomposer(
                 if (areas[rect] != TouchPrivacy.HIDE) areas[rect] = privacy
             }
             areas
-        } catch (t: Throwable) {
+        } catch (t: LinkageError) {
             compatibilityGate.markIncompatible(t, internalLogger)
             null
         }
@@ -1388,18 +1385,23 @@ internal class DefaultComposeHostCaptureRasterizer(
         return try {
             val bitmap = acquire(view.width, view.height)
             acquired = bitmap
-            @Suppress("UnsafeThirdPartyFunctionCall") // view.draw runs arbitrary custom draw code; caught below
-            view.draw(Canvas(bitmap))
-            drawn = true
-            bitmap
-        } catch (e: Exception) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.TELEMETRY,
-                { "Failed to rasterize Compose host for pixel-fallback capture" },
-                e
-            )
-            null
+            // Canvas failures propagate to the capture entry point; view.draw runs app code.
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            val canvas = Canvas(bitmap)
+            try {
+                @Suppress("UnsafeThirdPartyFunctionCall")
+                view.draw(canvas)
+                drawn = true
+                bitmap
+            } catch (e: Exception) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.TELEMETRY,
+                    { "Failed to rasterize Compose host for pixel-fallback capture" },
+                    e
+                )
+                null
+            }
         } finally {
             if (!drawn) acquired?.let { release(it) }
         }

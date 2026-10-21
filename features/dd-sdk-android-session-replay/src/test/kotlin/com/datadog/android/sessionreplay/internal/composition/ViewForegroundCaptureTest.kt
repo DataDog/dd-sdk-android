@@ -22,6 +22,7 @@ import com.datadog.android.internal.sessionreplay.composition.RumViewIdentitySco
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
@@ -213,15 +214,19 @@ internal class ViewForegroundCaptureTest {
         whenever(stubDrawable.copyBounds()).thenReturn(fakeOriginalBounds)
         val mockBitmap: Bitmap = mock()
         whenever(mockBitmap.getPixel(0, 0)).thenReturn(0x80112233.toInt())
-        if (fakeFails) whenever(stubDrawable.draw(any())).thenThrow(IllegalStateException("draw"))
+        val failure = IllegalStateException("draw")
+        if (fakeFails) whenever(stubDrawable.draw(any())).thenThrow(failure)
         mockStatic(Bitmap::class.java).use { bitmapFactory ->
             bitmapFactory.`when`<Bitmap> { Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888) }.thenReturn(mockBitmap)
             mockConstruction(Canvas::class.java).use {
                 // When
-                val fakeResult = DefaultForegroundColorResolver(mock()).resolve(stubDrawable)
+                if (fakeFails) {
+                    assertThatThrownBy { DefaultForegroundColorResolver().resolve(stubDrawable) }.isSameAs(failure)
+                } else {
+                    assertThat(DefaultForegroundColorResolver().resolve(stubDrawable)).isEqualTo(0x80112233.toInt())
+                }
 
                 // Then
-                assertThat(fakeResult).isEqualTo(if (fakeFails) null else 0x80112233.toInt())
                 inOrder(stubDrawable) {
                     verify(stubDrawable).setBounds(0, 0, 1, 1)
                     verify(stubDrawable).draw(any())

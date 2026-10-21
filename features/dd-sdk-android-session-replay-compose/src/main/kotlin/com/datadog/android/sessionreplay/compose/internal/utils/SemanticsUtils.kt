@@ -30,6 +30,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.sampling.RateBasedSampler
@@ -406,20 +407,22 @@ internal class SemanticsUtils(
     }
 
     private fun extractTextOverflowValue(overflowValue: Any, internalLogger: InternalLogger): Int? {
+        if (overflowValue !is TextOverflow) return null
         return try {
-            // Suppressed: All exceptions (NoSuchFieldException, SecurityException, NullPointerException)
-            // are handled by the catch blocks below
+            // A missing or inaccessible boxed-value field is an expected compatibility failure.
             @Suppress("UnsafeThirdPartyFunctionCall")
             val valueField = overflowValue.javaClass.getDeclaredField("value")
             valueField.isAccessible = true
-            // Suppressed: All exceptions (IllegalAccessException, IllegalArgumentException, NullPointerException,
-            // ExceptionInInitializerError) are handled by the catch blocks below
+            // Reflection access and receiver-type failures are handled explicitly below.
             @Suppress("UnsafeThirdPartyFunctionCall")
             valueField.get(overflowValue) as? Int
         } catch (e: ReflectiveOperationException) {
             logReflectionExtractionFailure(overflowValue, e, internalLogger)
             null
-        } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
+        } catch (e: SecurityException) {
+            logReflectionExtractionFailure(overflowValue, e, internalLogger)
+            null
+        } catch (e: IllegalArgumentException) {
             logReflectionExtractionFailure(overflowValue, e, internalLogger)
             null
         }

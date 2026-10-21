@@ -44,7 +44,7 @@ internal class GranularComposeCompatibilityGateTest {
         @StringForgery fakeMessage: String
     ) {
         // When
-        testedGate.markIncompatible(Throwable(fakeMessage), mock<InternalLogger>())
+        testedGate.markIncompatible(LinkageError(fakeMessage), mock<InternalLogger>())
 
         // Then
         assertThat(testedGate.isAvailable()).isFalse()
@@ -57,10 +57,10 @@ internal class GranularComposeCompatibilityGateTest {
     ) {
         // Given
         val mockLogger: InternalLogger = mock()
-        testedGate.markIncompatible(Throwable(fakeFirstMessage), mockLogger)
+        testedGate.markIncompatible(LinkageError(fakeFirstMessage), mockLogger)
 
         // When
-        testedGate.markIncompatible(Throwable(fakeSecondMessage), mockLogger)
+        testedGate.markIncompatible(LinkageError(fakeSecondMessage), mockLogger)
 
         // Then - never re-attempted: the monotonic state never downgrades and the second failure
         // is deduplicated by the logger's own onlyOnce handling, not by this class re-checking.
@@ -73,17 +73,17 @@ internal class GranularComposeCompatibilityGateTest {
     ) {
         // Given
         val mockLogger: InternalLogger = mock()
-        val fakeThrowable = Throwable(fakeMessage)
+        val fakeLinkageError = LinkageError(fakeMessage)
 
         // When
-        testedGate.markIncompatible(fakeThrowable, mockLogger)
+        testedGate.markIncompatible(fakeLinkageError, mockLogger)
 
         // Then
         verify(mockLogger).log(
             level = eq(InternalLogger.Level.ERROR),
             target = eq(InternalLogger.Target.TELEMETRY),
             messageBuilder = any(),
-            throwable = eq(fakeThrowable),
+            throwable = eq(fakeLinkageError),
             onlyOnce = eq(true),
             additionalProperties = eq(null)
         )

@@ -108,11 +108,12 @@ private fun readTouchOutline(view: View): Pair<Rect, Double>? {
     val outline = Outline()
     val rectangle = Rect()
     try {
+        // Only this app-defined callback is isolated; SDK outline reads remain outside the guard.
         provider.getOutline(view, outline)
-        if (!outline.getRect(rectangle)) return null
     } catch (_: Exception) {
         return null
     }
+    if (!outline.getRect(rectangle)) return null
     return rectangle to outline.radius.toDouble()
 }
 

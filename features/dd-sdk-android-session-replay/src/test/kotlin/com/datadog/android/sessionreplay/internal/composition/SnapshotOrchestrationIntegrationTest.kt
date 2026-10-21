@@ -53,6 +53,7 @@ internal class SnapshotOrchestrationIntegrationTest {
         val completionQueue = SnapshotCompletionQueue(
             executorService = executor,
             processor = DefaultSnapshotCompletionProcessor(
+                orientationProvider = mock(),
                 rumContextProvider = rumContextProvider,
                 recordWriter = writer,
                 internalLogger = mock(),
