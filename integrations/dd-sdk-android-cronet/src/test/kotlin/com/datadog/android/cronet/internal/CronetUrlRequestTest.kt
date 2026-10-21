@@ -121,13 +121,13 @@ internal class CronetUrlRequestTest {
     fun `M delegate to request W read()`() {
         // Given
         testedRequest.start()
-        val mockBuffer = mock<ByteBuffer>()
+        val fakeBuffer = ByteBuffer.allocate(1024)
 
         // When
-        testedRequest.read(mockBuffer)
+        testedRequest.read(fakeBuffer)
 
         // Then
-        verify(mockBuiltRequest).read(mockBuffer)
+        verify(mockBuiltRequest).read(fakeBuffer)
     }
 
     @Test
@@ -265,10 +265,10 @@ internal class CronetUrlRequestTest {
     @Test
     fun `M do nothing W read() { before start }`() {
         // Given
-        val mockBuffer = mock<ByteBuffer>()
+        val fakeBuffer = ByteBuffer.allocate(1024)
 
         // When
-        testedRequest.read(mockBuffer)
+        testedRequest.read(fakeBuffer)
 
         // Then
         verifyNoInteractions(mockBuiltRequest)

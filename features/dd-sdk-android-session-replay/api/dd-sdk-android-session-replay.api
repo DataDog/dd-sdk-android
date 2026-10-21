@@ -153,6 +153,7 @@ public final class com/datadog/android/sessionreplay/TouchPrivacy : java/lang/En
 public final class com/datadog/android/sessionreplay/_SessionReplayInternalProxy {
 	public static final field Companion Lcom/datadog/android/sessionreplay/_SessionReplayInternalProxy$Companion;
 	public fun <init> (Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;)V
+	public final fun setAdaptiveCaptureSchedulingEnabled (Z)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 	public final fun setInternalCallback (Lcom/datadog/android/sessionreplay/SessionReplayInternalCallback;)Lcom/datadog/android/sessionreplay/SessionReplayConfiguration$Builder;
 }
 

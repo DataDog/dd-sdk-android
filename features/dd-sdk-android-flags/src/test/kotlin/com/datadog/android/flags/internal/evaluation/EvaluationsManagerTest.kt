@@ -1112,12 +1112,18 @@ internal class EvaluationsManagerTest {
             DDCoreStateHolder.create(FlagsClientState.NotReady, FlagsStateListener::onStateChanged)
         )
         val work = ArrayDeque<Runnable>()
-        doAnswer { work.add(it.getArgument(0)); null }.whenever(mockExecutorService).execute(any())
+        doAnswer {
+            work.add(it.getArgument(0))
+            null
+        }.whenever(mockExecutorService).execute(any())
         lateinit var timeout: () -> Unit
         val manager = EvaluationsManager(
             mockSdkCore, mockExecutorService, mockInternalLogger, repository,
             mockAssignmentsDownloader, mockPrecomputeMapper, state, 1000,
-            { _, action -> timeout = action; {} }
+            { _, action ->
+                timeout = action;
+                {}
+            }
         )
         val context = EvaluationContext(fakeTargetingKey)
         val callback = mock<EvaluationContextCallback>()
@@ -1160,13 +1166,19 @@ internal class EvaluationsManagerTest {
             DDCoreStateHolder.create(FlagsClientState.NotReady, FlagsStateListener::onStateChanged)
         )
         val work = ArrayDeque<Runnable>()
-        doAnswer { work.add(it.getArgument(0)); null }.whenever(mockExecutorService).execute(any())
+        doAnswer {
+            work.add(it.getArgument(0))
+            null
+        }.whenever(mockExecutorService).execute(any())
         lateinit var timeout: () -> Unit
         var cancelled = false
         val manager = EvaluationsManager(
             mockSdkCore, mockExecutorService, mockInternalLogger, repository,
             mockAssignmentsDownloader, mockPrecomputeMapper, state, 1000,
-            { _, action -> timeout = action; { cancelled = true } }
+            { _, action ->
+                timeout = action;
+                { cancelled = true }
+            }
         )
         val context = EvaluationContext(fakeTargetingKey)
         val callback = mock<EvaluationContextCallback>()

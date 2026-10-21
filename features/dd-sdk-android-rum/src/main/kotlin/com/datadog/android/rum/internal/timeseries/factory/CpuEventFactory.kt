@@ -81,7 +81,9 @@ internal class CpuEventFactory(
                 hasReplay = featuresContextResolver.resolveViewHasReplay(
                     datadogContext,
                     rumContext.viewId.orEmpty()
-                )
+                ),
+                isMainProcess = datadogContext.processInfo.isMainProcess,
+                hasTimeseries = true
             ),
             synthetics = syntheticsAttribute,
             source = TimeseriesCpuEvent.Source.tryFromSource(datadogContext.source, internalLogger),

@@ -46,6 +46,8 @@ class HostsSanitizer @JvmOverloads constructor(
         return hosts.mapNotNull {
             if (it.matches(validUrlRegex)) {
                 try {
+                    // URL(String) is deprecated since JDK 20, but not on Android
+                    @Suppress("DEPRECATION")
                     val parsedUrl = URL(it)
                     internalLogger.log(
                         InternalLogger.Level.WARN,

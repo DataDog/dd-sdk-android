@@ -306,6 +306,7 @@ datadog:
       - "java.util.concurrent.Future.cancel(kotlin.Boolean)"
       # endregion
       # region Java I/O
+      - "java.io.BufferedInputStream.constructor(java.io.InputStream?)"
       - "java.io.BufferedReader.readText()"
       - "java.io.BufferedReader.use(kotlin.Function1)"
       - "java.io.ByteArrayOutputStream.constructor()"
@@ -911,6 +912,7 @@ datadog:
       - "kotlin.IntArray.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
       - "kotlin.IntArray.toSet()"
       - "kotlin.Long.coerceAtLeast(kotlin.Long)"
+      - "kotlin.Long.coerceAtMost(kotlin.Long)"
       - "kotlin.Long.coerceIn(kotlin.Long, kotlin.Long)"
       - "kotlin.Long.countLeadingZeroBits()"
       - "kotlin.Long.hashCode()"
@@ -1141,6 +1143,8 @@ datadog:
       - "okhttp3.RequestBody.contentLength()"
       - "okhttp3.RequestBody.contentType()"
       - "okhttp3.RequestBody.create(okhttp3.MediaType?, kotlin.ByteArray)"
+      - "okhttp3.RequestBody.isDuplex()"
+      - "okhttp3.RequestBody.isOneShot()"
       - "okhttp3.Response.code()"
       - "okhttp3.Response.header(kotlin.String)"
       - "okhttp3.Response.header(kotlin.String, kotlin.String?)"

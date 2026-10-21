@@ -28,6 +28,7 @@ internal class RumContextForgeryFactory : ForgeryFactory<RumContext> {
             viewType = forge.aValueFrom(RumViewType::class.java),
             syntheticsTestId = forge.aNullable { forge.anAlphaNumericalString() },
             syntheticsResultId = forge.aNullable { forge.anAlphaNumericalString() },
+            hasTimeseries = forge.aBool(),
             sessionSampleRate = forge.aFloat(min = 0f, max = 100f)
         )
     }

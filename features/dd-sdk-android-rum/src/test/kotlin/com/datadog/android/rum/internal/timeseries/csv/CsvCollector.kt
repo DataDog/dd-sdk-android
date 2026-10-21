@@ -56,6 +56,8 @@ internal class CsvCollector(
         }
     }
 
+    override fun isTimeseriesCollected(sessionId: String): Boolean = emitted.isNotEmpty()
+
     private fun flush(buffer: Buffer<Double>, eventFactory: EventFactory<Double, *>) = buffer.drain()
         .takeIf { it.isNotEmpty() }
         ?.let { eventFactory.create(datadogContext, rumContext, it) }

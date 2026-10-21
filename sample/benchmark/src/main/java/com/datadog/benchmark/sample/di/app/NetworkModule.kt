@@ -45,7 +45,10 @@ internal interface NetworkModule {
             return OkHttpClient.Builder().apply {
                 cache(Cache(File(context.cacheDir, "okhttp-cache"), OKHTTP_CACHE_SIZE_BYTES))
 
-                if (config.scenario == SyntheticsScenario.RumAuto && config.run == SyntheticsRun.Instrumented) {
+                // Timeseries Baseline runs RUM too, so resources are tracked in both runs
+                val isResourceTrackingEnabled = config.scenario == SyntheticsScenario.Timeseries ||
+                    (config.run == SyntheticsRun.Instrumented && config.scenario == SyntheticsScenario.RumAuto)
+                if (isResourceTrackingEnabled) {
                     val interceptor = DatadogInterceptor.Builder(emptyMap()).apply {
                         setSdkInstanceName(sdkCore.get().name)
                     }.build()

@@ -284,6 +284,26 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
+    fun hasIsMainProcess(expected: Boolean?): ActionEventAssert {
+        assertThat(actual.session.isMainProcess)
+            .overridingErrorMessage(
+                "Expected event to have session.is_main_process:$expected " +
+                    "but was ${actual.session.isMainProcess}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasSessionTimeseries(expected: Boolean?): ActionEventAssert {
+        assertThat(actual.session.hasTimeseries)
+            .overridingErrorMessage(
+                "Expected event to have session.has_timeseries:$expected " +
+                    "but was ${actual.session.hasTimeseries}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasSessionType(expected: ActionEvent.ActionEventSessionType): ActionEventAssert {
         assertThat(actual.session.type)
             .overridingErrorMessage {

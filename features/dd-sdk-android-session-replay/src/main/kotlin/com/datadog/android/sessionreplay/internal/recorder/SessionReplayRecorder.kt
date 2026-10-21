@@ -72,10 +72,15 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val sessionReplayLifecycleCallback: LifecycleCallback
     private val recordedDataQueueHandler: RecordedDataQueueHandler
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor
+    private val adaptiveCaptureSchedulingEnabled: Boolean
     private val internalLogger: InternalLogger
     private val uiHandler: Handler
     private val resourceResolver: ResourceResolver
     private val windowFromDecorView: (View) -> Window?
+    private val recordingStateLock = Any()
+    private var recordingGeneration = 0L
+
+    @Volatile
     private var shouldRecord = false
 
     /** Whether a capture has been asked for and not yet honoured — see [requestCapture]. */
@@ -107,6 +112,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         sdkCore: FeatureSdkCore,
         resourceDataStoreManager: ResourceDataStoreManager,
         dynamicOptimizationEnabled: Boolean,
+        adaptiveCaptureSchedulingEnabled: Boolean,
         internalCallback: SessionReplayInternalCallback,
         embeddedContentSlotRegistry: EmbeddedContentSlotRegistry,
         heatmapIdentifierRegistry: HeatmapIdentifierRegistry? = null
@@ -187,8 +193,10 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             webPImageCompression = WebPImageCompression(internalLogger)
         )
 
+        this.adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled
         this.viewOnDrawInterceptor = ViewOnDrawInterceptor(
             internalLogger = internalLogger,
+            adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled,
             onDrawListenerProducer = DefaultOnDrawListenerProducer(
                 snapshotProducer = SnapshotProducer(
                     imageWireframeHelper = DefaultImageWireframeHelper(
@@ -227,7 +235,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                 recordedDataQueueHandler = recordedDataQueueHandler,
                 sdkCore = sdkCore,
                 dynamicOptimizationEnabled = dynamicOptimizationEnabled,
-                rumContextProvider = rumContextProvider
+                adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled,
+                rumContextProvider = rumContextProvider,
+                isCaptureAllowed = { !adaptiveCaptureSchedulingEnabled || shouldRecord }
             ),
             touchPrivacyManager = touchPrivacyManager
         )
@@ -276,7 +286,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         embeddedContentSlotRegistry: EmbeddedContentSlotRegistry = EmbeddedContentSlotRegistry(),
         windowFromDecorView: (View) -> Window? = {
             WindowReflectionUtils.getWindowFromDecorView(it, internalLogger)
-        }
+        },
+        adaptiveCaptureSchedulingEnabled: Boolean = false
     ) {
         this.appContext = appContext
         this.textAndInputPrivacy = textAndInputPrivacy
@@ -284,6 +295,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.customOptionSelectorDetectors = customOptionSelectorDetectors
         this.windowInspector = windowInspector
         this.recordedDataQueueHandler = recordedDataQueueHandler
+        this.adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled
         this.viewOnDrawInterceptor = viewOnDrawInterceptor
         this.windowCallbackInterceptor = windowCallbackInterceptor
         this.sessionReplayLifecycleCallback = sessionReplayLifecycleCallback
@@ -309,10 +321,33 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     }
 
     override fun resumeRecorders() {
+        if (!adaptiveCaptureSchedulingEnabled) {
+            uiHandler.post {
+                shouldRecord = true
+                @Suppress("ThreadSafety") // Posted only to the main handler.
+                interceptCurrentWindows(sessionReplayLifecycleCallback.getCurrentWindows())
+            }
+            return
+        }
+        synchronized(recordingStateLock) {
+            val generation = ++recordingGeneration
+            uiHandler.post {
+                val canResume = synchronized(recordingStateLock) {
+                    (recordingGeneration == generation).also { if (it) shouldRecord = true }
+                }
+                if (canResume) {
+                    @Suppress("ThreadSafety") // handler posts to the main looper
+                    interceptCurrentWindows(sessionReplayLifecycleCallback.getCurrentWindows())
+                }
+            }
+        }
+    }
+
+    override fun onViewTransition() {
+        if (!adaptiveCaptureSchedulingEnabled) return
         uiHandler.post {
-            shouldRecord = true
-            @Suppress("ThreadSafety") // handler posts to the main looper
-            interceptCurrentWindows(sessionReplayLifecycleCallback.getCurrentWindows())
+            @Suppress("ThreadSafety") // Posted only to the main handler.
+            if (shouldRecord) viewOnDrawInterceptor.scheduleCapture()
         }
     }
 
@@ -397,10 +432,25 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     }
 
     override fun stopRecorders() {
-        uiHandler.post {
-            viewOnDrawInterceptor.stopIntercepting()
-            windowCallbackInterceptor.stopIntercepting()
+        if (!adaptiveCaptureSchedulingEnabled) {
+            uiHandler.post {
+                @Suppress("ThreadSafety") // Posted only to the main handler.
+                viewOnDrawInterceptor.stopIntercepting()
+                windowCallbackInterceptor.stopIntercepting()
+                shouldRecord = false
+            }
+            return
+        }
+        synchronized(recordingStateLock) {
+            // Close the capture gate before returning to the caller. A retry already queued on
+            // the main looper must not traverse post-stop UI while listener cleanup is pending.
+            recordingGeneration++
             shouldRecord = false
+            uiHandler.post {
+                @Suppress("ThreadSafety") // handler posts to the main looper
+                viewOnDrawInterceptor.stopIntercepting()
+                windowCallbackInterceptor.stopIntercepting()
+            }
         }
     }
 

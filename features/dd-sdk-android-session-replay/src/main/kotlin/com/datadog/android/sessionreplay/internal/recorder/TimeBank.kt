@@ -23,4 +23,7 @@ internal interface TimeBank {
      * @return true if the given timestamp is allowed by time bank to execute a task, false otherwise.
      */
     fun updateAndCheck(timestamp: Long): Boolean
+
+    /** Delay until the balance recovers, based on the most recent [updateAndCheck] call. */
+    fun timeUntilAvailableInNs(): Long
 }

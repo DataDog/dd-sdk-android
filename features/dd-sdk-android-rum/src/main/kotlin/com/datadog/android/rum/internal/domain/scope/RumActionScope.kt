@@ -309,7 +309,9 @@ internal class RumActionScope(
                 session = ActionEvent.ActionEventSession(
                     id = rumContext.sessionId,
                     type = sessionType,
-                    hasReplay = hasReplay
+                    hasReplay = hasReplay,
+                    isMainProcess = datadogContext.processInfo.isMainProcess,
+                    hasTimeseries = rumContext.hasTimeseries
                 ),
                 synthetics = syntheticsAttribute,
                 source = ActionEvent.ActionEventSource.tryFromSource(

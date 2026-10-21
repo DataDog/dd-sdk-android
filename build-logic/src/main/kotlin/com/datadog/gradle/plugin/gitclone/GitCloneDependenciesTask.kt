@@ -8,16 +8,17 @@ package com.datadog.gradle.plugin.gitclone
 
 import com.datadog.gradle.utils.execShell
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import java.io.File
-import java.nio.file.Files.createTempDirectory
 import javax.inject.Inject
 
 abstract class GitCloneDependenciesTask @Inject constructor(
-    private val execOperations: ExecOperations
+    private val execOperations: ExecOperations,
+    private val fileSystemOperations: FileSystemOperations
 ) : DefaultTask() {
 
     @get:Input
@@ -49,25 +50,28 @@ abstract class GitCloneDependenciesTask @Inject constructor(
     private fun cloneDependency(
         dependency: GitCloneDependenciesExtension.Dependency
     ) {
-        val target = createTempDirectory(null).toFile()
-        cloneRepository(dependency, target)
-
-        val copyFrom = if (dependency.originSubFolder.isEmpty()) {
-            target
-        } else {
-            File("${target.absolutePath}${File.separator}${dependency.originSubFolder}")
-        }
-        val copyTo = File(projectDirPath.get() + File.separator + dependency.destinationFolder)
-        copySources(copyFrom, copyTo, dependency.excludedPrefixes)
-
+        val target = temporaryDir.resolve(CLONE_DIRECTORY)
         deleteClone(target)
+        try {
+            cloneRepository(dependency, target)
+
+            val copyFrom = if (dependency.originSubFolder.isEmpty()) {
+                target
+            } else {
+                File("${target.absolutePath}${File.separator}${dependency.originSubFolder}")
+            }
+            val copyTo = File(projectDirPath.get() + File.separator + dependency.destinationFolder)
+            copySources(copyFrom, copyTo, dependency.excludedPrefixes)
+        } finally {
+            deleteClone(target)
+        }
     }
 
     private fun cloneRepository(
         dependency: GitCloneDependenciesExtension.Dependency,
         target: File
     ) {
-        println(" --- Cloning ${dependency.originRepository} into ${target.absolutePath}")
+        logger.lifecycle(" --- Cloning ${dependency.originRepository} into ${target.absolutePath}")
         execOperations.execShell(
             "git",
             "clone",
@@ -142,14 +146,15 @@ abstract class GitCloneDependenciesTask @Inject constructor(
     }
 
     private fun deleteClone(target: File) {
-        println(" --- Deleting temp folder ${target.absolutePath}")
-        execOperations.execShell("rm", "-r", target.absolutePath)
-        println(" --- Deleted")
+        // Unlike `File.deleteRecursively()`, this doesn't follow symbolic links out of the clone
+        fileSystemOperations.delete { delete(target) }
     }
 
     // endregion
 
     companion object {
+        private const val CLONE_DIRECTORY = "clone"
+
         private val LOG_LINE_REGEX = Regex("\\s+log\\.(debug|info|warn|error)\\(.*\\);\\s*")
         private val SLF4J_REGEX = Regex("\\s*@Slf4j\\s*")
 

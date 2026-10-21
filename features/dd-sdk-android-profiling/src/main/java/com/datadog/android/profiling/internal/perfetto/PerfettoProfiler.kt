@@ -27,9 +27,11 @@ import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import com.datadog.android.profiling.internal.trigger.ProfilingManagerTriggerRegistrar
 import com.datadog.android.profiling.internal.trigger.ProfilingTriggerListener
 import com.datadog.android.profiling.internal.trigger.ProfilingTriggerRegistrar
+import com.datadog.android.profiling.internal.utils.canProfilingModuleRecordNoStackSamples
+import com.datadog.android.profiling.internal.utils.fileDeleteSafe
 import com.datadog.android.profiling.internal.utils.fileSizeSafe
 import com.datadog.android.profiling.internal.utils.getProfilingModuleLongVersionCode
-import com.datadog.android.profiling.internal.utils.isProfilingModuleVersionBlocked
+import java.io.File
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -49,6 +51,8 @@ import kotlin.random.Random
  * The profiler passes its internal listener to it at register time; the listener
  * captures the profiler's `callback` so the registered SDK instance receives the detection.
  * @param buildSdkVersionProvider Build.VERSION.SDK_INT provider used for the test.
+ * @param stackSampleDetector detector of application launch and continuous traces without stack samples, which
+ * are discarded when recorded by an affected version of the profiling system package.
  */
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 internal class PerfettoProfiler(
@@ -57,7 +61,8 @@ internal class PerfettoProfiler(
     internal val profilingTelemetry: ProfilingTelemetry = ProfilingTelemetry(),
     internal val triggerRegistrar: ProfilingTriggerRegistrar =
         ProfilingManagerTriggerRegistrar(timeProvider, scheduledExecutorService, profilingTelemetry),
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
+    private val stackSampleDetector: StackSampleDetector = PerfettoStackSampleDetector()
 ) : Profiler {
 
     internal var stopSignal: CancellationSignal? = null
@@ -65,9 +70,6 @@ internal class PerfettoProfiler(
 
     // Whether a profiling session is currently running.
     private val isRunning: AtomicBoolean = AtomicBoolean(false)
-
-    // Whether the blocked system package version was already reported (reported once per process).
-    private val isBlockedReported: AtomicBoolean = AtomicBoolean(false)
 
     @Volatile
     private var isPackageVersionResolved = false
@@ -132,23 +134,15 @@ internal class PerfettoProfiler(
                 if (profilingStopElapsedMs > 0L) resultCallbackElapsedMs - profilingStopElapsedMs else 0L
             val startReason = ProfilingStartReason.entries.firstOrNull { it.value == result.tag.orEmpty() }
                 ?: ProfilingStartReason.UNKNOWN
-            if (result.errorCode == ProfilingResult.ERROR_NONE) {
+            val resultFilePath = result.resultFilePath
+            // Read before the result is delivered, as a trace without stack samples is deleted.
+            val fileSize = fileSizeSafe(resultFilePath, internalLogger)
+            val hasNoStackSamples = if (result.errorCode == ProfilingResult.ERROR_NONE && resultFilePath != null) {
                 // TODO RUM-13679: need to delete the file after it is no longer needed
-                result.resultFilePath?.let {
-                    notifyCallbacks {
-                        onSuccess(
-                            PerfettoResult(
-                                start = profilingStartTime,
-                                startReason = startReason,
-                                end = resultCallbackTime,
-                                resultFilePath = it,
-                                profileTypes = listOf(ProfileType.STACK_SAMPLING)
-                            )
-                        )
-                    }
-                } ?: notifyCallbacks { onFailure(startReason) }
+                deliverResult(resultFilePath, startReason, resultCallbackTime)
             } else {
                 notifyCallbacks { onFailure(startReason) }
+                null
             }
             updateRunningStatus(false)
             profilingTelemetry.report(
@@ -157,12 +151,13 @@ internal class PerfettoProfiler(
                     appStartInfo = profilingAppStartInfo,
                     errorCode = result.errorCode,
                     errorMessage = result.errorMessage,
-                    fileSize = fileSizeSafe(result.resultFilePath, internalLogger),
+                    fileSize = fileSize,
                     durationMs = duration,
                     resultCallbackDelayMs = resultCallbackDelayMs,
                     stopReason = resolveStopReason(result.errorCode),
                     bufferSizeKb = BUFFER_SIZE_KB,
-                    samplingFrequencyHz = profilingSamplingRateHz
+                    samplingFrequencyHz = profilingSamplingRateHz,
+                    hasNoStackSamples = hasNoStackSamples
                 )
             )
         }
@@ -208,13 +203,6 @@ internal class PerfettoProfiler(
     ) {
         val effectiveDurationMs =
             if (durationMs > 0) durationMs else getDefaultDurationMs(startReason)
-        if (isProfilingModuleVersionBlocked(profilingPackageVersionCode(appContext))) {
-            if (isBlockedReported.compareAndSet(false, true)) {
-                profilingTelemetry.report(ProfilingTelemetryEvent.Blocked(startReason.value))
-            }
-            callback?.onFailure(startReason)
-            return
-        }
         // profiling will be launched when no session is currently running.
         if (updateRunningStatus(true)) {
             profilingStartTime = timeProvider.getDeviceTimestampMillis()
@@ -339,6 +327,53 @@ internal class PerfettoProfiler(
         return profilingTelemetry.profilingPackageVersionCode
     }
 
+    /**
+     * Delivers a successful profiling result to the callback, unless the trace is expected to hold stack samples
+     * but has none: such a trace is deleted and reported as a failure, so that nothing relies on it.
+     *
+     * @return true if the trace was discarded because it has no stack sample, false if it has some, or null if it
+     * was not checked.
+     */
+    private fun deliverResult(
+        resultFilePath: String,
+        startReason: ProfilingStartReason,
+        resultCallbackTime: Long
+    ): Boolean? {
+        val areStackSamplesMissing = checkHasNoStackSamples(resultFilePath, startReason)
+        if (areStackSamplesMissing == true) {
+            fileDeleteSafe(resultFilePath, internalLogger)
+            notifyCallbacks { onFailure(startReason) }
+        } else {
+            notifyCallbacks {
+                onSuccess(
+                    PerfettoResult(
+                        start = profilingStartTime,
+                        startReason = startReason,
+                        end = resultCallbackTime,
+                        resultFilePath = resultFilePath,
+                        profileTypes = listOf(ProfileType.STACK_SAMPLING)
+                    )
+                )
+            }
+        }
+        return areStackSamplesMissing
+    }
+
+    /**
+     * @return true if the trace is expected to hold stack samples but has none, false if it has some, or null if it
+     * was not checked.
+     */
+    private fun checkHasNoStackSamples(resultFilePath: String, startReason: ProfilingStartReason): Boolean? {
+        // Resolved during the feature initialization: until then, the version is unknown and the trace is not checked.
+        val shouldCheck = startReason in EMPTY_TRACE_CHECKED_START_REASONS &&
+            canProfilingModuleRecordNoStackSamples(profilingTelemetry.profilingPackageVersionCode)
+        return if (shouldCheck) {
+            stackSampleDetector.hasNoStackSamples(File(resultFilePath), internalLogger ?: InternalLogger.UNBOUND)
+        } else {
+            null
+        }
+    }
+
     private fun resolveStopReason(errorCode: Int): String {
         return if (profilingStopElapsedMs > 0L) {
             ProfilingTelemetry.STOPPED_REASON_MANUAL
@@ -397,5 +432,10 @@ internal class PerfettoProfiler(
 
         private const val OPERATION_NAME_APP_LAUNCH_PROFILING_SCHEDULE =
             "app_launch_profiling_schedule"
+
+        private val EMPTY_TRACE_CHECKED_START_REASONS = setOf(
+            ProfilingStartReason.APPLICATION_LAUNCH,
+            ProfilingStartReason.CONTINUOUS
+        )
     }
 }

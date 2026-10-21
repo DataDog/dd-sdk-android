@@ -6,6 +6,7 @@
 
 package com.datadog.android.okhttp.internal
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.network.HttpSpec
 import com.datadog.android.rum.internal.net.RumNetworkInstrumentation
 import com.datadog.tools.unit.forge.BaseConfigurator
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -37,6 +39,9 @@ import java.io.IOException
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(BaseConfigurator::class)
 internal class OkHttpRequestResourceIdentifierTest {
+
+    @Mock
+    private lateinit var mockInternalLogger: InternalLogger
 
     @StringForgery(regex = "http(s?)://[a-z]+\\.com/\\w+")
     private lateinit var fakeUrl: String
@@ -252,7 +257,7 @@ internal class OkHttpRequestResourceIdentifierTest {
 
     private val Request.uniqueId: String
         get() = RumNetworkInstrumentation.buildResourceId(
-            request = OkHttpRequestInfo(this),
+            request = OkHttpRequestInfo(this, mockInternalLogger),
             generateUuid = false
         ).key
 }

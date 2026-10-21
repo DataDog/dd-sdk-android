@@ -18,19 +18,30 @@ import java.util.WeakHashMap
 internal class ViewOnDrawInterceptor(
     private val internalLogger: InternalLogger,
     private val touchPrivacyManager: TouchPrivacyManager,
+    private val adaptiveCaptureSchedulingEnabled: Boolean = false,
     private val onDrawListenerProducer: OnDrawListenerProducer
 ) {
     internal val decorOnDrawListeners: WeakHashMap<View, OnDemandCaptureListener> =
         WeakHashMap()
 
+    @MainThread
     fun intercept(
         decorViews: List<View>,
         textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy
     ) {
-        stopInterceptingAndRemove(decorViews)
+        if (adaptiveCaptureSchedulingEnabled) {
+            stopIntercepting()
+        } else {
+            stopInterceptingAndRemove(decorViews)
+        }
         val onDrawListener =
-            onDrawListenerProducer.create(decorViews, textAndInputPrivacy, imagePrivacy, touchPrivacyManager)
+            onDrawListenerProducer.create(
+                decorViews,
+                textAndInputPrivacy,
+                imagePrivacy,
+                touchPrivacyManager
+            )
         decorViews.forEach { decorView ->
             val viewTreeObserver = decorView.viewTreeObserver
             if (viewTreeObserver != null && viewTreeObserver.isAlive) {
@@ -53,14 +64,17 @@ internal class ViewOnDrawInterceptor(
         onDrawListener.onDraw()
     }
 
+    @MainThread
     fun stopIntercepting(decorViews: List<View>) {
         stopInterceptingAndRemove(decorViews)
     }
 
+    @MainThread
     fun stopIntercepting() {
         decorOnDrawListeners.entries.forEach { (decorView, listener) ->
             stopInterceptingSafe(decorView, listener)
         }
+        decorOnDrawListeners.values.toSet().forEach { it.cancelPendingCapture() }
         decorOnDrawListeners.clear()
     }
 
@@ -85,6 +99,11 @@ internal class ViewOnDrawInterceptor(
         }
     }
 
+    @MainThread
+    fun scheduleCapture() {
+        decorOnDrawListeners.values.toSet().forEach { it.scheduleCapture() }
+    }
+
     /**
      * The outcome of a [requestCapture] call.
      */
@@ -99,12 +118,17 @@ internal class ViewOnDrawInterceptor(
         NOT_CAPTURED
     }
 
+    @MainThread
+    @Suppress("UnsafeThirdPartyFunctionCall") // Local set operations use only existing listener references.
     private fun stopInterceptingAndRemove(decorViews: List<View>) {
+        val removedListeners = mutableSetOf<OnDemandCaptureListener>()
         decorViews.forEach { decorView ->
             decorOnDrawListeners.remove(decorView)?.let { listener ->
                 stopInterceptingSafe(decorView, listener)
+                removedListeners.add(listener)
             }
         }
+        removedListeners.filterNot { it in decorOnDrawListeners.values }.forEach { it.cancelPendingCapture() }
     }
 
     private fun stopInterceptingSafe(decorView: View, listener: OnDrawListener) {

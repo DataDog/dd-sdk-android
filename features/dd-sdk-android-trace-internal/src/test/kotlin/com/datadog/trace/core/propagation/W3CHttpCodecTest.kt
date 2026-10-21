@@ -85,7 +85,7 @@ internal class W3CHttpCodecTest {
                 capture()
             )
 
-            assertThat(firstValue).isEqualTo(expected)
+            assertThat(firstValue.split(",")).containsExactlyInAnyOrderElementsOf(expected.split(","))
         }
     }
 

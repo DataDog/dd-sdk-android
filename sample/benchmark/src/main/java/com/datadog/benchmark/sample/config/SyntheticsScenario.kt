@@ -24,7 +24,9 @@ internal enum class SyntheticsScenario(val value: String) {
 
     LogsHeavyTraffic("logs_heavy_traffic"),
 
-    Upload("upload");
+    Upload("upload"),
+
+    Timeseries("timeseries");
 
     companion object {
         fun from(value: String): SyntheticsScenario? {

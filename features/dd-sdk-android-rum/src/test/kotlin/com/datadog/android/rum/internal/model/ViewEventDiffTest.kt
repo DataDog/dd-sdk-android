@@ -210,6 +210,58 @@ internal class ViewEventDiffTest {
         assertThat(result.view.error?.count).isEqualTo(newCount)
     }
 
+    @Test
+    fun `M return null for session_is_main_process W diffViewEvent { is_main_process unchanged }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // When
+        val result = diffViewEvent(fakeEvent, fakeEvent.copy())
+
+        // Then
+        assertThat(result.session.isMainProcess).isNull()
+    }
+
+    @Test
+    fun `M return new value for session_is_main_process W diffViewEvent { is_main_process changed }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // Given
+        val newIsMainProcess = fakeEvent.session.isMainProcess?.not() ?: true
+        val newEvent = fakeEvent.copy(session = fakeEvent.session.copy(isMainProcess = newIsMainProcess))
+
+        // When
+        val result = diffViewEvent(fakeEvent, newEvent)
+
+        // Then
+        assertThat(result.session.isMainProcess).isEqualTo(newIsMainProcess)
+    }
+
+    @Test
+    fun `M return null for session_has_timeseries W diffViewEvent { has_timeseries unchanged }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // When
+        val result = diffViewEvent(fakeEvent, fakeEvent.copy())
+
+        // Then
+        assertThat(result.session.hasTimeseries).isNull()
+    }
+
+    @Test
+    fun `M return new value for session_has_timeseries W diffViewEvent { has_timeseries changed }`(
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // Given
+        val newHasTimeseries = fakeEvent.session.hasTimeseries?.not() ?: true
+        val newEvent = fakeEvent.copy(session = fakeEvent.session.copy(hasTimeseries = newHasTimeseries))
+
+        // When
+        val result = diffViewEvent(fakeEvent, newEvent)
+
+        // Then
+        assertThat(result.session.hasTimeseries).isEqualTo(newHasTimeseries)
+    }
+
     // endregion
 
     // region APPEND — accumulating arrays (only new elements)
@@ -245,6 +297,31 @@ internal class ViewEventDiffTest {
         assertThat(result.view.slowFrames).hasSize(1)
         assertThat(result.view.slowFrames!!.first().start).isEqualTo(newFrame.start)
         assertThat(result.view.slowFrames.first().duration).isEqualTo(newFrame.duration)
+    }
+
+    @Test
+    fun `M return grown last slow_frame W diffViewEvent { last slow frame duration increased }`(
+        @Forgery fakeEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val firstFrame = ViewEvent.SlowFrame(start = 1000L, duration = 500L)
+        val lastFrame = ViewEvent.SlowFrame(start = 2000L, duration = 600L)
+        val grownLastFrame = lastFrame.copy(duration = lastFrame.duration + forge.aLong(min = 1, max = 1000))
+        val newFrame = ViewEvent.SlowFrame(start = 3000L, duration = 400L)
+        val old = fakeEvent.copy(view = fakeEvent.view.copy(slowFrames = listOf(firstFrame, lastFrame)))
+        val new = fakeEvent.copy(
+            view = fakeEvent.view.copy(slowFrames = listOf(firstFrame, grownLastFrame, newFrame))
+        )
+
+        // When
+        val result = diffViewEvent(old, new)
+
+        // Then
+        assertThat(result.view.slowFrames).containsExactly(
+            ViewUpdateEvent.SlowFrame(start = grownLastFrame.start, duration = grownLastFrame.duration),
+            ViewUpdateEvent.SlowFrame(start = newFrame.start, duration = newFrame.duration)
+        )
     }
 
     @Test

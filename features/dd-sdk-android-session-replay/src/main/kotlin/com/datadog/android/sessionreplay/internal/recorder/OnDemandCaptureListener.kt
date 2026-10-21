@@ -20,4 +20,12 @@ internal interface OnDemandCaptureListener : ViewTreeObserver.OnDrawListener {
      */
     @MainThread
     fun captureNow(): Boolean
+
+    /** Schedules a navigation snapshot through the same scheduler as ordinary draws. */
+    @MainThread
+    fun scheduleCapture()
+
+    /** Cancels pending work when this listener is no longer intercepted. */
+    @MainThread
+    fun cancelPendingCapture()
 }

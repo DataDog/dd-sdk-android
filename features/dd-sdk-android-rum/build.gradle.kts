@@ -7,7 +7,7 @@
 
 import com.datadog.gradle.utils.cloneRumEventsFormat
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
-import com.datadog.gradle.utils.createRumSchemaCloneTask
+import com.datadog.gradle.utils.createRumEventsFormatCloneTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.nio.file.Paths
 
@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.okHttp)
 
     // Android Instrumentation
+    implementation(libs.androidXCollection)
     implementation(libs.androidXCore)
     implementation(libs.androidXMetrics)
     implementation(libs.bundles.androidXNavigation)
@@ -132,7 +133,7 @@ unMock {
     keepStartingWith("org.json")
 }
 
-createRumSchemaCloneTask("cloneRumSchema") {
+createRumEventsFormatCloneTask("cloneRumSchema") {
     cloneRumEventsFormat(
         project = project,
         subFolder = "schemas/rum",
@@ -140,7 +141,7 @@ createRumSchemaCloneTask("cloneRumSchema") {
     )
 }
 
-createRumSchemaCloneTask("cloneTelemetrySchema") {
+createRumEventsFormatCloneTask("cloneTelemetrySchema") {
     cloneRumEventsFormat(
         project = project,
         subFolder = "schemas/telemetry",
@@ -154,9 +155,11 @@ createJsonModelsGenerationTask("generateRumModelsFromJson") {
     ignoredFiles = listOf(
         "_common-schema.json",
         "_action-child-schema.json",
+        "_graphql-schema.json",
         "_perf-metric-schema.json",
         "_profiling-internal-context-schema.json",
         "_rect-schema.json",
+        "_trace-schema.json",
         "_view-container-schema.json",
         "_view-accessibility-schema.json",
         "_view-performance-schema.json",
