@@ -45,6 +45,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
@@ -207,6 +208,57 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         } else {
             assertThat(result.get()).isNull()
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["timeout", "interrupted", "budget-exhausted"])
+    fun `M stop waiting for source W getPrecomputedFlagWithContext() { source callback never completes }`(
+        outcome: String
+    ) {
+        // Given
+        doAnswer { null }.whenever(mockFeatureScope).withContext(any(), any())
+        val entry = cachedEntry(encoded = true)
+        doAnswer { it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(DataStoreContent(0, entry)) }
+            .whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        val timeoutMs = if (outcome == "timeout") 20L else TimeUnit.SECONDS.toMillis(5)
+        val sourceWaitReached = CountDownLatch(1)
+        var clockReads = 0
+        whenever(mockTimeProvider.getDeviceElapsedTimeNanos()).thenAnswer {
+            clockReads++
+            if (clockReads == 2) sourceWaitReached.countDown()
+            if (outcome == "budget-exhausted" && clockReads > 1) TimeUnit.MILLISECONDS.toNanos(timeoutMs) else 0L
+        }
+        testedRepository = DefaultFlagsRepository(
+            mockSdkCore,
+            fakeInstanceName,
+            mockDataStore,
+            persistenceLoadTimeoutMs = timeoutMs
+        )
+        val result = AtomicReference<Pair<PrecomputedFlag, EvaluationContext>?>()
+        val interrupted = AtomicBoolean(false)
+        val completed = CountDownLatch(1)
+        val reader = Thread {
+            try {
+                result.set(testedRepository.getPrecomputedFlagWithContext(fakeFlagKey))
+                interrupted.set(Thread.currentThread().isInterrupted)
+            } finally {
+                completed.countDown()
+            }
+        }.apply { isDaemon = true }
+
+        // When
+        reader.start()
+        val reachedSourceWait = sourceWaitReached.await(1, TimeUnit.SECONDS)
+        if (outcome == "interrupted") reader.interrupt()
+        val completedWithinDeadline = completed.await(1, TimeUnit.SECONDS)
+        if (!completedWithinDeadline) reader.interrupt()
+        reader.join(TimeUnit.SECONDS.toMillis(1))
+
+        // Then
+        assertThat(reachedSourceWait).isTrue()
+        assertThat(completedWithinDeadline).isTrue()
+        assertThat(result.get()).isNull()
+        assertThat(interrupted.get()).isEqualTo(outcome == "interrupted")
     }
 
     @ParameterizedTest

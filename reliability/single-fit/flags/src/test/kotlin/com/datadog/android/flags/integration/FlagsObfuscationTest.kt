@@ -78,15 +78,19 @@ class FlagsObfuscationTest {
         assertThat(client.resolve("\ud800", false).errorCode).isEqualTo(ErrorCode.FLAG_NOT_FOUND)
     }
 
-    @Test
-    fun `M keep original telemetry keys W resolveBooleanValue() {salt changes}`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M keep original telemetry keys W resolveBooleanValue() {salt changes}`(doLog: Boolean) {
         // Given
         val client = createClient()
         val context = EvaluationContext(fakeTargetingKey)
 
         // When
         listOf("encoded", "refreshed", "encoded").forEach { fixture ->
-            stubAssignments(fixture)
+            val response = JSONObject(readFixture(fixture))
+            val flags = response.getJSONObject("data").getJSONObject("attributes").getJSONObject("flags")
+            flags.keys().forEach { flags.getJSONObject(it).put("doLog", doLog) }
+            stubSdkCore.stubNetworkResponses { httpResponse(it, body = response.toString()) }
             client.setEvaluationContext(context)
             client.resolveBooleanValue("flag", false)
         }
@@ -94,11 +98,13 @@ class FlagsObfuscationTest {
 
         // Then
         val exposures = stubSdkCore.eventsWritten(Feature.FLAGS_FEATURE_NAME)
-        assertThat(exposures).hasSize(1)
-        val exposure = JSONObject(exposures.single().eventData)
-        assertThat(exposure.getJSONObject("flag").getString("key")).isEqualTo("flag")
-        assertThat(exposure.getJSONObject("subject").getString("id")).isEqualTo(fakeTargetingKey)
-        assertThat(exposure.getLong("serial_id")).isEqualTo(123)
+        assertThat(exposures).hasSize(if (doLog) 1 else 0)
+        if (doLog) {
+            val exposure = JSONObject(exposures.single().eventData)
+            assertThat(exposure.getJSONObject("flag").getString("key")).isEqualTo("flag")
+            assertThat(exposure.getJSONObject("subject").getString("id")).isEqualTo(fakeTargetingKey)
+            assertThat(exposure.getLong("serial_id")).isEqualTo(123)
+        }
         val evaluation =
             JSONObject(stubSdkCore.eventsWritten(Feature.FLAGS_EVALUATIONS_FEATURE_NAME).single().eventData)
         assertThat(evaluation.getJSONObject("flag").getString("key")).isEqualTo("flag")

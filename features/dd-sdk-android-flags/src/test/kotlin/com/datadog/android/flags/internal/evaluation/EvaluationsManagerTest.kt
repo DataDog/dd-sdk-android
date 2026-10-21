@@ -1320,6 +1320,8 @@ internal class EvaluationsManagerTest {
         }
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
+        whenever(mockSdkCore.timeProvider) doReturn mock()
+
         val realRepository = DefaultFlagsRepository(
             featureSdkCore = mockSdkCore,
             dataStore = mockDataStore,

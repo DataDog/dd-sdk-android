@@ -201,13 +201,13 @@ internal class DefaultFlagsRepository(
     }
 
     private fun waitForPersistenceLoad() {
-        val startTimeNs = System.nanoTime()
+        val startTimeNs = featureSdkCore.timeProvider.getDeviceElapsedTimeNanos()
         try {
             persistenceLoadedLatch.await(persistenceLoadTimeoutMs, TimeUnit.MILLISECONDS)
             if (atomicState.get()?.obfuscation != null) {
                 // Source detection and disk loading share the existing bounded cache-read timeout.
                 val remainingTimeNs = TimeUnit.MILLISECONDS.toNanos(persistenceLoadTimeoutMs) -
-                    (System.nanoTime() - startTimeNs)
+                    (featureSdkCore.timeProvider.getDeviceElapsedTimeNanos() - startTimeNs)
                 sourceDetectedLatch.await(remainingTimeNs, TimeUnit.NANOSECONDS)
             }
         } catch (e: InterruptedException) {

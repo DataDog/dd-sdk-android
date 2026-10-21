@@ -66,6 +66,7 @@ internal class FlagsStateDeserializerTest {
     fun `M reject invalid metadata W deserialize() {encoded cache}`(metadata: String, forge: Forge) {
         // Given
         val json = JSONObject(buildStateJson(forge.anAlphabeticalString(), JSONObject()))
+            .put("encodedFlags", JSONObject().put("a".repeat(64), buildFlagJson()))
         val descriptor = JSONObject(metadata)
         descriptor.keys().forEach { json.put(it, descriptor.get(it)) }
 
