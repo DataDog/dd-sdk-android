@@ -380,7 +380,9 @@ private fun resolveVerticalAlignment(gravity: Int): CapturedVerticalAlignment =
     }
 
 private fun resolveLayoutText(textView: TextView): String =
-    (textView.layout?.text ?: textView.text)?.toString().orEmpty()
+    (textView.layout?.text ?: textView.text)?.toString().orEmpty().ifEmpty {
+        textView.hint?.toString().orEmpty()
+    }
 
 /** [compoundDrawables] centers the icon on the view's cross-axis, pinned to its own edge on the main axis. */
 private fun centerOffset(containerDp: Long, contentDp: Long): Long = (containerDp / 2) - (contentDp / 2)

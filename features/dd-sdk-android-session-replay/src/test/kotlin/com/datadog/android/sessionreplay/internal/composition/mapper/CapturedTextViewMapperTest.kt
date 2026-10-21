@@ -64,6 +64,43 @@ import org.mockito.quality.Strictness
 internal class CapturedTextViewMapperTest {
 
     @ParameterizedTest
+    @CsvSource(
+        "MASK_ALL, false",
+        "MASK_ALL, true",
+        "MASK_ALL_INPUTS, false",
+        "MASK_ALL_INPUTS, true",
+        "MASK_SENSITIVE_INPUTS, false",
+        "MASK_SENSITIVE_INPUTS, true"
+    )
+    fun `M capture visible hint with text privacy W map { empty TextView }`(
+        fakePrivacy: TextAndInputPrivacy,
+        fakeHasLayout: Boolean
+    ) {
+        // Given
+        val stubView = textView()
+        val fakeHint = "Visible hint"
+        whenever(stubView.text).thenReturn("")
+        whenever(stubView.hint).thenReturn(fakeHint)
+        if (fakeHasLayout) {
+            val stubLayout: Layout = mock()
+            whenever(stubLayout.text).thenReturn("")
+            whenever(stubView.layout).thenReturn(stubLayout)
+        }
+        val fakeContext = mappingContext("hint", 1f).copy(textAndInputPrivacy = fakePrivacy)
+
+        // When
+        val result = testedMapper.map(stubView, fakeContext) as CapturedViewMapperResult.Wireframes
+
+        // Then
+        val fakeText = result.wireframes.filterIsInstance<CapturedWireframe.Text>().single().text
+        if (fakePrivacy == TextAndInputPrivacy.MASK_ALL) {
+            assertThat(fakeText).isNotEmpty().doesNotContain(fakeHint)
+        } else {
+            assertThat(fakeText).isEqualTo(fakeHint)
+        }
+    }
+
+    @ParameterizedTest
     @org.junit.jupiter.params.provider.EnumSource(TextAndInputPrivacy::class)
     fun `M mask selector values W capture() { option selector ancestor }`(fakePrivacy: TextAndInputPrivacy) {
         // Given
