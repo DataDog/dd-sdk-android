@@ -38,8 +38,9 @@ internal class ViewOcclusionDetector(
         val coveringBoundsAbove = mutableListOf<SiblingBounds>()
         for (i in childCount - 1 downTo 0) {
             val child = children[i]
-            // A transformed child cannot be represented by its layout rectangle in either direction.
-            if (hasScaleOrRotation(child)) continue
+            // Legacy animations change drawing without updating the layout rectangle or View alpha.
+            // Neither an animated nor a transformed child can participate in either direction.
+            if (child.animation != null || hasScaleOrRotation(child)) continue
             val childBounds = boundsInParent(child)
             if (coveringBoundsAbove.any { it.fullyCovers(childBounds) }) {
                 @Suppress("UnsafeThirdPartyFunctionCall") // plain HashSet-backed add, cannot throw

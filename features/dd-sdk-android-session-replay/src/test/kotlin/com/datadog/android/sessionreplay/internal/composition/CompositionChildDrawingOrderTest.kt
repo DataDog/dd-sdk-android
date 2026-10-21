@@ -230,6 +230,22 @@ internal class CompositionChildDrawingOrderTest {
         }
     }
 
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = [0, 1])
+    fun `M retain siblings W traverseWindow { either sibling has legacy animation }`(fakeAnimatedIndex: Int) {
+        // Given: a legacy animation does not update the View matrix or alpha properties.
+        val fixture = Fixture(childCount = 2)
+        fixture.children.forEach(fixture::makeOpaque)
+        whenever(fixture.children[fakeAnimatedIndex].animation).thenReturn(mock<android.view.animation.Animation>())
+
+        // When
+        val result = fixture.traverse()
+
+        // Then: neither the moving child nor a potentially exposed sibling may be culled.
+        assertThat(result.rootLayer.children.map { it.identity.localId }).containsExactly("1", "2")
+        assertThat(fixture.visited).containsExactly(fixture.root, fixture.children[0], fixture.children[1])
+    }
+
     @Test
     fun `M retain visible sibling W traverseWindow { opaque sibling clips to outline }`() {
         // Given: even without clipBounds, an outline can expose the sibling at rounded corners.
