@@ -104,6 +104,7 @@ navigation3 = "1.0.0-alpha01"
 kotlinxSerializationCore = "1.8.1"
 lifecycleViewmodelNav3 = "1.0.0-alpha01"
 openFeature = "0.6.2"
+retrofit = "2.11.0"
 
 # Local Server
 ktor = "2.3.13"
@@ -293,6 +294,11 @@ jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
 openTelemetryApi = { module = "io.opentelemetry:opentelemetry-api", version.ref = "openTelemetry" }
 openTelemetrySdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "openTelemetry" }
 re2j = { module = "com.google.re2j:re2j", version.ref = "re2j" }
+
+# Retrofit
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+retrofitRxJava3Adapter = { module = "com.squareup.retrofit2:adapter-rxjava3", version.ref = "retrofit" }
+retrofitConverterGson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
 
 [bundles]
 
