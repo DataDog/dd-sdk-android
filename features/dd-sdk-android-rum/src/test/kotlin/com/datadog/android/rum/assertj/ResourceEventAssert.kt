@@ -417,6 +417,16 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
+    fun hasIsMainProcess(expected: Boolean?): ResourceEventAssert {
+        assertThat(actual.session.isMainProcess)
+            .overridingErrorMessage(
+                "Expected event to have session.is_main_process:$expected " +
+                    "but was ${actual.session.isMainProcess}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasSessionType(expected: ResourceEvent.ResourceEventSessionType): ResourceEventAssert {
         assertThat(actual.session.type)
             .overridingErrorMessage(

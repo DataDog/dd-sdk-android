@@ -203,6 +203,7 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_CORE_CONFIG.copy(
                 firstPartyHostsWithHeaderTypes =
                 hosts.associate {
+                    @Suppress("DEPRECATION")
                     URL(it).host to setOf(
                         TracingHeaderType.DATADOG,
                         TracingHeaderType.TRACECONTEXT

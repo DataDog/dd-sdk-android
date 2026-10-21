@@ -16,6 +16,7 @@ plugins {
     // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
     id("ktlint")
     id("org.jetbrains.kotlin.android")
+    id("datadogBuildConfig")
 }
 
 // TODO RUM-18189 Support new AGP DSL
@@ -83,4 +84,8 @@ dependencies {
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
     implementation("androidx.recyclerview:recyclerview:1.3.0")
     implementation("com.google.android.gms:play-services-wearable:17.1.0")
+}
+
+datadogBuild {
+    applyKotlinConfig()
 }

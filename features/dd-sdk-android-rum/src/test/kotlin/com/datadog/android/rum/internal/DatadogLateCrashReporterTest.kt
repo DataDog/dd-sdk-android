@@ -191,6 +191,7 @@ internal class DatadogLateCrashReporterTest {
                 .hasErrorId()
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
+                .hasIsMainProcess(fakeViewEvent.session.isMainProcess)
                 .hasView(
                     fakeViewEvent.view.id,
                     fakeViewEvent.view.name,

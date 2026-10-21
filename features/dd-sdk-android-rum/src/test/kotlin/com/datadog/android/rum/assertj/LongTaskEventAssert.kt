@@ -211,6 +211,16 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
+    fun hasIsMainProcess(expected: Boolean?): LongTaskEventAssert {
+        assertThat(actual.session.isMainProcess)
+            .overridingErrorMessage(
+                "Expected event to have session.is_main_process:$expected " +
+                    "but was ${actual.session.isMainProcess}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasSessionType(expected: LongTaskEvent.LongTaskEventSessionType): LongTaskEventAssert {
         assertThat(actual.session.type)
             .overridingErrorMessage(

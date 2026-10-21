@@ -203,6 +203,16 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasIsMainProcess(expected: Boolean?): ViewEventAssert {
+        assertThat(actual.session.isMainProcess)
+            .overridingErrorMessage(
+                "Expected event to have session.is_main_process:$expected " +
+                    "but was ${actual.session.isMainProcess}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasSessionType(expected: ViewEvent.ViewEventSessionType): ViewEventAssert {
         assertThat(actual.session.type)
             .overridingErrorMessage(

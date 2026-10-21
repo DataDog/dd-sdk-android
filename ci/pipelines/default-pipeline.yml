@@ -174,8 +174,7 @@ analysis:generated-files-check:
   timeout: 30m
   script:
     - !reference [.snippets, setup-gradle]
-    # TODO RUM-17809: configuration cache not supported by gradle-dependency-license-plugin; re-enable once fixed
-    - ./gradlew checkGeneratedFiles --no-configuration-cache
+    - ./gradlew checkGeneratedFiles
 
 analysis:ktlint:
   extends:
@@ -446,6 +445,24 @@ test-pyramid:single-fit-profiling:
     reports:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
+test-pyramid:single-fit-flags:
+  extends:
+    - .base-cache-pull-job
+    - .cpu-memory-intensive-job
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  script:
+    - !reference [ .snippets, setup-gradle ]
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:flags:testReleaseUnitTest
+  artifacts:
+    when: always
+    expire_in: 1 week
+    reports:
+      junit: "**/build/test-results/testReleaseUnitTest/*.xml"
+
 # RUN INSTRUMENTED TESTS ON MIN API (23), LATEST API (34) and MEDIAN API (28)
 
 test-pyramid:legacy-integration-instrumented-min-api:
@@ -684,9 +701,10 @@ publish:dogfooding:
   timeout: 30m
   interruptible: false
   script:
-    - !reference [.snippets, set-publishing-credentials]
     - !reference [.snippets, setup-gradle]
-    - ./gradlew publishReleasePublicationToDogfoodRepository --stacktrace --no-daemon
+    # Publishing is done by S3 repo, so credentials are managed by IAM from env set in the CI
+    # job for the service account. Signing is also not required for internal build.
+    - ./gradlew publishReleasePublicationToDogfoodRepository --stacktrace --no-daemon -Pdd-skip-signing
 
 
 # SLACK NOTIFICATIONS

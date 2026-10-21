@@ -284,6 +284,16 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
+    fun hasIsMainProcess(expected: Boolean?): ActionEventAssert {
+        assertThat(actual.session.isMainProcess)
+            .overridingErrorMessage(
+                "Expected event to have session.is_main_process:$expected " +
+                    "but was ${actual.session.isMainProcess}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasSessionType(expected: ActionEvent.ActionEventSessionType): ActionEventAssert {
         assertThat(actual.session.type)
             .overridingErrorMessage {

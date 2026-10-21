@@ -10,12 +10,16 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.log.Logs
 import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.Profiling
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum._RumInternalProxy
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.benchmark.sample.DatadogFeaturesInitializer
+import com.datadog.benchmark.sample.configureTimeseries
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -28,7 +32,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.quality.Strictness
 
-@OptIn(ExperimentalProfilingApi::class)
+@OptIn(ExperimentalProfilingApi::class, ExperimentalRumApi::class)
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
@@ -185,6 +189,72 @@ class DatadogFeaturesInitializerTest {
             logs.verifyNoInteractions()
             profiling.verifyNoInteractions()
         }
+    }
+
+    @Test
+    fun `M enable rum only W run is instrumented and scenario is timeseries`() {
+        // Given
+        val config = BenchmarkConfig(
+            run = SyntheticsRun.Instrumented,
+            scenario = SyntheticsScenario.Timeseries
+        )
+
+        mockAllAndCheck(config) {
+            // Then
+            sessionReplay.verifyNoInteractions()
+            rum.verifyRumEnabled()
+            logs.verifyNoInteractions()
+            profiling.verifyNoInteractions()
+        }
+    }
+
+    @Test
+    fun `M enable rum only W run is baseline and scenario is timeseries`() {
+        // Given
+        val config = BenchmarkConfig(
+            run = SyntheticsRun.Baseline,
+            scenario = SyntheticsScenario.Timeseries
+        )
+
+        mockAllAndCheck(config) {
+            // Then
+            sessionReplay.verifyNoInteractions()
+            rum.verifyRumEnabled()
+            logs.verifyNoInteractions()
+            profiling.verifyNoInteractions()
+        }
+    }
+
+    @Test
+    fun `M apply default timeseries configuration W configureTimeseries() {instrumented, timeseries}`() {
+        // Given
+        val config = BenchmarkConfig(
+            run = SyntheticsRun.Instrumented,
+            scenario = SyntheticsScenario.Timeseries
+        )
+        var appliedConfiguration: TimeseriesConfiguration? = null
+
+        // When
+        configureTimeseries(config) { appliedConfiguration = it }
+
+        // Then
+        assertThat(appliedConfiguration).isSameAs(TimeseriesConfiguration.DEFAULT)
+    }
+
+    @Test
+    fun `M not apply timeseries configuration W configureTimeseries() {baseline, timeseries}`() {
+        // Given
+        val config = BenchmarkConfig(
+            run = SyntheticsRun.Baseline,
+            scenario = SyntheticsScenario.Timeseries
+        )
+        var appliedConfiguration: TimeseriesConfiguration? = null
+
+        // When
+        configureTimeseries(config) { appliedConfiguration = it }
+
+        // Then
+        assertThat(appliedConfiguration).isNull()
     }
 
     private fun mockAllAndCheck(config: BenchmarkConfig, thenBlock: MockedStatics.() -> Unit) {

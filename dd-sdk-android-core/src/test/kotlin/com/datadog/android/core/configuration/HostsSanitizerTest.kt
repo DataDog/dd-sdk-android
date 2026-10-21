@@ -228,7 +228,12 @@ internal class HostsSanitizerTest {
         )
 
         // Then
-        assertThat(sanitizedHosts).isEqualTo(hosts.map { URL(it).host })
+        assertThat(sanitizedHosts).isEqualTo(
+            hosts.map {
+                @Suppress("DEPRECATION")
+                URL(it).host
+            }
+        )
     }
 
     @Test
