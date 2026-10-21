@@ -14,6 +14,8 @@ import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.event.EventMapper
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
@@ -626,10 +628,12 @@ class LoggerTest {
         // Given
         val testedLogger = Logger.Builder(stubSdkCore).setBundleWithRumEnabled(true).build()
         stubSdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
-            it["application_id"] = fakeRumApplicationId
-            it["session_id"] = fakeRumSessionId
-            it["view_id"] = fakeRumViewId
-            it["action_id"] = fakeRumActionId
+            it[FeatureContextKeys.RUM_CONTEXT] = RumContext(
+                applicationId = fakeRumApplicationId,
+                sessionId = fakeRumSessionId,
+                viewId = fakeRumViewId,
+                actionId = fakeRumActionId
+            )
         }
 
         // When

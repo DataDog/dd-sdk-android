@@ -16,6 +16,8 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
@@ -50,7 +52,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import android.util.Log as AndroidLog
@@ -80,17 +81,17 @@ internal class DatadogLogHandlerTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
-    @Forgery
-    lateinit var fakeRumApplicationId: UUID
+    @StringForgery
+    lateinit var fakeRumApplicationId: String
 
-    @Forgery
-    lateinit var fakeRumSessionId: UUID
+    @StringForgery
+    lateinit var fakeRumSessionId: String
 
-    @Forgery
-    lateinit var fakeRumViewId: UUID
+    @StringForgery
+    lateinit var fakeRumViewId: String
 
-    @Forgery
-    lateinit var fakeRumActionId: UUID
+    @StringForgery
+    lateinit var fakeRumActionId: String
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
@@ -140,10 +141,12 @@ internal class DatadogLogHandlerTest {
                 put(
                     Feature.RUM_FEATURE_NAME,
                     mapOf(
-                        "application_id" to fakeRumApplicationId,
-                        "session_id" to fakeRumSessionId,
-                        "view_id" to fakeRumViewId,
-                        "action_id" to fakeRumActionId
+                        FeatureContextKeys.RUM_CONTEXT to RumContext(
+                            applicationId = fakeRumApplicationId,
+                            sessionId = fakeRumSessionId,
+                            viewId = fakeRumViewId,
+                            actionId = fakeRumActionId
+                        )
                     )
                 )
             }

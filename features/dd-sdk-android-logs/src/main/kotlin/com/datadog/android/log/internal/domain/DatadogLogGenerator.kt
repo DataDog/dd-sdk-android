@@ -15,6 +15,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.feature.event.ThreadDump
+import com.datadog.android.internal.rum.rumContext
 import com.datadog.android.internal.utils.loggableMessage
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
@@ -377,10 +378,11 @@ internal class DatadogLogGenerator(
         }
         if (bundleWithRum) {
             datadogContext.featuresContext[Feature.RUM_FEATURE_NAME]?.let {
-                combinedAttributes[LogAttributes.RUM_APPLICATION_ID] = it["application_id"]
-                combinedAttributes[LogAttributes.RUM_SESSION_ID] = it["session_id"]
-                combinedAttributes[LogAttributes.RUM_VIEW_ID] = it["view_id"]
-                combinedAttributes[LogAttributes.RUM_ACTION_ID] = it["action_id"]
+                val rumContext = it.rumContext()
+                combinedAttributes[LogAttributes.RUM_APPLICATION_ID] = rumContext?.applicationId
+                combinedAttributes[LogAttributes.RUM_SESSION_ID] = rumContext?.sessionId
+                combinedAttributes[LogAttributes.RUM_VIEW_ID] = rumContext?.viewId
+                combinedAttributes[LogAttributes.RUM_ACTION_ID] = rumContext?.actionId
             }
         }
         return combinedAttributes

@@ -26,6 +26,8 @@ import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.profiling.quota.QuotaReason
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumViewType
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -46,7 +48,6 @@ import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo

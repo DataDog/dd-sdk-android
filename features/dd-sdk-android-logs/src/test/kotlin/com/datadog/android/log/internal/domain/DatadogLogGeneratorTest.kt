@@ -13,6 +13,8 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.feature.event.ThreadDump
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
 import com.datadog.android.log.model.LogEvent
@@ -41,7 +43,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.util.Locale
-import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -72,17 +73,17 @@ internal class DatadogLogGeneratorTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
-    @Forgery
-    lateinit var fakeRumApplicationId: UUID
+    @StringForgery
+    lateinit var fakeRumApplicationId: String
 
-    @Forgery
-    lateinit var fakeRumSessionId: UUID
+    @StringForgery
+    lateinit var fakeRumSessionId: String
 
-    @Forgery
-    lateinit var fakeRumViewId: UUID
+    @StringForgery
+    lateinit var fakeRumViewId: String
 
-    @Forgery
-    lateinit var fakeRumActionId: UUID
+    @StringForgery
+    lateinit var fakeRumActionId: String
 
     var fakeTimestamp = 0L
     var fakeLevel: Int = 0
@@ -113,10 +114,12 @@ internal class DatadogLogGeneratorTest {
                 put(
                     Feature.RUM_FEATURE_NAME,
                     mapOf(
-                        "application_id" to fakeRumApplicationId,
-                        "session_id" to fakeRumSessionId,
-                        "view_id" to fakeRumViewId,
-                        "action_id" to fakeRumActionId
+                        FeatureContextKeys.RUM_CONTEXT to RumContext(
+                            applicationId = fakeRumApplicationId,
+                            sessionId = fakeRumSessionId,
+                            viewId = fakeRumViewId,
+                            actionId = fakeRumActionId
+                        )
                     )
                 )
                 put(
