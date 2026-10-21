@@ -480,29 +480,14 @@ internal class DatadogFlagsClient(
         flag: UnparsedFlag,
         context: EvaluationContext
     ) {
-        // Exposure logging (only when doLog=true)
-        if (flag.doLog) {
-            if (flagsConfiguration.trackExposures) {
-                writeExposureEvent(flagKey, flag, context)
-            }
-        }
+        trackFlagExposure(flagKey, flag, context)
 
         // RUM feature flag tracking - fires for all successful evaluations with a variant key
         if (flagsConfiguration.rumIntegrationEnabled && flag.variationKey.isNotBlank()) {
             logEvaluation(flagKey, flag.variationKey)
         }
 
-        // Evaluation logging for all evaluations (when enabled)
-        if (flagsConfiguration.trackEvaluations) {
-            writeEvaluationEvent(
-                flagKey = flagKey,
-                context = context,
-                variantKey = flag.variationKey,
-                allocationKey = flag.allocationKey,
-                errorCode = null,
-                errorMessage = null
-            )
-        }
+        trackFlagEvaluationEvent(flagKey, flag, context, errorCode = null)
     }
 
     private fun <T : Any> trackErrorResolution(resolution: InternalResolution.Error<T>) {
@@ -542,6 +527,39 @@ internal class DatadogFlagsClient(
      */
     internal fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
         trackResolution(flagKey, flag, context)
+    }
+
+    internal fun trackFlagExposure(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
+        if (flagsConfiguration.trackExposures && flag.doLog) {
+            writeExposureEvent(flagKey, flag, context)
+        }
+    }
+
+    internal fun trackFlagEvaluationEvent(
+        flagKey: String,
+        flag: UnparsedFlag?,
+        context: EvaluationContext,
+        errorCode: String?
+    ) {
+        if (!flagsConfiguration.trackEvaluations) {
+            return
+        }
+
+        // Hook errors can contain arbitrary customer data. Only forward standard OpenFeature codes.
+        val sanitizedErrorCode = when (errorCode) {
+            null -> null
+            "PROVIDER_NOT_READY", "PROVIDER_FATAL", "FLAG_NOT_FOUND", "PARSE_ERROR", "TYPE_MISMATCH",
+            "TARGETING_KEY_MISSING", "INVALID_CONTEXT", "GENERAL" -> errorCode
+            else -> "GENERAL"
+        }
+        writeEvaluationEvent(
+            flagKey = flagKey,
+            context = context,
+            variantKey = flag?.variationKey.takeIf { sanitizedErrorCode == null },
+            allocationKey = flag?.allocationKey.takeIf { sanitizedErrorCode == null },
+            errorCode = sanitizedErrorCode,
+            errorMessage = sanitizedErrorCode
+        )
     }
 
     // endregion

@@ -30,9 +30,35 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
         emptyMap()
     }
 
+    /**
+     * Records exposure, evaluation, and RUM tracking according to the enabled native features.
+     * Use the separate operations below for independently selected tracking hooks.
+     */
     fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
         if (client is DatadogFlagsClient) {
             client.trackFlagSnapshotEvaluation(flagKey, flag, context)
+        }
+    }
+
+    /** Records only an exposure, using the flag and context captured by the caller, without fetching configuration. */
+    fun trackFlagExposure(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
+        if (client is DatadogFlagsClient) {
+            client.trackFlagExposure(flagKey, flag, context)
+        }
+    }
+
+    /**
+     * Records only an evaluation event, without fetching configuration or reporting to RUM.
+     * A missing flag represents a runtime default. Unknown OpenFeature error codes are reported as `GENERAL`.
+     */
+    fun trackFlagEvaluationEvent(
+        flagKey: String,
+        flag: UnparsedFlag?,
+        context: EvaluationContext,
+        errorCode: String?
+    ) {
+        if (client is DatadogFlagsClient) {
+            client.trackFlagEvaluationEvent(flagKey, flag, context, errorCode)
         }
     }
 }
