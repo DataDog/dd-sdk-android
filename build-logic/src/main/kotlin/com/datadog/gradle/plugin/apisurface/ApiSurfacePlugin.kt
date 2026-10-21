@@ -77,8 +77,10 @@ class ApiSurfacePlugin : Plugin<Project> {
             // Java API generation task does a clean-up of all files in the output
             // folder, so let it run first
             if (target.plugins.hasPlugin(GEN_JAVA_API_LAYOUT_PLUGIN)) {
-                val isCi = target.providers.environmentVariable("CI").isPresent
-                if (isCi) {
+                val isCi = target.providers.environmentVariable("CI")
+                    .map { it.toBoolean() }
+                    .orElse(false)
+                if (isCi.get()) {
                     // Java API generation wires to the release build type, so we can afford triggering compilation
                     // of release type locally when we run debug compilation, but we would like to avoid it on CI
                     if (name == "compileReleaseKotlin") {
