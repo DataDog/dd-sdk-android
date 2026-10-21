@@ -47,6 +47,9 @@ internal class DefaultFlagsRepository(
 
     @Suppress("UnsafeThirdPartyFunctionCall") // CountDownLatch rejects negative counts; 1 is valid.
     private val persistenceLoadedLatch = CountDownLatch(1)
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // CountDownLatch rejects negative counts; 1 is valid.
+    private val sourceDetectedLatch = CountDownLatch(1)
     override val firstFlags = FirstFlagsLatch()
 
     private val persistenceManager = FlagsPersistenceManager(
@@ -133,6 +136,7 @@ internal class DefaultFlagsRepository(
 
     override fun setObfuscationSupported(supported: Boolean) {
         obfuscationSupported.set(supported)
+        sourceDetectedLatch.countDown()
         readableState?.takeIf { it.restoredFromCache }?.let { publishFirstFlags(it, it.flags.keys) }
     }
 
@@ -197,8 +201,15 @@ internal class DefaultFlagsRepository(
     }
 
     private fun waitForPersistenceLoad() {
+        val startTimeNs = System.nanoTime()
         try {
             persistenceLoadedLatch.await(persistenceLoadTimeoutMs, TimeUnit.MILLISECONDS)
+            if (atomicState.get()?.obfuscation != null) {
+                // Source detection and disk loading share the existing bounded cache-read timeout.
+                val remainingTimeNs = TimeUnit.MILLISECONDS.toNanos(persistenceLoadTimeoutMs) -
+                    (System.nanoTime() - startTimeNs)
+                sourceDetectedLatch.await(remainingTimeNs, TimeUnit.NANOSECONDS)
+            }
         } catch (e: InterruptedException) {
             @Suppress("UnsafeThirdPartyFunctionCall") // Safe: self-interruption is always permitted
             Thread.currentThread().interrupt()

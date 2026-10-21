@@ -33,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -42,6 +43,9 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -153,6 +157,56 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         assertThat(flag.variationValue).isEqualTo(fakeFlag.variationValue)
         assertThat(flag.reason).isEqualTo(ResolutionReason.CACHED.name)
         assertThat(testedRepository.getPrecomputedFlag(encodedKey)).isNull()
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["android", "react-native", "future-bridge"])
+    fun `M wait for source detection W getPrecomputedFlagWithContext() { encoded cache loaded first }`(
+        source: String
+    ) {
+        // Given
+        var sourceCallback: ((DatadogContext) -> Unit)? = null
+        doAnswer { sourceCallback = it.getArgument(1) }
+            .whenever(mockFeatureScope).withContext(any(), any())
+        val entry = cachedEntry(encoded = true)
+        doAnswer { it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(DataStoreContent(0, entry)) }
+            .whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        whenever(mockDatadogContext.source) doReturn source
+        testedRepository = DefaultFlagsRepository(
+            mockSdkCore,
+            fakeInstanceName,
+            mockDataStore,
+            persistenceLoadTimeoutMs = TimeUnit.SECONDS.toMillis(5)
+        )
+        val started = CountDownLatch(1)
+        val completed = CountDownLatch(1)
+        val result = AtomicReference<Pair<PrecomputedFlag, EvaluationContext>?>()
+        val reader = Thread {
+            started.countDown()
+            result.set(testedRepository.getPrecomputedFlagWithContext(fakeFlagKey))
+            completed.countDown()
+        }.apply { isDaemon = true }
+
+        // When
+        reader.start()
+        val readStarted = started.await(1, TimeUnit.SECONDS)
+        val completedBeforeSourceDetection = completed.await(100, TimeUnit.MILLISECONDS)
+        checkNotNull(sourceCallback).invoke(mockDatadogContext)
+        val completedAfterSourceDetection = completed.await(1, TimeUnit.SECONDS)
+        reader.join(TimeUnit.SECONDS.toMillis(1))
+
+        // Then
+        assertThat(readStarted).isTrue()
+        assertThat(completedBeforeSourceDetection).isFalse()
+        assertThat(completedAfterSourceDetection).isTrue()
+        if (source == "android") {
+            val (flag, context) = checkNotNull(result.get())
+            assertThat(flag.variationValue).isEqualTo(fakeFlag.variationValue)
+            assertThat(flag.reason).isEqualTo(ResolutionReason.CACHED.name)
+            assertThat(context).isEqualTo(fakeContext)
+        } else {
+            assertThat(result.get()).isNull()
+        }
     }
 
     @ParameterizedTest

@@ -177,8 +177,11 @@ class FlagsObfuscationTest {
         stubAssignments("encoded")
         client.setEvaluationContext(EvaluationContext(fakeTargetingKey))
 
-        // When / Then
-        assertThat(_FlagsInternalProxy(client).getFlagAssignmentsSnapshot()).isEmpty()
+        // When
+        val encodedSnapshot = _FlagsInternalProxy(client).getFlagAssignmentsSnapshot()
+
+        // Then
+        assertThat(encodedSnapshot).isEmpty()
 
         // When
         stubAssignments("plaintext")
