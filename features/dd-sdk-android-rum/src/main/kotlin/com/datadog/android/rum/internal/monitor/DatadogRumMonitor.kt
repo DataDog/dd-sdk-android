@@ -1122,7 +1122,8 @@ internal class DatadogRumMonitor(
 
         private val FATAL_ERROR_FEATURE_CONTEXTS = setOf(
             Feature.SESSION_REPLAY_FEATURE_NAME,
-            FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME
+            FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME,
+            Feature.TRACING_FEATURE_NAME
         )
 
         private val EVENT_FEATURE_CONTEXTS = setOf(

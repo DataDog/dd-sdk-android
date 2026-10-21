@@ -295,7 +295,8 @@ internal class DatadogRumMonitorTest {
                 eq(
                     setOf(
                         Feature.SESSION_REPLAY_FEATURE_NAME,
-                        FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME
+                        FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME,
+                        Feature.TRACING_FEATURE_NAME
                     )
                 ),
                 any()
@@ -1447,7 +1448,8 @@ internal class DatadogRumMonitorTest {
                 eq(
                     setOf(
                         Feature.SESSION_REPLAY_FEATURE_NAME,
-                        FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME
+                        FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME,
+                        Feature.TRACING_FEATURE_NAME
                     )
                 ),
                 any()
@@ -1479,7 +1481,8 @@ internal class DatadogRumMonitorTest {
                 eq(
                     setOf(
                         Feature.SESSION_REPLAY_FEATURE_NAME,
-                        FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME
+                        FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME,
+                        Feature.TRACING_FEATURE_NAME
                     )
                 ),
                 any()
