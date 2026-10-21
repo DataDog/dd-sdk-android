@@ -184,23 +184,13 @@ internal class DefaultFlagsRepository(
         return state?.context == context && state.flags.isNotEmpty()
     }
 
-    @Suppress("ReturnCount")
-    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? {
-        waitForPersistenceLoad()
+    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>? {
         val state = readableState ?: return null
-        val flag = state[key] ?: return null
+        val flag = state[key]
         return flag to state.context
     }
 
-    private fun publishFirstFlags(state: FlagsState, installedKeys: Collection<String>) {
-        if (state.obfuscation == null || obfuscationSupported.get()) {
-            // Encoded responses cannot enumerate the original application keys.
-            val keys = if (state.obfuscation == null) installedKeys else emptySet()
-            firstFlags.complete(keys, deliverFirstFlags)
-        }
-    }
-
-    private fun waitForPersistenceLoad() {
+    override fun waitForPersistenceLoad() {
         val startTimeNs = featureSdkCore.timeProvider.getDeviceElapsedTimeNanos()
         try {
             persistenceLoadedLatch.await(persistenceLoadTimeoutMs, TimeUnit.MILLISECONDS)
@@ -213,6 +203,14 @@ internal class DefaultFlagsRepository(
         } catch (e: InterruptedException) {
             @Suppress("UnsafeThirdPartyFunctionCall") // Safe: self-interruption is always permitted
             Thread.currentThread().interrupt()
+        }
+    }
+
+    private fun publishFirstFlags(state: FlagsState, installedKeys: Collection<String>) {
+        if (state.obfuscation == null || obfuscationSupported.get()) {
+            // Encoded responses cannot enumerate the original application keys.
+            val keys = if (state.obfuscation == null) installedKeys else emptySet()
+            firstFlags.complete(keys, deliverFirstFlags)
         }
     }
 

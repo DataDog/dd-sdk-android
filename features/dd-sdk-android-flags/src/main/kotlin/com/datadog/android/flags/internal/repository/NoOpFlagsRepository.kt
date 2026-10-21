@@ -27,7 +27,9 @@ internal class NoOpFlagsRepository : FlagsRepository {
 
     override fun setObfuscationSupported(supported: Boolean) = Unit
 
-    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? = null
+    override fun waitForPersistenceLoad() = Unit
+
+    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>? = null
 
     override val firstFlags = FirstFlagsLatch()
 

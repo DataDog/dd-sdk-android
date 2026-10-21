@@ -10,9 +10,9 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsInitializationTimeoutException
@@ -60,7 +60,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -94,7 +93,7 @@ internal class EvaluationsManagerTest {
     lateinit var mockFlagsStateManager: FlagsStateManager
 
     @Mock
-    lateinit var mockSdkCore: FeatureSdkCore
+    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockFlagsFeatureScope: FeatureScope
@@ -113,6 +112,15 @@ internal class EvaluationsManagerTest {
 
     private lateinit var evaluationsManager: EvaluationsManager
 
+    @Test
+    fun `M release request state W updateEvaluationsForContext() {executor rejects fetch}`() {
+        doThrow(java.util.concurrent.RejectedExecutionException())
+            .whenever(mockExecutorService).execute(any())
+        var finished = 0
+        evaluationsManager.updateEvaluationsForContext(EvaluationContext.EMPTY, null) { finished++ }
+        assertThat(finished).isEqualTo(1)
+    }
+
     @BeforeEach
     fun setUp() {
         evaluationsManager = EvaluationsManager(
@@ -128,10 +136,8 @@ internal class EvaluationsManagerTest {
         )
 
         whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)) doReturn mockFlagsFeatureScope
-        whenever(
-            mockFlagsFeatureScope.withContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any())
-        ) doAnswer {
-            it.getArgument<(DatadogContext) -> Unit>(1).invoke(fakeDatadogContext)
+        whenever(mockSdkCore.getDatadogContext(setOf(Feature.RUM_FEATURE_NAME))) doAnswer {
+            fakeDatadogContext
         }
 
         doAnswer {
@@ -148,18 +154,36 @@ internal class EvaluationsManagerTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["android", "react-native"])
-    fun `M set encoding support W updateEvaluationsForContext() { network executor delayed }`(source: String) {
+    fun `M set encoding support before cache reads W updateEvaluationsForContext() {source varies}`(source: String) {
         // Given
         fakeDatadogContext = fakeDatadogContext.copy(source = source)
-        doAnswer { null }.whenever(mockExecutorService).execute(any())
 
         // When
         evaluationsManager.updateEvaluationsForContext(EvaluationContext(fakeTargetingKey, emptyMap()))
 
         // Then
-        verify(mockFlagsRepository).setObfuscationSupported(source == "android")
-        verify(mockExecutorService).execute(any())
-        verifyNoInteractions(mockAssignmentsDownloader)
+        inOrder(mockFlagsRepository, mockAssignmentsDownloader) {
+            verify(mockFlagsRepository).setObfuscationSupported(source == "android")
+            verify(mockFlagsRepository).hasFlags()
+            verify(mockAssignmentsDownloader).readPrecomputedFlags(
+                EvaluationContext(fakeTargetingKey, emptyMap()),
+                fakeDatadogContext
+            )
+        }
+    }
+
+    @Test
+    fun `M release request state W updateEvaluationsForContext() {context dispatch unavailable}`() {
+        // Given
+        whenever(mockSdkCore.getDatadogContext(setOf(Feature.RUM_FEATURE_NAME))) doReturn null
+        var finished = 0
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(EvaluationContext.EMPTY, null) { finished++ }
+
+        // Then
+        assertThat(finished).isEqualTo(1)
+        verify(mockAssignmentsDownloader, never()).readPrecomputedFlags(any(), any())
     }
 
     @Test

@@ -155,6 +155,7 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         // Then
         val (flag, context) = checkNotNull(testedRepository.getPrecomputedFlagWithContext(fakeFlagKey))
         assertThat(context).isEqualTo(fakeContext)
+        checkNotNull(flag)
         assertThat(flag.variationValue).isEqualTo(fakeFlag.variationValue)
         assertThat(flag.reason).isEqualTo(ResolutionReason.CACHED.name)
         assertThat(testedRepository.getPrecomputedFlag(encodedKey)).isNull()
@@ -162,7 +163,7 @@ internal class DefaultFlagsRepositoryObfuscationTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["android", "react-native", "future-bridge"])
-    fun `M wait for source detection W getPrecomputedFlagWithContext() { encoded cache loaded first }`(
+    fun `M wait for source detection W waitForPersistenceLoad() { encoded cache loaded first }`(
         source: String
     ) {
         // Given
@@ -181,9 +182,10 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         )
         val started = CountDownLatch(1)
         val completed = CountDownLatch(1)
-        val result = AtomicReference<Pair<PrecomputedFlag, EvaluationContext>?>()
+        val result = AtomicReference<Pair<PrecomputedFlag?, EvaluationContext>?>()
         val reader = Thread {
             started.countDown()
+            testedRepository.waitForPersistenceLoad()
             result.set(testedRepository.getPrecomputedFlagWithContext(fakeFlagKey))
             completed.countDown()
         }.apply { isDaemon = true }
@@ -202,6 +204,7 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         assertThat(completedAfterSourceDetection).isTrue()
         if (source == "android") {
             val (flag, context) = checkNotNull(result.get())
+            checkNotNull(flag)
             assertThat(flag.variationValue).isEqualTo(fakeFlag.variationValue)
             assertThat(flag.reason).isEqualTo(ResolutionReason.CACHED.name)
             assertThat(context).isEqualTo(fakeContext)
@@ -212,7 +215,7 @@ internal class DefaultFlagsRepositoryObfuscationTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["timeout", "interrupted", "budget-exhausted"])
-    fun `M stop waiting for source W getPrecomputedFlagWithContext() { source callback never completes }`(
+    fun `M stop waiting for source W waitForPersistenceLoad() { source callback never completes }`(
         outcome: String
     ) {
         // Given
@@ -234,11 +237,12 @@ internal class DefaultFlagsRepositoryObfuscationTest {
             mockDataStore,
             persistenceLoadTimeoutMs = timeoutMs
         )
-        val result = AtomicReference<Pair<PrecomputedFlag, EvaluationContext>?>()
+        val result = AtomicReference<Pair<PrecomputedFlag?, EvaluationContext>?>()
         val interrupted = AtomicBoolean(false)
         val completed = CountDownLatch(1)
         val reader = Thread {
             try {
+                testedRepository.waitForPersistenceLoad()
                 result.set(testedRepository.getPrecomputedFlagWithContext(fakeFlagKey))
                 interrupted.set(Thread.currentThread().isInterrupted)
             } finally {
