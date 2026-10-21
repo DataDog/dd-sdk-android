@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
@@ -25,6 +26,10 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.TextLayoutInput
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Density
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.sampling.RateBasedSampler
@@ -478,9 +483,27 @@ internal class SemanticsUtils(
             fontSize = layoutInput.style.fontSize.value
                 .let { if (it.isNaN()) DEFAULT_FONT_SIZE_SP else it.toLong() },
             fontFamily = layoutInput.style.fontFamily,
-            textOverflow = textOverflow
+            textOverflow = textOverflow,
+            requiresPixelCapture = requiresTextPixels(layoutInput)
         )
     }
+
+    // The wire format cannot represent these styles. Keep the measured glyphs instead of
+    // substituting a font or asking the player to reflow differently styled text.
+    private fun requiresTextPixels(input: TextLayoutInput): Boolean {
+        val style = input.style
+        return input.text.spanStyles.isNotEmpty() || hasUnsupportedFontStyle(style) || hasCustomTextSpacing(style) ||
+            style.brush != null || (style.shadow != null && style.shadow != Shadow.None) ||
+            (style.textDecoration != null && style.textDecoration != TextDecoration.None)
+    }
+
+    private fun hasUnsupportedFontStyle(style: TextStyle): Boolean =
+        (style.fontWeight != null && style.fontWeight != FontWeight.Normal) ||
+            (style.fontStyle != null && style.fontStyle != FontStyle.Normal)
+
+    private fun hasCustomTextSpacing(style: TextStyle): Boolean =
+        ((style.letterSpacing.isSp || style.letterSpacing.isEm) && style.letterSpacing.value != 0f) ||
+            style.lineHeight.isSp || style.lineHeight.isEm
 
     internal fun getImagePrivacyOverride(semanticsNode: SemanticsNode): ImagePrivacy? {
         return semanticsNode.config.getOrNull(ImagePrivacySemanticsPropertyKey)

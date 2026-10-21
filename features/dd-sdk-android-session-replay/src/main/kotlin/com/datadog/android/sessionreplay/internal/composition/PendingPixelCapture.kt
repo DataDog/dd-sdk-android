@@ -38,6 +38,8 @@ import com.datadog.android.lint.InternalApi
  * @param isTextFree true for captures structurally guaranteed not to contain text, skipping
  * text-region detection entirely
  * @param isSourceImage true only for a source image allowed by image privacy, never mixed UI pixels
+ * @param isTextOnly true only for glyphs drawn from an unmasked, noneditable text layout after
+ * checking text privacy. Never use this for a screenshot or a crop of a UI hierarchy.
  */
 @InternalApi
 data class PendingPixelCapture @JvmOverloads constructor(
@@ -46,7 +48,8 @@ data class PendingPixelCapture @JvmOverloads constructor(
     val bitmap: Bitmap,
     val isTextFree: Boolean = false,
     /** A source image permitted by image privacy, rather than a screenshot containing mixed UI content. */
-    val isSourceImage: Boolean = false
+    val isSourceImage: Boolean = false,
+    val isTextOnly: Boolean = false
 )
 
 /**

@@ -163,8 +163,10 @@ internal class PixelFallbackSnapshotProcessorTest {
         assertThat(ownerLayer.children).containsExactly(CapturedChild.Wireframe(placeholder.identity))
     }
 
-    @Test
-    fun `M resolve the pixel resource W process { capture is text-free, no detector configured }`(
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = [false, true])
+    fun `M resolve the pixel resource W process { known text or text-free capture without detector }`(
+        textOnly: Boolean,
         @StringForgery fakeScope: String,
         @StringForgery fakeResourceId: String
     ) {
@@ -189,7 +191,7 @@ internal class PixelFallbackSnapshotProcessorTest {
             SnapshotProcessingRequest(
                 generationContext(),
                 fixture.snapshot,
-                listOf(fixture.pendingTextFree),
+                listOf(fixture.pendingTextFree.copy(isTextFree = !textOnly, isTextOnly = textOnly)),
                 fixture.identityFactory
             ),
             SnapshotProcessingCallback { results += it }
@@ -365,7 +367,7 @@ internal class PixelFallbackSnapshotProcessorTest {
             fakeFixture.identityFactory.imageWireframe(fakeSecondOwner),
             fakeSecondOwner,
             stubSecondBitmap,
-            isTextFree = true
+            isTextOnly = true
         )
         testedProcessor.process(
             SnapshotProcessingRequest(

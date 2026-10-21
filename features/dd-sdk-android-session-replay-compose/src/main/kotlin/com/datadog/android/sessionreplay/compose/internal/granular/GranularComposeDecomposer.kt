@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.GenericFontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
@@ -104,7 +105,8 @@ internal class GranularComposeDecomposer(
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND,
     private val compatibilityGate: GranularComposeCompatibilityGate = GranularComposeCompatibilityGate.SHARED,
     private val nodesPerCheckpoint: Int = NODES_PER_CHECKPOINT,
-    private val hostRasterizer: ComposeHostCaptureRasterizer = DefaultComposeHostCaptureRasterizer(internalLogger)
+    private val hostRasterizer: ComposeHostCaptureRasterizer = DefaultComposeHostCaptureRasterizer(internalLogger),
+    private val textRasterizer: ComposeTextRasterizer = DefaultComposeTextRasterizer(reflectionUtils, internalLogger)
 ) : CompositionHostDecomposer {
     private val imageMapper = ImageSemanticsNodeMapper(colorStringFormatter, semanticsUtils)
 
@@ -346,7 +348,7 @@ internal class GranularComposeDecomposer(
     }
 
     /** One [decompose] call's state - a fresh instance per call, so this class itself stays stateless. */
-    @Suppress("TooManyFunctions") // Keep the decomposition phases and deadline checkpoint in one capture session.
+    @Suppress("TooManyFunctions", "LargeClass") // One capture session owns the phases and deadline.
     private inner class DecomposeSession(
         private val hostView: View,
         private val request: CompositionHostDecomposeRequest
@@ -359,6 +361,7 @@ internal class GranularComposeDecomposer(
         private var nodesVisited = 0
         private var aborted = false
         private val pendingCaptures = mutableListOf<PendingCapture>()
+        private var textPixelCaptures = 0
         private val nativeSubtrees = mutableListOf<CompositionNativeSubtree>()
         private val protectedRasterBounds = mutableListOf<CapturedBounds>()
 
@@ -561,9 +564,47 @@ internal class GranularComposeDecomposer(
                 wireframes += shape
                 children += CapturedChild.Wireframe(shape.identity)
             }
-            wireframes += toTextWireframe(textId, bounds, info, node, privacy)
-            children += CapturedChild.Wireframe(textId)
+            val textPixels = captureTextPixels(node, identity, info, privacy, modifiers)
+            val textWireframe = textPixels ?: toTextWireframe(textId, bounds, info, node, privacy)
+            wireframes += textWireframe
+            children += CapturedChild.Wireframe(textWireframe.identity)
             return registerLayer(identity, bounds, children, resolveModifiers(node, bounds, modifiers))
+        }
+
+        @Suppress("ReturnCount") // Privacy and the capture budget are checked before allocating glyph pixels.
+        private fun captureTextPixels(
+            node: SemanticsNode,
+            identity: CapturedIdentity,
+            info: TextLayoutInfo,
+            privacy: NodePrivacy,
+            modifiers: List<ModifierInfo>
+        ): CapturedWireframe.Pixel? {
+            val standardFont = info.fontFamily == null || info.fontFamily == FontFamily.Default ||
+                info.fontFamily is GenericFontFamily
+            val textIsUnmasked = privacy.text != TextAndInputPrivacy.MASK_ALL &&
+                !semanticsUtils.isEditable(node) && !semanticsUtils.isPassword(node) && !request.hasOptionSelectorParent
+            val hasBudget = textPixelCaptures + pendingCaptures.size < MAX_PIXEL_CAPTURES_PER_HOST &&
+                request.shouldContinue()
+            val requiresPixels = !standardFont || info.requiresPixelCapture
+            if (!requiresPixels || !textIsUnmasked || !hasBudget) {
+                return null
+            }
+            val captured = textRasterizer.rasterize(node, info, modifiers, windowOffset) ?: return null
+            val pixelIdentity = request.identityFactory.imageWireframe(identity)
+            request.pendingPixelCaptureSink.register(
+                PendingPixelCapture(pixelIdentity, identity, captured.bitmap, isTextOnly = true)
+            )
+            textPixelCaptures++
+            return CapturedWireframe.Pixel(
+                identity = pixelIdentity,
+                bounds = CapturedBounds(
+                    captured.bounds.x,
+                    captured.bounds.y,
+                    captured.bounds.width,
+                    captured.bounds.height
+                ),
+                resource = PixelResource.Unresolved
+            )
         }
 
         private fun captureHiddenNode(identity: CapturedIdentity, bounds: CapturedBounds): CapturedChild {
@@ -766,7 +807,7 @@ internal class GranularComposeDecomposer(
             privacy: NodePrivacy
         ): CapturedChild? {
             if (shapeWireframe != null ||
-                pendingCaptures.size >= MAX_PIXEL_CAPTURES_PER_HOST ||
+                pendingCaptures.size + textPixelCaptures >= MAX_PIXEL_CAPTURES_PER_HOST ||
                 !inspection.isPixelCaptureCandidate(reflectionUtils)
             ) {
                 return null

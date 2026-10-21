@@ -90,7 +90,7 @@ class com.datadog.android.sessionreplay.internal.TouchPrivacyManager
   constructor(com.datadog.android.sessionreplay.TouchPrivacy)
   fun addTouchOverrideArea(android.graphics.Rect, com.datadog.android.sessionreplay.TouchPrivacy)
 data class com.datadog.android.sessionreplay.internal.composition.PendingPixelCapture
-  constructor(com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, android.graphics.Bitmap, Boolean = false, Boolean = false)
+  constructor(com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, android.graphics.Bitmap, Boolean = false, Boolean = false, Boolean = false)
 interface com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink
   fun register(PendingPixelCapture)
   companion object 

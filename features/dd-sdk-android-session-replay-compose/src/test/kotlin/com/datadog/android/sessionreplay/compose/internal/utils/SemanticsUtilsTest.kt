@@ -43,6 +43,7 @@ import androidx.compose.ui.text.TextLayoutInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
@@ -640,6 +641,21 @@ internal class SemanticsUtilsTest {
 
         // Then
         assertThat(result).isNull()
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = [false, true])
+    fun `M identify unsupported text styling W resolveTextLayoutInfo`(styled: Boolean, forge: Forge) {
+        // Given
+        val data = setupTextLayoutMocks(forge)
+        val style = TextStyle(fontWeight = if (styled) FontWeight.Bold else FontWeight.Normal)
+        whenever(data.textLayoutResult.layoutInput.style) doReturn style
+
+        // When
+        val result = testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode, mockInternalLogger)
+
+        // Then
+        assertThat(result?.requiresPixelCapture).isEqualTo(styled)
     }
 
     @Test

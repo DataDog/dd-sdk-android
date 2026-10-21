@@ -24,6 +24,7 @@ import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.platform.ValueElement
 import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
@@ -66,6 +67,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -93,6 +95,120 @@ internal class GranularComposeDecomposerTest {
     private lateinit var testedGate: GranularComposeCompatibilityGate
     private lateinit var testedDecomposer: GranularComposeDecomposer
     private val mockView: View = mock()
+
+    @Test
+    fun `M preserve custom font pixels W decompose() { visible static text and masked images }`() {
+        // Given
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        val info = TextLayoutInfo("250.00 €", Color.Black.value, 20, FontFamily(Font(42)))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any(), any())).thenReturn(info)
+        val fakeBitmap: Bitmap = mock()
+        val registered = mutableListOf<PendingPixelCapture>()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            textRasterizer = ComposeTextRasterizer { _, _, _, _ ->
+                RasterizedComposeText(fakeBitmap, GlobalBounds(12, 24, 80, 30))
+            }
+        )
+
+        // When
+        val result = testedDecomposer.decompose(
+            mockView,
+            realRequest(
+                imagePrivacy = ImagePrivacy.MASK_ALL,
+                pendingPixelCaptureSink = PendingPixelCaptureSink { registered += it }
+            )
+        )!!
+
+        // Then
+        val pixel = result.wireframes.single() as CapturedWireframe.Pixel
+        assertThat(pixel.bounds).isEqualTo(CapturedBounds(12, 24, 80, 30))
+        assertThat(registered.single().bitmap).isSameAs(fakeBitmap)
+        assertThat(registered.single().wireframeIdentity).isEqualTo(pixel.identity)
+        assertThat(registered.single().isTextOnly).isTrue()
+        assertThat(registered.single().isTextFree).isFalse()
+        assertThat(registered.single().isSourceImage).isFalse()
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "MASK_ALL,false,false",
+        "MASK_ALL_INPUTS,true,false",
+        "MASK_SENSITIVE_INPUTS,true,false",
+        "MASK_SENSITIVE_INPUTS,false,true"
+    )
+    fun `M never rasterize protected text W decompose() { custom font }`(
+        privacy: TextAndInputPrivacy,
+        editable: Boolean,
+        password: Boolean
+    ) {
+        // Given
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any(), any()))
+            .thenReturn(TextLayoutInfo("sensitive", Color.Black.value, 20, FontFamily(Font(42))))
+        whenever(mockSemanticsUtils.isEditable(node)).thenReturn(editable)
+        whenever(mockSemanticsUtils.isPassword(node)).thenReturn(password)
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            textRasterizer = ComposeTextRasterizer { _, _, _, _ -> error("Protected text must remain semantic") }
+        )
+        val registered = mutableListOf<PendingPixelCapture>()
+
+        // When
+        val result = testedDecomposer.decompose(
+            mockView,
+            realRequest(textPrivacy = privacy, pendingPixelCaptureSink = PendingPixelCaptureSink { registered += it })
+        )!!
+
+        // Then
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Text::class.java)
+        assertThat(registered).isEmpty()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M rasterize only unrepresentable standard text W decompose()`(requiresPixels: Boolean) {
+        // Given
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any(), any())).thenReturn(
+            TextLayoutInfo(
+                "Standard text",
+                Color.Black.value,
+                14,
+                FontFamily.Serif,
+                requiresPixelCapture = requiresPixels
+            )
+        )
+        var rasterizations = 0
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            textRasterizer = ComposeTextRasterizer { _, _, _, _ ->
+                rasterizations++
+                RasterizedComposeText(mock(), GlobalBounds(0, 0, 80, 20))
+            }
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())!!
+
+        // Then
+        assertThat(rasterizations).isEqualTo(if (requiresPixels) 1 else 0)
+        assertThat(result.wireframes.single()).isInstanceOf(
+            if (requiresPixels) CapturedWireframe.Pixel::class.java else CapturedWireframe.Text::class.java
+        )
+    }
 
     @Test
     fun `M apply inherited and local privacy W decompose() { cached layout text is unchanged }`() {

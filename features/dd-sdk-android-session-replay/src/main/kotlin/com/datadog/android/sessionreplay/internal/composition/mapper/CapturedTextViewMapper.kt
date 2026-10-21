@@ -11,8 +11,10 @@ import android.graphics.Canvas
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.text.TextUtils
+import android.text.method.PasswordTransformationMethod
 import android.view.Gravity
 import android.view.View
+import android.widget.EditText
 import android.widget.TextView
 import androidx.core.text.TextDirectionHeuristicsCompat
 import com.datadog.android.api.InternalLogger
@@ -51,7 +53,9 @@ internal open class CapturedTextViewMapper<T : TextView>(
         CapturedBackgroundShapeStyleResolver(),
     private val backgroundRasterizer: ViewBackgroundRasterizer = DefaultViewBackgroundRasterizer(),
     private val compoundDrawableRasterizer: CompoundDrawableRasterizer = DefaultCompoundDrawableRasterizer(),
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val textRasterizer: TextViewTextRasterizer = DefaultTextViewTextRasterizer(internalLogger),
+    private val isStandardTypeface: (Typeface) -> Boolean = ::isStandardTextTypeface
 ) : CapturedViewMapper<T> {
 
     override fun map(view: T, mappingContext: CapturedMappingContext): CapturedViewMapperResult =
@@ -78,6 +82,7 @@ internal open class CapturedTextViewMapper<T : TextView>(
                 emptyList()
             },
             compoundDrawableWireframes = resolveCompoundDrawableWireframes(view, mappingContext, bounds),
+            textPixels = captureTextPixels(view, mappingContext, bounds),
             family = when (view.typeface) {
                 Typeface.MONOSPACE -> "monospace"
                 Typeface.SERIF -> "serif"
@@ -107,6 +112,29 @@ internal open class CapturedTextViewMapper<T : TextView>(
             hasLayout = layout != null,
             colorStringFormatter = colorStringFormatter
         )
+    }
+
+    @Suppress("ReturnCount") // Reject supported fonts and protected text before allocating glyph pixels.
+    private fun captureTextPixels(
+        view: T,
+        mappingContext: CapturedMappingContext,
+        bounds: CapturedBounds
+    ): CapturedWireframe.Pixel? {
+        val typeface = view.typeface ?: return null
+        val customTypeface = !isStandardTypeface(typeface) || typeface.isBold || typeface.isItalic
+        // The wire font model has no Android font padding or letter-spacing fields. Preserve
+        // the measured glyph layout when a regular typeface still needs those native metrics.
+        if (!customTypeface && !requiresNativeTextMetrics(view)) return null
+        val input = view is EditText || view.transformationMethod is PasswordTransformationMethod
+        val protectedText = mappingContext.textAndInputPrivacy == TextAndInputPrivacy.MASK_ALL ||
+            mappingContext.hasOptionSelectorParent || input
+        if (protectedText || view.text.isNullOrEmpty()) return null
+        val bitmap = textRasterizer.rasterize(view) ?: return null
+        val identity = mappingContext.identityFactory.imageWireframe(mappingContext.ownerIdentity)
+        mappingContext.pendingPixelCaptureSink.register(
+            PendingPixelCapture(identity, mappingContext.ownerIdentity, bitmap, isTextOnly = true)
+        )
+        return CapturedWireframe.Pixel(identity, bounds, resource = PixelResource.Unresolved)
     }
 
     @Suppress("ReturnCount")
@@ -290,6 +318,7 @@ private data class CapturedTextViewData(
     val background: CapturedBackgroundColor?,
     val backgroundWireframes: List<CapturedWireframe>,
     val compoundDrawableWireframes: List<CapturedWireframe>,
+    val textPixels: CapturedWireframe.Pixel?,
     val family: String,
     val textSizePx: Long,
     val textColor: Int,
@@ -319,7 +348,7 @@ private data class CapturedTextViewData(
         }
         wireframes += backgroundWireframes
         val density = mappingContext.screenDensity / mappingContext.viewScale
-        wireframes += CapturedWireframe.Text(
+        wireframes += textPixels ?: CapturedWireframe.Text(
             identity = mappingContext.identityFactory.textWireframe(mappingContext.ownerIdentity),
             bounds = bounds,
             text = text,
@@ -368,6 +397,13 @@ private data class CapturedTextViewData(
         return CapturedAlignment(horizontal, resolveVerticalAlignment(gravity))
     }
 }
+
+private fun isStandardTextTypeface(typeface: Typeface): Boolean = when (typeface) {
+    Typeface.DEFAULT, Typeface.SANS_SERIF, Typeface.SERIF, Typeface.MONOSPACE -> true
+    else -> false
+}
+
+private fun requiresNativeTextMetrics(view: TextView): Boolean = view.includeFontPadding || view.letterSpacing != 0f
 
 private fun relativeAlignment(isRtl: Boolean, isEnd: Boolean): CapturedHorizontalAlignment =
     if (isRtl != isEnd) CapturedHorizontalAlignment.RIGHT else CapturedHorizontalAlignment.LEFT

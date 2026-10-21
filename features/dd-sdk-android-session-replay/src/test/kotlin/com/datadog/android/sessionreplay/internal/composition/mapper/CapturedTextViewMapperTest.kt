@@ -9,10 +9,13 @@ package com.datadog.android.sessionreplay.internal.composition.mapper
 import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.graphics.Bitmap
+import android.graphics.Typeface
 import android.graphics.drawable.Drawable
+import android.text.Editable
 import android.text.Layout
 import android.util.DisplayMetrics
 import android.view.Gravity
+import android.widget.EditText
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedAlignment
@@ -181,6 +184,99 @@ internal class CapturedTextViewMapperTest {
         // Then
         assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Text>().single().textStyle.color)
             .isEqualTo(fakeExpectedColor)
+    }
+
+    @Test
+    fun `M capture custom font pixels W map { static text with masked images }`() {
+        // Given
+        val view = textView()
+        val customFont: Typeface = mock()
+        whenever(view.typeface).thenReturn(customFont)
+        val registered = mutableListOf<PendingPixelCapture>()
+        val context = mappingContext("font", 1f, ImagePrivacy.MASK_ALL, PendingPixelCaptureSink { registered += it })
+        val mapper = CapturedTextViewMapper<TextView>(
+            viewBoundsResolver = mockViewBoundsResolver,
+            internalLogger = mockInternalLogger,
+            textRasterizer = TextViewTextRasterizer { mockBitmap }
+        )
+
+        // When
+        val result = mapper.map(view, context) as CapturedViewMapperResult.Wireframes
+
+        // Then
+        val pixel = result.wireframes.single() as CapturedWireframe.Pixel
+        assertThat(pixel.bounds).isEqualTo(GlobalBounds(0, 0, 100, 40).toCaptured())
+        assertThat(registered.single().wireframeIdentity).isEqualTo(pixel.identity)
+        assertThat(registered.single().bitmap).isSameAs(mockBitmap)
+        assertThat(registered.single().isTextOnly).isTrue()
+    }
+
+    @ParameterizedTest
+    @CsvSource("true,0.0", "false,0.05")
+    fun `M capture native glyph metrics W regular font has padding or letter spacing`(
+        fakeFontPadding: Boolean,
+        fakeLetterSpacing: Float
+    ) {
+        val stubView = textView()
+        whenever(stubView.typeface).thenReturn(mock<Typeface>())
+        whenever(stubView.includeFontPadding).thenReturn(fakeFontPadding)
+        whenever(stubView.letterSpacing).thenReturn(fakeLetterSpacing)
+        val fakeCaptures = mutableListOf<PendingPixelCapture>()
+        val fakeContext = mappingContext(
+            "native-metrics",
+            1f,
+            ImagePrivacy.MASK_ALL,
+            PendingPixelCaptureSink(fakeCaptures::add)
+        )
+        val testedMetricsMapper = CapturedTextViewMapper<TextView>(
+            viewBoundsResolver = mockViewBoundsResolver,
+            internalLogger = mockInternalLogger,
+            textRasterizer = TextViewTextRasterizer { mockBitmap },
+            isStandardTypeface = { true }
+        )
+
+        val fakeResult = testedMetricsMapper.map(stubView, fakeContext) as CapturedViewMapperResult.Wireframes
+
+        assertThat(fakeResult.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
+        assertThat(fakeCaptures.single().isTextOnly).isTrue()
+    }
+
+    @ParameterizedTest
+    @CsvSource("MASK_ALL,false,false", "MASK_SENSITIVE_INPUTS,true,false", "MASK_ALL_INPUTS,false,true")
+    fun `M retain semantic masking W map { custom font protected text }`(
+        privacy: TextAndInputPrivacy,
+        editable: Boolean,
+        selectorParent: Boolean
+    ) {
+        // Given
+        val view = if (editable) {
+            val editText: EditText = mock()
+            val text: Editable = mock()
+            whenever(text.toString()).thenReturn("secret")
+            whenever(editText.text).thenReturn(text)
+            editText
+        } else {
+            textView()
+        }
+        val customFont: Typeface = mock()
+        whenever(view.typeface).thenReturn(customFont)
+        whenever(view.compoundDrawables).thenReturn(arrayOfNulls(4))
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(view, 1f)).thenReturn(GlobalBounds(0, 0, 100, 40))
+        val mapper = CapturedTextViewMapper<TextView>(
+            viewBoundsResolver = mockViewBoundsResolver,
+            internalLogger = mockInternalLogger,
+            textRasterizer = TextViewTextRasterizer { error("Protected text cannot be rasterized") }
+        )
+        val context = mappingContext("font", 1f).copy(
+            textAndInputPrivacy = privacy,
+            hasOptionSelectorParent = selectorParent
+        )
+
+        // When
+        val result = mapper.map(view, context) as CapturedViewMapperResult.Wireframes
+
+        // Then
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Text::class.java)
     }
 
     private fun mappingContext(

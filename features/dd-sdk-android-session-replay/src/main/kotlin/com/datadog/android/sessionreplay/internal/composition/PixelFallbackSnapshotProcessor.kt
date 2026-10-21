@@ -68,7 +68,7 @@ internal class PixelFallbackSnapshotProcessor(
     @Suppress("UnsafeThirdPartyFunctionCall") // MAX_RESOLVED_CONTENT_CACHE_SIZE is a positive constant
     private val resolvedContentCache: LruCache<Long, String> = LruCache(MAX_RESOLVED_CONTENT_CACHE_SIZE)
 ) : CapturedSnapshotProcessor {
-    // Raw source images must never share cache entries with OCR-masked raster captures.
+    // Privacy-resolved source images and glyphs must not share cache entries with OCR-masked captures.
     @Suppress("UnsafeThirdPartyFunctionCall") // Positive, bounded cache size.
     private val rawContentCache = LruCache<Long, String>(MAX_RESOLVED_CONTENT_CACHE_SIZE)
     private val lateRecaptureRequested = AtomicBoolean(false)
@@ -109,7 +109,7 @@ internal class PixelFallbackSnapshotProcessor(
             resolveOne(capture, identityFactory, generation) { outcome ->
                 if (token.isValid()) {
                     outcomes[capture.wireframeIdentity.wireId] = outcome
-                } else if ((capture.isTextFree || capture.isSourceImage) && outcome is PixelOutcome.Resolved) {
+                } else if (capture.isPrivacyResolved() && outcome is PixelOutcome.Resolved) {
                     hasLateResolvedPixels.set(true)
                 }
                 token.complete()
@@ -141,7 +141,7 @@ internal class PixelFallbackSnapshotProcessor(
         generation: CaptureGenerationContext,
         onResolved: (PixelOutcome) -> Unit
     ) {
-        if (capture.isTextFree || capture.isSourceImage) {
+        if (capture.isPrivacyResolved()) {
             resolveRawCapture(capture, identityFactory, onResolved)
             return
         }
@@ -229,6 +229,8 @@ internal class PixelFallbackSnapshotProcessor(
     private fun requestRecaptureOnce() {
         if (lateRecaptureRequested.compareAndSet(false, true)) recaptureTrigger.requestRecapture()
     }
+
+    private fun PendingPixelCapture.isPrivacyResolved(): Boolean = isTextFree || isSourceImage || isTextOnly
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Bounded cache accepts non-null signatures and resource ids.
     private fun resolveRawCapture(

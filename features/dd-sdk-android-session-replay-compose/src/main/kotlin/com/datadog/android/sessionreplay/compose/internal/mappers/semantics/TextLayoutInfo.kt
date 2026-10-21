@@ -16,5 +16,6 @@ internal data class TextLayoutInfo(
     val fontSize: Long,
     val fontFamily: FontFamily?,
     val textAlign: TextAlign? = TextAlign.Start,
-    val textOverflow: MobileSegment.TruncationMode? = null
+    val textOverflow: MobileSegment.TruncationMode? = null,
+    val requiresPixelCapture: Boolean = false
 )
