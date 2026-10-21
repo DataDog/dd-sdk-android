@@ -9,7 +9,7 @@ package com.datadog.android.flags.internal.serialization
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.assertj.core.api.Assertions.catchThrowable
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
@@ -21,8 +21,11 @@ internal class FlagsJsonTest {
         // Given
         val metadata = JsonParser.parseString(json).asJsonObject
 
-        // When / Then
-        assertThatThrownBy { FlagsJson.readObfuscation(metadata) }.isInstanceOf(JsonParseException::class.java)
+        // When
+        val exception = catchThrowable { FlagsJson.readObfuscation(metadata) }
+
+        // Then
+        assertThat(exception).isInstanceOf(JsonParseException::class.java)
     }
 
     @ParameterizedTest
@@ -44,8 +47,11 @@ internal class FlagsJsonTest {
         // Given
         val keys = listOf(key).iterator()
 
-        // When / Then
-        assertThatThrownBy { FlagsJson.validateKeys(keys) }.isInstanceOf(JsonParseException::class.java)
+        // When
+        val exception = catchThrowable { FlagsJson.validateKeys(keys) }
+
+        // Then
+        assertThat(exception).isInstanceOf(JsonParseException::class.java)
     }
 
     @ParameterizedTest
@@ -54,8 +60,11 @@ internal class FlagsJsonTest {
         // Given
         val keys = listOf("a".repeat(length)).iterator()
 
-        // When / Then
-        assertThatThrownBy { FlagsJson.validateKeys(keys) }.isInstanceOf(JsonParseException::class.java)
+        // When
+        val exception = catchThrowable { FlagsJson.validateKeys(keys) }
+
+        // Then
+        assertThat(exception).isInstanceOf(JsonParseException::class.java)
     }
 
     companion object {

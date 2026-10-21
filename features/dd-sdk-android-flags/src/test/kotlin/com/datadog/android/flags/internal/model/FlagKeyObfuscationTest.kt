@@ -8,7 +8,7 @@ package com.datadog.android.flags.internal.model
 
 import com.google.gson.JsonParseException
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.assertj.core.api.Assertions.catchThrowable
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
@@ -69,8 +69,12 @@ internal class FlagKeyObfuscationTest {
     fun `M reject invalid salt W fromSalt() {invalid length or alphabet}`(salt: String) {
         // Given
         // Salt comes from the test case.
-        // When / Then
-        assertThatThrownBy { FlagKeyObfuscation.fromSalt(salt) }.isInstanceOf(JsonParseException::class.java)
+
+        // When
+        val exception = catchThrowable { FlagKeyObfuscation.fromSalt(salt) }
+
+        // Then
+        assertThat(exception).isInstanceOf(JsonParseException::class.java)
     }
 
     companion object {
