@@ -7,7 +7,7 @@
 
 import com.datadog.gradle.utils.cloneRumEventsFormat
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
-import com.datadog.gradle.utils.createRumSchemaCloneTask
+import com.datadog.gradle.utils.createRumEventsFormatCloneTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -104,7 +104,7 @@ unMock {
     keepStartingWith("org.json")
 }
 
-createRumSchemaCloneTask("cloneProfilingSchema") {
+createRumEventsFormatCloneTask("cloneProfilingSchema") {
     cloneRumEventsFormat(
         project = project,
         subFolder = "schemas/profiling",
