@@ -7,7 +7,7 @@
 
 import com.datadog.gradle.utils.cloneRumEventsFormat
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
-import com.datadog.gradle.utils.createRumSchemaCloneTask
+import com.datadog.gradle.utils.createRumEventsFormatCloneTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.nio.file.Paths
 
@@ -133,7 +133,7 @@ unMock {
     keepStartingWith("org.json")
 }
 
-createRumSchemaCloneTask("cloneRumSchema") {
+createRumEventsFormatCloneTask("cloneRumSchema") {
     cloneRumEventsFormat(
         project = project,
         subFolder = "schemas/rum",
@@ -141,7 +141,7 @@ createRumSchemaCloneTask("cloneRumSchema") {
     )
 }
 
-createRumSchemaCloneTask("cloneTelemetrySchema") {
+createRumEventsFormatCloneTask("cloneTelemetrySchema") {
     cloneRumEventsFormat(
         project = project,
         subFolder = "schemas/telemetry",
