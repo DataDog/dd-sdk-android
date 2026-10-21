@@ -80,6 +80,16 @@ Then use `AskUserQuestion`:
 - **Stash changes and continue** — run `git stash push -u -m "restack-stash"` and proceed. Remember to suggest popping the stash at the end.
 - **Abort** — exit the skill.
 
+Then check whether any other branch of the stack is checked out in another worktree:
+
+```bash
+git worktree list --porcelain
+```
+
+Git cannot rebase a branch checked out in another worktree, so `gt restack` skips it and still exits successfully. If any stack branch from `gt log short` other than `$BRANCH` appears in a `branch refs/heads/<name>` line, list each such branch with its `worktree` path and abort:
+
+> "These stack branches are checked out in other worktrees and would be skipped by `gt restack`: <list>. Switch those worktrees to another branch (or restack from them), then re-run `/sdk-pr-stack update`."
+
 ---
 
 ## Step 2 — Confirm restack
@@ -108,7 +118,7 @@ If `gt restack` exits non-zero, surface the full output verbatim and abort:
 
 > "Restack failed — see the error above. Common causes: rebase conflicts (resolve them manually with `gt continue` after fixing conflicts), or a corrupted Graphite branch metadata (repair with `gt track`)."
 
-If it succeeds, show the updated stack:
+If it succeeds but its output reports any branch as skipped, surface that output verbatim and abort before Step 4. Otherwise show the updated stack:
 
 ```bash
 gt log short

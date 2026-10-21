@@ -37,7 +37,7 @@ A valid feature branch matches:
 
 ### 0b. If on a protected branch (`main`, `master`, `develop`)
 
-Exception — uncommitted changes: if `git status --porcelain` is not empty, review them in place without switching. Use `git diff HEAD` (plus untracked files from `git ls-files --others --exclude-standard`) as the diff, skip Step 1, and go to Step 2.
+Exception — uncommitted changes: if `git status --porcelain` is not empty, review them in place without switching. Use `git diff HEAD` as the diff. `git diff HEAD` omits untracked files, so for each path from `git ls-files --others --exclude-standard` also add its full content as a new-file patch with `git diff --no-index /dev/null <path>` (exit code 1 is expected). Skip Step 1 and go to Step 2.
 
 Otherwise, do NOT review the protected branch. Offer to switch:
 

@@ -129,7 +129,7 @@ Try these sources in order, stopping at the first success. A source that resolve
 2. `git rev-parse --abbrev-ref @{upstream}` — if it resolves, strip the `origin/` prefix first, then use it only if it is not the current branch.
 3. `git config --get branch.<current>.remote` + `git config --get branch.<current>.merge` — strip `refs/heads/` first, then use it only if it is not the current branch.
 4. Reflog inspection: `git reflog show <current>` — look for the branch this one was created from.
-5. `git merge-base` against local `main` / `master` / `develop` (whichever exist) — pick the branch with the longest common ancestor line.
+5. `develop` (the repository's default PR base) — use it if `git rev-parse --verify develop` succeeds.
 
 If none of the above uniquely identifies a base branch, use `AskUserQuestion`:
 

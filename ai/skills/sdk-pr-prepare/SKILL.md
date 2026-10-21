@@ -13,13 +13,13 @@ Run the steps below **in order**. Stop on the first failing step, surface the er
 Arguments are **combinable** — the user may pass several at once (e.g. `/sdk-pr-prepare lint test`). Each argument selects which checks to run; they map to the steps below:
 
 - `compile` — run Step 2 only.
-- `test` — run Step 3's test part only, with error fixing and restart on failure.
-- `lint` — run Step 3's lint part only, then apiSurface and transitiveDependencies validation.
+- `test` — run formatting (Step 2) first, then Step 3's test part only, with error fixing and restart on failure.
+- `lint` — run formatting (Step 2) first, then Step 3's lint part only, then apiSurface and transitiveDependencies validation.
 - `api` — run Step 4's apiSurface part only (regeneration + validation).
 - `dep` — run Step 4's transitive dependencies part only (regeneration).
 - `local` — local-only mode. **Skip Step 7 (push) and Step 8 (create draft PR)** regardless of which checks run. Use when the user invokes `/sdk-pr-prepare local` or otherwise passes `local` in the arguments. In this mode, Step 9 reports that push/PR were intentionally skipped. `local` is a modifier, not a check selector: ignore it when deciding which checks to run. If no check arguments remain, run the full default flow.
 
-**No arguments** — run the full default flow (Steps 2–4): first compile (Step 2), then **in parallel** one lint subagent and one test subagent (Step 3, with error fixing and restart as needed), then **sequentially** apiSurface regeneration followed by transitiveDependencies regeneration (Step 4), and validation after the commit (Step 6).
+**No arguments** — run the full default flow (Steps 2–4): first format and compile (Step 2), then **in parallel** one lint subagent and one test subagent (Step 3, with error fixing and restart as needed), then **sequentially** apiSurface regeneration followed by transitiveDependencies regeneration (Step 4), and validation after the commit (Step 6).
 
 When specific check arguments are given, run only the corresponding parts (plus Step 0/1 branch checks). The commit step (Step 6) still runs if any of the executed steps modified tracked files.
 
@@ -58,11 +58,12 @@ git branch --show-current
 
 If the current branch does not match the pattern, surface a warning before proceeding (this is a soft check — only Step 0 hard-aborts).
 
-## Step 2 — Compile (shared artifacts)
+## Step 2 — Format and compile (shared artifacts)
 
-Run clean + compile once to produce all build artifacts. This must be sequential. **Skip if only `api` or `dep` arguments were given** (they do not need compiled artifacts).
+Format sources first, then run clean + compile once to produce all build artifacts. Both commands are sequential, so the parallel Step 3 builds never see sources being rewritten. **Skip if only `api` or `dep` arguments were given** (they do not need compiled artifacts). When only `test` or `lint` was given, run just the format command.
 
 ```bash
+./gradlew ktlintFormatAll
 ./gradlew clean assembleLibrariesDebug assembleDebugUnitTest :instrumented:integration:assembleDebugAndroidTest
 ```
 
@@ -72,12 +73,12 @@ Run only the parts selected by the arguments (both, one of them, or neither). Wh
 
 **Test subagent:**
 ```bash
-./gradlew unitTestDebug unitTestRelease
+./gradlew unitTestAll :build-logic:test
 ```
 
 **Lint subagent (run concurrently with the test subagent when both are requested):**
 ```bash
-./gradlew ktlintFormatAll detekt checkTestPyramidCoverage lintCheckAll checkDependencyLicensesAll --continue
+./gradlew detekt checkTestPyramidCoverage lintCheckAll checkDependencyLicensesAll --continue
 ```
 
 Analyze each result independently. On `FAILED`, inspect the error output, fix the issues, then **repeat from Step 2** (re-compile, then re-run Step 3 in parallel).
