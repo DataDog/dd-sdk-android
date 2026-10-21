@@ -266,6 +266,36 @@ internal class GranularComposeDecomposerTest {
         assertThat(masked.drop(1)).containsExactly("***", "***")
     }
 
+    @ParameterizedTest
+    @CsvSource("false,true", "false,false", "true,true")
+    fun `M position text inside padding W decompose { retain layer bounds and editable geometry }`(
+        editable: Boolean,
+        attached: Boolean
+    ) {
+        // Given: recorded Shopist tag geometry, with 8dp padding around the actual label.
+        val node = mockLeafNode()
+        val outer = GlobalBounds(16, 588, 93, 32)
+        val content = GlobalBounds(24, 596, 77, 16)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(mockSemanticsUtils.resolveInnerBounds(eq(node), any())).thenReturn(outer)
+        whenever(mockSemanticsUtils.resolveTextBounds(eq(node), any())).thenReturn(if (attached) content else null)
+        whenever(mockSemanticsUtils.isEditable(node)).thenReturn(editable)
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any(), any()))
+            .thenReturn(TextLayoutInfo("Coco Chanel", Color.Black.value, 14, FontFamily.SansSerif))
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())!!
+        val text = result.wireframes.single() as CapturedWireframe.Text
+
+        // Then
+        val expected = if (editable || !attached) outer else content
+        assertThat(text.bounds).isEqualTo(CapturedBounds(expected.x, expected.y, expected.width, expected.height))
+        assertThat(result.nodes.single().bounds).isEqualTo(CapturedBounds(16, 588, 93, 32))
+        assertThat(text.textPosition?.alignment?.horizontal).isEqualTo(CapturedHorizontalAlignment.LEFT)
+        if (editable) verify(mockSemanticsUtils, never()).resolveTextBounds(any(), any())
+    }
+
     @Test
     fun `M preserve font alignment and truncation W decompose()`() {
         // Given

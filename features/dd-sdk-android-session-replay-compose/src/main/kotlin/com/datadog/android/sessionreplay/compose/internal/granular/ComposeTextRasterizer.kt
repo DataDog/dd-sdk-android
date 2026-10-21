@@ -12,7 +12,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.layout.ModifierInfo
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.getOrNull
@@ -21,7 +20,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.unit.toSize
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOffset
-import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 internal data class RasterizedComposeText(val bitmap: Bitmap, val bounds: GlobalBounds)
@@ -37,7 +36,7 @@ internal fun interface ComposeTextRasterizer {
 }
 
 internal class DefaultComposeTextRasterizer(
-    private val reflectionUtils: ReflectionUtils = ReflectionUtils()
+    private val semanticsUtils: SemanticsUtils = SemanticsUtils()
 ) : ComposeTextRasterizer {
     @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall")
     override fun rasterize(
@@ -59,17 +58,8 @@ internal class DefaultComposeTextRasterizer(
         }
         val size = layout.size
         if (size.width <= 0 || size.height <= 0 || size.width.toLong() * size.height > MAX_TEXT_PIXELS) return null
-        val coordinates = modifiers.firstOrNull {
-            reflectionUtils.isTextStringSimpleElement(it.modifier)
-        }?.coordinates
-        val position = if (coordinates?.isAttached == true) coordinates.positionInRoot() else node.positionInRoot
+        val bounds = semanticsUtils.resolveTextBounds(node, windowOffset) ?: return null
         val density = node.layoutInfo.density
-        val bounds = GlobalBounds(
-            (position.x / density.density).toLong() + windowOffset.xDp,
-            (position.y / density.density).toLong() + windowOffset.yDp,
-            (size.width / density.density).toLong(),
-            (size.height / density.density).toLong()
-        )
         val pixels = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888)
         var completed = false
         return try {

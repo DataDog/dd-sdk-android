@@ -168,6 +168,25 @@ internal class SemanticsUtils(
         )
     }
 
+    /** Text is drawn inside all layout modifiers; semantics may describe the padded outer box. */
+    @Suppress("UnsafeThirdPartyFunctionCall") // Attached coordinates are read during the same UI-thread traversal.
+    internal fun resolveTextBounds(
+        semanticsNode: SemanticsNode,
+        windowOffset: ComposeWindowOffset
+    ): GlobalBounds? {
+        val coordinates = semanticsNode.layoutInfo.coordinates
+        if (!coordinates.isAttached) return null
+        val position = coordinates.positionInRoot()
+        val size = coordinates.size
+        val density = semanticsNode.layoutInfo.density.density
+        return GlobalBounds(
+            (position.x / density).toLong() + windowOffset.xDp,
+            (position.y / density).toLong() + windowOffset.yDp,
+            (size.width / density).toLong(),
+            (size.height / density).toLong()
+        )
+    }
+
     /** Image semantics may wrap padding (notably in Coil); scale within the painter's own layout. */
     internal fun resolvePainterBounds(
         semanticsNode: SemanticsNode,

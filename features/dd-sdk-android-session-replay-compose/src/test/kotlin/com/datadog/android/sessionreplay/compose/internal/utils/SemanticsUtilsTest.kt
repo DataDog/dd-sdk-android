@@ -387,6 +387,42 @@ internal class SemanticsUtilsTest {
     }
 
     @Test
+    fun `M preserve measured text content position W resolveTextBounds { padded semantics and window offset }`() {
+        // Given: the semantics rectangle includes 8dp padding around a 77dp by 16dp label.
+        val coordinates: LayoutCoordinates = mock()
+        whenever(mockLayoutInfo.coordinates).thenReturn(coordinates)
+        whenever(mockLayoutInfo.density).thenReturn(Density(2f))
+        whenever(coordinates.isAttached).thenReturn(true)
+        whenever(coordinates.localToRoot(Offset.Zero)).thenReturn(Offset(48f, 1192f))
+        whenever(coordinates.size).thenReturn(IntSize(154, 32))
+        whenever(mockSemanticsNode.positionInRoot).thenReturn(Offset(32f, 1176f))
+        whenever(mockSemanticsNode.size).thenReturn(IntSize(186, 64))
+        val windowOffset = ComposeWindowOffset(20, 40, 10, 20)
+
+        // When
+        val result = testedSemanticsUtils.resolveTextBounds(mockSemanticsNode, windowOffset)
+
+        // Then: use the actual text position, without applying the outer padding a second time.
+        assertThat(result).isEqualTo(GlobalBounds(34, 616, 77, 16))
+        verify(mockReflectionUtils, never()).getPlaceable(any())
+    }
+
+    @Test
+    fun `M skip detached text coordinates W resolveTextBounds`() {
+        // Given
+        val coordinates: LayoutCoordinates = mock()
+        whenever(mockLayoutInfo.coordinates).thenReturn(coordinates)
+        whenever(coordinates.isAttached).thenReturn(false)
+
+        // When
+        val result = testedSemanticsUtils.resolveTextBounds(mockSemanticsNode, ComposeWindowOffset.NONE)
+
+        // Then
+        assertThat(result).isNull()
+        verify(coordinates, never()).localToRoot(Offset.Zero)
+    }
+
+    @Test
     fun `M exclude outer padding W resolvePainterBounds() { semantics outside painter }`() {
         // Given
         val stubCoordinates: LayoutCoordinates = mock()

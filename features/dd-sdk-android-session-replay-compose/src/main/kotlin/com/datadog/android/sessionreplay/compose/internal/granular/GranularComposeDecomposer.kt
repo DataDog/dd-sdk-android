@@ -106,7 +106,7 @@ internal class GranularComposeDecomposer(
     private val compatibilityGate: GranularComposeCompatibilityGate = GranularComposeCompatibilityGate.SHARED,
     private val nodesPerCheckpoint: Int = NODES_PER_CHECKPOINT,
     private val hostRasterizer: ComposeHostCaptureRasterizer = DefaultComposeHostCaptureRasterizer(internalLogger),
-    private val textRasterizer: ComposeTextRasterizer = DefaultComposeTextRasterizer(reflectionUtils),
+    private val textRasterizer: ComposeTextRasterizer = DefaultComposeTextRasterizer(semanticsUtils),
     private val sourceImageClipper: ComposeSourceImageClipper = DefaultComposeSourceImageClipper()
 ) : CompositionHostDecomposer {
     private val imageMapper = ImageSemanticsNodeMapper(colorStringFormatter, semanticsUtils)
@@ -957,20 +957,23 @@ internal class GranularComposeDecomposer(
             node: SemanticsNode,
             privacy: NodePrivacy
         ): CapturedWireframe.Text {
+            val editable = semanticsUtils.isEditable(node)
+            val contentBounds = if (editable) null else semanticsUtils.resolveTextBounds(node, windowOffset)
+            val textBounds = contentBounds?.let { CapturedBounds(it.x, it.y, it.width, it.height) } ?: bounds
             return CapturedWireframe.Text(
                 identity = identity,
-                bounds = bounds,
+                bounds = textBounds,
                 text = if (semanticsUtils.isPassword(node)) {
                     "***"
                 } else {
                     transformCapturedText(
                         semanticsUtils.editableText(node) ?: textLayoutInfo.text,
                         privacy.text,
-                        semanticsUtils.isEditable(node) || request.hasOptionSelectorParent
+                        editable || request.hasOptionSelectorParent
                     )
                 },
                 textStyle = textStyleOf(textLayoutInfo, privacy.contentColor),
-                textPosition = if (semanticsUtils.isEditable(node)) {
+                textPosition = if (editable) {
                     CapturedTextPosition(
                         CapturedPadding(left = (EDIT_TEXT_START_PADDING * request.screenDensity).toLong()),
                         CapturedAlignment(CapturedHorizontalAlignment.LEFT, CapturedVerticalAlignment.CENTER)
