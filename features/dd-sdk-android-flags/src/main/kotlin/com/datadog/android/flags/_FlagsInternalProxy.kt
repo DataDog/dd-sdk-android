@@ -24,6 +24,21 @@ import com.datadog.android.lint.InternalApi
 @InternalApi
 @Suppress("ClassName", "ClassNaming", "UndocumentedPublicFunction")
 class _FlagsInternalProxy(private val client: FlagsClient) {
+    fun setEvaluationContext(
+        context: EvaluationContext,
+        callback: EvaluationContextCallback?,
+        telemetryOptedOut: Boolean
+    ) {
+        if (client is DatadogFlagsClient) {
+            client.setEvaluationContext(context, callback, telemetryOptedOut)
+        } else {
+            client.setEvaluationContext(context, callback)
+        }
+    }
+
+    fun isEvaluationTelemetryOptOutParameterEnabled(): Boolean =
+        (client as? DatadogFlagsClient)?.evaluationTelemetryOptOutParameterEnabled == true
+
     fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag> = if (client is DatadogFlagsClient) {
         client.getFlagAssignmentsSnapshot()
     } else {
