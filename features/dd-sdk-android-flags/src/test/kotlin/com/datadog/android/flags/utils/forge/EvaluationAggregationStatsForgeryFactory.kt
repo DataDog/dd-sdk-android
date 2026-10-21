@@ -22,7 +22,7 @@ internal class EvaluationAggregationStatsForgeryFactory : ForgeryFactory<Evaluat
         val lastEvalTimestamp = firstEvalTimestamp + forge.aLong(min = 0, max = 10_000)
 
         return EvaluationAggregationStats(
-            context = forge.getForgery(),
+
             aggregationKey = EvaluationAggregationKey(
                 flagKey = forge.anAlphabeticalString(),
                 variantKey = if (!isDefaultOrError) forge.anAlphabeticalString() else null,

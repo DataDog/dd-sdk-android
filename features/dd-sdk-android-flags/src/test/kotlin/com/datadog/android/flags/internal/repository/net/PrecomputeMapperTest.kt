@@ -71,6 +71,23 @@ internal class PrecomputeMapperTest {
     // region Valid JSON Parsing
 
     @Test
+    fun `M opt in only for literal true W map()`() {
+        // Given
+        val fakeConsentValues = listOf(true, false, JSONObject.NULL, "true", 1, JSONObject(), null)
+
+        // When
+        val results = fakeConsentValues.map { consent ->
+            val attributes = JSONObject().put("flags", JSONObject()).put("observeFullEvaluationData", consent)
+            testedMapper.map(JSONObject().put("data", JSONObject().put("attributes", attributes)).toString())
+        }
+
+        // Then
+        assertThat(results.map { checkNotNull(it).observeFullEvaluationData })
+            .containsExactly(true, false, false, false, false, false, false)
+        assertThat(results.map { checkNotNull(it).flags }).allMatch { it.isEmpty() }
+    }
+
+    @Test
     fun `M parse single flag with string variation W map() { valid JSON }`() {
         // Given
         val fakeStringValue = "test-value"
@@ -84,7 +101,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = checkNotNull(testedMapper.map(json))
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(1)
@@ -113,7 +130,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = checkNotNull(testedMapper.map(json))
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(1)
@@ -137,7 +154,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = checkNotNull(testedMapper.map(json))
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(1)
@@ -161,7 +178,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = checkNotNull(testedMapper.map(json))
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(1)
@@ -185,7 +202,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = checkNotNull(testedMapper.map(json))
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(1)
@@ -213,7 +230,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = checkNotNull(testedMapper.map(json))
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(1)
@@ -242,7 +259,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = checkNotNull(testedMapper.map(json))
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(1)
@@ -277,7 +294,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = checkNotNull(testedMapper.map(json))
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(3)
@@ -304,7 +321,7 @@ internal class PrecomputeMapperTest {
         val json = buildValidJson(emptyMap())
 
         // When
-        val result = checkNotNull(testedMapper.map(json))
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).isEmpty()
@@ -325,7 +342,7 @@ internal class PrecomputeMapperTest {
         val json = buildValidJson(mapOf(fakeFlagKey to flagJson))
 
         // When
-        val result = checkNotNull(testedMapper.map(json))
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         val flag = result[fakeFlagKey]
@@ -344,7 +361,7 @@ internal class PrecomputeMapperTest {
         val json = buildValidJson(mapOf(fakeFlagKey to flagJson))
 
         // When
-        val result = checkNotNull(testedMapper.map(json))
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         val flag = result[fakeFlagKey]
@@ -363,7 +380,7 @@ internal class PrecomputeMapperTest {
         val json = buildValidJson(mapOf(fakeFlagKey to flagJson))
 
         // When
-        val result = checkNotNull(testedMapper.map(json))
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         val flag = result[fakeFlagKey]
@@ -385,7 +402,7 @@ internal class PrecomputeMapperTest {
         )
 
         // When
-        val result = checkNotNull(testedMapper.map(json))
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         val flag = result[fakeFlagKey]
@@ -573,7 +590,7 @@ internal class PrecomputeMapperTest {
         }.toString()
 
         // When
-        val result = checkNotNull(testedMapper.map(json))
+        val result = checkNotNull(testedMapper.map(json)).flags
 
         // Then
         assertThat(result).hasSize(1)

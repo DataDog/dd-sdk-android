@@ -11,6 +11,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
@@ -283,8 +284,8 @@ internal class DefaultFlagsRepositoryTest {
         flags.forEach { (key, originalFlag) ->
             assertThat(snapshot[key]).isEqualTo(originalFlag.copy(reason = ResolutionReason.CACHED.name))
             assertThat(testedRepository.getPrecomputedFlag(key)).isSameAs(snapshot[key])
-            assertThat(testedRepository.getPrecomputedFlagWithContext(key))
-                .isEqualTo(snapshot[key] to context)
+            assertThat(testedRepository.getEvaluationSnapshot(key))
+                .isEqualTo(FlagEvaluationSnapshot(snapshot[key], context, false))
         }
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(context)
         assertThat(flags.values.map { it.reason }).doesNotContain(ResolutionReason.CACHED.name)

@@ -332,7 +332,6 @@ internal class EvaluationAggregationStatsTest {
         count: Int = fakeCount,
         firstEvaluation: Long = fakeFirstTimestamp,
         lastEvaluation: Long = fakeLastTimestamp,
-        context: EvaluationContext = fakeContext,
         rumApplicationId: String? = fakeApplicationId,
         errorMessage: String? = null
     ): EvaluationAggregationStats = EvaluationAggregationStats(
@@ -340,7 +339,6 @@ internal class EvaluationAggregationStatsTest {
         count = count,
         firstEvaluation = firstEvaluation,
         lastEvaluation = lastEvaluation,
-        context = context,
         rumApplicationId = rumApplicationId,
         errorMessage = errorMessage
     )

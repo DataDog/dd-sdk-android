@@ -42,13 +42,14 @@ internal class EvaluationEventsProcessor(
 
     fun processEvaluation(
         flagKey: String,
-        context: EvaluationContext,
+        context: EvaluationContext?,
         rumApplicationId: String?,
         rumViewName: String?,
         variantKey: String?,
         allocationKey: String?,
         errorCode: String?,
-        errorMessage: String?
+        errorMessage: String?,
+        observeFullEvaluationData: Boolean = false
     ) {
         val drainedEvents = aggregator.record(
             timestamp = timeProvider.getDeviceTimestampMillis(),
@@ -59,7 +60,8 @@ internal class EvaluationEventsProcessor(
             variantKey = variantKey,
             allocationKey = allocationKey,
             errorCode = errorCode,
-            errorMessage = errorMessage
+            errorMessage = errorMessage,
+            observeFullEvaluationData = observeFullEvaluationData
         )
 
         if (drainedEvents.isNotEmpty()) {

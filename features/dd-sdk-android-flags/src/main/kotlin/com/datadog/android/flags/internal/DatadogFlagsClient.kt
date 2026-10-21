@@ -15,6 +15,7 @@ import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsSubscription
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
@@ -24,6 +25,7 @@ import com.datadog.android.flags.model.FlagsClientEventType
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.model.UnparsedFlag
+import com.datadog.android.flags.model.UnparsedFlagWithConsent
 import org.json.JSONObject
 
 /**
@@ -99,7 +101,7 @@ internal class DatadogFlagsClient(
      * Invoked on a background executor thread. See [EvaluationContextCallback] for timeout behavior.
      */
     override fun setEvaluationContext(context: EvaluationContext, callback: EvaluationContextCallback?) {
-        evaluationsManager.updateEvaluationsForContext(context, callback)
+        evaluationsManager.updateEvaluationsForContext(context.copy(attributes = context.attributes.toMap()), callback)
     }
 
     /**
@@ -190,7 +192,7 @@ internal class DatadogFlagsClient(
         return when (resolution) {
             is InternalResolution.Success -> {
                 trackResolution(resolution)
-                createSuccessResolution(resolution.flag, resolution.value)
+                createSuccessResolution(resolution.flag, resolution.value, resolution.observeFullEvaluationData)
             }
 
             is InternalResolution.Error -> {
@@ -199,7 +201,8 @@ internal class DatadogFlagsClient(
                     flagKey = flagKey,
                     defaultValue = resolution.defaultValue,
                     errorCode = resolution.errorCode,
-                    errorMessage = resolution.errorMessage
+                    errorMessage = resolution.errorMessage,
+                    observeFullEvaluationData = resolution.observeFullEvaluationData
                 )
             }
         }
@@ -233,11 +236,12 @@ internal class DatadogFlagsClient(
 
     private fun writeEvaluationEvent(
         flagKey: String,
-        context: EvaluationContext,
+        context: EvaluationContext?,
         variantKey: String?,
         allocationKey: String?,
         errorCode: String?,
-        errorMessage: String?
+        errorMessage: String?,
+        observeFullEvaluationData: Boolean
     ) {
         evaluationsFeature?.processEvaluation(
             flagKey = flagKey,
@@ -245,7 +249,8 @@ internal class DatadogFlagsClient(
             variantKey = variantKey,
             allocationKey = allocationKey,
             errorCode = errorCode,
-            errorMessage = errorMessage
+            errorMessage = errorMessage,
+            observeFullEvaluationData = observeFullEvaluationData
         )
     }
 
@@ -267,28 +272,19 @@ internal class DatadogFlagsClient(
             override val flagKey: String,
             val value: T,
             val flag: PrecomputedFlag,
-            val context: EvaluationContext
+            val context: EvaluationContext,
+            val observeFullEvaluationData: Boolean
         ) : InternalResolution<T>()
 
         data class Error<T : Any>(
             override val flagKey: String,
             val defaultValue: T,
             val errorCode: ErrorCode,
-            val errorMessage: String
+            val errorMessage: String,
+            val context: EvaluationContext? = null,
+            val observeFullEvaluationData: Boolean = false
         ) : InternalResolution<T>()
     }
-
-    private fun <T : Any> checkProviderReady(flagKey: String, defaultValue: T): InternalResolution.Error<T>? =
-        if (flagsRepository.getEvaluationContext() == null) {
-            InternalResolution.Error(
-                flagKey = flagKey,
-                defaultValue = defaultValue,
-                errorCode = ErrorCode.PROVIDER_NOT_READY,
-                errorMessage = "Provider not ready - call setEvaluationContext() before resolving flags"
-            )
-        } else {
-            null
-        }
 
     /**
      * Fetches a flag from the repository and parses its value to the expected type.
@@ -310,18 +306,28 @@ internal class DatadogFlagsClient(
         flagKey: String,
         defaultValue: T
     ): InternalResolution<T> {
-        checkProviderReady(flagKey, defaultValue)?.let { return it }
-        val flagAndContext = flagsRepository.getPrecomputedFlagWithContext(flagKey)
-        if (flagAndContext == null) {
+        val snapshot = flagsRepository.getEvaluationSnapshot(flagKey)
+        if (snapshot == null) {
+            return InternalResolution.Error(
+                flagKey = flagKey,
+                defaultValue = defaultValue,
+                errorCode = ErrorCode.PROVIDER_NOT_READY,
+                errorMessage = "Provider not ready - call setEvaluationContext() before resolving flags"
+            )
+        }
+        val flag = snapshot.flag
+        if (flag == null) {
             return InternalResolution.Error(
                 flagKey = flagKey,
                 defaultValue = defaultValue,
                 errorCode = ErrorCode.FLAG_NOT_FOUND,
-                errorMessage = "Flag not found"
+                errorMessage = "Flag not found",
+                context = snapshot.context,
+                observeFullEvaluationData = snapshot.observeFullEvaluationData
             )
         }
 
-        val (flag, context) = flagAndContext
+        val context = snapshot.context
 
         val conversionResult = FlagValueConverter.convert(
             variationValue = flag.variationValue,
@@ -335,39 +341,52 @@ internal class DatadogFlagsClient(
                     flagKey = flagKey,
                     value = parsedValue,
                     flag = flag,
-                    context = context
+                    context = context,
+                    observeFullEvaluationData = snapshot.observeFullEvaluationData
                 )
             },
             onFailure = { exception ->
-                val errorCode: ErrorCode
-                val errorMessage: String
+                createConversionError(flagKey, defaultValue, flag.variationValue, snapshot, exception)
+            }
+        )
+    }
 
-                when (exception) {
-                    is TypeMismatchException -> {
-                        errorCode = ErrorCode.TYPE_MISMATCH
-                        errorMessage = exception.message ?: "Type mismatch"
-                    }
+    private fun <T : Any> createConversionError(
+        flagKey: String,
+        defaultValue: T,
+        variationValue: String,
+        snapshot: FlagEvaluationSnapshot,
+        exception: Throwable
+    ): InternalResolution.Error<T> {
+        val errorCode: ErrorCode
+        val errorMessage: String
 
-                    else -> {
-                        errorCode = ErrorCode.PARSE_ERROR
-                        val typeName = FlagValueConverter.getTypeName(defaultValue::class)
-                        errorMessage = "Failed to parse value '${flag.variationValue}' as $typeName"
+        when (exception) {
+            is TypeMismatchException -> {
+                errorCode = ErrorCode.TYPE_MISMATCH
+                errorMessage = exception.message ?: "Type mismatch"
+            }
 
-                        featureSdkCore.internalLogger.log(
-                            InternalLogger.Level.WARN,
-                            InternalLogger.Target.USER,
-                            { "Flag '$flagKey': $errorMessage - ${exception.message}" }
-                        )
-                    }
-                }
+            else -> {
+                errorCode = ErrorCode.PARSE_ERROR
+                val typeName = FlagValueConverter.getTypeName(defaultValue::class)
+                errorMessage = "Failed to parse value '$variationValue' as $typeName"
 
-                InternalResolution.Error(
-                    flagKey = flagKey,
-                    defaultValue = defaultValue,
-                    errorCode = errorCode,
-                    errorMessage = errorMessage
+                featureSdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    { "Flag '$flagKey': $errorMessage - ${exception.message}" }
                 )
             }
+        }
+
+        return InternalResolution.Error(
+            flagKey = flagKey,
+            defaultValue = defaultValue,
+            errorCode = errorCode,
+            errorMessage = errorMessage,
+            context = snapshot.context,
+            observeFullEvaluationData = snapshot.observeFullEvaluationData
         )
     }
 
@@ -416,17 +435,21 @@ internal class DatadogFlagsClient(
 
     // region Helper Methods
 
-    private fun <T : Any> createSuccessResolution(precomputedFlag: PrecomputedFlag, value: T): ResolutionDetails<T> =
+    private fun <T : Any> createSuccessResolution(
+        precomputedFlag: PrecomputedFlag,
+        value: T,
+        observeFullEvaluationData: Boolean
+    ): ResolutionDetails<T> =
         ResolutionDetails(
             value = value,
             variant = precomputedFlag.variationKey.takeIf { it.isNotBlank() },
             reason = parseReason(precomputedFlag.reason),
             errorCode = null,
             errorMessage = null,
-            flagMetadata = buildMetadata(precomputedFlag)
+            flagMetadata = buildMetadata(precomputedFlag, observeFullEvaluationData)
         )
 
-    private fun buildMetadata(precomputedFlag: PrecomputedFlag): Map<String, Any> {
+    private fun buildMetadata(precomputedFlag: PrecomputedFlag, observeFullEvaluationData: Boolean): Map<String, Any> {
         val metadata = mutableMapOf<String, Any>()
         precomputedFlag.extraLogging.keys().forEach { key ->
             val value = precomputedFlag.extraLogging.opt(key)
@@ -437,6 +460,7 @@ internal class DatadogFlagsClient(
         if (precomputedFlag.allocationKey.isNotBlank()) {
             metadata["allocationKey"] = precomputedFlag.allocationKey
         }
+        metadata["__dd_observe_full_evaluation_data"] = observeFullEvaluationData
         return metadata
     }
 
@@ -444,13 +468,15 @@ internal class DatadogFlagsClient(
         flagKey: String,
         defaultValue: T,
         errorCode: ErrorCode,
-        errorMessage: String
+        errorMessage: String,
+        observeFullEvaluationData: Boolean
     ): ResolutionDetails<T> = ResolutionDetails(
         value = defaultValue,
         variant = null,
         reason = ResolutionReason.ERROR,
         errorCode = errorCode,
-        errorMessage = "Flag '$flagKey': $errorMessage"
+        errorMessage = "Flag '$flagKey': $errorMessage",
+        flagMetadata = mapOf("__dd_observe_full_evaluation_data" to observeFullEvaluationData)
     )
 
     private fun parseReason(reasonString: String): ResolutionReason? {
@@ -472,13 +498,14 @@ internal class DatadogFlagsClient(
     }
 
     private fun <T : Any> trackResolution(resolution: InternalResolution.Success<T>) {
-        trackResolution(resolution.flagKey, resolution.flag, resolution.context)
+        trackResolution(resolution.flagKey, resolution.flag, resolution.context, resolution.observeFullEvaluationData)
     }
 
     private fun trackResolution(
         flagKey: String,
         flag: UnparsedFlag,
-        context: EvaluationContext
+        context: EvaluationContext,
+        observeFullEvaluationData: Boolean = (flag as? UnparsedFlagWithConsent)?.observeFullEvaluationData == true
     ) {
         // Exposure logging (only when doLog=true)
         if (flag.doLog) {
@@ -500,7 +527,8 @@ internal class DatadogFlagsClient(
                 variantKey = flag.variationKey,
                 allocationKey = flag.allocationKey,
                 errorCode = null,
-                errorMessage = null
+                errorMessage = null,
+                observeFullEvaluationData = observeFullEvaluationData
             )
         }
     }
@@ -510,15 +538,14 @@ internal class DatadogFlagsClient(
             return
         }
 
-        val context = flagsRepository.getEvaluationContext() ?: EvaluationContext.EMPTY
-
         writeEvaluationEvent(
             flagKey = resolution.flagKey,
-            context = context,
+            context = resolution.context,
             variantKey = null,
             allocationKey = null,
             errorCode = resolution.errorCode.name,
-            errorMessage = resolution.errorMessage
+            errorMessage = resolution.errorMessage,
+            observeFullEvaluationData = resolution.observeFullEvaluationData
         )
     }
 

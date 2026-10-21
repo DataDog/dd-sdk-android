@@ -51,7 +51,7 @@ internal fun <T : Any> ResolutionDetails<T>.toProviderEvaluation(): ProviderEval
     metadata = this.flagMetadata.toEvaluationMetadata()
 )
 
-private fun Map<String, Any>.toEvaluationMetadata(): EvaluationMetadata {
+internal fun Map<String, Any>.toEvaluationMetadata(): EvaluationMetadata {
     val builder = Builder()
     forEach { (key, value) ->
         when (value) {

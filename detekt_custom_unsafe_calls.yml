@@ -202,6 +202,7 @@ datadog:
       - "kotlin.DoubleArray.copyOf(kotlin.Int):java.lang.NegativeArraySizeException"
       - "kotlin.DoubleArray.copyInto(kotlin.DoubleArray, kotlin.Int, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "kotlin.DoubleArray.fill(kotlin.Double, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException,java.lang.IllegalArgumentException"
+      - "kotlin.String.encodeToByteArray(kotlin.Int, kotlin.Int, kotlin.Boolean):java.nio.charset.CharacterCodingException,java.lang.IndexOutOfBoundsException,java.lang.IllegalArgumentException"
       - "kotlin.String.format(kotlin.Array):java.util.IllegalFormatException"
       - "kotlin.String.get(kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "kotlin.String.substring(kotlin.Int):java.lang.IndexOutOfBoundsException"
@@ -272,6 +273,7 @@ datadog:
       - "org.json.JSONObject.getJSONObject(kotlin.String?):org.json.JSONException"
       - "org.json.JSONObject.getString(kotlin.String?):org.json.JSONException"
       - "org.json.JSONObject.put(kotlin.String?, kotlin.Any?):org.json.JSONException"
+      - "org.json.JSONObject.put(kotlin.String?, kotlin.Boolean):org.json.JSONException"
       - "org.json.JSONObject.put(kotlin.String?, kotlin.Long):org.json.JSONException"
       # endregion
       # region Gson

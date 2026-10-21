@@ -13,7 +13,7 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.internal.FlagsStateManager
-import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
@@ -164,11 +164,11 @@ internal class EvaluationsManager(
 
     private fun installFlags(
         context: EvaluationContext,
-        flagsMap: Map<String, PrecomputedFlag>,
+        assignments: PrecomputedAssignments,
         initializationCompletion: InitializationCompletion?,
         callback: EvaluationContextCallback?
     ) {
-        flagsRepository.setFlagsAndContext(context, flagsMap) {
+        flagsRepository.setFlagsAndContext(context, assignments.flags, assignments.observeFullEvaluationData) {
             val completionCallback = synchronized(initializationTerminalLock) {
                 val result = initializationCompletion?.take()?.callback
                     ?: if (initializationCompletion == null) callback else null
@@ -180,7 +180,7 @@ internal class EvaluationsManager(
         internalLogger.log(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.MAINTAINER,
-            { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
+            { "Successfully processed context ${context.targetingKey} with ${assignments.flags.size} flags" }
         )
     }
 

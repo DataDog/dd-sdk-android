@@ -32,7 +32,16 @@ dependencies {
     implementation(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
-    implementation(project(":features:dd-sdk-android-flags"))
+    val flagsArtifactDirectory = providers.gradleProperty("flagsArtifactDirectory").orNull
+    if (flagsArtifactDirectory == null) {
+        implementation(project(":features:dd-sdk-android-flags"))
+        implementation(project(":features:dd-sdk-android-flags-openfeature"))
+    } else {
+        implementation(files("$flagsArtifactDirectory/dd-sdk-android-flags-release.aar"))
+        implementation(files("$flagsArtifactDirectory/dd-sdk-android-flags-openfeature-release.aar"))
+    }
+    testImplementation(libs.openFeatureKotlinSdk)
+    testImplementation(libs.coroutinesTest)
     implementation(libs.kotlinRuntime)
 
     // Testing

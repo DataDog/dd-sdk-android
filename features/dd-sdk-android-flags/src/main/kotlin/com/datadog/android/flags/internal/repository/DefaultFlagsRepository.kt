@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
+import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.model.EvaluationContext
@@ -26,7 +27,11 @@ internal class DefaultFlagsRepository(
     private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS,
     private val deliverFirstFlags: (Runnable) -> Unit = Runnable::run
 ) : FlagsRepository {
-    private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
+    private data class FlagsState(
+        val context: EvaluationContext,
+        val flags: Map<String, PrecomputedFlag>,
+        val observeFullEvaluationData: Boolean
+    )
     private val atomicState = AtomicReference<FlagsState?>(null)
 
     @Suppress("UnsafeThirdPartyFunctionCall") // CountDownLatch rejects negative counts; 1 is valid.
@@ -43,7 +48,13 @@ internal class DefaultFlagsRepository(
                 null,
                 FlagsState(
                     persistedState.evaluationContext,
-                    persistedState.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) }
+                    persistedState.flags.mapValues { (_, flag) ->
+                        flag.copy(
+                            reason = ResolutionReason.CACHED.name,
+                            observeFullEvaluationData = persistedState.observeFullEvaluationData
+                        )
+                    },
+                    persistedState.observeFullEvaluationData
                 )
             )
         } finally {
@@ -57,9 +68,10 @@ internal class DefaultFlagsRepository(
     override fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
+        observeFullEvaluationData: Boolean,
         onInstalled: () -> Unit
     ) {
-        val newState = FlagsState(context, flags)
+        val newState = FlagsState(context, flags, observeFullEvaluationData)
 
         val firstInstallation = atomicState.getAndSet(newState) == null
         persistenceLoadedLatch.countDown()
@@ -69,6 +81,7 @@ internal class DefaultFlagsRepository(
                 context = context,
                 flags = flags,
                 currentTimestamp = featureSdkCore.timeProvider.getDeviceTimestampMillis(),
+                observeFullEvaluationData = observeFullEvaluationData,
                 object : DataStoreWriteCallback {
                     override fun onSuccess() {
                     }
@@ -148,11 +161,10 @@ internal class DefaultFlagsRepository(
     }
 
     @Suppress("ReturnCount")
-    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? {
+    override fun getEvaluationSnapshot(key: String): FlagEvaluationSnapshot? {
         waitForPersistenceLoad()
         val state = atomicState.get() ?: return null
-        val flag = state.flags[key] ?: return null
-        return flag to state.context
+        return FlagEvaluationSnapshot(state.flags[key], state.context, state.observeFullEvaluationData)
     }
 
     private fun waitForPersistenceLoad() {

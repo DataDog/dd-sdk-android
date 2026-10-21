@@ -31,21 +31,24 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
     fun record(
         timestamp: Long,
         flagKey: String,
-        context: EvaluationContext,
+        context: EvaluationContext?,
         rumApplicationId: String?,
         rumViewName: String?,
         variantKey: String?,
         allocationKey: String?,
         errorCode: String?,
-        errorMessage: String?
+        errorMessage: String?,
+        observeFullEvaluationData: Boolean = false
     ): List<EvaluationAggregationStats> {
+        val safeErrorCode = EvaluationPrivacy.errorCode(errorCode, errorMessage)
         val key = EvaluationAggregationKey(
             flagKey = flagKey,
             variantKey = variantKey,
             allocationKey = allocationKey,
-            targetingKey = context.targetingKey,
+            targetingKey = EvaluationPrivacy.targetingKey(context?.targetingKey, observeFullEvaluationData),
             viewName = rumViewName,
-            errorCode = errorCode
+            errorCode = safeErrorCode,
+            observeFullEvaluationData = observeFullEvaluationData
         )
 
         val drained = mapLock.withLock {
@@ -55,9 +58,8 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
                 count = 0,
                 firstEvaluation = timestamp,
                 lastEvaluation = timestamp,
-                context = context,
                 rumApplicationId = rumApplicationId,
-                errorMessage = errorMessage
+                errorMessage = safeErrorCode
             )
             @Suppress("UnsafeThirdPartyFunctionCall") // safe - non-null key and value
             aggregationMap.put(
@@ -66,7 +68,7 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
                     count = existing.count + 1,
                     firstEvaluation = minOf(existing.firstEvaluation, timestamp),
                     lastEvaluation = maxOf(existing.lastEvaluation, timestamp),
-                    errorMessage = errorMessage
+                    errorMessage = safeErrorCode
                 )
             )
 

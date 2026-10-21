@@ -7,7 +7,6 @@
 package com.datadog.android.flags.internal.aggregation
 
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagEvaluation
 
 /**
@@ -17,16 +16,14 @@ import com.datadog.android.flags.model.FlagEvaluation
  * @param count the number of evaluations aggregated
  * @param firstEvaluation timestamp of the earliest evaluation
  * @param lastEvaluation timestamp of the latest evaluation
- * @param context the evaluation context
  * @param rumApplicationId the RUM application ID (null if RUM not active)
- * @param errorMessage the most recent error message (null if no error)
+ * @param errorMessage the sanitized error code (null if no error)
  */
 internal data class EvaluationAggregationStats(
     internal val aggregationKey: EvaluationAggregationKey,
     internal val count: Int,
     internal val firstEvaluation: Long,
     internal val lastEvaluation: Long,
-    private val context: EvaluationContext,
     private val rumApplicationId: String?,
     internal val errorMessage: String?
 ) {

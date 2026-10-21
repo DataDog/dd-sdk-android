@@ -15,6 +15,7 @@ import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.openfeature.internal.adapters.convertToValue
 import com.datadog.android.flags.openfeature.internal.adapters.toDatadogEvaluationContext
+import com.datadog.android.flags.openfeature.internal.adapters.toEvaluationMetadata
 import com.datadog.android.flags.openfeature.internal.adapters.toOpenFeatureErrorCode
 import com.datadog.android.flags.openfeature.internal.adapters.toProviderEvaluation
 import com.datadog.android.flags.openfeature.internal.setEvaluationContextSuspend
@@ -167,7 +168,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
                 variant = resolutionDetails.variant,
                 reason = resolutionDetails.reason?.name,
                 errorCode = resolutionDetails.errorCode?.toOpenFeatureErrorCode(),
-                errorMessage = resolutionDetails.errorMessage
+                errorMessage = resolutionDetails.errorMessage,
+                metadata = resolutionDetails.flagMetadata.toEvaluationMetadata()
             )
         }
 
@@ -180,7 +182,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
             variant = resolutionDetails.variant,
             reason = resolutionDetails.reason?.name,
             errorCode = null,
-            errorMessage = null
+            errorMessage = null,
+            metadata = resolutionDetails.flagMetadata.toEvaluationMetadata()
         )
     }
 

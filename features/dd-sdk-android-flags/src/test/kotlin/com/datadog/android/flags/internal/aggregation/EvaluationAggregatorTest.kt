@@ -187,7 +187,7 @@ internal class EvaluationAggregatorTest {
         val events = testedAggregator.drain()
         assertThat(events).hasSize(1)
         assertThat(events.first().count).isEqualTo(3)
-        assertThat(events.first().errorMessage).isEqualTo("msg3")
+        assertThat(events.first().errorMessage).isEqualTo(errorCode)
     }
 
     @Test

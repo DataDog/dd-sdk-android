@@ -39,7 +39,8 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
             FlagsStateEntry(
                 evaluationContext = evaluationContext,
                 flags = flags,
-                lastUpdateTimestamp = timestamp
+                lastUpdateTimestamp = timestamp,
+                observeFullEvaluationData = json.opt("observeFullEvaluationData") == true
             )
         }
     } catch (e: JSONException) {
