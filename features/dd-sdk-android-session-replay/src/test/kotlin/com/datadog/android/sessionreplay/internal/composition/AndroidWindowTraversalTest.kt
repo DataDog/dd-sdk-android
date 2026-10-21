@@ -146,6 +146,11 @@ internal class AndroidWindowTraversalTest {
 
     private fun stubDefaults(view: View, bounds: GlobalBounds) {
         whenever(view.isShown).thenReturn(true)
+        whenever(view.rootView).thenReturn(view)
+        whenever(view.getGlobalVisibleRect(any())).thenAnswer {
+            it.getArgument<Rect>(0).set(0, 0, view.width, view.height)
+            true
+        }
         whenever(view.scaleX).thenReturn(1f)
         whenever(view.scaleY).thenReturn(1f)
         whenever(view.left).thenReturn(bounds.x.toInt())

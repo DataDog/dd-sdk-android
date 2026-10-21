@@ -1097,6 +1097,11 @@ internal class CompositionTouchPrivacyTest {
                 null
             }
             whenever(view.isShown).thenReturn(true)
+            whenever(view.rootView).thenReturn(view)
+            whenever(view.getGlobalVisibleRect(any())).thenAnswer {
+                it.getArgument<Rect>(0).set(0, 0, 100, 100)
+                true
+            }
             whenever(view.width).thenReturn(100)
             whenever(view.height).thenReturn(100)
             whenever(view.getLocationOnScreen(any())).thenAnswer {

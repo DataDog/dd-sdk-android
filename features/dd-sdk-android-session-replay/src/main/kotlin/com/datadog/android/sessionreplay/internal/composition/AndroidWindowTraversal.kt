@@ -138,7 +138,7 @@ internal class AndroidWindowTraversal(
             if (!tryVisit(item, state)) continue
             // Separate surfaces remain uncertain even inside a subtree omitted by sibling culling.
             state.isDrawingOrderReliable = state.isDrawingOrderReliable && item.view.sharesNativePaintOrder()
-            collectTouchOverrideArea(item.view, state.touchOverrideAreas, internalLogger)
+            collectTouchOverrideArea(item.view, state.touchOverrideAreas, internalLogger, context::shouldContinue)
             collectComposeTouchOverrides(item.view, state.touchOverrideAreas, context)
             if (item.touchOnly) {
                 captureTouchOnlyCustomMapper(item, state, context, mapperRegistry, internalLogger)
@@ -194,7 +194,11 @@ internal class AndroidWindowTraversal(
                 TouchPrivacy.HIDE
             )
         } else {
-            areas.forEach { (rect, privacy) -> overrides.putTouchOverrideArea(rect, privacy) }
+            areas.forEach { (rect, privacy) ->
+                clipTouchOverrideArea(view, rect, privacy, context::shouldContinue)?.let {
+                    overrides.putTouchOverrideArea(it, privacy)
+                }
+            }
         }
     }
 

@@ -75,7 +75,9 @@ internal class WindowTouchPrivacyReader(
             if (timeProvider.elapsedRealtimeNanos() - startedAtNs >= budgetNs) return null
             val view = pending.removeLast()
             if (isFiltered(view)) continue
-            collectTouchOverrideArea(view, areas, internalLogger)
+            collectTouchOverrideArea(view, areas, internalLogger) {
+                timeProvider.elapsedRealtimeNanos() - startedAtNs < budgetNs
+            }
             if (!collectComposeOverrides(view, areas, startedAtNs)) return null
             if (!enqueueChildren(view, pending, startedAtNs)) return null
         }
@@ -97,7 +99,11 @@ internal class WindowTouchPrivacyReader(
             timeProvider.elapsedRealtimeNanos() - startedAtNs < budgetNs
         } ?: return false
         if (overrides.isNotEmpty() && ViewTransformResolver.hasTransformedAncestor(view)) return false
-        overrides.forEach { (rect, privacy) -> areas.putTouchOverrideArea(rect, privacy) }
+        overrides.forEach { (rect, privacy) ->
+            clipTouchOverrideArea(view, rect, privacy) {
+                timeProvider.elapsedRealtimeNanos() - startedAtNs < budgetNs
+            }?.let { areas.putTouchOverrideArea(it, privacy) }
+        }
         return true
     }
 
@@ -129,7 +135,8 @@ internal class WindowTouchPrivacyReader(
 internal fun collectTouchOverrideArea(
     view: View,
     areas: MutableMap<Rect, TouchPrivacy>,
-    internalLogger: InternalLogger
+    internalLogger: InternalLogger,
+    shouldContinue: () -> Boolean = { true }
 ) {
     val touchPrivacyTag = view.getTag(R.id.datadog_touch_privacy) ?: return
     try {
@@ -153,7 +160,9 @@ internal fun collectTouchOverrideArea(
             val y = locationOnScreen[1]
             Rect(x, y, x + view.width, y + view.height)
         }
-        areas.putTouchOverrideArea(viewArea, privacyLevel)
+        clipTouchOverrideArea(view, viewArea, privacyLevel, shouldContinue)?.let {
+            areas.putTouchOverrideArea(it, privacyLevel)
+        }
     } catch (e: IllegalArgumentException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
