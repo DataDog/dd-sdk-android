@@ -68,6 +68,7 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlin.math.roundToLong
 import android.graphics.ColorMatrix as AndroidColorMatrix
 import android.graphics.ColorMatrixColorFilter as AndroidColorMatrixColorFilter
 
@@ -864,7 +865,16 @@ internal class GranularComposeDecomposer(
             // Keep restricted descendants semantic: OCR cannot hide images, control state or native interop.
             if (containsRestrictedDescendant(node, privacy)) return null
             val hostBoundsPx = hostRelativeBoundsPx(node) ?: return null
-            pendingCaptures += PendingCapture(nodeIdentity, bounds, hostBoundsPx, privacy)
+            // Use the same visible rectangle for the crop and replay, rather than combining
+            // an outer semantics position with an inner measured size. Round dimensions so a
+            // 5 px divider at density 2.625 remains 2 dp instead of being truncated to 1 dp.
+            val captureBounds = CapturedBounds(
+                ((hostBoundsPx.left + windowOffset.xPx) / request.screenDensity).roundToLong(),
+                ((hostBoundsPx.top + windowOffset.yPx) / request.screenDensity).roundToLong(),
+                (hostBoundsPx.width() / request.screenDensity).roundToLong().coerceAtLeast(1),
+                (hostBoundsPx.height() / request.screenDensity).roundToLong().coerceAtLeast(1)
+            )
+            pendingCaptures += PendingCapture(nodeIdentity, captureBounds, hostBoundsPx, privacy)
             return CapturedChild.Layer(nodeIdentity)
         }
 

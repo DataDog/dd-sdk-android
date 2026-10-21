@@ -73,6 +73,7 @@ import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -846,6 +847,7 @@ internal class GranularComposeDecomposerTest {
         // When
         whenever(mockSemanticsUtils.resolveInnerBounds(eq(stubLeaf), any()))
             .thenReturn(GlobalBounds(10, 90, 20, 20))
+        whenever(stubLeaf.boundsInRoot).thenReturn(androidx.compose.ui.geometry.Rect(10f, 90f, 30f, 100f))
         val enteringResult = testedDecomposer.decompose(mockView, fakeRequest)
 
         // Then
@@ -1093,13 +1095,14 @@ internal class GranularComposeDecomposerTest {
         ) -> String? = { null },
         pendingPixelCaptureSink: PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp,
         textPrivacy: TextAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
-        imagePrivacy: ImagePrivacy = ImagePrivacy.MASK_NONE
+        imagePrivacy: ImagePrivacy = ImagePrivacy.MASK_NONE,
+        screenDensity: Float = 1f
     ): CompositionHostDecomposeRequest {
         val identityFactory = FakeCompositionIdentityFactory()
         return CompositionHostDecomposeRequest(
             identityFactory = identityFactory,
             hostIdentity = identityFactory.anyIdentity(),
-            screenDensity = 1f,
+            screenDensity = screenDensity,
             hostBounds = null,
             nativeViewHandoff = { _, _ -> null },
             shouldContinue = shouldContinue,
@@ -1363,6 +1366,66 @@ internal class GranularComposeDecomposerTest {
         assertThat(pixelWireframe.identity).isEqualTo(registered.single().wireframeIdentity)
         // Never recurses into a capture candidate's own children (would double-render).
         assertThat(result.wireframes).hasSize(1)
+    }
+
+    @ParameterizedTest
+    @CsvSource("508,5,194,2", "736,27,280,10", "508,1,194,1")
+    fun `M preserve visible crop geometry W decompose() { fractional density and thin captures }`(
+        top: Int,
+        height: Int,
+        expectedY: Long,
+        expectedHeight: Long
+    ) {
+        // Given - the emulator's divider geometry; semantic bounds deliberately describe a different box.
+        val node = mockDrawingEffectNode()
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(node.boundsInRoot).thenReturn(
+            androidx.compose.ui.geometry.Rect(42f, top.toFloat(), 1038f, (top + height).toFloat())
+        )
+        val fakeRasterizer = FakeComposeHostCaptureRasterizer()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = fakeRasterizer
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest(screenDensity = 2.625f))!!
+
+        // Then
+        val pixel = result.wireframes.single() as CapturedWireframe.Pixel
+        assertThat(fakeRasterizer.lastRegions).containsExactly(Rect(42, top, 1038, top + height))
+        assertThat(pixel.bounds).isEqualTo(CapturedBounds(16, expectedY, 379, expectedHeight))
+        assertThat(result.nodes.single().bounds).isEqualTo(pixel.bounds)
+    }
+
+    @Test
+    fun `M add the raw host offset before rounding W decompose() { pixel crop }`() {
+        // Given - truncating the host offset before adding it would lose a dp.
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(node.boundsInRoot).thenReturn(androidx.compose.ui.geometry.Rect(2f, 2f, 12f, 12f))
+        doAnswer { invocation ->
+            val offset = invocation.getArgument<IntArray>(0)
+            offset[0] = 2
+            offset[1] = 2
+            null
+        }.whenever(mockView).getLocationOnScreen(any())
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = FakeComposeHostCaptureRasterizer()
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest(screenDensity = 2.625f))!!
+
+        // Then
+        assertThat(result.wireframes.single().bounds).isEqualTo(CapturedBounds(2, 2, 4, 4))
     }
 
     @Test

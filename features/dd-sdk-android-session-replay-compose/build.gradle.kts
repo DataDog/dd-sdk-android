@@ -81,6 +81,7 @@ dependencies {
 
 unMock {
     keep("android.graphics.Color")
+    keep("android.graphics.Rect")
 }
 
 datadogBuild {
