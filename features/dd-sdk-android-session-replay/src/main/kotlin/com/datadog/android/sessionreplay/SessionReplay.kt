@@ -75,6 +75,7 @@ object SessionReplay {
                     sampleRate = effectiveConfiguration.sampleRate,
                     startRecordingImmediately = effectiveConfiguration.startRecordingImmediately,
                     dynamicOptimizationEnabled = effectiveConfiguration.dynamicOptimizationEnabled,
+                    adaptiveCaptureSchedulingEnabled = effectiveConfiguration.adaptiveCaptureSchedulingEnabled,
                     internalCallback = effectiveConfiguration.internalCallback,
                     heatmapsEnabled = effectiveConfiguration.heatmapsEnabled
                 )

@@ -10,6 +10,7 @@ import android.os.ProfilingResult
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.profiling.internal.ProfilingStartReason
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -57,9 +58,11 @@ internal class ProfilingTelemetryTest {
     fun `M dispatch SessionEnd through logMetric W report() {logger set}`(
         @StringForgery fakeErrorMessage: String,
         @LongForgery(min = 0L) fakeDuration: Long,
-        @IntForgery(min = 1, max = 8) fakeErrorCode: Int
+        @IntForgery(min = 1, max = 8) fakeErrorCode: Int,
+        forge: Forge
     ) {
         // Given
+        val fakeHasNoStackSamples = forge.aNullable { aBool() }
         testedTelemetry.internalLogger = mockLogger
         val event = ProfilingTelemetryEvent.SessionEnd(
             startReason = ProfilingStartReason.APPLICATION_LAUNCH.value,
@@ -71,7 +74,8 @@ internal class ProfilingTelemetryTest {
             resultCallbackDelayMs = 0L,
             stopReason = ProfilingTelemetry.STOPPED_REASON_ERROR,
             bufferSizeKb = 5120,
-            samplingFrequencyHz = 201
+            samplingFrequencyHz = 201,
+            hasNoStackSamples = fakeHasNoStackSamples
         )
 
         // When
@@ -89,7 +93,8 @@ internal class ProfilingTelemetryTest {
                 ProfilingTelemetry.KEY_ERROR_MESSAGE to fakeErrorMessage,
                 ProfilingTelemetry.KEY_FILE_SIZE to 0L,
                 ProfilingTelemetry.KEY_STOPPED_REASON to ProfilingTelemetry.STOPPED_REASON_ERROR,
-                ProfilingTelemetry.KEY_APP_START_INFO to null
+                ProfilingTelemetry.KEY_APP_START_INFO to null,
+                ProfilingTelemetry.KEY_NO_STACK_SAMPLES to fakeHasNoStackSamples
             ),
             ProfilingTelemetry.KEY_PROFILING_CONFIG to mapOf(
                 // toInt here is needed because otherwise compiler may treat them as Long, in this case verify -> eq

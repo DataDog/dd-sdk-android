@@ -306,6 +306,7 @@ datadog:
       - "java.util.concurrent.Future.cancel(kotlin.Boolean)"
       # endregion
       # region Java I/O
+      - "java.io.BufferedInputStream.constructor(java.io.InputStream?)"
       - "java.io.BufferedReader.readText()"
       - "java.io.BufferedReader.use(kotlin.Function1)"
       - "java.io.ByteArrayOutputStream.constructor()"

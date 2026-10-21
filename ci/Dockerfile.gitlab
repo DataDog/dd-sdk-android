@@ -8,7 +8,7 @@ RUN ln -sf /usr/share/zoneinfo/Etc/UTC /etc/localtime
 
 # keep in sync with JAVA_HOME path below
 RUN apt-get update \
-    && apt-get -y install openjdk-17-jdk \
+    && apt-get -y install openjdk-21-jdk \
     && rm -rf /var/lib/apt/lists/*
 
 RUN set -x \
@@ -34,7 +34,7 @@ ENV CMAKE_VERSION 3.22.1
 ENV DD_TRACER_VERSION 1.60.1
 # requires build with BuildKit to be available https://docs.docker.com/build/building/variables/#multi-platform-build-arguments
 ARG TARGETARCH
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-${TARGETARCH}
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-${TARGETARCH}
 
 RUN apt update && apt install -y python3
 

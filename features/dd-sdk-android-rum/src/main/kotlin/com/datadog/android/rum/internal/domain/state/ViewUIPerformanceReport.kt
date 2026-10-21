@@ -21,7 +21,8 @@ internal class ViewUIPerformanceReport private constructor(
     var slowFramesDurationNs: Long = 0L,
     @Volatile
     var freezeFramesDuration: Long = 0,
-    val minViewLifetimeThresholdNs: Long = 0
+    val minViewLifetimeThresholdNs: Long = 0,
+    var lastSlowFrameEndTimestampNs: Long? = null
 ) {
     constructor(
         viewStartedTimeStamp: Long,

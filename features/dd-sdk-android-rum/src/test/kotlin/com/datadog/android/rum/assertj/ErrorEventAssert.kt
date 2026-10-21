@@ -310,6 +310,16 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasIsMainProcess(expected: Boolean?): ErrorEventAssert {
+        assertThat(actual.session.isMainProcess)
+            .overridingErrorMessage(
+                "Expected event to have session.is_main_process:$expected " +
+                    "but was ${actual.session.isMainProcess}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasSessionType(expected: ErrorEvent.ErrorEventSessionType): ErrorEventAssert {
         assertThat(actual.session.type)
             .overridingErrorMessage(

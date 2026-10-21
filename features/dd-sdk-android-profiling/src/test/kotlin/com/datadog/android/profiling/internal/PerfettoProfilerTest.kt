@@ -25,6 +25,7 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companio
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_SAMPLING_RATE_APP_LAUNCH
 import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler.Companion.PROFILING_SAMPLING_RATE_CONTINUOUS
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.perfetto.StackSampleDetector
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import com.datadog.android.profiling.internal.trigger.ProfilingTriggerRegistrar
@@ -41,13 +42,11 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -63,6 +62,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -103,6 +103,12 @@ internal class PerfettoProfilerTest {
     @Mock
     private lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
+    @Mock
+    private lateinit var mockStackSampleDetector: StackSampleDetector
+
+    @TempDir
+    lateinit var tempDir: File
+
     private val callbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
 
     @LongForgery(min = 1L)
@@ -129,7 +135,8 @@ internal class PerfettoProfilerTest {
             buildSdkVersionProvider = mockBuildSdkVersionProvider,
             profilingTelemetry = ProfilingTelemetry().apply {
                 profilingPackageVersionCode = fakeProfilingPackageLongVersionCode
-            }
+            },
+            stackSampleDetector = mockStackSampleDetector
         )
         testedProfiler.internalLogger = mockInternalLogger
         testedProfiler.registerProfilingCallback(mockContext, mockProfilerCallback)
@@ -226,7 +233,8 @@ internal class PerfettoProfilerTest {
                 "callback_delay_ms" to 0L,
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
-                "app_start_info" to null
+                "app_start_info" to null,
+                "no_stack_samples" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
@@ -289,7 +297,8 @@ internal class PerfettoProfilerTest {
                 "error_message" to fakeErrorMessage,
                 "file_size" to 0L,
                 "stopped_reason" to "error",
-                "app_start_info" to null
+                "app_start_info" to null,
+                "no_stack_samples" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
@@ -353,7 +362,8 @@ internal class PerfettoProfilerTest {
                 "error_message" to fakeErrorMessage,
                 "file_size" to 0L,
                 "stopped_reason" to "error",
-                "app_start_info" to null
+                "app_start_info" to null,
+                "no_stack_samples" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
@@ -793,7 +803,8 @@ internal class PerfettoProfilerTest {
                 "error_message" to null,
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
-                "app_start_info" to fakeAppStartInfo
+                "app_start_info" to fakeAppStartInfo,
+                "no_stack_samples" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
@@ -811,10 +822,9 @@ internal class PerfettoProfilerTest {
         assertThat(messageCaptor.firstValue.invoke()).isEqualTo("[Mobile Metric] Profiling Session")
     }
 
-    @ParameterizedTest(name = "startReason: {0}")
-    @EnumSource(ProfilingStartReason::class)
+    @Test
     fun `M include start_reason in telemetry W profiling finishes { startReason }`(
-        startReason: ProfilingStartReason,
+        @Forgery fakeStartReason: ProfilingStartReason,
         @LongForgery(min = 0L) fakeStartTime: Long,
         @LongForgery(min = 0L) fakeDuration: Long
     ) {
@@ -823,7 +833,7 @@ internal class PerfettoProfilerTest {
         stubTimeProvider.stopTime = fakeStartTime + fakeDuration
 
         // When
-        testedProfiler.start(mockContext, startReason, emptyMap())
+        testedProfiler.start(mockContext, fakeStartReason, emptyMap())
 
         // Then
         verify(mockService)
@@ -838,12 +848,12 @@ internal class PerfettoProfilerTest {
 
         val mockResult = mock<ProfilingResult> {
             on { errorCode } doReturn ProfilingResult.ERROR_NONE
-            on { tag } doReturn startReason.value
+            on { tag } doReturn fakeStartReason.value
         }
         callbackCaptor.firstValue.accept(mockResult)
 
         val messageCaptor = argumentCaptor<() -> String>()
-        val expectedSamplingRate = if (startReason == ProfilingStartReason.APPLICATION_LAUNCH) {
+        val expectedSamplingRate = if (fakeStartReason == ProfilingStartReason.APPLICATION_LAUNCH) {
             PROFILING_SAMPLING_RATE_APP_LAUNCH
         } else {
             PROFILING_SAMPLING_RATE_CONTINUOUS
@@ -852,13 +862,14 @@ internal class PerfettoProfilerTest {
             "metric_type" to "profiling session",
             "profiling_session" to mapOf(
                 "error_code" to ProfilingResult.ERROR_NONE,
-                "start_reason" to startReason.value,
+                "start_reason" to fakeStartReason.value,
                 "duration" to fakeDuration,
                 "callback_delay_ms" to 0L,
                 "error_message" to null,
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
-                "app_start_info" to null
+                "app_start_info" to null,
+                "no_stack_samples" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
@@ -925,7 +936,8 @@ internal class PerfettoProfilerTest {
                 "callback_delay_ms" to fakeCallbackDelta,
                 "file_size" to 0L,
                 "stopped_reason" to "manual",
-                "app_start_info" to null
+                "app_start_info" to null,
+                "no_stack_samples" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
@@ -1017,7 +1029,8 @@ internal class PerfettoProfilerTest {
                 "callback_delay_ms" to 0L,
                 "file_size" to 0L,
                 "stopped_reason" to "timeout",
-                "app_start_info" to null
+                "app_start_info" to null,
+                "no_stack_samples" to null
             ),
             "profiling_config" to mapOf(
                 "buffer_size" to 5120,
@@ -1209,123 +1222,16 @@ internal class PerfettoProfilerTest {
 
     // endregion
 
-    // region blocked profiling module version
-
-    @Test
-    fun `M not request profiling W start() {blocked profiling module version}`() {
-        // Given
-        stubProfilingModuleVersionCode(BLOCKED_VERSION_CODE)
-
-        // When
-        testedProfiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
-
-        // Then
-        verify(mockService, never()).requestProfiling(any(), any(), any(), any(), any(), any())
-        assertThat(testedProfiler.isRunning()).isFalse()
-    }
-
-    @Test
-    fun `M notify failure W start() {blocked profiling module version}`() {
-        // Given
-        stubProfilingModuleVersionCode(BLOCKED_VERSION_CODE)
-
-        // When
-        testedProfiler.start(mockContext, ProfilingStartReason.CONTINUOUS, emptyMap())
-
-        // Then no result callback will ever fire, so the caller must be told the window is over.
-        verify(mockProfilerCallback).onFailure(ProfilingStartReason.CONTINUOUS)
-        verifyNoMoreInteractions(mockProfilerCallback)
-    }
-
-    @Test
-    fun `M report blocked telemetry W start() {blocked profiling module version}`() {
-        // Given
-        stubProfilingModuleVersionCode(BLOCKED_VERSION_CODE)
-
-        // When
-        testedProfiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
-
-        // Then
-        val messageCaptor = argumentCaptor<() -> String>()
-        val expectedProps = mapOf(
-            "metric_type" to "profiling blocked",
-            "profiling_session" to mapOf(
-                "start_reason" to ProfilingStartReason.APPLICATION_LAUNCH.value
-            ),
-            "profiling_config" to mapOf(
-                "profiling_package_version_code" to BLOCKED_VERSION_CODE
-            )
-        )
-        verify(mockInternalLogger).logMetric(
-            messageCaptor.capture(),
-            eq(expectedProps),
-            eq(MethodCallSamplingRate.ALL.rate),
-            isNull()
-        )
-        assertThat(messageCaptor.firstValue.invoke()).isEqualTo("[Mobile Metric] Profiling Session")
-    }
-
-    @Test
-    fun `M report blocked telemetry only once W start() {blocked version, several calls}`(
-        forge: Forge
-    ) {
-        // Given
-        stubProfilingModuleVersionCode(BLOCKED_VERSION_CODE)
-
-        // When
-        repeat(forge.anInt(min = 2, max = 5)) {
-            testedProfiler.start(mockContext, ProfilingStartReason.CONTINUOUS, emptyMap())
-        }
-
-        // Then
-        verify(mockInternalLogger).logMetric(any(), any(), any(), anyOrNull())
-    }
-
-    @Test
-    fun `M report blocked telemetry with version code W start() {blocked version, before init}`() {
-        // Given a profiler started from the content provider, before the SDK is initialized:
-        // no logger is attached yet and the version code was never pushed by the feature.
-        val profiler = PerfettoProfiler(
-            timeProvider = stubTimeProvider,
-            scheduledExecutorService = mockExecutorService,
-            triggerRegistrar = mockRegistrar,
-            buildSdkVersionProvider = mockBuildSdkVersionProvider,
-            profilingTelemetry = ProfilingTelemetry()
-        )
-        stubProfilingModuleVersionCode(BLOCKED_VERSION_CODE)
-
-        // When
-        profiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
-        profiler.internalLogger = mockInternalLogger
-
-        // Then
-        val propertiesCaptor = argumentCaptor<Map<String, Any?>>()
-        verify(mockInternalLogger).logMetric(
-            any(),
-            propertiesCaptor.capture(),
-            eq(MethodCallSamplingRate.ALL.rate),
-            isNull()
-        )
-        val profilingConfig = propertiesCaptor.firstValue["profiling_config"] as Map<*, *>
-        assertThat(profilingConfig["profiling_package_version_code"])
-            .isEqualTo(BLOCKED_VERSION_CODE)
-    }
-
-    @Test
-    fun `M request profiling W start() {profiling module version is not blocked}`() {
-        // Given
-        stubProfilingModuleVersionCode(fakeProfilingPackageLongVersionCode)
-
-        // When
-        testedProfiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
-
-        // Then
-        verify(mockService).requestProfiling(any(), any(), any(), any(), any(), any())
-    }
-
-    // endregion
-
     // region profiling module version resolution
+
+    @Test
+    fun `M not look up the profiling module version W start()`() {
+        // When
+        testedProfiler.start(mockContext, ProfilingStartReason.APPLICATION_LAUNCH, emptyMap())
+
+        // Then
+        verify(mockPackageManager, never()).getPackageInfo(any<String>(), any<Int>())
+    }
 
     @Test
     fun `M query the package manager once W resolveProfilingPackageVersionCode() {concurrent}`() {
@@ -1353,7 +1259,7 @@ internal class PerfettoProfilerTest {
         firstCaller.start()
         check(lookupStarted.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS)) { "lookup never started" }
         secondCaller.start()
-        Thread.sleep(CONTENTION_WINDOW_MS)
+        check(awaitBlocked(secondCaller)) { "second caller never waited for the lookup in flight" }
         releaseLookup.countDown()
         firstCaller.join(JOIN_TIMEOUT_MS)
         secondCaller.join(JOIN_TIMEOUT_MS)
@@ -1366,6 +1272,171 @@ internal class PerfettoProfilerTest {
     }
 
     // endregion
+
+    @Test
+    fun `M delete trace and notify failure W profiling finishes {no stack samples, affected module version}`(
+        @LongForgery(min = 1L, max = FIXED_PROFILING_MODULE_VERSION_CODE) fakeVersionCode: Long,
+        forge: Forge
+    ) {
+        // Given
+        val fakeStartReason =
+            forge.anElementFrom(ProfilingStartReason.APPLICATION_LAUNCH, ProfilingStartReason.CONTINUOUS)
+        val traceFile = File(tempDir, fakePath).apply { writeText(fakePath) }
+        stubProfilingModuleVersionCode(fakeVersionCode)
+        testedProfiler.resolveProfilingPackageVersionCode(mockContext)
+        whenever(mockStackSampleDetector.hasNoStackSamples(traceFile, mockInternalLogger)) doReturn true
+
+        // When
+        finishProfiling(fakeStartReason, traceFile.absolutePath)
+
+        // Then
+        verify(mockProfilerCallback).onFailure(fakeStartReason)
+        verify(mockProfilerCallback, never()).onSuccess(any())
+        assertThat(traceFile).doesNotExist()
+        assertNoStackSamplesReported(true)
+    }
+
+    @Test
+    fun `M notify success W profiling finishes {stack samples, affected module version}`(
+        @LongForgery(min = 1L, max = FIXED_PROFILING_MODULE_VERSION_CODE) fakeVersionCode: Long,
+        forge: Forge
+    ) {
+        // Given
+        val fakeStartReason =
+            forge.anElementFrom(listOf(ProfilingStartReason.APPLICATION_LAUNCH, ProfilingStartReason.CONTINUOUS))
+        val traceFile = File(tempDir, fakePath).apply { writeText(fakePath) }
+        stubProfilingModuleVersionCode(fakeVersionCode)
+        testedProfiler.resolveProfilingPackageVersionCode(mockContext)
+        whenever(mockStackSampleDetector.hasNoStackSamples(traceFile, mockInternalLogger)) doReturn false
+
+        // When
+        finishProfiling(fakeStartReason, traceFile.absolutePath)
+
+        // Then
+        verify(mockStackSampleDetector).hasNoStackSamples(traceFile, mockInternalLogger)
+        assertSuccessNotified(fakeStartReason, traceFile)
+        assertNoStackSamplesReported(false)
+    }
+
+    @Test
+    fun `M notify success without checking the trace W profiling finishes {fixed module version}`(
+        @LongForgery(min = FIXED_PROFILING_MODULE_VERSION_CODE) fakeVersionCode: Long,
+        forge: Forge
+    ) {
+        // Given
+        val fakeStartReason =
+            forge.anElementFrom(listOf(ProfilingStartReason.APPLICATION_LAUNCH, ProfilingStartReason.CONTINUOUS))
+        val traceFile = File(tempDir, fakePath).apply { writeText(fakePath) }
+        stubProfilingModuleVersionCode(fakeVersionCode)
+        testedProfiler.resolveProfilingPackageVersionCode(mockContext)
+
+        // When
+        finishProfiling(fakeStartReason, traceFile.absolutePath)
+
+        // Then
+        verifyNoInteractions(mockStackSampleDetector)
+        assertSuccessNotified(fakeStartReason, traceFile)
+        assertNoStackSamplesReported(null)
+    }
+
+    @Test
+    fun `M notify success without checking the trace W profiling finishes {unknown module version}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeStartReason =
+            forge.anElementFrom(ProfilingStartReason.APPLICATION_LAUNCH, ProfilingStartReason.CONTINUOUS)
+        val traceFile = File(tempDir, fakePath).apply { writeText(fakePath) }
+        stubProfilingModuleVersionCode(0L)
+        testedProfiler.resolveProfilingPackageVersionCode(mockContext)
+
+        // When
+        finishProfiling(fakeStartReason, traceFile.absolutePath)
+
+        // Then
+        verifyNoInteractions(mockStackSampleDetector)
+        assertSuccessNotified(fakeStartReason, traceFile)
+        assertNoStackSamplesReported(null)
+    }
+
+    @Test
+    fun `M notify success without checking the trace W profiling finishes {start reason not checked}`(
+        @LongForgery(min = 1L, max = FIXED_PROFILING_MODULE_VERSION_CODE) fakeVersionCode: Long,
+        forge: Forge
+    ) {
+        // Given
+        val fakeStartReason = forge.aValueFrom(
+            ProfilingStartReason::class.java,
+            exclude = listOf(
+                ProfilingStartReason.APPLICATION_LAUNCH,
+                ProfilingStartReason.CONTINUOUS
+            )
+        )
+        val traceFile = File(tempDir, fakePath).apply { writeText(fakePath) }
+        stubProfilingModuleVersionCode(fakeVersionCode)
+        testedProfiler.resolveProfilingPackageVersionCode(mockContext)
+
+        // When
+        finishProfiling(fakeStartReason, traceFile.absolutePath)
+
+        // Then
+        verifyNoInteractions(mockStackSampleDetector)
+        assertSuccessNotified(fakeStartReason, traceFile)
+        assertNoStackSamplesReported(null)
+    }
+
+    private fun finishProfiling(startReason: ProfilingStartReason, resultFilePath: String) {
+        testedProfiler.start(mockContext, startReason, emptyMap())
+        verify(mockService).requestProfiling(
+            eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
+            any<Bundle>(),
+            any<String>(),
+            any<CancellationSignal>(),
+            any(),
+            callbackCaptor.capture()
+        )
+        val successResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { this.resultFilePath } doReturn resultFilePath
+            on { tag } doReturn startReason.value
+        }
+        callbackCaptor.firstValue.accept(successResult)
+    }
+
+    private fun assertNoStackSamplesReported(expected: Boolean?) {
+        val messageCaptor = argumentCaptor<() -> String>()
+        val propertiesCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(mockInternalLogger).logMetric(
+            messageCaptor.capture(),
+            propertiesCaptor.capture(),
+            eq(MethodCallSamplingRate.ALL.rate),
+            isNull()
+        )
+        assertThat(messageCaptor.firstValue.invoke()).isEqualTo(ProfilingTelemetry.TELEMETRY_MSG_PROFILING_SESSION)
+        val sessionProperties = propertiesCaptor.firstValue[ProfilingTelemetry.KEY_PROFILING_SESSION] as Map<*, *>
+        assertThat(sessionProperties[ProfilingTelemetry.KEY_NO_STACK_SAMPLES]).isEqualTo(expected)
+    }
+
+    private fun assertSuccessNotified(startReason: ProfilingStartReason, traceFile: File) {
+        argumentCaptor<PerfettoResult> {
+            verify(mockProfilerCallback).onSuccess(capture())
+            assertThat(firstValue.startReason).isEqualTo(startReason)
+            assertThat(firstValue.resultFilePath).isEqualTo(traceFile.absolutePath)
+        }
+        verify(mockProfilerCallback, never()).onFailure(any())
+        assertThat(traceFile).exists()
+    }
+
+    /**
+     * Waits, at most [LATCH_TIMEOUT_SECONDS], until [thread] is blocked on a monitor held by another thread.
+     */
+    private fun awaitBlocked(thread: Thread): Boolean {
+        val deadlineNs = System.nanoTime() + TimeUnit.SECONDS.toNanos(LATCH_TIMEOUT_SECONDS)
+        while (thread.state != Thread.State.BLOCKED && System.nanoTime() < deadlineNs) {
+            Thread.yield()
+        }
+        return thread.state == Thread.State.BLOCKED
+    }
 
     private fun stubProfilingModuleVersionCode(versionCode: Long) {
         val mockPackageInfo = mock<PackageInfo> {
@@ -1380,14 +1451,11 @@ internal class PerfettoProfilerTest {
     }
 
     companion object {
-        // Version of the profiling system package known to produce empty profiles.
-        private const val BLOCKED_VERSION_CODE = 370546200L
+        // First version of the profiling system package which no longer records empty stack sampling traces.
+        private const val FIXED_PROFILING_MODULE_VERSION_CODE = 371020780L
 
         private const val LATCH_TIMEOUT_SECONDS = 5L
         private const val JOIN_TIMEOUT_MS = 5000L
-
-        // Time left to the second caller to reach the lookup while the first one holds it.
-        private const val CONTENTION_WINDOW_MS = 200L
     }
 
     private class StubTimeProvider : MutableTimeProvider {

@@ -82,7 +82,8 @@ internal class MemoryEventFactory(
                 hasReplay = featuresContextResolver.resolveViewHasReplay(
                     datadogContext,
                     rumContext.viewId.orEmpty()
-                )
+                ),
+                isMainProcess = datadogContext.processInfo.isMainProcess
             ),
             synthetics = syntheticsAttribute,
             source = TimeseriesMemoryEvent.Source.tryFromSource(datadogContext.source, internalLogger),
