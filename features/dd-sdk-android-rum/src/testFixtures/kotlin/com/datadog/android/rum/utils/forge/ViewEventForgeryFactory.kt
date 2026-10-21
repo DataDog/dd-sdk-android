@@ -167,8 +167,9 @@ class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                 },
                 profiling = forge.aNullable {
                     ViewEvent.Profiling(
-                        status = aNullable { aValueFrom(ViewEvent.ProfilingStatus::class.java) },
-                        errorReason = aNullable { aValueFrom(ViewEvent.ErrorReason::class.java) }
+                        status = aNullable { getForgery() },
+                        quotaReason = aNullable { getForgery() },
+                        errorReason = aNullable { getForgery() }
                     )
                 },
                 pageStates = forge.aNullable {
