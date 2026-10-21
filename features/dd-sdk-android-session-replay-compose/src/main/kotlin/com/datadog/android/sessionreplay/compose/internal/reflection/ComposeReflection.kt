@@ -159,6 +159,20 @@ internal object ComposeReflection {
         isCritical = false
     )
 
+    private val imagePainterClasses = listOfNotNull(
+        PainterElementClass,
+        ContentPainterModifierClass,
+        ContentPainterElementClass,
+        ContentPainterElement3Class
+    )
+    val ImagePainterContentScaleFields = imagePainterFields("contentScale")
+    val ImagePainterAlignmentFields = imagePainterFields("alignment")
+
+    private fun imagePainterFields(name: String): List<Pair<Class<*>, Field>> =
+        imagePainterClasses.mapNotNull { type ->
+            type.getDeclaredFieldSafe(name, isCritical = false)?.let { type to it }
+        }
+
     val PainterNodeClass = getClassSafe(
         "coil3.compose.internal.ContentPainterNode",
         isCritical = false

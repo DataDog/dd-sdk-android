@@ -51,6 +51,7 @@ import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.ImageSemanticsNodeMapper
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.compose.internal.utils.ComposeTextCaptureCache
+import com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOffset
 import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.resolveComposeWindowOffset
@@ -315,6 +316,33 @@ internal class GranularComposeDecomposer(
                 }
             }
         }
+    }
+
+    /** Preserve an equivalent rounded rectangle for players rendering the flat wireframe list. */
+    // Skip unrelated or non-equivalent clips in the owned modifier list.
+    @Suppress("LoopWithTooManyJumpStatements", "UnsafeThirdPartyFunctionCall")
+    private fun resolveBackgroundClipRadius(
+        node: SemanticsNode,
+        bounds: CapturedBounds,
+        modifiers: List<ModifierInfo>,
+        windowOffset: ComposeWindowOffset
+    ): Float? {
+        val background = modifiers.indexOfLast { reflectionUtils.isBackgroundElement(it.modifier) }
+        var radius: Float? = null
+        for (index in 0 until background) {
+            val info = modifiers[index]
+            val modifier = info.modifier
+            if (modifier !is InspectableValue || modifier.nameFallback != GRAPHICS_LAYER_NAME_FALLBACK) continue
+            val properties = GraphicsLayerProperties(modifier)
+            val shape = properties.shape ?: continue
+            if (!properties.clip) continue
+            val clipBounds = semanticsUtils.resolveModifierBounds(node, info, windowOffset) ?: continue
+            // A differently positioned or sized clip requires the composition tree.
+            if (clipBounds != GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)) continue
+            val resolved = semanticsUtils.resolveCornerRadius(shape, clipBounds, node.layoutInfo.density)
+            radius = maxOf(radius ?: 0f, resolved.coerceAtMost(minOf(bounds.width, bounds.height) / 2f))
+        }
+        return radius
     }
 
     /** One [decompose] call's state - a fresh instance per call, so this class itself stays stateless. */
@@ -924,13 +952,15 @@ internal class GranularComposeDecomposer(
             modifiers: List<ModifierInfo>
         ): CapturedWireframe.Shape? {
             val colorLong = semanticsUtils.resolveBackgroundColor(modifiers) ?: return null
-            val cornerRadius = semanticsUtils.resolveBackgroundShape(modifiers)?.let { shape ->
+            val backgroundRadius = semanticsUtils.resolveBackgroundShape(modifiers)?.let { shape ->
                 semanticsUtils.resolveCornerRadius(
                     shape,
                     GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height),
                     node.layoutInfo.density
                 )
             }
+            val clipRadius = resolveBackgroundClipRadius(node, bounds, modifiers, windowOffset)
+            val cornerRadius = listOfNotNull(backgroundRadius, clipRadius).maxOrNull()
             return CapturedWireframe.Shape(
                 identity = request.identityFactory.shapeWireframe(nodeIdentity),
                 bounds = bounds,

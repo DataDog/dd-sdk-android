@@ -30,14 +30,12 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsOwner
 import androidx.compose.ui.text.MultiParagraph
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
-import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.AlignmentField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.AsyncImagePainterClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.BitmapField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ChildFieldOfModifierNode
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.CompositionField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ContentPainterElementClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ContentPainterModifierClass
-import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ContentScaleField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetInnerLayerCoordinatorMethod
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetInteropViewMethod
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.HeadFieldOfNodeChain
@@ -55,6 +53,7 @@ import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeRefl
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterNodeClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.StaticLayoutField
 import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
+import java.lang.reflect.Field
 
 @Suppress("TooManyFunctions")
 internal class ReflectionUtils {
@@ -241,19 +240,16 @@ internal class ReflectionUtils {
         return modifier?.let { PainterField?.getSafe(it) as? Painter }
     }
 
-    fun getContentScale(semanticsNode: SemanticsNode): ContentScale? {
-        val modifier = semanticsNode.layoutInfo.getModifierInfo().firstOrNull {
-            PainterElementClass?.isInstance(it.modifier) == true
-        }?.modifier
-        return modifier?.let { ContentScaleField?.getSafe(it) as? ContentScale }
-    }
+    fun getContentScale(semanticsNode: SemanticsNode): ContentScale? =
+        imagePainterProperty(semanticsNode, ComposeReflection.ImagePainterContentScaleFields) as? ContentScale
 
-    fun getAlignment(semanticsNode: SemanticsNode): Alignment? {
-        val modifier = semanticsNode.layoutInfo.getModifierInfo().firstOrNull {
-            PainterElementClass?.isInstance(it.modifier) == true
-        }?.modifier
-        return modifier?.let { AlignmentField?.getSafe(it) as? Alignment }
-    }
+    fun getAlignment(semanticsNode: SemanticsNode): Alignment? =
+        imagePainterProperty(semanticsNode, ComposeReflection.ImagePainterAlignmentFields) as? Alignment
+
+    private fun imagePainterProperty(semanticsNode: SemanticsNode, fields: List<Pair<Class<*>, Field>>): Any? =
+        semanticsNode.layoutInfo.getModifierInfo().firstNotNullOfOrNull { info ->
+            fields.firstOrNull { (type, _) -> type.isInstance(info.modifier) }?.second?.getSafe(info.modifier)
+        }
 
     fun getAsyncImagePainter(semanticsNode: SemanticsNode): Painter? {
         // Check if Coil AsyncImagePainter is present first to optimize the performance

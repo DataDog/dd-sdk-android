@@ -72,6 +72,10 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    // Exercise the actual Coil modifier used by current applications, rather than mocked painter metadata.
+    testImplementation("io.coil-kt:coil-compose-base:2.7.0") {
+        isTransitive = false
+    }
     unmock(libs.robolectric)
 }
 

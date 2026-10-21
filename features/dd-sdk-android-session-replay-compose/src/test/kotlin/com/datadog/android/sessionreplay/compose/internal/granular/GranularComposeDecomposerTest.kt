@@ -1295,6 +1295,42 @@ internal class GranularComposeDecomposerTest {
             .containsExactly("second", "second")
     }
 
+    @ParameterizedTest
+    @CsvSource("true,true,16.0", "true,false,0.0", "false,true,0.0")
+    fun `M preserve equivalent rounded background W decompose() { flat wireframes }`(
+        clipEnabled: Boolean,
+        sameBounds: Boolean,
+        expectedRadius: Double
+    ) {
+        // Given
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        val shape: Shape = mock()
+        val clip = mockGraphicsLayerModifier(mapOf("clip" to clipEnabled, "shape" to shape))
+        val background: Modifier = mock()
+        val clipInfo: ModifierInfo = mock()
+        val backgroundInfo: ModifierInfo = mock()
+        whenever(clipInfo.modifier).thenReturn(clip)
+        whenever(backgroundInfo.modifier).thenReturn(background)
+        val modifiers = listOf(clipInfo, backgroundInfo)
+        whenever(mockReflectionUtils.isBackgroundElement(background)).thenReturn(true)
+        whenever(node.layoutInfo.getModifierInfo()).thenReturn(modifiers)
+        whenever(node.layoutInfo.density).thenReturn(Density(1f))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(mockSemanticsUtils.resolveInnerBounds(eq(node), any())).thenReturn(GlobalBounds(0, 0, 100, 40))
+        whenever(mockSemanticsUtils.resolveModifierBounds(eq(node), eq(clipInfo), any()))
+            .thenReturn(GlobalBounds(if (sameBounds) 0 else 8, 0, 100, 40))
+        whenever(mockSemanticsUtils.resolveBackgroundColor(modifiers)).thenReturn(Color.Black.value.toLong())
+        whenever(mockSemanticsUtils.resolveCornerRadius(eq(shape), any(), any())).thenReturn(16f)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())!!
+
+        // Then
+        val backgroundShape = result.wireframes.filterIsInstance<CapturedWireframe.Shape>().single()
+        assertThat(backgroundShape.style?.cornerRadius ?: 0.0).isEqualTo(expectedRadius)
+    }
+
     // region clip modifier
 
     /**
