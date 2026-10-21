@@ -231,6 +231,7 @@ internal class RumResourceScope(
         val rulePsr = resourceAttributes.remove(RumAttributes.RULE_PSR) as? Number
 
         val rumContext = getRumContext()
+        val hasTimeseries = resolveHasTimeseries(rumContext)
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
             rumContext.syntheticsResultId.isNullOrBlank()
@@ -348,7 +349,8 @@ internal class RumResourceScope(
                     id = rumContext.sessionId,
                     type = sessionType,
                     hasReplay = hasReplay,
-                    isMainProcess = datadogContext.processInfo.isMainProcess
+                    isMainProcess = datadogContext.processInfo.isMainProcess,
+                    hasTimeseries = hasTimeseries
                 ),
                 synthetics = syntheticsAttribute,
                 source = ResourceEvent.ResourceEventSource.tryFromSource(
@@ -440,6 +442,7 @@ internal class RumResourceScope(
     ) {
         val errorFingerprint = resourceAttributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
         val rumContext = getRumContext()
+        val hasTimeseries = resolveHasTimeseries(rumContext)
 
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
@@ -515,7 +518,8 @@ internal class RumResourceScope(
                     id = rumContext.sessionId,
                     type = sessionType,
                     hasReplay = hasReplay,
-                    isMainProcess = datadogContext.processInfo.isMainProcess
+                    isMainProcess = datadogContext.processInfo.isMainProcess,
+                    hasTimeseries = hasTimeseries
                 ),
                 synthetics = syntheticsAttribute,
                 source = ErrorEvent.ErrorEventSource.tryFromSource(
@@ -562,6 +566,14 @@ internal class RumResourceScope(
             .submit()
 
         sent = true
+    }
+
+    // rumContext is frozen at resource start, while timeseries may be collected for its session afterwards.
+    // The parent context is only trusted while it still belongs to the same session.
+    private fun resolveHasTimeseries(rumContext: RumContext): Boolean {
+        if (rumContext.hasTimeseries) return true
+        val parentContext = parentScope.getRumContext()
+        return parentContext.sessionId == rumContext.sessionId && parentContext.hasTimeseries
     }
 
     private fun resolveErrorProvider(): ErrorEvent.Provider? {

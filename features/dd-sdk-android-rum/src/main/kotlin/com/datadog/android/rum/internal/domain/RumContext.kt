@@ -27,6 +27,7 @@ internal data class RumContext(
     val viewTimestamp: Long = 0L,
     val viewTimestampOffset: Long = 0L,
     val hasReplay: Boolean = false,
+    val hasTimeseries: Boolean = false,
     val sessionSampleRate: Float = SAMPLE_ALL_RATE
 ) {
 
@@ -46,6 +47,7 @@ internal data class RumContext(
             SYNTHETICS_RESULT_ID to syntheticsResultId,
             VIEW_TIMESTAMP to viewTimestamp,
             HAS_REPLAY to hasReplay,
+            SESSION_HAS_TIMESERIES to hasTimeseries,
             VIEW_TIMESTAMP_OFFSET to viewTimestampOffset,
             SESSION_SAMPLE_RATE to sessionSampleRate
         )
@@ -62,6 +64,7 @@ internal data class RumContext(
         const val SESSION_ACTIVE = "session_active"
         const val SESSION_STATE = FeatureContextKeys.RUM_SESSION_STATE
         const val SESSION_START_REASON = "session_start_reason"
+        const val SESSION_HAS_TIMESERIES = "session_has_timeseries"
         const val VIEW_ID = "view_id"
         const val VIEW_NAME = "view_name"
         const val VIEW_URL = "view_url"
@@ -92,6 +95,7 @@ internal data class RumContext(
             val syntheticsTestId = featureContext[SYNTHETICS_TEST_ID] as? String
             val syntheticsResultId = featureContext[SYNTHETICS_RESULT_ID] as? String
             val hasReplay = featureContext[HAS_REPLAY] as? Boolean ?: false
+            val hasTimeseries = featureContext[SESSION_HAS_TIMESERIES] as? Boolean ?: false
             val viewTimestamp = featureContext[VIEW_TIMESTAMP] as? Long ?: 0L
             val viewTimestampOffset = featureContext[VIEW_TIMESTAMP_OFFSET] as? Long ?: 0L
             val sampleRate = (featureContext[SESSION_SAMPLE_RATE] as? Number)?.toFloat() ?: SAMPLE_ALL_RATE
@@ -112,6 +116,7 @@ internal data class RumContext(
                 viewTimestamp = viewTimestamp,
                 viewTimestampOffset = viewTimestampOffset,
                 hasReplay = hasReplay,
+                hasTimeseries = hasTimeseries,
                 sessionSampleRate = sampleRate
             )
         }

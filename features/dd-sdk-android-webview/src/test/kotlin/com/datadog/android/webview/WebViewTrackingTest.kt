@@ -10,6 +10,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.context.ProcessInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
@@ -686,12 +687,19 @@ internal class WebViewTrackingTest {
         val fakeSessionId = forge.getForgery<UUID>().toString()
         val fakeAnonymousId = forge.anAlphabeticalString()
         val fakeUserInfo = UserInfo(anonymousId = fakeAnonymousId)
+        val fakeProcessInfo = ProcessInfo(isMainProcess = forge.aBool())
         val mockWebViewRumFeature = mock<FeatureScope>()
         val mockWebViewLogsFeature = mock<FeatureScope>()
         val expectedEvent = fakeBundledEvent.deepCopy().apply {
             add("container", JsonObject().apply { addProperty("source", "android") })
             add("application", JsonObject().apply { addProperty("id", fakeApplicationId) })
-            add("session", JsonObject().apply { addProperty("id", fakeSessionId) })
+            add(
+                "session",
+                JsonObject().apply {
+                    addProperty("id", fakeSessionId)
+                    addProperty("is_main_process", fakeProcessInfo.isMainProcess)
+                }
+            )
             add("usr", JsonObject().apply { addProperty("anonymous_id", fakeAnonymousId) })
             addProperty(
                 "ddtags",
@@ -720,6 +728,7 @@ internal class WebViewTrackingTest {
         )
         whenever(mockDatadogContext.featuresContext) doReturn fakeFeaturesContext
         whenever(mockDatadogContext.userInfo) doReturn fakeUserInfo
+        whenever(mockDatadogContext.processInfo) doReturn fakeProcessInfo
         val mockEventBatchWriter = mock<EventBatchWriter>()
         val mockEventWriteScope = mock<EventWriteScope>()
         whenever(mockEventWriteScope.invoke(any())) doAnswer {

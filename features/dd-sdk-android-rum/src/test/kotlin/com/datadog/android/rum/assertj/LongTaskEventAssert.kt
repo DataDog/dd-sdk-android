@@ -221,6 +221,16 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
+    fun hasSessionTimeseries(expected: Boolean?): LongTaskEventAssert {
+        assertThat(actual.session.hasTimeseries)
+            .overridingErrorMessage(
+                "Expected event to have session.has_timeseries:$expected " +
+                    "but was ${actual.session.hasTimeseries}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasSessionType(expected: LongTaskEvent.LongTaskEventSessionType): LongTaskEventAssert {
         assertThat(actual.session.type)
             .overridingErrorMessage(
