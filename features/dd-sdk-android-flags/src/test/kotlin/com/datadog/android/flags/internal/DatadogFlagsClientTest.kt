@@ -22,6 +22,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientEvent
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -181,7 +182,6 @@ internal class DatadogFlagsClientTest {
         whenever(mockFlagsRepository.firstFlags) doReturn latch
         val fakeKeys = listOf(fakeDefaultValue)
         val failure = if (throwsError) AssertionError(fakeJsonKey) else IllegalStateException(fakeJsonKey)
-        val deliveries = ArrayDeque<Runnable>()
         val events = mutableListOf<FlagsClientEvent>()
         if (completeBeforeRegistration) latch.complete(fakeKeys)
 
@@ -189,23 +189,17 @@ internal class DatadogFlagsClientTest {
         testedClient.onFirstFlags { throw failure }
         testedClient.onFirstFlags { events.add(it) }
         if (!completeBeforeRegistration) {
-            latch.complete(fakeKeys) { deliveries.add(it) }
-            deliveries.removeFirst().run()
+            latch.complete(fakeKeys)
         }
 
         // Then
         assertThat(events.map { it.flagsChanged }).containsExactly(fakeKeys)
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                eq(failure),
-                any(),
-                anyOrNull()
-            )
-            assertThat(firstValue()).isEqualTo("First flags callback failed")
-        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            "First flags callback failed",
+            throwable = failure
+        )
     }
 
     @Test

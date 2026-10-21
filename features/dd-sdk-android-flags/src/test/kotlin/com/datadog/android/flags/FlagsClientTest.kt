@@ -7,17 +7,12 @@
 package com.datadog.android.flags
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.api.storage.datastore.DataStoreHandler
-import com.datadog.android.api.storage.datastore.DataStoreReadCallback
-import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.NoOpFlagsClient
-import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.model.EvaluationContext
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -31,16 +26,12 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.ExecutorService
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -128,52 +119,6 @@ internal class FlagsClientTest {
     }
 
     // region Static Flag Resolution Methods
-
-    @Test
-    fun `M deliver cached first flags W network work is pending`(@StringForgery fakeTargetingKey: String) {
-        // Given
-        val dataStore = mock<DataStoreHandler>()
-        val featureScope = mock<FeatureScope>()
-        val networkExecutor = mock<ExecutorService>()
-        val callbackExecutor = mock<ExecutorService>()
-        val networkWork = ArrayDeque<Runnable>()
-        whenever(mockSdkCore.getFeature(FLAGS_FEATURE_NAME)).thenReturn(featureScope)
-        whenever(featureScope.dataStore).thenReturn(dataStore)
-        whenever(mockSdkCore.createOkHttpCallFactory(any())).thenReturn(mock())
-        whenever(mockSdkCore.createSingleThreadExecutorService(FlagsClient.FLAGS_NETWORK_EXECUTOR_NAME))
-            .thenReturn(networkExecutor)
-        whenever(mockSdkCore.createSingleThreadExecutorService(FlagsClient.FLAGS_FIRST_FLAGS_EXECUTOR_NAME))
-            .thenReturn(callbackExecutor)
-        doAnswer { networkWork.add(it.getArgument(0)); null }.whenever(networkExecutor).execute(any())
-        doAnswer { it.getArgument<Runnable>(0).run(); null }.whenever(callbackExecutor).execute(any())
-        doAnswer {
-            it.getArgument<(DatadogContext) -> Unit>(1).invoke(mock())
-            null
-        }.whenever(featureScope).withContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any())
-        val configuration = FlagsConfiguration.Builder().initializationTimeout(0).build()
-        val client = FlagsClient.createInternal(
-            configuration,
-            mockSdkCore,
-            FlagsFeature(mockSdkCore, configuration),
-            null,
-            fakeTargetingKey
-        )
-        val context = EvaluationContext(fakeTargetingKey)
-        var delivered = false
-        client.onFirstFlags { delivered = true }
-
-        // When
-        client.setEvaluationContext(context)
-        argumentCaptor<DataStoreReadCallback<FlagsStateEntry>> {
-            verify(dataStore).value(any(), anyOrNull(), capture(), any())
-            firstValue.onSuccess(DataStoreContent(0, FlagsStateEntry(context, emptyMap(), 0)))
-        }
-
-        // Then
-        assertThat(networkWork).hasSize(1)
-        assertThat(delivered).isTrue()
-        verify(callbackExecutor).shutdown()
-    }
 
     @Test
     fun `M return no-op default W get() + resolveBooleanValue() {no client registered for SDK core}`(

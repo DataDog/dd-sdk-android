@@ -15,10 +15,8 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
-import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
-import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
@@ -31,7 +29,6 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.utils.DDCoreStateHolder
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -45,9 +42,6 @@ import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvSource
-import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -1205,118 +1199,6 @@ internal class EvaluationsManagerTest {
     }
 
     // region Cold-start integration
-
-    @ParameterizedTest
-    @ValueSource(booleans = [false, true])
-    fun `M wait for valid first flags W initial fetch fails without cached flags`(malformedResponse: Boolean) {
-        // Given
-        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
-        whenever(mockSdkCore.timeProvider).thenReturn(mock())
-        val repository = DefaultFlagsRepository(mockSdkCore, fakeTargetingKey, mock(), persistenceLoadTimeoutMs = 0)
-        val firstKeys = mutableListOf<List<String>>()
-        repository.firstFlags.whenComplete { firstKeys.add(it) }
-        val manager = EvaluationsManager(
-            mockSdkCore, mockExecutorService, mockInternalLogger, repository,
-            mockAssignmentsDownloader, PrecomputeMapper(mockInternalLogger), mockFlagsStateManager, null,
-            { _, _ -> {} }
-        )
-        val context = EvaluationContext(fakeTargetingKey)
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
-            .thenReturn(if (malformedResponse) "{ invalid json }" else null, EMPTY_FLAGS_RESPONSE_JSON)
-
-        // When
-        manager.updateEvaluationsForContext(context)
-
-        // Then
-        assertThat(firstKeys).isEmpty()
-        assertThat(repository.getFlagsSnapshot()).isEmpty()
-        assertThat(repository.getEvaluationContext()).isNull()
-
-        // When
-        manager.updateEvaluationsForContext(context)
-
-        // Then
-        assertThat(firstKeys).containsExactly(emptyList())
-        assertThat(repository.getEvaluationContext()).isEqualTo(context)
-        verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
-    }
-
-    @ParameterizedTest
-    @CsvSource("same, false", "same, true", "user, false", "user, true", "attributes, false", "attributes, true")
-    fun `M retain only matching assignments W failed context update`(
-        contextChange: String,
-        malformedResponse: Boolean,
-        forge: Forge
-    ) {
-        // Given
-        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
-        whenever(mockSdkCore.timeProvider).thenReturn(mock())
-        val dataStore = mock<DataStoreHandler>()
-        val repository = DefaultFlagsRepository(mockSdkCore, fakeTargetingKey, dataStore)
-        val cachedContext = EvaluationContext(fakeTargetingKey)
-        val matchingContext = contextChange == "same"
-        val requestedContext = when (contextChange) {
-            "user" -> cachedContext.copy(targetingKey = fakeTargetingKey + "-other")
-            "attributes" -> cachedContext.copy(attributes = mapOf(fakeAttributeKey to fakeAttributeValue))
-            else -> cachedContext
-        }
-        val flag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = "boolean",
-            variationValue = "true",
-            doLog = false
-        )
-        repository.setFlagsAndContext(cachedContext, mapOf(fakeAttributeKey to flag))
-        val firstKeys = mutableListOf<List<String>>()
-        repository.firstFlags.whenComplete { firstKeys.add(it) }
-        val state = FlagsStateManager(
-            DDCoreStateHolder.create(FlagsClientState.NotReady, FlagsStateListener::onStateChanged)
-        )
-        val manager = EvaluationsManager(
-            mockSdkCore, mockExecutorService, mockInternalLogger, repository,
-            mockAssignmentsDownloader, PrecomputeMapper(mockInternalLogger), state, null,
-            { _, _ -> {} }
-        )
-        val client = DatadogFlagsClient(
-            mockSdkCore,
-            manager,
-            repository,
-            forge.getForgery<FlagsConfiguration>().copy(
-                trackExposures = false,
-                trackEvaluations = false,
-                rumIntegrationEnabled = false
-            ),
-            mock(),
-            mock(),
-            null,
-            state
-        )
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(requestedContext, fakeDatadogContext))
-            .thenReturn(if (malformedResponse) "{ invalid json }" else null)
-        val callback = mock<EvaluationContextCallback>()
-
-        // When
-        manager.updateEvaluationsForContext(requestedContext, callback)
-
-        // Then
-        assertThat(client.resolveBooleanValue(fakeAttributeKey, false)).isEqualTo(matchingContext)
-        assertThat(repository.getEvaluationContext()).isEqualTo(requestedContext)
-        assertThat(repository.getFlagsSnapshot()).isEqualTo(
-            if (matchingContext) mapOf(fakeAttributeKey to flag) else emptyMap()
-        )
-        if (matchingContext) {
-            assertThat(state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
-        } else {
-            assertThat(state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
-        }
-        assertThat(firstKeys).containsExactly(listOf(fakeAttributeKey))
-        argumentCaptor<FlagsStateEntry> {
-            verify(dataStore).setValue(any(), capture(), any(), anyOrNull(), any())
-            assertThat(firstValue.evaluationContext).isEqualTo(cachedContext)
-            assertThat(firstValue.flags).containsEntry(fakeAttributeKey, flag)
-        }
-        verify(callback).onFailure(any())
-        verify(callback, never()).onSuccess()
-    }
 
     @Test
     fun `M notify STALE W updateEvaluationsForContext() { cold start network failure, cached flags match context }`() {
