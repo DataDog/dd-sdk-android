@@ -62,11 +62,30 @@ internal class DefaultFlagsRepository(
         flags: Map<String, PrecomputedFlag>,
         onInstalled: () -> Unit
     ) {
-        val newState = FlagsState(context, flags)
+        installFlagsAndContext(context, flags).complete(onInstalled)
+    }
 
+    override fun installFlagsAndContext(
+        context: EvaluationContext,
+        flags: Map<String, PrecomputedFlag>
+    ): FlagsInstallation {
+        val newState = FlagsState(context, flags)
         val firstInstallation = atomicState.getAndSet(newState) == null
         persistenceLoadedLatch.countDown()
 
+        return FlagsInstallation { onInstalled ->
+            persistFlags(context, flags)
+            try {
+                onInstalled()
+            } finally {
+                if (firstInstallation) {
+                    firstFlags.complete(flags.keys, deliverFirstFlags)
+                }
+            }
+        }
+    }
+
+    private fun persistFlags(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
         try {
             persistenceManager.saveFlagsState(
                 context = context,
@@ -97,14 +116,12 @@ internal class DefaultFlagsRepository(
                 exception
             )
         }
+    }
 
-        try {
-            onInstalled()
-        } finally {
-            if (firstInstallation) {
-                firstFlags.complete(flags.keys, deliverFirstFlags)
-            }
-        }
+    override fun getResolutionSnapshot(key: String): FlagsResolutionSnapshot? {
+        waitForPersistenceLoad()
+        val state = atomicState.get() ?: return null
+        return FlagsResolutionSnapshot(state.flags[key], state.context)
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {

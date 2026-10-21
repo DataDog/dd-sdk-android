@@ -15,6 +15,13 @@ internal class NoOpFlagsRepository : FlagsRepository {
 
     override fun getEvaluationContext(): EvaluationContext? = null
 
+    override fun getResolutionSnapshot(key: String): FlagsResolutionSnapshot? = null
+
+    override fun installFlagsAndContext(
+        context: EvaluationContext,
+        flags: Map<String, PrecomputedFlag>
+    ) = FlagsInstallation { onInstalled -> onInstalled() }
+
     override fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,

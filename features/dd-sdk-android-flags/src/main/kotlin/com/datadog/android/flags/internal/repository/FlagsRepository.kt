@@ -13,6 +13,12 @@ internal interface FlagsRepository {
     fun getPrecomputedFlag(key: String): PrecomputedFlag?
     fun getEvaluationContext(): EvaluationContext?
 
+    /** Reads the context and nullable assignment after one bounded persistence wait. */
+    fun getResolutionSnapshot(key: String): FlagsResolutionSnapshot?
+
+    /** Installs memory only. The caller must complete storage and notifications outside its locks. */
+    fun installFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>): FlagsInstallation
+
     /**
      * Runs [onInstalled] after attempting storage submission, including when submission fails.
      * For the first installation, it runs before publishing the first-flags result to listeners.
@@ -27,4 +33,10 @@ internal interface FlagsRepository {
     fun hasFlags(): Boolean
     fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean
     fun getFlagsSnapshot(): Map<String, PrecomputedFlag>
+}
+
+internal data class FlagsResolutionSnapshot(val flag: PrecomputedFlag?, val context: EvaluationContext)
+
+internal fun interface FlagsInstallation {
+    fun complete(onInstalled: () -> Unit)
 }

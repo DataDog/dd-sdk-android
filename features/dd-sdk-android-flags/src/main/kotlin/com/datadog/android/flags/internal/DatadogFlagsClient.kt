@@ -277,27 +277,16 @@ internal class DatadogFlagsClient(
             override val flagKey: String,
             val defaultValue: T,
             val errorCode: ErrorCode,
-            val errorMessage: String
+            val errorMessage: String,
+            val context: EvaluationContext
         ) : InternalResolution<T>()
     }
-
-    private fun <T : Any> checkProviderReady(flagKey: String, defaultValue: T): InternalResolution.Error<T>? =
-        if (flagsRepository.getEvaluationContext() == null) {
-            InternalResolution.Error(
-                flagKey = flagKey,
-                defaultValue = defaultValue,
-                errorCode = ErrorCode.PROVIDER_NOT_READY,
-                errorMessage = "Provider not ready - call setEvaluationContext() before resolving flags"
-            )
-        } else {
-            null
-        }
 
     private fun <T : Any> checkExperimentationContext(
         flagKey: String,
         defaultValue: T,
-        context: EvaluationContext?
-    ): InternalResolution.Error<T>? = experimentationOptOut.resolutionError(context)?.let { error ->
+        resolutionContext: ExperimentationOptOut.ResolutionContext
+    ): InternalResolution.Error<T>? = resolutionContext.errorCode?.let { error ->
         InternalResolution.Error(
             flagKey,
             defaultValue,
@@ -306,7 +295,8 @@ internal class DatadogFlagsClient(
                 ExperimentationOptOut.INVALID_CONTEXT_MESSAGE
             } else {
                 "Assignments for the current evaluation context are not available."
-            }
+            },
+            resolutionContext.context
         )
     }
 
@@ -330,24 +320,38 @@ internal class DatadogFlagsClient(
         flagKey: String,
         defaultValue: T
     ): InternalResolution<T> {
-        val flagAndContext = flagsRepository.getPrecomputedFlagWithContext(flagKey)
-        checkExperimentationContext(
-            flagKey,
-            defaultValue,
-            flagAndContext?.second ?: flagsRepository.getEvaluationContext()
-        )?.let { return it }
-        checkProviderReady(flagKey, defaultValue)?.let { return it }
-        if (flagAndContext == null) {
+        val snapshot = flagsRepository.getResolutionSnapshot(flagKey)
+        val resolutionContext = experimentationOptOut.resolutionContext(snapshot?.context)
+        checkExperimentationContext(flagKey, defaultValue, resolutionContext)?.let { return it }
+        if (snapshot == null) {
+            return InternalResolution.Error(
+                flagKey = flagKey,
+                defaultValue = defaultValue,
+                errorCode = ErrorCode.PROVIDER_NOT_READY,
+                errorMessage = "Provider not ready - call setEvaluationContext() before resolving flags",
+                context = resolutionContext.context
+            )
+        }
+        val flag = snapshot.flag
+        if (flag == null) {
             return InternalResolution.Error(
                 flagKey = flagKey,
                 defaultValue = defaultValue,
                 errorCode = ErrorCode.FLAG_NOT_FOUND,
-                errorMessage = "Flag not found"
+                errorMessage = "Flag not found",
+                context = resolutionContext.context
             )
         }
 
-        val (flag, context) = flagAndContext
+        return parseAssignment(flagKey, defaultValue, flag, snapshot.context)
+    }
 
+    private fun <T : Any> parseAssignment(
+        flagKey: String,
+        defaultValue: T,
+        flag: PrecomputedFlag,
+        context: EvaluationContext
+    ): InternalResolution<T> {
         val conversionResult = FlagValueConverter.convert(
             variationValue = flag.variationValue,
             variationType = flag.variationType,
@@ -390,7 +394,8 @@ internal class DatadogFlagsClient(
                     flagKey = flagKey,
                     defaultValue = defaultValue,
                     errorCode = errorCode,
-                    errorMessage = errorMessage
+                    errorMessage = errorMessage,
+                    context = context
                 )
             }
         )
@@ -535,11 +540,9 @@ internal class DatadogFlagsClient(
             return
         }
 
-        val context = flagsRepository.getEvaluationContext() ?: EvaluationContext.EMPTY
-
         writeEvaluationEvent(
             flagKey = resolution.flagKey,
-            context = context,
+            context = resolution.context,
             variantKey = null,
             allocationKey = null,
             errorCode = resolution.errorCode.name,

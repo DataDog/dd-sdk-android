@@ -35,17 +35,23 @@ internal class ExperimentationOptOut(val mode: ExperimentationOptOutMode = Exper
         }
     }
 
-    fun resolutionError(installedContext: EvaluationContext?): ErrorCode? {
-        if (!enabled) return null
+    fun resolutionError(installedContext: EvaluationContext?): ErrorCode? =
+        resolutionContext(installedContext).errorCode
+
+    fun resolutionContext(installedContext: EvaluationContext?): ResolutionContext {
+        if (!enabled) return ResolutionContext(installedContext ?: EvaluationContext.EMPTY, null)
         return synchronized(stateLock) {
             val request = currentRequest
-            when {
+            val errorCode = when {
                 request?.invalid == true -> ErrorCode.INVALID_CONTEXT
                 request == null || request.context != installedContext -> ErrorCode.PROVIDER_NOT_READY
                 else -> null
             }
+            ResolutionContext(request?.context ?: EvaluationContext.EMPTY, errorCode)
         }
     }
+
+    data class ResolutionContext(val context: EvaluationContext, val errorCode: ErrorCode?)
 
     class Request(
         val context: EvaluationContext,
