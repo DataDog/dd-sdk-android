@@ -12,7 +12,6 @@ stages:
     - |
       gradle_jvm_args=(
         "-Xmx8g"
-        "-XX:ReservedCodeCacheSize=768m"
         "-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG"
       )
 
