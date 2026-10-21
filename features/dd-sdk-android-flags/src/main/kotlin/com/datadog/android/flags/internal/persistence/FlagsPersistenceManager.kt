@@ -11,6 +11,7 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
@@ -19,17 +20,16 @@ internal class FlagsPersistenceManager(
     private val dataStore: DataStoreHandler,
     instanceName: String,
     private val internalLogger: InternalLogger,
-    experimentationOptOutEnabled: Boolean = false,
+    experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
     onStateLoaded: (FlagsStateEntry?) -> Unit
 ) {
     private val serializer = FlagsStateSerializer(internalLogger)
     private val deserializer = FlagsStateDeserializer(internalLogger)
 
-    // Immediate-mode caches contain assignments accepted with the option acknowledgment check.
-    private val flagsStateKey: String = if (experimentationOptOutEnabled) {
-        "flags-immediate-v1-state-$instanceName"
-    } else {
-        "$FLAGS_STATE_KEY_PREFIX-$instanceName"
+    private val flagsStateKey: String = when (experimentationOptOutMode) {
+        ExperimentationOptOutMode.DISABLED -> "$FLAGS_STATE_KEY_PREFIX-$instanceName"
+        ExperimentationOptOutMode.IMMEDIATE -> "flags-immediate-v1-state-$instanceName"
+        ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY -> "flags-future-v1-state-$instanceName"
     }
 
     init {

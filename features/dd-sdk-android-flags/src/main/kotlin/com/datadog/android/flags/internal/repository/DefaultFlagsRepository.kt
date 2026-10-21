@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
+import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.model.EvaluationContext
@@ -25,7 +26,7 @@ internal class DefaultFlagsRepository(
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
     private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS,
     private val deliverFirstFlags: (Runnable) -> Unit = Runnable::run,
-    experimentationOptOutEnabled: Boolean = false
+    experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED
 ) : FlagsRepository {
     private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
     private val atomicState = AtomicReference<FlagsState?>(null)
@@ -38,7 +39,7 @@ internal class DefaultFlagsRepository(
         dataStore = dataStore,
         instanceName = instanceName,
         internalLogger = internalLogger,
-        experimentationOptOutEnabled = experimentationOptOutEnabled
+        experimentationOptOutMode = experimentationOptOutMode
     ) { persistedState ->
         val installed = try {
             persistedState != null && atomicState.compareAndSet(

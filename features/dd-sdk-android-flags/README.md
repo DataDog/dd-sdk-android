@@ -125,14 +125,21 @@ client.setEvaluationContext(
 val enabled = client.resolveBooleanValue("new-feature", false)
 ```
 
-The default mode is `DISABLED`. In `IMMEDIATE` mode, provide an RFC3339 timestamp string to exclude the subject from experiment allocations.
+| Mode | Behavior when the subject timestamp is present |
+| --- | --- |
+| `DISABLED` (default) | Ignore the timestamp. |
+| `IMMEDIATE` | Exclude all experiment allocations, including experiments already in progress. |
+| `FUTURE_EXPERIMENTS_ONLY` | Continue experiments activated before the timestamp. Exclude newer experiments and those with unknown activation times. |
+
+Provide the customer's stored RFC3339 opt-out timestamp. Do not replace it with the current time on each launch.
 A future timestamp also takes effect immediately. Omit the attribute to permit experimentation.
 Invalid timestamps return application defaults with `INVALID_CONTEXT` and do not send an assignment request.
 
 The backend skips experiment allocations and continues through ordinary feature allocations.
 The SDK requires the backend to acknowledge exclusion before using the response.
+Future mode requires the matching mode and exact cutoff in the acknowledgement.
 During a context change, assignments from a different context are unavailable.
-Previously accepted assignments can be reused only for the same context and mode.
+Previously accepted assignments can be reused only for the same context, cutoff, and mode.
 Evaluation telemetry is independent of experimentation opt-out.
 Immediate withdrawal can change an enrolled subject's experience. Account for this change in experiment analysis.
 

@@ -207,6 +207,7 @@ datadog:
       - "kotlin.String.get(kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "kotlin.String.substring(kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "kotlin.String.substring(kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
+      - "kotlin.String.take(kotlin.Int):java.lang.IllegalArgumentException"
       - "kotlin.String.takeLast(kotlin.Int):java.lang.IllegalArgumentException"
       - "kotlin.String.takeLast(kotlin.Int):kotlin.IllegalArgumentException"
       - "kotlin.String.toLong():java.lang.NumberFormatException"

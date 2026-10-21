@@ -64,7 +64,8 @@ internal class ExperimentationOptOutTest {
         assertThat(stubSdkCore.requestsSent()).hasSize(1)
         val attributes = stubSdkCore.requestsSent().single().bodyAsJson()
             .getJSONObject("data").getJSONObject("attributes")
-        assertThat(attributes.optJSONObject("evaluation_options")?.opt("experimentation_opt_out")).isEqualTo(true)
+        assertThat(attributes.optJSONObject("evaluation_options")?.opt("experimentation_opt_out_mode"))
+            .isEqualTo("immediate")
     }
 
     @ParameterizedTest
@@ -127,7 +128,7 @@ internal class ExperimentationOptOutTest {
         // Then
         assertThat(result.value).isTrue()
         assertThat(stubSdkCore.eventsWritten(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
-        assertThat(requestOptions(stubSdkCore)?.opt("experimentation_opt_out")).isEqualTo(false)
+        assertThat(requestOptions(stubSdkCore)?.opt("experimentation_opt_out_mode")).isEqualTo("immediate")
     }
 
     @Test
@@ -172,6 +173,25 @@ internal class ExperimentationOptOutTest {
         assertThat(result.errorCode).isEqualTo(ErrorCode.PROVIDER_NOT_READY)
         assertThat(testedClient.state.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
         assertThat(stubSdkCore.eventsWritten(Feature.FLAGS_FEATURE_NAME)).isEmpty()
+    }
+
+    @Test
+    fun `M reject conflicting mode acknowledgement W setEvaluationContext()`(forge: Forge) {
+        // Given
+        val stubSdkCore = FlagsClientTest.createStubSdkCore(forge)
+        val testedClient = buildClient(stubSdkCore)
+        val body = JSONObject(response(true, acknowledgment = true))
+        body.getJSONObject("data").getJSONObject("attributes").getJSONObject("evaluation_options")
+            .put("experimentation_opt_out_mode", "future_experiments_only")
+        stubSdkCore.stubNetworkResponses { httpResponse(it, body = body.toString()) }
+
+        // When
+        testedClient.setEvaluationContext(optedOutContext())
+        val result = testedClient.resolve("flag", false)
+
+        // Then
+        assertThat(result.value).isFalse()
+        assertThat(result.errorCode).isEqualTo(ErrorCode.PROVIDER_NOT_READY)
     }
 
     @Test
@@ -328,7 +348,7 @@ internal class ExperimentationOptOutTest {
         // Then
         assertThat(result.value).isTrue()
         assertThat(result.errorCode).isNull()
-        assertThat(requestOptions(stubSdkCore)?.opt("experimentation_opt_out")).isEqualTo(true)
+        assertThat(requestOptions(stubSdkCore)?.opt("experimentation_opt_out_mode")).isEqualTo("immediate")
     }
 
     @Test

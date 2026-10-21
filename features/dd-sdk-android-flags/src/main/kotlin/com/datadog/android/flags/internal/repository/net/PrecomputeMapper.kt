@@ -7,6 +7,9 @@
 package com.datadog.android.flags.internal.repository.net
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.ExperimentationOptOutMode
+import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
+import com.datadog.android.flags.internal.evaluation.wireValue
 import com.datadog.android.flags.internal.model.JsonKeys
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import org.json.JSONException
@@ -19,13 +22,16 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
     // JSONObject methods accept non-null String parameters despite Detekt's incorrect nullable interpretation
     // All getJsonObject calls are wrapped in try-catch for JSONException which is the actual exception thrown
     @Suppress("UnsafeThirdPartyFunctionCall")
-    internal fun map(rawJson: String, experimentationOptOut: Boolean = false): Map<String, PrecomputedFlag>? {
+    internal fun map(
+        rawJson: String,
+        experimentationOptOut: ExperimentationOptOut.Request? = null
+    ): Map<String, PrecomputedFlag>? {
         return try {
             val jsonResponse = JSONObject(rawJson)
             val data = jsonResponse.getJSONObject("data")
             val attributes = data.getJSONObject("attributes")
-            if (experimentationOptOut &&
-                attributes.optJSONObject("evaluation_options")?.opt("experimentation_opt_out") != true
+            if (experimentationOptOut != null &&
+                !acknowledgesOptOut(attributes.optJSONObject("evaluation_options"), experimentationOptOut)
             ) {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -83,7 +89,24 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
         }
     }
 
+    private fun acknowledgesOptOut(options: JSONObject?, request: ExperimentationOptOut.Request): Boolean =
+        when (request.mode) {
+            ExperimentationOptOutMode.DISABLED -> true
+            ExperimentationOptOutMode.IMMEDIATE -> options?.opt("experimentation_opt_out") == true &&
+                (
+                    !options.has(OPT_OUT_MODE) ||
+                        options.opt(OPT_OUT_MODE) == request.mode.wireValue
+                    )
+            ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY ->
+                options?.opt(OPT_OUT_MODE) == request.mode.wireValue &&
+                    ExperimentationOptOut.timestampsMatch(
+                        request.context.attributes[ExperimentationOptOut.ATTRIBUTE],
+                        options.opt(ExperimentationOptOut.ATTRIBUTE) as? String
+                    )
+        }
+
     private companion object {
+        const val OPT_OUT_MODE = "experimentation_opt_out_mode"
         const val ERROR_FAILED_TO_PARSE_RESPONSE = "Failed to parse precomputed response"
     }
 }

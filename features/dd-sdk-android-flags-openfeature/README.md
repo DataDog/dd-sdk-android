@@ -103,6 +103,9 @@ val provider = FlagsClient.Builder().build().asOpenFeatureProvider()
 
 ### Exclude a subject from experimentation
 
+Select `IMMEDIATE` to stop experimentation now, or `FUTURE_EXPERIMENTS_ONLY` to continue experiments activated before the subject's stored opt-out timestamp.
+Configure the native client before creating the provider. The default is `DISABLED`.
+
 Configure the native client before wrapping it as a provider:
 
 ```kotlin

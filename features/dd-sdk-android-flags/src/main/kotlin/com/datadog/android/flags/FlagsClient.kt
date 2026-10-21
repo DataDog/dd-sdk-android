@@ -439,7 +439,7 @@ interface FlagsClient {
                     featureSdkCore = featureSdkCore,
                     dataStore = datastore,
                     instanceName = name,
-                    experimentationOptOutEnabled = experimentationOptOut.enabled,
+                    experimentationOptOutMode = experimentationOptOutMode,
                     deliverFirstFlags = { delivery ->
                         val worker = featureSdkCore.createSingleThreadExecutorService(FLAGS_FIRST_FLAGS_EXECUTOR_NAME)
                         try {
@@ -461,7 +461,7 @@ interface FlagsClient {
                     PrecomputedAssignmentsRequestFactory(
                         featureSdkCore.internalLogger,
                         configuration.customFlagEndpoint,
-                        experimentationOptOutEnabled = true
+                        experimentationOptOutMode = experimentationOptOutMode
                     )
                 } else {
                     flagsFeature.precomputedRequestFactory

@@ -155,7 +155,9 @@ internal class EvaluationsManager(
                         hadFlags && flagsRepository.getEvaluationContext() == context
                     )
                     val response = assignmentsReader.readPrecomputedFlags(context, datadogContext)
-                    val flagsMap = response?.let { precomputeMapper.map(it, request.optedOut) }
+                    val flagsMap = response?.let { rawResponse ->
+                        precomputeMapper.map(rawResponse, request.takeIf { it.optedOut })
+                    }
                     if (flagsMap != null) {
                         val installed = experimentationOptOut.ifCurrent(request) {
                             installFlags(context, flagsMap, initializationCompletion, callback)

@@ -15,7 +15,7 @@ import java.util.Locale
 
 /** Keeps the requested context separate from the last accepted assignments. */
 internal class ExperimentationOptOut(val mode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED) {
-    val enabled: Boolean = mode == ExperimentationOptOutMode.IMMEDIATE
+    val enabled: Boolean = mode != ExperimentationOptOutMode.DISABLED
     val stateLock = Any()
     private var currentRequest: Request? = null
 
@@ -23,7 +23,7 @@ internal class ExperimentationOptOut(val mode: ExperimentationOptOutMode = Exper
         val snapshot = context.copy(attributes = context.attributes.toMap())
         val supplied = enabled && snapshot.attributes.containsKey(ATTRIBUTE)
         val invalid = supplied && !isValidTimestamp(snapshot.attributes[ATTRIBUTE])
-        Request(snapshot, supplied && !invalid, invalid).also { currentRequest = it }
+        Request(snapshot, supplied && !invalid, invalid, mode).also { currentRequest = it }
     }
 
     fun ifCurrent(request: Request, action: () -> Unit): Boolean = synchronized(stateLock) {
@@ -47,27 +47,56 @@ internal class ExperimentationOptOut(val mode: ExperimentationOptOutMode = Exper
         }
     }
 
-    class Request(val context: EvaluationContext, val optedOut: Boolean, val invalid: Boolean)
+    class Request(
+        val context: EvaluationContext,
+        val optedOut: Boolean,
+        val invalid: Boolean,
+        val mode: ExperimentationOptOutMode
+    )
+
+    private data class Timestamp(val wholeSecondMillis: Long, val fraction: String)
 
     companion object {
         const val ATTRIBUTE = "dd_experimentation_opt_out_at"
         const val INVALID_CONTEXT_MESSAGE = "dd_experimentation_opt_out_at must be an RFC3339 timestamp string."
         private val TIMESTAMP =
-            Regex("^([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2})(?:\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$")
+            Regex("^([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2})(?:\\.([0-9]+))?(Z|[+-][0-9]{2}:[0-9]{2})$")
 
-        fun isValidTimestamp(value: String?): Boolean {
-            val match = value?.let { TIMESTAMP.matchEntire(it.uppercase(Locale.US)) } ?: return false
-            val zone = match.groupValues[2].replace("Z", "+0000").replace(":", "")
+        fun isValidTimestamp(value: String?): Boolean = parseTimestamp(value) != null
+
+        fun timestampsMatch(expected: String?, actual: String?): Boolean {
+            val timestamp = parseTimestamp(expected) ?: return false
+            return timestamp == parseTimestamp(actual)
+        }
+
+        private fun parseTimestamp(value: String?): Timestamp? {
+            val match = value?.let { TIMESTAMP.matchEntire(it.uppercase(Locale.US)) } ?: return null
+            val zone = match.groupValues[TIMEZONE_GROUP].replace("Z", "+0000").replace(":", "")
             val normalized = match.groupValues[1] + zone
             return try {
                 val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US).apply { isLenient = false }
                 val position = ParsePosition(0)
-                format.parse(normalized, position) != null && position.index == normalized.length
+                val date = format.parse(normalized, position)
+                if (date != null && position.index == normalized.length) {
+                    Timestamp(date.time, match.groupValues[2].take(NANOSECOND_DIGITS).trimEnd('0'))
+                } else {
+                    null
+                }
             } catch (_: IllegalArgumentException) {
-                false
+                null
             } catch (_: NullPointerException) {
-                false
+                null
             }
         }
+
+        private const val NANOSECOND_DIGITS = 9
+        private const val TIMEZONE_GROUP = 3
     }
 }
+
+internal val ExperimentationOptOutMode.wireValue: String
+    get() = when (this) {
+        ExperimentationOptOutMode.DISABLED -> "disabled"
+        ExperimentationOptOutMode.IMMEDIATE -> "immediate"
+        ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY -> "future_experiments_only"
+    }

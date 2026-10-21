@@ -17,5 +17,13 @@ enum class ExperimentationOptOutMode {
      * An invalid timestamp returns application defaults with an INVALID_CONTEXT error.
      * This does not suppress evaluation telemetry.
      */
-    IMMEDIATE
+    IMMEDIATE,
+
+    /**
+     * Excludes experiment allocations activated at or after the subject's RFC3339 opt-out timestamp.
+     * Allocations without an activation timestamp are also excluded. Earlier experiments continue.
+     * Omit the attribute to permit experimentation. Invalid timestamps return INVALID_CONTEXT.
+     * This does not suppress evaluation telemetry.
+     */
+    FUTURE_EXPERIMENTS_ONLY
 }

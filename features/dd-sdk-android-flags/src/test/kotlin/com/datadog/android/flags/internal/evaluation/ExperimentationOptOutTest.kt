@@ -8,10 +8,30 @@ package com.datadog.android.flags.internal.evaluation
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.NullSource
 import org.junit.jupiter.params.provider.ValueSource
 
 internal class ExperimentationOptOutTest {
+    @ParameterizedTest
+    @CsvSource(
+        "2026-10-21T10:00:00.123456789Z, 2026-10-21T14:30:00.123456789+04:30, true",
+        "2026-10-21T10:00:00.123456789Z, 2026-10-21T10:00:00.123456788Z, false",
+        "2026-10-21T10:00:00.123456789123Z, 2026-10-21T10:00:00.123456789Z, true",
+        "2026-10-21T10:00:00.100Z, 2026-10-21T10:00:00.1Z, true",
+        "2026-10-21T10:00:00Z, 2026-10-21T10:00:00.000000000Z, true",
+        "2026-10-21T10:00:00Z, 2026-10-21T10:00:00.000000001Z, false",
+        "2026-10-21T10:00:00Z, junk, false"
+    )
+    fun `M compare instants at nanosecond precision W timestampsMatch()`(
+        expected: String,
+        actual: String,
+        matches: Boolean
+    ) {
+        // When / Then
+        assertThat(ExperimentationOptOut.timestampsMatch(expected, actual)).isEqualTo(matches)
+    }
+
     @ParameterizedTest
     @ValueSource(
         strings = [

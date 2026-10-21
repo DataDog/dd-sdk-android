@@ -4,6 +4,7 @@ interface com.datadog.android.flags.EvaluationContextCallback
 enum com.datadog.android.flags.ExperimentationOptOutMode
   - DISABLED
   - IMMEDIATE
+  - FUTURE_EXPERIMENTS_ONLY
 object com.datadog.android.flags.Flags
   fun enable(FlagsConfiguration = FlagsConfiguration.default, com.datadog.android.api.SdkCore = Datadog.getInstance())
 interface com.datadog.android.flags.FlagsClient
