@@ -222,7 +222,8 @@ internal class RumSessionScope(
             sessionState = sessionState,
             sessionStartReason = startReason,
             isSessionActive = isActive,
-            sessionSampleRate = sessionSampleRate
+            sessionSampleRate = sessionSampleRate,
+            hasTimeseries = timeseriesCollector.isTimeseriesCollected(sessionId)
         )
     }
 

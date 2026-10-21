@@ -24,7 +24,16 @@
     },
     "quota_reason": {
       "type": "string",
-      "description": "The reason profiling was denied by the quota API for this session. Present only when the quota API returned a denied decision.",
+      "description": "The reason provided by the profiling quota admission API. This attribute is only present if the status is `stopped` due to quota.\n\nPossible values:\n- `quota_ok`: Quota check passed.\n- `quota_exceeded`: The organization has exceeded its profiling quota.\n- `org_disabled`: The organization has profiling disabled.\n- `backend_unavailable`: The quota admission API is unavailable or not initialized.\n- `undefined`: The quota reason is undefined.\n- `timeout`: The quota check timed out on the client side.\n- `api-error`: An API error occurred on the client side.",
+      "enum": [
+        "quota_ok",
+        "quota_exceeded",
+        "org_disabled",
+        "backend_unavailable",
+        "undefined",
+        "timeout",
+        "api-error"
+      ],
       "readOnly": true
     }
   }

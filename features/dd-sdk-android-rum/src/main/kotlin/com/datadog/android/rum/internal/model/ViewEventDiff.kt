@@ -76,7 +76,8 @@ private fun diffSession(
             hasReplay = diffEquals(ViewEvent.ViewEventSession::hasReplay),
             isActive = diffEquals(ViewEvent.ViewEventSession::isActive),
             sampledForReplay = diffEquals(ViewEvent.ViewEventSession::sampledForReplay),
-            isMainProcess = diffEquals(ViewEvent.ViewEventSession::isMainProcess)
+            isMainProcess = diffEquals(ViewEvent.ViewEventSession::isMainProcess),
+            hasTimeseries = diffEquals(ViewEvent.ViewEventSession::hasTimeseries)
         )
     }
 }
@@ -197,7 +198,8 @@ private fun diffDd(old: ViewEvent.Dd, new: ViewEvent.Dd): ViewUpdateEvent.Dd {
             profiling = diffEquals(ViewEvent.Dd::profiling)?.let {
                 ViewUpdateEvent.Profiling(
                     status = it.status?.toViewUpdate(),
-                    errorReason = it.errorReason?.toViewUpdate()
+                    errorReason = it.errorReason?.toViewUpdate(),
+                    quotaReason = it.quotaReason?.toViewUpdate()
                 )
             },
             // pageStates uses diffList (drop-by-size), consistent with inForegroundPeriods.

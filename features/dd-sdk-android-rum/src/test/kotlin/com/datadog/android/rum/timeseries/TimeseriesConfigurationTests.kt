@@ -22,7 +22,7 @@ internal class TimeseriesConfigurationTests {
 
         // Then
         assertThat(testedConfiguration.bufferSize).isEqualTo(120)
-        assertThat(testedConfiguration.intervalMs).isEqualTo(1000L)
+        assertThat(testedConfiguration.samplingIntervalMs).isEqualTo(1000L)
     }
 
     @Test

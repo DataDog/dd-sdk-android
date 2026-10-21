@@ -203,6 +203,15 @@ data class com.datadog.android.internal.profiling.ProfilingRumContext
   constructor(String, String, String?, String?)
 data class com.datadog.android.internal.profiling.ProfilingThreadDump
   constructor(String, Thread.State, String)
+enum com.datadog.android.internal.profiling.quota.QuotaReason
+  constructor(String)
+  - QUOTA_OK
+  - QUOTA_EXCEEDED
+  - ORG_DISABLED
+  - BACKEND_UNAVAILABLE
+  - UNDEFINED
+  - TIMEOUT
+  - API_ERROR
 object com.datadog.android.internal.rum.RumSessionConstants
   const val EMPTY_RUM_SESSION_ID: String
   const val TRACKED_SESSION_STATE: String
