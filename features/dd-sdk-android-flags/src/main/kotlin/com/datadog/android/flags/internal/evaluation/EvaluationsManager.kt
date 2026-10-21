@@ -79,6 +79,7 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
  * @param flagStateManager channel for notifying state change listeners
  * @param initializationTimeoutMs optional maximum duration of the first context operation
  * @param initializationTimeoutScheduler schedules the first context timeout
+ * @param experimentationOptOut validates contexts and prevents superseded installations
  */
 internal class EvaluationsManager(
     private val sdkCore: FeatureSdkCore,
@@ -89,10 +90,11 @@ internal class EvaluationsManager(
     private val precomputeMapper: PrecomputeMapper,
     private val flagStateManager: FlagsStateManager,
     private val initializationTimeoutMs: Long?,
-    private val initializationTimeoutScheduler: InitializationTimeoutScheduler
+    private val initializationTimeoutScheduler: InitializationTimeoutScheduler,
+    private val experimentationOptOut: ExperimentationOptOut = ExperimentationOptOut()
 ) {
     private val didStartInitialization = AtomicBoolean(false)
-    private val initializationTerminalLock = Any()
+    private val initializationTerminalLock = experimentationOptOut.stateLock
 
     /**
      * Processes a new evaluation context by fetching flags and storing atomically.
@@ -109,11 +111,32 @@ internal class EvaluationsManager(
      * @param callback Optional callback invoked when the context is set and the flags have been fetched successfully or not.
      */
     fun updateEvaluationsForContext(context: EvaluationContext, callback: EvaluationContextCallback? = null) {
-        val matchingCachedAssignments = AtomicBoolean(false)
-        val initializationCompletion = startInitializationTimeout(context, callback, matchingCachedAssignments) {
-            flagStateManager.updateState(FlagsClientState.Reconciling)
+        val request = experimentationOptOut.prepare(context)
+        if (request.invalid) {
+            val error = IllegalArgumentException(ExperimentationOptOut.INVALID_CONTEXT_MESSAGE)
+            experimentationOptOut.ifCurrent(request) {
+                flagStateManager.updateState(FlagsClientState.Error(error))
+            }
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { ExperimentationOptOut.INVALID_CONTEXT_MESSAGE }
+            )
+            callback?.onFailure(error)
+            return
         }
-        if (initializationCompletion == null) flagStateManager.updateState(FlagsClientState.Reconciling)
+        fetchEvaluations(request, callback)
+    }
+
+    private fun fetchEvaluations(request: ExperimentationOptOut.Request, callback: EvaluationContextCallback?) {
+        val context = request.context
+        val matchingCachedAssignments = AtomicBoolean(false)
+        val initializationCompletion = startInitializationTimeout(request, callback, matchingCachedAssignments) {
+            experimentationOptOut.ifCurrent(request) { flagStateManager.updateState(FlagsClientState.Reconciling) }
+        }
+        if (initializationCompletion == null) {
+            experimentationOptOut.ifCurrent(request) { flagStateManager.updateState(FlagsClientState.Reconciling) }
+        }
 
         sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
             ?.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) { datadogContext ->
@@ -132,34 +155,54 @@ internal class EvaluationsManager(
                         hadFlags && flagsRepository.getEvaluationContext() == context
                     )
                     val response = assignmentsReader.readPrecomputedFlags(context, datadogContext)
-                    val flagsMap = response?.let { precomputeMapper.map(it) }
+                    val flagsMap = response?.let { precomputeMapper.map(it, request.optedOut) }
                     if (flagsMap != null) {
-                        installFlags(context, flagsMap, initializationCompletion, callback)
-                    } else {
-                        val message = if (response == null) NETWORK_REQUEST_FAILED_MESSAGE else INVALID_RESPONSE_MESSAGE
-                        internalLogger.log(
-                            InternalLogger.Level.WARN,
-                            InternalLogger.Target.USER,
-                            { message }
-                        )
-
-                        val throwable = NetworkRequestFailedException(message)
-                        // Lifecycle is Stale only when retained flags match the requested context.
-                        // Failed fetches do not replace the installed flags or their context.
-                        val completionCallback = synchronized(initializationTerminalLock) {
+                        val installed = experimentationOptOut.ifCurrent(request) {
+                            installFlags(context, flagsMap, initializationCompletion, callback)
+                        }
+                        if (!installed) {
                             val result = initializationCompletion?.take()?.callback
                                 ?: if (initializationCompletion == null) callback else null
-                            if (matchingCachedAssignments.get()) {
-                                flagStateManager.updateState(FlagsClientState.Stale)
-                            } else {
-                                flagStateManager.updateState(FlagsClientState.Error(throwable))
-                            }
-                            result
+                            result?.onFailure(
+                                IllegalStateException("A newer evaluation context replaced this request.")
+                            )
                         }
-                        completionCallback?.onFailure(throwable)
+                    } else {
+                        handleRequestFailure(
+                            request,
+                            initializationCompletion,
+                            callback,
+                            matchingCachedAssignments.get(),
+                            response == null
+                        )
                     }
                 }
             }
+    }
+
+    private fun handleRequestFailure(
+        request: ExperimentationOptOut.Request,
+        initializationCompletion: InitializationCompletion?,
+        callback: EvaluationContextCallback?,
+        matchingCachedAssignments: Boolean,
+        networkFailed: Boolean
+    ) {
+        val message = if (networkFailed) NETWORK_REQUEST_FAILED_MESSAGE else INVALID_RESPONSE_MESSAGE
+        internalLogger.log(InternalLogger.Level.WARN, InternalLogger.Target.USER, { message })
+        val throwable = NetworkRequestFailedException(message)
+        val completionCallback = synchronized(initializationTerminalLock) {
+            val result = initializationCompletion?.take()?.callback
+                ?: if (initializationCompletion == null) callback else null
+            experimentationOptOut.ifCurrent(request) {
+                if (matchingCachedAssignments) {
+                    flagStateManager.updateState(FlagsClientState.Stale)
+                } else {
+                    flagStateManager.updateState(FlagsClientState.Error(throwable))
+                }
+            }
+            result
+        }
+        completionCallback?.onFailure(throwable)
     }
 
     private fun installFlags(
@@ -185,7 +228,7 @@ internal class EvaluationsManager(
     }
 
     private fun startInitializationTimeout(
-        context: EvaluationContext,
+        request: ExperimentationOptOut.Request,
         callback: EvaluationContextCallback?,
         matchingCachedAssignments: AtomicBoolean,
         beforeScheduling: () -> Unit
@@ -201,15 +244,17 @@ internal class EvaluationsManager(
                     val claimedResult = completion.take(shouldCancelTimeout = false)
                         ?: return@synchronized null
                     val currentState = flagStateManager.getCurrentState()
-                    if (currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale) {
-                        val hasMatchingCachedAssignments = matchingCachedAssignments.get() ||
-                            flagsRepository.hasLoadedFlagsForContext(context)
-                        val timeoutState = if (hasMatchingCachedAssignments) {
-                            FlagsClientState.Stale
-                        } else {
-                            FlagsClientState.Error(error)
+                    experimentationOptOut.ifCurrent(request) {
+                        if (currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale) {
+                            val hasMatchingCachedAssignments = matchingCachedAssignments.get() ||
+                                flagsRepository.hasLoadedFlagsForContext(request.context)
+                            val timeoutState = if (hasMatchingCachedAssignments) {
+                                FlagsClientState.Stale
+                            } else {
+                                FlagsClientState.Error(error)
+                            }
+                            flagStateManager.updateState(timeoutState)
                         }
-                        flagStateManager.updateState(timeoutState)
                     }
                     claimedResult
                 }

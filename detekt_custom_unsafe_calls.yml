@@ -177,6 +177,7 @@ datadog:
       - "java.text.SimpleDateFormat.format(java.util.Date?):java.lang.NullPointerException"
       - "java.text.SimpleDateFormat.format(kotlin.Any):java.lang.IllegalArgumentException,java.lang.NullPointerException"
       - "java.text.SimpleDateFormat.parse(kotlin.String):java.text.ParseException,java.lang.NullPointerException"
+      - "java.text.SimpleDateFormat.parse(kotlin.String?, java.text.ParsePosition?):java.lang.NullPointerException"
       - "java.util.TimeZone.getTimeZone(kotlin.String?):java.lang.NullPointerException"
       # endregion
       # region Java Collections
@@ -272,6 +273,7 @@ datadog:
       - "org.json.JSONObject.getJSONObject(kotlin.String?):org.json.JSONException"
       - "org.json.JSONObject.getString(kotlin.String?):org.json.JSONException"
       - "org.json.JSONObject.put(kotlin.String?, kotlin.Any?):org.json.JSONException"
+      - "org.json.JSONObject.put(kotlin.String?, kotlin.Boolean):org.json.JSONException"
       - "org.json.JSONObject.put(kotlin.String?, kotlin.Long):org.json.JSONException"
       # endregion
       # region Gson

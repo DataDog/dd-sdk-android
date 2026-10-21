@@ -19,56 +19,68 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
     // JSONObject methods accept non-null String parameters despite Detekt's incorrect nullable interpretation
     // All getJsonObject calls are wrapped in try-catch for JSONException which is the actual exception thrown
     @Suppress("UnsafeThirdPartyFunctionCall")
-    internal fun map(rawJson: String): Map<String, PrecomputedFlag>? = try {
-        val jsonResponse = JSONObject(rawJson)
-        val data = jsonResponse.getJSONObject("data")
-        val attributes = data.getJSONObject("attributes")
-        val flags = attributes.getJSONObject("flags")
+    internal fun map(rawJson: String, experimentationOptOut: Boolean = false): Map<String, PrecomputedFlag>? {
+        return try {
+            val jsonResponse = JSONObject(rawJson)
+            val data = jsonResponse.getJSONObject("data")
+            val attributes = data.getJSONObject("attributes")
+            if (experimentationOptOut &&
+                attributes.optJSONObject("evaluation_options")?.opt("experimentation_opt_out") != true
+            ) {
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    { "The feature flags response did not acknowledge experimentation opt-out." }
+                )
+                return null
+            }
+            val flags = attributes.getJSONObject("flags")
 
-        val flagsMap = mutableMapOf<String, PrecomputedFlag>()
+            val flagsMap = mutableMapOf<String, PrecomputedFlag>()
 
-        val flagKeys = flags.keys()
-        while (flagKeys.hasNext()) {
-            val flagKey = flagKeys.next()
-            val flagData = flags.getJSONObject(flagKey)
+            val flagKeys = flags.keys()
+            while (flagKeys.hasNext()) {
+                val flagKey = flagKeys.next()
+                val flagData = flags.getJSONObject(flagKey)
 
-            val precomputedFlag = PrecomputedFlag(
-                variationType = flagData.getString(JsonKeys.VARIATION_TYPE.value),
-                variationValue = when (val value = flagData.get(JsonKeys.VARIATION_VALUE.value)) {
-                    is Boolean -> value.toString()
-                    is String -> value
-                    is Number -> value.toString()
-                    else -> value.toString()
-                },
-                doLog = flagData.getBoolean(JsonKeys.DO_LOG.value),
-                allocationKey = flagData.getString(JsonKeys.ALLOCATION_KEY.value),
-                variationKey = flagData.getString(JsonKeys.VARIATION_KEY.value),
-                extraLogging = flagData.getJSONObject(JsonKeys.EXTRA_LOGGING.value),
-                reason = flagData.getString(JsonKeys.REASON.value),
-                serialId = (flagData.opt(JsonKeys.SERIAL_ID.value) as? Number)?.toLong()
+                val precomputedFlag = PrecomputedFlag(
+                    variationType = flagData.getString(JsonKeys.VARIATION_TYPE.value),
+                    variationValue = when (val value = flagData.get(JsonKeys.VARIATION_VALUE.value)) {
+                        is Boolean -> value.toString()
+                        is String -> value
+                        is Number -> value.toString()
+                        else -> value.toString()
+                    },
+                    doLog = flagData.getBoolean(JsonKeys.DO_LOG.value),
+                    allocationKey = flagData.getString(JsonKeys.ALLOCATION_KEY.value),
+                    variationKey = flagData.getString(JsonKeys.VARIATION_KEY.value),
+                    extraLogging = flagData.getJSONObject(JsonKeys.EXTRA_LOGGING.value),
+                    reason = flagData.getString(JsonKeys.REASON.value),
+                    serialId = (flagData.opt(JsonKeys.SERIAL_ID.value) as? Number)?.toLong()
+                )
+
+                flagsMap[flagKey] = precomputedFlag
+            }
+
+            flagsMap
+        } catch (e: JSONException) {
+            internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { ERROR_FAILED_TO_PARSE_RESPONSE },
+                throwable = e
             )
 
-            flagsMap[flagKey] = precomputedFlag
+            internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                target = InternalLogger.Target.TELEMETRY,
+                messageBuilder = { ERROR_FAILED_TO_PARSE_RESPONSE },
+                throwable = e,
+                onlyOnce = true
+            )
+
+            null
         }
-
-        flagsMap
-    } catch (e: JSONException) {
-        internalLogger.log(
-            level = InternalLogger.Level.WARN,
-            target = InternalLogger.Target.MAINTAINER,
-            messageBuilder = { ERROR_FAILED_TO_PARSE_RESPONSE },
-            throwable = e
-        )
-
-        internalLogger.log(
-            level = InternalLogger.Level.WARN,
-            target = InternalLogger.Target.TELEMETRY,
-            messageBuilder = { ERROR_FAILED_TO_PARSE_RESPONSE },
-            throwable = e,
-            onlyOnce = true
-        )
-
-        null
     }
 
     private companion object {

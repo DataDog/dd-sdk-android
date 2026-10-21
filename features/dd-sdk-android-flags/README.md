@@ -107,6 +107,35 @@ val client = FlagsClient.Builder().build()
 val analyticsClient = FlagsClient.Builder("analytics").build()
 ```
 
+### Exclude a subject from experimentation
+
+Configure the client to honor `dd_experimentation_opt_out_at`:
+
+```kotlin
+val client = FlagsClient.Builder()
+    .experimentationOptOutMode(ExperimentationOptOutMode.IMMEDIATE)
+    .build()
+
+client.setEvaluationContext(
+    EvaluationContext(
+        targetingKey = "user-123",
+        attributes = mapOf("dd_experimentation_opt_out_at" to "2026-10-21T10:00:00Z")
+    )
+)
+val enabled = client.resolveBooleanValue("new-feature", false)
+```
+
+The default mode is `DISABLED`. In `IMMEDIATE` mode, provide an RFC3339 timestamp string to exclude the subject from experiment allocations.
+A future timestamp also takes effect immediately. Omit the attribute to permit experimentation.
+Invalid timestamps return application defaults with `INVALID_CONTEXT` and do not send an assignment request.
+
+The backend skips experiment allocations and continues through ordinary feature allocations.
+The SDK requires the backend to acknowledge exclusion before using the response.
+During a context change, assignments from a different context are unavailable.
+Previously accepted assignments can be reused only for the same context and mode.
+Evaluation telemetry is independent of experimentation opt-out.
+Immediate withdrawal can change an enrolled subject's experience. Account for this change in experiment analysis.
+
 ### Set evaluation context
 
 Before evaluating flags, set the evaluation context with a targeting key and optional attributes:

@@ -15,6 +15,7 @@ import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsSubscription
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
@@ -32,8 +33,8 @@ import org.json.JSONObject
  * This implementation fetches precomputed flag values from the local repository and handles
  * type conversion with appropriate fallback to default values.
  *
- * Thread safety: All resolve methods are thread-safe read operations with no synchronization
- * overhead, designed for high-frequency usage. The [setEvaluationContext] method is thread-safe
+ * Thread safety: All resolve methods are thread-safe read operations.
+ * The [setEvaluationContext] method is thread-safe
  * but triggers asynchronous background operations for fetching updated flag evaluations.
  *
  * @param featureSdkCore the SDK core for logging and internal operations
@@ -44,6 +45,7 @@ import org.json.JSONObject
  * @param exposureProcessor responsible for writing exposure batches to be sent to flags backend.
  * @param evaluationsFeature the evaluations subfeature for accessing processor and context (optional).
  * @param flagStateManager channel for managing state change listeners
+ * @param experimentationOptOut validates the active opt-out context before resolution
  */
 @Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
 internal class DatadogFlagsClient(
@@ -54,7 +56,8 @@ internal class DatadogFlagsClient(
     private val rumEvaluationLogger: RumEvaluationLogger,
     private val exposureProcessor: EventsProcessor,
     private val evaluationsFeature: EvaluationsFeature?,
-    private val flagStateManager: FlagsStateManager
+    private val flagStateManager: FlagsStateManager,
+    internal val experimentationOptOut: ExperimentationOptOut = ExperimentationOptOut()
 ) : FlagsClient {
 
     override val state: StateObservable = flagStateManager
@@ -290,6 +293,23 @@ internal class DatadogFlagsClient(
             null
         }
 
+    private fun <T : Any> checkExperimentationContext(
+        flagKey: String,
+        defaultValue: T,
+        context: EvaluationContext?
+    ): InternalResolution.Error<T>? = experimentationOptOut.resolutionError(context)?.let { error ->
+        InternalResolution.Error(
+            flagKey,
+            defaultValue,
+            error,
+            if (error == ErrorCode.INVALID_CONTEXT) {
+                ExperimentationOptOut.INVALID_CONTEXT_MESSAGE
+            } else {
+                "Assignments for the current evaluation context are not available."
+            }
+        )
+    }
+
     /**
      * Fetches a flag from the repository and parses its value to the expected type.
      *
@@ -310,8 +330,13 @@ internal class DatadogFlagsClient(
         flagKey: String,
         defaultValue: T
     ): InternalResolution<T> {
-        checkProviderReady(flagKey, defaultValue)?.let { return it }
         val flagAndContext = flagsRepository.getPrecomputedFlagWithContext(flagKey)
+        checkExperimentationContext(
+            flagKey,
+            defaultValue,
+            flagAndContext?.second ?: flagsRepository.getEvaluationContext()
+        )?.let { return it }
+        checkProviderReady(flagKey, defaultValue)?.let { return it }
         if (flagAndContext == null) {
             return InternalResolution.Error(
                 flagKey = flagKey,
@@ -533,7 +558,12 @@ internal class DatadogFlagsClient(
      *
      * @return A map of flag key to an unparsed flag, or an empty map if no flags are available or the client is not ready.
      */
-    internal fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag> = flagsRepository.getFlagsSnapshot()
+    internal fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag> =
+        if (experimentationOptOut.resolutionError(flagsRepository.getEvaluationContext()) == null) {
+            flagsRepository.getFlagsSnapshot()
+        } else {
+            emptyMap()
+        }
 
     /**
      * Tracks the evaluation of a flag from an exact flags state snapshot.
@@ -541,7 +571,9 @@ internal class DatadogFlagsClient(
      * Supposed to be used by internal Datadog packages to track flag evaluations from an exact flags state snapshot.
      */
     internal fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
-        trackResolution(flagKey, flag, context)
+        if (experimentationOptOut.resolutionError(context) == null) {
+            trackResolution(flagKey, flag, context)
+        }
     }
 
     // endregion

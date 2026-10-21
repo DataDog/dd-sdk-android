@@ -48,9 +48,13 @@ internal suspend fun FlagsClient.setEvaluationContextSuspend(context: Evaluation
                     continuation.resume(Unit)
                 } else {
                     continuation.resumeWithException(
-                        OpenFeatureError.GeneralError(
-                            error.message ?: "Unknown error: ${error::class.simpleName}"
-                        )
+                        if (error is IllegalArgumentException) {
+                            OpenFeatureError.InvalidContextError(error.message ?: "Invalid evaluation context")
+                        } else {
+                            OpenFeatureError.GeneralError(
+                                error.message ?: "Unknown error: ${error::class.simpleName}"
+                            )
+                        }
                     )
                 }
             }

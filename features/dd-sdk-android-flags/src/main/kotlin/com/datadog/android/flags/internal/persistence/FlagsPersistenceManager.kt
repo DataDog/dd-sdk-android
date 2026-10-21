@@ -19,11 +19,18 @@ internal class FlagsPersistenceManager(
     private val dataStore: DataStoreHandler,
     instanceName: String,
     private val internalLogger: InternalLogger,
+    experimentationOptOutEnabled: Boolean = false,
     onStateLoaded: (FlagsStateEntry?) -> Unit
 ) {
     private val serializer = FlagsStateSerializer(internalLogger)
     private val deserializer = FlagsStateDeserializer(internalLogger)
-    private val flagsStateKey: String = "$FLAGS_STATE_KEY_PREFIX-$instanceName"
+
+    // Immediate-mode caches contain assignments accepted with the option acknowledgment check.
+    private val flagsStateKey: String = if (experimentationOptOutEnabled) {
+        "flags-immediate-v1-state-$instanceName"
+    } else {
+        "$FLAGS_STATE_KEY_PREFIX-$instanceName"
+    }
 
     init {
         loadFlagsState(onStateLoaded)

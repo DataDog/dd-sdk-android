@@ -24,7 +24,8 @@ internal class DefaultFlagsRepository(
     private val dataStore: DataStoreHandler,
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
     private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS,
-    private val deliverFirstFlags: (Runnable) -> Unit = Runnable::run
+    private val deliverFirstFlags: (Runnable) -> Unit = Runnable::run,
+    experimentationOptOutEnabled: Boolean = false
 ) : FlagsRepository {
     private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
     private val atomicState = AtomicReference<FlagsState?>(null)
@@ -36,7 +37,8 @@ internal class DefaultFlagsRepository(
     private val persistenceManager = FlagsPersistenceManager(
         dataStore = dataStore,
         instanceName = instanceName,
-        internalLogger = internalLogger
+        internalLogger = internalLogger,
+        experimentationOptOutEnabled = experimentationOptOutEnabled
     ) { persistedState ->
         val installed = try {
             persistedState != null && atomicState.compareAndSet(

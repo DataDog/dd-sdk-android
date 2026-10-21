@@ -29,6 +29,39 @@ import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 @ForgeConfiguration(BaseConfigurator::class)
 internal class ConvertersTest {
 
+    @Test
+    fun `M preserve invalid typed opt out W toDatadogEvaluationContext()`() {
+        // Given
+        val key = "dd_experimentation_opt_out_at"
+        val values =
+            listOf(Value.Boolean(true), Value.Integer(1), Value.Double(1.0), Value.Null, Value.Structure(emptyMap()))
+
+        // When
+        val converted = values.map {
+            ImmutableContext(
+                "subject",
+                mapOf(key to it)
+            ).toDatadogEvaluationContext(experimentationOptOutEnabled = true)
+        }
+
+        // Then
+        assertThat(converted.map { it.attributes[key] }).containsOnly("")
+    }
+
+    @Test
+    fun `M preserve timestamp W toDatadogEvaluationContext()`() {
+        // Given
+        val key = "dd_experimentation_opt_out_at"
+        val timestamp = "2026-10-21T10:00:00Z"
+        val context = ImmutableContext("subject", mapOf(key to Value.String(timestamp)))
+
+        // When
+        val converted = context.toDatadogEvaluationContext(experimentationOptOutEnabled = true)
+
+        // Then
+        assertThat(converted.attributes).containsEntry(key, timestamp)
+    }
+
     // region toProviderEvaluation
 
     @Test

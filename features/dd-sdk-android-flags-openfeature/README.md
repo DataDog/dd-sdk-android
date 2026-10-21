@@ -101,6 +101,31 @@ Flags.enable(flagsConfig)
 val provider = FlagsClient.Builder().build().asOpenFeatureProvider()
 ```
 
+### Exclude a subject from experimentation
+
+Configure the native client before wrapping it as a provider:
+
+```kotlin
+val provider = FlagsClient.Builder()
+    .experimentationOptOutMode(ExperimentationOptOutMode.IMMEDIATE)
+    .build()
+    .asOpenFeatureProvider()
+
+OpenFeatureAPI.setEvaluationContext(
+    ImmutableContext(
+        targetingKey = "user-123",
+        attributes = mapOf("dd_experimentation_opt_out_at" to Value.String("2026-10-21T10:00:00Z"))
+    )
+)
+OpenFeatureAPI.setProviderAndWait(provider)
+val enabled = OpenFeatureAPI.getClient().getBooleanValue("new-feature", false)
+```
+
+The default mode is `DISABLED`. In `IMMEDIATE` mode, the attribute must be an RFC3339 string.
+Omit it for subjects who can participate. Boolean, numeric, null, and malformed timestamp values are invalid.
+The provider returns defaults with `INVALID_CONTEXT` for invalid input. It does not convert non-string values into timestamps.
+See the [native client behavior](../dd-sdk-android-flags/README.md#exclude-a-subject-from-experimentation) for delivery and cache behavior.
+
 ## Using the OpenFeature API
 
 Once the provider is configured, you can use the standard OpenFeature Kotlin SDK API to evaluate feature flags:

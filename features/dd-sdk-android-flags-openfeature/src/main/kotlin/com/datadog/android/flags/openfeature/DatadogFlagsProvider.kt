@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.openfeature.internal.adapters.convertToValue
 import com.datadog.android.flags.openfeature.internal.adapters.toDatadogEvaluationContext
@@ -80,6 +81,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     FeatureProvider {
 
     private val internalLogger: InternalLogger = sdkCore.internalLogger
+    private val experimentationOptOutEnabled = _FlagsInternalProxy(flagsClient).isExperimentationOptOutEnabled()
 
     override val metadata: ProviderMetadata = object : ProviderMetadata {
         override val name: String = PROVIDER_NAME
@@ -103,7 +105,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * without matching cached assignments
      */
     override suspend fun initialize(initialContext: OpenFeatureEvaluationContext?) {
-        val datadogContext = initialContext?.toDatadogEvaluationContext() ?: DatadogEvaluationContext.EMPTY
+        val datadogContext = initialContext?.toDatadogEvaluationContext(experimentationOptOutEnabled)
+            ?: DatadogEvaluationContext.EMPTY
         flagsClient.setEvaluationContextSuspend(datadogContext)
     }
 
@@ -124,7 +127,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         oldContext: OpenFeatureEvaluationContext?,
         newContext: OpenFeatureEvaluationContext
     ) {
-        flagsClient.setEvaluationContextSuspend(newContext.toDatadogEvaluationContext())
+        flagsClient.setEvaluationContextSuspend(newContext.toDatadogEvaluationContext(experimentationOptOutEnabled))
     }
 
     override fun getBooleanEvaluation(
@@ -223,10 +226,12 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
                     FlagsClientState.Stale -> OpenFeatureProviderEvents.ProviderStale
                     is FlagsClientState.Error -> newState.error.let { cause ->
                         OpenFeatureProviderEvents.ProviderError(
-                            error = if (cause is FlagsInitializationTimeoutException) {
-                                OpenFeatureError.GeneralError(cause.message ?: "Flags initialization timed out")
-                            } else {
-                                OpenFeatureError.ProviderFatalError()
+                            error = when (cause) {
+                                is IllegalArgumentException ->
+                                    OpenFeatureError.InvalidContextError(cause.message ?: "Invalid evaluation context")
+                                is FlagsInitializationTimeoutException ->
+                                    OpenFeatureError.GeneralError(cause.message ?: "Flags initialization timed out")
+                                else -> OpenFeatureError.ProviderFatalError()
                             }
                         )
                     }

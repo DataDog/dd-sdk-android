@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.getFlagsEndpoint
 import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Headers
@@ -23,7 +24,8 @@ import org.json.JSONObject
  */
 internal class PrecomputedAssignmentsRequestFactory(
     private val internalLogger: InternalLogger,
-    private val customFlagEndpoint: String?
+    private val customFlagEndpoint: String?,
+    private val experimentationOptOutEnabled: Boolean = false
 ) {
 
     /**
@@ -94,6 +96,15 @@ internal class PrecomputedAssignmentsRequestFactory(
             .put("env", env)
             .put("source", source)
             .put("subject", subject)
+        if (experimentationOptOutEnabled) {
+            attributes.put(
+                "evaluation_options",
+                JSONObject().put(
+                    "experimentation_opt_out",
+                    context.attributes.containsKey(ExperimentationOptOut.ATTRIBUTE)
+                )
+            )
+        }
         val data = JSONObject()
             .put("type", "precompute-assignments-request")
             .put("attributes", attributes)
