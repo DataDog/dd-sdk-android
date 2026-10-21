@@ -59,7 +59,14 @@ class VitalAppLaunchEventForgeryFactory : ForgeryFactory<VitalAppLaunchEvent> {
             },
             dd = VitalAppLaunchEvent.Dd(
                 session = forge.aNullable { VitalAppLaunchEvent.DdSession(getForgery()) },
-                browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") }
+                browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") },
+                profiling = forge.aNullable {
+                    VitalAppLaunchEvent.Profiling(
+                        status = aNullable { getForgery() },
+                        quotaReason = aNullable { getForgery() },
+                        errorReason = aNullable { getForgery() }
+                    )
+                }
             ),
             ddtags = forge.aNullable { ddTagsString() },
             view = VitalAppLaunchEvent.VitalAppLaunchEventView(

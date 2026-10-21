@@ -25,6 +25,7 @@ import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
+import com.datadog.android.internal.profiling.quota.QuotaReason
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -37,8 +38,8 @@ import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
-import com.datadog.android.rum.assertj.VitalEventAssert
 import com.datadog.android.rum.assertj.VitalOperationPropertiesAssert
+import com.datadog.android.rum.assertj.VitalOperationStepEventAssert.Companion.assertThat
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
@@ -642,6 +643,8 @@ internal class RumViewScopeTest {
                 hasViewId(testedScope.viewId)
                 hasApplicationId(fakeParentContext.applicationId)
                 hasSessionId(fakeParentContext.sessionId)
+                hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+                hasSessionTimeseries(fakeParentContext.hasTimeseries)
                 hasSessionType(fakeRumSessionType?.toView() ?: ViewEvent.ViewEventSessionType.USER)
                 hasNoSyntheticsTest()
                 hasStartReason(fakeParentContext.sessionStartReason)
@@ -2183,6 +2186,8 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+                    hasSessionTimeseries(fakeParentContext.hasTimeseries)
                     hasSessionType(fakeRumSessionType?.toView() ?: ViewEvent.ViewEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
@@ -4843,6 +4848,8 @@ internal class RumViewScopeTest {
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+                    hasSessionTimeseries(fakeParentContext.hasTimeseries)
                     hasActionId(fakeActionId)
                     hasErrorType(null)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
@@ -6075,7 +6082,7 @@ internal class RumViewScopeTest {
     fun `M include quotaReason in LongTaskEvent W handleEvent(AddLongTask) {profiler not running and quota denied}`(
         @LongForgery(0L, 700_000_000L) durationNs: Long,
         @StringForgery target: String,
-        @StringForgery fakeQuotaReason: String
+        @Forgery fakeQuotaReason: QuotaReason
     ) {
         // Given
         testedScope.activeActionScope = null
@@ -6099,8 +6106,8 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<LongTaskEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue.dd.profiling?.quotaReason).isEqualTo(fakeQuotaReason)
-            assertThat(firstValue.dd.profiling?.status).isEqualTo(LongTaskEvent.ProfilingStatus.STOPPED)
+            assertThat(firstValue).hasProfilingQuotaReason(fakeQuotaReason)
+            assertThat(firstValue).hasProfilingStatus(LongTaskEvent.ProfilingStatus.STOPPED)
         }
     }
 
@@ -6108,7 +6115,7 @@ internal class RumViewScopeTest {
     fun `M ignore stale quotaReason in LongTaskEvent W handleEvent(AddLongTask) {quota reason for other session}`(
         @LongForgery(0L, 700_000_000L) durationNs: Long,
         @StringForgery target: String,
-        @StringForgery fakeQuotaReason: String,
+        @Forgery fakeQuotaReason: QuotaReason,
         @StringForgery fakeOtherSessionId: String
     ) {
         // Given — the quota reason is stamped with a different session than the current one
@@ -6133,8 +6140,7 @@ internal class RumViewScopeTest {
         // Then — the stale reason is ignored and no profiling status is attached
         argumentCaptor<LongTaskEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue.dd.profiling?.quotaReason).isNull()
-            assertThat(firstValue.dd.profiling?.status).isNull()
+            assertThat(firstValue).hasNoProfiling()
         }
     }
 
@@ -6161,7 +6167,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<VitalOperationStepEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            VitalEventAssert.assertThat(firstValue)
+            assertThat(firstValue)
                 .hasProfilingStatus(VitalOperationStepEvent.ProfilingStatus.RUNNING)
         }
     }
@@ -6193,14 +6199,14 @@ internal class RumViewScopeTest {
                 capture(),
                 eq(EventType.DEFAULT)
             )
-            VitalEventAssert.assertThat(firstValue).hasNoProfiling()
+            assertThat(firstValue).hasNoProfiling()
         }
     }
 
     @Test
     fun `M include quotaReason in VitalOperationStep W handleEvent(StartOperation) {profiler stopped, quota denied}`(
         @StringForgery fakeName: String,
-        @StringForgery fakeQuotaReason: String
+        @Forgery fakeQuotaReason: QuotaReason
     ) {
         // Given
         val event = RumRawEvent.StartOperation(
@@ -6232,15 +6238,15 @@ internal class RumViewScopeTest {
                 capture(),
                 eq(EventType.DEFAULT)
             )
-            assertThat(firstValue.dd.profiling?.quotaReason).isEqualTo(fakeQuotaReason)
-            assertThat(firstValue.dd.profiling?.status).isEqualTo(VitalOperationStepEvent.ProfilingStatus.STOPPED)
+            assertThat(firstValue).hasProfilingQuotaReason(fakeQuotaReason)
+            assertThat(firstValue).hasProfilingStatus(VitalOperationStepEvent.ProfilingStatus.STOPPED)
         }
     }
 
     @Test
     fun `M ignore stale quotaReason in VitalOperationStep W handleEvent(StartOperation) {stale quota, other session}`(
         @StringForgery fakeName: String,
-        @StringForgery fakeQuotaReason: String,
+        @Forgery fakeQuotaReason: QuotaReason,
         @StringForgery fakeOtherSessionId: String
     ) {
         // Given — the quota reason is stamped with a different session than the current one
@@ -6269,8 +6275,7 @@ internal class RumViewScopeTest {
         // Then — the stale reason is ignored and no profiling status is attached
         argumentCaptor<VitalOperationStepEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue.dd.profiling?.quotaReason).isNull()
-            assertThat(firstValue.dd.profiling?.status).isNull()
+            assertThat(firstValue).hasNoProfiling()
         }
     }
 
@@ -6397,7 +6402,7 @@ internal class RumViewScopeTest {
         argumentCaptor<ErrorEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasProfilingStatus(ErrorEvent.ProfilingStatus.RUNNING)
-            assertThat(firstValue.dd.profiling?.quotaReason).isNull()
+            assertThat(firstValue).hasProfilingQuotaReason(null)
         }
     }
 
@@ -6444,7 +6449,7 @@ internal class RumViewScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String,
-        @StringForgery fakeQuotaReason: String,
+        @Forgery fakeQuotaReason: QuotaReason,
         forge: Forge
     ) {
         // Given — the error was reported by the trigger-based profiling pipeline, but the current
@@ -6483,8 +6488,8 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<ErrorEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue.dd.profiling?.status).isEqualTo(ErrorEvent.ProfilingStatus.STOPPED)
-            assertThat(firstValue.dd.profiling?.quotaReason).isEqualTo(fakeQuotaReason)
+            assertThat(firstValue).hasProfilingStatus(ErrorEvent.ProfilingStatus.STOPPED)
+            assertThat(firstValue).hasProfilingQuotaReason(fakeQuotaReason)
         }
     }
 
@@ -6567,7 +6572,7 @@ internal class RumViewScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String,
-        @StringForgery fakeQuotaReason: String,
+        @Forgery fakeQuotaReason: QuotaReason,
         forge: Forge
     ) {
         // Given
@@ -6603,8 +6608,8 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<ErrorEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue.dd.profiling?.quotaReason).isEqualTo(fakeQuotaReason)
-            assertThat(firstValue.dd.profiling?.status).isEqualTo(ErrorEvent.ProfilingStatus.STOPPED)
+            assertThat(firstValue).hasProfilingQuotaReason(fakeQuotaReason)
+            assertThat(firstValue).hasProfilingStatus(ErrorEvent.ProfilingStatus.STOPPED)
         }
     }
 
@@ -6613,7 +6618,7 @@ internal class RumViewScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String,
-        @StringForgery fakeQuotaReason: String,
+        @Forgery fakeQuotaReason: QuotaReason,
         @StringForgery fakeOtherSessionId: String,
         forge: Forge
     ) {
@@ -6650,8 +6655,7 @@ internal class RumViewScopeTest {
         // Then — the stale reason is ignored and no profiling status is attached
         argumentCaptor<ErrorEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue.dd.profiling?.quotaReason).isNull()
-            assertThat(firstValue.dd.profiling?.status).isNull()
+            assertThat(firstValue).hasNoProfiling()
         }
     }
 
@@ -6710,7 +6714,7 @@ internal class RumViewScopeTest {
     @Test
     fun `M include quotaReason in ViewEvent W handleEvent(StartView) {profiler not running and quota denied}`(
         @Forgery key: RumScopeKey,
-        @StringForgery fakeQuotaReason: String
+        @Forgery fakeQuotaReason: QuotaReason
     ) {
         // Given
         val datadogContext = fakeDatadogContext.copy(
@@ -6737,15 +6741,15 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue.dd.profiling?.quotaReason).isEqualTo(fakeQuotaReason)
-            assertThat(lastValue.dd.profiling?.status).isEqualTo(ViewEvent.ProfilingStatus.STOPPED)
+            assertThat(lastValue).hasProfilingQuotaReason(fakeQuotaReason)
+            assertThat(lastValue).hasProfilingStatus(ViewEvent.ProfilingStatus.STOPPED)
         }
     }
 
     @Test
     fun `M ignore stale quotaReason in ViewEvent W handleEvent(StartView) {quota reason for other session}`(
         @Forgery key: RumScopeKey,
-        @StringForgery fakeQuotaReason: String,
+        @Forgery fakeQuotaReason: QuotaReason,
         @StringForgery fakeOtherSessionId: String
     ) {
         // Given — the quota reason is stamped with a different session than the current one
@@ -6773,8 +6777,7 @@ internal class RumViewScopeTest {
         // Then — the stale reason is ignored and no profiling status is attached
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(lastValue.dd.profiling?.quotaReason).isNull()
-            assertThat(lastValue.dd.profiling?.status).isNull()
+            assertThat(lastValue).hasNoProfiling()
         }
     }
 
@@ -10305,13 +10308,15 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<VitalOperationStepEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            VitalEventAssert.assertThat(lastValue)
+            assertThat(lastValue)
                 .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
                 .hasApplicationId(fakeParentContext.applicationId)
                 .containsExactlyContextAttributes(expectedAttributes)
                 .hasStartReason(fakeParentContext.sessionStartReason)
                 .hasSampleRate(fakeSampleRate)
                 .hasSessionId(fakeParentContext.sessionId)
+                .hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+                .hasSessionTimeseries(fakeParentContext.hasTimeseries)
                 .hasSessionType(
                     fakeRumSessionType?.toVital()
                         ?: VitalOperationStepEvent.VitalOperationStepEventSessionType.USER
@@ -10380,7 +10385,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<VitalOperationStepEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            VitalEventAssert.assertThat(lastValue)
+            assertThat(lastValue)
                 .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
                 .hasApplicationId(fakeParentContext.applicationId)
                 .containsExactlyContextAttributes(expectedAttributes)
@@ -10452,7 +10457,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<VitalOperationStepEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            VitalEventAssert.assertThat(lastValue)
+            assertThat(lastValue)
                 .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
                 .hasApplicationId(fakeParentContext.applicationId)
                 .containsExactlyContextAttributes(expectedAttributes)
@@ -10527,7 +10532,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<VitalOperationStepEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            VitalEventAssert.assertThat(lastValue)
+            assertThat(lastValue)
                 .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
                 .hasApplicationId(fakeParentContext.applicationId)
                 .containsExactlyContextAttributes(expectedAttributes)
@@ -10600,7 +10605,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<VitalOperationStepEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            VitalEventAssert.assertThat(lastValue)
+            assertThat(lastValue)
                 .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
                 .hasApplicationId(fakeParentContext.applicationId)
                 .containsExactlyContextAttributes(expectedAttributes)
@@ -10677,7 +10682,7 @@ internal class RumViewScopeTest {
         // Then
         argumentCaptor<VitalOperationStepEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            VitalEventAssert.assertThat(lastValue)
+            assertThat(lastValue)
                 .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
                 .hasApplicationId(fakeParentContext.applicationId)
                 .containsExactlyContextAttributes(expectedAttributes)

@@ -8,6 +8,7 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
+import com.datadog.android.internal.profiling.quota.QuotaReason
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.internal.domain.scope.toVitalAppLaunchSessionPrecondition
@@ -70,6 +71,24 @@ internal class VitalAppLaunchEventAssert(
         assertThat(actual.session.id)
             .overridingErrorMessage(
                 "Expected event to have session.id $expected but was ${actual.session.id}"
+            )
+            .isEqualTo(expected)
+    }
+
+    fun hasIsMainProcess(expected: Boolean?) = apply {
+        assertThat(actual.session.isMainProcess)
+            .overridingErrorMessage(
+                "Expected event to have session.is_main_process:$expected " +
+                    "but was ${actual.session.isMainProcess}"
+            )
+            .isEqualTo(expected)
+    }
+
+    fun hasSessionTimeseries(expected: Boolean?) = apply {
+        assertThat(actual.session.hasTimeseries)
+            .overridingErrorMessage(
+                "Expected event to have session.has_timeseries:$expected " +
+                    "but was ${actual.session.hasTimeseries}"
             )
             .isEqualTo(expected)
     }
@@ -389,13 +408,13 @@ internal class VitalAppLaunchEventAssert(
             .isNull()
     }
 
-    fun hasProfilingQuotaReason(quotaReason: String?) = apply {
-        assertThat(actual.dd.profiling?.quotaReason)
+    fun hasProfilingQuotaReason(quotaReason: QuotaReason) = apply {
+        assertThat(actual.dd.profiling?.quotaReason?.toJson()?.asString)
             .overridingErrorMessage(
-                "Expected RUM event to have profiling quota reason: $quotaReason" +
+                "Expected RUM event to have profiling quota reason: ${quotaReason.rawValue}" +
                     " but instead was: ${actual.dd.profiling?.quotaReason}"
             )
-            .isEqualTo(quotaReason)
+            .isEqualTo(quotaReason.rawValue)
     }
 
     fun hasNoProfilingQuotaReason() = apply {

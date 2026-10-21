@@ -419,7 +419,9 @@ internal open class RumViewScope(
             session = VitalOperationStepEvent.VitalOperationStepEventSession(
                 id = rumContext.sessionId,
                 type = sessionType,
-                hasReplay = hasReplay
+                hasReplay = hasReplay,
+                isMainProcess = datadogContext.processInfo.isMainProcess,
+                hasTimeseries = rumContext.hasTimeseries
             ),
             view = VitalOperationStepEvent.VitalOperationStepEventView(
                 id = rumContext.viewId.orEmpty(),
@@ -873,7 +875,9 @@ internal open class RumViewScope(
                 session = ErrorEvent.ErrorEventSession(
                     id = rumContext.sessionId,
                     type = sessionType,
-                    hasReplay = hasReplay
+                    hasReplay = hasReplay,
+                    isMainProcess = datadogContext.processInfo.isMainProcess,
+                    hasTimeseries = rumContext.hasTimeseries
                 ),
                 synthetics = syntheticsAttribute,
                 source = ErrorEvent.ErrorEventSource.tryFromSource(
@@ -1432,7 +1436,9 @@ internal open class RumViewScope(
                 id = rumContext.sessionId,
                 type = sessionType,
                 hasReplay = hasReplay,
-                isActive = rumContext.isSessionActive
+                isActive = rumContext.isSessionActive,
+                isMainProcess = datadogContext.processInfo.isMainProcess,
+                hasTimeseries = rumContext.hasTimeseries
             ),
             synthetics = syntheticsAttribute,
             source = ViewEvent.ViewEventSource.tryFromSource(
@@ -1635,7 +1641,9 @@ internal open class RumViewScope(
                 session = LongTaskEvent.LongTaskEventSession(
                     id = rumContext.sessionId,
                     type = sessionType,
-                    hasReplay = hasReplay
+                    hasReplay = hasReplay,
+                    isMainProcess = datadogContext.processInfo.isMainProcess,
+                    hasTimeseries = rumContext.hasTimeseries
                 ),
                 synthetics = syntheticsAttribute,
                 source = LongTaskEvent.LongTaskEventSource.tryFromSource(
@@ -1778,7 +1786,7 @@ internal open class RumViewScope(
 
             quotaReason != null -> ErrorEvent.Profiling(
                 status = ErrorEvent.ProfilingStatus.STOPPED,
-                quotaReason = quotaReason
+                quotaReason = quotaReason.toErrorQuotaReason()
             )
 
             else -> null
@@ -1797,7 +1805,7 @@ internal open class RumViewScope(
 
             quotaReason != null -> VitalOperationStepEvent.Profiling(
                 status = VitalOperationStepEvent.ProfilingStatus.STOPPED,
-                quotaReason = quotaReason
+                quotaReason = quotaReason.toVitalOperationStepQuotaReason()
             )
 
             else -> null
@@ -1814,7 +1822,7 @@ internal open class RumViewScope(
 
             quotaReason != null -> LongTaskEvent.Profiling(
                 status = LongTaskEvent.ProfilingStatus.STOPPED,
-                quotaReason = quotaReason
+                quotaReason = quotaReason.toLongTaskQuotaReason()
             )
 
             else -> null
@@ -1831,7 +1839,7 @@ internal open class RumViewScope(
 
             quotaReason != null -> ViewEvent.Profiling(
                 status = ViewEvent.ProfilingStatus.STOPPED,
-                quotaReason = quotaReason
+                quotaReason = quotaReason.toViewQuotaReason()
             )
 
             else -> null

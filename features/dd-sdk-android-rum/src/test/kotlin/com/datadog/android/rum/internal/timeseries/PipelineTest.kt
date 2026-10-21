@@ -90,6 +90,9 @@ internal class PipelineTest {
     lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Mock
+    lateinit var mockCollectedSessionsRegistry: CollectedTimeseriesSessionRegistry
+
+    @Mock
     lateinit var mockInsightsCollector: InsightsCollector
 
     @Mock
@@ -126,7 +129,7 @@ internal class PipelineTest {
             buffer = buffer,
             eventFactory = mockEventFactory,
             dataWriter = mockDataWriter,
-            internalLogger = mockInternalLogger,
+            collectedSessionsRegistry = mockCollectedSessionsRegistry,
             insightsCollector = mockInsightsCollector
         )
     }
@@ -153,6 +156,7 @@ internal class PipelineTest {
 
         // Then
         assertThat(buffer.drain()).containsExactly(fakePoint)
+        verify(mockCollectedSessionsRegistry).setTimeseriesCollected(fakeRumContext.sessionId)
     }
 
     @Test
@@ -165,6 +169,7 @@ internal class PipelineTest {
 
         // Then
         assertThat(buffer.drain()).isEmpty()
+        verifyNoInteractions(mockCollectedSessionsRegistry)
     }
 
     @Test

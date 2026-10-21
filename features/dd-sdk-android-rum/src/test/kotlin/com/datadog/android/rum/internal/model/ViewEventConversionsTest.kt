@@ -125,11 +125,11 @@ internal class ViewEventConversionsTest {
     @Test
     fun `M map container fields correctly W diffViewEvent { container changed }`(
         @Forgery fakeEvent: ViewEvent,
+        @Forgery fakeSource: ViewEvent.ViewEventSource,
         forge: Forge
     ) {
         // Given
         val fakeViewId = forge.anHexadecimalString()
-        val fakeSource = forge.anElementFrom(*ViewEvent.ViewEventSource.values())
         val newContainer = ViewEvent.Container(
             view = ViewEvent.ContainerView(id = fakeViewId),
             source = fakeSource
@@ -599,7 +599,7 @@ internal class ViewEventConversionsTest {
         val old = fakeEvent.copy(dd = fakeEvent.dd.copy(profiling = null))
         val new = fakeEvent.copy(
             dd = fakeEvent.dd.copy(
-                profiling = ViewEvent.Profiling(status = fakeStatus, errorReason = null)
+                profiling = ViewEvent.Profiling(status = fakeStatus, errorReason = null, quotaReason = null)
             )
         )
 
@@ -621,7 +621,7 @@ internal class ViewEventConversionsTest {
         val old = fakeEvent.copy(dd = fakeEvent.dd.copy(profiling = null))
         val new = fakeEvent.copy(
             dd = fakeEvent.dd.copy(
-                profiling = ViewEvent.Profiling(status = null, errorReason = fakeErrorReason)
+                profiling = ViewEvent.Profiling(status = null, errorReason = fakeErrorReason, quotaReason = null)
             )
         )
 
@@ -631,6 +631,28 @@ internal class ViewEventConversionsTest {
         // Then
         assertThat(result.dd.profiling?.errorReason).isNotNull()
         assertThat(result.dd.profiling!!.errorReason!!.name).isEqualTo(fakeErrorReason.name)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ViewEvent.QuotaReason::class)
+    fun `M map profiling quota reason correctly W diffViewEvent { profiling changed }`(
+        fakeQuotaReason: ViewEvent.QuotaReason,
+        @Forgery fakeEvent: ViewEvent
+    ) {
+        // Given
+        val old = fakeEvent.copy(dd = fakeEvent.dd.copy(profiling = null))
+        val new = fakeEvent.copy(
+            dd = fakeEvent.dd.copy(
+                profiling = ViewEvent.Profiling(status = null, errorReason = null, quotaReason = fakeQuotaReason)
+            )
+        )
+
+        // When
+        val result = diffViewEvent(old, new)
+
+        // Then
+        assertThat(result.dd.profiling?.quotaReason).isNotNull()
+        assertThat(result.dd.profiling!!.quotaReason!!.name).isEqualTo(fakeQuotaReason.name)
     }
 
     @ParameterizedTest

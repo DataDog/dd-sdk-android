@@ -317,7 +317,7 @@ internal class CronetRequestContextTest {
     ) {
         // Given
         val fakeHash = ByteArray(5) { forge.anInt().toByte() }
-        val fakeDictionary = mock<ByteBuffer>()
+        val fakeDictionary = ByteBuffer.allocate(5)
         testedContext.setRawCompressionDictionary(fakeHash, fakeDictionary, fakeDictionaryId)
 
         // When
@@ -505,15 +505,15 @@ internal class CronetRequestContextTest {
     ) {
         // Given
         val fakeHash = ByteArray(5) { forge.anInt().toByte() }
-        val mockDictionary = mock<ByteBuffer>()
-        testedContext.setRawCompressionDictionary(fakeHash, mockDictionary, fakeDictionaryId)
+        val fakeDictionary = ByteBuffer.allocate(5)
+        testedContext.setRawCompressionDictionary(fakeHash, fakeDictionary, fakeDictionaryId)
         val requestInfo = testedContext.asCronetRequestInfo()
 
         // When
         testedContext.asCronetRequest(requestInfo, mockTracingState)
 
         // Then
-        verify(mockDelegateBuilder).setRawCompressionDictionary(fakeHash, mockDictionary, fakeDictionaryId)
+        verify(mockDelegateBuilder).setRawCompressionDictionary(fakeHash, fakeDictionary, fakeDictionaryId)
     }
 
     @Test

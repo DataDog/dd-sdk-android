@@ -6,6 +6,7 @@
 
 package com.datadog.android.profiling.internal.quota
 
+import com.datadog.android.internal.profiling.quota.QuotaReason
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 

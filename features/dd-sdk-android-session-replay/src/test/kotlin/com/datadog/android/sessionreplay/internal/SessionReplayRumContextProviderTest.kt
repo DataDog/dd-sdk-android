@@ -26,6 +26,8 @@ import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import java.util.UUID
 
 @Extensions(
@@ -34,13 +36,45 @@ import java.util.UUID
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class SessionReplayRumContextProviderTest {
 
-    private val testedSessionReplayContextProvider = SessionReplayRumContextProvider()
+    private val testedSessionReplayContextProvider = SessionReplayRumContextProvider(
+        adaptiveCaptureSchedulingEnabled = false
+    )
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M preserve previous view W onContextUpdate {core reuses mutable map}`(fakeSchedulingEnabled: Boolean) {
+        // Given
+        val fakeFirstViewId = UUID.randomUUID().toString()
+        val fakeSecondViewId = UUID.randomUUID().toString()
+        val fakeNotifications = mutableListOf<String>()
+        lateinit var testedProvider: SessionReplayRumContextProvider
+        testedProvider = SessionReplayRumContextProvider(fakeSchedulingEnabled) {
+            fakeNotifications.add(testedProvider.getRumContext().viewId)
+        }
+        val fakeContext = mutableMapOf<String, Any?>(RUM_VIEW_ID_CONTEXT_KEY to fakeFirstViewId)
+        testedProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
+
+        // When: core changes the same map before notifying receivers.
+        fakeContext.clear()
+        fakeContext[RUM_VIEW_ID_CONTEXT_KEY] = fakeSecondViewId
+
+        // Then: only the opt-in path isolates reads from mutations before notification.
+        assertThat(testedProvider.getRumContext().viewId)
+            .isEqualTo(if (fakeSchedulingEnabled) fakeFirstViewId else fakeSecondViewId)
+        testedProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
+        testedProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
+        assertThat(fakeNotifications).containsExactlyElementsOf(
+            if (fakeSchedulingEnabled) listOf(fakeFirstViewId, fakeSecondViewId) else listOf(fakeFirstViewId)
+        )
+        assertThat(testedProvider.getRumContext().viewId).isEqualTo(fakeSecondViewId)
+    }
 
     @Test
     fun `M notify first view W onContextUpdate { new valid RUM view }`() {
         // Given
         var notificationCount = 0
-        val testedProvider = SessionReplayRumContextProvider { notificationCount++ }
+        val testedProvider =
+            SessionReplayRumContextProvider(adaptiveCaptureSchedulingEnabled = false) { notificationCount++ }
         val viewId = UUID.randomUUID().toString()
 
         // When
@@ -59,7 +93,7 @@ internal class SessionReplayRumContextProviderTest {
         val viewId = UUID.randomUUID().toString()
         lateinit var testedProvider: SessionReplayRumContextProvider
         var notifiedViewId: String? = null
-        testedProvider = SessionReplayRumContextProvider {
+        testedProvider = SessionReplayRumContextProvider(adaptiveCaptureSchedulingEnabled = false) {
             notifiedViewId = testedProvider.getRumContext().viewId
         }
 
@@ -77,7 +111,8 @@ internal class SessionReplayRumContextProviderTest {
     fun `M notify view transition W onContextUpdate { valid RUM view changes }`() {
         // Given
         var notificationCount = 0
-        val testedProvider = SessionReplayRumContextProvider { notificationCount++ }
+        val testedProvider =
+            SessionReplayRumContextProvider(adaptiveCaptureSchedulingEnabled = false) { notificationCount++ }
         testedProvider.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
             mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
@@ -97,7 +132,8 @@ internal class SessionReplayRumContextProviderTest {
     fun `M not notify view change W onContextUpdate { same RUM view }`() {
         // Given
         var notificationCount = 0
-        val testedProvider = SessionReplayRumContextProvider { notificationCount++ }
+        val testedProvider =
+            SessionReplayRumContextProvider(adaptiveCaptureSchedulingEnabled = false) { notificationCount++ }
         val viewId = UUID.randomUUID().toString()
         testedProvider.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
@@ -118,7 +154,8 @@ internal class SessionReplayRumContextProviderTest {
     fun `M not notify view change W onContextUpdate { invalid view }`() {
         // Given
         var notificationCount = 0
-        val testedProvider = SessionReplayRumContextProvider { notificationCount++ }
+        val testedProvider =
+            SessionReplayRumContextProvider(adaptiveCaptureSchedulingEnabled = false) { notificationCount++ }
 
         // When
         testedProvider.onContextUpdate(

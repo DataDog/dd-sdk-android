@@ -475,6 +475,20 @@ public final class com/datadog/android/internal/profiling/ProfilingThreadDump {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/profiling/quota/QuotaReason : java/lang/Enum {
+	public static final field API_ERROR Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+	public static final field BACKEND_UNAVAILABLE Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+	public static final field ORG_DISABLED Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+	public static final field QUOTA_EXCEEDED Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+	public static final field QUOTA_OK Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+	public static final field TIMEOUT Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+	public static final field UNDEFINED Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun getRawValue ()Ljava/lang/String;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+	public static fun values ()[Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+}
+
 public final class com/datadog/android/internal/rum/RumSessionConstants {
 	public static final field EMPTY_RUM_SESSION_ID Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/internal/rum/RumSessionConstants;

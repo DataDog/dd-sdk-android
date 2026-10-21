@@ -9,8 +9,10 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
+import com.datadog.android.internal.profiling.quota.QuotaReason
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.isConnected
+import com.datadog.android.rum.internal.domain.scope.toLongTaskQuotaReason
 import com.datadog.android.rum.internal.domain.scope.toLongTaskSessionPrecondition
 import com.datadog.android.rum.model.LongTaskEvent
 import org.assertj.core.api.AbstractObjectAssert
@@ -206,6 +208,26 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         assertThat(actual.session.id)
             .overridingErrorMessage(
                 "Expected event to have session.id $expected but was ${actual.session.id}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasIsMainProcess(expected: Boolean?): LongTaskEventAssert {
+        assertThat(actual.session.isMainProcess)
+            .overridingErrorMessage(
+                "Expected event to have session.is_main_process:$expected " +
+                    "but was ${actual.session.isMainProcess}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasSessionTimeseries(expected: Boolean?): LongTaskEventAssert {
+        assertThat(actual.session.hasTimeseries)
+            .overridingErrorMessage(
+                "Expected event to have session.has_timeseries:$expected " +
+                    "but was ${actual.session.hasTimeseries}"
             )
             .isEqualTo(expected)
         return this
@@ -427,6 +449,16 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
             )
             .isNotNull
             .isNotBlank
+        return this
+    }
+
+    fun hasProfilingQuotaReason(quotaReason: QuotaReason): LongTaskEventAssert {
+        assertThat(actual.dd.profiling?.quotaReason)
+            .overridingErrorMessage(
+                "Expected RUM event to have profiling quota reason: $quotaReason" +
+                    " but instead was: ${actual.dd.profiling?.quotaReason}"
+            )
+            .isEqualTo(quotaReason.toLongTaskQuotaReason())
         return this
     }
 

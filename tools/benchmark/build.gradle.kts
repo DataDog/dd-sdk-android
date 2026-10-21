@@ -7,6 +7,7 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.java11
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Build
@@ -62,7 +63,7 @@ createJsonModelsGenerationTask("generateTraceModelsFromJson") {
 }
 
 datadogBuild {
-    applyKotlinConfig()
+    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
     applyJunitConfig()
     applyAndroidLibraryConfig()
     applyPublishingConfig(

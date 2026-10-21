@@ -211,4 +211,14 @@ internal fun ViewEvent.State.toViewUpdate() = when (this) {
     ViewEvent.State.TERMINATED -> ViewUpdateEvent.State.TERMINATED
 }
 
+internal fun ViewEvent.QuotaReason.toViewUpdate() = when (this) {
+    ViewEvent.QuotaReason.QUOTA_OK -> ViewUpdateEvent.QuotaReason.QUOTA_OK
+    ViewEvent.QuotaReason.QUOTA_EXCEEDED -> ViewUpdateEvent.QuotaReason.QUOTA_EXCEEDED
+    ViewEvent.QuotaReason.ORG_DISABLED -> ViewUpdateEvent.QuotaReason.ORG_DISABLED
+    ViewEvent.QuotaReason.BACKEND_UNAVAILABLE -> ViewUpdateEvent.QuotaReason.BACKEND_UNAVAILABLE
+    ViewEvent.QuotaReason.UNDEFINED -> ViewUpdateEvent.QuotaReason.UNDEFINED
+    ViewEvent.QuotaReason.TIMEOUT -> ViewUpdateEvent.QuotaReason.TIMEOUT
+    ViewEvent.QuotaReason.API_ERROR -> ViewUpdateEvent.QuotaReason.API_ERROR
+}
+
 // endregion

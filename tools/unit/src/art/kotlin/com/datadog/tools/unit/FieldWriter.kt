@@ -10,13 +10,14 @@ import android.annotation.SuppressLint
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 
-internal object RemoveFinalModifier {
+internal object FieldWriter {
     @SuppressLint("DiscouragedPrivateApi")
-    fun remove(field: Field) {
+    fun set(instance: Any?, field: Field, value: Any?) {
         Field::class.java.getDeclaredField("accessFlags")
             .apply {
                 isAccessible = true
             }
             .set(field, field.modifiers and Modifier.FINAL.inv())
+        field.set(instance, value)
     }
 }

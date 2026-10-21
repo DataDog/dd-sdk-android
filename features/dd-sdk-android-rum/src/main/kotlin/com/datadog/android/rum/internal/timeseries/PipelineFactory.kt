@@ -30,6 +30,7 @@ internal class PipelineFactory(
     private val configuration: TimeseriesConfiguration,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
+    private val sessionRegistry: CollectedTimeseriesSessionRegistry,
     private val crossPlatformTraceSampleRate: Float?
 ) {
     private val typesFactory = mapOf(
@@ -57,7 +58,7 @@ internal class PipelineFactory(
             reader = VitalReaderWrapper(
                 vitalReader = MemoryVitalReader(internalLogger = sdkCore.internalLogger),
                 timeProvider = sdkCore.timeProvider,
-                intervalMs = configuration.intervalMs
+                intervalMs = configuration.samplingIntervalMs
             ),
             buffer = Buffer(configuration.bufferSize),
             eventFactory = MemoryEventFactory(
@@ -70,17 +71,19 @@ internal class PipelineFactory(
                 crossPlatformTraceSampleRate = crossPlatformTraceSampleRate
             ),
             dataWriter = dataWriter,
-            insightsCollector = insightsCollector,
-            internalLogger = sdkCore.internalLogger
+            collectedSessionsRegistry = sessionRegistry,
+            insightsCollector = insightsCollector
         )
     }
 
-    private fun createCpuPipeline(sessionType: RumSessionType) = Pipeline(
+    private fun createCpuPipeline(
+        sessionType: RumSessionType
+    ) = Pipeline(
         sdkCore = sdkCore,
         reader = CpuDatapointReader(
             cpuStatReader = CpuStatReader(internalLogger = sdkCore.internalLogger),
             timeProvider = sdkCore.timeProvider,
-            intervalMs = configuration.intervalMs
+            intervalMs = configuration.samplingIntervalMs
         ),
         buffer = Buffer(configuration.bufferSize),
         eventFactory = CpuEventFactory(
@@ -92,8 +95,8 @@ internal class PipelineFactory(
             crossPlatformTraceSampleRate = crossPlatformTraceSampleRate
         ),
         dataWriter = dataWriter,
-        insightsCollector = insightsCollector,
-        internalLogger = sdkCore.internalLogger
+        collectedSessionsRegistry = sessionRegistry,
+        insightsCollector = insightsCollector
     )
 
     internal companion object {

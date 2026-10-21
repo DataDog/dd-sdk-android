@@ -8,19 +8,21 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
+import com.datadog.android.internal.profiling.quota.QuotaReason
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.isConnected
+import com.datadog.android.rum.internal.domain.scope.toVitalOperationStepQuotaReason
 import com.datadog.android.rum.internal.domain.scope.toVitalOperationStepSessionPrecondition
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent.VitalOperationStepEventSessionType
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
-internal class VitalEventAssert(
+internal class VitalOperationStepEventAssert(
     actual: VitalOperationStepEvent
-) : AbstractObjectAssert<VitalEventAssert, VitalOperationStepEvent>(
+) : AbstractObjectAssert<VitalOperationStepEventAssert, VitalOperationStepEvent>(
     actual,
-    VitalEventAssert::class.java
+    VitalOperationStepEventAssert::class.java
 ) {
 
     fun hasDate(expected: Long) = apply {
@@ -71,6 +73,24 @@ internal class VitalEventAssert(
         assertThat(actual.session.id)
             .overridingErrorMessage(
                 "Expected event to have session.id $expected but was ${actual.session.id}"
+            )
+            .isEqualTo(expected)
+    }
+
+    fun hasIsMainProcess(expected: Boolean?) = apply {
+        assertThat(actual.session.isMainProcess)
+            .overridingErrorMessage(
+                "Expected event to have session.is_main_process:$expected " +
+                    "but was ${actual.session.isMainProcess}"
+            )
+            .isEqualTo(expected)
+    }
+
+    fun hasSessionTimeseries(expected: Boolean?) = apply {
+        assertThat(actual.session.hasTimeseries)
+            .overridingErrorMessage(
+                "Expected event to have session.has_timeseries:$expected " +
+                    "but was ${actual.session.hasTimeseries}"
             )
             .isEqualTo(expected)
     }
@@ -360,6 +380,15 @@ internal class VitalEventAssert(
             .isEqualTo(serviceName)
     }
 
+    fun hasProfilingQuotaReason(quotaReason: QuotaReason) = apply {
+        assertThat(actual.dd.profiling?.quotaReason)
+            .overridingErrorMessage(
+                "Expected RUM event to have profiling quota reason: $quotaReason" +
+                    " but instead was: ${actual.dd.profiling?.quotaReason}"
+            )
+            .isEqualTo(quotaReason.toVitalOperationStepQuotaReason())
+    }
+
     fun hasProfilingStatus(profilingStatus: VitalOperationStepEvent.ProfilingStatus?) = apply {
         assertThat(actual.dd.profiling?.status)
             .overridingErrorMessage(
@@ -388,6 +417,8 @@ internal class VitalEventAssert(
     }
 
     companion object {
-        internal fun assertThat(actual: VitalOperationStepEvent): VitalEventAssert = VitalEventAssert(actual)
+        internal fun assertThat(
+            actual: VitalOperationStepEvent
+        ): VitalOperationStepEventAssert = VitalOperationStepEventAssert(actual)
     }
 }

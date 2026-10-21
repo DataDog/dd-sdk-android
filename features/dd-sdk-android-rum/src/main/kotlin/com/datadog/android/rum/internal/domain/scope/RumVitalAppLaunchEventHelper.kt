@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.internal.utils.DdTagsUtils
+import com.datadog.android.internal.profiling.quota.QuotaReason
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
@@ -39,7 +40,7 @@ internal class RumVitalAppLaunchEventHelper(
         scenario: RumStartupScenario,
         appLaunchMetric: VitalAppLaunchEvent.AppLaunchMetric,
         profilingStatus: VitalAppLaunchEvent.ProfilingStatus?,
-        profilingQuotaReason: String? = null
+        profilingQuotaReason: QuotaReason? = null
     ): VitalAppLaunchEvent {
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
@@ -84,7 +85,7 @@ internal class RumVitalAppLaunchEventHelper(
                 configuration = VitalAppLaunchEvent.Configuration(sessionSampleRate = sampleRate),
                 profiling = VitalAppLaunchEvent.Profiling(
                     status = profilingStatus,
-                    quotaReason = profilingQuotaReason
+                    quotaReason = profilingQuotaReason?.toVitalAppLaunchQuotaReason()
                 )
             ),
             application = VitalAppLaunchEvent.Application(
@@ -95,7 +96,9 @@ internal class RumVitalAppLaunchEventHelper(
             session = VitalAppLaunchEvent.VitalAppLaunchEventSession(
                 id = rumContext.sessionId,
                 type = sessionType,
-                hasReplay = hasReplay
+                hasReplay = hasReplay,
+                isMainProcess = datadogContext.processInfo.isMainProcess,
+                hasTimeseries = rumContext.hasTimeseries
             ),
             view = view,
             source = VitalAppLaunchEvent.VitalAppLaunchEventSource.tryFromSource(

@@ -86,3 +86,14 @@
 
 # Netty is using a lot of reflection
 -keep class io.netty.** { *; }
+
+# Keep names for RUM
+-keepnames class * extends android.view.View
+-keepnames class * extends android.app.Activity
+-keepnames class * extends androidx.fragment.app.Fragment
+
+# Room 2.5 instantiates the generated *_Impl database class reflectively
+-keep class * extends androidx.room.RoomDatabase { <init>(); }
+
+# Gson deserializes the sample's remote models reflectively
+-keep class com.datadog.android.sample.data.model.** { *; }
