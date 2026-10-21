@@ -22,6 +22,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientEvent
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -171,6 +173,34 @@ internal class DatadogFlagsClientTest {
     }
 
     // region resolveBooleanValue()
+
+    @ParameterizedTest
+    @CsvSource("false, false", "false, true", "true, false", "true, true")
+    fun `M isolate listener failures W onFirstFlags()`(completeBeforeRegistration: Boolean, throwsError: Boolean) {
+        // Given
+        val latch = FirstFlagsLatch()
+        whenever(mockFlagsRepository.firstFlags) doReturn latch
+        val fakeKeys = listOf(fakeDefaultValue)
+        val failure = if (throwsError) AssertionError(fakeJsonKey) else IllegalStateException(fakeJsonKey)
+        val events = mutableListOf<FlagsClientEvent>()
+        if (completeBeforeRegistration) latch.complete(fakeKeys)
+
+        // When
+        testedClient.onFirstFlags { throw failure }
+        testedClient.onFirstFlags { events.add(it) }
+        if (!completeBeforeRegistration) {
+            latch.complete(fakeKeys)
+        }
+
+        // Then
+        assertThat(events.map { it.flagsChanged }).containsExactly(fakeKeys)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            "First flags callback failed",
+            throwable = failure
+        )
+    }
 
     @Test
     fun `M return default value W resolveBooleanValue() { flag exists with invalid boolean string }`(forge: Forge) {

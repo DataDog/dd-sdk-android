@@ -26,7 +26,11 @@ internal class DefaultFlagsRepository(
     private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS,
     private val deliverFirstFlags: (Runnable) -> Unit = Runnable::run
 ) : FlagsRepository {
-    private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
+    private data class FlagsState(
+        val context: EvaluationContext,
+        val flags: Map<String, PrecomputedFlag>,
+        val hasAcceptedConfiguration: Boolean = true
+    )
     private val atomicState = AtomicReference<FlagsState?>(null)
 
     @Suppress("UnsafeThirdPartyFunctionCall") // CountDownLatch rejects negative counts; 1 is valid.
@@ -39,8 +43,7 @@ internal class DefaultFlagsRepository(
         internalLogger = internalLogger
     ) { persistedState ->
         val installed = try {
-            persistedState != null && atomicState.compareAndSet(
-                null,
+            persistedState != null && installPersistedState(
                 FlagsState(
                     persistedState.evaluationContext,
                     persistedState.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) }
@@ -61,7 +64,7 @@ internal class DefaultFlagsRepository(
     ) {
         val newState = FlagsState(context, flags)
 
-        val firstInstallation = atomicState.getAndSet(newState) == null
+        val firstInstallation = atomicState.getAndSet(newState)?.hasAcceptedConfiguration != true
         persistenceLoadedLatch.countDown()
 
         try {
@@ -104,6 +107,15 @@ internal class DefaultFlagsRepository(
         }
     }
 
+    override fun clearFlagsIfContextChanged(context: EvaluationContext) {
+        do {
+            val currentState = atomicState.get()
+            if (currentState?.context == context) return
+            // Reject late cache reads for other contexts without accepting an empty configuration.
+            val clearedState = FlagsState(context, emptyMap(), currentState?.hasAcceptedConfiguration == true)
+        } while (!atomicState.compareAndSet(currentState, clearedState))
+    }
+
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
         waitForPersistenceLoad()
         val state = atomicState.get()
@@ -134,7 +146,7 @@ internal class DefaultFlagsRepository(
 
     override fun getEvaluationContext(): EvaluationContext? {
         waitForPersistenceLoad()
-        return atomicState.get()?.context
+        return atomicState.get()?.takeIf { it.hasAcceptedConfiguration }?.context
     }
 
     override fun hasFlags(): Boolean {
@@ -153,6 +165,18 @@ internal class DefaultFlagsRepository(
         val state = atomicState.get() ?: return null
         val flag = state.flags[key] ?: return null
         return flag to state.context
+    }
+
+    private fun installPersistedState(persistedState: FlagsState): Boolean {
+        do {
+            val currentState = atomicState.get()
+            if (currentState != null &&
+                (currentState.hasAcceptedConfiguration || currentState.context != persistedState.context)
+            ) {
+                return false
+            }
+        } while (!atomicState.compareAndSet(currentState, persistedState))
+        return true
     }
 
     private fun waitForPersistenceLoad() {

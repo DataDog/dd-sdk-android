@@ -280,7 +280,7 @@ override fun onDestroy() {
 - Unsubscription is thread-safe and idempotent and releases pending captures. A callback already
   claimed for delivery may still run; cancellation does not interrupt it or undo synchronous replay.
 - This is not a readiness signal. Use `client.state` to track readiness.
-- Ordinary callback exceptions are logged and isolated.
+- Callback failures, including errors, are logged and isolated.
 
 Use `client.onFirstFlags { event -> ... }` from Kotlin or
 `client.onFirstFlags(event -> { ... })` from Java. The client retains the first installed keys
