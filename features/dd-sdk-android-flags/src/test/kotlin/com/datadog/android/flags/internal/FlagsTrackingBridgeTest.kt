@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.NullSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
@@ -113,22 +114,48 @@ internal class FlagsTrackingBridgeTest {
         )
     }
 
-    @Test
-    fun `M record each event once W independent hooks are both selected`() {
+    @ParameterizedTest
+    @CsvSource("false, false", "false, true", "true, false", "true, true")
+    fun `M respect each tracking setting W independent hooks called`(
+        trackExposures: Boolean,
+        trackEvaluations: Boolean
+    ) {
+        // Given
+        testedProxy = newProxy(
+            fakeConfiguration.copy(trackExposures = trackExposures, trackEvaluations = trackEvaluations)
+        )
+
         // When
         testedProxy.trackFlagExposure(fakeFlagKey, fakeFlag, fakeContext)
         testedProxy.trackFlagEvaluationEvent(fakeFlagKey, fakeFlag, fakeContext, null)
+        testedProxy.trackFlagEvaluationEvent(fakeFlagKey, null, fakeContext, "FLAG_NOT_FOUND")
 
         // Then
-        verify(mockExposureProcessor).processEvent(fakeFlagKey, fakeContext, fakeFlag)
-        verify(mockEvaluationsFeature).processEvaluation(
-            fakeFlagKey,
-            fakeContext,
-            fakeFlag.variationKey,
-            fakeFlag.allocationKey,
-            null,
-            null
-        )
+        if (trackExposures) {
+            verify(mockExposureProcessor).processEvent(fakeFlagKey, fakeContext, fakeFlag)
+        } else {
+            verifyNoInteractions(mockExposureProcessor)
+        }
+        if (trackEvaluations) {
+            verify(mockEvaluationsFeature).processEvaluation(
+                fakeFlagKey,
+                fakeContext,
+                fakeFlag.variationKey,
+                fakeFlag.allocationKey,
+                null,
+                null
+            )
+            verify(mockEvaluationsFeature).processEvaluation(
+                fakeFlagKey,
+                fakeContext,
+                null,
+                null,
+                "FLAG_NOT_FOUND",
+                "FLAG_NOT_FOUND"
+            )
+        } else {
+            verifyNoInteractions(mockEvaluationsFeature)
+        }
     }
 
     @Test
@@ -195,17 +222,6 @@ internal class FlagsTrackingBridgeTest {
     fun `M skip exposure W trackFlagExposure {doLog false}`() {
         // When
         testedProxy.trackFlagExposure(fakeFlagKey, fakeFlag.copy(doLog = false), fakeContext)
-    }
-
-    @Test
-    fun `M skip disabled tracking W independent hooks called`() {
-        // Given
-        testedProxy = newProxy(fakeConfiguration.copy(trackExposures = false, trackEvaluations = false))
-
-        // When
-        testedProxy.trackFlagExposure(fakeFlagKey, fakeFlag, fakeContext)
-        testedProxy.trackFlagEvaluationEvent(fakeFlagKey, fakeFlag, fakeContext, null)
-        testedProxy.trackFlagEvaluationEvent(fakeFlagKey, null, fakeContext, "FLAG_NOT_FOUND")
     }
 
     @Test
