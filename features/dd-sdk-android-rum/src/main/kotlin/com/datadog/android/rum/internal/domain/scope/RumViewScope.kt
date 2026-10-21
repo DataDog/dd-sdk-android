@@ -416,7 +416,8 @@ internal open class RumViewScope(
             session = VitalOperationStepEvent.VitalOperationStepEventSession(
                 id = rumContext.sessionId,
                 type = sessionType,
-                hasReplay = hasReplay
+                hasReplay = hasReplay,
+                isMainProcess = datadogContext.processInfo.isMainProcess
             ),
             view = VitalOperationStepEvent.VitalOperationStepEventView(
                 id = rumContext.viewId.orEmpty(),
@@ -876,7 +877,8 @@ internal open class RumViewScope(
                 session = ErrorEvent.ErrorEventSession(
                     id = rumContext.sessionId,
                     type = sessionType,
-                    hasReplay = hasReplay
+                    hasReplay = hasReplay,
+                    isMainProcess = datadogContext.processInfo.isMainProcess
                 ),
                 synthetics = syntheticsAttribute,
                 source = ErrorEvent.ErrorEventSource.tryFromSource(
@@ -1465,7 +1467,8 @@ internal open class RumViewScope(
                 id = rumContext.sessionId,
                 type = sessionType,
                 hasReplay = hasReplay,
-                isActive = rumContext.isSessionActive
+                isActive = rumContext.isSessionActive,
+                isMainProcess = datadogContext.processInfo.isMainProcess
             ),
             synthetics = syntheticsAttribute,
             source = ViewEvent.ViewEventSource.tryFromSource(
@@ -1663,7 +1666,8 @@ internal open class RumViewScope(
                 session = LongTaskEvent.LongTaskEventSession(
                     id = rumContext.sessionId,
                     type = sessionType,
-                    hasReplay = hasReplay
+                    hasReplay = hasReplay,
+                    isMainProcess = datadogContext.processInfo.isMainProcess
                 ),
                 synthetics = syntheticsAttribute,
                 source = LongTaskEvent.LongTaskEventSource.tryFromSource(

@@ -21,7 +21,9 @@ internal class DefaultOnDrawListenerProducer(
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val sdkCore: FeatureSdkCore,
     private val dynamicOptimizationEnabled: Boolean,
-    private val rumContextProvider: RumContextProvider
+    private val adaptiveCaptureSchedulingEnabled: Boolean,
+    private val rumContextProvider: RumContextProvider,
+    private val isCaptureAllowed: () -> Boolean = { true }
 ) : OnDrawListenerProducer {
 
     override fun create(
@@ -39,8 +41,10 @@ internal class DefaultOnDrawListenerProducer(
             sdkCore = sdkCore,
             methodCallSamplingRate = MethodCallSamplingRate.LOW.rate,
             dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+            adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled,
             touchPrivacyManager = touchPrivacyManager,
-            rumContextProvider = rumContextProvider
+            rumContextProvider = rumContextProvider,
+            isCaptureAllowed = isCaptureAllowed
         )
     }
 }

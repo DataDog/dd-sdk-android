@@ -63,7 +63,9 @@ internal class LaunchActivity : BaseBenchmarkActivity() {
 
     private fun openScenarioActivity(config: BenchmarkConfig) {
         val activity = when (config.scenario) {
+            SyntheticsScenario.Timeseries,
             SyntheticsScenario.RumAuto -> RumAutoScenarioActivity::class.java
+
             SyntheticsScenario.SessionReplayCompose -> SessionReplayComposeScenarioActivity::class.java
             SyntheticsScenario.SessionReplay -> SessionReplayScenarioActivity::class.java
             else -> DefaultScenarioActivity::class.java

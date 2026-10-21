@@ -641,6 +641,7 @@ internal class RumViewScopeTest {
                 hasViewId(testedScope.viewId)
                 hasApplicationId(fakeParentContext.applicationId)
                 hasSessionId(fakeParentContext.sessionId)
+                hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
                 hasSessionType(fakeRumSessionType?.toView() ?: ViewEvent.ViewEventSessionType.USER)
                 hasNoSyntheticsTest()
                 hasStartReason(fakeParentContext.sessionStartReason)
@@ -2153,6 +2154,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
                     hasSessionType(fakeRumSessionType?.toView() ?: ViewEvent.ViewEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
@@ -4958,6 +4960,7 @@ internal class RumViewScopeTest {
                     hasView(testedScope.viewId, testedScope.key.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
                     hasActionId(fakeActionId)
                     hasErrorType(null)
                     hasErrorSourceType(sourceType.toSchemaSourceType())
@@ -10427,6 +10430,7 @@ internal class RumViewScopeTest {
                 .hasStartReason(fakeParentContext.sessionStartReason)
                 .hasSampleRate(fakeSampleRate)
                 .hasSessionId(fakeParentContext.sessionId)
+                .hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
                 .hasSessionType(
                     fakeRumSessionType?.toVital()
                         ?: VitalOperationStepEvent.VitalOperationStepEventSessionType.USER
