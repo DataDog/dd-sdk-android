@@ -106,7 +106,8 @@ internal class GranularComposeDecomposer(
     private val compatibilityGate: GranularComposeCompatibilityGate = GranularComposeCompatibilityGate.SHARED,
     private val nodesPerCheckpoint: Int = NODES_PER_CHECKPOINT,
     private val hostRasterizer: ComposeHostCaptureRasterizer = DefaultComposeHostCaptureRasterizer(internalLogger),
-    private val textRasterizer: ComposeTextRasterizer = DefaultComposeTextRasterizer(reflectionUtils)
+    private val textRasterizer: ComposeTextRasterizer = DefaultComposeTextRasterizer(reflectionUtils),
+    private val sourceImageClipper: ComposeSourceImageClipper = DefaultComposeSourceImageClipper()
 ) : CompositionHostDecomposer {
     private val imageMapper = ImageSemanticsNodeMapper(colorStringFormatter, semanticsUtils)
 
@@ -320,13 +321,14 @@ internal class GranularComposeDecomposer(
     /** Preserve an equivalent rounded rectangle for players rendering the flat wireframe list. */
     // Skip unrelated or non-equivalent clips in the owned modifier list.
     @Suppress("LoopWithTooManyJumpStatements", "UnsafeThirdPartyFunctionCall")
-    private fun resolveBackgroundClipRadius(
+    private fun resolveSimpleClipRadius(
         node: SemanticsNode,
         bounds: CapturedBounds,
         modifiers: List<ModifierInfo>,
-        windowOffset: ComposeWindowOffset
+        windowOffset: ComposeWindowOffset,
+        image: Boolean = false
     ): Float? {
-        val background = modifiers.indexOfLast { reflectionUtils.isBackgroundElement(it.modifier) }
+        val background = drawingModifierIndex(modifiers, image)
         var radius: Float? = null
         for (index in 0 until background) {
             val info = modifiers[index]
@@ -342,6 +344,17 @@ internal class GranularComposeDecomposer(
             radius = maxOf(radius ?: 0f, resolved.coerceAtMost(minOf(bounds.width, bounds.height) / 2f))
         }
         return radius
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // Scan an owned modifier list for its drawing element.
+    private fun drawingModifierIndex(modifiers: List<ModifierInfo>, image: Boolean): Int = modifiers.indexOfLast {
+        if (image) {
+            reflectionUtils.isImagePainterModifier(
+                it.modifier
+            )
+        } else {
+            reflectionUtils.isBackgroundElement(it.modifier)
+        }
     }
 
     /** One [decompose] call's state - a fresh instance per call, so this class itself stays stateless. */
@@ -646,14 +659,19 @@ internal class GranularComposeDecomposer(
                     image,
                     request.screenDensity
                 )
+                val clipped = clipSourceImage(node, modifiers, bitmap, scaled.bounds, painterBounds)
+                // The clip is also retained in the composition tree. Baking it into this permitted
+                // source image preserves the same pixels in players consuming only flat wireframes.
+                val pixelBounds = if (clipped != null) painterBounds else scaled.bounds
+                if (clipped != null && clipped !== bitmap) bitmap.recycle()
                 val pixelId = request.identityFactory.imageWireframe(identity)
                 request.pendingPixelCaptureSink.register(
-                    PendingPixelCapture(pixelId, identity, bitmap, isSourceImage = true)
+                    PendingPixelCapture(pixelId, identity, clipped ?: bitmap, isSourceImage = true)
                 )
                 CapturedWireframe.Pixel(
                     pixelId,
-                    CapturedBounds(scaled.bounds.x, scaled.bounds.y, scaled.bounds.width, scaled.bounds.height),
-                    imageClip(scaled.bounds, visibleBounds, painterBounds),
+                    CapturedBounds(pixelBounds.x, pixelBounds.y, pixelBounds.width, pixelBounds.height),
+                    imageClip(pixelBounds, visibleBounds, painterBounds),
                     resource = PixelResource.Unresolved
                 )
             } else {
@@ -665,6 +683,31 @@ internal class GranularComposeDecomposer(
                 )
             }
             return captureImageModifiers(node, identity, bounds, visibleBounds, modifiers, wireframe)
+        }
+
+        private fun clipSourceImage(
+            node: SemanticsNode,
+            modifiers: List<ModifierInfo>,
+            bitmap: Bitmap,
+            scaledBounds: GlobalBounds,
+            painterBounds: GlobalBounds
+        ): Bitmap? {
+            var completed = false
+            return try {
+                val radius = resolveSimpleClipRadius(
+                    node,
+                    CapturedBounds(painterBounds.x, painterBounds.y, painterBounds.width, painterBounds.height),
+                    modifiers,
+                    windowOffset,
+                    image = true
+                )
+                radius?.let {
+                    sourceImageClipper.clip(bitmap, scaledBounds, painterBounds, it, request.screenDensity)
+                }.also { completed = true }
+            } finally {
+                // This source copy has not reached the pending-capture owner if clipping failed.
+                if (!completed) bitmap.recycle()
+            }
         }
 
         /** Rebuild only the image's drawing modifiers, from the painter outwards, in draw order. */
@@ -1001,7 +1044,7 @@ internal class GranularComposeDecomposer(
                     node.layoutInfo.density
                 )
             }
-            val clipRadius = resolveBackgroundClipRadius(node, bounds, modifiers, windowOffset)
+            val clipRadius = resolveSimpleClipRadius(node, bounds, modifiers, windowOffset)
             val cornerRadius = listOfNotNull(backgroundRadius, clipRadius).maxOrNull()
             return CapturedWireframe.Shape(
                 identity = request.identityFactory.shapeWireframe(nodeIdentity),

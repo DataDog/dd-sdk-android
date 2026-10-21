@@ -317,6 +317,91 @@ internal class GranularComposeDecomposerTest {
         assertThat(captures.single().isTextFree).isFalse()
     }
 
+    @ParameterizedTest
+    @CsvSource("false,true,false", "true,true,false", "false,false,false", "false,true,true")
+    fun `M bake equivalent rounded image clips W decompose() { permitted source only }`(
+        masked: Boolean,
+        sameBounds: Boolean,
+        fails: Boolean
+    ) {
+        // Given
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        val bitmap: Bitmap = mock()
+        val clippedBitmap: Bitmap = mock()
+        val shape: Shape = mock()
+        val clipInfo: ModifierInfo = mock()
+        val painterInfo: ModifierInfo = mock()
+        val clip = mockGraphicsLayerModifier(mapOf("clip" to true, "shape" to shape))
+        val painter: Modifier = mock()
+        whenever(clipInfo.modifier).thenReturn(clip)
+        whenever(painterInfo.modifier).thenReturn(painter)
+        whenever(node.layoutInfo.getModifierInfo()).thenReturn(listOf(clipInfo, painterInfo))
+        whenever(node.layoutInfo.density).thenReturn(Density(1f))
+        whenever(mockReflectionUtils.isImagePainterModifier(painter)).thenReturn(true)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(mockSemanticsUtils.isImage(node)).thenReturn(true)
+        whenever(bitmap.width).thenReturn(200)
+        whenever(bitmap.height).thenReturn(100)
+        whenever(mockSemanticsUtils.resolveSemanticsPainter(eq(node), any()))
+            .thenReturn(BitmapInfo(bitmap, false, ContentScale.Crop))
+        val viewport = GlobalBounds(32, 32, 160, 160)
+        whenever(mockSemanticsUtils.resolveUnclippedBounds(eq(node), any())).thenReturn(viewport)
+        whenever(mockSemanticsUtils.resolveVisibleBounds(eq(node), any())).thenReturn(viewport)
+        whenever(mockSemanticsUtils.resolveModifierBounds(eq(node), eq(clipInfo), any()))
+            .thenReturn(if (sameBounds) viewport else GlobalBounds(0, 0, 224, 224))
+        whenever(mockSemanticsUtils.resolveCornerRadius(eq(shape), any(), any())).thenReturn(32f)
+        var clips = 0
+        val failure = IllegalStateException("simulated clipping failure")
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            sourceImageClipper = ComposeSourceImageClipper { source, scaled, crop, radius, _ ->
+                clips++
+                if (fails) throw failure
+                assertThat(source).isSameAs(bitmap)
+                assertThat(scaled).isEqualTo(GlobalBounds(-48, 32, 320, 160))
+                assertThat(crop).isEqualTo(viewport)
+                assertThat(radius).isEqualTo(32f)
+                clippedBitmap
+            }
+        )
+        val captures = mutableListOf<PendingPixelCapture>()
+
+        // When
+        val capture = {
+            testedDecomposer.decompose(
+                mockView,
+                realRequest(
+                    imagePrivacy = if (masked) ImagePrivacy.MASK_ALL else ImagePrivacy.MASK_NONE,
+                    pendingPixelCaptureSink = PendingPixelCaptureSink(captures::add)
+                )
+            )!!
+        }
+        if (fails) {
+            assertThatThrownBy { capture() }.isSameAs(failure)
+            verify(bitmap).recycle()
+            assertThat(captures).isEmpty()
+            return
+        }
+        val result = capture()
+
+        // Then
+        assertThat(clips).isEqualTo(if (!masked && sameBounds) 1 else 0)
+        if (masked) {
+            assertThat(captures).isEmpty()
+            verify(mockSemanticsUtils, never()).resolveSemanticsPainter(any(), any())
+        } else {
+            assertThat(captures.single().isSourceImage).isTrue()
+            assertThat(captures.single().bitmap).isSameAs(if (sameBounds) clippedBitmap else bitmap)
+            if (sameBounds) {
+                assertThat(result.wireframes.single().bounds).isEqualTo(CapturedBounds(32, 32, 160, 160))
+                verify(bitmap).recycle()
+            }
+        }
+    }
+
     @Test
     fun `M crop source images without resizing W decompose() { image scrolls outside viewport }`() {
         // Given
