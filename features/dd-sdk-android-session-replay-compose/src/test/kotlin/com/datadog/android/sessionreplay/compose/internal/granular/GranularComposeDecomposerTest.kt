@@ -174,6 +174,30 @@ internal class GranularComposeDecomposerTest {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = ["sans-serif", "serif", "monospace", "cursive"])
+    fun `M retain supported font aliases W decompose() { standard single-line text }`(family: String) {
+        // Given
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        val font = when (family) {
+            "serif" -> FontFamily.Serif
+            "monospace" -> FontFamily.Monospace
+            "cursive" -> FontFamily.Cursive
+            else -> FontFamily.SansSerif
+        }
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any(), any()))
+            .thenReturn(TextLayoutInfo("Standard text", Color.Black.value, 14, font))
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())!!
+
+        // Then
+        val text = result.wireframes.single() as CapturedWireframe.Text
+        assertThat(text.textStyle.family).isEqualTo(if (family == "sans-serif") "roboto, sans-serif" else family)
+    }
+
+    @ParameterizedTest
     @ValueSource(booleans = [false, true])
     fun `M rasterize only unrepresentable standard text W decompose()`(requiresPixels: Boolean) {
         // Given

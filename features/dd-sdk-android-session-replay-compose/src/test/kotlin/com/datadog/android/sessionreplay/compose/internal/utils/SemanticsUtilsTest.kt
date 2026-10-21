@@ -644,6 +644,20 @@ internal class SemanticsUtilsTest {
     }
 
     @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = [1, 2])
+    fun `M preserve measured multiline layout W resolveTextLayoutInfo`(lineCount: Int, forge: Forge) {
+        // Given
+        val data = setupTextLayoutMocks(forge)
+        whenever(data.textLayoutResult.lineCount) doReturn lineCount
+
+        // When
+        val result = testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode, mockInternalLogger)
+
+        // Then
+        assertThat(result?.requiresPixelCapture).isEqualTo(lineCount > 1)
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.ValueSource(booleans = [false, true])
     fun `M identify unsupported text styling W resolveTextLayoutInfo`(styled: Boolean, forge: Forge) {
         // Given

@@ -253,7 +253,13 @@ internal class SemanticsUtils(
                 ?.modifier
             val modifierColor = textModifier?.let { reflectionUtils.getColorProducerColor(it) }
             val textOverflow = resolveTextStringSimpleElementOverflow(textModifier, internalLogger)
-            convertTextLayoutInfo(layoutInput, multiParagraphCapturedText, modifierColor, textOverflow).also {
+            convertTextLayoutInfo(
+                layoutInput,
+                multiParagraphCapturedText,
+                modifierColor,
+                textOverflow,
+                isMultiline = textLayoutResult.lineCount > 1
+            ).also {
                 textCaptureCache?.put(semanticsNode.id, state, textModifier, it)
             }
         }
@@ -474,7 +480,8 @@ internal class SemanticsUtils(
         layoutInput: TextLayoutInput,
         multiParagraphCapturedText: String?,
         modifierColor: Color?,
-        textOverflow: MobileSegment.TruncationMode?
+        textOverflow: MobileSegment.TruncationMode?,
+        isMultiline: Boolean
     ): TextLayoutInfo {
         return TextLayoutInfo(
             text = multiParagraphCapturedText ?: resolveAnnotatedString(layoutInput.text),
@@ -484,7 +491,8 @@ internal class SemanticsUtils(
                 .let { if (it.isNaN()) DEFAULT_FONT_SIZE_SP else it.toLong() },
             fontFamily = layoutInput.style.fontFamily,
             textOverflow = textOverflow,
-            requiresPixelCapture = requiresTextPixels(layoutInput)
+            // The flat text format cannot preserve the paragraph's measured breaks and baselines.
+            requiresPixelCapture = isMultiline || requiresTextPixels(layoutInput)
         )
     }
 

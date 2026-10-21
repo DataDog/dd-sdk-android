@@ -386,7 +386,11 @@ internal class GranularComposeDecomposer(
                 return previous
             }
             return CapturedTextStyle(
-                family = (info.fontFamily as? GenericFontFamily)?.name ?: DEFAULT_FONT_FAMILY,
+                family = when (info.fontFamily) {
+                    FontFamily.SansSerif -> DEFAULT_FONT_FAMILY
+                    is GenericFontFamily -> info.fontFamily.name
+                    else -> DEFAULT_FONT_FAMILY
+                },
                 size = info.fontSize,
                 color = resolveColor(info.color.toLong()) ?: fallbackColor ?: DEFAULT_TEXT_COLOR,
                 truncationMode = info.textOverflow?.let { CapturedTruncationMode.valueOf(it.name) }
