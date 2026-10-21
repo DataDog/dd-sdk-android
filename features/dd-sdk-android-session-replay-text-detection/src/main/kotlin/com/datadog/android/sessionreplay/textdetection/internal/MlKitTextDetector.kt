@@ -7,6 +7,9 @@
 package com.datadog.android.sessionreplay.textdetection.internal
 
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Rect
 import com.datadog.android.sessionreplay.recorder.privacy.TextDetectionOutcome
 import com.datadog.android.sessionreplay.recorder.privacy.TextDetector
 import com.datadog.android.sessionreplay.textdetection.TextDetectionExtensionSupport
@@ -47,42 +50,86 @@ internal class MlKitTextDetector(
         lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
 ) : TextDetector {
 
-    @Suppress("UnsafeThirdPartyFunctionCall", "SwallowedException")
-    // schedule/fromBitmap/process/mapNotNull/addOnSuccessListener/addOnFailureListener can only
-    // throw for programmer errors (bad arguments, shutdown executor) that would be bugs here, not
-    // recoverable conditions; the IllegalArgumentException from fromBitmap is deliberately
-    // swallowed since it already resolves to TextDetectionOutcome.Unavailable, same as a timeout.
+    @Suppress("UnsafeThirdPartyFunctionCall") // Scheduling uses the owned, active executor and positive timeout.
     override fun detectTextRegions(bitmap: Bitmap, onComplete: (TextDetectionOutcome) -> Unit) {
         val alreadyCompleted = AtomicBoolean(false)
         val complete = { outcome: TextDetectionOutcome ->
             if (alreadyCompleted.compareAndSet(false, true)) onComplete(outcome)
         }
-
         timeoutScheduler.schedule(
             { complete(TextDetectionOutcome.Unavailable) },
             timeoutMs,
             TimeUnit.MILLISECONDS
         )
+        recognize(bitmap, complete)
+    }
 
-        val noRotation = 0
-        val image = try {
-            InputImage.fromBitmap(bitmap, noRotation)
-        } catch (e: IllegalArgumentException) {
-            complete(TextDetectionOutcome.Unavailable)
-            return
-        }
-
-        recognizer.value.process(image)
-            .addOnSuccessListener(callbackExecutor) { visionText ->
-                val regions = visionText.textBlocks.mapNotNull { it.boundingBox }
-                complete(TextDetectionOutcome.Detected(regions))
+    @Suppress("UnsafeThirdPartyFunctionCall", "SwallowedException")
+    private fun recognize(bitmap: Bitmap, complete: (TextDetectionOutcome) -> Unit) {
+        val width = bitmap.width
+        val height = bitmap.height
+        val input = padSmallBitmap(bitmap)
+        var taskOwnsInput = false
+        try {
+            val image = try {
+                InputImage.fromBitmap(input, 0)
+            } catch (_: IllegalArgumentException) {
+                complete(TextDetectionOutcome.Unavailable)
+                return
             }
-            .addOnFailureListener(callbackExecutor) {
+            val task = recognizer.value.process(image)
+            task.addOnCompleteListener(callbackExecutor) {
+                // A timeout completes our callback, but ML Kit may still be reading its input.
+                if (input !== bitmap) input.recycle()
+            }
+            taskOwnsInput = true
+            task.addOnSuccessListener(callbackExecutor) { visionText ->
+                val regions = visionText.textBlocks.mapNotNull { block ->
+                    block.boundingBox?.let { clippedRegion(it, width, height) }
+                }
+                complete(TextDetectionOutcome.Detected(regions))
+            }.addOnFailureListener(callbackExecutor) {
                 complete(TextDetectionOutcome.Unavailable)
             }
+        } finally {
+            if (!taskOwnsInput && input !== bitmap) input.recycle()
+        }
+    }
+
+    /** ML Kit rejects either dimension below 32px. Padding is detector-only; replay keeps the source bitmap. */
+    @Suppress("UnsafeThirdPartyFunctionCall") // Positive bitmap dimensions; unfinished owned output is always recycled.
+    private fun padSmallBitmap(bitmap: Bitmap): Bitmap {
+        if (bitmap.width >= MIN_INPUT_SIZE_PX && bitmap.height >= MIN_INPUT_SIZE_PX) return bitmap
+        val padded = Bitmap.createBitmap(
+            bitmap.width.coerceAtLeast(MIN_INPUT_SIZE_PX),
+            bitmap.height.coerceAtLeast(MIN_INPUT_SIZE_PX),
+            Bitmap.Config.ARGB_8888
+        )
+        var completed = false
+        return try {
+            val canvas = Canvas(padded)
+            canvas.drawColor(Color.TRANSPARENT)
+            // Transparent padding preserves source contrast; top-left placement preserves mask coordinates.
+            canvas.drawBitmap(bitmap, 0f, 0f, null)
+            completed = true
+            padded
+        } finally {
+            if (!completed) padded.recycle()
+        }
+    }
+
+    private fun clippedRegion(region: Rect, width: Int, height: Int): Rect? {
+        val clipped = Rect(
+            region.left.coerceIn(0, width),
+            region.top.coerceIn(0, height),
+            region.right.coerceIn(0, width),
+            region.bottom.coerceIn(0, height)
+        )
+        return if (clipped.left < clipped.right && clipped.top < clipped.bottom) clipped else null
     }
 
     private companion object {
         const val DEFAULT_TIMEOUT_MS = 2_000L
+        const val MIN_INPUT_SIZE_PX = 32
     }
 }
