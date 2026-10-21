@@ -108,6 +108,8 @@ These are rules that reviewers repeatedly enforce. Follow them when writing code
 
 ## Public API
 
+Exception for shared SDK internals: `dd-sdk-android-internal` is an `implementation` dependency of core and features; its cross-module types may be `public` (including data classes) without being customer API. Changes are allowed without customer-facing deprecation. Before changing signatures or removing members, check usages in SDK modules and cross-platform repositories (`dd-sdk-reactnative`, `dd-sdk-flutter`, `dd-sdk-unity`).
+
 - Keep everything `internal` unless it is meant for customers. Check the `api/apiSurface` diff for anything leaked by accident.
 - Don't expose `Impl` classes, internal types in public signatures, or internal classes in public KDoc. Cross-module internal access goes through `_RumInternalProxy`-style proxies or a cast inside the function body.
 - If a class is meant to be built via `Builder`, make its constructor `internal` or `private`.
