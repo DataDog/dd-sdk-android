@@ -23,7 +23,7 @@
 }
 
 # Required because we need access to RumContext fields by reflection
--keepnames class com.datadog.android.rum.internal.domain.RumContext {
+-keepnames class com.datadog.android.internal.rum.RumContext {
     *;
 }
 

@@ -7,7 +7,7 @@ package com.datadog.android.rum.internal.timeseries.collector
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
-import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.internal.rum.RumContext
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 

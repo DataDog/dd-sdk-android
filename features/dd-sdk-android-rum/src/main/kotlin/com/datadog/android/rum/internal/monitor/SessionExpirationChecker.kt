@@ -7,10 +7,10 @@
 package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
-import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 
 internal class SessionExpirationChecker(
     private val monitor: DatadogRumMonitor,
@@ -29,9 +29,9 @@ internal class SessionExpirationChecker(
     // Called after every handled RUM event, including the expiry check itself. Only a tracked
     // session gets a pending check, so ticks stop once the session expires and resume with the
     // next event that renews it.
-    fun onEventHandled(sessionState: RumSessionScope.State?) {
+    fun onEventHandled(sessionState: RumSessionState?) {
         handler.removeCallbacks(expiryCheckRunnable)
-        if (!stopped && RumSessionScope.State.TRACKED == sessionState) {
+        if (!stopped && RumSessionState.TRACKED == sessionState) {
             handler.postDelayed(expiryCheckRunnable, checkIntervalMs)
         }
     }
