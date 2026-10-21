@@ -13,6 +13,7 @@ import com.datadog.android.api.context.DeviceInfo
 import com.datadog.android.api.context.DeviceType
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.internal.profiling.quota.QuotaReason
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -921,4 +922,65 @@ internal fun RumStartupScenario.toVitalAppLaunchStartupType(): VitalAppLaunchEve
         is RumStartupScenario.WarmFirstActivity -> VitalAppLaunchEvent.StartupType.WARM_START
     }
 }
+
+internal fun QuotaReason.toLongTaskQuotaReason(): LongTaskEvent.QuotaReason {
+    return when (this) {
+        QuotaReason.QUOTA_OK -> LongTaskEvent.QuotaReason.QUOTA_OK
+        QuotaReason.QUOTA_EXCEEDED -> LongTaskEvent.QuotaReason.QUOTA_EXCEEDED
+        QuotaReason.ORG_DISABLED -> LongTaskEvent.QuotaReason.ORG_DISABLED
+        QuotaReason.BACKEND_UNAVAILABLE -> LongTaskEvent.QuotaReason.BACKEND_UNAVAILABLE
+        QuotaReason.UNDEFINED -> LongTaskEvent.QuotaReason.UNDEFINED
+        QuotaReason.TIMEOUT -> LongTaskEvent.QuotaReason.TIMEOUT
+        QuotaReason.API_ERROR -> LongTaskEvent.QuotaReason.API_ERROR
+    }
+}
+
+internal fun QuotaReason.toVitalOperationStepQuotaReason(): VitalOperationStepEvent.QuotaReason {
+    return when (this) {
+        QuotaReason.QUOTA_OK -> VitalOperationStepEvent.QuotaReason.QUOTA_OK
+        QuotaReason.QUOTA_EXCEEDED -> VitalOperationStepEvent.QuotaReason.QUOTA_EXCEEDED
+        QuotaReason.ORG_DISABLED -> VitalOperationStepEvent.QuotaReason.ORG_DISABLED
+        QuotaReason.BACKEND_UNAVAILABLE -> VitalOperationStepEvent.QuotaReason.BACKEND_UNAVAILABLE
+        QuotaReason.UNDEFINED -> VitalOperationStepEvent.QuotaReason.UNDEFINED
+        QuotaReason.TIMEOUT -> VitalOperationStepEvent.QuotaReason.TIMEOUT
+        QuotaReason.API_ERROR -> VitalOperationStepEvent.QuotaReason.API_ERROR
+    }
+}
+
+internal fun QuotaReason.toVitalAppLaunchQuotaReason(): VitalAppLaunchEvent.QuotaReason {
+    return when (this) {
+        QuotaReason.QUOTA_OK -> VitalAppLaunchEvent.QuotaReason.QUOTA_OK
+        QuotaReason.QUOTA_EXCEEDED -> VitalAppLaunchEvent.QuotaReason.QUOTA_EXCEEDED
+        QuotaReason.ORG_DISABLED -> VitalAppLaunchEvent.QuotaReason.ORG_DISABLED
+        QuotaReason.BACKEND_UNAVAILABLE -> VitalAppLaunchEvent.QuotaReason.BACKEND_UNAVAILABLE
+        QuotaReason.UNDEFINED -> VitalAppLaunchEvent.QuotaReason.UNDEFINED
+        QuotaReason.TIMEOUT -> VitalAppLaunchEvent.QuotaReason.TIMEOUT
+        QuotaReason.API_ERROR -> VitalAppLaunchEvent.QuotaReason.API_ERROR
+    }
+}
+
+internal fun QuotaReason.toViewQuotaReason(): ViewEvent.QuotaReason {
+    return when (this) {
+        QuotaReason.QUOTA_OK -> ViewEvent.QuotaReason.QUOTA_OK
+        QuotaReason.QUOTA_EXCEEDED -> ViewEvent.QuotaReason.QUOTA_EXCEEDED
+        QuotaReason.ORG_DISABLED -> ViewEvent.QuotaReason.ORG_DISABLED
+        QuotaReason.BACKEND_UNAVAILABLE -> ViewEvent.QuotaReason.BACKEND_UNAVAILABLE
+        QuotaReason.UNDEFINED -> ViewEvent.QuotaReason.UNDEFINED
+        QuotaReason.TIMEOUT -> ViewEvent.QuotaReason.TIMEOUT
+        QuotaReason.API_ERROR -> ViewEvent.QuotaReason.API_ERROR
+    }
+}
+
+internal fun QuotaReason.toErrorQuotaReason(): ErrorEvent.QuotaReason {
+    return when (this) {
+        QuotaReason.QUOTA_OK -> ErrorEvent.QuotaReason.QUOTA_OK
+        QuotaReason.QUOTA_EXCEEDED -> ErrorEvent.QuotaReason.QUOTA_EXCEEDED
+        QuotaReason.ORG_DISABLED -> ErrorEvent.QuotaReason.ORG_DISABLED
+        QuotaReason.BACKEND_UNAVAILABLE -> ErrorEvent.QuotaReason.BACKEND_UNAVAILABLE
+        QuotaReason.UNDEFINED -> ErrorEvent.QuotaReason.UNDEFINED
+        QuotaReason.TIMEOUT -> ErrorEvent.QuotaReason.TIMEOUT
+        QuotaReason.API_ERROR -> ErrorEvent.QuotaReason.API_ERROR
+    }
+}
+
 // endregion

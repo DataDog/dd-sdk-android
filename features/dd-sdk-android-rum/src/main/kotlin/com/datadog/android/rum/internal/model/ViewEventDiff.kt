@@ -198,7 +198,8 @@ private fun diffDd(old: ViewEvent.Dd, new: ViewEvent.Dd): ViewUpdateEvent.Dd {
             profiling = diffEquals(ViewEvent.Dd::profiling)?.let {
                 ViewUpdateEvent.Profiling(
                     status = it.status?.toViewUpdate(),
-                    errorReason = it.errorReason?.toViewUpdate()
+                    errorReason = it.errorReason?.toViewUpdate(),
+                    quotaReason = it.quotaReason?.toViewUpdate()
                 )
             },
             // pageStates uses diffList (drop-by-size), consistent with inForegroundPeriods.

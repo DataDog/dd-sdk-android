@@ -9,8 +9,10 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
+import com.datadog.android.internal.profiling.quota.QuotaReason
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.isConnected
+import com.datadog.android.rum.internal.domain.scope.toViewQuotaReason
 import com.datadog.android.rum.internal.domain.scope.toViewSessionPrecondition
 import com.datadog.android.rum.model.ViewEvent
 import org.assertj.core.api.AbstractObjectAssert
@@ -873,6 +875,15 @@ internal class ViewEventAssert(actual: ViewEvent) :
             )
             .isEqualTo(expected)
         return this
+    }
+
+    fun hasProfilingQuotaReason(quotaReason: QuotaReason) = apply {
+        assertThat(actual.dd.profiling?.quotaReason)
+            .overridingErrorMessage(
+                "Expected RUM event to have profiling quota reason: $quotaReason" +
+                    " but instead was: ${actual.dd.profiling?.quotaReason}"
+            )
+            .isEqualTo(quotaReason.toViewQuotaReason())
     }
 
     fun hasProfilingStatus(profilingStatus: ViewEvent.ProfilingStatus?): ViewEventAssert {
