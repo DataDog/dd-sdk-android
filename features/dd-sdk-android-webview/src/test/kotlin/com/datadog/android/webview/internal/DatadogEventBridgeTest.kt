@@ -10,6 +10,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -321,11 +323,7 @@ internal class DatadogEventBridgeTest {
         // Given
         val sessionId = "c5b3c4ab-fa4a-4de9-8199-a522131ec48a"
         whenever(mockWebViewRumFeature.cachedRumContext).thenReturn(
-            mapOf(
-                "session_id" to sessionId,
-                "session_state" to "TRACKED",
-                "session_sample_rate" to 100f
-            )
+            RumContext(sessionId = sessionId, sessionState = RumSessionState.TRACKED, sessionSampleRate = 100f)
         )
         whenever(mockWebViewRumFeature.cachedTracingContext)
             .thenReturn(mapOf("okhttp_interceptor_sample_rate" to 100f))
@@ -343,11 +341,7 @@ internal class DatadogEventBridgeTest {
         // This UUID hashes to ~50.68%, so at combined rate 40% (100% session * 40% trace) it's not sampled
         val sessionId = "c5b3c4ab-fa4a-4de9-8199-a522131ec48a"
         whenever(mockWebViewRumFeature.cachedRumContext).thenReturn(
-            mapOf(
-                "session_id" to sessionId,
-                "session_state" to "TRACKED",
-                "session_sample_rate" to 100f
-            )
+            RumContext(sessionId = sessionId, sessionState = RumSessionState.TRACKED, sessionSampleRate = 100f)
         )
         whenever(mockWebViewRumFeature.cachedTracingContext)
             .thenReturn(mapOf("okhttp_interceptor_sample_rate" to 40f))
@@ -381,7 +375,7 @@ internal class DatadogEventBridgeTest {
     @Test
     fun `M return null W getIsTraceSampled() { no session id }`() {
         // Given
-        whenever(mockWebViewRumFeature.cachedRumContext).thenReturn(emptyMap())
+        whenever(mockWebViewRumFeature.cachedRumContext).thenReturn(null)
 
         // When
         val result = testedDatadogEventBridge.getIsTraceSampled()
@@ -394,10 +388,7 @@ internal class DatadogEventBridgeTest {
     fun `M return null W getIsTraceSampled() { session not tracked }`() {
         // Given
         whenever(mockWebViewRumFeature.cachedRumContext).thenReturn(
-            mapOf(
-                "session_id" to "some-session-id",
-                "session_state" to "NOT_TRACKED"
-            )
+            RumContext(sessionId = "some-session-id", sessionState = RumSessionState.NOT_TRACKED)
         )
 
         // When
@@ -411,30 +402,9 @@ internal class DatadogEventBridgeTest {
     fun `M return null W getIsTraceSampled() { no trace sample rate configured }`() {
         // Given
         whenever(mockWebViewRumFeature.cachedRumContext).thenReturn(
-            mapOf(
-                "session_id" to "some-session-id",
-                "session_state" to "TRACKED",
-                "session_sample_rate" to 100f
-            )
+            RumContext(sessionId = "some-session-id", sessionState = RumSessionState.TRACKED, sessionSampleRate = 100f)
         )
         whenever(mockWebViewRumFeature.cachedTracingContext).thenReturn(emptyMap())
-
-        // When
-        val result = testedDatadogEventBridge.getIsTraceSampled()
-
-        // Then
-        assertThat(result).isEqualTo("null")
-    }
-
-    @Test
-    fun `M return null W getIsTraceSampled() { no session sample rate }`() {
-        // Given
-        whenever(mockWebViewRumFeature.cachedRumContext).thenReturn(
-            mapOf(
-                "session_id" to "some-session-id",
-                "session_state" to "TRACKED"
-            )
-        )
 
         // When
         val result = testedDatadogEventBridge.getIsTraceSampled()
@@ -452,10 +422,10 @@ internal class DatadogEventBridgeTest {
             .thenReturn(mapOf("okhttp_interceptor_sample_rate" to 60f))
         whenever(mockWebViewRumFeature.cachedRumContext)
             .thenReturn(
-                mapOf("session_id" to sessionId, "session_state" to "TRACKED", "session_sample_rate" to 100f)
+                RumContext(sessionId = sessionId, sessionState = RumSessionState.TRACKED, sessionSampleRate = 100f)
             )
             .thenReturn(
-                mapOf("session_id" to sessionId, "session_state" to "TRACKED", "session_sample_rate" to 50f)
+                RumContext(sessionId = sessionId, sessionState = RumSessionState.TRACKED, sessionSampleRate = 50f)
             )
 
         // When
@@ -475,10 +445,10 @@ internal class DatadogEventBridgeTest {
             .thenReturn(mapOf("okhttp_interceptor_sample_rate" to 100f))
         whenever(mockWebViewRumFeature.cachedRumContext)
             .thenReturn(
-                mapOf("session_id" to sessionId, "session_state" to "TRACKED", "session_sample_rate" to 100f)
+                RumContext(sessionId = sessionId, sessionState = RumSessionState.TRACKED, sessionSampleRate = 100f)
             )
             .thenReturn(
-                mapOf("session_id" to sessionId, "session_state" to "NOT_TRACKED")
+                RumContext(sessionId = sessionId, sessionState = RumSessionState.NOT_TRACKED)
             )
 
         // When
@@ -497,13 +467,13 @@ internal class DatadogEventBridgeTest {
             .thenReturn(mapOf("okhttp_interceptor_sample_rate" to 100f))
         whenever(mockWebViewRumFeature.cachedRumContext)
             .thenReturn(
-                mapOf("session_id" to "old-session-id", "session_state" to "NOT_TRACKED")
+                RumContext(sessionId = "old-session-id", sessionState = RumSessionState.NOT_TRACKED)
             )
             .thenReturn(
-                mapOf(
-                    "session_id" to "c5b3c4ab-fa4a-4de9-8199-a522131ec48a",
-                    "session_state" to "TRACKED",
-                    "session_sample_rate" to 100f
+                RumContext(
+                    sessionId = "c5b3c4ab-fa4a-4de9-8199-a522131ec48a",
+                    sessionState = RumSessionState.TRACKED,
+                    sessionSampleRate = 100f
                 )
             )
 

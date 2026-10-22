@@ -102,7 +102,7 @@ class RumContextPropagationTest {
                 listOfNotNull(
                     "account.id=${accountInfo.id}",
                     userInfo.id?.let { "user.id=$it" },
-                    "session.id=${rumContext[RUM_CONTEXT_SESSION_ID]}"
+                    "session.id=${rumContext.sessionId}"
                 )
             )
         }
@@ -158,8 +158,7 @@ class RumContextPropagationTest {
         forge: Forge
     ) {
         // Given
-        val rumContext = forge.aRumContext(sessionId = null)
-        val datadogContext = forge.aDatadogContextWithRumContext(rumContext)
+        val datadogContext = forge.aDatadogContextWithRumContext(null)
         stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
         testedClient = prepareClient(stubSdkCore)
@@ -180,8 +179,7 @@ class RumContextPropagationTest {
         forge: Forge
     ) {
         // Given
-        val rumContext = forge.aRumContext(sessionId = null)
-        val datadogContext = forge.aDatadogContextWithRumContext(rumContext)
+        val datadogContext = forge.aDatadogContextWithRumContext(null)
         stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
         testedClient = prepareClient(stubSdkCore)
@@ -240,8 +238,6 @@ class RumContextPropagationTest {
 
         private const val HEADER_BAGGAGE = "baggage"
         private const val HEADER_SAMPLE_PRIORITY = "x-datadog-sampling-priority"
-
-        private const val RUM_CONTEXT_SESSION_ID = "session_id"
 
         private fun RumContextPropagationTest.assertSentRequest(block: RecordedRequest.() -> Unit) {
             block(mockServer.takeRequest())

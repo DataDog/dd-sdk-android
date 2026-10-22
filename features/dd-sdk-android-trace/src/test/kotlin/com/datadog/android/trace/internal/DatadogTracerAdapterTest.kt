@@ -10,6 +10,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.trace.api.scope.DatadogScopeListener
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.utils.RumContextTestsUtils.aDatadogContextWithRumContext
@@ -82,7 +83,7 @@ internal class DatadogTracerAdapterTest {
     @BoolForgery
     private var fakeBool: Boolean = false
 
-    lateinit var fakeRumContext: Map<String, Any?>
+    lateinit var fakeRumContext: RumContext
 
     @Mock
     private lateinit var mockContextFuture: Future<DatadogContext?>

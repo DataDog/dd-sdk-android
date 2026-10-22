@@ -9,6 +9,8 @@ package com.datadog.android.trace.integration.otel
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.tests.ktx.getInt
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
@@ -1038,10 +1040,13 @@ internal class OtelTracerProviderTest {
     ) {
         // Given
         val rumContext = mapOf(
-            "application_id" to fakeRumApplicationId,
-            "session_id" to fakeRumSessionId,
-            "view_id" to fakeRumViewId,
-            "action_id" to fakeRumActionId
+            FeatureContextKeys.RUM_CONTEXT to
+                RumContext(
+                    applicationId = fakeRumApplicationId,
+                    sessionId = fakeRumSessionId,
+                    viewId = fakeRumViewId,
+                    actionId = fakeRumActionId
+                )
         )
 
         val datadogContext = stubSdkCore.getDatadogContext().let { datadogContext ->
