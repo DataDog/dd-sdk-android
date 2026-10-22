@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
+import com.datadog.android.internal.sessionreplay.composition.CapturedClip
 import com.datadog.android.internal.sessionreplay.composition.CapturedCompositeOperation
 import com.datadog.android.internal.sessionreplay.composition.CapturedFillRule
 import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
@@ -56,6 +57,37 @@ internal class CapturedTreeWireMapperTest {
         assertThat(record.data.compositionTree?.layers?.map { it.id })
             .containsExactly(tree.layer.identity.wireId)
         assertThat(record.toJson().asJsonObject.getAsJsonObject("data").has("compositionTree")).isTrue
+    }
+
+    @Test
+    fun `M serialize padded image and clip W mapFullSnapshot { owning layer retains actual bounds }`() {
+        // Given
+        val bounds = CapturedBounds(16, 194, 379, 2)
+        val tree = compositionTestTree(rootBounds = CapturedBounds(0, 0, 411, 923), layerBounds = bounds)
+        val identity = tree.factory.imageWireframe(tree.layer.identity)
+        val pixel = CapturedWireframe.Pixel(
+            identity,
+            bounds.copy(height = 16),
+            clip = CapturedClip(bottom = 14),
+            resource = PixelResource.Resolved("padded-stripe", "image/webp")
+        )
+        val layer = tree.layer.copy(children = listOf(CapturedChild.Wireframe(identity)))
+
+        // When
+        val result = testedMapper.mapFullSnapshot(
+            tree.snapshot.copy(layers = listOf(layer), wireframes = listOf(pixel))
+        )
+
+        // Then
+        val record = (result as CaptureWireMappingResult.Success).value
+        val image = record.data.wireframes.single() as MobileSegment.Wireframe.ImageWireframe
+        assertThat(image.y).isEqualTo(194)
+        assertThat(image.height).isEqualTo(16)
+        assertThat(image.clip?.bottom).isEqualTo(14)
+        assertThat(record.data.compositionTree!!.layers!!.single().height).isEqualTo(2)
+        val serialized = record.toJson().asJsonObject.getAsJsonObject("data")
+            .getAsJsonArray("wireframes").single().asJsonObject
+        assertThat(serialized.getAsJsonObject("clip").get("bottom").asLong).isEqualTo(14)
     }
 
     @Test

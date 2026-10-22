@@ -916,17 +916,20 @@ internal class GranularComposeDecomposer(
 
         private fun resolveOneCapture(pending: PendingCapture, cropped: Bitmap?): CapturedWireframe {
             if (cropped != null) {
+                val padded = ComposePixelCapturePadding.pad(cropped, pending.bounds)
+                if (padded.bitmap !== cropped) cropped.recycle()
                 val pixelIdentity = request.identityFactory.imageWireframe(pending.nodeIdentity)
                 request.pendingPixelCaptureSink.register(
                     PendingPixelCapture(
                         wireframeIdentity = pixelIdentity,
                         ownerIdentity = pending.nodeIdentity,
-                        bitmap = cropped
+                        bitmap = padded.bitmap
                     )
                 )
                 return CapturedWireframe.Pixel(
                     identity = pixelIdentity,
-                    bounds = pending.bounds,
+                    bounds = padded.bounds,
+                    clip = padded.clip,
                     resource = PixelResource.Unresolved
                 )
             }

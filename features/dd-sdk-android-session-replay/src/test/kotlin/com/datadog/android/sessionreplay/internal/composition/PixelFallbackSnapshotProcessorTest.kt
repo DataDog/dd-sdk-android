@@ -11,6 +11,7 @@ import android.graphics.Rect
 import androidx.collection.LruCache
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
+import com.datadog.android.internal.sessionreplay.composition.CapturedClip
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
@@ -161,6 +162,33 @@ internal class PixelFallbackSnapshotProcessorTest {
         assertThat(placeholder.bounds).isEqualTo(fixture.bounds)
         val ownerLayer = finalSnapshot.layers.single { it.identity == fixture.ownerIdentity }
         assertThat(ownerLayer.children).containsExactly(CapturedChild.Wireframe(placeholder.identity))
+    }
+
+    @Test
+    fun `M retain original visible footprint W process { padded image fails privacy detection }`() {
+        // Given
+        val fixture = Fixture("padded-capture")
+        val padded = fixture.pixelWireframe.copy(
+            bounds = fixture.bounds.copy(height = 16),
+            clip = CapturedClip(bottom = 14)
+        )
+        val owner = fixture.ownerLayer.copy(bounds = fixture.bounds.copy(height = 2))
+        val snapshot = fixture.snapshot.copy(layers = listOf(owner), wireframes = listOf(padded))
+        val testedProcessor = PixelFallbackSnapshotProcessor(mockResourceResolver, null, immediateMainThreadExecutor)
+        var completed: CapturedFullSnapshot? = null
+
+        // When
+        testedProcessor.process(
+            SnapshotProcessingRequest(generationContext(), snapshot, listOf(fixture.pending), fixture.identityFactory),
+            SnapshotProcessingCallback { completed = (it as SnapshotProcessingResult.Completed).snapshot }
+        )
+
+        // Then
+        val placeholder = completed!!.wireframes.single() as CapturedWireframe.PrivacyPlaceholder
+        assertThat(placeholder.bounds).isEqualTo(padded.bounds)
+        assertThat(placeholder.clip).isEqualTo(CapturedClip(bottom = 14))
+        assertThat(completed!!.layers.single().bounds.height).isEqualTo(2)
+        verify(mockResourceResolver, never()).resolveResourceIdFromBitmap(any(), any())
     }
 
     @org.junit.jupiter.params.ParameterizedTest

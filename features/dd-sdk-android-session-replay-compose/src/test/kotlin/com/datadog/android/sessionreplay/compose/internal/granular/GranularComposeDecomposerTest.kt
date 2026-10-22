@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.compose.internal.granular
 
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Rect
 import android.view.View
 import androidx.compose.ui.Modifier
@@ -29,6 +30,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedClip
 import com.datadog.android.internal.sessionreplay.composition.CapturedHorizontalAlignment
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentityKind
@@ -70,6 +72,8 @@ import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.Mockito.mockConstruction
+import org.mockito.Mockito.mockStatic
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -1426,6 +1430,60 @@ internal class GranularComposeDecomposerTest {
 
         // Then
         assertThat(result.wireframes.single().bounds).isEqualTo(CapturedBounds(2, 2, 4, 4))
+    }
+
+    @ParameterizedTest
+    @CsvSource("5,2,16,40", "27,10,20,54")
+    fun `M register padded resource and retain original layer W decompose() { thin drawing }`(
+        heightPx: Int,
+        heightDp: Long,
+        paddedHeightDp: Long,
+        paddedHeightPx: Int
+    ) {
+        // Given
+        val node = mockDrawingEffectNode()
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(node.boundsInRoot).thenReturn(
+            androidx.compose.ui.geometry.Rect(42f, 508f, 1038f, (508 + heightPx).toFloat())
+        )
+        val source: Bitmap = mock()
+        val padded: Bitmap = mock()
+        whenever(source.width).thenReturn(996)
+        whenever(source.height).thenReturn(heightPx)
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = FakeComposeHostCaptureRasterizer { listOf(source) }
+        )
+        val registered = mutableListOf<PendingPixelCapture>()
+        mockStatic(Bitmap::class.java).use { factory ->
+            factory.`when`<Bitmap> {
+                Bitmap.createBitmap(996, paddedHeightPx, Bitmap.Config.ARGB_8888)
+            }.thenReturn(padded)
+            mockConstruction(Canvas::class.java).use { _ ->
+                // When
+                val result = testedDecomposer.decompose(
+                    mockView,
+                    realRequest(
+                        screenDensity = 2.625f,
+                        pendingPixelCaptureSink = PendingPixelCaptureSink { registered += it }
+                    )
+                )!!
+
+                // Then
+                val pixel = result.wireframes.single() as CapturedWireframe.Pixel
+                assertThat(pixel.bounds).isEqualTo(CapturedBounds(16, 194, 379, paddedHeightDp))
+                assertThat(pixel.clip).isEqualTo(CapturedClip(bottom = paddedHeightDp - heightDp))
+                assertThat(result.nodes.single().bounds).isEqualTo(CapturedBounds(16, 194, 379, heightDp))
+                assertThat(registered.single().bitmap).isSameAs(padded)
+                assertThat(registered.single().isTextFree).isFalse()
+                assertThat(registered.single().isSourceImage).isFalse()
+                verify(source).recycle()
+                verify(padded, never()).recycle()
+            }
+        }
     }
 
     @Test
