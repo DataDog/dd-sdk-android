@@ -45,7 +45,10 @@ internal class WebViewRumEventsTest {
         ConditionWatcher { currentRumContext()[SESSION_STATE_KEY] == "TRACKED" }
             .doWait(timeoutMs = RumTest.FINAL_WAIT_MS)
         val sessionId = currentRumContext()[SESSION_ID_KEY]
-        Thread.sleep(TIMESERIES_COLLECTION_WAIT_MS)
+        ConditionWatcher {
+            refreshRumContext()
+            currentRumContext()[SESSION_HAS_TIMESERIES_KEY] == true
+        }.doWait(timeoutMs = RumTest.FINAL_WAIT_MS)
         val webViewId = UUID.randomUUID().toString()
 
         // When
@@ -93,6 +96,13 @@ internal class WebViewRumEventsTest {
     private fun currentRumContext(): Map<String, Any?> =
         (Datadog.getInstance() as FeatureSdkCore).getFeatureContext(Feature.RUM_FEATURE_NAME)
 
+    // The RUM feature context is republished only after RUM handles an event, not when a timeseries
+    // data point is collected. Sends the same no-op notification the WebView bridge sends before each event.
+    private fun refreshRumContext() {
+        (Datadog.getInstance() as FeatureSdkCore).getFeature(Feature.RUM_FEATURE_NAME)
+            ?.sendEvent(mapOf("type" to WEB_VIEW_INGESTED_NOTIFICATION))
+    }
+
     private fun rumEvents(): List<JsonObject> = mockServerRule
         .getRequests(RuntimeConfig.rumEndpointUrl)
         .flatMap { request -> request.textBody?.let(::rumPayloadToJsonList).orEmpty() }
@@ -103,13 +113,12 @@ internal class WebViewRumEventsTest {
     companion object {
         private const val SESSION_STATE_KEY = "session_state"
         private const val SESSION_ID_KEY = "session_id"
+        private const val SESSION_HAS_TIMESERIES_KEY = "session_has_timeseries"
+        private const val WEB_VIEW_INGESTED_NOTIFICATION = "web_view_ingested_notification"
         private const val SESSION_KEY = "session"
         private const val VIEW_KEY = "view"
         private const val ID_KEY = "id"
         private const val HAS_TIMESERIES_KEY = "has_timeseries"
         private const val IS_MAIN_PROCESS_KEY = "is_main_process"
-
-        // Two sampling intervals, so at least one data point is collected for the session.
-        private const val TIMESERIES_COLLECTION_WAIT_MS = 2_000L
     }
 }
