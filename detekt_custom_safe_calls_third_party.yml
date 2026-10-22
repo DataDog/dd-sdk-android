@@ -1,10 +1,6 @@
 datadog:
   UnsafeThirdPartyFunctionCall:
     knownSafeThirdPartyCalls:
-      # region AndroidX
-      - "androidx.collection.LruCache.get(kotlin.String)"
-      - "androidx.collection.LruCache.put(kotlin.String, kotlin.String)"
-      # endregion
       # region Apollo Kotlin
       - "com.apollographql.apollo.api.json.buildJsonString(kotlin.String?, kotlin.Function1)"
       - "com.apollographql.apollo.api.ApolloRequest.newBuilder()"
@@ -1168,7 +1164,6 @@ datadog:
       - "org.json.JSONArray.length()"
       - "org.json.JSONArray.put(kotlin.Any?)"
       - "org.json.JSONArray.toJsonArray()"
-      - "org.json.JSONException.constructor(kotlin.String?)"
       - "org.json.JSONObject.constructor()"
       - "org.json.JSONObject.has(kotlin.String?)"
       - "org.json.JSONObject.keys()"
