@@ -1,0 +1,121 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.flags.internal.selection
+
+/**
+ * The flag selection as configured by the application, before canonicalization.
+ * Elements are nullable because Java callers can pass lists that hold nulls.
+ */
+internal data class FlagSelection(
+    val tags: List<String?>,
+    val keyPatterns: List<String?>
+)
+
+/**
+ * A flag selection that was trimmed, deduplicated, sorted in UTF-8 byte order and validated.
+ */
+internal data class CanonicalFlagSelection(
+    val tags: List<String>,
+    val keyPatterns: List<String>
+)
+
+/**
+ * Reasons a flag selection is dropped. Values match the reasons used by Compute and ffe-service.
+ */
+internal enum class FlagSelectionError(val reason: String, val limit: String) {
+    MALFORMED_SELECTION(
+        "malformed_selection",
+        "tags and key patterns must be non-null strings without unpaired UTF-16 surrogates"
+    ),
+    TOO_MANY_VALUES(
+        "too_many_values",
+        "each list accepts at most ${FlagSelectionCanonicalizer.MAX_VALUES} values"
+    ),
+    INVALID_KEY_PATTERN(
+        "invalid_key_pattern",
+        "each key pattern is at most ${FlagSelectionCanonicalizer.MAX_KEY_PATTERN_BYTES} UTF-8 bytes"
+    ),
+    INVALID_TAG(
+        "invalid_tag",
+        "each tag is at most ${FlagSelectionCanonicalizer.MAX_TAG_BYTES} UTF-8 bytes"
+    )
+}
+
+internal sealed interface FlagSelectionResult {
+    object None : FlagSelectionResult
+    data class Selected(val selection: CanonicalFlagSelection) : FlagSelectionResult
+    data class Dropped(val error: FlagSelectionError) : FlagSelectionResult
+}
+
+/**
+ * Canonicalizes and validates a flag selection the same way Compute and ffe-service do.
+ */
+internal object FlagSelectionCanonicalizer {
+
+    internal const val MAX_VALUES = 31
+    internal const val MAX_TAG_BYTES = 200
+    internal const val MAX_KEY_PATTERN_BYTES = 200
+
+    // The Unicode White_Space property, which Compute trims with Rust's str::trim.
+    // Kotlin's trim() differs: it also trims U+001C..U+001F and does not trim U+0085.
+    private const val WHITE_SPACE = "\u0009\u000A\u000B\u000C\u000D\u0020\u0085\u00A0\u1680" +
+        "\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A" +
+        "\u2028\u2029\u202F\u205F\u3000"
+
+    @Suppress("ReturnCount")
+    fun canonicalize(selection: FlagSelection?): FlagSelectionResult {
+        if (selection == null) return FlagSelectionResult.None
+        val rawTags = selection.tags.wellFormedOrNull()
+        val rawKeyPatterns = selection.keyPatterns.wellFormedOrNull()
+        if (rawTags == null || rawKeyPatterns == null) {
+            return FlagSelectionResult.Dropped(FlagSelectionError.MALFORMED_SELECTION)
+        }
+
+        val tags = canonicalizeList(rawTags)
+        val keyPatterns = canonicalizeList(rawKeyPatterns)
+
+        val error = when {
+            tags.size > MAX_VALUES || keyPatterns.size > MAX_VALUES -> FlagSelectionError.TOO_MANY_VALUES
+            keyPatterns.any { it.utf8Size() > MAX_KEY_PATTERN_BYTES } -> FlagSelectionError.INVALID_KEY_PATTERN
+            tags.any { it.utf8Size() > MAX_TAG_BYTES } -> FlagSelectionError.INVALID_TAG
+            else -> null
+        }
+        return when {
+            error != null -> FlagSelectionResult.Dropped(error)
+            tags.isEmpty() && keyPatterns.isEmpty() -> FlagSelectionResult.None
+            else -> FlagSelectionResult.Selected(CanonicalFlagSelection(tags, keyPatterns))
+        }
+    }
+
+    private fun canonicalizeList(values: List<String>): List<String> = values
+        .asSequence()
+        .map { value -> value.trim { it in WHITE_SPACE } }
+        .filter { it.isNotEmpty() }
+        .sortedBy { it.utf8SortKey() }
+        .toList()
+        .distinct()
+
+    // Latin-1 maps each byte to one char, so comparing these strings compares unsigned UTF-8 bytes.
+    private fun String.utf8SortKey(): String = String(toByteArray(Charsets.UTF_8), Charsets.ISO_8859_1)
+
+    private fun String.utf8Size(): Int = toByteArray(Charsets.UTF_8).size
+
+    private fun List<String?>.wellFormedOrNull(): List<String>? =
+        if (all { it != null && !it.hasUnpairedSurrogate() }) filterIsInstance<String>() else null
+
+    private fun String.hasUnpairedSurrogate(): Boolean {
+        var index = 0
+        var unpaired = false
+        while (index < length && !unpaired) {
+            val char = this[index]
+            val isPair = char.isHighSurrogate() && index + 1 < length && this[index + 1].isLowSurrogate()
+            unpaired = !isPair && (char.isHighSurrogate() || char.isLowSurrogate())
+            index += if (isPair) 2 else 1
+        }
+        return unpaired
+    }
+}

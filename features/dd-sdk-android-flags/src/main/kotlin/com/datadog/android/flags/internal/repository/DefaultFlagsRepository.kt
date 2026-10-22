@@ -12,6 +12,7 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
+import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
 import java.util.concurrent.CountDownLatch
@@ -22,6 +23,7 @@ internal class DefaultFlagsRepository(
     private val featureSdkCore: FeatureSdkCore,
     private val instanceName: String,
     private val dataStore: DataStoreHandler,
+    private val flagSelection: CanonicalFlagSelection?,
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
     private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS,
     private val deliverFirstFlags: (Runnable) -> Unit = Runnable::run
@@ -37,7 +39,9 @@ internal class DefaultFlagsRepository(
         dataStore = dataStore,
         instanceName = instanceName,
         internalLogger = internalLogger
-    ) { persistedState ->
+    ) { loadedState ->
+        // State fetched with a different selection holds a different set of flags.
+        val persistedState = loadedState?.takeIf { it.flagSelection == flagSelection }
         val installed = try {
             persistedState != null && atomicState.compareAndSet(
                 null,
@@ -68,6 +72,7 @@ internal class DefaultFlagsRepository(
             persistenceManager.saveFlagsState(
                 context = context,
                 flags = flags,
+                flagSelection = flagSelection,
                 currentTimestamp = featureSdkCore.timeProvider.getDeviceTimestampMillis(),
                 object : DataStoreWriteCallback {
                     override fun onSuccess() {
@@ -139,13 +144,11 @@ internal class DefaultFlagsRepository(
 
     override fun hasFlags(): Boolean {
         waitForPersistenceLoad()
-        return atomicState.get()?.flags?.isNotEmpty() ?: false
+        return atomicState.get() != null
     }
 
-    override fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean {
-        val state = atomicState.get()
-        return state?.context == context && state.flags.isNotEmpty()
-    }
+    override fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean =
+        atomicState.get()?.context == context
 
     override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>? {
         val state = atomicState.get() ?: return null

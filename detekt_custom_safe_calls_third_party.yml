@@ -865,6 +865,8 @@ datadog:
       - "kotlin.ByteArray.constructor(kotlin.Int)"
       - "kotlin.ByteArray.copyTo(kotlin.Int, kotlin.ByteArray, kotlin.Int, kotlin.Int, com.datadog.android.api.InternalLogger)"
       - "kotlin.Char.digitToIntOrNull()"
+      - "kotlin.Char.isHighSurrogate()"
+      - "kotlin.Char.isLowSurrogate()"
       - "kotlin.Char.isLowerCase()"
       - "kotlin.Char.titlecase(java.util.Locale)"
       - "kotlin.CharArray.constructor(kotlin.Int, kotlin.Function1)"

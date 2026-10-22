@@ -252,7 +252,7 @@ internal class FirstFlagsInstallationTest {
         try {
             // When
             val loading = executor.submit {
-                disk.onSuccess(DataStoreContent(1, FlagsStateEntry(context, flags, 0)))
+                disk.onSuccess(DataStoreContent(1, FlagsStateEntry(context, flags, 0, null)))
             }
 
             // Then
@@ -365,13 +365,13 @@ internal class FirstFlagsInstallationTest {
             disk = it.getArgument(2)
             null
         }.whenever(store).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
-        return DefaultFlagsRepository(core, "first", store, persistenceLoadTimeoutMs = timeoutMs).also {
+        return DefaultFlagsRepository(core, "first", store, null, persistenceLoadTimeoutMs = timeoutMs).also {
             it.firstFlags.whenComplete { keys -> events.add(keys) }
         }
     }
 
     private fun restored(keys: List<String>): DataStoreContent<FlagsStateEntry> = DataStoreContent(
         1,
-        FlagsStateEntry(context, keys.associateWith { mock<PrecomputedFlag>() }, 0)
+        FlagsStateEntry(context, keys.associateWith { mock<PrecomputedFlag>() }, 0, null)
     )
 }

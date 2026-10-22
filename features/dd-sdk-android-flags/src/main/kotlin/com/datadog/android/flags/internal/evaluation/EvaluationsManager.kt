@@ -17,8 +17,10 @@ import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
+import com.datadog.android.flags.internal.net.PrecomputedAssignmentsResponse
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
+import com.datadog.android.flags.internal.selection.logIgnoredFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import java.util.concurrent.Executor
@@ -146,7 +148,7 @@ internal class EvaluationsManager(
                     hadFlags && flagsRepository.getEvaluationContext() == context
                 )
                 val response = datadogContext?.let { assignmentsReader.readPrecomputedFlags(context, it) }
-                val flagsMap = response?.let { precomputeMapper.map(it) }
+                val flagsMap = response?.let { mapResponse(it) }
                 if (flagsMap != null) {
                     installFlags(context, flagsMap, initializationCompletion, callback)
                 } else {
@@ -196,6 +198,11 @@ internal class EvaluationsManager(
             onFetchFinished()
             throw exception
         }
+    }
+
+    private fun mapResponse(response: PrecomputedAssignmentsResponse): Map<String, PrecomputedFlag>? {
+        response.flagSelectionIgnoredReason?.let { internalLogger.logIgnoredFlagSelection(it) }
+        return precomputeMapper.map(response.body)
     }
 
     private fun installFlags(

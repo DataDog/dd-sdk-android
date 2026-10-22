@@ -29,7 +29,11 @@ internal interface FlagsRepository {
     // Nonblocking snapshot. Missing flags retain their context from the same atomic state read.
     fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>?
     val firstFlags: FirstFlagsLatch
+
+    /** True once a configuration is installed, including a valid configuration with zero flags. */
     fun hasFlags(): Boolean
+
+    /** True when the installed configuration is for [context], including a valid configuration with zero flags. */
     fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean
     fun getFlagsSnapshot(): Map<String, PrecomputedFlag>
 }

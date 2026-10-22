@@ -14,5 +14,17 @@ import com.datadog.tools.annotation.NoOpImplementation
 @NoOpImplementation
 internal interface PrecomputedAssignmentsReader {
     @WorkerThread
-    fun readPrecomputedFlags(context: EvaluationContext, datadogContext: DatadogContext): String?
+    fun readPrecomputedFlags(
+        context: EvaluationContext,
+        datadogContext: DatadogContext
+    ): PrecomputedAssignmentsResponse?
 }
+
+/**
+ * @param body the raw response body
+ * @param flagSelectionIgnoredReason the `DD-Flag-Selection-Ignored` header value, or null when absent
+ */
+internal data class PrecomputedAssignmentsResponse(
+    val body: String,
+    val flagSelectionIgnoredReason: String?
+)

@@ -11,7 +11,9 @@ import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.JsonKeys
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -32,6 +34,8 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
         @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
         val timestamp = json.getLong(JsonKeys.LAST_UPDATE_TIMESTAMP.value)
 
+        val flagSelection = json.optJSONObject(JsonKeys.FLAG_SELECTION.value)?.let { deserializeFlagSelection(it) }
+
         // A nonempty cache with no readable flags is not a valid empty configuration.
         if (flags.isEmpty() && flagsJson.length() > 0) {
             null
@@ -39,7 +43,8 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
             FlagsStateEntry(
                 evaluationContext = evaluationContext,
                 flags = flags,
-                lastUpdateTimestamp = timestamp
+                lastUpdateTimestamp = timestamp,
+                flagSelection = flagSelection
             )
         }
     } catch (e: JSONException) {
@@ -73,6 +78,15 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
 
         return EvaluationContext(targetingKey, attributes)
     }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
+    private fun deserializeFlagSelection(selectionJson: JSONObject): CanonicalFlagSelection = CanonicalFlagSelection(
+        tags = selectionJson.getJSONArray(JsonKeys.TAGS.value).toStringList(),
+        keyPatterns = selectionJson.getJSONArray(JsonKeys.KEY_PATTERNS.value).toStringList()
+    )
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // JSONArray operations wrapped in try-catch
+    private fun JSONArray.toStringList(): List<String> = List(length()) { getString(it) }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
     private fun deserializeAttributes(attributesJson: JSONObject): Map<String, String> {

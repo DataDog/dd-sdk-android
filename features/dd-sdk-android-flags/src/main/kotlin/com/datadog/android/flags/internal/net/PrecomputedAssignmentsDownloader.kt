@@ -28,14 +28,17 @@ internal class PrecomputedAssignmentsDownloader(
 ) : PrecomputedAssignmentsReader {
 
     @WorkerThread
-    override fun readPrecomputedFlags(context: EvaluationContext, datadogContext: DatadogContext): String? {
+    override fun readPrecomputedFlags(
+        context: EvaluationContext,
+        datadogContext: DatadogContext
+    ): PrecomputedAssignmentsResponse? {
         val request = requestFactory.create(context, datadogContext) ?: return null
 
         return executeDownloadRequest(request)
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun executeDownloadRequest(request: Request): String? = try {
+    private fun executeDownloadRequest(request: Request): PrecomputedAssignmentsResponse? = try {
         val response = callFactory.newCall(request).execute()
         handleResponse(response)
     } catch (e: Throwable) {
@@ -48,9 +51,14 @@ internal class PrecomputedAssignmentsDownloader(
         null
     }
 
-    private fun handleResponse(response: Response): String? = if (response.isSuccessful) {
+    private fun handleResponse(response: Response): PrecomputedAssignmentsResponse? = if (response.isSuccessful) {
         @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in outer try-catch
-        response.body?.use { it.string() }
+        response.body?.use { it.string() }?.let { body ->
+            PrecomputedAssignmentsResponse(
+                body = body,
+                flagSelectionIgnoredReason = response.header(HEADER_FLAG_SELECTION_IGNORED)
+            )
+        }
     } else {
         internalLogger.log(
             InternalLogger.Level.ERROR,
@@ -69,5 +77,9 @@ internal class PrecomputedAssignmentsDownloader(
         response.body?.close()
 
         null
+    }
+
+    private companion object {
+        const val HEADER_FLAG_SELECTION_IGNORED = "DD-Flag-Selection-Ignored"
     }
 }

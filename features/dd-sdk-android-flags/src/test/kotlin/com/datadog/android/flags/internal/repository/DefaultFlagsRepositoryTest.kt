@@ -13,6 +13,7 @@ import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
@@ -88,6 +89,7 @@ internal class DefaultFlagsRepositoryTest {
         testedRepository = DefaultFlagsRepository(
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
+            flagSelection = null,
             instanceName = "default"
         )
 
@@ -140,6 +142,7 @@ internal class DefaultFlagsRepositoryTest {
         val testedRepository = DefaultFlagsRepository(
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
+            flagSelection = null,
             instanceName = forge.anAlphabeticalString(),
             persistenceLoadTimeoutMs = TimeUnit.SECONDS.toMillis(10)
         )
@@ -201,6 +204,7 @@ internal class DefaultFlagsRepositoryTest {
         val testedRepository = DefaultFlagsRepository(
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
+            flagSelection = null,
             instanceName = "loading",
             persistenceLoadTimeoutMs = TimeUnit.SECONDS.toMillis(10)
         )
@@ -241,6 +245,7 @@ internal class DefaultFlagsRepositoryTest {
         val testedRepository = DefaultFlagsRepository(
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
+            flagSelection = null,
             instanceName = "async"
         )
         val asyncThread = Thread {
@@ -273,6 +278,7 @@ internal class DefaultFlagsRepositoryTest {
         val testedRepository = DefaultFlagsRepository(
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
+            flagSelection = null,
             instanceName = "timeout",
             persistenceLoadTimeoutMs = 1L
         )
@@ -323,7 +329,7 @@ internal class DefaultFlagsRepositoryTest {
         }.toMap()
         val callback = preparePersistenceLoad(forge)
 
-        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong())))
+        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong(), null)))
 
         val snapshot = testedRepository.getFlagsSnapshot()
         flags.forEach { (key, originalFlag) ->
@@ -350,7 +356,7 @@ internal class DefaultFlagsRepositoryTest {
             anAlphabeticalString() to getForgery<PrecomputedFlag>()
         }.toMap()
         val callback = preparePersistenceLoad(forge)
-        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong())))
+        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong(), null)))
         val cachedSnapshot = testedRepository.getFlagsSnapshot()
 
         testedRepository.setFlagsAndContext(context, flags)
@@ -379,7 +385,7 @@ internal class DefaultFlagsRepositoryTest {
         val networkFlags = mapOf(forge.anAlphabeticalString() to forge.getForgery<PrecomputedFlag>())
         testedRepository.setFlagsAndContext(networkContext, networkFlags)
 
-        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong())))
+        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong(), null)))
 
         assertThat(testedRepository.getFlagsSnapshot()).isSameAs(networkFlags)
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(networkContext)
@@ -392,12 +398,12 @@ internal class DefaultFlagsRepositoryTest {
         val callback = preparePersistenceLoad(forge)
 
         // When
-        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, emptyMap(), forge.aLong())))
+        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, emptyMap(), forge.aLong(), null)))
 
         // Then
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(context)
         assertThat(testedRepository.getFlagsSnapshot()).isEmpty()
-        assertThat(testedRepository.hasFlags()).isFalse()
+        assertThat(testedRepository.hasFlags()).isTrue()
         verify(mockDataStore, never()).setValue<FlagsStateEntry>(
             key = any(),
             data = any(),
@@ -415,7 +421,7 @@ internal class DefaultFlagsRepositoryTest {
         val networkContext = diskContext.copy(targetingKey = diskContext.targetingKey + "-network")
         val diskFlags = mapOf(forge.anAlphabeticalString() to forge.getForgery<PrecomputedFlag>())
         val callback = preparePersistenceLoad(forge)
-        val diskContent = DataStoreContent(forge.anInt(), FlagsStateEntry(diskContext, diskFlags, forge.aLong()))
+        val diskContent = DataStoreContent(forge.anInt(), FlagsStateEntry(diskContext, diskFlags, forge.aLong(), null))
 
         // When
         if (diskFirst) {
@@ -442,13 +448,114 @@ internal class DefaultFlagsRepositoryTest {
         assertThat(entry.firstValue.flags).isEmpty()
     }
 
-    private fun preparePersistenceLoad(forge: Forge): DataStoreReadCallback<FlagsStateEntry> {
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M ignore persisted state W initial disk read completes { different flag selection }`(
+        configureSelection: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val configuredSelection = CanonicalFlagSelection(listOf("mobile"), emptyList()).takeIf { configureSelection }
+        val persistedSelection = CanonicalFlagSelection(listOf("web"), emptyList())
+        val flags = mapOf(forge.anAlphabeticalString() to forge.getForgery<PrecomputedFlag>())
+        val callback = preparePersistenceLoad(forge, configuredSelection)
+
+        // When
+        callback.onSuccess(
+            DataStoreContent(
+                forge.anInt(),
+                FlagsStateEntry(forge.getForgery(), flags, forge.aLong(), persistedSelection)
+            )
+        )
+
+        // Then
+        assertThat(testedRepository.getEvaluationContext()).isNull()
+        assertThat(testedRepository.hasFlags()).isFalse()
+    }
+
+    @Test
+    fun `M install persisted state W initial disk read completes { same flag selection }`(forge: Forge) {
+        // Given
+        val context = forge.getForgery<EvaluationContext>()
+        val flagKey = forge.anAlphabeticalString()
+        val callback = preparePersistenceLoad(forge, CanonicalFlagSelection(listOf("mobile"), listOf("checkout-*")))
+
+        // When
+        callback.onSuccess(
+            DataStoreContent(
+                forge.anInt(),
+                FlagsStateEntry(
+                    context,
+                    mapOf(flagKey to forge.getForgery<PrecomputedFlag>()),
+                    forge.aLong(),
+                    CanonicalFlagSelection(listOf("mobile"), listOf("checkout-*"))
+                )
+            )
+        )
+
+        // Then
+        assertThat(testedRepository.getEvaluationContext()).isEqualTo(context)
+        assertThat(testedRepository.getPrecomputedFlag(flagKey)).isNotNull()
+    }
+
+    @Test
+    fun `M persist the configured flag selection W setFlagsAndContext()`(forge: Forge) {
+        // Given
+        val flagSelection = CanonicalFlagSelection(listOf("mobile"), listOf("checkout-*"))
+        preparePersistenceLoad(forge, flagSelection)
+
+        // When
+        testedRepository.setFlagsAndContext(forge.getForgery(), emptyMap())
+
+        // Then
+        val entry = argumentCaptor<FlagsStateEntry>()
+        verify(mockDataStore).setValue(
+            key = any(),
+            data = entry.capture(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
+        assertThat(entry.firstValue.flagSelection).isEqualTo(flagSelection)
+    }
+
+    @Test
+    fun `M return true W hasLoadedFlagsForContext() { empty flags map for the same context }`(forge: Forge) {
+        // Given
+        val context = forge.getForgery<EvaluationContext>()
+        testedRepository.setFlagsAndContext(context, emptyMap())
+
+        // When / Then
+        assertThat(testedRepository.hasLoadedFlagsForContext(context)).isTrue()
+    }
+
+    @Test
+    fun `M return false W hasLoadedFlagsForContext() { different context }`(forge: Forge) {
+        // Given
+        val context = forge.getForgery<EvaluationContext>()
+        testedRepository.setFlagsAndContext(context, singleFlagMap)
+
+        // When / Then
+        assertThat(
+            testedRepository.hasLoadedFlagsForContext(context.copy(targetingKey = context.targetingKey + "-other"))
+        ).isFalse()
+    }
+
+    private fun preparePersistenceLoad(
+        forge: Forge,
+        flagSelection: CanonicalFlagSelection? = null
+    ): DataStoreReadCallback<FlagsStateEntry> {
         lateinit var callback: DataStoreReadCallback<FlagsStateEntry>
         doAnswer {
             callback = it.getArgument(2)
             null
         }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
-        testedRepository = DefaultFlagsRepository(mockFeatureSdkCore, forge.anAlphabeticalString(), mockDataStore)
+        testedRepository = DefaultFlagsRepository(
+            mockFeatureSdkCore,
+            forge.anAlphabeticalString(),
+            mockDataStore,
+            flagSelection
+        )
         return callback
     }
 
@@ -461,7 +568,7 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
-    fun `M return false W hasFlags() { empty flags map }`(forge: Forge) {
+    fun `M return true W hasFlags() { empty flags map }`(forge: Forge) {
         // Given
         testedRepository.setFlagsAndContext(
             EvaluationContext(forge.anAlphabeticalString(), emptyMap()),
@@ -469,7 +576,7 @@ internal class DefaultFlagsRepositoryTest {
         )
 
         // When + Then
-        assertThat(testedRepository.hasFlags()).isFalse()
+        assertThat(testedRepository.hasFlags()).isTrue()
     }
 
     @Test
@@ -496,7 +603,8 @@ internal class DefaultFlagsRepositoryTest {
         val persistedEntry = FlagsStateEntry(
             flags = singleFlagMap,
             evaluationContext = testContext,
-            lastUpdateTimestamp = 0L
+            lastUpdateTimestamp = 0L,
+            flagSelection = null
         )
         doAnswer {
             it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
@@ -511,6 +619,7 @@ internal class DefaultFlagsRepositoryTest {
         val repository = DefaultFlagsRepository(
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
+            flagSelection = null,
             instanceName = "with-flags"
         )
 
@@ -534,6 +643,7 @@ internal class DefaultFlagsRepositoryTest {
         val repository = DefaultFlagsRepository(
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
+            flagSelection = null,
             instanceName = "no-data"
         )
 
@@ -556,6 +666,7 @@ internal class DefaultFlagsRepositoryTest {
         val timeoutRepository = DefaultFlagsRepository(
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
+            flagSelection = null,
             instanceName = "timeout",
             persistenceLoadTimeoutMs = 1L
         )

@@ -10,11 +10,13 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.internal.getFlagsEndpoint
+import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -23,7 +25,8 @@ import org.json.JSONObject
  */
 internal class PrecomputedAssignmentsRequestFactory(
     private val internalLogger: InternalLogger,
-    private val customFlagEndpoint: String?
+    private val customFlagEndpoint: String?,
+    private val flagSelection: CanonicalFlagSelection?
 ) {
 
     /**
@@ -94,6 +97,7 @@ internal class PrecomputedAssignmentsRequestFactory(
             .put("env", env)
             .put("source", source)
             .put("subject", subject)
+        flagSelection?.let { attributes.put("flag_selection", buildFlagSelectionPayload(it)) }
         val data = JSONObject()
             .put("type", "precompute-assignments-request")
             .put("attributes", attributes)
@@ -133,6 +137,12 @@ internal class PrecomputedAssignmentsRequestFactory(
         JSONObject()
             .put("sdk_name", SDK_NAME)
             .put("sdk_version", datadogContext.sdkVersion)
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // call wrapped in try/catch
+    private fun buildFlagSelectionPayload(selection: CanonicalFlagSelection): JSONObject =
+        JSONObject()
+            .put("tags", JSONArray(selection.tags))
+            .put("key_patterns", JSONArray(selection.keyPatterns))
 
     private val DatadogContext.rumApplicationId: String?
         get() = featuresContext.get(Feature.RUM_FEATURE_NAME)

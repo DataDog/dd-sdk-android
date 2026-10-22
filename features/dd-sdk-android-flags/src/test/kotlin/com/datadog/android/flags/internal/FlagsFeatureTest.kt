@@ -12,8 +12,10 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -102,6 +104,50 @@ internal class FlagsFeatureTest {
         assertThat(
             testedFeature.precomputedRequestFactory
         ).isNotNull()
+    }
+
+    @Test
+    fun `M expose the canonical flag selection W constructor { valid selection }`() {
+        // When
+        val feature = FlagsFeature(
+            sdkCore = mockSdkCore,
+            flagsConfiguration = FlagsConfiguration.Builder()
+                .flagSelection(tags = listOf(" web", "mobile", "web"), keyPatterns = listOf("checkout-*"))
+                .build()
+        )
+
+        // Then
+        assertThat(feature.flagSelection)
+            .isEqualTo(CanonicalFlagSelection(tags = listOf("mobile", "web"), keyPatterns = listOf("checkout-*")))
+    }
+
+    @Test
+    fun `M log the dropped flag selection W onInitialize() { selection over a limit }`() {
+        // Given
+        val feature = FlagsFeature(
+            sdkCore = mockSdkCore,
+            flagsConfiguration = FlagsConfiguration.Builder()
+                .flagSelection(tags = List(32) { "tag-$it" }, keyPatterns = emptyList())
+                .build()
+        )
+
+        // When
+        feature.onInitialize(mockContext)
+
+        // Then
+        assertThat(feature.flagSelection).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            "flagSelection was not sent (too_many_values: each list accepts at most 31 values). " +
+                "Loading the full flag configuration."
+        )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.DEBUG,
+            InternalLogger.Target.TELEMETRY,
+            "Flag selection dropped",
+            additionalProperties = mapOf("reason" to "too_many_values")
+        )
     }
 
     @Test

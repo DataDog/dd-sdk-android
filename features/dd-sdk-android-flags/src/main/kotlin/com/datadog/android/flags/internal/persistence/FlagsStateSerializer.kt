@@ -11,6 +11,8 @@ import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.JsonKeys
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -37,6 +39,8 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
 
         json.put(JsonKeys.LAST_UPDATE_TIMESTAMP.value, model.lastUpdateTimestamp)
 
+        model.flagSelection?.let { json.put(JsonKeys.FLAG_SELECTION.value, serializeFlagSelection(it)) }
+
         json.toString()
     } catch (e: JSONException) {
         internalLogger.log(
@@ -55,6 +59,12 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
             attributesJson.put(key, value)
         }
         return attributesJson
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
+    private fun serializeFlagSelection(selection: CanonicalFlagSelection): JSONObject = JSONObject().apply {
+        put(JsonKeys.TAGS.value, JSONArray(selection.tags))
+        put(JsonKeys.KEY_PATTERNS.value, JSONArray(selection.keyPatterns))
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
