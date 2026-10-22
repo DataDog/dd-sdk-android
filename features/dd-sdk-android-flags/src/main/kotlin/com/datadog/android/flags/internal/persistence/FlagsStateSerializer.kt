@@ -38,7 +38,7 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
         json.put(JsonKeys.LAST_UPDATE_TIMESTAMP.value, model.lastUpdateTimestamp)
         json.put("observeFullEvaluationData", model.observeFullEvaluationData)
 
-        json.toString()
+        escapeUnpairedSurrogates(json.toString())
     } catch (e: JSONException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
@@ -47,6 +47,27 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
             e
         )
         ""
+    }
+
+    private fun escapeUnpairedSurrogates(json: String): String {
+        if (json.none { it.isSurrogate() }) return json
+
+        // JSONObject leaves lone surrogates unescaped, and UTF-8 storage would replace them.
+        return buildString(json.length) {
+            json.forEachIndexed { index, character ->
+                val isPaired = when {
+                    character.isHighSurrogate() -> json.getOrNull(index + 1)?.isLowSurrogate() == true
+                    character.isLowSurrogate() -> json.getOrNull(index - 1)?.isHighSurrogate() == true
+                    else -> true
+                }
+                if (isPaired) {
+                    append(character)
+                } else {
+                    append("\\u")
+                    append(character.code.toString(HEX_RADIX))
+                }
+            }
+        }
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
@@ -68,5 +89,9 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
         put(JsonKeys.EXTRA_LOGGING.value, flag.extraLogging)
         put(JsonKeys.REASON.value, flag.reason)
         flag.serialId?.let { put(JsonKeys.SERIAL_ID.value, it) }
+    }
+
+    private companion object {
+        private const val HEX_RADIX = 16
     }
 }

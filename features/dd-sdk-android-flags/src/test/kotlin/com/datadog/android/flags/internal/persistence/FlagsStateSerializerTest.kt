@@ -18,6 +18,8 @@ import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 
@@ -35,6 +37,44 @@ internal class FlagsStateSerializerTest {
     @BeforeEach
     fun `set up`() {
         testedSerializer = FlagsStateSerializer(mockInternalLogger)
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["", "jane.doe@datadoghq.com", "é", "e\u0301", "😀", "\uFFFD", "\\uD800"])
+    fun `M preserve valid Unicode bytes W serialize()`(fakeKey: String) {
+        // Given
+        val fakeState = FlagsStateEntry(EvaluationContext(fakeKey), emptyMap(), fakeTimestamp)
+
+        // When
+        val serialized = testedSerializer.serialize(fakeState)
+
+        // Then
+        assertThat(serialized).contains(JSONObject.quote(fakeKey))
+        val restored = checkNotNull(FlagsStateDeserializer(mockInternalLogger).deserialize(serialized))
+        assertThat(restored.evaluationContext.targetingKey).isEqualTo(fakeKey)
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            "", "jane.doe@datadoghq.com", "é", "e\u0301", "😀", "\uFFFD", "\\uD800",
+            "\uD800", "\uDC00", "a\uD800b", "\uD800\uD800", "\uDC00\uD800", "😀\uD800"
+        ]
+    )
+    fun `M preserve context through UTF8 storage W serialize()`(fakeKey: String) {
+        // Given
+        val fakeContext = EvaluationContext(fakeKey, mapOf("value" to fakeKey))
+        val fakeState = FlagsStateEntry(fakeContext, emptyMap(), fakeTimestamp, observeFullEvaluationData = true)
+
+        // When
+        val persistedBytes = testedSerializer.serialize(fakeState).toByteArray(Charsets.UTF_8)
+        val restored = FlagsStateDeserializer(mockInternalLogger).deserialize(persistedBytes.toString(Charsets.UTF_8))
+
+        // Then
+        val restoredState = checkNotNull(restored)
+        assertThat(restoredState.evaluationContext).isEqualTo(fakeContext)
+        assertThat(restoredState.observeFullEvaluationData).isTrue()
+        assertThat(restoredState.flags).isEmpty()
     }
 
     @Test

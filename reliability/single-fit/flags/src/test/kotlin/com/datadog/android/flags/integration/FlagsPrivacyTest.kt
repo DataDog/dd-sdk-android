@@ -185,6 +185,44 @@ internal class FlagsPrivacyTest {
         assertThat(events.sumOf { it.getInt("evaluation_count") }).isEqualTo(3)
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = ["\uD800", "\uDC00", "a\uD800b"])
+    fun `M omit malformed cached keys without losing counts W build + resolve + stop`(
+        fakeKey: String,
+        forge: Forge
+    ) {
+        // Given
+        val dataStore = stubSdkCore.stubDataStore(Feature.FLAGS_FEATURE_NAME)
+        stubAssignments(false)
+        buildClient().setEvaluationContext(EvaluationContext(fakeKey))
+        stubSdkCore.stopFeatures()
+        stubSdkCore = createStubSdkCore(forge)
+        stubSdkCore.stubDataStore(Feature.FLAGS_FEATURE_NAME, dataStore)
+        stubSdkCore.stubNetworkResponses { null }
+        val client = buildClient()
+
+        // When
+        val success = client.resolve("flag-0", false)
+        val missing = client.resolve("missing", false)
+        client.setEvaluationContext(EvaluationContext(fakeKey))
+        val afterFailedRefresh = client.resolveBooleanValue("flag-0", false)
+        stubSdkCore.stopFeatures()
+        val events = wireBody().lineSequence().filter { it.isNotBlank() }.map(::JSONObject).toList()
+
+        // Then
+        assertThat(success.value).isTrue()
+        assertThat(missing.value).isFalse()
+        assertThat(afterFailedRefresh).isTrue()
+        assertThat(success.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", false)
+        assertThat(missing.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", false)
+        assertThat(events).hasSize(2)
+        assertThat(events.map { it.has("targeting_key") }).containsOnly(false)
+        assertThat(events.sumOf { it.getInt("evaluation_count") }).isEqualTo(3)
+        val error = events.single { it.has("error") }
+        assertThat(error.getJSONObject("error").getString("message")).isEqualTo("FLAG_NOT_FOUND")
+        assertThat(error.getInt("evaluation_count")).isEqualTo(1)
+    }
+
     @Test
     fun `M retain empty and omit malformed or missing keys W resolve + stop`() {
         // Given
