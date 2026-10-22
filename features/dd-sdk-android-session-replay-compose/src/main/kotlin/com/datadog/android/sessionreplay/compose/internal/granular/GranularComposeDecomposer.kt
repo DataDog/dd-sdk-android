@@ -126,8 +126,9 @@ internal class GranularComposeDecomposer(
 
     override fun decompose(view: View, request: CompositionHostDecomposeRequest): CompositionHostDecomposeResult? {
         if (!compatibilityGate.isAvailable()) return null
+
         return try {
-            DecomposeSession(view, request).run()
+            DecomposeSession(semanticsUtils.findComposeRootView(view) ?: view, request).run()
         } catch (t: LinkageError) {
             compatibilityGate.markIncompatible(t, internalLogger)
             null
@@ -139,7 +140,10 @@ internal class GranularComposeDecomposer(
         if (!compatibilityGate.isAvailable()) return null
         return try {
             val root = semanticsUtils.findRootSemanticsNode(view) ?: return null
-            val offset by lazy { view.resolveComposeWindowOffset(view.resources.displayMetrics.density) }
+            val offset by lazy {
+                (semanticsUtils.findComposeRootView(view) ?: view)
+                    .resolveComposeWindowOffset(view.resources.displayMetrics.density)
+            }
             val pending = ArrayDeque<SemanticsNode>()
             pending.addLast(root)
             val areas = mutableMapOf<Rect, TouchPrivacy>()

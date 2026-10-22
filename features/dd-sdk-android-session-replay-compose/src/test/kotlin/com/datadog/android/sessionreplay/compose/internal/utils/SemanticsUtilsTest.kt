@@ -8,10 +8,10 @@ package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
 import android.view.View
+import android.view.ViewGroup
 import androidx.compose.animation.core.AnimationState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.Composition
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -28,7 +28,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.layout.ModifierInfo
-import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.node.RootForTest
 import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.platform.ValueElement
 import androidx.compose.ui.semantics.AccessibilityAction
@@ -137,6 +137,7 @@ internal class SemanticsUtilsTest {
             reflectionUtils = mockReflectionUtils
         )
         whenever(mockSemanticsNode.layoutInfo) doReturn mockLayoutInfo
+        whenever(mockLayoutInfo.coordinates) doReturn mock<LayoutCoordinates>()
         whenever(mockLayoutInfo.getModifierInfo()) doReturn listOf(mockModifierInfo)
         whenever(mockModifierInfo.modifier) doReturn mockModifier
         whenever(mockLayoutInfo.density) doReturn Density(fakeDensity)
@@ -201,23 +202,19 @@ internal class SemanticsUtilsTest {
     }
 
     @Test
-    fun `M return root semantics W findRootSemanticsNode`() {
-        // Given
-        val mockComposition = mock<Composition>()
-        val mockOwner = mock<Any>()
-        val mockSemanticsOwner = mock<SemanticsOwner>()
-        whenever(mockReflectionUtils.getComposition(mockView)) doReturn mockComposition
-        whenever(mockReflectionUtils.isWrappedCompositionClass(mockComposition)) doReturn true
-        whenever(mockReflectionUtils.getOwner(mockComposition)) doReturn mockOwner
-        whenever(mockReflectionUtils.isAndroidComposeView(mockOwner)) doReturn true
-        whenever(mockReflectionUtils.getSemanticsOwner(mockOwner)) doReturn mockSemanticsOwner
-        whenever(mockSemanticsOwner.unmergedRootSemanticsNode) doReturn mockSemanticsNode
+    fun `M find unmerged semantics through public root W findRootSemanticsNode`() {
+        val root = mock<View>(extraInterfaces = arrayOf(RootForTest::class))
+        val owner = mock<SemanticsOwner>()
+        whenever((root as RootForTest).semanticsOwner).thenReturn(owner)
+        whenever(owner.unmergedRootSemanticsNode).thenReturn(mockSemanticsNode)
+        val host = mock<ViewGroup>()
+        whenever(host.childCount).thenReturn(2)
+        whenever(host.getChildAt(0)).thenReturn(mockView)
+        whenever(host.getChildAt(1)).thenReturn(root)
 
-        // When
-        val result = testedSemanticsUtils.findRootSemanticsNode(mockView)
-
-        // Then
-        assertThat(result).isEqualTo(mockSemanticsNode)
+        assertThat(testedSemanticsUtils.findRootSemanticsNode(root)).isSameAs(mockSemanticsNode)
+        assertThat(testedSemanticsUtils.findRootSemanticsNode(host)).isSameAs(mockSemanticsNode)
+        assertThat(testedSemanticsUtils.findRootSemanticsNode(mockView)).isNull()
     }
 
     @Test
@@ -350,8 +347,10 @@ internal class SemanticsUtilsTest {
     @Test
     fun `M return inner bounds W resolveInnerBounds`() {
         // Given
-        val placeable = mock<Placeable>()
-        whenever(mockReflectionUtils.getPlaceable(mockSemanticsNode)) doReturn placeable
+        val coordinates = mock<LayoutCoordinates>()
+        whenever(mockLayoutInfo.coordinates).thenReturn(coordinates)
+        whenever(coordinates.isAttached).thenReturn(true)
+        whenever(coordinates.size).thenReturn(IntSize(180, 75))
         whenever(mockSemanticsNode.positionInRoot) doReturn fakeOffset
 
         // When
@@ -359,12 +358,26 @@ internal class SemanticsUtilsTest {
         val expected = GlobalBounds(
             x = (fakeOffset.x / fakeDensity).toLong(),
             y = (fakeOffset.y / fakeDensity).toLong(),
-            width = (placeable.width / fakeDensity).toLong(),
-            height = (placeable.width / fakeDensity).toLong()
+            width = (180 / fakeDensity).toLong(),
+            height = (75 / fakeDensity).toLong()
         )
 
         // Then
         assertThat(result).isEqualTo(expected)
+    }
+
+    @Test
+    fun `M retain visible fallback W resolveInnerBounds {detached public coordinates}`() {
+        val coordinates = mock<LayoutCoordinates>()
+        whenever(mockLayoutInfo.coordinates).thenReturn(coordinates)
+        whenever(coordinates.isAttached).thenReturn(false)
+        whenever(mockSemanticsNode.positionInRoot).thenReturn(Offset(20f, 40f))
+        whenever(mockSemanticsNode.boundsInRoot).thenReturn(Rect(20f, 40f, 100f, 70f))
+        whenever(mockLayoutInfo.density).thenReturn(Density(2f))
+
+        assertThat(testedSemanticsUtils.resolveInnerBounds(mockSemanticsNode))
+            .isEqualTo(GlobalBounds(10, 20, 40, 15))
+        verify(coordinates, never()).size
     }
 
     @Test
@@ -383,7 +396,6 @@ internal class SemanticsUtilsTest {
         // Then
         assertThat(fakeLayoutBounds).isEqualTo(GlobalBounds(30, -30, 96, 96))
         assertThat(fakeVisibleBounds).isEqualTo(GlobalBounds(30, 10, 96, 56))
-        verify(mockReflectionUtils, never()).getPlaceable(any())
     }
 
     @Test
@@ -404,7 +416,6 @@ internal class SemanticsUtilsTest {
 
         // Then: use the actual text position, without applying the outer padding a second time.
         assertThat(result).isEqualTo(GlobalBounds(34, 616, 77, 16))
-        verify(mockReflectionUtils, never()).getPlaceable(any())
     }
 
     @Test
@@ -443,7 +454,6 @@ internal class SemanticsUtilsTest {
 
         // Then
         assertThat(result).isEqualTo(GlobalBounds(42, -22, 160, 160))
-        verify(mockReflectionUtils, never()).getPlaceable(any())
     }
 
     @Test
@@ -481,8 +491,10 @@ internal class SemanticsUtilsTest {
         // Given — RUM-16362: the host view's screen offset must be baked into bounds at the point
         // they're resolved, so it stays attached to the same wireframe instance that async
         // resource resolution later mutates (e.g. ImageWireframe.resourceId).
-        val placeable = mock<Placeable>()
-        whenever(mockReflectionUtils.getPlaceable(mockSemanticsNode)) doReturn placeable
+        val coordinates = mock<LayoutCoordinates>()
+        whenever(mockLayoutInfo.coordinates).thenReturn(coordinates)
+        whenever(coordinates.isAttached).thenReturn(true)
+        whenever(coordinates.size).thenReturn(IntSize(180, 75))
         whenever(mockSemanticsNode.positionInRoot) doReturn fakeOffset
 
         // When
@@ -490,8 +502,8 @@ internal class SemanticsUtilsTest {
         val expected = GlobalBounds(
             x = (fakeOffset.x / fakeDensity).toLong() + fakeWindowOffset.xDp,
             y = (fakeOffset.y / fakeDensity).toLong() + fakeWindowOffset.yDp,
-            width = (placeable.width / fakeDensity).toLong(),
-            height = (placeable.width / fakeDensity).toLong()
+            width = (180 / fakeDensity).toLong(),
+            height = (75 / fakeDensity).toLong()
         )
 
         // Then

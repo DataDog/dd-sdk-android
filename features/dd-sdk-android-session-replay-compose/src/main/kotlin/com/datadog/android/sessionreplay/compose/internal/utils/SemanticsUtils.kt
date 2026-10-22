@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
 import android.view.View
+import android.view.ViewGroup
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.node.RootForTest
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
@@ -59,16 +61,22 @@ internal class SemanticsUtils(
         { node, offset -> resolveInnerBounds(node, offset) }
     )
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // Owned child-index range, read on the UI thread.
     internal fun findRootSemanticsNode(view: View): SemanticsNode? {
-        reflectionUtils.apply {
-            getComposition(view)?.takeIf { isWrappedCompositionClass(it) }?.let { composition ->
-                getOwner(composition)?.takeIf { isAndroidComposeView(it) }?.let { owner ->
-                    val semanticsOwner = reflectionUtils.getSemanticsOwner(owner)
-                    return semanticsOwner?.unmergedRootSemanticsNode
-                }
+        return when (view) {
+            is RootForTest -> view.semanticsOwner.unmergedRootSemanticsNode
+            is ViewGroup -> (0 until view.childCount).firstNotNullOfOrNull { index ->
+                findRootSemanticsNode(view.getChildAt(index))
             }
+            else -> null
         }
-        return null
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // View children are inspected on their owning UI thread.
+    internal fun findComposeRootView(view: View): View? = when (view) {
+        is RootForTest -> view
+        is ViewGroup -> (0 until view.childCount).firstNotNullOfOrNull { findComposeRootView(view.getChildAt(it)) }
+        else -> null
     }
 
     internal fun resolveBackgroundInfo(
@@ -142,14 +150,10 @@ internal class SemanticsUtils(
     }
 
     private fun resolveInnerSize(semanticsNode: SemanticsNode): Size? {
-        val placeable = reflectionUtils.getPlaceable(semanticsNode)
-        val height = placeable?.height
-        val width = placeable?.width
-        return if (height != null && width != null) {
-            Size(width = width.toFloat(), height = height.toFloat())
-        } else {
-            null
-        }
+        val coordinates = semanticsNode.layoutInfo.coordinates
+        if (!coordinates.isAttached) return null
+        val size = coordinates.size
+        return Size(size.width.toFloat(), size.height.toFloat())
     }
 
     /** Composition image scaling needs the layout size, even when scrolling clips most of it. */

@@ -11,7 +11,6 @@ import android.text.StaticLayout
 import android.view.View
 import android.widget.EdgeEffect
 import androidx.compose.animation.core.AnimationState
-import androidx.compose.runtime.Composition
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.BlurEffect
@@ -25,23 +24,18 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.semantics.SemanticsNode
-import androidx.compose.ui.semantics.SemanticsOwner
 import androidx.compose.ui.text.MultiParagraph
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.AsyncImagePainterClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.BitmapField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ChildFieldOfModifierNode
-import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.CompositionField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ContentPainterElementClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ContentPainterModifierClass
-import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetInnerLayerCoordinatorMethod
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetInteropViewMethod
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.HeadFieldOfNodeChain
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ImageField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.LayoutField
-import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.LayoutNodeField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.NodesFieldOfLayoutNode
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterElementClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterField
@@ -58,10 +52,6 @@ import java.lang.reflect.Field
 @Suppress("TooManyFunctions")
 internal class ReflectionUtils {
 
-    fun getComposition(view: View): Composition? {
-        return CompositionField?.getSafe(view) as? Composition
-    }
-
     fun isBackgroundElement(modifier: Modifier): Boolean {
         return ComposeReflection.BackgroundElementClass?.isInstance(modifier) == true
     }
@@ -72,14 +62,6 @@ internal class ReflectionUtils {
 
     fun isTextStringSimpleElement(modifier: Modifier): Boolean {
         return ComposeReflection.TextStringSimpleElement?.isInstance(modifier) == true
-    }
-
-    fun isWrappedCompositionClass(composition: Composition): Boolean {
-        return ComposeReflection.WrappedCompositionClass?.isInstance(composition) == true
-    }
-
-    fun isAndroidComposeView(any: Any): Boolean {
-        return ComposeReflection.AndroidComposeViewClass?.isInstance(any) == true
     }
 
     fun isAsyncImagePainter(painter: Painter): Boolean {
@@ -119,26 +101,12 @@ internal class ReflectionUtils {
         }
     }
 
-    fun getOwner(composition: Composition): Any? {
-        return ComposeReflection.OwnerField?.getSafe(composition)
-    }
-
-    fun getSemanticsOwner(any: Any): SemanticsOwner? {
-        return ComposeReflection.SemanticsOwner?.getSafe(any) as? SemanticsOwner
-    }
-
     fun getColorProducerColor(modifier: Modifier): Color? {
         return (ComposeReflection.ColorProducerField?.getSafe(modifier) as? ColorProducer)?.invoke()
     }
 
     fun getTextStringSimpleElementOverflow(modifier: Modifier): Any? {
         return ComposeReflection.TextStringSimpleElementOverflowField?.getSafe(modifier)
-    }
-
-    fun getPlaceable(semanticsNode: SemanticsNode): Placeable? {
-        val layoutNode = LayoutNodeField?.getSafe(semanticsNode)
-        val innerLayerCoordinator = layoutNode?.let { GetInnerLayerCoordinatorMethod?.invoke(it) }
-        return innerLayerCoordinator as? Placeable
     }
 
     fun getTopPadding(modifier: Modifier): Float {
@@ -215,7 +183,7 @@ internal class ReflectionUtils {
         // by skipping the node chain iteration
         if (PainterNodeClass == null) return null
 
-        val layoutNode = LayoutNodeField?.getSafe(semanticsNode)
+        val layoutNode = semanticsNode.layoutInfo
         val nodeChain = NodesFieldOfLayoutNode?.getSafe(layoutNode)
         val headNode = HeadFieldOfNodeChain?.getSafe(nodeChain) as? Modifier.Node
         var currentNode = headNode
