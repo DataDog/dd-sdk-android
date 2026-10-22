@@ -40,6 +40,29 @@ processor unit tests cover concurrent recording, draining, periodic flush and sh
 Only precomputed evaluation is supported by this implementation. These tests do not claim a
 rules-based evaluator, live backend acceptance, or transport retry scheduling coverage.
 
+## Run on an Android device or emulator
+
+`FlagsPrivacyInstrumentedTest` runs the release SDK and provider on ART with the real SDK core,
+file persistence, scheduled aggregation, upload scheduling and a loopback HTTP server. It covers
+five-state consent parsing, protected/full buckets across refresh, stable errors, context omission,
+malformed/empty keys, tracking opt-out, periodic upload with a 503 retry, and consent restored from
+disk after restarting the SDK and failing a refresh. Both native and OpenFeature paths are covered;
+the offline-restart cases call the provider directly to isolate cache behavior from OpenFeature's
+failed-initialization policy. The shutdown cases invoke the feature's stop callback and the core's
+existing test drain hook; the retry cases use normal scheduled uploads.
+
+With a booted emulator or connected device:
+
+```sh
+ANDROID_SERIAL=emulator-5554 ./gradlew :reliability:single-fit:flags:connectedReleaseAndroidTest
+```
+
+The existing `test-pyramid:core-it-{min,median,latest}-api` CI jobs also run this suite on Android
+API 23, 28 and 37 emulators. They upload the instrumentation results from
+`reliability/single-fit/flags/build/outputs/androidTest-results/connected/release/`.
+The tests use synthetic credentials and a local server; no live Datadog org is needed. They verify
+actual Android HTTP uploads, but do not claim live backend acceptance or process-kill recovery.
+
 ## React Native handoff
 
 Native Android owns evaluation telemetry protection. The internal assignment snapshot can now

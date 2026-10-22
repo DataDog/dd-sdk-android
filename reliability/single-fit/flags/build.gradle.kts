@@ -26,6 +26,10 @@ plugins {
 @Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.flags.integration"
+    testBuildType = "release"
+    defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
 }
 
 dependencies {
@@ -40,6 +44,12 @@ dependencies {
         implementation(files("$flagsArtifactDirectory/dd-sdk-android-flags-release.aar"))
         implementation(files("$flagsArtifactDirectory/dd-sdk-android-flags-openfeature-release.aar"))
     }
+    androidTestImplementation(libs.openFeatureKotlinSdk)
+    androidTestImplementation(libs.coroutinesCore)
+    androidTestImplementation(libs.androidXTestCore)
+    androidTestImplementation(libs.androidXTestRunner)
+    androidTestImplementation(libs.androidXTestJUnitExt)
+    androidTestImplementation(libs.okHttpMock)
     testImplementation(libs.openFeatureKotlinSdk)
     testImplementation(libs.coroutinesTest)
     implementation(libs.kotlinRuntime)
