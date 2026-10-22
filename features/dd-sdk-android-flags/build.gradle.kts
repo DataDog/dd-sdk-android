@@ -39,13 +39,6 @@ plugins {
     id("test-pyramid-api-surface")
 }
 
-// Retain the released model classes for binary compatibility.
-createJsonModelsGenerationTask("generateFlagsModelsFromJson") {
-    inputDirPath = "src/main/json/flags"
-    targetPackageName = "com.datadog.android.flags.model"
-    ignoredFiles.set(listOf("assignment.json", "assignments-response.json", "flags-state.json"))
-}
-
 createJsonModelsGenerationTask("generateFlagsInternalModelsFromJson") {
     inputDirPath = "src/main/json/flags"
     targetPackageName = "com.datadog.android.flags.internal.model"

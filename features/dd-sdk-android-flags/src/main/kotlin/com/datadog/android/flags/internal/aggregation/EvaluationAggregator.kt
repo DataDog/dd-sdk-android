@@ -6,8 +6,8 @@
 
 package com.datadog.android.flags.internal.aggregation
 
-import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.internal.model.FlagEvaluation
+import com.datadog.android.flags.model.EvaluationContext
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
