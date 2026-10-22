@@ -15,8 +15,11 @@ import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.text.MultiParagraph
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.toSize
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOffset
@@ -51,9 +54,7 @@ internal class DefaultComposeTextRasterizer(
         val layout = results.firstOrNull() ?: return null
         // The privacy decision was made for this exact text on the same main-thread traversal.
         val originalText = layout.layoutInput.text.text
-        if (originalText != text.text &&
-            !(layout.didOverflowHeight && originalText.startsWith(text.text))
-        ) {
+        if (originalText != (text.sourceText ?: text.text)) {
             return null
         }
         val size = layout.size
@@ -70,7 +71,7 @@ internal class DefaultComposeTextRasterizer(
                 size.toSize()
             ) {
                 val color = if (layout.layoutInput.style.brush != null) Color.Unspecified else Color(text.color)
-                drawText(layout, color = color)
+                drawText(measuredLayout(layout), color = color)
             }
             val captured = RasterizedComposeText(pixels, bounds)
             completed = true
@@ -78,6 +79,29 @@ internal class DefaultComposeTextRasterizer(
         } finally {
             if (!completed) pixels.recycle()
         }
+    }
+
+    /** Simple text semantics can reconstruct a paragraph at the parent's maximum width while
+     * retaining the narrower measured size. Center/end alignment must use the measured width.
+     * Unwrapped overflowing text deliberately retains its original paragraph width.
+     */
+    // Valid measured constraints; the ellipsis constructor supports older Compose binaries.
+    @Suppress("DEPRECATION", "UnsafeThirdPartyFunctionCall")
+    private fun measuredLayout(layout: TextLayoutResult): TextLayoutResult {
+        val input = layout.layoutInput
+        val unwrappedOverflow = !input.softWrap && input.overflow != TextOverflow.Ellipsis
+        val invalidWidth = layout.size.width <= 0 || layout.multiParagraph.width <= layout.size.width
+        if (unwrappedOverflow || invalidWidth) return layout
+        return TextLayoutResult(
+            input,
+            MultiParagraph(
+                intrinsics = layout.multiParagraph.intrinsics,
+                constraints = Constraints(maxWidth = layout.size.width, maxHeight = input.constraints.maxHeight),
+                maxLines = if (!input.softWrap && input.overflow == TextOverflow.Ellipsis) 1 else input.maxLines,
+                ellipsis = input.overflow == TextOverflow.Ellipsis
+            ),
+            layout.size
+        )
     }
 
     private companion object {

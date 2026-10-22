@@ -17,5 +17,7 @@ internal data class TextLayoutInfo(
     val fontFamily: FontFamily?,
     val textAlign: TextAlign? = TextAlign.Start,
     val textOverflow: MobileSegment.TruncationMode? = null,
-    val requiresPixelCapture: Boolean = false
+    val requiresPixelCapture: Boolean = false,
+    // Keep the source distinct from StaticLayout's ellipsized display string, including its padding.
+    val sourceText: String? = null
 )

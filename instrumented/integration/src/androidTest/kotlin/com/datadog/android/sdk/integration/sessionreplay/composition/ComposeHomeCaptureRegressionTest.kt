@@ -16,8 +16,11 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -27,13 +30,24 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.compose.internal.granular.DefaultComposeTextRasterizer
 import com.datadog.android.sessionreplay.compose.internal.granular.GranularComposeCompatibilityGate
 import com.datadog.android.sessionreplay.compose.internal.granular.GranularComposeDecomposer
+import com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOffset
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.internal.composition.DefaultCapturedIdentityFactory
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCapture
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink
@@ -117,6 +131,50 @@ internal class ComposeHomeCaptureRegressionTest {
                 assertThat(bitmap.getPixel(32, 32)).isEqualTo(0x800000FF.toInt())
                 assertThat(bitmap.getPixel(50, 50)).isZero()
             } finally { captures.forEach { it.bitmap.recycle() } }
+        }
+    }
+
+    @Test fun preserveCenteredLabelsWithinMeasuredTextWidth() {
+        val labels = listOf("No Recents", "Select starred items", "Select saved views")
+        composeRule.setContent {
+            Column(Modifier.width(296.dp)) {
+                for (label in labels) {
+                    BasicText(
+                        label,
+                        style = TextStyle(color = Color.Black, fontSize = 14.sp, textAlign = TextAlign.Center),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+        composeRule.runOnIdle {
+            val utils = SemanticsUtils()
+            val rasterizer = DefaultComposeTextRasterizer(utils)
+            val root =
+                checkNotNull(utils.findRootSemanticsNode(checkNotNull(findHost(composeRule.activity.window.decorView))))
+            val nodes = mutableListOf<SemanticsNode>()
+            fun collect(node: SemanticsNode) {
+                if (node.config.getOrNull(SemanticsProperties.Text) != null) nodes += node
+                node.children.forEach(::collect)
+            }
+            collect(root)
+            assertThat(nodes).hasSize(3)
+            for (node in nodes) {
+                val info = checkNotNull(utils.resolveTextLayoutInfo(node, InternalLogger.UNBOUND))
+                val bitmap = checkNotNull(
+                    rasterizer.rasterize(node, info, node.layoutInfo.getModifierInfo(), ComposeWindowOffset.NONE)
+                ).bitmap
+                try {
+                    val ink = (0 until bitmap.width).filter { x ->
+                        (0 until bitmap.height).any { y -> bitmap.getPixel(x, y) ushr 24 != 0 }
+                    }
+                    assertThat(ink).isNotEmpty()
+                    // Centered, wrap-content text fills its measured width with balanced side bearings.
+                    assertThat(ink.first()).isLessThan(bitmap.width / 8)
+                    assertThat(ink.last()).isGreaterThan(bitmap.width * 7 / 8)
+                } finally { bitmap.recycle() }
+            }
         }
     }
 

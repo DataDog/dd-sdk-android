@@ -738,7 +738,8 @@ internal class SemanticsUtilsTest {
             color = testData.fakeColorValue,
             textAlign = testData.fakeTextAlign,
             fontSize = testData.fakeFontSize.toLong(),
-            fontFamily = testData.fakeFontFamily
+            fontFamily = testData.fakeFontFamily,
+            sourceText = testData.fakeText.text
         )
         assertThat(result).isEqualTo(expected)
     }
@@ -762,7 +763,8 @@ internal class SemanticsUtilsTest {
             color = fakeModifierColorValue,
             textAlign = testData.fakeTextAlign,
             fontSize = testData.fakeFontSize.toLong(),
-            fontFamily = testData.fakeFontFamily
+            fontFamily = testData.fakeFontFamily,
+            sourceText = testData.fakeText.text
         )
         assertThat(result).isEqualTo(expected)
     }
@@ -791,7 +793,8 @@ internal class SemanticsUtilsTest {
             color = fakeModifierColorValue,
             textAlign = testData.fakeTextAlign,
             fontSize = testData.fakeFontSize.toLong(),
-            fontFamily = testData.fakeFontFamily
+            fontFamily = testData.fakeFontFamily,
+            sourceText = testData.fakeText.text
         )
         assertThat(result).isEqualTo(expected)
     }

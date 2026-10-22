@@ -612,6 +612,7 @@ internal class SemanticsUtils(
     ): TextLayoutInfo {
         return TextLayoutInfo(
             text = multiParagraphCapturedText ?: resolveAnnotatedString(layoutInput.text),
+            sourceText = layoutInput.text.text,
             color = modifierColor?.value ?: layoutInput.style.color.value,
             textAlign = layoutInput.style.textAlign,
             fontSize = layoutInput.style.fontSize.value
