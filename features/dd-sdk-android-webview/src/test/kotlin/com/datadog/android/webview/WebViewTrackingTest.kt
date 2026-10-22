@@ -688,6 +688,7 @@ internal class WebViewTrackingTest {
         val fakeAnonymousId = forge.anAlphabeticalString()
         val fakeUserInfo = UserInfo(anonymousId = fakeAnonymousId)
         val fakeProcessInfo = ProcessInfo(isMainProcess = forge.aBool())
+        val fakeSessionHasTimeseries = forge.aBool()
         val mockWebViewRumFeature = mock<FeatureScope>()
         val mockWebViewLogsFeature = mock<FeatureScope>()
         val expectedEvent = fakeBundledEvent.deepCopy().apply {
@@ -698,6 +699,7 @@ internal class WebViewTrackingTest {
                 JsonObject().apply {
                     addProperty("id", fakeSessionId)
                     addProperty("is_main_process", fakeProcessInfo.isMainProcess)
+                    addProperty("has_timeseries", fakeSessionHasTimeseries)
                 }
             )
             add("usr", JsonObject().apply { addProperty("anonymous_id", fakeAnonymousId) })
@@ -723,7 +725,8 @@ internal class WebViewTrackingTest {
             "rum" to mapOf<String, Any?>(
                 "application_id" to fakeApplicationId,
                 "session_id" to fakeSessionId,
-                "session_state" to "TRACKED"
+                "session_state" to "TRACKED",
+                "session_has_timeseries" to fakeSessionHasTimeseries
             )
         )
         whenever(mockDatadogContext.featuresContext) doReturn fakeFeaturesContext
