@@ -58,7 +58,9 @@ ANDROID_SERIAL=emulator-5554 ./gradlew :reliability:single-fit:flags:connectedRe
 ```
 
 The existing `test-pyramid:core-it-{min,median,latest}-api` CI jobs also run this suite on Android
-API 23, 28 and 37 emulators. They upload the instrumentation results from
+API 23, 28 and 37 emulators. Each job builds and copies the native/provider release AARs, logs their
+SHA-256 hashes and supplies them through `-PflagsArtifactDirectory` to the device suite. They upload
+the instrumentation results from
 `reliability/single-fit/flags/build/outputs/androidTest-results/connected/release/`.
 The tests use synthetic credentials and a local server; no live Datadog org is needed. They verify
 actual Android HTTP uploads, but do not claim live backend acceptance or process-kill recovery.
