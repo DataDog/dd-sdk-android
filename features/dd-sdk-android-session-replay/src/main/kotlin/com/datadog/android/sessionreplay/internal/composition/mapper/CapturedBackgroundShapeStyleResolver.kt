@@ -6,6 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal.composition.mapper
 
+import android.graphics.PixelFormat
+import android.graphics.drawable.ColorDrawable
 import android.view.View
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.composition.CapturedShapeStyle
@@ -25,11 +27,29 @@ internal class CapturedBackgroundShapeStyleResolver(
     private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault()
 ) {
     fun resolve(view: View): CapturedShapeStyle? {
-        val color = view.background?.let { drawableToColorMapper.mapDrawableToColor(it, internalLogger) }
-            ?: return null
-        return CapturedShapeStyle(
-            // View alpha belongs to the owning layer so text and descendants share it exactly once.
-            backgroundColor = colorStringFormatter.formatColorAsHexString(color)
-        )
+        return capture(view)?.resolve()
     }
+
+    fun capture(view: View): CapturedBackgroundColor? {
+        val background = view.background
+        val color = background?.let { drawableToColorMapper.mapDrawableToColor(it, internalLogger) } ?: return null
+
+        @Suppress("DEPRECATION") // ColorDrawable opacity accounts for tint and color filters.
+        val isOpaque = background is ColorDrawable && background.opacity == PixelFormat.OPAQUE &&
+            (color ushr ALPHA_SHIFT) == FULLY_OPAQUE_ALPHA
+        return CapturedBackgroundColor(color, colorStringFormatter, isOpaque)
+    }
+
+    private companion object {
+        const val ALPHA_SHIFT = 24
+        const val FULLY_OPAQUE_ALPHA = 0xff
+    }
+}
+
+internal data class CapturedBackgroundColor(
+    val color: Int,
+    val formatter: ColorStringFormatter,
+    val isOpaque: Boolean = false
+) {
+    fun resolve(): CapturedShapeStyle = CapturedShapeStyle(backgroundColor = formatter.formatColorAsHexString(color))
 }

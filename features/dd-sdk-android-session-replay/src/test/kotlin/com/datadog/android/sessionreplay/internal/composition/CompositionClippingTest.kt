@@ -176,7 +176,29 @@ internal class CompositionClippingTest {
     }
 
     @Test
-    fun `M keep sibling clipping independent W traversal leaves a padded subtree`() {
+    fun `M preserve copied clipping constraints W build { live clipping changes }`() {
+        // Given
+        val fixture = Fixture()
+        whenever(fixture.root.clipChildren).thenReturn(true)
+        fixture.onMapped = { if (it == fixture.parent) fixture.nowNs = 10 }
+        val step = fixture.start()
+        assertThat(step).isInstanceOf(WindowCopyResult.Present::class.java)
+
+        // When
+        whenever(fixture.root.clipChildren).thenReturn(false)
+        val result = step.buildWindow(fixture.context) as WindowWalkResult.Present
+
+        // Then
+        assertThat(
+            result.wireframe(fixture.identities.getValue(fixture.child)).clip
+        ).isEqualTo(
+            CapturedClip(top = 20, bottom = 60, left = 20, right = 60)
+        )
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M keep sibling clipping independent W traversal leaves a padded subtree`(fakeAdvanceClock: Boolean) {
         // Given: the first subtree clips to padding; the second allows overflow up to the window.
         val fixture = Fixture()
         whenever(fixture.parent.clipToPadding).thenReturn(true)
@@ -185,6 +207,7 @@ internal class CompositionClippingTest {
         val siblingChild = fixture.view(GlobalBounds(160, 160, 140, 140))
         fixture.children(sibling, siblingChild)
         fixture.children(fixture.root, fixture.parent, sibling)
+        if (fakeAdvanceClock) fixture.onMapped = { fixture.nowNs += 10L }
 
         // When
         val result = fixture.capture()
@@ -211,6 +234,7 @@ internal class CompositionClippingTest {
         val leaf = fixture.view(GlobalBounds(0, 0, 300, 300))
         fixture.children(fixture.parent, inner)
         fixture.children(inner, leaf)
+        fixture.onMapped = { fixture.nowNs += 10L }
 
         // When
         val result = fixture.capture()
@@ -222,8 +246,8 @@ internal class CompositionClippingTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = [128, 1024])
-    fun `M preserve tightest clipping edges W hierarchy is deeply nested`(fakeDepth: Int) {
+    @CsvSource("128, false", "128, true", "1024, false", "1024, true")
+    fun `M preserve tightest clipping edges W hierarchy is deeply nested`(fakeDepth: Int, fakeAdvanceClock: Boolean) {
         // Given: ancestors constrain different edges, then widen again without undoing earlier clips.
         val fixture = Fixture()
         whenever(fixture.root.clipChildren).thenReturn(true)
@@ -238,6 +262,7 @@ internal class CompositionClippingTest {
         }
         val leaf = fixture.view(GlobalBounds(0, 0, 300, 300))
         fixture.children(parent, leaf)
+        if (fakeAdvanceClock) fixture.onMapped = { fixture.nowNs++ }
 
         // When
         val result = fixture.capture()
@@ -264,11 +289,13 @@ internal class CompositionClippingTest {
             .isEqualTo(CapturedClip(top = 20, bottom = 20, left = 10, right = 10))
     }
 
-    @Test
-    fun `M propagate explicit clip to descendants W group has clip bounds`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M propagate explicit clip to descendants W group has clip bounds`(fakeAdvanceClock: Boolean) {
         // Given: neither group clips children or padding, but the explicit view clip still applies.
         val fixture = Fixture()
         fixture.clip(fixture.parent, 20, 40, 100, 120)
+        if (fakeAdvanceClock) fixture.onMapped = { fixture.nowNs += 10 }
 
         // When
         val result = fixture.capture()
@@ -325,12 +352,13 @@ internal class CompositionClippingTest {
     }
 
     @ParameterizedTest
-    @ValueSource(floats = [0f, 0.5f, 1f])
-    fun `M capture subtree opacity once W view group has alpha`(fakeAlpha: Float) {
+    @CsvSource("0.0, false", "0.5, false", "0.5, true", "1.0, true")
+    fun `M capture subtree opacity once W view group has alpha`(fakeAlpha: Float, fakeAdvanceClock: Boolean) {
         // Given
         val fixture = Fixture()
         whenever(fixture.parent.alpha).thenReturn(fakeAlpha)
         whenever(fixture.child.alpha).thenReturn(0.25f)
+        if (fakeAdvanceClock) fixture.onMapped = { fixture.nowNs += 10 }
 
         // When
         val result = fixture.capture()
@@ -423,9 +451,9 @@ internal class CompositionClippingTest {
             whenever(view.clipBounds).thenReturn(fakeClip)
         }
 
-        @Suppress("DEPRECATION")
         fun makeOpaque(view: View) {
             val stubBackground: ColorDrawable = mock()
+            @Suppress("DEPRECATION") // Stub the same opacity check as the production occluder.
             whenever(stubBackground.opacity).thenReturn(PixelFormat.OPAQUE)
             whenever(view.background).thenReturn(stubBackground)
             whenever(view.alpha).thenReturn(1f)
@@ -434,7 +462,7 @@ internal class CompositionClippingTest {
             whenever(mockDrawableToColorMapper.mapDrawableToColor(any(), any())).thenReturn(Color.BLACK)
         }
 
-        fun start(): WindowWalkResult {
+        fun start(): WindowCopyResult {
             val mapper = CapturedViewMapper<View> { view, mappingContext ->
                 val identity = mappingContext.identityFactory.shapeWireframe(mappingContext.ownerIdentity)
                 identities[view] = identity
@@ -454,7 +482,7 @@ internal class CompositionClippingTest {
             return testedTraversal.traverseWindow(root, factory.window("window"), factory, context)
         }
 
-        fun capture(): WindowWalkResult.Present = start() as WindowWalkResult.Present
+        fun capture(): WindowWalkResult.Present = start().buildWindow(context) as WindowWalkResult.Present
 
         companion object {
             const val DENSITY = 2f

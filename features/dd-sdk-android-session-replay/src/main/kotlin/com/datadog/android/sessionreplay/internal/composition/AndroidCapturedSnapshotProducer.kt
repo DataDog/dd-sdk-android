@@ -16,17 +16,7 @@ import com.datadog.android.sessionreplay.internal.putTouchOverrideArea
 import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
-/**
- * The real [CapturedSnapshotProducer] for the plain Android View hierarchy - the workstream-3
- * implementation of the extension point [SnapshotCaptureOrchestrator] drives every generation.
- * Builds a fresh [CapturedIdentityFactory] per call (this workstream only produces full snapshots;
- * an identity factory persisting across generations for incremental diffing is a later workstream's
- * concern), walks active main-thread-owned windows via [AndroidWindowTraversal], and assembles them
- * under one synthetic screen root in [ActiveWindowSource.currentWindows] order (already z-ordered).
- *
- * All hierarchy reads complete in one main-thread pass. Each window checks the shared generation
- * deadline, and only a complete capture publishes its touch overrides.
- */
+/** Copies all supported windows in one UI turn; final tree construction belongs to the worker. */
 internal class AndroidCapturedSnapshotProducer(
     private val windowSource: ActiveWindowSource,
     private val scopeProvider: RumViewScopeProvider,
@@ -36,10 +26,9 @@ internal class AndroidCapturedSnapshotProducer(
     private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver,
     private val isMainThreadWindow: (View) -> Boolean = ::isAttachedToMainLooper
 ) : CapturedSnapshotProducer {
-
     @MainThread
-    @Suppress("ReturnCount") // Reject missing scope, stale windows and aborted traversal before publication.
-    override fun capture(context: CaptureGenerationContext): CapturedFullSnapshot? {
+    @Suppress("ReturnCount")
+    override fun capture(context: CaptureGenerationContext): CapturedSnapshotInput? {
         val rumViewScope = scopeProvider.currentScope()
         if (rumViewScope == null) {
             if (context.shouldContinue()) {
@@ -48,7 +37,6 @@ internal class AndroidCapturedSnapshotProducer(
             }
             return null
         }
-        val identityFactory = DefaultCapturedIdentityFactory(rumViewScope.scope)
         val windowSnapshot = windowSource.snapshot()
         val windows = windowSnapshot.windows.filter(isMainThreadWindow)
         if (windows.isEmpty()) {
@@ -58,29 +46,40 @@ internal class AndroidCapturedSnapshotProducer(
             }
             return null
         }
-        val accumulation = WindowsWalkAccumulation()
+        val identityFactory = DefaultCapturedIdentityFactory(rumViewScope.scope)
+        val copies = mutableListOf<CapturedNativeWindow>()
+        val capturedWindows = mutableListOf<View>()
+        val touchOverrideAreas = mutableMapOf<Rect, TouchPrivacy>()
+        val touchOverridesByWindow = mutableMapOf<View, Map<Rect, TouchPrivacy>>()
         for (window in windows) {
-            if (!canContinueCapture(context, rumViewScope, windowSnapshot) || !isMainThreadWindow(window)) return null
-            val windowIdentity = identityFactory.window(viewIdentifierResolver.resolveViewId(window).toString())
-            when (val result = traversal.traverseWindow(window, windowIdentity, identityFactory, context)) {
-                is WindowWalkResult.Present -> {
-                    accumulation.absorb(window, result)
-                    accumulation.capturedWindows += window
+            if (!canContinueCapture(context, rumViewScope, windowSnapshot) || !isMainThreadWindow(window)) {
+                return null
+            }
+            val identity = identityFactory.window(viewIdentifierResolver.resolveViewId(window).toString())
+            when (val result = traversal.traverseWindow(window, identity, identityFactory, context)) {
+                is WindowCopyResult.Present -> {
+                    copies += result.window
+                    capturedWindows += window
+                    result.touchOverrideAreas.forEach { (bounds, privacy) ->
+                        touchOverrideAreas.putTouchOverrideArea(bounds, privacy)
+                    }
+                    touchOverridesByWindow[window] = result.touchOverrideAreas
                 }
-                WindowWalkResult.Filtered -> Unit
-                WindowWalkResult.Aborted -> return null
+                WindowCopyResult.Filtered -> Unit
+                WindowCopyResult.Aborted -> return null
             }
         }
-        val snapshot = accumulation.buildSnapshot(identityFactory, timeProvider, rumViewScope)
-        if (!canContinueCapture(context, rumViewScope, windowSnapshot)) return null
-        // No partial areas enter the legacy manager's staging state, including on cancellation.
-        windowSource.publishTouchPrivacy(
-            windowSnapshot,
-            accumulation.capturedWindows,
+        val snapshot = CapturedNativeSnapshot(
+            timeProvider.getDeviceTimestampMillis() + rumViewScope.viewTimeOffsetMs,
             rumViewScope.scope,
-            accumulation.touchOverridesByWindow
-        ) {
-            touchPrivacyManager.replaceCurrentTouchOverrideAreas(accumulation.touchOverrideAreas)
+            copies
+        )
+        if (!canContinueCapture(context, rumViewScope, windowSnapshot) || windows.any { !isMainThreadWindow(it) }) {
+            return null
+        }
+        // Only a complete copy publishes touch overrides; abandoned copies leave no staging state.
+        windowSource.publishTouchPrivacy(windowSnapshot, capturedWindows, rumViewScope.scope, touchOverridesByWindow) {
+            touchPrivacyManager.replaceCurrentTouchOverrideAreas(touchOverrideAreas)
         }
         return snapshot
     }
@@ -92,45 +91,4 @@ internal class AndroidCapturedSnapshotProducer(
     ): Boolean = context.shouldContinue() &&
         scopeProvider.currentScope()?.scope == rumViewScope.scope &&
         windowSource.isCurrent(windowSnapshot)
-
-    private class WindowsWalkAccumulation {
-        private val windowLayers = mutableListOf<CapturedLayer>()
-        private val layers = mutableListOf<CapturedLayer>()
-        private val wireframes = mutableListOf<CapturedWireframe>()
-        val touchOverrideAreas = mutableMapOf<Rect, TouchPrivacy>()
-        val capturedWindows = mutableListOf<View>()
-        val touchOverridesByWindow = mutableMapOf<View, Map<Rect, TouchPrivacy>>()
-
-        fun absorb(window: View, result: WindowWalkResult.Present) {
-            windowLayers += result.rootLayer
-            layers += result.layers
-            wireframes += result.wireframes
-            result.touchOverrideAreas.forEach { (bounds, privacy) ->
-                touchOverrideAreas.putTouchOverrideArea(bounds, privacy)
-            }
-            touchOverridesByWindow[window] = result.touchOverrideAreas
-        }
-
-        fun buildSnapshot(
-            identityFactory: CapturedIdentityFactory,
-            timeProvider: TimeProvider,
-            rumViewScope: CapturedRumViewScope
-        ): CapturedFullSnapshot {
-            val root = CapturedLayer(
-                identity = identityFactory.screenRoot(),
-                kind = CapturedLayerKind.SYNTHETIC_SCREEN_ROOT,
-                // Every window could have come back Filtered, leaving this empty even though the
-                // caller's own window list wasn't - falls back rather than crashing on that.
-                bounds = windowLayers.firstOrNull()?.bounds ?: CapturedBounds(0, 0, 0, 0),
-                children = windowLayers.map { layer -> CapturedChild.Layer(layer.identity) }
-            )
-            return CapturedFullSnapshot(
-                timestamp = timeProvider.getDeviceTimestampMillis() + rumViewScope.viewTimeOffsetMs,
-                scope = rumViewScope.scope,
-                root = root,
-                layers = layers,
-                wireframes = wireframes
-            )
-        }
-    }
 }

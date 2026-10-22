@@ -6,14 +6,19 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
-/** Default processing scope until asynchronous enrichers are supplied by capture implementations. */
+/** Synchronous adapter for tests and producers that supply an already completed tree. */
 internal class ImmediateCapturedSnapshotProcessor : CapturedSnapshotProcessor {
     override fun process(
         request: SnapshotProcessingRequest,
         callback: SnapshotProcessingCallback
     ): CancellableCaptureWork {
         callback.onProcessed(
-            SnapshotProcessingResult.Completed(request.generation.id, request.snapshot)
+            when (val snapshot = request.snapshot) {
+                is CapturedFullSnapshot -> SnapshotProcessingResult.Completed(request.generation.id, snapshot)
+                is CapturedNativeSnapshot -> CapturedNativeSnapshotBuilder().build(snapshot, request.generation)
+                    ?.let { SnapshotProcessingResult.Completed(request.generation.id, it) }
+                    ?: SnapshotProcessingResult.Failed(request.generation.id)
+            }
         )
         return CancellableCaptureWork.NONE
     }

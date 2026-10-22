@@ -18,6 +18,8 @@ import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.ShapeDrawable
 import android.util.DisplayMetrics
+import android.view.SurfaceView
+import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
@@ -511,6 +513,36 @@ internal class CompositionChildDrawingOrderTest {
         verifyNoInteractions(mockColorMapper, *fakeChildren.toTypedArray())
     }
 
+    @ParameterizedTest
+    @ValueSource(classes = [SurfaceView::class, TextureView::class])
+    fun `M disable worker culling W traverseWindow { covered subtree contains a separate surface }`(
+        fakeSurfaceClass: Class<out View>
+    ) {
+        // Given: the lower group is omitted by sibling culling, but its surface still affects paint order.
+        val fixture = Fixture(childCount = 2)
+        val mockBack: ViewGroup = mock()
+        whenever(mockBack.isShown).thenReturn(true)
+        whenever(mockBack.width).thenReturn(100)
+        whenever(mockBack.height).thenReturn(100)
+        whenever(mockBack.scaleX).thenReturn(1f)
+        whenever(mockBack.scaleY).thenReturn(1f)
+        val mockSurface = Mockito.mock(fakeSurfaceClass)
+        whenever(mockSurface.isShown).thenReturn(true)
+        whenever(mockSurface.width).thenReturn(100)
+        whenever(mockSurface.height).thenReturn(100)
+        whenever(mockBack.childCount).thenReturn(1)
+        whenever(mockBack.getChildAt(0)).thenReturn(mockSurface)
+        whenever(fixture.root.getChildAt(0)).thenReturn(mockBack)
+        fixture.makeOpaque(fixture.children[1])
+
+        // When
+        val copy = fixture.copyWindow() as WindowCopyResult.Present
+
+        // Then: the optional worker pass cannot assume ordinary Canvas ordering for this window.
+        assertThat(copy.window.isDrawingOrderReliable).isFalse()
+        assertThat(fixture.visited).doesNotContain(mockBack, mockSurface)
+    }
+
     private class Fixture(childCount: Int = 3, private val sdkInt: Int = 28, screenDensity: Float = 1f) {
         val root: CustomOrderViewGroup = mock()
         val children = List(childCount) { mock<View>() }
@@ -587,11 +619,15 @@ internal class CompositionChildDrawingOrderTest {
             )
         }
 
-        fun traverse(): WindowWalkResult.Present {
+        fun copyWindow(): WindowCopyResult {
             val identityFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope("view"))
             val context = CaptureGenerationContext(1L, 0L, Long.MAX_VALUE, CaptureTimeProvider { 0L })
             return testedTraversal.traverseWindow(root, identityFactory.window("window"), identityFactory, context)
-                as WindowWalkResult.Present
+        }
+
+        fun traverse(): WindowWalkResult.Present {
+            val context = CaptureGenerationContext(1L, 0L, Long.MAX_VALUE, CaptureTimeProvider { 0L })
+            return copyWindow().buildWindow(context) as WindowWalkResult.Present
         }
     }
 

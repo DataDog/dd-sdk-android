@@ -8,9 +8,10 @@ package com.datadog.android.sessionreplay.internal.composition
 
 /**
  * Discovers roots and synchronously inspects Android/Compose state on the main thread. Concrete
- * walkers must use [CaptureGenerationContext.shouldContinue] between bounded operations and may
- * return a contract-provided placeholder or cached resource before the deadline.
+ * walkers must use [CaptureGenerationContext.shouldContinue] between bounded operations. Native
+ * View state must be copied in one UI-thread turn: resuming live traversal across turns can mix
+ * different frames. Snapshot construction runs independently of live UI state.
  */
 internal fun interface CapturedSnapshotProducer {
-    fun capture(context: CaptureGenerationContext): CapturedFullSnapshot?
+    fun capture(context: CaptureGenerationContext): CapturedSnapshotInput?
 }
