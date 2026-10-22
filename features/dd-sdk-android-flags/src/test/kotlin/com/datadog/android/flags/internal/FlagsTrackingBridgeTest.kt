@@ -30,14 +30,17 @@ import org.junit.jupiter.params.provider.NullSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
+@MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class FlagsTrackingBridgeTest {
 
@@ -91,7 +94,7 @@ internal class FlagsTrackingBridgeTest {
     }
 
     @Test
-    fun `M record only exposure W trackFlagExposure`() {
+    fun `M record only exposure W trackFlagExposure()`() {
         // When
         testedProxy.trackFlagExposure(fakeFlagKey, fakeFlag, fakeContext)
 
@@ -100,7 +103,7 @@ internal class FlagsTrackingBridgeTest {
     }
 
     @Test
-    fun `M record only evaluation W trackFlagEvaluationEvent {doLog false}`() {
+    fun `M record only evaluation W trackFlagEvaluationEvent() {doLog false}`() {
         // When
         testedProxy.trackFlagEvaluationEvent(fakeFlagKey, fakeFlag.copy(doLog = false), fakeContext, null)
 
@@ -117,7 +120,7 @@ internal class FlagsTrackingBridgeTest {
 
     @ParameterizedTest
     @CsvSource("false, false", "false, true", "true, false", "true, true")
-    fun `M respect each tracking setting W independent hooks called`(
+    fun `M respect each tracking setting W trackFlagExposure() + trackFlagEvaluationEvent()`(
         trackExposures: Boolean,
         trackEvaluations: Boolean
     ) {
@@ -160,7 +163,7 @@ internal class FlagsTrackingBridgeTest {
     }
 
     @Test
-    fun `M retain combined tracking W trackFlagSnapshotEvaluation`() {
+    fun `M retain combined tracking W trackFlagSnapshotEvaluation()`() {
         // When
         testedProxy.trackFlagSnapshotEvaluation(fakeFlagKey, fakeFlag, fakeContext)
 
@@ -227,7 +230,7 @@ internal class FlagsTrackingBridgeTest {
             "TARGETING_KEY_MISSING", "INVALID_CONTEXT", "GENERAL"
         ]
     )
-    fun `M record runtime default W trackFlagEvaluationEvent {missing assignment}`(errorCode: String?) {
+    fun `M record runtime default W trackFlagEvaluationEvent() {missing assignment}`(errorCode: String?) {
         // When
         testedProxy.trackFlagEvaluationEvent(fakeFlagKey, null, fakeContext, errorCode)
 
@@ -237,7 +240,7 @@ internal class FlagsTrackingBridgeTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["", "customer-sensitive-error"])
-    fun `M sanitize error W trackFlagEvaluationEvent {unknown error code}`(errorCode: String) {
+    fun `M sanitize error W trackFlagEvaluationEvent() {unknown error code}`(errorCode: String) {
         // When
         testedProxy.trackFlagEvaluationEvent(fakeFlagKey, null, fakeContext, errorCode)
 
@@ -246,7 +249,7 @@ internal class FlagsTrackingBridgeTest {
     }
 
     @Test
-    fun `M omit assignment metadata W trackFlagEvaluationEvent {evaluation error}`() {
+    fun `M omit assignment metadata W trackFlagEvaluationEvent() {evaluation error}`() {
         // When
         testedProxy.trackFlagEvaluationEvent(fakeFlagKey, fakeFlag, fakeContext, "TYPE_MISMATCH")
 
@@ -262,7 +265,7 @@ internal class FlagsTrackingBridgeTest {
     }
 
     @Test
-    fun `M skip exposure W trackFlagExposure {doLog false}`() {
+    fun `M skip exposure W trackFlagExposure() {doLog false}`() {
         // When
         testedProxy.trackFlagExposure(fakeFlagKey, fakeFlag.copy(doLog = false), fakeContext)
 
@@ -271,7 +274,7 @@ internal class FlagsTrackingBridgeTest {
     }
 
     @Test
-    fun `M skip evaluation W evaluations feature unavailable`() {
+    fun `M skip evaluation W trackFlagEvaluationEvent() {feature unavailable}`() {
         // Given
         testedProxy = newProxy(evaluationsFeature = null)
 
@@ -283,7 +286,7 @@ internal class FlagsTrackingBridgeTest {
     }
 
     @Test
-    fun `M do nothing W independent hooks called {fallback client}`() {
+    fun `M do nothing W trackFlagExposure() + trackFlagEvaluationEvent() {fallback client}`() {
         // Given
         testedProxy = _FlagsInternalProxy(NoOpFlagsClient("test", "not initialized") { _, _ -> })
 
