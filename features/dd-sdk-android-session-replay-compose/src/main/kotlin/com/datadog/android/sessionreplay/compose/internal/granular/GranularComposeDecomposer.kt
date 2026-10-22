@@ -647,16 +647,10 @@ internal class GranularComposeDecomposer(
             val image = if (privacy.image == ImagePrivacy.MASK_ALL) {
                 null
             } else {
-                semanticsUtils.resolveSemanticsPainter(node, internalLogger)
+                semanticsUtils.resolveCompositionPainter(node, internalLogger)
             }
 
-            // SemanticsUtils already owns regular software copies; ALPHA_8 needs its own copy too.
-            @Suppress("UnsafeThirdPartyFunctionCall") // Copy to the bitmap's supported software configuration.
-            val bitmap = if (image?.bitmap?.config == Bitmap.Config.ALPHA_8) {
-                image.bitmap.copy(Bitmap.Config.ALPHA_8, false)
-            } else {
-                image?.bitmap
-            }
+            val bitmap = image?.bitmap
             val contextualMasked = privacy.image == ImagePrivacy.MASK_LARGE_ONLY && image?.isContextualImage == true
             val wireframe = if (image != null && bitmap != null && !contextualMasked) {
                 val scaled = imageMapper.calculateScaledImageBounds(
@@ -680,6 +674,7 @@ internal class GranularComposeDecomposer(
                     resource = PixelResource.Unresolved
                 )
             } else {
+                bitmap?.recycle()
                 CapturedWireframe.PrivacyPlaceholder(
                     request.identityFactory.placeholderWireframe(identity),
                     CapturedBounds(painterBounds.x, painterBounds.y, painterBounds.width, painterBounds.height),

@@ -337,7 +337,9 @@ internal class GranularComposeDecomposerTest {
         val stubRoot = mockRoot(listOf(node))
         whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
         whenever(mockSemanticsUtils.isImage(node)).thenReturn(true)
-        whenever(mockSemanticsUtils.resolveSemanticsPainter(eq(node), any())).thenReturn(BitmapInfo(stubBitmap, false))
+        whenever(
+            mockSemanticsUtils.resolveCompositionPainter(eq(node), any())
+        ).thenReturn(BitmapInfo(stubBitmap, false))
         val captures = mutableListOf<PendingPixelCapture>()
 
         // When
@@ -378,7 +380,7 @@ internal class GranularComposeDecomposerTest {
         whenever(mockSemanticsUtils.isImage(node)).thenReturn(true)
         whenever(bitmap.width).thenReturn(200)
         whenever(bitmap.height).thenReturn(100)
-        whenever(mockSemanticsUtils.resolveSemanticsPainter(eq(node), any()))
+        whenever(mockSemanticsUtils.resolveCompositionPainter(eq(node), any()))
             .thenReturn(BitmapInfo(bitmap, false, ContentScale.Crop))
         val viewport = GlobalBounds(32, 32, 160, 160)
         whenever(mockSemanticsUtils.resolveUnclippedBounds(eq(node), any())).thenReturn(viewport)
@@ -426,7 +428,7 @@ internal class GranularComposeDecomposerTest {
         assertThat(clips).isEqualTo(if (!masked && sameBounds) 1 else 0)
         if (masked) {
             assertThat(captures).isEmpty()
-            verify(mockSemanticsUtils, never()).resolveSemanticsPainter(any(), any())
+            verify(mockSemanticsUtils, never()).resolveCompositionPainter(any(), any())
         } else {
             assertThat(captures.single().isSourceImage).isTrue()
             assertThat(captures.single().bitmap).isSameAs(if (sameBounds) clippedBitmap else bitmap)
@@ -447,7 +449,7 @@ internal class GranularComposeDecomposerTest {
         whenever(stubBitmap.height).thenReturn(100)
         whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
         whenever(mockSemanticsUtils.isImage(stubImage)).thenReturn(true)
-        whenever(mockSemanticsUtils.resolveSemanticsPainter(eq(stubImage), any()))
+        whenever(mockSemanticsUtils.resolveCompositionPainter(eq(stubImage), any()))
             .thenReturn(BitmapInfo(stubBitmap, false))
         val fakeLayoutBounds = GlobalBounds(0, 0, 160, 160)
         whenever(mockSemanticsUtils.resolveUnclippedBounds(eq(stubImage), any())).thenReturn(fakeLayoutBounds)
@@ -474,7 +476,7 @@ internal class GranularComposeDecomposerTest {
         whenever(stubBitmap.height).thenReturn(100)
         whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
         whenever(mockSemanticsUtils.isImage(stubImage)).thenReturn(true)
-        whenever(mockSemanticsUtils.resolveSemanticsPainter(eq(stubImage), any()))
+        whenever(mockSemanticsUtils.resolveCompositionPainter(eq(stubImage), any()))
             .thenReturn(BitmapInfo(stubBitmap, false))
         whenever(mockSemanticsUtils.resolveUnclippedBounds(eq(stubImage), any()))
             .thenReturn(GlobalBounds(0, 0, 224, 224))
@@ -495,7 +497,7 @@ internal class GranularComposeDecomposerTest {
         assertThat(image.clip?.top).isEqualTo(32L)
         assertThat(image.clip?.left).isNull()
         assertThat(result.nodes.single().bounds).isEqualTo(CapturedBounds(0, 0, 224, 224))
-        if (masked) verify(mockSemanticsUtils, never()).resolveSemanticsPainter(any(), any())
+        if (masked) verify(mockSemanticsUtils, never()).resolveCompositionPainter(any(), any())
     }
 
     @Test
@@ -508,7 +510,7 @@ internal class GranularComposeDecomposerTest {
         whenever(stubBitmap.height).thenReturn(100)
         whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
         whenever(mockSemanticsUtils.isImage(stubImage)).thenReturn(true)
-        whenever(mockSemanticsUtils.resolveSemanticsPainter(eq(stubImage), any()))
+        whenever(mockSemanticsUtils.resolveCompositionPainter(eq(stubImage), any()))
             .thenReturn(BitmapInfo(stubBitmap, false, ContentScale.Crop))
         whenever(mockSemanticsUtils.resolveUnclippedBounds(eq(stubImage), any()))
             .thenReturn(GlobalBounds(0, 0, 224, 224))
@@ -554,31 +556,28 @@ internal class GranularComposeDecomposerTest {
     }
 
     @Test
-    fun `M own alpha bitmap pixels W decompose() { source image }`() {
+    fun `M retain ownership of rendered painter pixels W decompose()`() {
         // Given
-        val stubImage = mockLeafNode()
-        val stubRoot = mockRoot(listOf(stubImage))
-        val stubOriginal: Bitmap = mock()
-        val stubCopy: Bitmap = mock()
-        whenever(stubOriginal.config).thenReturn(Bitmap.Config.ALPHA_8)
-        whenever(stubOriginal.width).thenReturn(20)
-        whenever(stubOriginal.height).thenReturn(20)
-        whenever(stubOriginal.copy(Bitmap.Config.ALPHA_8, false)).thenReturn(stubCopy)
-        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
-        whenever(mockSemanticsUtils.isImage(stubImage)).thenReturn(true)
-        whenever(mockSemanticsUtils.resolveSemanticsPainter(eq(stubImage), any()))
-            .thenReturn(BitmapInfo(stubOriginal, false))
-        val fakeCaptures = mutableListOf<PendingPixelCapture>()
+        val node = mockLeafNode()
+        val bitmap: Bitmap = mock()
+        whenever(bitmap.width).thenReturn(20)
+        whenever(bitmap.height).thenReturn(20)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(mockSemanticsUtils.isImage(node)).thenReturn(true)
+        whenever(mockSemanticsUtils.resolveCompositionPainter(eq(node), any())).thenReturn(BitmapInfo(bitmap, false))
+        val captures = mutableListOf<PendingPixelCapture>()
 
         // When
         testedDecomposer.decompose(
             mockView,
-            realRequest(pendingPixelCaptureSink = PendingPixelCaptureSink(fakeCaptures::add))
+            realRequest(pendingPixelCaptureSink = PendingPixelCaptureSink(captures::add))
         )
 
         // Then
-        assertThat(fakeCaptures.single().bitmap).isSameAs(stubCopy)
-        verify(stubOriginal).copy(Bitmap.Config.ALPHA_8, false)
+        assertThat(captures.single().bitmap).isSameAs(bitmap)
+        verify(bitmap, never()).copy(any(), any())
+        verify(bitmap, never()).recycle()
     }
 
     @ParameterizedTest
@@ -674,7 +673,7 @@ internal class GranularComposeDecomposerTest {
         whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(stubRoot)
         whenever(mockSemanticsUtils.isImage(stubImage)).thenReturn(true)
         whenever(
-            mockSemanticsUtils.resolveSemanticsPainter(eq(stubImage), any())
+            mockSemanticsUtils.resolveCompositionPainter(eq(stubImage), any())
         ).thenReturn(BitmapInfo(stubBitmap, false))
         val fakeCaptures = mutableListOf<PendingPixelCapture>()
         val fakeRequest = realRequest(pendingPixelCaptureSink = PendingPixelCaptureSink(fakeCaptures::add))

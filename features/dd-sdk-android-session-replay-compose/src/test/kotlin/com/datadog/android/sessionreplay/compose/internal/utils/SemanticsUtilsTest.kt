@@ -212,6 +212,9 @@ internal class SemanticsUtilsTest {
         whenever(host.getChildAt(0)).thenReturn(mockView)
         whenever(host.getChildAt(1)).thenReturn(root)
 
+        assertThat(testedSemanticsUtils.findComposeRootView(root)).isSameAs(root)
+        assertThat(testedSemanticsUtils.findComposeRootView(host)).isSameAs(root)
+        assertThat(testedSemanticsUtils.findComposeRootView(mockView)).isNull()
         assertThat(testedSemanticsUtils.findRootSemanticsNode(root)).isSameAs(mockSemanticsNode)
         assertThat(testedSemanticsUtils.findRootSemanticsNode(host)).isSameAs(mockSemanticsNode)
         assertThat(testedSemanticsUtils.findRootSemanticsNode(mockView)).isNull()
@@ -1633,6 +1636,34 @@ internal class SemanticsUtilsTest {
         whenever(inspectable.nameFallback) doReturn "graphicsLayer"
         whenever(inspectable.inspectableElements) doReturn sequenceOf(ValueElement("shape", shape))
         return modifier
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = [true, false])
+    fun `M copy untinted image once W resolveCompositionPainter { copy succeeds or fails }`(copySucceeds: Boolean) {
+        // Given
+        val painter: BitmapPainter = mock()
+        val source: Bitmap = mock()
+        val frozen: Bitmap = mock()
+        whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn painter
+        whenever(mockReflectionUtils.getBitmapInBitmapPainter(painter)) doReturn source
+        whenever(mockReflectionUtils.getImageAlpha(mockSemanticsNode)) doReturn 1f
+        whenever(mockReflectionUtils.getContentScale(mockSemanticsNode)) doReturn ContentScale.Fit
+        whenever(mockReflectionUtils.getAlignment(mockSemanticsNode)) doReturn Alignment.Center
+        whenever(source.width) doReturn 120
+        whenever(source.height) doReturn 80
+        whenever(source.config) doReturn Bitmap.Config.ARGB_8888
+        whenever(source.copy(Bitmap.Config.ARGB_8888, false)) doReturn frozen.takeIf { copySucceeds }
+
+        // When
+        val result = testedSemanticsUtils.resolveCompositionPainter(mockSemanticsNode, mockInternalLogger)
+
+        // Then - success returns the owned frozen copy without allocating a second render bitmap.
+        // Android bitmap allocation is unavailable in this JVM test, so an extra draw would fail.
+        assertThat(result?.bitmap).isSameAs(frozen.takeIf { copySucceeds })
+        verify(source).copy(Bitmap.Config.ARGB_8888, false)
+        verify(source, never()).recycle()
+        verify(frozen, never()).recycle()
     }
 
     @Test

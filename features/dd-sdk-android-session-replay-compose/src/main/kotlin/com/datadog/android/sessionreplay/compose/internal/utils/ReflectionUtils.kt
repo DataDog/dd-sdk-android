@@ -214,6 +214,13 @@ internal class ReflectionUtils {
     fun getAlignment(semanticsNode: SemanticsNode): Alignment? =
         imagePainterProperty(semanticsNode, ComposeReflection.ImagePainterAlignmentFields) as? Alignment
 
+    fun getImageColorFilter(semanticsNode: SemanticsNode): androidx.compose.ui.graphics.ColorFilter? =
+        imagePainterProperty(semanticsNode, ComposeReflection.ImagePainterColorFilterFields)
+            as? androidx.compose.ui.graphics.ColorFilter
+
+    fun getImageAlpha(semanticsNode: SemanticsNode): Float =
+        imagePainterProperty(semanticsNode, ComposeReflection.ImagePainterAlphaFields) as? Float ?: 1f
+
     private fun imagePainterProperty(semanticsNode: SemanticsNode, fields: List<Pair<Class<*>, Field>>): Any? =
         semanticsNode.layoutInfo.getModifierInfo().firstNotNullOfOrNull { info ->
             fields.firstOrNull { (type, _) -> type.isInstance(info.modifier) }?.second?.getSafe(info.modifier)

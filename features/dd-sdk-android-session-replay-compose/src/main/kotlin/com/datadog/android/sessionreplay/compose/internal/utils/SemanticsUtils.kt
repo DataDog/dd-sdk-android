@@ -7,14 +7,20 @@
 package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
+import android.graphics.Paint
+import android.graphics.Rect
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asAndroidColorFilter
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.VectorPainter
@@ -49,6 +55,9 @@ import com.datadog.android.sessionreplay.compose.internal.isPositionedAtOrigin
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
+import kotlin.math.roundToInt
+import android.graphics.Canvas as AndroidCanvas
 
 @Suppress("TooManyFunctions")
 internal class SemanticsUtils(
@@ -323,6 +332,98 @@ internal class SemanticsUtils(
                 contentScale = contentScale,
                 alignment = alignment
             )
+        }
+    }
+
+    /** Composition captures painter output, including alpha and tint, rather than the vector's
+     * internal ALPHA_8 coverage cache. Only this permitted source image is drawn, never the host.
+     */
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall")
+    internal fun resolveCompositionPainter(
+        semanticsNode: SemanticsNode,
+        internalLogger: InternalLogger
+    ): BitmapInfo? {
+        val (painter, contextual) = resolvePainter(semanticsNode)
+        if (painter == null) return null
+        val source = resolveBitmapFromPainter(painter, internalLogger) ?: return null
+        if (source.width <= 0 || source.height <= 0 || source.width.toLong() * source.height > MAX_SOURCE_PIXELS) {
+            return null
+        }
+        val colorFilter = reflectionUtils.getImageColorFilter(semanticsNode)
+        val alpha = reflectionUtils.getImageAlpha(semanticsNode).coerceIn(0f, 1f)
+        if (canCopyPainterSource(painter, source, alpha, colorFilter)) {
+            // Own a frozen software copy without also allocating and drawing an identical second
+            // bitmap. The tinted/transparent and vector paths still render their painter output.
+            val frozen = source.copy(Bitmap.Config.ARGB_8888, false) ?: return null
+            return BitmapInfo(
+                frozen,
+                contextual,
+                reflectionUtils.getContentScale(semanticsNode),
+                reflectionUtils.getAlignment(semanticsNode)
+            )
+        }
+        val pixels = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
+        var completed = false
+        try {
+            if (painter is VectorPainter) {
+                CanvasDrawScope().draw(
+                    semanticsNode.layoutInfo.density,
+                    semanticsNode.layoutInfo.layoutDirection,
+                    Canvas(pixels.asImageBitmap()),
+                    Size(source.width.toFloat(), source.height.toFloat())
+                ) {
+                    with(painter) { draw(size, alpha, colorFilter) }
+                }
+            } else {
+                if (!drawBitmapSource(source, pixels, alpha, colorFilter)) return null
+            }
+            completed = true
+            return BitmapInfo(
+                pixels,
+                contextual,
+                reflectionUtils.getContentScale(semanticsNode),
+                reflectionUtils.getAlignment(semanticsNode)
+            )
+        } finally {
+            if (!completed) pixels.recycle()
+        }
+    }
+
+    private fun canCopyPainterSource(
+        painter: Painter,
+        source: Bitmap,
+        alpha: Float,
+        colorFilter: androidx.compose.ui.graphics.ColorFilter?
+    ): Boolean {
+        val unmodified = alpha == 1f && colorFilter == null
+        return unmodified && painter !is VectorPainter && source.config != Bitmap.Config.ALPHA_8
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // Supported software copy; the temporary source is always recycled.
+    private fun drawBitmapSource(
+        source: Bitmap,
+        pixels: Bitmap,
+        alpha: Float,
+        colorFilter: androidx.compose.ui.graphics.ColorFilter?
+    ): Boolean {
+        // ALPHA_8 is directly drawable as a transparent mask; hardware images need a software copy.
+        val software = if (source.config ==
+            Bitmap.Config.ALPHA_8
+        ) {
+            source
+        } else {
+            source.copy(Bitmap.Config.ARGB_8888, false)
+        }
+        if (software == null) return false
+        try {
+            val paint = Paint().apply {
+                this.alpha = (alpha * OPAQUE_ALPHA_VALUE).roundToInt()
+                this.colorFilter = colorFilter?.asAndroidColorFilter()
+            }
+            AndroidCanvas(pixels).drawBitmap(software, null, Rect(0, 0, pixels.width, pixels.height), paint)
+            return true
+        } finally {
+            if (software !== source) software.recycle()
         }
     }
 
@@ -624,6 +725,7 @@ internal class SemanticsUtils(
     }
 
     internal companion object {
+        private const val MAX_SOURCE_PIXELS = 4_000_000L
         internal enum class OnDrawFieldType {
             FILL_COLOR,
             CHECKMARK_COLOR,

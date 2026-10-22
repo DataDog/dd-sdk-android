@@ -151,6 +151,8 @@ internal object ComposeReflection {
     )
     val ImagePainterContentScaleFields = imagePainterFields("contentScale")
     val ImagePainterAlignmentFields = imagePainterFields("alignment")
+    val ImagePainterColorFilterFields = imagePainterFields("colorFilter")
+    val ImagePainterAlphaFields = imagePainterFields("alpha")
 
     private fun imagePainterFields(name: String): List<Pair<Class<*>, Field>> =
         imagePainterClasses.mapNotNull { type ->
