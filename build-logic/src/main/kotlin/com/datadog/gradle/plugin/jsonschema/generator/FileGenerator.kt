@@ -18,12 +18,13 @@ class FileGenerator(
     private val outputDir: File,
     private val packageName: String,
     private val logger: Logger,
-    private val internalModels: Boolean = false
+    private val internalModels: Boolean = false,
+    generateConstructorDefaults: Boolean = true
 ) {
 
     private val knownTypes: MutableSet<KotlinTypeWrapper> = mutableSetOf()
 
-    private val classGenerator = ClassGenerator(packageName, knownTypes)
+    private val classGenerator = ClassGenerator(packageName, knownTypes, generateConstructorDefaults)
     private val enumGenerator = EnumClassGenerator(packageName, knownTypes)
     private val oneOfPrimitiveOptionGenerator = OneOfPrimitiveOptionGenerator(packageName, knownTypes)
 

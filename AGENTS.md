@@ -1,3 +1,19 @@
+# Start here
+
+Read the [contributor guide](CONTRIBUTING.md) for setup and contribution procedures.
+Use the [documentation map](docs/README.md) to select current SDK guidance and
+Foundation validation commands. Follow the module rules and validation tasks below.
+
+Include necessary documentation with each implementation change. Review accuracy,
+reader purpose, navigation, and instruction scope. Record actual validation evidence.
+For staged documentation validation, use a provisioned FactoryKit environment:
+
+```sh
+python ci/scripts/foundation_check.py --snapshot index --against HEAD --format json
+```
+
+This manual gate supplements the existing module validation tasks.
+
 # Module Map
 
 - `dd-sdk-android-core` — SDK core: `Datadog`, `InternalLogger`, storage/upload, shared executors (`CoreFeature`).
@@ -11,13 +27,15 @@
 
 # Agent Skills
 
-Load the matching project skill (from `.agents/skills/<name>/SKILL.md`) before these tasks:
+Load the matching project skill before these tasks. The links below point to the
+tracked sources in `ai/skills/`. The `.agents/skills/` and `.claude/skills/`
+directory aliases expose those same sources to agent hosts.
 
-- Writing, editing, or reviewing tests: [`sdk-tests`](.agents/skills/sdk-tests/SKILL.md).
-- Reviewing a branch or PR: [`sdk-review`](.agents/skills/sdk-review/SKILL.md).
-- Writing commit messages or PR titles: [`sdk-commit`](.agents/skills/sdk-commit/SKILL.md).
-- Running pre-PR checks and regenerating generated files: [`sdk-pr-prepare`](.agents/skills/sdk-pr-prepare/SKILL.md).
-- Creating or updating stacked PRs with Graphite: [`sdk-pr-stack`](.agents/skills/sdk-pr-stack/SKILL.md).
+- Writing, editing, or reviewing tests: [`sdk-tests`](ai/skills/sdk-tests/SKILL.md).
+- Reviewing a branch or PR: [`sdk-review`](ai/skills/sdk-review/SKILL.md).
+- Writing commit messages or PR titles: [`sdk-commit`](ai/skills/sdk-commit/SKILL.md).
+- Running pre-PR checks and regenerating generated files: [`sdk-pr-prepare`](ai/skills/sdk-pr-prepare/SKILL.md).
+- Creating or updating stacked PRs with Graphite: [`sdk-pr-stack`](ai/skills/sdk-pr-stack/SKILL.md).
 - Inspecting events emitted by the sample app: [`android-sdk-event-inspection`](.claude/skills/android-sdk-event-inspection/SKILL.md).
 
 # Build Commands

@@ -221,7 +221,10 @@ internal class WindowsOnDrawListenerTest {
             fakeDueMs = fakeClockMs + it.getArgument<Long>(1)
             true
         }
-        doAnswer { fakePendingCapture = null; null }.whenever(mockHandler).removeCallbacksAndMessages(null)
+        doAnswer {
+            fakePendingCapture = null
+            null
+        }.whenever(mockHandler).removeCallbacksAndMessages(null)
         fun advanceTo(targetMs: Long) {
             while (fakePendingCapture != null && fakeDueMs <= targetMs) {
                 fakeClockMs = fakeDueMs

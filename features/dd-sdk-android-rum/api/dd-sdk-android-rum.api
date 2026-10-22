@@ -8689,7 +8689,6 @@ public final class com/datadog/android/rum/model/ViewEvent$Viewport$Companion {
 public final class com/datadog/android/rum/model/ViewUpdateEvent {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Companion;
 	public fun <init> (Lcom/datadog/android/rum/model/ViewUpdateEvent$Container;Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventView;Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSession;Lcom/datadog/android/rum/model/ViewUpdateEvent$FeatureFlags;Lcom/datadog/android/rum/model/ViewUpdateEvent$Privacy;Lcom/datadog/android/rum/model/ViewUpdateEvent$Display;Lcom/datadog/android/rum/model/ViewUpdateEvent$Dd;JLcom/datadog/android/rum/model/ViewUpdateEvent$Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSource;Lcom/datadog/android/rum/model/ViewUpdateEvent$Usr;Lcom/datadog/android/rum/model/ViewUpdateEvent$Account;Lcom/datadog/android/rum/model/ViewUpdateEvent$Tab;Lcom/datadog/android/rum/model/ViewUpdateEvent$Connectivity;Lcom/datadog/android/rum/model/ViewUpdateEvent$Synthetics;Lcom/datadog/android/rum/model/ViewUpdateEvent$CiTest;Lcom/datadog/android/rum/model/ViewUpdateEvent$Os;Lcom/datadog/android/rum/model/ViewUpdateEvent$Device;Lcom/datadog/android/rum/model/ViewUpdateEvent$FeatureFlags;Lcom/datadog/android/rum/model/ViewUpdateEvent$Stream;)V
-	public synthetic fun <init> (Lcom/datadog/android/rum/model/ViewUpdateEvent$Container;Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventView;Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSession;Lcom/datadog/android/rum/model/ViewUpdateEvent$FeatureFlags;Lcom/datadog/android/rum/model/ViewUpdateEvent$Privacy;Lcom/datadog/android/rum/model/ViewUpdateEvent$Display;Lcom/datadog/android/rum/model/ViewUpdateEvent$Dd;JLcom/datadog/android/rum/model/ViewUpdateEvent$Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSource;Lcom/datadog/android/rum/model/ViewUpdateEvent$Usr;Lcom/datadog/android/rum/model/ViewUpdateEvent$Account;Lcom/datadog/android/rum/model/ViewUpdateEvent$Tab;Lcom/datadog/android/rum/model/ViewUpdateEvent$Connectivity;Lcom/datadog/android/rum/model/ViewUpdateEvent$Synthetics;Lcom/datadog/android/rum/model/ViewUpdateEvent$CiTest;Lcom/datadog/android/rum/model/ViewUpdateEvent$Os;Lcom/datadog/android/rum/model/ViewUpdateEvent$Device;Lcom/datadog/android/rum/model/ViewUpdateEvent$FeatureFlags;Lcom/datadog/android/rum/model/ViewUpdateEvent$Stream;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/rum/model/ViewUpdateEvent$Container;
 	public final fun component10 ()Ljava/lang/String;
 	public final fun component11 ()Ljava/lang/String;
@@ -8753,9 +8752,7 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent {
 
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Accessibility {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Accessibility$Companion;
-	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component10 ()Ljava/lang/Boolean;
 	public final fun component11 ()Ljava/lang/Boolean;
@@ -8818,7 +8815,6 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$Accessibility$C
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Account {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Account$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/util/Map;
@@ -8863,7 +8859,6 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$Action$Companio
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Application {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Application$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewUpdateEvent$Application;
@@ -8885,9 +8880,7 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$Application$Com
 
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Cellular {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Cellular$Companion;
-	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewUpdateEvent$Cellular;
@@ -8935,7 +8928,6 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$Companion {
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Configuration {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Configuration$Companion;
 	public fun <init> (Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/util/List;)V
-	public synthetic fun <init> (Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/Boolean;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/Number;
@@ -8968,7 +8960,6 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$Configuration$C
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Connectivity {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Connectivity$Companion;
 	public fun <init> (Lcom/datadog/android/rum/model/ViewUpdateEvent$ConnectivityStatus;Ljava/util/List;Lcom/datadog/android/rum/model/ViewUpdateEvent$EffectiveType;Lcom/datadog/android/rum/model/ViewUpdateEvent$Cellular;)V
-	public synthetic fun <init> (Lcom/datadog/android/rum/model/ViewUpdateEvent$ConnectivityStatus;Ljava/util/List;Lcom/datadog/android/rum/model/ViewUpdateEvent$EffectiveType;Lcom/datadog/android/rum/model/ViewUpdateEvent$Cellular;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/rum/model/ViewUpdateEvent$ConnectivityStatus;
 	public final fun component2 ()Ljava/util/List;
 	public final fun component3 ()Lcom/datadog/android/rum/model/ViewUpdateEvent$EffectiveType;
@@ -9072,9 +9063,7 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$Crash$Companion
 
 public final class com/datadog/android/rum/model/ViewUpdateEvent$CustomTimings {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$CustomTimings$Companion;
-	public fun <init> ()V
 	public fun <init> (Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/Map;
 	public final fun copy (Ljava/util/Map;)Lcom/datadog/android/rum/model/ViewUpdateEvent$CustomTimings;
 	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewUpdateEvent$CustomTimings;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewUpdateEvent$CustomTimings;
@@ -9095,7 +9084,6 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$CustomTimings$C
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Dd {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Dd$Companion;
 	public fun <init> (JLjava/util/List;Lcom/datadog/android/rum/model/ViewUpdateEvent$ReplayStats;Lcom/datadog/android/rum/model/ViewUpdateEvent$DdCls;Lcom/datadog/android/rum/model/ViewUpdateEvent$Configuration;Lcom/datadog/android/rum/model/ViewUpdateEvent$Profiling;Lcom/datadog/android/rum/model/ViewUpdateEvent$DdSession;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (JLjava/util/List;Lcom/datadog/android/rum/model/ViewUpdateEvent$ReplayStats;Lcom/datadog/android/rum/model/ViewUpdateEvent$DdCls;Lcom/datadog/android/rum/model/ViewUpdateEvent$Configuration;Lcom/datadog/android/rum/model/ViewUpdateEvent$Profiling;Lcom/datadog/android/rum/model/ViewUpdateEvent$DdSession;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()J
 	public final fun component2 ()Ljava/util/List;
 	public final fun component3 ()Lcom/datadog/android/rum/model/ViewUpdateEvent$ReplayStats;
@@ -9132,9 +9120,7 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$Dd$Companion {
 
 public final class com/datadog/android/rum/model/ViewUpdateEvent$DdCls {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$DdCls$Companion;
-	public fun <init> ()V
 	public fun <init> (Ljava/lang/Number;)V
-	public synthetic fun <init> (Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/Number;
 	public final fun copy (Ljava/lang/Number;)Lcom/datadog/android/rum/model/ViewUpdateEvent$DdCls;
 	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewUpdateEvent$DdCls;Ljava/lang/Number;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewUpdateEvent$DdCls;
@@ -9154,9 +9140,7 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$DdCls$Companion
 
 public final class com/datadog/android/rum/model/ViewUpdateEvent$DdSession {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$DdSession$Companion;
-	public fun <init> ()V
 	public fun <init> (Lcom/datadog/android/rum/model/ViewUpdateEvent$Plan;Lcom/datadog/android/rum/model/ViewUpdateEvent$SessionPrecondition;)V
-	public synthetic fun <init> (Lcom/datadog/android/rum/model/ViewUpdateEvent$Plan;Lcom/datadog/android/rum/model/ViewUpdateEvent$SessionPrecondition;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/rum/model/ViewUpdateEvent$Plan;
 	public final fun component2 ()Lcom/datadog/android/rum/model/ViewUpdateEvent$SessionPrecondition;
 	public final fun copy (Lcom/datadog/android/rum/model/ViewUpdateEvent$Plan;Lcom/datadog/android/rum/model/ViewUpdateEvent$SessionPrecondition;)Lcom/datadog/android/rum/model/ViewUpdateEvent$DdSession;
@@ -9178,9 +9162,7 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$DdSession$Compa
 
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Device {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Device$Companion;
-	public fun <init> ()V
 	public fun <init> (Lcom/datadog/android/rum/model/ViewUpdateEvent$DeviceType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Lcom/datadog/android/rum/model/ViewUpdateEvent$DeviceType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Boolean;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/rum/model/ViewUpdateEvent$DeviceType;
 	public final fun component10 ()Ljava/lang/Boolean;
 	public final fun component11 ()Ljava/lang/Number;
@@ -9246,9 +9228,7 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$DeviceType$Comp
 
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Display {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Display$Companion;
-	public fun <init> ()V
 	public fun <init> (Lcom/datadog/android/rum/model/ViewUpdateEvent$Scroll;Lcom/datadog/android/rum/model/ViewUpdateEvent$Viewport;)V
-	public synthetic fun <init> (Lcom/datadog/android/rum/model/ViewUpdateEvent$Scroll;Lcom/datadog/android/rum/model/ViewUpdateEvent$Viewport;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/rum/model/ViewUpdateEvent$Scroll;
 	public final fun component2 ()Lcom/datadog/android/rum/model/ViewUpdateEvent$Viewport;
 	public final fun copy (Lcom/datadog/android/rum/model/ViewUpdateEvent$Scroll;Lcom/datadog/android/rum/model/ViewUpdateEvent$Viewport;)Lcom/datadog/android/rum/model/ViewUpdateEvent$Display;
@@ -9364,9 +9344,7 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$Fcp$Companion {
 
 public final class com/datadog/android/rum/model/ViewUpdateEvent$FeatureFlags {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$FeatureFlags$Companion;
-	public fun <init> ()V
 	public fun <init> (Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/Map;
 	public final fun copy (Ljava/util/Map;)Lcom/datadog/android/rum/model/ViewUpdateEvent$FeatureFlags;
 	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewUpdateEvent$FeatureFlags;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewUpdateEvent$FeatureFlags;
@@ -9387,7 +9365,6 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$FeatureFlags$Co
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Fid {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Fid$Companion;
 	public fun <init> (JJLjava/lang/String;)V
-	public synthetic fun <init> (JJLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()J
 	public final fun component2 ()J
 	public final fun component3 ()Ljava/lang/String;
@@ -9412,7 +9389,6 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$Fid$Companion {
 public final class com/datadog/android/rum/model/ViewUpdateEvent$FlutterBuildTime {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$FlutterBuildTime$Companion;
 	public fun <init> (Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;)V
-	public synthetic fun <init> (Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/Number;
 	public final fun component2 ()Ljava/lang/Number;
 	public final fun component3 ()Ljava/lang/Number;
@@ -9501,7 +9477,6 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$InForegroundPer
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Inp {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Inp$Companion;
 	public fun <init> (JLjava/lang/Long;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$InpSubParts;)V
-	public synthetic fun <init> (JLjava/lang/Long;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$InpSubParts;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()J
 	public final fun component2 ()Ljava/lang/Long;
 	public final fun component3 ()Ljava/lang/String;
@@ -9574,7 +9549,6 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$Interface$Compa
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Lcp {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Lcp$Companion;
 	public fun <init> (JLjava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$LcpSubParts;)V
-	public synthetic fun <init> (JLjava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$LcpSubParts;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()J
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
@@ -9667,7 +9641,6 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$LongTask$Compan
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Os {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Os$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
@@ -9715,9 +9688,7 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$PageState$Compa
 
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Performance {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Performance$Companion;
-	public fun <init> ()V
 	public fun <init> (Lcom/datadog/android/rum/model/ViewUpdateEvent$PerformanceCls;Lcom/datadog/android/rum/model/ViewUpdateEvent$Fcp;Lcom/datadog/android/rum/model/ViewUpdateEvent$Fid;Lcom/datadog/android/rum/model/ViewUpdateEvent$Inp;Lcom/datadog/android/rum/model/ViewUpdateEvent$Lcp;Lcom/datadog/android/rum/model/ViewUpdateEvent$Fbc;)V
-	public synthetic fun <init> (Lcom/datadog/android/rum/model/ViewUpdateEvent$PerformanceCls;Lcom/datadog/android/rum/model/ViewUpdateEvent$Fcp;Lcom/datadog/android/rum/model/ViewUpdateEvent$Fid;Lcom/datadog/android/rum/model/ViewUpdateEvent$Inp;Lcom/datadog/android/rum/model/ViewUpdateEvent$Lcp;Lcom/datadog/android/rum/model/ViewUpdateEvent$Fbc;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/rum/model/ViewUpdateEvent$PerformanceCls;
 	public final fun component2 ()Lcom/datadog/android/rum/model/ViewUpdateEvent$Fcp;
 	public final fun component3 ()Lcom/datadog/android/rum/model/ViewUpdateEvent$Fid;
@@ -9748,7 +9719,6 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$Performance$Com
 public final class com/datadog/android/rum/model/ViewUpdateEvent$PerformanceCls {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$PerformanceCls$Companion;
 	public fun <init> (Ljava/lang/Number;Ljava/lang/Long;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$PreviousRect;Lcom/datadog/android/rum/model/ViewUpdateEvent$PreviousRect;)V
-	public synthetic fun <init> (Ljava/lang/Number;Ljava/lang/Long;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$PreviousRect;Lcom/datadog/android/rum/model/ViewUpdateEvent$PreviousRect;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/Number;
 	public final fun component2 ()Ljava/lang/Long;
 	public final fun component3 ()Ljava/lang/String;
@@ -9837,9 +9807,7 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$Privacy$Compani
 
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Profiling {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Profiling$Companion;
-	public fun <init> ()V
 	public fun <init> (Lcom/datadog/android/rum/model/ViewUpdateEvent$ProfilingStatus;Lcom/datadog/android/rum/model/ViewUpdateEvent$ErrorReason;Lcom/datadog/android/rum/model/ViewUpdateEvent$QuotaReason;)V
-	public synthetic fun <init> (Lcom/datadog/android/rum/model/ViewUpdateEvent$ProfilingStatus;Lcom/datadog/android/rum/model/ViewUpdateEvent$ErrorReason;Lcom/datadog/android/rum/model/ViewUpdateEvent$QuotaReason;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/rum/model/ViewUpdateEvent$ProfilingStatus;
 	public final fun component2 ()Lcom/datadog/android/rum/model/ViewUpdateEvent$ErrorReason;
 	public final fun component3 ()Lcom/datadog/android/rum/model/ViewUpdateEvent$QuotaReason;
@@ -9916,9 +9884,7 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$ReplayLevel$Com
 
 public final class com/datadog/android/rum/model/ViewUpdateEvent$ReplayStats {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$ReplayStats$Companion;
-	public fun <init> ()V
 	public fun <init> (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;)V
-	public synthetic fun <init> (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/Long;
 	public final fun component2 ()Ljava/lang/Long;
 	public final fun component3 ()Ljava/lang/Long;
@@ -10069,7 +10035,6 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$Stream$Companio
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Synthetics {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Synthetics$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/Boolean;
@@ -10115,9 +10080,7 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$Tab$Companion {
 
 public final class com/datadog/android/rum/model/ViewUpdateEvent$Usr {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$Usr$Companion;
-	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
@@ -10146,7 +10109,6 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$Usr$Companion {
 public final class com/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSession {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSession$Companion;
 	public fun <init> (Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventSessionType;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/Boolean;
 	public final fun component2 ()Ljava/lang/Boolean;
 	public final fun component3 ()Ljava/lang/String;
@@ -10219,7 +10181,6 @@ public final class com/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEvent
 public final class com/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventView {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewUpdateEvent$ViewUpdateEventView$Companion;
 	public fun <init> (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewUpdateEvent$LoadingType;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewUpdateEvent$CustomTimings;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/datadog/android/rum/model/ViewUpdateEvent$Action;Lcom/datadog/android/rum/model/ViewUpdateEvent$Error;Lcom/datadog/android/rum/model/ViewUpdateEvent$Crash;Lcom/datadog/android/rum/model/ViewUpdateEvent$LongTask;Lcom/datadog/android/rum/model/ViewUpdateEvent$FrozenFrame;Ljava/util/List;Lcom/datadog/android/rum/model/ViewUpdateEvent$Resource;Lcom/datadog/android/rum/model/ViewUpdateEvent$Frustration;Ljava/util/List;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Lcom/datadog/android/rum/model/ViewUpdateEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewUpdateEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewUpdateEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewUpdateEvent$Performance;Lcom/datadog/android/rum/model/ViewUpdateEvent$Accessibility;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewUpdateEvent$LoadingType;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/Number;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Lcom/datadog/android/rum/model/ViewUpdateEvent$CustomTimings;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/datadog/android/rum/model/ViewUpdateEvent$Action;Lcom/datadog/android/rum/model/ViewUpdateEvent$Error;Lcom/datadog/android/rum/model/ViewUpdateEvent$Crash;Lcom/datadog/android/rum/model/ViewUpdateEvent$LongTask;Lcom/datadog/android/rum/model/ViewUpdateEvent$FrozenFrame;Ljava/util/List;Lcom/datadog/android/rum/model/ViewUpdateEvent$Resource;Lcom/datadog/android/rum/model/ViewUpdateEvent$Frustration;Ljava/util/List;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Lcom/datadog/android/rum/model/ViewUpdateEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewUpdateEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewUpdateEvent$FlutterBuildTime;Lcom/datadog/android/rum/model/ViewUpdateEvent$Performance;Lcom/datadog/android/rum/model/ViewUpdateEvent$Accessibility;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/Long;
 	public final fun component10 ()Ljava/lang/Long;
 	public final fun component11 ()Ljava/lang/String;
