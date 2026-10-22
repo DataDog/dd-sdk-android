@@ -103,11 +103,22 @@
     long layoutSize;
 }
 
-# Optional composition layout traversal.
+# Optional composition layout traversal and already-applied placement properties.
 -keepclassmembers class androidx.compose.runtime.collection.MutableVector {
     java.lang.Object[] getContent();
     int getSize();
 }
 -keepclassmembers class androidx.compose.ui.semantics.SemanticsNode {
     public <init>(androidx.compose.ui.Modifier$Node, boolean, androidx.compose.ui.node.LayoutNode, androidx.compose.ui.semantics.SemanticsConfiguration);
+}
+-keep,allowoptimization class androidx.compose.ui.node.NodeCoordinator {
+    *** getLastClip*();
+    *** getLastShape*();
+}
+-keep,allowoptimization class androidx.compose.ui.platform.GraphicsLayerOwnerLayer {
+    *** graphicsLayer;
+}
+-keep,allowoptimization class androidx.compose.ui.graphics.layer.GraphicsLayer {
+    float getShadowElevation();
+    long getSpotShadowColor*();
 }

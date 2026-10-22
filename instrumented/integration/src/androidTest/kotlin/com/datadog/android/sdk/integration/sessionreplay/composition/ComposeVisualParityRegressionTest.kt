@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.testTag
@@ -389,6 +390,94 @@ internal class ComposeVisualParityRegressionTest {
             try {
                 assertThat(result).isNotNull()
                 assertThat(captures).isEmpty()
+            } finally { captures.forEach { it.bitmap.recycle() } }
+        }
+    }
+
+    @Test fun preserveClipAppliedDuringPlacement() {
+        org.junit.Assume.assumeTrue(
+            Class.forName("androidx.compose.ui.node.NodeCoordinator").methods.any {
+                it.name.substringBefore('$') == "getLastClip"
+            }
+        )
+        composeRule.setContent {
+            Box(Modifier.size(300.dp, 200.dp).background(Color.White).testTag(ROOT)) {
+                androidx.compose.ui.layout.Layout(
+                    content = { Box(Modifier.size(240.dp, 64.dp).background(Color.Blue)) },
+                    modifier = Modifier.offset(16.dp, 24.dp)
+                ) { children, constraints ->
+                    val child = children.single().measure(constraints)
+                    layout(child.width, child.height) {
+                        child.placeWithLayer(0, 0) {
+                            shape = androidx.compose.foundation.shape.CircleShape
+                            clip = true
+                        }
+                    }
+                }
+            }
+        }
+        compare("placement-clip") { result ->
+            assertThat(result.nodes.flatMap { it.modifiers }.filterIsInstance<CapturedModifier.Clip>()).isNotEmpty()
+        }
+    }
+
+    @Test fun preservePlacementElevationWithoutDuplicatingModifierShadow() {
+        org.junit.Assume.assumeTrue(
+            Class.forName("androidx.compose.ui.node.NodeCoordinator").methods.any {
+                it.name.substringBefore('$') == "getLastClip"
+            }
+        )
+        composeRule.setContent {
+            val elevation = with(androidx.compose.ui.platform.LocalDensity.current) { 6.dp.toPx() }
+            Box(Modifier.size(300.dp, 200.dp).background(Color.White).testTag(ROOT)) {
+                androidx.compose.ui.layout.Layout(
+                    content = { Box(Modifier.size(120.dp, 64.dp).background(Color.Blue)) },
+                    modifier = Modifier.offset(16.dp, 24.dp)
+                ) { children, constraints ->
+                    val child = children.single().measure(constraints)
+                    layout(child.width, child.height) {
+                        child.placeWithLayer(0, 0) {
+                            shadowElevation = elevation
+                            shape = androidx.compose.foundation.shape.CircleShape
+                            clip = true
+                        }
+                    }
+                }
+                Box(
+                    Modifier.offset(160.dp, 24.dp).size(100.dp, 64.dp)
+                        .then(
+                            Modifier.graphicsLayer(
+                                shadowElevation = elevation,
+                                shape = androidx.compose.foundation.shape.CircleShape,
+                                clip = true
+                            )
+                        ).background(Color.Blue)
+                )
+            }
+        }
+        composeRule.runOnIdle {
+            val host = checkNotNull(findHost(composeRule.activity.window.decorView))
+            val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope("placement-elevation"))
+            val captures = mutableListOf<PendingPixelCapture>()
+            val result = checkNotNull(
+                GranularComposeDecomposer(compatibilityGate = GranularComposeCompatibilityGate())
+                    .decompose(
+                        host,
+                        CompositionHostDecomposeRequest(
+                            factory,
+                            factory.composeHost(factory.window("window"), "host"),
+                            host.resources.displayMetrics.density,
+                            hostBounds = null,
+                            nativeViewHandoff = { _, _ -> null },
+                            imagePrivacy = ImagePrivacy.MASK_NONE,
+                            pendingPixelCaptureSink = PendingPixelCaptureSink(captures::add)
+                        )
+                    )
+            )
+            try {
+                val shadows = result.nodes.flatMap { it.modifiers }.filterIsInstance<CapturedModifier.Shadow>()
+                assertThat(shadows).hasSize(2)
+                assertThat(shadows).allMatch { it.radius > 0 && it.offsetY > 0 }
             } finally { captures.forEach { it.bitmap.recycle() } }
         }
     }

@@ -86,7 +86,8 @@ import android.graphics.ColorMatrixColorFilter as AndroidColorMatrixColorFilter
 
 /**
  * Walks a Compose host's unmerged semantics boundaries together with layout-only drawing nodes
- * in paint order. Optional runtime reflection recovers those visual nodes; unsupported runtimes retain the existing semantics traversal. Real semantics
+ * in paint order. Optional runtime reflection recovers those visual nodes and already-applied
+ * placement clips; unsupported runtimes retain the existing semantics traversal. Real semantics
  * boundaries remain authoritative for privacy, text, source images and native interop.
  *
  * Preserves text content and resolvable background/shape styling, extracts `graphicsLayer` alpha as
@@ -120,6 +121,7 @@ internal class GranularComposeDecomposer(
         DefaultComposeDrawBehindColorResolver(reflectionUtils)
 ) : CompositionHostDecomposer {
     private val visualChildrenResolver = ComposeVisualChildrenResolver()
+    private val placementClipResolver = ComposePlacementClipResolver()
     private val imageMapper = ImageSemanticsNodeMapper(colorStringFormatter, semanticsUtils)
 
     // Only runtime linkage failures indicate an unsupported Compose binary. Ordinary bugs and
@@ -577,9 +579,34 @@ internal class GranularComposeDecomposer(
             // Use the child list already needed for traversal; no scan, cache, or extra View reads.
             val allowCulling = hostClip != null && source.size >= MIN_CULLING_SIBLINGS
             for (child in source) {
-                walkNode(child, allowCulling, privacy)?.let { destination += it }
+                walkNode(child, allowCulling, privacy)?.let {
+                    destination += withPlacementClip(child, it)
+                }
                 if (aborted) break
             }
+        }
+
+        @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Owned immutable layer children and clip.
+        private fun withPlacementClip(node: SemanticsNode, content: CapturedChild): CapturedChild {
+            val current = placementClipResolver.resolve(node, windowOffset, modifiersOf(node)) ?: return content
+            val clip = resolveClipModifier(
+                current.shape,
+                current.bounds,
+                node.layoutInfo.density,
+                node.layoutInfo.layoutDirection
+            ) ?: return content
+            val modifiers = mutableListOf<CapturedModifier>(clip)
+            val hasModifierShadow = modifiersOf(node).any {
+                val value = it.modifier as? InspectableValue
+                value?.nameFallback == GRAPHICS_LAYER_NAME_FALLBACK &&
+                    (GraphicsLayerProperties(value).shadowElevation ?: 0f) > 0f
+            }
+            if (!hasModifierShadow) {
+                resolveShadowModifier(current.shadowElevation, current.spotShadowColor, node.layoutInfo.density)
+                    ?.let(modifiers::add)
+            }
+            val identity = request.identityFactory.composeNode(content.identity, "placement-clip")
+            return registerLayer(identity, current.bounds, listOf(content), modifiers)
         }
 
         private fun captureText(
