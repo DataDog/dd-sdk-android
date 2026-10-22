@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedClip
 import com.datadog.android.internal.sessionreplay.composition.CapturedHorizontalAlignment
@@ -328,6 +329,46 @@ internal class GranularComposeDecomposerTest {
     }
 
     @Test
+    fun `M preserve rectangular clips W decompose()`() {
+        // Given
+        val node = mockClippableNode(true, androidx.compose.ui.graphics.RectangleShape)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())!!
+
+        // Then
+        assertThat(result.nodes.flatMap { it.modifiers }.filterIsInstance<CapturedModifier.Clip>()).hasSize(1)
+    }
+
+    @Test
+    fun `M clip glyph images to visible text bounds W decompose()`() {
+        // Given
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        val info = TextLayoutInfo("Long title", Color.Black.value, 20, FontFamily(Font(42)))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any(), any())).thenReturn(info)
+        whenever(mockSemanticsUtils.resolveVisibleBounds(eq(node), any())).thenReturn(GlobalBounds(16, 45, 272, 36))
+        val bitmap: Bitmap = mock()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            textRasterizer = ComposeTextRasterizer { _, _, _, _ ->
+                RasterizedComposeText(bitmap, GlobalBounds(16, 45, 390, 36))
+            }
+        )
+
+        // When
+        val pixel = testedDecomposer.decompose(mockView, realRequest())!!.wireframes.single() as CapturedWireframe.Pixel
+
+        // Then
+        assertThat(pixel.clip).isEqualTo(CapturedClip(right = 118))
+    }
+
+    @Test
     fun `M capture a permitted source image W decompose() { no OCR extension }`() {
         // Given
         val node = mockLeafNode()
@@ -578,6 +619,50 @@ internal class GranularComposeDecomposerTest {
         assertThat(captures.single().bitmap).isSameAs(bitmap)
         verify(bitmap, never()).copy(any(), any())
         verify(bitmap, never()).recycle()
+    }
+
+    @Test
+    fun `M retain padded background bounds and paint border after content W decompose()`() {
+        // Given
+        val child = mockLeafNode()
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(child), any(), any()))
+            .thenReturn(TextLayoutInfo("No Recents", Color.Black.value, 14, null))
+        val node = mockNode(GlobalBounds(0, 20, 360, 105), listOf(child))
+        val background: Modifier = mock()
+        val backgroundInfo: ModifierInfo = mock()
+        whenever(backgroundInfo.modifier).thenReturn(background)
+        whenever(mockReflectionUtils.isBackgroundElement(background)).thenReturn(true)
+        val border = mockGraphicsLayerModifier(mapOf("width" to androidx.compose.ui.unit.Dp(1f), "color" to Color.Red))
+        whenever((border as InspectableValue).nameFallback).thenReturn("border")
+        val borderInfo: ModifierInfo = mock()
+        whenever(borderInfo.modifier).thenReturn(border)
+        val modifiers = listOf(borderInfo, backgroundInfo)
+        whenever(node.layoutInfo.getModifierInfo()).thenReturn(modifiers)
+        val drawingBounds = GlobalBounds(16, 36, 328, 150)
+        modifiers.forEach {
+            whenever(mockSemanticsUtils.resolveModifierBounds(eq(node), eq(it), any())).thenReturn(drawingBounds)
+        }
+        whenever(
+            mockSemanticsUtils.resolveBackgroundColor(listOf(backgroundInfo))
+        ).thenReturn(Color.Gray.value.toLong())
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())!!
+
+        // Then
+        val backgroundShape = result.wireframes.first() as CapturedWireframe.Shape
+        val text = result.wireframes[1] as CapturedWireframe.Text
+        val borderShape = result.wireframes.last() as CapturedWireframe.Shape
+        assertThat(backgroundShape.bounds).isEqualTo(CapturedBounds(16, 36, 328, 150))
+        assertThat(text.text).isEqualTo("No Recents")
+        assertThat(borderShape.bounds).isEqualTo(backgroundShape.bounds)
+        assertThat(borderShape.border?.width).isEqualTo(1L)
+        assertThat(borderShape.border?.color).isEqualTo("#ff0000ff")
+        val parent = result.nodes.last()
+        assertThat(parent.children.first().identity).isEqualTo(backgroundShape.identity)
+        assertThat(parent.children.last().identity).isEqualTo(borderShape.identity)
     }
 
     @ParameterizedTest
@@ -1017,6 +1102,8 @@ internal class GranularComposeDecomposerTest {
             )
         )
         whenever(mockSemanticsUtils.resolveInnerBounds(eq(stubNode), any())).thenReturn(bounds)
+        whenever(mockSemanticsUtils.resolveVisibleBounds(eq(stubNode), any())).thenReturn(bounds)
+        whenever(stubLayout.layoutDirection).thenReturn(LayoutDirection.Ltr)
         whenever(mockSemanticsUtils.resolveBackgroundColor(any<List<ModifierInfo>>())).thenReturn(null)
         return stubNode
     }
@@ -1063,6 +1150,7 @@ internal class GranularComposeDecomposerTest {
         // otherwise evaluating node.id below throws mid-stub and corrupts Mockito's recording state.
         val layoutInfo: LayoutInfo = mock()
         whenever(node.layoutInfo).thenReturn(layoutInfo)
+        whenever(layoutInfo.layoutDirection).thenReturn(LayoutDirection.Ltr)
         whenever(layoutInfo.getModifierInfo()).thenReturn(emptyList())
         whenever(node.id).thenReturn(nextNodeId++)
         whenever(node.children).thenReturn(emptyList())
@@ -1485,10 +1573,20 @@ internal class GranularComposeDecomposerTest {
         }
     }
 
-    @Test
-    fun `M register a pending capture W decompose() { childless leaf with no text or shape }`() {
-        // Given - mockLeafNode() is itself exactly this: childless, no text, no resolvable background.
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M register a pending capture W decompose() { leaf without a resolvable shape }`(
+        unresolvedBackground: Boolean
+    ) {
+        // Given
         val node = mockLeafNode()
+        if (unresolvedBackground) {
+            val background: Modifier = mock()
+            val info: ModifierInfo = mock()
+            whenever(info.modifier).thenReturn(background)
+            whenever(node.layoutInfo.getModifierInfo()).thenReturn(listOf(info))
+            whenever(mockReflectionUtils.isBackgroundElement(background)).thenReturn(true)
+        }
         val root = mockRoot(listOf(node))
         whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
         val fakeRasterizer = FakeComposeHostCaptureRasterizer()
@@ -1723,6 +1821,9 @@ internal class GranularComposeDecomposerTest {
         whenever(mockSemanticsUtils.resolveModifierBounds(eq(node), eq(clipInfo), any()))
             .thenReturn(GlobalBounds(if (sameBounds) 0 else 8, 0, 100, 40))
         whenever(mockSemanticsUtils.resolveBackgroundColor(modifiers)).thenReturn(Color.Black.value.toLong())
+        whenever(
+            mockSemanticsUtils.resolveBackgroundColor(listOf(backgroundInfo))
+        ).thenReturn(Color.Black.value.toLong())
         whenever(mockSemanticsUtils.resolveCornerRadius(eq(shape), any(), any())).thenReturn(16f)
 
         // When

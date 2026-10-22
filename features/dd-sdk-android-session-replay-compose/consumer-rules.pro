@@ -102,3 +102,12 @@
     long prevConstraints;
     long layoutSize;
 }
+
+# Optional composition layout traversal.
+-keepclassmembers class androidx.compose.runtime.collection.MutableVector {
+    java.lang.Object[] getContent();
+    int getSize();
+}
+-keepclassmembers class androidx.compose.ui.semantics.SemanticsNode {
+    public <init>(androidx.compose.ui.Modifier$Node, boolean, androidx.compose.ui.node.LayoutNode, androidx.compose.ui.semantics.SemanticsConfiguration);
+}

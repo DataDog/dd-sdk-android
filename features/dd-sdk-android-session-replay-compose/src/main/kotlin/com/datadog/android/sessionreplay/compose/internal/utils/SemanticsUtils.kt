@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.layout.ModifierInfo
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.node.RootForTest
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
@@ -200,6 +201,12 @@ internal class SemanticsUtils(
         )
     }
 
+    /** Layout-only capture wrappers have no accessibility coordinator, especially on older runtimes. */
+    internal fun resolveLayoutBounds(
+        semanticsNode: SemanticsNode,
+        windowOffset: ComposeWindowOffset
+    ): GlobalBounds? = resolveTextBounds(semanticsNode, windowOffset)
+
     /** Image semantics may wrap padding (notably in Coil); scale within the painter's own layout. */
     internal fun resolvePainterBounds(
         semanticsNode: SemanticsNode,
@@ -223,11 +230,34 @@ internal class SemanticsUtils(
         val position = coordinates.positionInRoot()
         val size = coordinates.size
         val density = semanticsNode.layoutInfo.density.density
+        val left = (position.x / density).toLong()
+        val top = (position.y / density).toLong()
         return GlobalBounds(
-            (position.x / density).toLong() + windowOffset.xDp,
-            (position.y / density).toLong() + windowOffset.yDp,
-            (size.width / density).toLong(),
-            (size.height / density).toLong()
+            left + windowOffset.xDp,
+            top + windowOffset.yDp,
+            ((position.x + size.width) / density).toLong() - left,
+            ((position.y + size.height) / density).toLong() - top
+        )
+    }
+
+    /** Drawing modifiers can have different bounds from their outer accessibility semantics. */
+    @Suppress("UnsafeThirdPartyFunctionCall") // Attached coordinates from the same main-thread capture.
+    internal fun resolveModifierVisibleBounds(
+        semanticsNode: SemanticsNode,
+        modifier: ModifierInfo,
+        windowOffset: ComposeWindowOffset
+    ): GlobalBounds? {
+        val coordinates = modifier.coordinates
+        if (!coordinates.isAttached) return null
+        val bounds = coordinates.boundsInRoot()
+        val density = semanticsNode.layoutInfo.density.density
+        val left = (bounds.left / density).toLong()
+        val top = (bounds.top / density).toLong()
+        return GlobalBounds(
+            left + windowOffset.xDp,
+            top + windowOffset.yDp,
+            (bounds.right / density).toLong() - left,
+            (bounds.bottom / density).toLong() - top
         )
     }
 
@@ -238,11 +268,15 @@ internal class SemanticsUtils(
     ): GlobalBounds {
         val bounds = semanticsNode.boundsInRoot
         val density = semanticsNode.layoutInfo.density.density
+        val left = (bounds.left / density).toLong()
+        val top = (bounds.top / density).toLong()
+        // Quantize edges together. Truncating a separately computed width/height can lose a
+        // whole dp through floating-point subtraction even when both edges are integral.
         return GlobalBounds(
-            (bounds.left / density).toLong() + windowOffset.xDp,
-            (bounds.top / density).toLong() + windowOffset.yDp,
-            (bounds.width / density).toLong(),
-            (bounds.height / density).toLong()
+            left + windowOffset.xDp,
+            top + windowOffset.yDp,
+            (bounds.right / density).toLong() - left,
+            (bounds.bottom / density).toLong() - top
         )
     }
 

@@ -149,7 +149,7 @@ internal class ComposeImageCaptureRegressionTest {
             assertThat(backgrounds.map { it.bounds.x }).containsExactly(16L, 48L)
             assertThat(backgrounds.map { it.style?.cornerRadius }).containsExactly(96.0, 8.0)
             val roundedLayers = result.nodes.filter {
-                it.modifiers.any { modifier -> modifier is CapturedModifier.Clip }
+                it.modifiers.any { modifier -> modifier is CapturedModifier.Clip && " A " in modifier.path }
             }
                 .sortedByDescending { it.bounds.width }
             assertThat(roundedLayers.map { it.bounds.width }).containsExactly(192L, 128L)

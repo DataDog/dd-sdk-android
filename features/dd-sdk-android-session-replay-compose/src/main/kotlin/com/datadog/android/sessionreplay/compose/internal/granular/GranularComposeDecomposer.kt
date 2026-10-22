@@ -11,22 +11,31 @@ import android.graphics.Canvas
 import android.graphics.Rect
 import android.view.View
 import androidx.compose.ui.draw.DrawModifier
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.RenderEffect
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asAndroidColorFilter
 import androidx.compose.ui.graphics.toAndroidRectF
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.layout.ModifierInfo
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.GenericFontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.graphics.toRect
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedAlignment
@@ -39,6 +48,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.sessionreplay.composition.CapturedPadding
+import com.datadog.android.internal.sessionreplay.composition.CapturedShapeBorder
 import com.datadog.android.internal.sessionreplay.composition.CapturedShapeStyle
 import com.datadog.android.internal.sessionreplay.composition.CapturedTextPosition
 import com.datadog.android.internal.sessionreplay.composition.CapturedTextStyle
@@ -66,6 +76,7 @@ import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
+import java.util.IdentityHashMap
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
@@ -73,14 +84,9 @@ import android.graphics.ColorMatrix as AndroidColorMatrix
 import android.graphics.ColorMatrixColorFilter as AndroidColorMatrixColorFilter
 
 /**
- * Real implementation of [CompositionHostDecomposer], walking a Compose host's *unmerged* semantics
- * tree - the same structural basis the legacy mapper-based pipeline
- * ([com.datadog.android.sessionreplay.compose.internal.mappers.semantics.RootSemanticsNodeMapper])
- * already relies on to capture backgrounds/shapes for ordinary composables that carry no explicit
- * semantics of their own, which is the empirical evidence this mirrors the real `LayoutNode`
- * structure closely enough to use here too - reusing already-proven reflection utilities
- * ([SemanticsUtils], [ReflectionUtils]) end to end, rather than a fresh, riskier direct
- * `LayoutNode`/`Owner` walk requiring `@OptIn(InternalComposeUiApi::class)`.
+ * Walks a Compose host's unmerged semantics boundaries together with layout-only drawing nodes
+ * in paint order. Optional runtime reflection recovers those visual nodes; unsupported runtimes retain the existing semantics traversal. Real semantics
+ * boundaries remain authoritative for privacy, text, source images and native interop.
  *
  * Preserves text content and resolvable background/shape styling, extracts `graphicsLayer` alpha as
  * [CapturedModifier.Opacity], and hands embedded interop `View`s back to native traversal. A node
@@ -108,8 +114,11 @@ internal class GranularComposeDecomposer(
     private val nodesPerCheckpoint: Int = NODES_PER_CHECKPOINT,
     private val hostRasterizer: ComposeHostCaptureRasterizer = DefaultComposeHostCaptureRasterizer(internalLogger),
     private val textRasterizer: ComposeTextRasterizer = DefaultComposeTextRasterizer(semanticsUtils),
-    private val sourceImageClipper: ComposeSourceImageClipper = DefaultComposeSourceImageClipper()
+    private val sourceImageClipper: ComposeSourceImageClipper = DefaultComposeSourceImageClipper(),
+    private val drawBehindColorResolver: ComposeDrawBehindColorResolver =
+        DefaultComposeDrawBehindColorResolver(reflectionUtils)
 ) : CompositionHostDecomposer {
+    private val visualChildrenResolver = ComposeVisualChildrenResolver()
     private val imageMapper = ImageSemanticsNodeMapper(colorStringFormatter, semanticsUtils)
 
     // Only runtime linkage failures indicate an unsupported Compose binary. Ordinary bugs and
@@ -199,21 +208,15 @@ internal class GranularComposeDecomposer(
         val privacy: NodePrivacy
     )
 
-    /**
-     * A shape without meaningful rounding clips to a plain rectangle, which the existing
-     * per-wireframe ancestor-bounds crop ([com.datadog.android.internal.sessionreplay.composition.CapturedClip])
-     * already represents - only a genuinely rounded (or otherwise non-rectangular) shape needs
-     * this layer-level modifier, since that's what the rectangular crop can't express. Only
-     * [androidx.compose.foundation.shape.RoundedCornerShape] (which `CircleShape` is itself an
-     * instance of) is resolved to a real radius today; any other [Shape] - a custom
-     * `GenericShape`, a cut/diagonal shape, etc. - is treated as unsupported and skipped, same
-     * as [com.datadog.android.sessionreplay.compose.internal.utils.BackgroundResolver.resolveCornerRadius].
-     */
-    @Suppress("ReturnCount") // Each guard bails out at the point it's no longer worth a Clip modifier.
+    /** Rectangular Compose clips must be explicit: layer bounds do not clip their children. */
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall")
     private fun resolveClipModifier(
         shape: Shape?,
         bounds: CapturedBounds,
-        density: Density
+        density: Density,
+        layoutDirection: LayoutDirection,
+        offsetX: Double = 0.0,
+        offsetY: Double = 0.0
     ): CapturedModifier.Clip? {
         if (shape == null) return null
         val radius = semanticsUtils.resolveCornerRadius(
@@ -221,9 +224,23 @@ internal class GranularComposeDecomposer(
             GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height),
             density
         )
-        if (radius <= 0f) return null
-        val clampedRadius = radius.toDouble().coerceAtMost(minOf(bounds.width, bounds.height) / 2.0)
-        return CapturedModifier.Clip(path = roundedRectPath(bounds.width, bounds.height, clampedRadius))
+        if (radius > 0f) {
+            val clamped = radius.toDouble().coerceAtMost(minOf(bounds.width, bounds.height) / 2.0)
+            return CapturedModifier.Clip(
+                path = roundedRectPath(bounds.width, bounds.height, clamped, offsetX, offsetY)
+            )
+        }
+        val outline = shape.createOutline(
+            Size(bounds.width * density.density, bounds.height * density.density),
+            layoutDirection,
+            density
+        ) as? Outline.Rectangle ?: return null
+        val rect = outline.rect
+        val left = rect.left / density.density + offsetX
+        val top = rect.top / density.density + offsetY
+        val right = rect.right / density.density + offsetX
+        val bottom = rect.bottom / density.density + offsetY
+        return CapturedModifier.Clip("M $left,$top L $right,$top L $right,$bottom L $left,$bottom Z")
     }
 
     /**
@@ -436,7 +453,7 @@ internal class GranularComposeDecomposer(
                         boundsOf(root)
                     )
             } else {
-                walkChildren(root.children, rootChildren, privacy)
+                walkChildren(childrenOf(root), rootChildren, privacy)
             }
             if (aborted || (rootChildren.isEmpty() && !culledLeaf)) return null
             // The batched draw itself is one potentially-expensive operation outside the per-node
@@ -471,7 +488,7 @@ internal class GranularComposeDecomposer(
             // Retain parents to preserve overflowing children, and preserve privacy/interop above.
             var resolvedChildren: List<SemanticsNode>? = null
             if (allowCulling && hostClip != null && isFullyOutsideHostClip(bounds, hostClip)) {
-                resolvedChildren = node.children
+                resolvedChildren = childrenOf(node)
                 if (resolvedChildren.isEmpty()) {
                     culledLeaf = true
                     return null
@@ -479,19 +496,19 @@ internal class GranularComposeDecomposer(
             }
 
             // ModifierInfo and children getters rebuild Compose-owned lists; read each once in this UI turn.
-            val inspection = NodeInspection(node, resolvedChildren)
+            val inspection = NodeInspection(node, resolvedChildren, ::childrenOf, modifiersOf(node))
             val modifiers = inspection.modifiers
             captureSemanticNode(node, nodeIdentity, bounds, privacy, modifiers)?.let { return it }
 
             val shapeWireframe = resolveShapeWireframe(node, nodeIdentity, bounds, modifiers)
+            val drawingModifiers = hasDrawingModifiers(modifiers)
+            if (isEmptyVisualLayout(node, inspection, drawingModifiers)) return null
             tryQueuePixelCapture(node, nodeIdentity, bounds, shapeWireframe, inspection, privacy)
                 ?.let { return it }
 
+            val contentStart = wireframes.size
             val children = mutableListOf<CapturedChild>()
-            shapeWireframe?.let { shape ->
-                wireframes += shape
-                children += CapturedChild.Wireframe(shape.identity)
-            }
+            addFallbackShape(shapeWireframe, drawingModifiers, children)
             walkChildren(
                 inspection.children,
                 children,
@@ -502,7 +519,7 @@ internal class GranularComposeDecomposer(
             )
             if (aborted) return null
 
-            return registerLayer(nodeIdentity, bounds, children, modifiers = resolveModifiers(node, bounds, modifiers))
+            return captureDecoratedLayer(node, nodeIdentity, bounds, modifiers, children, contentStart)
         }
 
         private fun captureSemanticNode(
@@ -512,7 +529,9 @@ internal class GranularComposeDecomposer(
             privacy: NodePrivacy,
             modifiers: List<ModifierInfo>
         ): CapturedChild? {
-            if (semanticsUtils.isImage(node)) return captureSourceImage(node, identity, privacy, modifiers)
+            if (semanticsUtils.isImage(node) || isPainterImage(node, modifiers)) {
+                return captureSourceImage(node, identity, privacy, modifiers)
+            }
             val progress = semanticsUtils.getProgressBarRangeInfo(node)
             return if (progress != null) {
                 captureProgress(node, identity, bounds, privacy, progress, modifiers)
@@ -578,8 +597,10 @@ internal class GranularComposeDecomposer(
                 null
             )
             val textId = request.identityFactory.textWireframe(identity)
+            val contentStart = wireframes.size
+            val drawingModifiers = hasDrawingModifiers(modifiers)
             val children = mutableListOf<CapturedChild>()
-            resolveShapeWireframe(node, identity, bounds, modifiers)?.let { shape ->
+            resolveShapeWireframe(node, identity, bounds, modifiers)?.takeUnless { drawingModifiers }?.let { shape ->
                 wireframes += shape
                 children += CapturedChild.Wireframe(shape.identity)
             }
@@ -587,7 +608,7 @@ internal class GranularComposeDecomposer(
             val textWireframe = textPixels ?: toTextWireframe(textId, bounds, info, node, privacy)
             wireframes += textWireframe
             children += CapturedChild.Wireframe(textWireframe.identity)
-            return registerLayer(identity, bounds, children, resolveModifiers(node, bounds, modifiers))
+            return captureDecoratedLayer(node, identity, bounds, modifiers, children, contentStart)
         }
 
         @Suppress("ReturnCount") // Privacy and the capture budget are checked before allocating glyph pixels.
@@ -622,9 +643,16 @@ internal class GranularComposeDecomposer(
                     captured.bounds.width,
                     captured.bounds.height
                 ),
-                resource = PixelResource.Unresolved
+                resource = PixelResource.Unresolved,
+                clip = clipToVisible(node, captured.bounds)
             )
         }
+
+        private fun clipToVisible(node: SemanticsNode, bounds: GlobalBounds): CapturedClip? =
+            imageClip(bounds, semanticsUtils.resolveVisibleBounds(node, windowOffset))
+
+        private fun clipToVisible(node: SemanticsNode, bounds: CapturedBounds): CapturedClip? =
+            clipToVisible(node, GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height))
 
         private fun captureHiddenNode(identity: CapturedIdentity, bounds: CapturedBounds): CapturedChild {
             val placeholderId = request.identityFactory.placeholderWireframe(identity)
@@ -638,9 +666,11 @@ internal class GranularComposeDecomposer(
             privacy: NodePrivacy,
             modifiers: List<ModifierInfo>
         ): CapturedChild {
-            val layoutBounds = semanticsUtils.resolveUnclippedBounds(node, windowOffset)
+            val layoutBounds = visualLayoutBounds(node) ?: semanticsUtils.resolveUnclippedBounds(node, windowOffset)
             val painterBounds = semanticsUtils.resolvePainterBounds(node, modifiers, windowOffset)
-            val visibleBounds = semanticsUtils.resolveVisibleBounds(node, windowOffset)
+            val painter = modifiers.firstOrNull { reflectionUtils.isImagePainterModifier(it.modifier) }
+            val visibleBounds = painter?.let { semanticsUtils.resolveModifierVisibleBounds(node, it, windowOffset) }
+                ?: semanticsUtils.resolveVisibleBounds(node, windowOffset)
             val bounds = CapturedBounds(layoutBounds.x, layoutBounds.y, layoutBounds.width, layoutBounds.height)
             // Resolve the same painter and scaling metadata as the existing Compose image mapper.
             // This is a source bitmap, never a screenshot of this node or its descendants.
@@ -682,7 +712,17 @@ internal class GranularComposeDecomposer(
                     label = if (privacy.image == ImagePrivacy.MASK_LARGE_ONLY) "Content Image" else "Image"
                 )
             }
-            return captureImageModifiers(node, identity, bounds, visibleBounds, modifiers, wireframe)
+            val contentStart = wireframes.size
+            wireframes += wireframe
+            return captureDrawingModifiers(
+                node,
+                identity,
+                bounds,
+                modifiers,
+                listOf(CapturedChild.Wireframe(wireframe.identity)),
+                contentStart,
+                visibleBounds
+            )
         }
 
         private fun clipSourceImage(
@@ -710,24 +750,61 @@ internal class GranularComposeDecomposer(
             }
         }
 
-        /** Rebuild only the image's drawing modifiers, from the painter outwards, in draw order. */
-        @Suppress("UnsafeThirdPartyFunctionCall") // Owned immutable child lists and bounded modifier traversal.
-        private fun captureImageModifiers(
+        private fun addFallbackShape(
+            shape: CapturedWireframe.Shape?,
+            drawingModifiers: Boolean,
+            children: MutableList<CapturedChild>
+        ) {
+            if (drawingModifiers || shape == null) return
+            wireframes += shape
+            children += CapturedChild.Wireframe(shape.identity)
+        }
+
+        private fun captureDecoratedLayer(
             node: SemanticsNode,
             identity: CapturedIdentity,
             bounds: CapturedBounds,
-            visibleBounds: GlobalBounds,
             modifiers: List<ModifierInfo>,
-            image: CapturedWireframe
+            children: List<CapturedChild>,
+            contentStart: Int
+        ): CapturedChild = if (hasDrawingModifiers(modifiers)) {
+            captureDrawingModifiers(node, identity, bounds, modifiers, children, contentStart)
+        } else {
+            registerLayer(identity, bounds, children, resolveModifiers(node, bounds, modifiers))
+        }
+
+        private fun hasDrawingModifiers(modifiers: List<ModifierInfo>): Boolean = modifiers.any {
+            reflectionUtils.isBackgroundElement(it.modifier) || isBorderModifier(it.modifier) ||
+                reflectionUtils.isDrawBehindElementClass(it.modifier)
+        }
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // Bounded Compose-owned inspector properties.
+        private fun isBorderModifier(modifier: Any): Boolean =
+            modifier is InspectableValue && modifier.nameFallback == "border" &&
+                modifier.inspectableElements.any { it.name == "color" || it.value is SolidColor }
+
+        /** Rebuild drawing modifiers from the content outwards using each modifier's coordinates. */
+        @Suppress("UnsafeThirdPartyFunctionCall") // Owned immutable child lists and bounded modifier traversal.
+        private fun captureDrawingModifiers(
+            node: SemanticsNode,
+            identity: CapturedIdentity,
+            bounds: CapturedBounds,
+            modifiers: List<ModifierInfo>,
+            content: List<CapturedChild>,
+            contentStart: Int,
+            visibleBounds: GlobalBounds? = null
         ): CapturedChild {
             val backgrounds = linkedMapOf<CapturedIdentity, CapturedWireframe.Shape>()
-            var children = listOf<CapturedChild>(CapturedChild.Wireframe(image.identity))
+            val borders = mutableListOf<CapturedWireframe.Shape>()
+            var children = content
             for (index in modifiers.indices.reversed()) {
                 val info = modifiers[index]
                 val modifier = info.modifier
                 val graphicsLayer =
                     modifier is InspectableValue && modifier.nameFallback == GRAPHICS_LAYER_NAME_FALLBACK
-                if (!graphicsLayer && !reflectionUtils.isBackgroundElement(modifier)) continue
+                val border = isBorderModifier(modifier)
+                val drawBehind = reflectionUtils.isDrawBehindElementClass(modifier)
+                if (!graphicsLayer && !hasDrawingModifiers(listOf(info))) continue
                 val globalBounds = semanticsUtils.resolveModifierBounds(node, info, windowOffset)
                     ?: GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
                 val modifierBounds = CapturedBounds(
@@ -745,17 +822,85 @@ internal class GranularComposeDecomposer(
                         children,
                         backgrounds
                     )
+                } else if (border) {
+                    resolveBorderWireframe(node, identity, index, info, modifierBounds)?.let { stroke ->
+                        borders += stroke
+                        children = children + CapturedChild.Wireframe(stroke.identity)
+                    }
                 } else {
-                    val backgroundIdentity = request.identityFactory.composeNode(identity, "image-background:$index")
-                    resolveShapeWireframe(node, backgroundIdentity, modifierBounds, listOf(info))?.let { shape ->
-                        backgrounds[shape.identity] = shape.copy(clip = imageClip(globalBounds, visibleBounds))
+                    val background = resolveDrawingBackground(node, identity, index, info, modifierBounds, drawBehind)
+                    background?.let { shape ->
+                        backgrounds[shape.identity] = shape.copy(
+                            clip = imageClip(
+                                globalBounds,
+                                semanticsUtils.resolveModifierVisibleBounds(node, info, windowOffset)
+                                    ?: visibleBounds ?: semanticsUtils.resolveVisibleBounds(node, windowOffset)
+                            )
+                        )
                         children = listOf(CapturedChild.Wireframe(shape.identity)) + children
                     }
                 }
             }
-            wireframes += backgrounds.values.reversed()
-            wireframes += image
+            wireframes.addAll(contentStart, backgrounds.values.reversed())
+            wireframes += borders
             return registerLayer(identity, bounds, children)
+        }
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // Owned singleton modifier list.
+        private fun resolveDrawingBackground(
+            node: SemanticsNode,
+            identity: CapturedIdentity,
+            index: Int,
+            info: ModifierInfo,
+            bounds: CapturedBounds,
+            drawBehind: Boolean
+        ): CapturedWireframe.Shape? {
+            val owner = request.identityFactory.composeNode(identity, "image-background:$index")
+            if (!drawBehind) return resolveShapeWireframe(node, owner, bounds, listOf(info))
+            return drawBehindColorResolver.resolve(node, info)?.let { color ->
+                CapturedWireframe.Shape(
+                    request.identityFactory.shapeWireframe(owner),
+                    bounds,
+                    style = CapturedShapeStyle(backgroundColor = resolveColor(color.value.toLong()))
+                )
+            }
+        }
+
+        // Guard unsupported strokes; read finite dp and Compose-owned inspector values.
+        @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall")
+        private fun resolveBorderWireframe(
+            node: SemanticsNode,
+            identity: CapturedIdentity,
+            index: Int,
+            info: ModifierInfo,
+            bounds: CapturedBounds
+        ): CapturedWireframe.Shape? {
+            val properties = (info.modifier as InspectableValue).inspectableElements.associate { it.name to it.value }
+            val width = (properties["width"] as? Dp)?.value ?: return null
+            val color = properties["color"] as? Color ?: (properties["brush"] as? SolidColor)?.value ?: return null
+            if (!width.isFinite() || width < 0f || color == Color.Unspecified) return null
+            val radius = (properties["shape"] as? Shape)?.let {
+                semanticsUtils.resolveCornerRadius(
+                    it,
+                    GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height),
+                    node.layoutInfo.density
+                )
+            }
+            val owner = request.identityFactory.composeNode(identity, "border:$index")
+            return CapturedWireframe.Shape(
+                request.identityFactory.shapeWireframe(owner),
+                bounds,
+                style = CapturedShapeStyle(cornerRadius = radius?.toDouble()),
+                clip = imageClip(
+                    GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height),
+                    semanticsUtils.resolveModifierVisibleBounds(node, info, windowOffset)
+                        ?: semanticsUtils.resolveVisibleBounds(node, windowOffset)
+                ),
+                border = CapturedShapeBorder(
+                    resolveColor(color.value.toLong()) ?: return null,
+                    width.roundToLong().coerceAtLeast(1)
+                )
+            )
         }
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Owned immutable child list.
@@ -850,6 +995,7 @@ internal class GranularComposeDecomposer(
             inspection: NodeInspection,
             privacy: NodePrivacy
         ): CapturedChild? {
+            if (inspection.modifiers.any { isBorderModifier(it.modifier) }) return null
             if (shapeWireframe != null ||
                 pendingCaptures.size + textPixelCaptures >= MAX_PIXEL_CAPTURES_PER_HOST ||
                 !inspection.isPixelCaptureCandidate(reflectionUtils)
@@ -863,16 +1009,12 @@ internal class GranularComposeDecomposer(
             }
             // Keep restricted descendants semantic: OCR cannot hide images, control state or native interop.
             if (containsRestrictedDescendant(node, privacy)) return null
-            val hostBoundsPx = hostRelativeBoundsPx(node) ?: return null
+            val useMeasuredBounds = node.layoutInfo in visualOnlyNodes
+            val hostBoundsPx = hostRelativeBoundsPx(node, useMeasuredBounds) ?: return null
             // Use the same visible rectangle for the crop and replay, rather than combining
             // an outer semantics position with an inner measured size. Round dimensions so a
             // 5 px divider at density 2.625 remains 2 dp instead of being truncated to 1 dp.
-            val captureBounds = CapturedBounds(
-                ((hostBoundsPx.left + windowOffset.xPx) / request.screenDensity).roundToLong(),
-                ((hostBoundsPx.top + windowOffset.yPx) / request.screenDensity).roundToLong(),
-                (hostBoundsPx.width() / request.screenDensity).roundToLong().coerceAtLeast(1),
-                (hostBoundsPx.height() / request.screenDensity).roundToLong().coerceAtLeast(1)
-            )
+            val captureBounds = captureBoundsOf(hostBoundsPx)
             pendingCaptures += PendingCapture(nodeIdentity, captureBounds, hostBoundsPx, privacy)
             return CapturedChild.Layer(nodeIdentity)
         }
@@ -957,8 +1099,40 @@ internal class GranularComposeDecomposer(
             return CapturedChild.Layer(identity)
         }
 
+        private val visualOnlyNodes = mutableSetOf<LayoutInfo>()
+        private val modifierLists = IdentityHashMap<LayoutInfo, List<ModifierInfo>>()
+        private val childLists = IdentityHashMap<LayoutInfo, List<SemanticsNode>>()
+
+        private fun isEmptyVisualLayout(
+            node: SemanticsNode,
+            inspection: NodeInspection,
+            drawingModifiers: Boolean
+        ): Boolean {
+            if (drawingModifiers || inspection.hasDrawModifier(reflectionUtils)) return false
+            return node.layoutInfo in visualOnlyNodes && inspection.children.isEmpty()
+        }
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // Owned map, used only during this capture.
+        private fun modifiersOf(node: SemanticsNode): List<ModifierInfo> =
+            modifierLists.getOrPut(node.layoutInfo) { node.layoutInfo.getModifierInfo() }
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // Owned map, used only during this capture.
+        private fun childrenOf(node: SemanticsNode): List<SemanticsNode> = childLists.getOrPut(node.layoutInfo) {
+            visualChildrenResolver.children(node) { visualOnlyNodes += it.layoutInfo } ?: node.children
+        }
+
+        private fun isPainterImage(node: SemanticsNode, modifiers: List<ModifierInfo>): Boolean {
+            if (!modifiers.any { reflectionUtils.isImagePainterModifier(it.modifier) }) return false
+            val hasText = node.config.getOrNull(SemanticsProperties.Text) != null
+            val hasTextOrInput = hasText || semanticsUtils.hasInputState(node)
+            return !hasTextOrInput && childrenOf(node).isEmpty()
+        }
+
+        private fun visualLayoutBounds(node: SemanticsNode): GlobalBounds? =
+            if (node.layoutInfo in visualOnlyNodes) semanticsUtils.resolveLayoutBounds(node, windowOffset) else null
+
         private fun boundsOf(node: SemanticsNode): CapturedBounds {
-            val globalBounds = semanticsUtils.resolveInnerBounds(node, windowOffset)
+            val globalBounds = visualLayoutBounds(node) ?: semanticsUtils.resolveInnerBounds(node, windowOffset)
             return CapturedBounds(globalBounds.x, globalBounds.y, globalBounds.width, globalBounds.height)
         }
 
@@ -975,6 +1149,7 @@ internal class GranularComposeDecomposer(
             return CapturedWireframe.Text(
                 identity = identity,
                 bounds = textBounds,
+                clip = clipToVisible(node, textBounds),
                 text = if (semanticsUtils.isPassword(node)) {
                     "***"
                 } else {
@@ -1019,7 +1194,7 @@ internal class GranularComposeDecomposer(
                 val (current, inherited) = pending.removeLast()
                 val effective = privacyOf(current, inherited)
                 if (isRasterRestricted(current, effective)) return true
-                current.children.forEach { pending.addLast(it to effective) }
+                childrenOf(current).forEach { pending.addLast(it to effective) }
             }
             return false
         }
@@ -1036,9 +1211,17 @@ internal class GranularComposeDecomposer(
                     request.shouldContinue() && isFullyOutsideHostClip(capture.bounds, it)
                 }
 
+        private fun captureBoundsOf(pixels: Rect): CapturedBounds = CapturedBounds(
+            ((pixels.left + windowOffset.xPx) / request.screenDensity).roundToLong(),
+            ((pixels.top + windowOffset.yPx) / request.screenDensity).roundToLong(),
+            (pixels.width() / request.screenDensity).roundToLong().coerceAtLeast(1),
+            (pixels.height() / request.screenDensity).roundToLong().coerceAtLeast(1)
+        )
+
         private fun requiresSemanticCapture(node: SemanticsNode, privacy: NodePrivacy): Boolean {
+            val sourceImage = semanticsUtils.isImage(node) || isPainterImage(node, modifiersOf(node))
             val semanticContent = semanticsUtils.isNodeHidden(node) || reflectionUtils.getInteropView(node) != null ||
-                semanticsUtils.isImage(node)
+                sourceImage
             val maskedState =
                 semanticsUtils.hasInputState(node) && privacy.text != TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
             val restrictedInput = maskedState || semanticsUtils.isPassword(node)
@@ -1064,6 +1247,7 @@ internal class GranularComposeDecomposer(
             return CapturedWireframe.Shape(
                 identity = request.identityFactory.shapeWireframe(nodeIdentity),
                 bounds = bounds,
+                clip = clipToVisible(node, bounds),
                 style = CapturedShapeStyle(
                     backgroundColor = resolveColor(colorLong),
                     cornerRadius = cornerRadius?.toDouble()
@@ -1093,7 +1277,9 @@ internal class GranularComposeDecomposer(
             for (info in modifierInfo) {
                 val modifier = info.modifier
                 if (modifier is InspectableValue && modifier.nameFallback == GRAPHICS_LAYER_NAME_FALLBACK) {
-                    modifiers += resolveGraphicsLayerModifiers(modifier, node, bounds)
+                    val global = semanticsUtils.resolveModifierBounds(node, info, windowOffset)
+                    val actual = global?.let { CapturedBounds(it.x, it.y, it.width, it.height) } ?: bounds
+                    modifiers += resolveGraphicsLayerModifiers(modifier, node, actual, clipOrigin = bounds)
                 }
             }
             return modifiers
@@ -1103,12 +1289,20 @@ internal class GranularComposeDecomposer(
             modifier: InspectableValue,
             node: SemanticsNode,
             bounds: CapturedBounds,
-            properties: GraphicsLayerProperties = GraphicsLayerProperties(modifier)
+            properties: GraphicsLayerProperties = GraphicsLayerProperties(modifier),
+            clipOrigin: CapturedBounds = bounds
         ): List<CapturedModifier> {
             val density = node.layoutInfo.density
             val modifiers = mutableListOf<CapturedModifier>()
             if (properties.clip) {
-                resolveClipModifier(properties.shape, bounds, density)?.let { modifiers += it }
+                resolveClipModifier(
+                    properties.shape,
+                    bounds,
+                    density,
+                    node.layoutInfo.layoutDirection,
+                    (bounds.x - clipOrigin.x).toDouble(),
+                    (bounds.y - clipOrigin.y).toDouble()
+                )?.let { modifiers += it }
             }
             resolveColorMatrixModifier(
                 platformColorMatrixValues(properties.colorFilter)
@@ -1207,21 +1401,26 @@ internal class GranularComposeDecomposer(
  * Otherwise a childless node is the fallback for content without a structural mapping, such as
  * Image/Icon; empty leaves may also qualify.
  */
-private class NodeInspection(node: SemanticsNode, initialChildren: List<SemanticsNode>?) {
-    val modifiers = node.layoutInfo.getModifierInfo()
+private class NodeInspection(
+    node: SemanticsNode,
+    initialChildren: List<SemanticsNode>?,
+    private val childrenOf: (SemanticsNode) -> List<SemanticsNode>,
+    val modifiers: List<ModifierInfo>
+) {
     private val node = node
     private var resolvedChildren = initialChildren
 
     val children: List<SemanticsNode>
-        get() = resolvedChildren ?: node.children.also { resolvedChildren = it }
+        get() = resolvedChildren ?: childrenOf(node).also { resolvedChildren = it }
 
     @Suppress("DEPRECATION") // Older Compose runtimes can still expose legacy DrawModifier elements.
+    fun hasDrawModifier(reflectionUtils: ReflectionUtils): Boolean = modifiers.any {
+        (it.modifier is DrawModifier && !reflectionUtils.isInactiveOverscrollModifier(it.modifier)) ||
+            reflectionUtils.isDrawModifierElement(it.modifier)
+    }
+
     fun isPixelCaptureCandidate(reflectionUtils: ReflectionUtils): Boolean =
-        modifiers.any {
-            (it.modifier is DrawModifier && !reflectionUtils.isInactiveOverscrollModifier(it.modifier)) ||
-                reflectionUtils.isDrawModifierElement(it.modifier)
-        } ||
-            children.isEmpty()
+        hasDrawModifier(reflectionUtils) || children.isEmpty()
 }
 
 /**
@@ -1231,8 +1430,15 @@ private class NodeInspection(node: SemanticsNode, initialChildren: List<Semantic
  * or are degenerate, in which case the node is left with no visual content of its own rather than
  * risk cropping a meaningless region.
  */
-private fun hostRelativeBoundsPx(node: SemanticsNode): Rect? {
-    val boundsInRoot = node.boundsInRoot
+@Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Attached coordinates, read in the same UI-thread traversal.
+private fun hostRelativeBoundsPx(node: SemanticsNode, useLayoutCoordinates: Boolean = false): Rect? {
+    val boundsInRoot = if (useLayoutCoordinates) {
+        val coordinates = node.layoutInfo.coordinates
+        if (!coordinates.isAttached) return null
+        coordinates.boundsInRoot()
+    } else {
+        node.boundsInRoot
+    }
     if (boundsInRoot.width <= 0f || boundsInRoot.height <= 0f) return null
     return Rect(
         boundsInRoot.left.roundToInt(),
@@ -1250,14 +1456,29 @@ private fun hostRelativeBoundsPx(node: SemanticsNode): Rect? {
  * [CapturedModifier.Clip]'s wire contract. [radius] is expected to already be clamped to at most
  * half of the shorter side by the caller.
  */
-private fun roundedRectPath(width: Long, height: Long, radius: Double): String {
-    val w = width.toDouble()
-    val h = height.toDouble()
-    return "M $radius,0 " +
-        "L ${w - radius},0 A $radius,$radius 0 0 1 $w,$radius " +
-        "L $w,${h - radius} A $radius,$radius 0 0 1 ${w - radius},$h " +
-        "L $radius,$h A $radius,$radius 0 0 1 0,${h - radius} " +
-        "L 0,$radius A $radius,$radius 0 0 1 $radius,0 Z"
+private fun roundedRectPath(
+    width: Long,
+    height: Long,
+    radius: Double,
+    x: Double = 0.0,
+    y: Double = 0.0
+): String {
+    if (x == 0.0 && y == 0.0) {
+        val w = width.toDouble()
+        val h = height.toDouble()
+        return "M $radius,0 " +
+            "L ${w - radius},0 A $radius,$radius 0 0 1 $w,$radius " +
+            "L $w,${h - radius} A $radius,$radius 0 0 1 ${w - radius},$h " +
+            "L $radius,$h A $radius,$radius 0 0 1 0,${h - radius} " +
+            "L 0,$radius A $radius,$radius 0 0 1 $radius,0 Z"
+    }
+    val right = x + width
+    val bottom = y + height
+    return "M ${x + radius},$y " +
+        "L ${right - radius},$y A $radius,$radius 0 0 1 $right,${y + radius} " +
+        "L $right,${bottom - radius} A $radius,$radius 0 0 1 ${right - radius},$bottom " +
+        "L ${x + radius},$bottom A $radius,$radius 0 0 1 $x,${bottom - radius} " +
+        "L $x,${y + radius} A $radius,$radius 0 0 1 ${x + radius},$y Z"
 }
 
 /**

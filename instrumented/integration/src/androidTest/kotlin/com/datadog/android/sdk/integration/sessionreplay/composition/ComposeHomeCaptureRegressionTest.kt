@@ -16,12 +16,18 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.SolidColor
@@ -40,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -64,6 +71,33 @@ internal class ComposeHomeCaptureRegressionTest {
     @Before fun keepAwake() {
         composeRule.runOnIdle {
             composeRule.activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
+    @Test fun preserveMeasuredCardBackgroundClipAndBorder() {
+        composeRule.setContent {
+            Box(
+                Modifier.size(200.dp, 100.dp).padding(16.dp)
+                    .border(1.dp, Color.Red, RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(12.dp)).background(Color.Gray)
+                    .padding(8.dp)
+            ) { BasicText("No Recents") }
+        }
+        composeRule.runOnIdle {
+            val (result, captures) = capture()
+            try {
+                val gray = result.wireframes.filterIsInstance<CapturedWireframe.Shape>()
+                    .single { it.style?.backgroundColor == "#888888ff" }
+                val border = result.wireframes.filterIsInstance<CapturedWireframe.Shape>().single { it.border != null }
+                assertThat(gray.bounds.width).isEqualTo(168L)
+                assertThat(gray.bounds.height).isEqualTo(68L)
+                assertThat(gray.bounds.x).isEqualTo(16L)
+                assertThat(gray.style?.cornerRadius).isEqualTo(12.0)
+                assertThat(border.bounds).isEqualTo(gray.bounds)
+                assertThat(border.border?.width).isEqualTo(1L)
+                assertThat(border.border?.color).isEqualTo("#ff0000ff")
+                assertThat(result.wireframes.indexOf(gray)).isLessThan(result.wireframes.indexOf(border))
+            } finally { captures.forEach { it.bitmap.recycle() } }
         }
     }
 

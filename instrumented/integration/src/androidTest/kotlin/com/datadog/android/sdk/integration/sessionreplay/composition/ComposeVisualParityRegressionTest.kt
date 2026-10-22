@@ -16,16 +16,29 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -42,8 +55,10 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.compose.internal.granular.DefaultComposeDrawBehindColorResolver
 import com.datadog.android.sessionreplay.compose.internal.granular.GranularComposeCompatibilityGate
 import com.datadog.android.sessionreplay.compose.internal.granular.GranularComposeDecomposer
+import com.datadog.android.sessionreplay.compose.sessionReplayHide
 import com.datadog.android.sessionreplay.internal.composition.DefaultCapturedIdentityFactory
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCapture
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink
@@ -67,6 +82,69 @@ internal class ComposeVisualParityRegressionTest {
         }
     }
 
+    @Test fun uniformDrawBehindWithImageChild() {
+        val icon = Bitmap.createBitmap(24, 24, Bitmap.Config.ARGB_8888).apply {
+            Canvas(this).drawRect(6f, 6f, 18f, 18f, Paint().apply { color = android.graphics.Color.BLACK })
+        }
+        composeRule.setContent {
+            Box(Modifier.size(300.dp, 200.dp).background(Color.White).testTag(ROOT)) {
+                Box(
+                    Modifier.size(300.dp, 80.dp).drawBehind {
+                        drawRect(Color(0xFFF2ECF6))
+                    }.semantics {
+                        isTraversalGroup =
+                            true
+                    }
+                ) {
+                    Image(icon.asImageBitmap(), "toolbar-action", Modifier.offset(264.dp, 28.dp).size(24.dp))
+                }
+            }
+        }
+        compare("toolbar") { result ->
+            assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Shape>())
+                .anyMatch { it.style?.backgroundColor == "#f2ecf6ff" }
+        }
+    }
+
+    @Test fun titleRespectsAllocatedWidth() {
+        composeRule.setContent {
+            Box(Modifier.size(300.dp, 200.dp).background(Color.White).testTag(ROOT)) {
+                Box(Modifier.offset(16.dp, 24.dp).size(152.dp, 44.dp).clipToBounds()) {
+                    BasicText(
+                        "Datadog title that extends beyond the action",
+                        style = TextStyle(color = Color.Black, fontSize = 24.sp, lineHeight = 32.sp),
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Clip
+                    )
+                }
+            }
+        }
+        compare("title") { result ->
+            assertThat(result.nodes.flatMap { it.modifiers }.filterIsInstance<CapturedModifier.Clip>()).isNotEmpty()
+            assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Text>()).isEmpty()
+        }
+    }
+
+    @Test fun scrolledContentRespectsRectangularViewport() {
+        composeRule.setContent {
+            Box(Modifier.size(300.dp, 200.dp).background(Color.White).testTag(ROOT)) {
+                Box(Modifier.offset(0.dp, 56.dp).size(300.dp, 100.dp).clipToBounds()) {
+                    Column(Modifier.offset(0.dp, (-40).dp)) {
+                        BasicText(
+                            "This row is above the viewport",
+                            style = TextStyle(color = Color.Black, fontSize = 16.sp, lineHeight = 24.sp)
+                        )
+                        Box(Modifier.size(300.dp, 140.dp).background(Color.Red))
+                    }
+                }
+            }
+        }
+        compare("viewport") { result ->
+            assertThat(result.nodes.flatMap { it.modifiers }.filterIsInstance<CapturedModifier.Clip>()).isNotEmpty()
+        }
+    }
+
     @Test fun ellipsizedDescriptionUsesMeasuredGlyphs() {
         composeRule.setContent {
             Box(Modifier.size(300.dp, 200.dp).background(Color.White).testTag(ROOT)) {
@@ -87,6 +165,173 @@ internal class ComposeVisualParityRegressionTest {
         compare("ellipsis") { result ->
             assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Text>()).isEmpty()
             assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Pixel>()).isNotEmpty()
+        }
+    }
+
+    @Test fun nonuniformDrawBehindIsNotExposedAsUniformFill() {
+        composeRule.setContent {
+            Box(
+                Modifier.size(80.dp).drawBehind {
+                    drawRect(Color.Blue, size = androidx.compose.ui.geometry.Size(size.width / 2, size.height))
+                }.testTag(ROOT)
+            )
+        }
+        composeRule.runOnIdle {
+            val utils = com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils()
+            val reflection = com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils()
+            val resolver = DefaultComposeDrawBehindColorResolver()
+            val root =
+                checkNotNull(utils.findRootSemanticsNode(checkNotNull(findHost(composeRule.activity.window.decorView))))
+            var checked = false
+            fun visit(node: androidx.compose.ui.semantics.SemanticsNode) {
+                for (modifier in node.layoutInfo.getModifierInfo()) {
+                    if (reflection.isDrawBehindElementClass(modifier.modifier)) {
+                        assertThat(resolver.resolve(node, modifier)).isNull()
+                        checked = true
+                    }
+                }
+                node.children.forEach(::visit)
+            }
+            visit(root)
+            assertThat(checked).isTrue()
+        }
+    }
+
+    @Test fun preserveIconWithoutContentDescriptionInsideSemanticButton() {
+        val icon = Bitmap.createBitmap(24, 24, Bitmap.Config.ARGB_8888).apply {
+            Canvas(this).drawRect(6f, 6f, 18f, 18f, Paint().apply { color = android.graphics.Color.BLACK })
+        }
+        composeRule.setContent {
+            Box(Modifier.size(300.dp, 200.dp).background(Color.White).testTag(ROOT)) {
+                Box(
+                    Modifier.offset(16.dp, 24.dp).size(80.dp).semantics {
+                        contentDescription = "tab"
+                        role = androidx.compose.ui.semantics.Role.Tab
+                    }
+                ) {
+                    Image(icon.asImageBitmap(), null, Modifier.offset(24.dp, 24.dp).size(24.dp))
+                }
+            }
+        }
+        compare("decorative-icon") { result ->
+            assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Pixel>()).isNotEmpty()
+        }
+    }
+
+    @Test fun preserveLayoutOnlyDividerAndRoundedContainer() {
+        composeRule.setContent {
+            Box(Modifier.size(300.dp, 200.dp).background(Color.White).testTag(ROOT)) {
+                Box(
+                    Modifier.offset(16.dp, 24.dp).size(240.dp, 80.dp)
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp)).background(Color.Gray)
+                ) {
+                    Box(Modifier.offset(0.dp, 40.dp).size(240.dp, 1.dp).drawBehind { drawRect(Color.Blue) })
+                }
+            }
+        }
+        compare("decorative-divider") { result ->
+            assertThat(result.wireframes).isNotEmpty()
+            assertThat(result.nodes.flatMap { it.modifiers }.filterIsInstance<CapturedModifier.Clip>()).isNotEmpty()
+        }
+    }
+
+    @Test fun preserveVectorIconInPartiallyVisibleCard() {
+        val vector = androidx.compose.ui.graphics.vector.ImageVector.Builder(
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).apply {
+            path(fill = androidx.compose.ui.graphics.SolidColor(Color.White)) {
+                moveTo(12f, 4f)
+                lineTo(20f, 12f)
+                lineTo(12f, 20f)
+                lineTo(4f, 12f)
+                close()
+            }
+        }.build()
+        composeRule.setContent {
+            Box(Modifier.size(300.dp, 200.dp).background(Color.White).testTag(ROOT)) {
+                androidx.compose.foundation.layout.Row(
+                    Modifier.offset(16.dp, 24.dp).size(264.dp, 80.dp).clipToBounds()
+                ) {
+                    repeat(3) {
+                        Box(
+                            Modifier.size(112.dp, 77.dp)
+                                .border(1.dp, Color(0xFFCBC4D4), RoundedCornerShape(8.dp))
+                        ) {
+                            Image(
+                                androidx.compose.ui.graphics.vector.rememberVectorPainter(vector),
+                                "severity-icon-$it",
+                                Modifier.offset(16.dp, 16.dp).size(20.dp).clipToBounds(),
+                                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color(0xFFE52975))
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        compare("clipped-severity-icons") { result ->
+            assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Pixel>()).hasSize(3)
+        }
+    }
+
+    @Test fun preservePartiallyClippedSeverityBorders() {
+        composeRule.setContent {
+            Box(Modifier.size(300.dp, 200.dp).background(Color.White).testTag(ROOT)) {
+                androidx.compose.foundation.layout.Row(
+                    Modifier.offset(16.dp, 24.dp).size(240.dp, 80.dp).clipToBounds()
+                ) {
+                    repeat(3) {
+                        Box(
+                            Modifier.semantics { role = androidx.compose.ui.semantics.Role.Button }
+                                .size(112.dp, 77.dp).border(1.dp, Color(0xFFCBC4D4), RoundedCornerShape(8.dp))
+                        )
+                    }
+                }
+            }
+        }
+        compare("clipped-borders") { result ->
+            assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Shape>().filter { it.border != null })
+                .hasSize(3)
+        }
+    }
+
+    @Test fun preserveImageMaskForUnlabeledIcon() = verifyDecorativePrivacy(hideParent = false)
+
+    @Test fun preserveHiddenParentForUnlabeledIcon() = verifyDecorativePrivacy(hideParent = true)
+
+    private fun verifyDecorativePrivacy(hideParent: Boolean) {
+        val icon = Bitmap.createBitmap(24, 24, Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.RED) }
+        composeRule.setContent {
+            Box(
+                Modifier.size(80.dp).testTag(ROOT).then(
+                    if (hideParent) Modifier.sessionReplayHide(true) else Modifier
+                )
+            ) { Image(icon.asImageBitmap(), null, Modifier.size(24.dp)) }
+        }
+        composeRule.runOnIdle {
+            val host = checkNotNull(findHost(composeRule.activity.window.decorView))
+            val captures = mutableListOf<PendingPixelCapture>()
+            val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope("decorative-privacy"))
+            val request = CompositionHostDecomposeRequest(
+                factory,
+                factory.composeHost(factory.window("window"), "host"),
+                host.resources.displayMetrics.density,
+                hostBounds = null,
+                nativeViewHandoff = { _, _ -> null },
+                imagePrivacy = if (hideParent) ImagePrivacy.MASK_NONE else ImagePrivacy.MASK_ALL,
+                pendingPixelCaptureSink = PendingPixelCaptureSink(captures::add)
+            )
+            val result = checkNotNull(
+                GranularComposeDecomposer(
+                    compatibilityGate = GranularComposeCompatibilityGate()
+                ).decompose(host, request)
+            )
+            try {
+                assertThat(captures).isEmpty()
+                assertThat(result.wireframes.filterIsInstance<CapturedWireframe.PrivacyPlaceholder>()).isNotEmpty()
+            } finally { captures.forEach { it.bitmap.recycle() } }
         }
     }
 

@@ -348,6 +348,24 @@ internal class SemanticsUtilsTest {
     }
 
     @Test
+    fun `M preserve integral bottom edge W resolveModifierBounds {fractional dp origin and size}`() {
+        val coordinates: LayoutCoordinates = mock()
+        whenever(mockModifierInfo.coordinates).thenReturn(coordinates)
+        whenever(coordinates.isAttached).thenReturn(true)
+        whenever(coordinates.localToRoot(Offset.Zero)).thenReturn(Offset(0f, 119f))
+        whenever(coordinates.size).thenReturn(IntSize(900, 229))
+        whenever(mockLayoutInfo.density).thenReturn(Density(3f))
+
+        val result = testedSemanticsUtils.resolveModifierBounds(
+            mockSemanticsNode,
+            mockModifierInfo,
+            ComposeWindowOffset.NONE
+        )
+
+        assertThat(result).isEqualTo(GlobalBounds(0, 39, 300, 77))
+    }
+
+    @Test
     fun `M return inner bounds W resolveInnerBounds`() {
         // Given
         val coordinates = mock<LayoutCoordinates>()
