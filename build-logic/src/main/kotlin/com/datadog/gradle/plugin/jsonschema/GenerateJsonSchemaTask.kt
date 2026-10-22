@@ -98,6 +98,13 @@ abstract class GenerateJsonSchemaTask @Inject constructor(
     abstract val inputNameMapping: MapProperty<String, String>
 
     /**
+     * Root schema filenames whose generated classes, including nested classes, require
+     * explicit constructor arguments even for optional properties.
+     */
+    @get:Input
+    abstract val schemasWithoutConstructorDefaults: ListProperty<String>
+
+    /**
      * The [OutputDirectory] where the generated files are written, in a package-agnostic way
      * (the `{out_package}` subdirectories are created by the generator itself).
      *
@@ -133,9 +140,14 @@ abstract class GenerateJsonSchemaTask @Inject constructor(
         logger.info("Found ${files.size} files in input dir: $inputDir")
 
         val reader = JsonSchemaReader(inputNameMapping.get(), logger)
-        val generator = FileGenerator(outputDir, targetPackageName.get(), logger)
         files.forEach {
             val type = reader.readSchema(it)
+            val generator = FileGenerator(
+                outputDir,
+                targetPackageName.get(),
+                logger,
+                generateConstructorDefaults = it.name !in schemasWithoutConstructorDefaults.get()
+            )
             generator.generate(type)
         }
     }
