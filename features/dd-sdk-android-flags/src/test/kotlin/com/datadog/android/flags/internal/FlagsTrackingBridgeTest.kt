@@ -21,6 +21,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
@@ -222,6 +223,9 @@ internal class FlagsTrackingBridgeTest {
     fun `M skip exposure W trackFlagExposure {doLog false}`() {
         // When
         testedProxy.trackFlagExposure(fakeFlagKey, fakeFlag.copy(doLog = false), fakeContext)
+
+        // Then
+        verifyNoInteractions(mockExposureProcessor, mockEvaluationsFeature, mockRumEvaluationLogger)
     }
 
     @Test
@@ -231,6 +235,9 @@ internal class FlagsTrackingBridgeTest {
 
         // When
         testedProxy.trackFlagEvaluationEvent(fakeFlagKey, fakeFlag, fakeContext, null)
+
+        // Then
+        verifyNoInteractions(mockExposureProcessor, mockEvaluationsFeature, mockRumEvaluationLogger)
     }
 
     @Test
@@ -238,10 +245,12 @@ internal class FlagsTrackingBridgeTest {
         // Given
         testedProxy = _FlagsInternalProxy(NoOpFlagsClient("test", "not initialized") { _, _ -> })
 
-        // When
-        testedProxy.trackFlagExposure(fakeFlagKey, fakeFlag, fakeContext)
-        testedProxy.trackFlagEvaluationEvent(fakeFlagKey, fakeFlag, fakeContext, null)
-        testedProxy.trackFlagEvaluationEvent(fakeFlagKey, null, fakeContext, "PROVIDER_NOT_READY")
+        // When / Then
+        assertDoesNotThrow {
+            testedProxy.trackFlagExposure(fakeFlagKey, fakeFlag, fakeContext)
+            testedProxy.trackFlagEvaluationEvent(fakeFlagKey, fakeFlag, fakeContext, null)
+            testedProxy.trackFlagEvaluationEvent(fakeFlagKey, null, fakeContext, "PROVIDER_NOT_READY")
+        }
     }
 
     private fun newProxy(
