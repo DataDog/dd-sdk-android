@@ -7,10 +7,10 @@
 package com.datadog.android.flags.internal.repository
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
@@ -18,7 +18,6 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 internal class DefaultFlagsRepository(
@@ -32,24 +31,20 @@ internal class DefaultFlagsRepository(
     private data class FlagsState(
         val context: EvaluationContext,
         val flags: Map<String, PrecomputedFlag>,
-        val obfuscation: FlagKeyObfuscation?,
-        val restoredFromCache: Boolean = false
+        val obfuscation: FlagKeyObfuscation?
     ) {
         operator fun get(key: String): PrecomputedFlag? =
             if (obfuscation == null) flags[key] else obfuscation.encode(key)?.let { flags[it] }
     }
     private val atomicState = AtomicReference<FlagsState?>(null)
-    private val obfuscationSupported = AtomicBoolean(false)
+    private val obfuscationSupported = (featureSdkCore as? InternalSdkCore)?.source == "android"
 
-    // Preserve encoded cache data while source detection is pending, but do not expose it.
     private val readableState: FlagsState?
-        get() = atomicState.get()?.takeIf { it.obfuscation == null || obfuscationSupported.get() }
+        get() = atomicState.get()?.takeIf { it.obfuscation == null || obfuscationSupported }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // CountDownLatch rejects negative counts; 1 is valid.
     private val persistenceLoadedLatch = CountDownLatch(1)
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // CountDownLatch rejects negative counts; 1 is valid.
-    private val sourceDetectedLatch = CountDownLatch(1)
     override val firstFlags = FirstFlagsLatch()
 
     private val persistenceManager = FlagsPersistenceManager(
@@ -62,8 +57,7 @@ internal class DefaultFlagsRepository(
                 FlagsState(
                     it.evaluationContext,
                     it.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) },
-                    it.obfuscation,
-                    restoredFromCache = true
+                    it.obfuscation
                 ).takeIf { state -> atomicState.compareAndSet(null, state) }
             }
         } finally {
@@ -71,12 +65,6 @@ internal class DefaultFlagsRepository(
         }
         if (cachedState != null && persistedState != null) {
             publishFirstFlags(cachedState, persistedState.flags.keys)
-        }
-    }
-
-    init {
-        featureSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)?.withContext { context ->
-            setObfuscationSupported(context.source == "android")
         }
     }
 
@@ -90,7 +78,7 @@ internal class DefaultFlagsRepository(
 
         val previousState = atomicState.getAndSet(newState)
         val firstInstallation = previousState == null ||
-            (previousState.obfuscation != null && !obfuscationSupported.get())
+            (previousState.obfuscation != null && !obfuscationSupported)
         persistenceLoadedLatch.countDown()
 
         try {
@@ -132,12 +120,6 @@ internal class DefaultFlagsRepository(
                 publishFirstFlags(newState, flags.keys)
             }
         }
-    }
-
-    override fun setObfuscationSupported(supported: Boolean) {
-        obfuscationSupported.set(supported)
-        sourceDetectedLatch.countDown()
-        readableState?.takeIf { it.restoredFromCache }?.let { publishFirstFlags(it, it.flags.keys) }
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
@@ -191,15 +173,8 @@ internal class DefaultFlagsRepository(
     }
 
     override fun waitForPersistenceLoad() {
-        val startTimeNs = featureSdkCore.timeProvider.getDeviceElapsedTimeNanos()
         try {
             persistenceLoadedLatch.await(persistenceLoadTimeoutMs, TimeUnit.MILLISECONDS)
-            if (atomicState.get()?.obfuscation != null) {
-                // Source detection and disk loading share the existing bounded cache-read timeout.
-                val remainingTimeNs = TimeUnit.MILLISECONDS.toNanos(persistenceLoadTimeoutMs) -
-                    (featureSdkCore.timeProvider.getDeviceElapsedTimeNanos() - startTimeNs)
-                sourceDetectedLatch.await(remainingTimeNs, TimeUnit.NANOSECONDS)
-            }
         } catch (e: InterruptedException) {
             @Suppress("UnsafeThirdPartyFunctionCall") // Safe: self-interruption is always permitted
             Thread.currentThread().interrupt()
@@ -207,7 +182,7 @@ internal class DefaultFlagsRepository(
     }
 
     private fun publishFirstFlags(state: FlagsState, installedKeys: Collection<String>) {
-        if (state.obfuscation == null || obfuscationSupported.get()) {
+        if (state.obfuscation == null || obfuscationSupported) {
             // Encoded responses cannot enumerate the original application keys.
             val keys = if (state.obfuscation == null) installedKeys else emptySet()
             firstFlags.complete(keys, deliverFirstFlags)

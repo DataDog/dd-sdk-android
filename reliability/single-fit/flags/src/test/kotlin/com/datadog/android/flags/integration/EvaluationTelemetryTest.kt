@@ -28,6 +28,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.Value
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -44,6 +45,8 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
+import java.security.MessageDigest
+import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
@@ -67,26 +70,30 @@ internal class EvaluationTelemetryTest {
     @ValueSource(booleans = [true, false])
     fun `M preserve telemetry policy W resolve() {encoded assignments and missing flag}`(
         optedOut: Boolean,
-        @StringForgery fakeTargetingKey: String
+        @StringForgery fakeTargetingKey: String,
+        @StringForgery fakeFlagKey: String,
+        @StringForgery(regex = "[0-9a-f]{32}") fakeSalt: String,
+        @BoolForgery fakeValue: Boolean
     ) {
         // Given
-        fixture.stubCore.stubNetworkResponses { httpResponse(it, body = readFixture("encoded")) }
+        val response = encodedResponse(fakeFlagKey, fakeValue, fakeSalt)
+        fixture.stubCore.stubNetworkResponses { httpResponse(it, body = response) }
         val client = newClient()
         client.setEvaluationContext(EvaluationContext(fakeTargetingKey))
         client.setEvaluationTelemetryOptOut(optedOut)
 
         // When
-        val assigned = client.resolve("flag", false)
-        val missing = client.resolve("missing", false)
+        val assigned = client.resolve(fakeFlagKey, !fakeValue)
+        val missing = client.resolve("$fakeFlagKey-missing", !fakeValue)
         fixture.flush()
 
         // Then
-        assertThat(assigned.value).isTrue()
+        assertThat(assigned.value).isEqualTo(fakeValue)
         assertThat(missing.errorCode).isEqualTo(ErrorCode.FLAG_NOT_FOUND)
         assertThat(fixture.evaluationCount()).isEqualTo(if (optedOut) 0 else 2)
         assertThat(fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).hasSize(if (optedOut) 0 else 1)
         val exposure = fixture.events(Feature.FLAGS_FEATURE_NAME).single()
-        assertThat(exposure["flag"].asJsonObject["key"].asString).isEqualTo("flag")
+        assertThat(exposure["flag"].asJsonObject["key"].asString).isEqualTo(fakeFlagKey)
         assertThat(exposure["subject"].asJsonObject["id"].asString).isEqualTo(fakeTargetingKey)
     }
 
@@ -622,6 +629,20 @@ internal class EvaluationTelemetryTest {
             }
         ).containsExactly("false", "true")
         assertThat(fixture.evaluationCount()).isEqualTo(1)
+    }
+
+    private fun encodedResponse(key: String, value: Boolean, salt: String): String {
+        val response = JSONObject(readFixture("plaintext"))
+        val attributes = response.getJSONObject("data").getJSONObject("attributes")
+        val flag = attributes.getJSONObject("flags").getJSONObject("flag").put("variationValue", value)
+        val saltBytes = salt.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        val input = "datadog.feature-flags.flag-key.v1\u0000".toByteArray() + saltBytes + key.toByteArray()
+        val encodedKey = MessageDigest.getInstance("SHA-256").digest(input)
+            .joinToString("") { "%02x".format(Locale.US, it) }
+        attributes.put("flags", JSONObject().put(encodedKey, flag))
+        attributes.put("obfuscated", true)
+        attributes.put("obfuscation", JSONObject().put("scheme", "flag-key-sha256-v1").put("salt", salt))
+        return response.toString()
     }
 
     private fun newClient(activated: Boolean = true, name: String = "client"): FlagsClient =

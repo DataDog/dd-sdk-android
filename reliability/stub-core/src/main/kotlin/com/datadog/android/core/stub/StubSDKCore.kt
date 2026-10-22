@@ -53,6 +53,9 @@ class StubSDKCore(
     private var datadogContext: DatadogContext = forge.getForgery<DatadogContext>().copy(source = "android")
 ) : InternalSdkCore by mockSdkCore {
 
+    override val source: String
+        get() = datadogContext.source
+
     private val featureScopes = mutableMapOf<String, FeatureScope>()
 
     private val dataStores = mutableMapOf<String, DataStoreHandler>()

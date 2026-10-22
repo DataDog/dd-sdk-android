@@ -135,9 +135,8 @@ internal class EvaluationsManager(
                 } else {
                     null
                 }
-                // React Native looks up keys in JavaScript snapshots. Native code cannot reverse the hashes.
+                // The React Native bridge requires a map keyed by original flag names, which encoded data omits.
                 val supportsObfuscation = datadogContext?.source == "android"
-                flagsRepository.setObfuscationSupported(supportsObfuscation)
                 internalLogger.log(
                     InternalLogger.Level.DEBUG,
                     InternalLogger.Target.MAINTAINER,

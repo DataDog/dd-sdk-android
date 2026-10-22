@@ -7,9 +7,9 @@
 package com.datadog.android.flags.internal
 
 import androidx.collection.LruCache
+import com.datadog.android.flags.internal.model.ExposureEvent
 import com.datadog.android.flags.internal.storage.RecordWriter
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.ExposureEvent
 import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.internal.time.TimeProvider
 

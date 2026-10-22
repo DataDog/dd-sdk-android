@@ -99,7 +99,6 @@ internal class PrecomputeMapperTest {
     )
     fun `M reject malformed structure W map() { generated model }`(json: String) {
         // Given
-        // The response is supplied by the test case.
         // When
         val result = testedMapper.map(json)
 

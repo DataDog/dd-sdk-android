@@ -136,6 +136,7 @@ internal class EvaluationsManagerTest {
         )
 
         whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)) doReturn mockFlagsFeatureScope
+        whenever(mockSdkCore.source) doAnswer { fakeDatadogContext.source }
         whenever(mockSdkCore.getDatadogContext(setOf(Feature.RUM_FEATURE_NAME))) doAnswer {
             fakeDatadogContext
         }
@@ -154,7 +155,7 @@ internal class EvaluationsManagerTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["android", "react-native"])
-    fun `M set encoding support before cache reads W updateEvaluationsForContext() {source varies}`(source: String) {
+    fun `M read cache before fetching assignments W updateEvaluationsForContext() {source varies}`(source: String) {
         // Given
         fakeDatadogContext = fakeDatadogContext.copy(source = source)
 
@@ -163,7 +164,6 @@ internal class EvaluationsManagerTest {
 
         // Then
         inOrder(mockFlagsRepository, mockAssignmentsDownloader) {
-            verify(mockFlagsRepository).setObfuscationSupported(source == "android")
             verify(mockFlagsRepository).hasFlags()
             verify(mockAssignmentsDownloader).readPrecomputedFlags(
                 EvaluationContext(fakeTargetingKey, emptyMap()),

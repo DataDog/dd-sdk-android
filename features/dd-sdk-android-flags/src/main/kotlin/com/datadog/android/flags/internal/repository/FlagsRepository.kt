@@ -24,7 +24,6 @@ internal interface FlagsRepository {
         obfuscation: FlagKeyObfuscation? = null,
         onInstalled: () -> Unit = {}
     )
-    fun setObfuscationSupported(supported: Boolean)
 
     /** Waits for initial persistence loading, up to the repository's timeout. Call without holding locks. */
     fun waitForPersistenceLoad()

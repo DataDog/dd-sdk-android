@@ -362,7 +362,6 @@ internal class FlagsStateDeserializerTest {
     @ValueSource(strings = ["null", "[]", "true", "0", "\"text\""])
     fun `M reject nonobject cache W deserialize() { generated model }`(json: String) {
         // Given
-        // The cache is supplied by the test case.
         // When
         val result = testedDeserializer.deserialize(json)
 
@@ -380,7 +379,6 @@ internal class FlagsStateDeserializerTest {
         val targetingKey = forge.anAlphabeticalString()
         val json = JSONObject(buildStateJson(targetingKey, JSONObject().put("flag", buildFlagJson())))
         json.getJSONObject("evaluationContext").put("attributes", JSONObject("{\"value\":$attributes}").get("value"))
-        // Legacy readers ignored the inactive map.
         json.put("encodedFlags", JSONObject.NULL)
 
         // When

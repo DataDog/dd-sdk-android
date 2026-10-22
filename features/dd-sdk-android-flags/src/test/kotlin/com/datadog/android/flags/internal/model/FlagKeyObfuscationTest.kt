@@ -7,14 +7,21 @@
 package com.datadog.android.flags.internal.model
 
 import com.google.gson.JsonParseException
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.catchThrowable
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import org.junit.jupiter.params.provider.ValueSource
 
+@ExtendWith(ForgeExtension::class)
 internal class FlagKeyObfuscationTest {
+    @StringForgery(regex = "[0-9a-f]{32}")
+    lateinit var fakeSalt: String
+
     @ParameterizedTest
     @MethodSource("vectors")
     fun `M match backend hashes W encode() {shared protocol vectors}`(vector: Pair<String, String>) {
@@ -30,48 +37,121 @@ internal class FlagKeyObfuscationTest {
     }
 
     @Test
-    fun `M cache bounded lookup hashes W encode() { descriptors keep separate caches }`() {
+    fun `M cache bounded lookup hashes W encode() { descriptors keep separate caches }`(
+        @StringForgery fakeKey: String
+    ) {
         // Given
-        val encoding = FlagKeyObfuscation.fromSalt(SALT)
-        val other = FlagKeyObfuscation.fromSalt("f".repeat(32))
+        val encoding = FlagKeyObfuscation.fromSalt(fakeSalt)
+        val otherSalt = (if (fakeSalt[0] == '0') '1' else '0') + fakeSalt.drop(1)
+        val other = FlagKeyObfuscation.fromSalt(otherSalt)
 
         // When
-        val first = checkNotNull(encoding.encode("flag"))
+        val first = encoding.encode(fakeKey)
 
         // Then
-        assertThat(encoding.encode("flag")).isSameAs(first)
-        assertThat(other.encode("flag")).isNotEqualTo(first)
-        assertThat(encoding.encode("flag")).isSameAs(first)
-        assertThat(encoding.encode("café")).isNotEqualTo(encoding.encode("cafe\u0301"))
+        checkNotNull(first)
+        assertThat(encoding.encode(fakeKey)).isSameAs(first)
+        assertThat(other.encode(fakeKey)).isNotEqualTo(first)
+        assertThat(encoding.encode(fakeKey)).isSameAs(first)
 
         // When
-        repeat(1024) { encoding.encode("flag-$it") }
+        repeat(1024) { encoding.encode("$fakeKey-$it") }
 
         // Then
-        assertThat(encoding.encode("flag")).isEqualTo(first).isNotSameAs(first)
+        assertThat(encoding.encode(fakeKey)).isEqualTo(first).isNotSameAs(first)
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = ["\ud800", "\udc00", "a\ud800b"])
-    fun `M reject invalid Unicode W encode() {unpaired surrogate}`(key: String) {
+    @Test
+    fun `M reject invalid Unicode W encode() {unpaired high surrogate}`(
+        @IntForgery(min = 0xd800, max = 0xdc00) fakeSurrogate: Int,
+        @StringForgery(regex = "[a-z]+") fakePrefix: String
+    ) {
         // Given
-        val encoding = FlagKeyObfuscation.fromSalt(SALT)
+        val encoding = FlagKeyObfuscation.fromSalt(fakeSalt)
+        val fakeKey = fakePrefix + fakeSurrogate.toChar()
 
         // When
-        val actual = encoding.encode(key)
+        val actual = encoding.encode(fakeKey)
 
         // Then
         assertThat(actual).isNull()
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = ["", "000102", "000102030405060708090A0B0C0D0E0F", "000102030405060708090a0b0c0d0e0fg"])
-    fun `M reject invalid salt W fromSalt() {invalid length or alphabet}`(salt: String) {
+    @Test
+    fun `M reject invalid Unicode W encode() {unpaired low surrogate}`(
+        @IntForgery(min = 0xdc00, max = 0xe000) fakeSurrogate: Int,
+        @StringForgery(regex = "[a-z]+") fakeSuffix: String
+    ) {
         // Given
-        // Salt comes from the test case.
+        val encoding = FlagKeyObfuscation.fromSalt(fakeSalt)
+        val fakeKey = fakeSurrogate.toChar() + fakeSuffix
 
         // When
-        val exception = catchThrowable { FlagKeyObfuscation.fromSalt(salt) }
+        val actual = encoding.encode(fakeKey)
+
+        // Then
+        assertThat(actual).isNull()
+    }
+
+    @Test
+    fun `M reject invalid Unicode W encode() {high surrogate followed by nonsurrogate}`(
+        @IntForgery(min = 0xd800, max = 0xdc00) fakeSurrogate: Int,
+        @StringForgery(regex = "[a-z]+") fakeSuffix: String
+    ) {
+        // Given
+        val encoding = FlagKeyObfuscation.fromSalt(fakeSalt)
+        val fakeKey = fakeSurrogate.toChar() + fakeSuffix
+
+        // When
+        val actual = encoding.encode(fakeKey)
+
+        // Then
+        assertThat(actual).isNull()
+    }
+
+    @Test
+    fun `M consume both surrogates W encode() {adjacent pairs followed by invalid Unicode}`(
+        @IntForgery(min = 0xd800, max = 0xdc00) fakeHighSurrogate: Int,
+        @IntForgery(min = 0xdc00, max = 0xe000) fakeLowSurrogate: Int
+    ) {
+        // Given
+        val encoding = FlagKeyObfuscation.fromSalt(fakeSalt)
+        val fakePair = "${fakeHighSurrogate.toChar()}${fakeLowSurrogate.toChar()}"
+        val fakeKey = fakePair + fakePair
+
+        // When
+        val valid = encoding.encode(fakeKey)
+        val invalid = encoding.encode(fakeKey + fakeLowSurrogate.toChar())
+
+        // Then
+        assertThat(valid).matches("[0-9a-f]{64}")
+        assertThat(invalid).isNull()
+    }
+
+    @Test
+    fun `M reject invalid salt W fromSalt() {invalid length}`(
+        @IntForgery(min = 0, max = 32) fakeLength: Int
+    ) {
+        // Given
+        val fakeInvalidSalt = fakeSalt.take(fakeLength)
+
+        // When
+        val exception = catchThrowable { FlagKeyObfuscation.fromSalt(fakeInvalidSalt) }
+
+        // Then
+        assertThat(exception).isInstanceOf(JsonParseException::class.java)
+    }
+
+    @Test
+    fun `M reject invalid salt W fromSalt() {invalid alphabet}`(
+        @IntForgery(min = 0, max = 32) fakeIndex: Int,
+        @StringForgery(regex = "[A-Fg-z]") fakeInvalidCharacter: String
+    ) {
+        // Given
+        val fakeInvalidSalt = fakeSalt.replaceRange(fakeIndex, fakeIndex + 1, fakeInvalidCharacter)
+
+        // When
+        val exception = catchThrowable { FlagKeyObfuscation.fromSalt(fakeInvalidSalt) }
 
         // Then
         assertThat(exception).isInstanceOf(JsonParseException::class.java)

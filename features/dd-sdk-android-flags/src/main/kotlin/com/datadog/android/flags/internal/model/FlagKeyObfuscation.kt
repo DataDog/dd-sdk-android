@@ -21,7 +21,6 @@ internal data class FlagKeyObfuscation private constructor(val salt: String) {
     fun encode(key: String): String? {
         // Reject unpaired surrogates instead of silently replacing their UTF-8 encoding.
         if (!isWellFormedUnicode(key)) return null
-        @Suppress("UnsafeThirdPartyFunctionCall") // The key is non-null.
         val cachedKey = lookupKeys.get(key)
         return cachedKey ?: run {
             @Suppress("UnsafeThirdPartyFunctionCall") // SHA-256 is mandatory on Android.
@@ -34,7 +33,6 @@ internal data class FlagKeyObfuscation private constructor(val salt: String) {
             digest.digest().joinToString("") {
                 "%02x".format(Locale.US, it)
             }.also {
-                @Suppress("UnsafeThirdPartyFunctionCall") // The key and encoded value are non-null.
                 lookupKeys.put(key, it)
             }
         }
@@ -63,11 +61,14 @@ internal data class FlagKeyObfuscation private constructor(val salt: String) {
         private fun isWellFormedUnicode(value: String): Boolean {
             var index = 0
             while (index < value.length) {
-                val char = value[index++]
+                val char = value[index]
                 if (char.isHighSurrogate()) {
-                    if (index >= value.length || !value[index++].isLowSurrogate()) return false
+                    if (index + 1 >= value.length || !value[index + 1].isLowSurrogate()) return false
+                    index += 2
                 } else if (char.isLowSurrogate()) {
                     return false
+                } else {
+                    index++
                 }
             }
             return true
