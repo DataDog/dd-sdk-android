@@ -182,7 +182,7 @@ internal class FlagsTrackingBridgeTest {
 
     @ParameterizedTest
     @CsvSource("false, false", "false, true", "true, false", "true, true")
-    fun `M respect telemetry opt-out W trackFlagExposure + trackFlagEvaluationEvent`(
+    fun `M respect telemetry opt-out W trackFlagExposure() + trackFlagEvaluationEvent()`(
         optOutParameterEnabled: Boolean,
         telemetryOptedOut: Boolean
     ) {
