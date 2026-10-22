@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -473,7 +474,7 @@ internal class GranularComposeDecomposer(
             val nodeIdentity = request.identityFactory.composeNode(request.hostIdentity, node.id.toString())
             val bounds = boundsOf(node)
             val privacy = privacyOf(node, inherited)
-            if (requiresSemanticCapture(node, privacy)) protectedRasterBounds += bounds
+            if (requiresSemanticCapture(node, privacy)) protectedRasterBounds += protectedBoundsOf(node, bounds)
 
             if (semanticsUtils.isNodeHidden(node)) {
                 return captureHiddenNode(nodeIdentity, bounds)
@@ -1009,7 +1010,11 @@ internal class GranularComposeDecomposer(
             }
             // Keep restricted descendants semantic: OCR cannot hide images, control state or native interop.
             if (containsRestrictedDescendant(node, privacy)) return null
-            val useMeasuredBounds = node.layoutInfo in visualOnlyNodes
+            // Compiler instrumentation can attach real semantics to a zero-height Canvas.
+            // Use measured geometry for that drawing, while empty instrumented spacers stay uncaptured.
+            val degenerateDrawing = (bounds.width <= 0 || bounds.height <= 0) &&
+                inspection.hasDrawModifier(reflectionUtils)
+            val useMeasuredBounds = node.layoutInfo in visualOnlyNodes || degenerateDrawing
             val hostBoundsPx = hostRelativeBoundsPx(node, useMeasuredBounds) ?: return null
             // Use the same visible rectangle for the crop and replay, rather than combining
             // an outer semantics position with an inner measured size. Round dimensions so a
@@ -1210,6 +1215,12 @@ internal class GranularComposeDecomposer(
                 protectedRasterBounds.all {
                     request.shouldContinue() && isFullyOutsideHostClip(capture.bounds, it)
                 }
+
+        private fun protectedBoundsOf(node: SemanticsNode, bounds: CapturedBounds): CapturedBounds {
+            if (bounds.width > 0 && bounds.height > 0) return bounds
+            // A hidden zero-height sibling can still paint a hairline into a shared host crop.
+            return hostRelativeBoundsPx(node, useLayoutCoordinates = true)?.let(::captureBoundsOf) ?: bounds
+        }
 
         private fun captureBoundsOf(pixels: Rect): CapturedBounds = CapturedBounds(
             ((pixels.left + windowOffset.xPx) / request.screenDensity).roundToLong(),
@@ -1435,7 +1446,34 @@ private fun hostRelativeBoundsPx(node: SemanticsNode, useLayoutCoordinates: Bool
     val boundsInRoot = if (useLayoutCoordinates) {
         val coordinates = node.layoutInfo.coordinates
         if (!coordinates.isAttached) return null
-        coordinates.boundsInRoot()
+        val visible = coordinates.boundsInRoot()
+        val size = coordinates.size
+        if (size.width == 0 || size.height == 0) {
+            val position = coordinates.positionInRoot()
+            val density = node.layoutInfo.density.density
+            // Hairline Canvas nodes have zero layout thickness but paint a physical pixel.
+            // Crop complete dp cells around that pixel so its bitmap is never stretched.
+            androidx.compose.ui.geometry.Rect(
+                if (size.width == 0) kotlin.math.floor((position.x - 1f) / density) * density else position.x,
+                if (size.height == 0) kotlin.math.floor((position.y - 1f) / density) * density else position.y,
+                if (size.width ==
+                    0
+                ) {
+                    kotlin.math.ceil((position.x + 1f) / density) * density
+                } else {
+                    position.x + size.width
+                },
+                if (size.height ==
+                    0
+                ) {
+                    kotlin.math.ceil((position.y + 1f) / density) * density
+                } else {
+                    position.y + size.height
+                }
+            )
+        } else {
+            visible
+        }
     } else {
         node.boundsInRoot
     }

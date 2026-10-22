@@ -22,6 +22,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
@@ -49,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.PathParser
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.compose.datadog
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
@@ -235,6 +237,72 @@ internal class ComposeVisualParityRegressionTest {
         }
     }
 
+    @Test fun preserveZeroHeightHairlineDivider() {
+        composeRule.setContent {
+            Box(Modifier.size(300.dp, 200.dp).background(Color.White).testTag(ROOT)) {
+                Box(
+                    Modifier.offset(16.dp, 64.dp).size(240.dp, 0.dp).drawBehind {
+                        drawLine(
+                            Color.Blue,
+                            androidx.compose.ui.geometry.Offset.Zero,
+                            androidx.compose.ui.geometry.Offset(size.width, 0f),
+                            strokeWidth = 0f
+                        )
+                    }
+                )
+            }
+        }
+        compare("hairline-divider") { result ->
+            assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Pixel>()).isNotEmpty()
+        }
+    }
+
+    @Test fun preserveInstrumentedHairlineDivider() {
+        composeRule.setContent {
+            Box(Modifier.size(300.dp, 200.dp).background(Color.White).testTag(ROOT)) {
+                Box(Modifier.datadog("Spacer").size(0.dp))
+                Box(
+                    Modifier.offset(16.dp, 64.dp).datadog("HorizontalDivider")
+                        .padding(horizontal = 16.dp).size(240.dp, 0.dp).drawBehind {
+                            drawLine(
+                                Color.Blue,
+                                androidx.compose.ui.geometry.Offset.Zero,
+                                androidx.compose.ui.geometry.Offset(size.width, 0f),
+                                strokeWidth = 0f
+                            )
+                        }
+                )
+            }
+        }
+        compare("instrumented-hairline") { result ->
+            assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Pixel>()).hasSize(1)
+        }
+    }
+
+    @Test fun preserveDividerWhenSourceImageIsOutsideViewport() {
+        val image = Bitmap.createBitmap(24, 24, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(android.graphics.Color.RED)
+        }
+        composeRule.setContent {
+            Box(Modifier.size(300.dp, 200.dp).background(Color.White).clipToBounds().testTag(ROOT)) {
+                Image(image.asImageBitmap(), "offscreen-image", Modifier.offset(16.dp, (-48).dp).size(24.dp))
+                Box(
+                    Modifier.offset(16.dp, 64.dp).datadog("HorizontalDivider").size(240.dp, 0.dp).drawBehind {
+                        drawLine(
+                            Color.Blue,
+                            androidx.compose.ui.geometry.Offset.Zero,
+                            androidx.compose.ui.geometry.Offset(size.width, 0f),
+                            strokeWidth = 0f
+                        )
+                    }
+                )
+            }
+        }
+        compare("offscreen-image-divider") { result ->
+            assertThat(result.wireframes.filterIsInstance<CapturedWireframe.PrivacyPlaceholder>()).isEmpty()
+        }
+    }
+
     @Test fun preserveVectorIconInPartiallyVisibleCard() {
         val vector = androidx.compose.ui.graphics.vector.ImageVector.Builder(
             defaultWidth = 24.dp,
@@ -273,6 +341,55 @@ internal class ComposeVisualParityRegressionTest {
         }
         compare("clipped-severity-icons") { result ->
             assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Pixel>()).hasSize(3)
+        }
+    }
+
+    @Test fun protectHiddenZeroHeightSiblingFromHairlineCrop() {
+        composeRule.setContent {
+            Box(Modifier.size(300.dp, 200.dp).background(Color.White).testTag(ROOT)) {
+                Box(
+                    Modifier.offset(16.dp, 64.dp).size(240.dp, 0.dp).sessionReplayHide(true).drawBehind {
+                        drawLine(
+                            Color.Red,
+                            androidx.compose.ui.geometry.Offset.Zero,
+                            androidx.compose.ui.geometry.Offset(size.width, 0f),
+                            strokeWidth = 0f
+                        )
+                    }
+                )
+                Box(
+                    Modifier.offset(16.dp, 64.dp).datadog("HorizontalDivider").size(240.dp, 0.dp).drawBehind {
+                        drawLine(
+                            Color.Transparent,
+                            androidx.compose.ui.geometry.Offset.Zero,
+                            androidx.compose.ui.geometry.Offset(size.width, 0f),
+                            strokeWidth = 0f
+                        )
+                    }
+                )
+            }
+        }
+        composeRule.runOnIdle {
+            val host = checkNotNull(findHost(composeRule.activity.window.decorView))
+            val captures = mutableListOf<PendingPixelCapture>()
+            val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope("hairline-privacy"))
+            val result = GranularComposeDecomposer(compatibilityGate = GranularComposeCompatibilityGate()).decompose(
+                host,
+                CompositionHostDecomposeRequest(
+                    factory,
+                    factory.composeHost(factory.window("window"), "host"),
+                    host.resources.displayMetrics.density,
+                    hostBounds = null,
+                    nativeViewHandoff = { _, _ -> null },
+                    imagePrivacy = ImagePrivacy.MASK_NONE,
+                    textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
+                    pendingPixelCaptureSink = PendingPixelCaptureSink(captures::add)
+                )
+            )
+            try {
+                assertThat(result).isNotNull()
+                assertThat(captures).isEmpty()
+            } finally { captures.forEach { it.bitmap.recycle() } }
         }
     }
 
