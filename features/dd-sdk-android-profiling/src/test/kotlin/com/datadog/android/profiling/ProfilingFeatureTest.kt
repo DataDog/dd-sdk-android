@@ -27,6 +27,7 @@ import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.profiling.fixtures.ProfilingStorageFixture
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilerCallback
@@ -46,8 +47,12 @@ import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.time.MutableTimeProvider
 import com.datadog.android.profiling.internal.trigger.NoOpPendingTriggerProfiles
+import com.datadog.android.profiling.internal.trigger.PendingOomGatingEvent
+import com.datadog.android.profiling.internal.trigger.PendingOomProfile
+import com.datadog.android.profiling.internal.trigger.PendingTriggerProfileStorage
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
 import com.datadog.android.profiling.internal.trigger.ProfilingTriggerRegistrar
+import com.datadog.android.profiling.internal.utils.bootNtpOffsetNs
 import com.datadog.android.profiling.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -74,6 +79,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
@@ -93,6 +99,7 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalProfilingApi::class)
 @Extensions(
@@ -187,6 +194,9 @@ internal class ProfilingFeatureTest {
     @StringForgery
     private lateinit var fakeInstanceName: String
 
+    @LongForgery
+    private var fakeBootNtpOffsetNs: Long = 0L
+
     @LongForgery(min = 1L)
     private var fakeProfilingPackageVersionCode: Long = 0L
 
@@ -227,9 +237,11 @@ internal class ProfilingFeatureTest {
         ) doReturn mockPackageInfo
         whenever(mockSdkCore.name) doReturn fakeInstanceName
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockProfilingExecutor
+        whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockSchedulerExecutor
         whenever(mockProfiler.timeProvider) doReturn mockMutableTimeProvider
         whenever(mockSdkCore.createOkHttpCallFactory(any())) doReturn mockCallFactory
         whenever(mockProfiler.scheduledExecutorService) doReturn mockSchedulerExecutor
+        whenever(mockProfiler.isOomTriggerActive) doReturn true
         whenever(mockContext.getSystemService(ProfilingManager::class.java)) doReturn (mockService)
         whenever(mockContext.getSharedPreferences(any(), any())) doReturn mockSharedPreferences
         whenever(mockSharedPreferences.edit()) doReturn mockEditor
@@ -244,13 +256,13 @@ internal class ProfilingFeatureTest {
             it.getArgument<(DatadogContext) -> Unit>(1).invoke(fakeDatadogContext)
         }
         testedFeature = ProfilingFeature(mockSdkCore, fakeConfiguration, mockProfiler)
-        ProfilingStorage.sharedPreferencesStorage = mockSharedPreferencesStorage
+        ProfilingStorageFixture.stubWith(mockSharedPreferencesStorage)
         fakeTTID = fakeTTID.copy(type = ProfilerEvent.RumVitalEvent.Type.TTID)
     }
 
     @AfterEach
     fun `tear down`() {
-        ProfilingStorage.sharedPreferencesStorage = null
+        ProfilingStorageFixture.reset()
     }
 
     @Test
@@ -833,7 +845,8 @@ internal class ProfilingFeatureTest {
                 startReason = ProfilingStartReason.APPLICATION_LAUNCH,
                 end = 1000L,
                 resultFilePath = "/fake/path",
-                profileTypes = listOf(ProfileType.STACK_SAMPLING)
+                profileTypes = listOf(ProfileType.STACK_SAMPLING),
+                bootNtpOffsetNs = fakeBootNtpOffsetNs
             )
         )
 
@@ -1046,7 +1059,8 @@ internal class ProfilingFeatureTest {
                 startReason = ProfilingStartReason.APPLICATION_LAUNCH,
                 end = 1L,
                 resultFilePath = "/fake",
-                profileTypes = listOf(ProfileType.STACK_SAMPLING)
+                profileTypes = listOf(ProfileType.STACK_SAMPLING),
+                bootNtpOffsetNs = fakeBootNtpOffsetNs
             )
         )
         // Open continuous active window
@@ -1140,7 +1154,8 @@ internal class ProfilingFeatureTest {
                 startReason = ProfilingStartReason.APPLICATION_LAUNCH,
                 end = 1L,
                 resultFilePath = "/fake",
-                profileTypes = listOf(ProfileType.STACK_SAMPLING)
+                profileTypes = listOf(ProfileType.STACK_SAMPLING),
+                bootNtpOffsetNs = fakeBootNtpOffsetNs
             )
         )
         // Open continuous active window
@@ -1287,7 +1302,8 @@ internal class ProfilingFeatureTest {
                 startReason = ProfilingStartReason.APPLICATION_LAUNCH,
                 end = 1L,
                 resultFilePath = "/fake",
-                profileTypes = listOf(ProfileType.STACK_SAMPLING)
+                profileTypes = listOf(ProfileType.STACK_SAMPLING),
+                bootNtpOffsetNs = fakeBootNtpOffsetNs
             )
         )
         // Open window 1
@@ -1310,7 +1326,8 @@ internal class ProfilingFeatureTest {
                 startReason = ProfilingStartReason.CONTINUOUS,
                 end = 1L,
                 resultFilePath = "/fake",
-                profileTypes = listOf(ProfileType.STACK_SAMPLING)
+                profileTypes = listOf(ProfileType.STACK_SAMPLING),
+                bootNtpOffsetNs = fakeBootNtpOffsetNs
             )
         )
 
@@ -2501,6 +2518,497 @@ internal class ProfilingFeatureTest {
     // dispatchRumSession defaults the session state to TRACKED, so any UUID dispatched
     // through it is treated as a sampled-in RUM session.
     private fun sampledInSessionId(): String = UUID.randomUUID().toString()
+
+    @Test
+    fun `M write heap histogram W onMemoryAnomalyDetected then RumAnomalyErrorEvent {matched pair}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @Forgery fakeAnomalyEvent: ProfilerEvent.RumAnomalyErrorEvent,
+        @LongForgery(min = 1_000L, max = 1_000_000L) fakeCaptureMs: Long
+    ) {
+        // Given
+        val fakeAnomalyResult = fakePerfettoResult.asHeapHistogram(ProfilingStartReason.MEMORY_ANOMALY, fakeCaptureMs)
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        testedFeature.dispatchRumSession(fakeAnomalyEvent.rumContext.sessionId, 100f)
+        testedFeature.simulateQuotaAllowed()
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(fakeCaptureMs)
+
+        // When
+        testedFeature.onMemoryAnomalyDetected(fakeAnomalyResult)
+        testedFeature.onReceive(fakeAnomalyEvent)
+
+        // Then
+        verify(mockRumFeatureScope).sendEvent(ProfilingAnomalyDetectedEvent(fakeCaptureMs))
+        val resultCaptor = argumentCaptor<PerfettoResult>()
+        verify(mockDataWriter).writeTriggerProfile(
+            resultCaptor.capture(),
+            eq(fakeAnomalyEvent.id),
+            eq(fakeAnomalyEvent.rumContext)
+        )
+        assertThat(resultCaptor.firstValue.start).isEqualTo(fakeCaptureMs)
+        assertThat(resultCaptor.firstValue.end).isEqualTo(fakeCaptureMs)
+        assertThat(resultCaptor.firstValue.startReason).isEqualTo(ProfilingStartReason.MEMORY_ANOMALY)
+        assertThat(resultCaptor.firstValue.resultFilePath).isEqualTo(fakeAnomalyResult.resultFilePath)
+    }
+
+    @Test
+    fun `M delete trigger profile file W onMemoryAnomalyDetected then RumAnomalyErrorEvent {quota denied}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @Forgery fakeAnomalyEvent: ProfilerEvent.RumAnomalyErrorEvent,
+        @LongForgery(min = 1_000L, max = 1_000_000L) fakeCaptureMs: Long,
+        @StringForgery fakeFileName: String,
+        @StringForgery fakeTraceContent: String,
+        @TempDir fakeTempDir: File
+    ) {
+        // Given
+        val traceFile = File(fakeTempDir, fakeFileName).apply { writeText(fakeTraceContent) }
+        val fakeAnomalyResult = fakePerfettoResult
+            .asHeapHistogram(ProfilingStartReason.MEMORY_ANOMALY, fakeCaptureMs)
+            .copy(resultFilePath = traceFile.absolutePath)
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        testedFeature.dispatchRumSession(fakeAnomalyEvent.rumContext.sessionId, 100f)
+        testedFeature.simulateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(fakeCaptureMs)
+        testedFeature.onMemoryAnomalyDetected(fakeAnomalyResult)
+
+        // When
+        testedFeature.onReceive(fakeAnomalyEvent)
+
+        // Then
+        assertThat(traceFile.exists()).isFalse
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+    }
+
+    @Test
+    fun `M persist pending profile W RumOomErrorEvent then onOutOfMemoryDetected {matched pair}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @Forgery fakeOomEvent: ProfilerEvent.RumOomErrorEvent,
+        @LongForgery(min = 1_000L, max = 1_000_000L) fakeCaptureMs: Long,
+        @LongForgery(min = 1_000_000L, max = 1_000_000_000L) fakeServerMs: Long,
+        @LongForgery(min = 1L, max = 1_000_000L) fakeElapsedNs: Long
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn fakeServerMs
+        whenever(mockTimeProvider.getDeviceElapsedRealtimeNanos()) doReturn fakeElapsedNs
+        val fakeOomResult = fakePerfettoResult
+            .asHeapHistogram(ProfilingStartReason.OUT_OF_MEMORY, fakeCaptureMs)
+            .copy(bootNtpOffsetNs = mockTimeProvider.bootNtpOffsetNs())
+
+        // When
+        testedFeature.onReceive(fakeOomEvent)
+        testedFeature.onOutOfMemoryDetected(fakeOomResult)
+
+        // Then
+        val pendingProfileCaptor = argumentCaptor<String>()
+        verify(mockSharedPreferencesStorage).putString(
+            eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+            pendingProfileCaptor.capture(),
+            eq(true)
+        )
+        assertThat(PendingOomProfile.fromJson(pendingProfileCaptor.firstValue)).isEqualTo(
+            PendingOomProfile(
+                resultFilePath = fakeOomResult.resultFilePath,
+                startMs = fakeCaptureMs,
+                endMs = fakeCaptureMs,
+                bootNtpOffsetNs = TimeUnit.MILLISECONDS.toNanos(fakeServerMs) - fakeElapsedNs,
+                rumErrorId = fakeOomEvent.id,
+                rumContext = fakeOomEvent.rumContext
+            )
+        )
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+    }
+
+    @Test
+    fun `M persist gating event synchronously W onReceive() {RumOomErrorEvent}`(
+        @Forgery fakeOomEvent: ProfilerEvent.RumOomErrorEvent
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+
+        // When
+        testedFeature.onReceive(fakeOomEvent)
+
+        // Then
+        val gatingEventCaptor = argumentCaptor<String>()
+        verify(mockSharedPreferencesStorage).putString(
+            eq(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT),
+            gatingEventCaptor.capture(),
+            eq(true)
+        )
+        assertThat(PendingOomGatingEvent.fromJson(gatingEventCaptor.firstValue)).isEqualTo(
+            PendingOomGatingEvent(
+                rumErrorId = fakeOomEvent.id,
+                timestampMs = fakeOomEvent.timestamp,
+                rumContext = fakeOomEvent.rumContext
+            )
+        )
+    }
+
+    @Test
+    fun `M not persist gating event W onReceive() {RumOomErrorEvent, OOM trigger inactive}`(
+        @Forgery fakeOomEvent: ProfilerEvent.RumOomErrorEvent
+    ) {
+        // Given
+        whenever(mockProfiler.isOomTriggerActive) doReturn false
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.pendingTriggerProfiles = mockPendingTriggerProfiles
+
+        // When
+        testedFeature.onReceive(fakeOomEvent)
+
+        // Then
+        verify(mockPendingTriggerProfiles, never()).setRumGatingEvent(fakeOomEvent)
+    }
+
+    @Test
+    fun `M clear persisted gating event W onOutOfMemoryDetected() {matched in-process}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @Forgery fakeOomEvent: ProfilerEvent.RumOomErrorEvent,
+        @LongForgery(min = 1_000L, max = 1_000_000L) fakeCaptureMs: Long
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        testedFeature.onReceive(fakeOomEvent)
+
+        // When
+        testedFeature.onOutOfMemoryDetected(
+            fakePerfettoResult.asHeapHistogram(ProfilingStartReason.OUT_OF_MEMORY, fakeCaptureMs)
+        )
+
+        // Then
+        verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, true)
+    }
+
+    @Test
+    fun `M recover deferred gating event and upload immediately W onOutOfMemoryDetected() {within max age}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @Forgery fakeGatingEvent: PendingOomGatingEvent,
+        @LongForgery(min = 1_000L, max = 1_000_000L) fakeGatingTimestampMs: Long,
+        @LongForgery(min = 1_000L, max = 1_000_000L) fakeCaptureMs: Long,
+        @LongForgery(min = 1L, max = 1_000L) fakeAgeMarginMs: Long
+    ) {
+        // Given
+        val fakeDeferredGatingEvent = fakeGatingEvent.copy(timestampMs = fakeGatingTimestampMs)
+        val fakeOomResult = fakePerfettoResult.asHeapHistogram(ProfilingStartReason.OUT_OF_MEMORY, fakeCaptureMs)
+        val expectedPendingProfile = PendingOomProfile(
+            resultFilePath = fakeOomResult.resultFilePath,
+            startMs = fakeCaptureMs,
+            endMs = fakeCaptureMs,
+            bootNtpOffsetNs = fakeOomResult.bootNtpOffsetNs,
+            rumErrorId = fakeDeferredGatingEvent.rumErrorId,
+            rumContext = fakeDeferredGatingEvent.rumContext
+        )
+        stubStoredString(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, fakeDeferredGatingEvent.toJson())
+        stubStoredString(ProfilingStorage.KEY_PENDING_OOM_PROFILE, expectedPendingProfile.toJson())
+        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn
+            fakeGatingTimestampMs + PendingTriggerProfileStorage.PENDING_OOM_PROFILE_MAX_AGE_MS - fakeAgeMarginMs
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeCaptureMs
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        runSchedulerExecutorInline()
+
+        // When
+        testedFeature.onOutOfMemoryDetected(fakeOomResult)
+
+        // Then
+        verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, true)
+        val pendingProfileCaptor = argumentCaptor<String>()
+        verify(mockSharedPreferencesStorage).putString(
+            eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+            pendingProfileCaptor.capture(),
+            eq(true)
+        )
+        assertThat(PendingOomProfile.fromJson(pendingProfileCaptor.firstValue)).isEqualTo(expectedPendingProfile)
+        val resultCaptor = argumentCaptor<PerfettoResult>()
+        verify(mockDataWriter).writeTriggerProfile(
+            resultCaptor.capture(),
+            eq(expectedPendingProfile.rumErrorId),
+            eq(expectedPendingProfile.rumContext)
+        )
+        assertUploadedProfile(resultCaptor.firstValue, expectedPendingProfile)
+    }
+
+    @Test
+    fun `M not recover gating event W onOutOfMemoryDetected() {older than max age}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @Forgery fakeGatingEvent: PendingOomGatingEvent,
+        @LongForgery(min = 1_000L, max = 1_000_000L) fakeGatingTimestampMs: Long,
+        @LongForgery(min = 1_000L, max = 1_000_000L) fakeCaptureMs: Long,
+        @LongForgery(min = 0L, max = 1_000L) fakeExtraAgeMs: Long
+    ) {
+        // Given
+        stubStoredString(
+            ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT,
+            fakeGatingEvent.copy(timestampMs = fakeGatingTimestampMs).toJson()
+        )
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn
+            fakeGatingTimestampMs + PendingTriggerProfileStorage.PENDING_OOM_PROFILE_MAX_AGE_MS + fakeExtraAgeMs
+
+        // When
+        testedFeature.onOutOfMemoryDetected(
+            fakePerfettoResult.asHeapHistogram(ProfilingStartReason.OUT_OF_MEMORY, fakeCaptureMs)
+        )
+
+        // Then
+        verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, true)
+        verify(mockSharedPreferencesStorage, never()).putString(
+            eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+            any(),
+            any()
+        )
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+    }
+
+    @Test
+    fun `M clear then upload the persisted profile W onInitialize() {within max age}`(
+        @Forgery fakePendingOomProfile: PendingOomProfile,
+        @LongForgery(min = 1_000L, max = 1_000_000L) fakeStartMs: Long,
+        @LongForgery(min = 0L, max = 1_000L) fakeAgeMs: Long
+    ) {
+        // Given
+        val fakePendingProfile = fakePendingOomProfile.copy(startMs = fakeStartMs)
+        stubStoredString(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakePendingProfile.toJson())
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeStartMs + fakeAgeMs
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+
+        // When
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        runScheduledReplay()
+
+        // Then
+        val resultCaptor = argumentCaptor<PerfettoResult>()
+        val inOrder = inOrder(mockSharedPreferencesStorage, mockDataWriter)
+        inOrder.verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_PROFILE, true)
+        inOrder.verify(mockDataWriter).writeTriggerProfile(
+            resultCaptor.capture(),
+            eq(fakePendingProfile.rumErrorId),
+            eq(fakePendingProfile.rumContext)
+        )
+        assertUploadedProfile(resultCaptor.firstValue, fakePendingProfile)
+    }
+
+    @Test
+    fun `M delete the persisted profile file in place W onInitialize() {older than max age}`(
+        @Forgery fakePendingOomProfile: PendingOomProfile,
+        @LongForgery(min = 1_000L, max = 1_000_000L) fakeStartMs: Long,
+        @LongForgery(min = 0L, max = 1_000L) fakeExtraAgeMs: Long,
+        @StringForgery fakeFileName: String,
+        @StringForgery fakeTraceContent: String,
+        @TempDir fakeTempDir: File
+    ) {
+        // Given
+        val traceFile = File(fakeTempDir, fakeFileName).apply { writeText(fakeTraceContent) }
+        val fakePendingProfile = fakePendingOomProfile.copy(
+            resultFilePath = traceFile.absolutePath,
+            startMs = fakeStartMs
+        )
+        stubStoredString(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakePendingProfile.toJson())
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn
+            fakeStartMs + PendingTriggerProfileStorage.PENDING_OOM_PROFILE_MAX_AGE_MS + fakeExtraAgeMs
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+
+        // When
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        runScheduledReplay()
+
+        // Then
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+        verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_PROFILE, true)
+        assertThat(traceFile.exists()).isFalse
+    }
+
+    @Test
+    fun `M not persist pending profile W RumOomErrorEvent then onOutOfMemoryDetected {quota denied}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @Forgery fakeOomEvent: ProfilerEvent.RumOomErrorEvent,
+        @LongForgery(min = 1_000L, max = 1_000_000L) fakeCaptureMs: Long,
+        @StringForgery fakeFileName: String,
+        @StringForgery fakeTraceContent: String,
+        @TempDir fakeTempDir: File
+    ) {
+        // Given
+        val traceFile = File(fakeTempDir, fakeFileName).apply { writeText(fakeTraceContent) }
+        val fakeOomResult = fakePerfettoResult
+            .asHeapHistogram(ProfilingStartReason.OUT_OF_MEMORY, fakeCaptureMs)
+            .copy(resultFilePath = traceFile.absolutePath)
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        testedFeature.dispatchRumSession(fakeOomEvent.rumContext.sessionId, 100f)
+        testedFeature.simulateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
+        testedFeature.onReceive(fakeOomEvent)
+
+        // When
+        testedFeature.onOutOfMemoryDetected(fakeOomResult)
+
+        // Then
+        verify(mockSharedPreferencesStorage, never()).putString(
+            eq(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT),
+            any(),
+            any()
+        )
+        verify(mockSharedPreferencesStorage, never()).putString(
+            eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+            any(),
+            any()
+        )
+        assertThat(traceFile.exists()).isFalse
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+    }
+
+    @Test
+    fun `M upload the persisted profile W onInitialize() {current session quota denied}`(
+        @Forgery fakePendingOomProfile: PendingOomProfile,
+        @LongForgery(min = 1_000L, max = 1_000_000L) fakeStartMs: Long,
+        @LongForgery(min = 0L, max = 1_000L) fakeAgeMs: Long
+    ) {
+        // Given
+        val fakePendingProfile = fakePendingOomProfile.copy(startMs = fakeStartMs)
+        stubStoredString(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakePendingProfile.toJson())
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeStartMs + fakeAgeMs
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+
+        // When
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        testedFeature.dispatchRumSession(fakeSessionId, 100f)
+        testedFeature.simulateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
+        runScheduledReplay()
+
+        // Then
+        val resultCaptor = argumentCaptor<PerfettoResult>()
+        verify(mockDataWriter).writeTriggerProfile(
+            resultCaptor.capture(),
+            eq(fakePendingProfile.rumErrorId),
+            eq(fakePendingProfile.rumContext)
+        )
+        assertUploadedProfile(resultCaptor.firstValue, fakePendingProfile)
+    }
+
+    @Test
+    fun `M not upload anything W onInitialize() {no pending profile}`() {
+        // Given
+        stubStoredString(ProfilingStorage.KEY_PENDING_OOM_PROFILE, null)
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+
+        // When
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        runScheduledReplay()
+
+        // Then
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+    }
+
+    @Test
+    fun `M delete histogram file in place W expiry {capture expired, no signal}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @LongForgery(min = 1_000L, max = 1_000_000L) fakeCaptureMs: Long,
+        @StringForgery fakeFileName: String,
+        @StringForgery fakeTraceContent: String,
+        @TempDir fakeTempDir: File
+    ) {
+        // Given
+        val traceFile = File(fakeTempDir, fakeFileName).apply { writeText(fakeTraceContent) }
+        val scheduledTasks = mutableListOf<Runnable>()
+        whenever(mockSchedulerExecutor.schedule(any<Runnable>(), any(), any())) doAnswer {
+            scheduledTasks.add(it.getArgument(0))
+            null
+        }
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(fakeCaptureMs)
+        testedFeature.onOutOfMemoryDetected(
+            fakePerfettoResult
+                .asHeapHistogram(ProfilingStartReason.OUT_OF_MEMORY, fakeCaptureMs)
+                .copy(resultFilePath = traceFile.absolutePath)
+        )
+        whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn
+            fakeCaptureMs + PendingTriggerProfiles.EXPIRY_TIMEOUT_MS + 1L
+
+        // When
+        scheduledTasks.last().run()
+
+        // Then
+        assertThat(traceFile.exists()).isFalse
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+    }
+
+    @Test
+    fun `M delete pending histogram file in place W onStop {capture pending}`(
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @LongForgery(min = 1_000L, max = 1_000_000L) fakeCaptureMs: Long,
+        @StringForgery fakeFileName: String,
+        @StringForgery fakeTraceContent: String,
+        @TempDir fakeTempDir: File
+    ) {
+        // Given
+        val traceFile = File(fakeTempDir, fakeFileName).apply { writeText(fakeTraceContent) }
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(fakeCaptureMs)
+        testedFeature.onOutOfMemoryDetected(
+            fakePerfettoResult
+                .asHeapHistogram(ProfilingStartReason.OUT_OF_MEMORY, fakeCaptureMs)
+                .copy(resultFilePath = traceFile.absolutePath)
+        )
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(traceFile.exists()).isFalse
+    }
+
+    private fun PerfettoResult.asHeapHistogram(startReason: ProfilingStartReason, captureMs: Long): PerfettoResult =
+        copy(
+            start = captureMs,
+            startReason = startReason,
+            end = captureMs,
+            profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
+        )
+
+    private fun stubStoredString(key: String, value: String?) {
+        whenever(mockSharedPreferencesStorage.getString(eq(key), anyOrNull())) doReturn value
+    }
+
+    private fun assertUploadedProfile(actual: PerfettoResult, expected: PendingOomProfile) {
+        assertThat(actual.start).isEqualTo(expected.startMs)
+        assertThat(actual.end).isEqualTo(expected.endMs)
+        assertThat(actual.startReason).isEqualTo(ProfilingStartReason.OUT_OF_MEMORY)
+        assertThat(actual.resultFilePath).isEqualTo(expected.resultFilePath)
+        assertThat(actual.profileTypes).containsExactly(ProfileType.HEAP_HISTOGRAM)
+        assertThat(actual.bootNtpOffsetNs).isEqualTo(expected.bootNtpOffsetNs)
+    }
+
+    private fun runSchedulerExecutorInline() {
+        doAnswer { it.getArgument<Runnable>(0).run() }
+            .whenever(mockSchedulerExecutor).execute(any())
+    }
+
+    private fun runScheduledReplay() {
+        val runnableCaptor = argumentCaptor<Runnable>()
+        verify(mockSchedulerExecutor).execute(runnableCaptor.capture())
+        runnableCaptor.allValues.forEach { it.run() }
+    }
 
     companion object {
         private val mainLooper = MainLooperTestConfiguration()

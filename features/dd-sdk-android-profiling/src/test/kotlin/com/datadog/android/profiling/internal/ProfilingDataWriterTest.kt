@@ -32,6 +32,7 @@ import com.datadog.android.profiling.model.RumMetadataEvent
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -265,7 +266,7 @@ internal class ProfilingDataWriterTest {
         file.writeBytes(forge.aString().toByteArray())
         val fakeServerTimeMs = forge.aPositiveLong()
         val fakeBootTimeNs = forge.aLong(min = 1L, max = 1_000_000L)
-        val expectedBootNtpNs = TimeUnit.MILLISECONDS.toNanos(fakeServerTimeMs) - fakeBootTimeNs
+        val expectedBootNtpOffsetNs = TimeUnit.MILLISECONDS.toNanos(fakeServerTimeMs) - fakeBootTimeNs
         whenever(mockTimeProvider.getServerTimestampMillis()) doReturn fakeServerTimeMs
         whenever(mockTimeProvider.getDeviceElapsedRealtimeNanos()) doReturn fakeBootTimeNs
         val rumContext = fakeVitals.first().rumContext
@@ -294,7 +295,7 @@ internal class ProfilingDataWriterTest {
             eventType = eq(EventType.DEFAULT)
         )
         val actualEvent = ProfileEvent.fromJson(String(argumentCaptor.firstValue.data))
-        assertThat(actualEvent).hasBootNtp(expectedBootNtpNs)
+        assertThat(actualEvent).hasBootNtp(expectedBootNtpOffsetNs)
         assertThat(file.exists()).isFalse()
     }
 
@@ -637,15 +638,17 @@ internal class ProfilingDataWriterTest {
     fun `M write ProfileEvent with error id and oom operation W writeTriggerProfile() {valid file}`(
         @StringForgery rumErrorId: String,
         @Forgery rumContext: ProfilingRumContext,
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @LongForgery(min = 1_000L, max = 1_000_000L) detectedAtMs: Long,
+        @StringForgery fakeFileName: String,
         forge: Forge
     ) {
         // Given
-        val profileFile = File(tmp, "trigger.proto").apply { writeBytes(forge.aString().toByteArray()) }
-        val detectedAtMs = 1_000L
+        val profileFile = File(tmp, fakeFileName).apply { writeBytes(forge.aString().toByteArray()) }
 
         // When
         testedDataWriterTest.writeTriggerProfile(
-            perfettoResult = PerfettoResult(
+            perfettoResult = fakePerfettoResult.copy(
                 start = detectedAtMs,
                 startReason = ProfilingStartReason.OUT_OF_MEMORY,
                 end = detectedAtMs,
@@ -671,12 +674,12 @@ internal class ProfilingDataWriterTest {
             "sdk_version:${fakeDatadogContext.sdkVersion}",
             "profiler_version:${fakeDatadogContext.sdkVersion}",
             "runtime_version:${fakeDatadogContext.deviceInfo.osVersion}",
-            "operation:out_of_memory",
-            "profile_type:heap_histogram"
+            "operation:out_of_memory"
         )
         fakeDatadogContext.appBuildId?.let {
             expectedTagList.add("build_id:${fakeDatadogContext.appBuildId}")
         }
+        expectedTagList.add("profile_type:heap_histogram")
         assertThat(actualEvent)
             .hasStart(formatIsoUtc(detectedAtMs))
             .hasEnd(formatIsoUtc(detectedAtMs))
@@ -711,17 +714,17 @@ internal class ProfilingDataWriterTest {
     @Test
     fun `M not write and delete file W writeTriggerProfile() {empty file}`(
         @StringForgery rumErrorId: String,
-        @Forgery rumContext: ProfilingRumContext
+        @Forgery rumContext: ProfilingRumContext,
+        @Forgery fakePerfettoResult: PerfettoResult,
+        @StringForgery fakeFileName: String
     ) {
         // Given
-        val profileFile = File(tmp, "empty.proto").apply { writeBytes(ByteArray(0)) }
+        val profileFile = File(tmp, fakeFileName).apply { writeBytes(ByteArray(0)) }
 
         // When
         testedDataWriterTest.writeTriggerProfile(
-            perfettoResult = PerfettoResult(
-                start = 1_000L,
+            perfettoResult = fakePerfettoResult.copy(
                 startReason = ProfilingStartReason.MEMORY_ANOMALY,
-                end = 1_000L,
                 resultFilePath = profileFile.absolutePath,
                 profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
             ),

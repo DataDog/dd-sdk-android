@@ -16,7 +16,7 @@ internal class PendingOomProfileForgeryFactory : ForgeryFactory<PendingOomProfil
             resultFilePath = forge.anAlphabeticalString(),
             startMs = forge.aLong(),
             endMs = forge.aLong(),
-            bootNtpNs = forge.aLong(),
+            bootNtpOffsetNs = forge.aLong(),
             rumErrorId = forge.anAlphabeticalString(),
             rumContext = forge.getForgery()
         )

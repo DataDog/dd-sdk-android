@@ -50,19 +50,26 @@ internal class PendingOomGatingEventTest {
     }
 
     @Test
-    fun `M read the documented wire format W fromJson()`() {
+    fun `M read the documented wire format W fromJson()`(
+        @StringForgery fakeErrorId: String,
+        @LongForgery fakeTimestampMs: Long,
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String,
+        @StringForgery fakeViewId: String,
+        @StringForgery fakeViewName: String
+    ) {
         // Given
-        // The marker is written by the process that received the RUM gating event and read by
+        // The gating event is written by the process that received it and read by
         // the one that eventually receives the deferred trigger result, so these key names are a
         // compatibility contract across an app launch.
         val serialized = """
             {
-              "error_id": "err-1",
-              "timestamp": 1700000000000,
-              "application_id": "app-1",
-              "session_id": "sess-1",
-              "view_id": "view-1",
-              "view_name": "MainActivity"
+              "error_id": "$fakeErrorId",
+              "timestamp": $fakeTimestampMs,
+              "application_id": "$fakeApplicationId",
+              "session_id": "$fakeSessionId",
+              "view_id": "$fakeViewId",
+              "view_name": "$fakeViewName"
             }
         """.trimIndent()
 
@@ -72,13 +79,13 @@ internal class PendingOomGatingEventTest {
         // Then
         assertThat(restored).isEqualTo(
             PendingOomGatingEvent(
-                rumErrorId = "err-1",
-                timestampMs = 1_700_000_000_000L,
+                rumErrorId = fakeErrorId,
+                timestampMs = fakeTimestampMs,
                 rumContext = ProfilingRumContext(
-                    applicationId = "app-1",
-                    sessionId = "sess-1",
-                    viewId = "view-1",
-                    viewName = "MainActivity"
+                    applicationId = fakeApplicationId,
+                    sessionId = fakeSessionId,
+                    viewId = fakeViewId,
+                    viewName = fakeViewName
                 )
             )
         )

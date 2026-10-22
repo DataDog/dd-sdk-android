@@ -52,7 +52,7 @@ internal data class PendingOomGatingEvent(
 
         /**
          * Rebuilds a [PendingOomGatingEvent] from [serialized], or returns `null` if it is not a
-         * marker this version can use. The marker may have been written by a different version of
+         * gating event this version can use. It may have been written by a different version of
          * the SDK, or left half-written by the process death it exists to survive, so nothing
          * about its shape is assumed.
          */

@@ -26,11 +26,14 @@ internal enum class ProfileType(val value: String) {
  * @param end the end time of the profiling in milliseconds since epoch.
  * @param resultFilePath the path to the file containing the profiling result.
  * @param profileTypes the types of traces contained in the profiling result.
+ * @param bootNtpOffsetNs the offset between NTP-corrected time and the boot clock (NTP time - boot
+ * time), in nanoseconds, as measured at capture time.
  */
 internal data class PerfettoResult(
     val start: Long,
     val startReason: ProfilingStartReason,
     val end: Long,
     val resultFilePath: String,
-    val profileTypes: List<ProfileType>
+    val profileTypes: List<ProfileType>,
+    val bootNtpOffsetNs: Long
 )

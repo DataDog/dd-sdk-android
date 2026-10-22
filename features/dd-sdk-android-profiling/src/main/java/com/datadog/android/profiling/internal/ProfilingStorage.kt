@@ -48,7 +48,7 @@ internal object ProfilingStorage {
     }
 
     internal fun removePendingOomProfile(appContext: Context) {
-        getStorage(appContext).remove(KEY_PENDING_OOM_PROFILE)
+        getStorage(appContext).remove(KEY_PENDING_OOM_PROFILE, sync = true)
     }
 
     /**
@@ -66,7 +66,7 @@ internal object ProfilingStorage {
     }
 
     internal fun removePendingOomGatingEvent(appContext: Context) {
-        getStorage(appContext).remove(KEY_PENDING_OOM_GATING_EVENT)
+        getStorage(appContext).remove(KEY_PENDING_OOM_GATING_EVENT, sync = true)
     }
 
     @JvmStatic

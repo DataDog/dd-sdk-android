@@ -6,27 +6,52 @@
 
 package com.datadog.android.profiling.internal
 
+import android.content.Context
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.profiling.fixtures.ProfilingStorageFixture
+import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.perfetto.ProfileType
+import com.datadog.android.profiling.internal.trigger.PendingOomGatingEvent
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfileStorage
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
+import com.datadog.android.utils.verifyLog
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
 import java.util.concurrent.ScheduledExecutorService
 
-@ExtendWith(MockitoExtension::class)
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(Configurator::class)
 internal class PendingTriggerProfilesTest {
 
     private val now = 10_000L
@@ -38,8 +63,29 @@ internal class PendingTriggerProfilesTest {
     @Mock
     private lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    private lateinit var mockContext: Context
+
+    @Mock
+    private lateinit var mockSharedPreferencesStorage: SharedPreferencesStorage
+
     @TempDir
     private lateinit var tempDir: File
+
+    @LongForgery
+    private var fakeBootNtpOffsetNs: Long = 0L
+
+    private val fakeQuotaDeniedSessionIds = mutableSetOf<String>()
+
+    @BeforeEach
+    fun setUp() {
+        ProfilingStorageFixture.stubWith(mockSharedPreferencesStorage)
+    }
+
+    @AfterEach
+    fun tearDown() {
+        ProfilingStorageFixture.reset()
+    }
 
     // region ANR (deletes the result file in place on expiry)
 
@@ -185,10 +231,11 @@ internal class PendingTriggerProfilesTest {
     fun `M delete old profiling result file in place W setProfilingResult {second result}`() {
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
         val buffer = PendingTriggerProfileStorage(
+            appContext = mockContext,
             executor = mockExecutor,
             timeProvider = fixedTimeProvider(),
             internalLogger = mockInternalLogger,
-            onMatch = { c, s -> matched.add(c to s) }
+            callback = stubCallback(onMatch = { c, s -> matched.add(c to s) })
         )
         val oldFile = File(tempDir, "old.proto").apply { writeText("trace") }
         val newFile = File(tempDir, "new.proto").apply { writeText("trace") }
@@ -348,6 +395,96 @@ internal class PendingTriggerProfilesTest {
     }
 
     @Test
+    fun `M consume buffered result W setProfilingResult {deferred OOM gating event, within max age}`(
+        @StringForgery fakeErrorId: String,
+        @StringForgery fakePath: String,
+        @Forgery fakeRumContext: ProfilingRumContext,
+        @LongForgery(min = 1_000L, max = 1_000_000L) fakeNowMs: Long
+    ) {
+        // Given
+        val deferredGatingEvent = PendingOomGatingEvent(
+            rumErrorId = fakeErrorId,
+            timestampMs = fakeNowMs,
+            rumContext = fakeRumContext
+        )
+        whenever(
+            mockSharedPreferencesStorage.getString(
+                eq(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT),
+                anyOrNull()
+            )
+        ) doReturn deferredGatingEvent.toJson()
+        var deferredReadyCount = 0
+        val buffer = PendingTriggerProfileStorage(
+            appContext = mockContext,
+            executor = mockExecutor,
+            timeProvider = fixedTimeProvider(fakeNowMs),
+            internalLogger = mockInternalLogger,
+            callback = stubCallback(onDeferredOomProfileReady = { deferredReadyCount++ })
+        )
+
+        // When
+        buffer.setProfilingResult(
+            perfettoResult(fakeNowMs, fakePath, startReason = ProfilingStartReason.OUT_OF_MEMORY)
+        )
+
+        // Then
+        assertThat(deferredReadyCount).isEqualTo(1)
+        assertThat(buffer.clear()).isNull()
+    }
+
+    @Test
+    fun `M not persist the gating event W setRumGatingEvent {OOM, quota denied}`(
+        @Forgery fakeOomEvent: ProfilerEvent.RumOomErrorEvent
+    ) {
+        // Given
+        fakeQuotaDeniedSessionIds.add(fakeOomEvent.rumContext.sessionId)
+        val buffer = testedHeapHistogramBuffer()
+
+        // When
+        buffer.setRumGatingEvent(fakeOomEvent)
+
+        // Then
+        verify(mockSharedPreferencesStorage, never()).putString(
+            eq(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT),
+            any(),
+            any()
+        )
+    }
+
+    @Test
+    fun `M drop the profile W setProfilingResult {OOM matched in-process, quota denied after gating event}`(
+        @Forgery fakeOomEvent: ProfilerEvent.RumOomErrorEvent,
+        @LongForgery(min = 1_000L, max = 1_000_000L) fakeDetectedAtMs: Long,
+        @StringForgery fakeFileName: String,
+        @StringForgery fakeTraceContent: String
+    ) {
+        // Given
+        val traceFile = File(tempDir, fakeFileName).apply { writeText(fakeTraceContent) }
+        val buffer = testedHeapHistogramBuffer()
+        buffer.setRumGatingEvent(fakeOomEvent)
+        fakeQuotaDeniedSessionIds.add(fakeOomEvent.rumContext.sessionId)
+
+        // When
+        buffer.setProfilingResult(
+            perfettoResult(fakeDetectedAtMs, traceFile.absolutePath, startReason = ProfilingStartReason.OUT_OF_MEMORY)
+        )
+
+        // Then
+        verify(mockSharedPreferencesStorage, never()).putString(
+            eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+            any(),
+            any()
+        )
+        assertThat(traceFile.exists()).isFalse
+        verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, true)
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.DEBUG,
+            target = InternalLogger.Target.USER,
+            message = PendingTriggerProfileStorage.LOG_OOM_PROFILE_DROPPED_QUOTA_DENIED
+        )
+    }
+
+    @Test
     fun `M delete old profiling result file in place W setProfilingResult {second result, OOM}`() {
         // Given
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
@@ -388,7 +525,8 @@ internal class PendingTriggerProfilesTest {
             } else {
                 ProfileType.STACK_SAMPLING
             }
-        )
+        ),
+        bootNtpOffsetNs = fakeBootNtpOffsetNs
     )
 
     private fun anrErrorEvent(
@@ -433,20 +571,33 @@ internal class PendingTriggerProfilesTest {
     private fun testedBuffer(
         onMatch: (PerfettoResult, ProfilerEvent) -> Unit = { _, _ -> }
     ): PendingTriggerProfileStorage = PendingTriggerProfileStorage(
+        appContext = mockContext,
         executor = mockExecutor,
         timeProvider = fixedTimeProvider(),
         internalLogger = mockInternalLogger,
-        onMatch = onMatch
+        callback = stubCallback(onMatch = onMatch)
     )
 
     private fun testedHeapHistogramBuffer(
         onMatch: (PerfettoResult, ProfilerEvent) -> Unit = { _, _ -> }
     ): PendingTriggerProfileStorage = PendingTriggerProfileStorage(
+        appContext = mockContext,
         executor = mockExecutor,
         timeProvider = fixedTimeProvider(),
         internalLogger = mockInternalLogger,
-        onMatch = onMatch
+        callback = stubCallback(onMatch = onMatch)
     )
+
+    private fun stubCallback(
+        onMatch: (PerfettoResult, ProfilerEvent) -> Unit = { _, _ -> },
+        onDeferredOomProfileReady: () -> Unit = {}
+    ) = object : PendingTriggerProfileStorage.Callback {
+        override fun onMatch(result: PerfettoResult, event: ProfilerEvent) = onMatch(result, event)
+
+        override fun onDeferredOomProfileReady() = onDeferredOomProfileReady()
+
+        override fun isSessionQuotaDenied(sessionId: String) = fakeQuotaDeniedSessionIds.contains(sessionId)
+    }
 
     // endregion
 }
