@@ -128,7 +128,7 @@ internal class ExperimentationOptOutTest {
         // Then
         assertThat(result.value).isTrue()
         assertThat(stubSdkCore.eventsWritten(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
-        assertThat(requestOptions(stubSdkCore)?.opt("experimentation_opt_out_mode")).isEqualTo("immediate")
+        assertThat(requestOptions(stubSdkCore)).isNull()
     }
 
     @Test
