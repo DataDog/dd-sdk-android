@@ -87,7 +87,7 @@ internal class WebViewRumEventContextProviderTest {
             .isEqualTo(fakeApplicationId.toString())
         assertThat(rumContext?.sessionId)
             .isEqualTo(fakeSessionId.toString())
-        assertThat(rumContext?.hasTimeseries)
+        assertThat(checkNotNull(rumContext).hasTimeseries)
             .isEqualTo(fakeSessionHasTimeseries)
     }
 
