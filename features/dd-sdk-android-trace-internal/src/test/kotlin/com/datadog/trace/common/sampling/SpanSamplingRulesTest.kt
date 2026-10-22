@@ -20,7 +20,7 @@ internal open class SpanSamplingRulesTest {
         val rules = deserializeRules("[]")
 
         // Then
-        assertThat(rules.isEmpty()).isTrue()
+        assertThat(rules.isEmpty).isTrue()
     }
 
     @Test
@@ -112,7 +112,7 @@ internal open class SpanSamplingRulesTest {
             )
 
         // Then
-        assertThat(rules.isEmpty()).isTrue()
+        assertThat(rules.isEmpty).isTrue()
     }
 
     @ParameterizedTest
@@ -125,14 +125,14 @@ internal open class SpanSamplingRulesTest {
             )
 
         // Then
-        assertThat(rules.isEmpty()).isTrue()
+        assertThat(rules.isEmpty).isTrue()
     }
 
     @ParameterizedTest
     @ValueSource(strings = ["[", "{\"service\": \"usersvc\",}", ""])
     fun `Skip Span Sampling Rules when incorrect JSON provided`(jsonRules: String) {
         val rules = deserializeRules(jsonRules)
-        assertThat(rules.isEmpty()).isTrue()
+        assertThat(rules.isEmpty).isTrue()
     }
 
     @Test

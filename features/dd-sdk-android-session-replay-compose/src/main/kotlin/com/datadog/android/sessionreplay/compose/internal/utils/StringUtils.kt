@@ -38,7 +38,7 @@ internal fun resolveAnnotatedString(value: Any?): String = if (value is Annotate
     ) {
         value.text
     } else {
-        // Save space if we there is text only in the object
+        // Save space if there is text only in the object
         value.toString()
     }
 } else if (value is Collection<*>) {

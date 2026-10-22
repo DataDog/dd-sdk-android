@@ -2,7 +2,7 @@
 ## ComposeView & AndroidComposeView
 
 The `ComposeView` or one of its children (typically an `AndroidComposeView`) will contain a `Composition` object 
-in it's internal tags with the key `androidx.compose.ui.R.id.wrapped_composition_tag`. 
+in its internal tags with the key `androidx.compose.ui.R.id.wrapped_composition_tag`. 
 
 It will be an instance of the `WrappedComposition` class which in turns holds a `CompositionImpl` instance, 
 from which we get a `Composer` instance.  

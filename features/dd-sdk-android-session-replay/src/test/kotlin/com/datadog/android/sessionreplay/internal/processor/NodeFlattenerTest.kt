@@ -295,7 +295,7 @@ internal class NodeFlattenerTest {
         val root = mutableList.removeAt(0).toNode()
         val middle = mutableList.size / 2
         // add left
-        // we need to create a new list as Kotlin .subList re - uses the old list
+        // we need to create a new list as Kotlin .subList reuses the old list
         addLeafsToParent(root, ArrayList(mutableList.subList(0, middle)))
         // add right
         addLeafsToParent(root, ArrayList(mutableList.subList(middle, mutableList.size)))
@@ -347,23 +347,6 @@ internal class NodeFlattenerTest {
 
         )
         return root.copy(children = snapshots(root, 1, treeLevel, childrenSize))
-    }
-
-    private fun MobileSegment.Wireframe.copy(id: Long): MobileSegment.Wireframe {
-        return when (this) {
-            is MobileSegment.Wireframe.ShapeWireframe ->
-                this.copy(id = id)
-            is MobileSegment.Wireframe.TextWireframe ->
-                this.copy(id = id)
-            is MobileSegment.Wireframe.ImageWireframe ->
-                this.copy(id = id)
-            is MobileSegment.Wireframe.PlaceholderWireframe ->
-                this.copy(id = id)
-            is MobileSegment.Wireframe.WebviewWireframe ->
-                this.copy(id = id)
-            is MobileSegment.Wireframe.EmbeddedContentWireframe ->
-                this.copy(id = id)
-        }
     }
 
     private fun Forge.snapshots(parent: Node, treeLevel: Int, maxTreeLevel: Int, childrenSize: Int): List<Node> {

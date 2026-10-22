@@ -53,7 +53,7 @@ internal class WebViewRumEventContextProviderTest {
     @Forgery
     lateinit var fakeSessionId: UUID
 
-    @StringForgery()
+    @StringForgery
     lateinit var fakeSessionState: String
 
     @BoolForgery

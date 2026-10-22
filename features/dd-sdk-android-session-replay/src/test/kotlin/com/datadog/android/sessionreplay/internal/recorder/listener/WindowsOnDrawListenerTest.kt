@@ -508,7 +508,6 @@ internal class WindowsOnDrawListenerTest {
         ).thenReturn(mockPerformanceMetric)
         whenever(mockDebouncer.debounce(any(), any())) doAnswer {
             it.getArgument<Runnable>(0).run()
-            Unit
         }
         whenever(mockRecordedDataQueueHandler.addSnapshotItem(any<SystemInformation>()))
             .thenReturn(fakeSnapshotQueueItem)

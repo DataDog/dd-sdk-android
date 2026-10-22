@@ -27,7 +27,6 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.asString
 import com.datadog.android.internal.utils.loggableStackTrace
-import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -879,7 +878,6 @@ internal class RumFeatureTest {
     }
 
     @Test
-    @OptIn(ExperimentalRumApi::class)
     fun `M wire timeseries factory W initialize { timeseries enabled }`(
         @LongForgery(min = 1L) fakeTotalRamBytes: Long,
         @IntForgery(min = 2, max = 128) fakeBufferSize: Int,
@@ -948,7 +946,6 @@ internal class RumFeatureTest {
     }
 
     @Test
-    @OptIn(ExperimentalRumApi::class)
     fun `M not wire timeseries factory and warn W initialize { timeseries enabled, non-Application context }`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
@@ -1064,7 +1061,6 @@ internal class RumFeatureTest {
     }
 
     @Test
-    @OptIn(ExperimentalRumApi::class)
     fun `M initialize vital executor W initialize { frequency = NEVER and timeseries enabled }`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(

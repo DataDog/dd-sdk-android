@@ -19,11 +19,11 @@ import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
 
 /**
- * This class exposes internal methods that are used by other Datadog modules and cross platform
+ * This class exposes internal methods that are used by other Datadog modules and cross-platform
  * frameworks. It is not meant for public use.
  *
  * DO NOT USE this class or its methods if you are not working on the internals of the Datadog SDK
- * or one of the cross platform frameworks.
+ * or one of the cross-platform frameworks.
  *
  * Methods, members, and functionality of this class  are subject to change without notice, as they
  * are not considered part of the public interface of the Datadog SDK.
@@ -62,7 +62,7 @@ class _SessionReplayInternalProxy(private val builder: SessionReplayConfiguratio
         /**
          * Identifies [view] as a host slot for embedded Session Replay content.
          *
-         * The slot identifier is supplied by the embedding SDK and is independent from the native
+         * The slot identifier is supplied by the embedding SDK and is independent of the native
          * wireframe identifier. Passing `null` permanently detaches the slot and removes its
          * embedded-content wireframe from the next capture. Reassigning the current slot identifier
          * has no effect.

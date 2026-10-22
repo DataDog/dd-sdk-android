@@ -81,6 +81,7 @@ internal class FPSVitalListenerTest {
         verify(mockObserver).onNewSample(eq(expectedFrameRate, 0.0001))
     }
 
+    @Test
     fun `M do nothing W onFrame() {zero ns duration}`(
         @LongForgery timestampNs: Long,
         @BoolForgery isJank: Boolean

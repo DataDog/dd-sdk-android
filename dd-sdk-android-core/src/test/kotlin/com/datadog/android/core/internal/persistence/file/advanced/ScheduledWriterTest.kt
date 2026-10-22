@@ -52,7 +52,7 @@ internal class ScheduledWriterTest {
 
     @BeforeEach
     fun `set up`() {
-        testedWriter = ScheduledWriter<String>(
+        testedWriter = ScheduledWriter(
             mockDelegateWriter,
             mockExecutorService,
             mockInternalLogger

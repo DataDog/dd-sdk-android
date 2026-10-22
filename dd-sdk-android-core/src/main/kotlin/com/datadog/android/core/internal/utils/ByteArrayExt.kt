@@ -63,10 +63,10 @@ fun Collection<ByteArray>.join(
     prefix.copyTo(0, result, 0, prefix.size, internalLogger)
     offset += prefix.size
 
-    for (item in this.withIndex()) {
-        item.value.copyTo(0, result, offset, item.value.size, internalLogger)
-        offset += item.value.size
-        if (item.index != this.size - 1) {
+    for ((index, value) in this.withIndex()) {
+        value.copyTo(0, result, offset, value.size, internalLogger)
+        offset += value.size
+        if (index != this.size - 1) {
             separator.copyTo(0, result, offset, separator.size, internalLogger)
             offset += separator.size
         }

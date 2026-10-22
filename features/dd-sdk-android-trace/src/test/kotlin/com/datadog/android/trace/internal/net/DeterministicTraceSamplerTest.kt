@@ -23,7 +23,6 @@ import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
@@ -39,9 +38,6 @@ import org.mockito.quality.Strictness
 internal class DeterministicTraceSamplerTest {
 
     private lateinit var testedSampler: DeterministicTraceSampler
-
-    @Mock
-    lateinit var mockSpanContext: DatadogSpanContext
 
     private lateinit var fakeSpans: List<DatadogSpan>
 

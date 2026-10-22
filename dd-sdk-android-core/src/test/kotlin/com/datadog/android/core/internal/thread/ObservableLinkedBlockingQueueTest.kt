@@ -119,7 +119,7 @@ class ObservableLinkedBlockingQueueTest {
         val testedObservableLinkedBlockingQueue =
             ObservableLinkedBlockingQueue<Runnable>(Int.MAX_VALUE)
         repeat(ObservableLinkedBlockingQueue.MAX_SIZE_TO_DUMP + 1) {
-            testedObservableLinkedBlockingQueue.offer(mock<Runnable>())
+            testedObservableLinkedBlockingQueue.offer(mock())
         }
 
         // When

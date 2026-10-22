@@ -123,6 +123,7 @@ datadog:
       - "java.util.Deque.toList()"
       - "java.util.HashSet.add(kotlin.String)"
       - "java.util.HashSet.clear()"
+      - "java.util.HashSet.isNotEmpty()"
       - "java.util.HashSet.remove(kotlin.String)"
       - "java.util.HashSet.toList()"
       - "java.util.LinkedList.add(android.view.View)"

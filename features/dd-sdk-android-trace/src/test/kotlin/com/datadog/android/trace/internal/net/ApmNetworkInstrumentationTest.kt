@@ -1236,7 +1236,7 @@ internal class ApmNetworkInstrumentationTest {
         whenever(mockSdkCore.remoteConfiguration) doReturn fakeRc
         val instrumentation = _TraceInternalProxy.createApmNetworkInstrumentation(
             "test",
-            ApmNetworkInstrumentationConfiguration(emptyList<String>())
+            ApmNetworkInstrumentationConfiguration(emptyList())
                 .setHeaderPropagationOnly()
         )
 

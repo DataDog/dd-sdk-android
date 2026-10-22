@@ -28,7 +28,7 @@ interface SessionReplayInternalResourceQueue {
      * identifier has already been queued or uploaded in this session, it will not be
      * queued again.
      *
-     * @param identifier A unique identifier for this resource. Typically an MD5 hash of
+     * @param identifier A unique identifier for this resource. Typically, an MD5 hash of
      * the resource content to ensure deduplication across identical resources.
      * @param resourceData The raw binary data of the resource to upload.
      * @param mimeType Optional MIME type of the resource (e.g., "image/svg+xml").

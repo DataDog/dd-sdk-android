@@ -239,7 +239,7 @@ internal class RumViewManagerScopeTest {
     }
 
     @Test
-    fun `M keep children scope W handleEvent child returns non null`() {
+    fun `M keep children scope W handleEvent child returns non-null`() {
         // Given
         val fakeEvent: RumRawEvent = mock()
         testedScope.childrenScopes.add(mockChildScope)

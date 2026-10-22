@@ -42,7 +42,7 @@ internal class ActionBarContainerMapper(
     ): List<MobileSegment.Wireframe> {
         // The ActionBarContainer uses an internal Drawable implementation that redirects to some fields in the
         // ActionBarContainer class. It uses an ActionBarContainer.mBackground field (not to be confused with the
-        // View.mBackground field which has a getBackground() accessor.
+        // View.mBackground field which has a getBackground() accessor).
         // Fortunately, the ActionBarContainer.mBackground field we're interested in is package private,
         // which allows us to access it via the DatadogActionBarContainerAccessor.
         val background = DatadogActionBarContainerAccessor(view).getBackgroundDrawable()

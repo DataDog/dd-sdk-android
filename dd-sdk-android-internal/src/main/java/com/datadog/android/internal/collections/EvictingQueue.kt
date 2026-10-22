@@ -21,7 +21,7 @@ import kotlin.math.max
  *                The default value is [Int.MAX_VALUE], which effectively means there is no practical bound.
  * @param delegate the underlying [LinkedList] that stores the elements and to which all [Queue] operations are delegated.
  */
-class EvictingQueue<T> constructor(
+class EvictingQueue<T>(
     maxSize: Int,
     private val delegate: Deque<T>
 ) : Queue<T> by delegate {

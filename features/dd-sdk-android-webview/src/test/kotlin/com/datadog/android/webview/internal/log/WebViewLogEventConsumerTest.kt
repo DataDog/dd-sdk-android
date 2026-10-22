@@ -448,7 +448,6 @@ internal class WebViewLogEventConsumerTest {
         private const val USR_NAME_KEY = "name"
         private const val USR_EMAIL_KEY = "email"
 
-        @Suppress("unused")
         @JvmStatic
         fun brokenJsonTestData(): Stream<Arguments> {
             val fakeJsonObject1 = JsonObject().apply {

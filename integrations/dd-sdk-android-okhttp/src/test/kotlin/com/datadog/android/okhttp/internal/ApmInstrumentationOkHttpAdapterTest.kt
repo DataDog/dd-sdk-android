@@ -38,6 +38,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -486,11 +487,11 @@ internal class ApmInstrumentationOkHttpAdapterTest {
     }
 
     private fun mockRequestInfoBuilder(requestInfo: OkHttpRequestInfo?): HttpRequestInfoBuilder {
-        val mockBuilder = org.mockito.kotlin.mock<HttpRequestInfoBuilder>()
+        val mockBuilder = mock<HttpRequestInfoBuilder>()
         if (requestInfo != null) {
             whenever(mockBuilder.build()) doReturn requestInfo
         } else {
-            whenever(mockBuilder.build()) doReturn org.mockito.kotlin.mock()
+            whenever(mockBuilder.build()) doReturn mock()
         }
         return mockBuilder
     }

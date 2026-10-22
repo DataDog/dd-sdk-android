@@ -359,13 +359,13 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
         assertThat(span.context().tags).containsExactlyInAnyOrderEntriesOf(
             tagContext.tags +
                 mapOf(
-                    DDTags.RUNTIME_ID_TAG to Config.get().getRuntimeId(),
+                    DDTags.RUNTIME_ID_TAG to Config.get().runtimeId,
                     DDTags.LANGUAGE_TAG_KEY to DDTags.LANGUAGE_TAG_VALUE,
                     DDTags.THREAD_NAME to thread.name,
                     DDTags.THREAD_ID to thread.safeGetThreadId(),
                     DDTags.PID_TAG to Config.get().processId,
                     DDTags.SCHEMA_VERSION_TAG_KEY to SpanNaming.instance().version(),
-                    DDTags.PROFILING_ENABLED to if (Config.get().isProfilingEnabled()) 1 else 0
+                    DDTags.PROFILING_ENABLED to if (Config.get().isProfilingEnabled) 1 else 0
                 )
         )
     }
@@ -385,11 +385,11 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
                 mapOf(
                     DDTags.THREAD_NAME to Thread.currentThread().name,
                     DDTags.THREAD_ID to Thread.currentThread().safeGetThreadId(),
-                    DDTags.RUNTIME_ID_TAG to Config.get().getRuntimeId(),
+                    DDTags.RUNTIME_ID_TAG to Config.get().runtimeId,
                     DDTags.LANGUAGE_TAG_KEY to DDTags.LANGUAGE_TAG_VALUE,
-                    DDTags.PID_TAG to Config.get().getProcessId(),
+                    DDTags.PID_TAG to Config.get().processId,
                     DDTags.SCHEMA_VERSION_TAG_KEY to SpanNaming.instance().version(),
-                    DDTags.PROFILING_ENABLED to if (Config.get().isProfilingEnabled()) 1 else 0
+                    DDTags.PROFILING_ENABLED to if (Config.get().isProfilingEnabled) 1 else 0
                 )
         )
 

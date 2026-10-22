@@ -48,7 +48,7 @@ internal class NetworkSettledMetricResolver(
     fun resourceWasStarted(context: InternalResourceContext) {
         if (viewWasStopped) return
         currentViewDiagnostic.started.incrementAndGet()
-        // check if the resource was is a network settled valid resource
+        // check if the resource is a network settled valid resource
         if (initialResourceIdentifier.validate(
                 NetworkSettledResourceContext(
                     context.resourceId,
@@ -120,7 +120,7 @@ internal class NetworkSettledMetricResolver(
             )
             return null
         }
-        if (resourceStartedTimestamps.size > 0) {
+        if (resourceStartedTimestamps.isNotEmpty()) {
             // not all resources were stopped
             internalLogger.log(
                 InternalLogger.Level.DEBUG,

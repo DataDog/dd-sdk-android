@@ -9,8 +9,6 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 import android.view.View
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
-import com.datadog.android.sessionreplay.recorder.MappingContext
-import com.datadog.android.sessionreplay.recorder.mapper.BaseWireframeMapper
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
@@ -33,16 +31,10 @@ internal class QueueStatusCallbackTest {
     private lateinit var testedMapper: QueueStatusCallback
 
     @Mock
-    lateinit var mockMapper: BaseWireframeMapper<View>
-
-    @Mock
     lateinit var mockRecordedDataQueueRefs: RecordedDataQueueRefs
 
     @Mock
     lateinit var mockView: View
-
-    @Mock
-    lateinit var mockMappingContext: MappingContext
 
     @BeforeEach
     fun setup() {

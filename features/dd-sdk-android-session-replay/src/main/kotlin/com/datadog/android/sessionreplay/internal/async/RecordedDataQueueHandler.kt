@@ -127,7 +127,7 @@ internal class RecordedDataQueueHandler(
     @Synchronized
     private fun triggerProcessingLoop() {
         while (recordedDataQueue.isNotEmpty()) {
-            // peeking is safe here because we are in a synchronized block
+            // peeking is safe here because we are in a synchronized block,
             // and we check for isEmpty first
             @Suppress("UnsafeThirdPartyFunctionCall")
             val nextItem = recordedDataQueue.peek()

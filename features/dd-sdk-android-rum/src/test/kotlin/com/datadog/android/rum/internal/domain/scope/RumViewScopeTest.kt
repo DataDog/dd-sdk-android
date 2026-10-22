@@ -3025,6 +3025,7 @@ internal class RumViewScopeTest {
         assertThat(actionScope.heatmapResolver).isInstanceOf(HeatmapActionResolver.Native::class.java)
     }
 
+    @Test
     fun `M create ActionScope W handleEvent(StartAction+CUSTOM+cont)`(
         @StringForgery name: String,
         forge: Forge
@@ -4472,7 +4473,7 @@ internal class RumViewScopeTest {
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         val throwableMessage = throwable.message
         check(!throwableMessage.isNullOrBlank()) {
-            "Expected throwable to have a non null, non blank message"
+            "Expected throwable to have a non-null, non blank message"
         }
         fakeEvent = RumRawEvent.AddError(
             throwableMessage,
@@ -4932,7 +4933,7 @@ internal class RumViewScopeTest {
         }
         val throwableMessage = throwable.message
         check(!throwableMessage.isNullOrBlank()) {
-            "Expected throwable to have a non null, non blank message"
+            "Expected throwable to have a non-null, non blank message"
         }
         fakeEvent = RumRawEvent.AddError(
             throwableMessage,
@@ -11121,7 +11122,6 @@ internal class RumViewScopeTest {
             return listOf(rumMonitorConfiguration)
         }
 
-        @Suppress("unused")
         @JvmStatic
         fun brokenTimeRawEventData(): List<RumRawEventData> {
             val forge = Forge()
