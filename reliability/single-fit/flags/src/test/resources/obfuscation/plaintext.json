@@ -1,0 +1,118 @@
+{
+  "data": {
+    "type": "precomputed-assignments",
+    "attributes": {
+      "flags": {
+        "flag": {
+          "variationType": "boolean",
+          "variationValue": true,
+          "allocationKey": "allocation",
+          "variationKey": "variant",
+          "doLog": true,
+          "serialId": 123,
+          "reason": "TARGETING_MATCH",
+          "extraLogging": {
+            "test": "metadata"
+          },
+          "future-field": true
+        },
+        "string": {
+          "variationType": "string",
+          "variationValue": "visible",
+          "allocationKey": "allocation",
+          "variationKey": "variant",
+          "doLog": true,
+          "serialId": 123,
+          "reason": "TARGETING_MATCH",
+          "extraLogging": {
+            "test": "metadata"
+          },
+          "future-field": true
+        },
+        "integer": {
+          "variationType": "integer",
+          "variationValue": 42,
+          "allocationKey": "allocation",
+          "variationKey": "variant",
+          "doLog": true,
+          "serialId": 123,
+          "reason": "TARGETING_MATCH",
+          "extraLogging": {
+            "test": "metadata"
+          },
+          "future-field": true
+        },
+        "number": {
+          "variationType": "number",
+          "variationValue": 12.5,
+          "allocationKey": "allocation",
+          "variationKey": "variant",
+          "doLog": true,
+          "serialId": 123,
+          "reason": "TARGETING_MATCH",
+          "extraLogging": {
+            "test": "metadata"
+          },
+          "future-field": true
+        },
+        "object": {
+          "variationType": "object",
+          "variationValue": {
+            "nested": [
+              42
+            ]
+          },
+          "allocationKey": "allocation",
+          "variationKey": "variant",
+          "doLog": true,
+          "serialId": 123,
+          "reason": "TARGETING_MATCH",
+          "extraLogging": {
+            "test": "metadata"
+          },
+          "future-field": true
+        },
+        "bad": {
+          "variationType": "boolean",
+          "variationValue": "invalid",
+          "allocationKey": "allocation",
+          "variationKey": "variant",
+          "doLog": true,
+          "serialId": 123,
+          "reason": "TARGETING_MATCH",
+          "extraLogging": {
+            "test": "metadata"
+          },
+          "future-field": true
+        },
+        "new-flag": {
+          "variationType": "boolean",
+          "variationValue": true,
+          "allocationKey": "allocation",
+          "variationKey": "variant",
+          "doLog": true,
+          "serialId": 123,
+          "reason": "TARGETING_MATCH",
+          "extraLogging": {
+            "test": "metadata"
+          },
+          "future-field": true
+        },
+        "future": {
+          "variationType": "future-type",
+          "variationValue": true,
+          "allocationKey": "allocation",
+          "variationKey": "variant",
+          "doLog": true,
+          "serialId": 123,
+          "reason": "TARGETING_MATCH",
+          "extraLogging": {
+            "test": "metadata"
+          },
+          "future-field": true
+        }
+      },
+      "future-field": true
+    }
+  }
+}

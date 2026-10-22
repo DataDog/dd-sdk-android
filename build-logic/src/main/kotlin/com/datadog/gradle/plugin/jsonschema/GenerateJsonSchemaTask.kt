@@ -42,6 +42,7 @@ abstract class GenerateJsonSchemaTask @Inject constructor(
     init {
         group = "datadog"
         description = "Read source JSON schema files and generate the relevant Kotlin data classes"
+        internalModels.convention(false)
     }
 
     // region Input/Output
@@ -83,6 +84,10 @@ abstract class GenerateJsonSchemaTask @Inject constructor(
      */
     @get:Input
     abstract val targetPackageName: Property<String>
+
+    /** Keep generated models out of the public SDK API when requested. */
+    @get:Input
+    abstract val internalModels: Property<Boolean>
 
     /**
      * The list of schema files to be ignored.
@@ -146,6 +151,7 @@ abstract class GenerateJsonSchemaTask @Inject constructor(
                 outputDir,
                 targetPackageName.get(),
                 logger,
+                internalModels = internalModels.get(),
                 generateConstructorDefaults = it.name !in schemasWithoutConstructorDefaults.get()
             )
             generator.generate(type)
