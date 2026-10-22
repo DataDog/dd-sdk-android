@@ -11,8 +11,8 @@ import com.datadog.android.api.InternalLogger
 // Telemetry carries only the reason, never selection values.
 private const val TELEMETRY_REASON_KEY = "reason"
 
-internal const val FLAG_SELECTION_DROPPED_TELEMETRY_MESSAGE = "Flag selection dropped"
-internal const val FLAG_SELECTION_IGNORED_TELEMETRY_MESSAGE = "Flag selection ignored"
+private const val FLAG_SELECTION_DROPPED_TELEMETRY_MESSAGE = "Flag selection dropped"
+private const val FLAG_SELECTION_IGNORED_TELEMETRY_MESSAGE = "Flag selection ignored"
 
 internal fun InternalLogger.logDroppedFlagSelection(error: FlagSelectionError) {
     log(
