@@ -16,7 +16,8 @@ internal class RumContextForgeryFactory : ForgeryFactory<RumContext> {
         return RumContext(
             applicationId = forge.getForgery<UUID>().toString(),
             sessionId = forge.getForgery<UUID>().toString(),
-            sessionState = forge.anElementFrom("TRACKED", "NOT_TRACKED", "EXPIRED")
+            sessionState = forge.anElementFrom("TRACKED", "NOT_TRACKED", "EXPIRED"),
+            hasTimeseries = forge.aBool()
         )
     }
 }
