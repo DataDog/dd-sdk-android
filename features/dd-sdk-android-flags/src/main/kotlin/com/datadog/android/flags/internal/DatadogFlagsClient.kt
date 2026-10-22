@@ -32,8 +32,8 @@ import org.json.JSONObject
  * This implementation fetches precomputed flag values from the local repository and handles
  * type conversion with appropriate fallback to default values.
  *
- * Thread safety: All resolve methods are thread-safe read operations with no synchronization
- * overhead, designed for high-frequency usage. The [setEvaluationContext] method is thread-safe
+ * Thread safety: Resolve methods capture assignments and the subject policy together.
+ * When opt-out is disabled, reads do not acquire the policy lock. [setEvaluationContext] is thread-safe
  * but triggers asynchronous background operations for fetching updated flag evaluations.
  *
  * @param featureSdkCore the SDK core for logging and internal operations
@@ -44,6 +44,7 @@ import org.json.JSONObject
  * @param exposureProcessor responsible for writing exposure batches to be sent to flags backend.
  * @param evaluationsFeature the evaluations subfeature for accessing processor and context (optional).
  * @param flagStateManager channel for managing state change listeners
+ * @param evaluationTelemetryOptOutParameterEnabled whether this client accepts the local telemetry policy
  */
 @Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
 internal class DatadogFlagsClient(
@@ -54,8 +55,16 @@ internal class DatadogFlagsClient(
     private val rumEvaluationLogger: RumEvaluationLogger,
     private val exposureProcessor: EventsProcessor,
     private val evaluationsFeature: EvaluationsFeature?,
-    private val flagStateManager: FlagsStateManager
+    private val flagStateManager: FlagsStateManager,
+    internal val evaluationTelemetryOptOutParameterEnabled: Boolean
 ) : FlagsClient {
+
+    @Volatile
+    private var evaluationTelemetryOptOut: Boolean = false
+    private val telemetryLock = Any()
+    private val subjectOptOut = mutableMapOf<String, Boolean>()
+    private val pendingSubjects = mutableMapOf<String, Int>()
+    private var requestedSubject: String? = null
 
     override val state: StateObservable = flagStateManager
 
@@ -99,8 +108,45 @@ internal class DatadogFlagsClient(
      * Invoked on a background executor thread. See [EvaluationContextCallback] for timeout behavior.
      */
     override fun setEvaluationContext(context: EvaluationContext, callback: EvaluationContextCallback?) {
-        evaluationsManager.updateEvaluationsForContext(context, callback)
+        setEvaluationContext(context, callback, null)
     }
+
+    internal fun setEvaluationContext(
+        context: EvaluationContext,
+        callback: EvaluationContextCallback?,
+        telemetryOptedOut: Boolean?
+    ) {
+        if (!evaluationTelemetryOptOutParameterEnabled) {
+            evaluationsManager.updateEvaluationsForContext(context, callback)
+            return
+        }
+        synchronized(telemetryLock) {
+            // Register the typed decision and its request together, before any callbacks or dispatch.
+            if (telemetryOptedOut != null) subjectOptOut[context.targetingKey] = telemetryOptedOut
+            requestedSubject = context.targetingKey
+            pendingSubjects[context.targetingKey] = (pendingSubjects[context.targetingKey] ?: 0) + 1
+        }
+        evaluationsManager.updateEvaluationsForContext(context, callback) {
+            val installedSubject = flagsRepository.getEvaluationContext()?.targetingKey
+            synchronized(telemetryLock) {
+                val remaining = (pendingSubjects[context.targetingKey] ?: 1) - 1
+                if (remaining == 0) {
+                    pendingSubjects.remove(context.targetingKey)
+                } else {
+                    pendingSubjects[context.targetingKey] = remaining
+                }
+                subjectOptOut.keys.retainAll(pendingSubjects.keys + listOfNotNull(installedSubject, requestedSubject))
+            }
+        }
+    }
+
+    internal fun setEvaluationTelemetryOptOut(optOut: Boolean) {
+        evaluationTelemetryOptOut = evaluationTelemetryOptOutParameterEnabled && optOut
+    }
+
+    private fun isSubjectOptedOut(subject: String?): Boolean =
+        evaluationTelemetryOptOut ||
+            (subjectOptOut[requestedSubject] == true) || (subjectOptOut[subject] == true)
 
     /**
      * Resolves a boolean flag value.
@@ -262,33 +308,68 @@ internal class DatadogFlagsClient(
 
     private sealed class InternalResolution<T : Any> {
         abstract val flagKey: String
+        abstract val telemetryOptedOut: Boolean
 
         data class Success<T : Any>(
             override val flagKey: String,
             val value: T,
             val flag: PrecomputedFlag,
-            val context: EvaluationContext
+            val context: EvaluationContext,
+            override val telemetryOptedOut: Boolean = false
         ) : InternalResolution<T>()
 
         data class Error<T : Any>(
             override val flagKey: String,
             val defaultValue: T,
             val errorCode: ErrorCode,
-            val errorMessage: String
+            val errorMessage: String,
+            val context: EvaluationContext = EvaluationContext.EMPTY,
+            override val telemetryOptedOut: Boolean = false
         ) : InternalResolution<T>()
     }
 
-    private fun <T : Any> checkProviderReady(flagKey: String, defaultValue: T): InternalResolution.Error<T>? =
-        if (flagsRepository.getEvaluationContext() == null) {
-            InternalResolution.Error(
-                flagKey = flagKey,
-                defaultValue = defaultValue,
-                errorCode = ErrorCode.PROVIDER_NOT_READY,
-                errorMessage = "Provider not ready - call setEvaluationContext() before resolving flags"
-            )
+    private data class EvaluationSnapshot(
+        val context: EvaluationContext?,
+        val flag: PrecomputedFlag?,
+        val telemetryOptedOut: Boolean
+    )
+
+    private fun evaluationSnapshot(flagKey: String): EvaluationSnapshot {
+        flagsRepository.waitForPersistenceLoad()
+        // Keep the subject decision alive until it has been captured with the
+        // assignments. Repository reads inside this lock must not wait for persistence.
+        return if (evaluationTelemetryOptOutParameterEnabled) {
+            synchronized(telemetryLock) { readEvaluationSnapshot(flagKey) }
         } else {
-            null
+            readEvaluationSnapshot(flagKey)
         }
+    }
+
+    private fun readEvaluationSnapshot(flagKey: String): EvaluationSnapshot {
+        val pair = flagsRepository.getPrecomputedFlagWithContext(flagKey)
+        val context = pair?.second
+        return EvaluationSnapshot(
+            context,
+            pair?.first,
+            evaluationTelemetryOptOutParameterEnabled && isSubjectOptedOut(context?.targetingKey)
+        )
+    }
+
+    private fun <T : Any> unavailableResolution(
+        flagKey: String,
+        defaultValue: T,
+        snapshot: EvaluationSnapshot
+    ): InternalResolution.Error<T> {
+        val ready = snapshot.context != null
+        return InternalResolution.Error(
+            flagKey,
+            defaultValue,
+            if (ready) ErrorCode.FLAG_NOT_FOUND else ErrorCode.PROVIDER_NOT_READY,
+            if (ready) "Flag not found" else "Provider not ready - call setEvaluationContext() before resolving flags",
+            context = snapshot.context ?: EvaluationContext.EMPTY,
+            telemetryOptedOut = snapshot.telemetryOptedOut
+        )
+    }
 
     /**
      * Fetches a flag from the repository and parses its value to the expected type.
@@ -310,18 +391,12 @@ internal class DatadogFlagsClient(
         flagKey: String,
         defaultValue: T
     ): InternalResolution<T> {
-        checkProviderReady(flagKey, defaultValue)?.let { return it }
-        val flagAndContext = flagsRepository.getPrecomputedFlagWithContext(flagKey)
-        if (flagAndContext == null) {
-            return InternalResolution.Error(
-                flagKey = flagKey,
-                defaultValue = defaultValue,
-                errorCode = ErrorCode.FLAG_NOT_FOUND,
-                errorMessage = "Flag not found"
-            )
+        val snapshot = evaluationSnapshot(flagKey)
+        val context = snapshot.context
+        val flag = snapshot.flag
+        if (context == null || flag == null) {
+            return unavailableResolution(flagKey, defaultValue, snapshot)
         }
-
-        val (flag, context) = flagAndContext
 
         val conversionResult = FlagValueConverter.convert(
             variationValue = flag.variationValue,
@@ -335,7 +410,8 @@ internal class DatadogFlagsClient(
                     flagKey = flagKey,
                     value = parsedValue,
                     flag = flag,
-                    context = context
+                    context = context,
+                    telemetryOptedOut = snapshot.telemetryOptedOut
                 )
             },
             onFailure = { exception ->
@@ -365,7 +441,9 @@ internal class DatadogFlagsClient(
                     flagKey = flagKey,
                     defaultValue = defaultValue,
                     errorCode = errorCode,
-                    errorMessage = errorMessage
+                    errorMessage = errorMessage,
+                    context = context,
+                    telemetryOptedOut = snapshot.telemetryOptedOut
                 )
             }
         )
@@ -472,34 +550,46 @@ internal class DatadogFlagsClient(
     }
 
     private fun <T : Any> trackResolution(resolution: InternalResolution.Success<T>) {
-        trackResolution(resolution.flagKey, resolution.flag, resolution.context)
+        trackResolution(resolution.flagKey, resolution.flag, resolution.context, resolution.telemetryOptedOut)
     }
 
     private fun trackResolution(
         flagKey: String,
         flag: UnparsedFlag,
-        context: EvaluationContext
+        context: EvaluationContext,
+        telemetryOptedOut: Boolean
     ) {
         trackFlagExposure(flagKey, flag, context)
+
+        if (telemetryOptedOut) {
+            return
+        }
 
         // RUM feature flag tracking - fires for all successful evaluations with a variant key
         if (flagsConfiguration.rumIntegrationEnabled && flag.variationKey.isNotBlank()) {
             logEvaluation(flagKey, flag.variationKey)
         }
 
-        trackFlagEvaluationEvent(flagKey, flag, context, errorCode = null)
+        if (flagsConfiguration.trackEvaluations) {
+            writeEvaluationEvent(
+                flagKey = flagKey,
+                context = context,
+                variantKey = flag.variationKey,
+                allocationKey = flag.allocationKey,
+                errorCode = null,
+                errorMessage = null
+            )
+        }
     }
 
     private fun <T : Any> trackErrorResolution(resolution: InternalResolution.Error<T>) {
-        if (!flagsConfiguration.trackEvaluations) {
+        if (resolution.telemetryOptedOut || !flagsConfiguration.trackEvaluations) {
             return
         }
 
-        val context = flagsRepository.getEvaluationContext() ?: EvaluationContext.EMPTY
-
         writeEvaluationEvent(
             flagKey = resolution.flagKey,
-            context = context,
+            context = resolution.context,
             variantKey = null,
             allocationKey = null,
             errorCode = resolution.errorCode.name,
@@ -526,7 +616,8 @@ internal class DatadogFlagsClient(
      * Supposed to be used by internal Datadog packages to track flag evaluations from an exact flags state snapshot.
      */
     internal fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
-        trackResolution(flagKey, flag, context)
+        val optedOut = synchronized(telemetryLock) { isSubjectOptedOut(context.targetingKey) }
+        trackResolution(flagKey, flag, context, optedOut)
     }
 
     internal fun trackFlagExposure(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
@@ -541,7 +632,9 @@ internal class DatadogFlagsClient(
         context: EvaluationContext,
         errorCode: String?
     ) {
-        if (!flagsConfiguration.trackEvaluations) {
+        val telemetryOptedOut = evaluationTelemetryOptOutParameterEnabled &&
+            synchronized(telemetryLock) { isSubjectOptedOut(context.targetingKey) }
+        if (!flagsConfiguration.trackEvaluations || telemetryOptedOut) {
             return
         }
 

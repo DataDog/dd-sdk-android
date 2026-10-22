@@ -24,6 +24,21 @@ import com.datadog.android.lint.InternalApi
 @InternalApi
 @Suppress("ClassName", "ClassNaming", "UndocumentedPublicFunction")
 class _FlagsInternalProxy(private val client: FlagsClient) {
+    fun setEvaluationContext(
+        context: EvaluationContext,
+        callback: EvaluationContextCallback?,
+        telemetryOptedOut: Boolean
+    ) {
+        if (client is DatadogFlagsClient) {
+            client.setEvaluationContext(context, callback, telemetryOptedOut)
+        } else {
+            client.setEvaluationContext(context, callback)
+        }
+    }
+
+    fun isEvaluationTelemetryOptOutParameterEnabled(): Boolean =
+        (client as? DatadogFlagsClient)?.evaluationTelemetryOptOutParameterEnabled == true
+
     fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag> = if (client is DatadogFlagsClient) {
         client.getFlagAssignmentsSnapshot()
     } else {
@@ -49,6 +64,7 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
 
     /**
      * Records only an evaluation event, without fetching configuration or reporting to RUM.
+     * Respects the client's evaluation telemetry opt-out settings.
      * A missing flag represents a runtime default. Unknown OpenFeature error codes are reported as `GENERAL`.
      */
     fun trackFlagEvaluationEvent(

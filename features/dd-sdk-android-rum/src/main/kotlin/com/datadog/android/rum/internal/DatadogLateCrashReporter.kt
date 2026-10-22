@@ -215,7 +215,8 @@ internal class DatadogLateCrashReporter(
             session = ErrorEvent.ErrorEventSession(
                 viewEvent.session.id,
                 ErrorEvent.ErrorEventSessionType.USER,
-                isMainProcess = viewEvent.session.isMainProcess
+                isMainProcess = viewEvent.session.isMainProcess,
+                hasTimeseries = viewEvent.session.hasTimeseries
             ),
             source = viewEvent.source?.toJson()?.asString?.let {
                 ErrorEvent.ErrorEventSource.tryFromSource(

@@ -95,8 +95,8 @@ import com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl
 import com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporterImpl
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
-import com.datadog.android.rum.internal.startup.name
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
+import com.datadog.android.rum.internal.timeseries.CollectedTimeseriesSessionRegistry
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
 import com.datadog.android.rum.internal.timeseries.PipelineFactory
 import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
@@ -335,20 +335,25 @@ internal class RumFeature(
         appContext: Application,
         timeseriesConfiguration: TimeseriesConfiguration
     ) {
+        val sessionRegistry = CollectedTimeseriesSessionRegistry()
+
         val pipelinesFactory = PipelineFactory(
-            totalRamBytes = appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L,
             sdkCore = sdkCore,
             dataWriter = dataWriter,
             insightsCollector = insightsCollector,
+            configuration = timeseriesConfiguration,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            configuration = timeseriesConfiguration
+            sessionRegistry = sessionRegistry,
+            totalRamBytes = appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L
         )
 
         timeseriesCollector = DefaultTimeseriesCollector(
-            scheduledExecutorService = vitalExecutorService,
+            sdkCore = sdkCore,
+            sessionRegistry = sessionRegistry,
             pipelinesFactory = pipelinesFactory,
-            internalLogger = sdkCore.internalLogger
+            scheduledExecutorService = vitalExecutorService,
+            viewTransitionDelayMs = timeseriesConfiguration.viewTransitionDelayMs
         )
     }
 

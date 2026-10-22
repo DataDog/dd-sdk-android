@@ -111,7 +111,14 @@ class LongTaskEventForgeryFactory :
             },
             dd = LongTaskEvent.Dd(
                 session = forge.aNullable { LongTaskEvent.DdSession(getForgery()) },
-                browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") }
+                browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") },
+                profiling = forge.aNullable {
+                    LongTaskEvent.Profiling(
+                        status = aNullable { getForgery() },
+                        quotaReason = aNullable { getForgery() },
+                        errorReason = aNullable { getForgery() }
+                    )
+                }
             ),
             ddtags = forge.aNullable { ddTagsString() }
         )

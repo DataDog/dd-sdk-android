@@ -6,6 +6,8 @@
 
 package com.datadog.android.profiling.internal.quota
 
+import com.datadog.android.internal.profiling.quota.QuotaReason
+
 internal data class QuotaResult(
     val decision: Decision,
     val reason: QuotaReason

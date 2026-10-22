@@ -63,6 +63,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.Mockito
 import org.mockito.junit.jupiter.MockitoExtension
@@ -1951,6 +1952,42 @@ internal class RumSessionScopeTest {
     // endregion
 
     // region Timeseries
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M set hasTimeseries from collector W getRumContext()`(
+        fakeHasTimeseries: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        whenever(mockTimeseriesCollector.isTimeseriesCollected(testedScope.sessionId)) doReturn fakeHasTimeseries
+
+        // When
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(context.hasTimeseries).isEqualTo(fakeHasTimeseries)
+    }
+
+    @Test
+    fun `M not inherit hasTimeseries W getRumContext() { session expired, renewed by interaction }`(forge: Forge) {
+        // Given
+        initializeTestedScope(timeseriesCollector = mockTimeseriesCollector)
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val expiredSessionId = testedScope.sessionId
+        whenever(mockTimeseriesCollector.isTimeseriesCollected(expiredSessionId)) doReturn true
+        advanceTimeByMs(TEST_INACTIVITY_MS)
+        testedScope.handleEvent(forge.startViewEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // When
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(context.sessionId).isNotEqualTo(expiredSessionId)
+        assertThat(context.hasTimeseries).isFalse()
+    }
 
     @Test
     fun `M start timeseries W renewSession() { keepSession = true }`(forge: Forge) {

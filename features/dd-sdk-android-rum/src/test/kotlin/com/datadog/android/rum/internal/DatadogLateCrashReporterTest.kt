@@ -192,6 +192,7 @@ internal class DatadogLateCrashReporterTest {
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
                 .hasIsMainProcess(fakeViewEvent.session.isMainProcess)
+                .hasSessionTimeseries(fakeViewEvent.session.hasTimeseries)
                 .hasView(
                     fakeViewEvent.view.id,
                     fakeViewEvent.view.name,

@@ -98,10 +98,12 @@ class RumContextPropagationTest {
 
         // Then
         assertSentRequest {
-            assertThat(getHeader(HEADER_BAGGAGE)).isEqualTo(
-                "account.id=${accountInfo.id}," +
-                    userInfo.id?.let { "user.id=$it," }.orEmpty() +
+            assertThat(getHeader(HEADER_BAGGAGE)?.split(",")).containsExactlyInAnyOrderElementsOf(
+                listOfNotNull(
+                    "account.id=${accountInfo.id}",
+                    userInfo.id?.let { "user.id=$it" },
                     "session.id=${rumContext[RUM_CONTEXT_SESSION_ID]}"
+                )
             )
         }
     }

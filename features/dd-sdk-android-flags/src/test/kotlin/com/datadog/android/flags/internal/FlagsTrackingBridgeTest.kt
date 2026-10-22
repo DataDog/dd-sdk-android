@@ -178,6 +178,48 @@ internal class FlagsTrackingBridgeTest {
     }
 
     @ParameterizedTest
+    @CsvSource("false, false", "false, true", "true, false", "true, true")
+    fun `M respect telemetry opt-out W trackFlagExposure + trackFlagEvaluationEvent`(
+        optOutParameterEnabled: Boolean,
+        telemetryOptedOut: Boolean
+    ) {
+        // Given
+        testedProxy = newProxy(
+            optOutParameterEnabled = optOutParameterEnabled,
+            telemetryOptedOut = telemetryOptedOut
+        )
+
+        // When
+        testedProxy.trackFlagExposure(fakeFlagKey, fakeFlag, fakeContext)
+        testedProxy.trackFlagEvaluationEvent(fakeFlagKey, fakeFlag, fakeContext, null)
+        testedProxy.trackFlagEvaluationEvent(fakeFlagKey, null, fakeContext, "FLAG_NOT_FOUND")
+
+        // Then
+        verify(mockExposureProcessor).processEvent(fakeFlagKey, fakeContext, fakeFlag)
+        verifyNoInteractions(mockRumEvaluationLogger)
+        if (optOutParameterEnabled && telemetryOptedOut) {
+            verifyNoInteractions(mockEvaluationsFeature)
+        } else {
+            verify(mockEvaluationsFeature).processEvaluation(
+                fakeFlagKey,
+                fakeContext,
+                fakeFlag.variationKey,
+                fakeFlag.allocationKey,
+                null,
+                null
+            )
+            verify(mockEvaluationsFeature).processEvaluation(
+                fakeFlagKey,
+                fakeContext,
+                null,
+                null,
+                "FLAG_NOT_FOUND",
+                "FLAG_NOT_FOUND"
+            )
+        }
+    }
+
+    @ParameterizedTest
     @NullSource
     @ValueSource(
         strings = [
@@ -255,7 +297,9 @@ internal class FlagsTrackingBridgeTest {
 
     private fun newProxy(
         configuration: FlagsConfiguration = fakeConfiguration,
-        evaluationsFeature: EvaluationsFeature? = mockEvaluationsFeature
+        evaluationsFeature: EvaluationsFeature? = mockEvaluationsFeature,
+        optOutParameterEnabled: Boolean = false,
+        telemetryOptedOut: Boolean = false
     ): _FlagsInternalProxy = _FlagsInternalProxy(
         DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
@@ -265,7 +309,8 @@ internal class FlagsTrackingBridgeTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockExposureProcessor,
             evaluationsFeature = evaluationsFeature,
-            flagStateManager = mockFlagsStateManager
-        )
+            flagStateManager = mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = optOutParameterEnabled
+        ).apply { setEvaluationTelemetryOptOut(telemetryOptedOut) }
     )
 }
