@@ -63,6 +63,8 @@ class StubSDKCore(
 
     private val contextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
 
+    private val scheduledExecutors = mutableListOf<StubScheduledExecutorService>()
+
     private var currentTimestampMillis: Long = 0L
     private var currentNanoTime: Long = 0L
 
@@ -170,12 +172,16 @@ class StubSDKCore(
     }
 
     /**
-     * Advances the current time by the specified duration.
+     * Advances the current time and drains due tasks on all scheduled executors created by this core.
      * @param durationMs the duration to advance in milliseconds
      */
     fun advanceTimeBy(durationMs: Long) {
         currentTimestampMillis += durationMs
         currentNanoTime += TimeUnit.MILLISECONDS.toNanos(durationMs)
+        // A task may queue due work on an executor already visited or created during this pass.
+        do {
+            scheduledExecutors.toList().forEach { it.runDueTasks() }
+        } while (scheduledExecutors.any { it.hasDueTasks() })
     }
 
     /**
@@ -310,7 +316,9 @@ class StubSDKCore(
     }
 
     override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
-        return StubScheduledExecutorService(executorContext, timeProvider::getDeviceTimestampMillis)
+        val executor = StubScheduledExecutorService(executorContext, timeProvider::getDeviceTimestampMillis)
+        scheduledExecutors.add(executor)
+        return executor
     }
 
     override fun createSingleThreadExecutorService(executorContext: String): ExecutorService {
