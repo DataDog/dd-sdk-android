@@ -30,13 +30,11 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
             val jsonResponse = JSONObject(rawJson)
             val data = jsonResponse.getJSONObject("data")
             val attributes = data.getJSONObject("attributes")
-            if (experimentationOptOut != null &&
-                !acknowledgesOptOut(attributes.optJSONObject("evaluation_options"), experimentationOptOut)
-            ) {
+            if (!acknowledgesOptOut(attributes.optJSONObject("evaluation_options"), experimentationOptOut)) {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.USER,
-                    { "The feature flags response did not acknowledge experimentation opt-out." }
+                    { "The feature flags response does not match the requested experimentation opt-out policy." }
                 )
                 return null
             }
@@ -89,9 +87,11 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
         }
     }
 
-    private fun acknowledgesOptOut(options: JSONObject?, request: ExperimentationOptOut.Request): Boolean =
-        when (request.mode) {
-            ExperimentationOptOutMode.DISABLED -> true
+    private fun acknowledgesOptOut(options: JSONObject?, request: ExperimentationOptOut.Request?): Boolean =
+        when (request?.mode) {
+            null, ExperimentationOptOutMode.DISABLED -> options?.opt("experimentation_opt_out") != true &&
+                options?.opt(OPT_OUT_MODE) != ExperimentationOptOutMode.IMMEDIATE.wireValue &&
+                options?.opt(OPT_OUT_MODE) != ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY.wireValue
             ExperimentationOptOutMode.IMMEDIATE -> options?.opt("experimentation_opt_out") == true &&
                 (
                     !options.has(OPT_OUT_MODE) ||

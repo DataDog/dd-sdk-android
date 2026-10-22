@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.ExperimentationOptOutMode
+import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.evaluation.wireValue
 import com.datadog.android.flags.internal.getFlagsEndpoint
 import com.datadog.android.flags.model.EvaluationContext
@@ -97,7 +98,9 @@ internal class PrecomputedAssignmentsRequestFactory(
             .put("env", env)
             .put("source", source)
             .put("subject", subject)
-        if (experimentationOptOutMode != ExperimentationOptOutMode.DISABLED) {
+        if (experimentationOptOutMode != ExperimentationOptOutMode.DISABLED &&
+            context.attributes.containsKey(ExperimentationOptOut.ATTRIBUTE)
+        ) {
             attributes.put(
                 "evaluation_options",
                 JSONObject().put(

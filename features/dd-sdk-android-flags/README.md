@@ -134,9 +134,17 @@ val enabled = client.resolveBooleanValue("new-feature", false)
 Provide the customer's stored RFC3339 opt-out timestamp. Do not replace it with the current time on each launch.
 A future timestamp also takes effect immediately. Omit the attribute to permit experimentation.
 Invalid timestamps return application defaults with `INVALID_CONTEXT` and do not send an assignment request.
+An absent timestamp sends an ordinary assignment request without `evaluation_options`, including in enabled modes.
+
+Timestamps use Gregorian calendar dates with years `0000` through `9999`, both before and after UTC normalization.
+Use `YYYY-MM-DDTHH:mm:ss`, optional fractional seconds, and `Z` or a numeric `±HH:mm` offset
+(hours `00`–`23`, minutes `00`–`59`). Lowercase `t` and `z` are accepted. Fractions beyond nine digits
+are truncated without rounding, and comparisons preserve nanosecond precision. Leap seconds, invalid dates,
+whitespace and named timezones are rejected.
 
 The backend skips experiment allocations and continues through ordinary feature allocations.
 The SDK requires the backend to acknowledge exclusion before using the response.
+When the subject has no effective opt-out policy, responses explicitly marked as filtered are rejected.
 Future mode requires the matching mode and exact cutoff in the acknowledgement.
 During a context change, assignments from a different context are unavailable.
 Previously accepted assignments can be reused only for the same context, cutoff, and mode.

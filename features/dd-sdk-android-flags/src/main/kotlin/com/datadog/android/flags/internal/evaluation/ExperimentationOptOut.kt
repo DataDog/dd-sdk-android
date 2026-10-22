@@ -11,7 +11,11 @@ import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import java.text.ParsePosition
 import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.GregorianCalendar
 import java.util.Locale
+import java.util.TimeZone
+import java.util.concurrent.TimeUnit
 
 /** Keeps the requested context separate from the last accepted assignments. */
 internal class ExperimentationOptOut(val mode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED) {
@@ -75,28 +79,70 @@ internal class ExperimentationOptOut(val mode: ExperimentationOptOutMode = Exper
             return timestamp == parseTimestamp(actual)
         }
 
+        @Suppress("ComplexCondition") // Admission requires a complete parse and both UTC bounds.
         private fun parseTimestamp(value: String?): Timestamp? {
             val match = value?.let { TIMESTAMP.matchEntire(it.uppercase(Locale.US)) } ?: return null
-            val zone = match.groupValues[TIMEZONE_GROUP].replace("Z", "+0000").replace(":", "")
-            val normalized = match.groupValues[1] + zone
-            return try {
-                val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US).apply { isLenient = false }
-                val position = ParsePosition(0)
-                val date = format.parse(normalized, position)
-                if (date != null && position.index == normalized.length) {
-                    Timestamp(date.time, match.groupValues[2].take(NANOSECOND_DIGITS).trimEnd('0'))
-                } else {
+            val offsetMinutes = parseOffsetMinutes(match.groupValues[TIMEZONE_GROUP])
+            val dateTime = match.groupValues[1]
+
+            // Calendar numbers years within an era: astronomical year zero is 1 BC.
+            @Suppress("UnsafeThirdPartyFunctionCall") // Fixed non-empty replacement on a non-null string.
+            val normalized = if (dateTime.startsWith("0000")) {
+                "BC ${dateTime.replaceFirst("0000", "0001")}"
+            } else {
+                "AD $dateTime"
+            }
+            return if (offsetMinutes == null) {
+                null
+            } else {
+                try {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // Non-null arguments; exceptions caught below.
+                    val format = SimpleDateFormat("G yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply {
+                        calendar = GregorianCalendar(TimeZone.getTimeZone("UTC"), Locale.US).apply {
+                            // Use the Gregorian rules before 1582 too, without a historical cutover.
+                            gregorianChange = Date(Long.MIN_VALUE)
+                        }
+                        isLenient = false
+                    }
+                    val position = ParsePosition(0)
+                    val date = format.parse(normalized, position)
+
+                    // Apply the numeric offset explicitly; Calendar limits its zone-offset field more narrowly.
+                    @Suppress("UnsafeThirdPartyFunctionCall") // Non-throwing subtraction of bounded values.
+                    val utcMillis = date?.time?.minus(TimeUnit.MINUTES.toMillis(offsetMinutes.toLong()))
+                    if (utcMillis != null && position.index == normalized.length &&
+                        utcMillis >= MIN_TIMESTAMP_MILLIS && utcMillis < MAX_TIMESTAMP_MILLIS_EXCLUSIVE
+                    ) {
+                        Timestamp(utcMillis, match.groupValues[2].take(NANOSECOND_DIGITS).trimEnd('0'))
+                    } else {
+                        null
+                    }
+                } catch (_: IllegalArgumentException) {
+                    null
+                } catch (_: NullPointerException) {
                     null
                 }
-            } catch (_: IllegalArgumentException) {
+            }
+        }
+
+        private fun parseOffsetMinutes(zone: String): Int? {
+            if (zone == "Z") return 0
+            @Suppress("UnsafeThirdPartyFunctionCall") // TIMESTAMP guarantees a sign and two-digit fields.
+            val fields = zone.drop(1).split(':').map { it.toInt() }
+            val (hours, minutes) = fields
+            return if (hours > MAX_OFFSET_HOURS || minutes >= MINUTES_PER_HOUR) {
                 null
-            } catch (_: NullPointerException) {
-                null
+            } else {
+                (hours * MINUTES_PER_HOUR + minutes) * if (zone[0] == '-') -1 else 1
             }
         }
 
         private const val NANOSECOND_DIGITS = 9
         private const val TIMEZONE_GROUP = 3
+        private const val MAX_OFFSET_HOURS = 23
+        private const val MINUTES_PER_HOUR = 60
+        private const val MIN_TIMESTAMP_MILLIS = -62167219200000L // 0000-01-01T00:00:00Z
+        private const val MAX_TIMESTAMP_MILLIS_EXCLUSIVE = 253402300800000L // 10000-01-01T00:00:00Z
     }
 }
 
