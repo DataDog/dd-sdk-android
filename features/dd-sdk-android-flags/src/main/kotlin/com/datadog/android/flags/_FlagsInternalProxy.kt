@@ -55,7 +55,10 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
         }
     }
 
-    /** Records only an exposure, using the flag and context captured by the caller, without fetching configuration. */
+    /**
+     * Records only an exposure, using the flag and context captured by the caller, without fetching configuration.
+     * Evaluation telemetry opt-out intentionally does not suppress exposures.
+     */
     fun trackFlagExposure(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
         if (client is DatadogFlagsClient) {
             client.trackFlagExposure(flagKey, flag, context)
@@ -66,6 +69,7 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
      * Records only an evaluation event, without fetching configuration or reporting to RUM.
      * Respects the client's evaluation telemetry opt-out settings.
      * A missing flag represents a runtime default. Unknown OpenFeature error codes are reported as `GENERAL`.
+     * The sanitized code is sent as the event's error message, matching the iOS bridge.
      */
     fun trackFlagEvaluationEvent(
         flagKey: String,

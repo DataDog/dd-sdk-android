@@ -148,6 +148,10 @@ internal class DatadogFlagsClient(
         evaluationTelemetryOptOut ||
             (subjectOptOut[requestedSubject] == true) || (subjectOptOut[subject] == true)
 
+    private fun isEvaluationTelemetryOptedOut(context: EvaluationContext): Boolean =
+        evaluationTelemetryOptOutParameterEnabled &&
+            synchronized(telemetryLock) { isSubjectOptedOut(context.targetingKey) }
+
     /**
      * Resolves a boolean flag value.
      *
@@ -616,8 +620,7 @@ internal class DatadogFlagsClient(
      * Supposed to be used by internal Datadog packages to track flag evaluations from an exact flags state snapshot.
      */
     internal fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
-        val optedOut = synchronized(telemetryLock) { isSubjectOptedOut(context.targetingKey) }
-        trackResolution(flagKey, flag, context, optedOut)
+        trackResolution(flagKey, flag, context, isEvaluationTelemetryOptedOut(context))
     }
 
     internal fun trackFlagExposure(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
@@ -632,17 +635,14 @@ internal class DatadogFlagsClient(
         context: EvaluationContext,
         errorCode: String?
     ) {
-        val telemetryOptedOut = evaluationTelemetryOptOutParameterEnabled &&
-            synchronized(telemetryLock) { isSubjectOptedOut(context.targetingKey) }
-        if (!flagsConfiguration.trackEvaluations || telemetryOptedOut) {
+        if (!flagsConfiguration.trackEvaluations || isEvaluationTelemetryOptedOut(context)) {
             return
         }
 
         // Hook errors can contain arbitrary customer data. Only forward standard OpenFeature codes.
         val sanitizedErrorCode = when (errorCode) {
             null -> null
-            "PROVIDER_NOT_READY", "PROVIDER_FATAL", "FLAG_NOT_FOUND", "PARSE_ERROR", "TYPE_MISMATCH",
-            "TARGETING_KEY_MISSING", "INVALID_CONTEXT", "GENERAL" -> errorCode
+            in ALLOWED_EVALUATION_ERROR_CODES -> errorCode
             else -> "GENERAL"
         }
         writeEvaluationEvent(
@@ -656,4 +656,17 @@ internal class DatadogFlagsClient(
     }
 
     // endregion
+
+    private companion object {
+        val ALLOWED_EVALUATION_ERROR_CODES = setOf(
+            "PROVIDER_NOT_READY",
+            "PROVIDER_FATAL",
+            "FLAG_NOT_FOUND",
+            "PARSE_ERROR",
+            "TYPE_MISMATCH",
+            "TARGETING_KEY_MISSING",
+            "INVALID_CONTEXT",
+            "GENERAL"
+        )
+    }
 }
