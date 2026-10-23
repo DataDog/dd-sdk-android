@@ -169,6 +169,12 @@ val isEnabled = client.getBooleanValue("my-feature", false)
 
 For complete details on using the OpenFeature API, including flag evaluation methods, hooks, state management, and events, see the [OpenFeature Kotlin SDK documentation](https://openfeature.dev/docs/reference/technologies/client/kotlin/)
 
+### Recoverable errors
+
+When a flag request fails without usable cached assignments, the provider reports a `ProviderError` with `GeneralError`.
+The provider can recover when a later context update loads valid assignments. It then reports `ProviderReady`.
+Initialization timeouts without usable cached assignments use the same recoverable error classification.
+
 ## Integration with RUM
 
 When RUM is enabled in your application and RUM integration is enabled in the Flags configuration (default), flag evaluations are automatically:
