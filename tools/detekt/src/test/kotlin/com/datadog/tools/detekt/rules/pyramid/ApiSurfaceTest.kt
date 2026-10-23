@@ -26,7 +26,7 @@ internal class ApiSurfaceTest {
     }
 
     @Test
-    fun `generateApiSurface`() {
+    fun generateApiSurface() {
         // Given
         val config = TestConfig("outputFileName" to fileName)
         val code =

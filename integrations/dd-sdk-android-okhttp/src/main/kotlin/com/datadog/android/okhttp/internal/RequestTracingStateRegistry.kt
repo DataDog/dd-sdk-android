@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * Striped lock pool for per-call synchronization.
  *
- * Using the call object itself as a monitor (`synchronized(call)`) is an anti-pattern:
+ * Using the call object itself as a monitor (`synchronized(call)`) is an antipattern:
  * external code could synchronize on the same object, risking deadlocks.
  * Instead, we use a fixed pool of private lock objects selected by hashCode.
  *
