@@ -45,8 +45,8 @@ internal class RumFeatureContextTest {
                 "application_id" to context.applicationId,
                 "session_id" to context.sessionId,
                 "session_active" to context.isSessionActive,
-                "session_state" to context.sessionState.asString,
-                "session_start_reason" to context.sessionStartReason.asString,
+                "session_state" to context.sessionState?.asString,
+                "session_start_reason" to context.sessionStartReason?.asString,
                 "view_id" to context.viewId,
                 "view_name" to context.viewName,
                 "view_url" to context.viewUrl,
@@ -76,5 +76,23 @@ internal class RumFeatureContextTest {
 
         // Then
         assertThat(featureContext).isEmpty()
+    }
+
+    @Test
+    fun `M clear stale legacy correlation W setRumContext() {application only}`(
+        @Forgery fakeRumContext: RumContext
+    ) {
+        // Given
+        val featureContext = mutableMapOf<String, Any?>()
+        featureContext.setRumContext(fakeRumContext)
+        val context = RumContext(applicationId = fakeRumContext.applicationId)
+
+        // When
+        featureContext.setRumContext(context)
+
+        // Then
+        assertThat(featureContext).isEqualTo(
+            mapOf(FeatureContextKeys.RUM_CONTEXT to context, "application_id" to context.applicationId)
+        )
     }
 }

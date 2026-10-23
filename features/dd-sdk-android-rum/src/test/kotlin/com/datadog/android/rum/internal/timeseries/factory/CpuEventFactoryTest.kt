@@ -125,6 +125,18 @@ internal class CpuEventFactoryTest {
     )
 
     @Test
+    fun `M return null W create() {session absent}`() {
+        // Given
+        val context = fakeSerializedRumContext.copy(sessionId = null)
+
+        // When
+        val result = testedFactory().create(fakeDatadogContext, context, oneSample)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
     fun `M return null W create() { empty input }`() {
         // When
         val result = testedFactory().create(fakeDatadogContext, fakeSerializedRumContext, emptyList())

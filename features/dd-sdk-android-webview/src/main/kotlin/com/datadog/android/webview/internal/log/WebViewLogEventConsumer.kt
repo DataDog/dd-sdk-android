@@ -54,9 +54,19 @@ internal class WebViewLogEventConsumer(
         addDdTags(event, datadogContext)
         correctDate(event, datadogContext)
         addAnonymousId(event, datadogContext)
-        if (rumContext != null) {
-            event.addProperty(LogAttributes.RUM_APPLICATION_ID, rumContext.applicationId)
-            event.addProperty(LogAttributes.RUM_SESSION_ID, rumContext.sessionId)
+        val applicationId = rumContext?.applicationId
+        if (applicationId != null && applicationId != RumContext.NULL_UUID) {
+            event.addProperty(LogAttributes.RUM_APPLICATION_ID, applicationId)
+            val sessionId = rumContext.sessionId
+            if (sessionId != null) {
+                event.addProperty(LogAttributes.RUM_SESSION_ID, sessionId)
+            } else {
+                event.remove(LogAttributes.RUM_SESSION_ID)
+                event.remove(LogAttributes.RUM_VIEW_ID)
+                event.remove(LogAttributes.RUM_ACTION_ID)
+                (event.get(VIEW_KEY_NAME) as? JsonObject)?.remove(ID_KEY_NAME)
+                (event.get(USER_ACTION_KEY_NAME) as? JsonObject)?.remove(ID_KEY_NAME)
+            }
         }
         return event
     }
@@ -168,6 +178,9 @@ internal class WebViewLogEventConsumer(
         const val DATE_KEY_NAME = "date"
         const val USER_LOG_EVENT_TYPE = "log"
         const val INTERNAL_LOG_EVENT_TYPE = "internal_log"
+        private const val VIEW_KEY_NAME = "view"
+        private const val USER_ACTION_KEY_NAME = "user_action"
+        private const val ID_KEY_NAME = "id"
         const val USR_KEY_NAME = "usr"
         const val ANONYMOUS_ID_KEY_NAME = "anonymous_id"
         const val JSON_PARSING_ERROR_MESSAGE = "The bundled web log event could not be deserialized"

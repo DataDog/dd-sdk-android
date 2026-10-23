@@ -63,6 +63,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -78,6 +79,7 @@ import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -3717,6 +3719,80 @@ internal class RumResourceScopeTest {
             )
     }
 
+    @ParameterizedTest
+    @EnumSource(SessionlessResourceCompletion::class)
+    fun `M notify about dropped event W handleEvent() {no session}`(
+        completion: SessionlessResourceCompletion,
+        forge: Forge
+    ) {
+        // Given
+        fakeParentContext = fakeParentContext.copy(sessionId = null)
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
+        testedScope = RumResourceScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = fakeUrl,
+            method = fakeMethod,
+            key = fakeKey,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
+        )
+        val fakeStopTime = timeWithOffset(RESOURCE_DURATION_MS)
+        val fakeStopEvent = when (completion) {
+            SessionlessResourceCompletion.SUCCESS -> RumRawEvent.StopResource(
+                fakeKey,
+                forge.aLong(min = 200, max = 300),
+                forge.aLong(min = 0, max = 1024),
+                forge.aValueFrom(RumResourceKind::class.java),
+                emptyMap(),
+                fakeStopTime
+            )
+            SessionlessResourceCompletion.ERROR -> RumRawEvent.StopResourceWithError(
+                fakeKey,
+                forge.aLong(min = 400, max = 600),
+                forge.aString(),
+                forge.aValueFrom(RumErrorSource::class.java),
+                forge.anException(),
+                emptyMap(),
+                fakeStopTime
+            )
+            SessionlessResourceCompletion.STACK_TRACE -> RumRawEvent.StopResourceWithStackTrace(
+                fakeKey,
+                forge.aLong(min = 400, max = 600),
+                forge.aString(),
+                forge.aValueFrom(RumErrorSource::class.java),
+                forge.aString(),
+                forge.aString(),
+                emptyMap(),
+                fakeStopTime
+            )
+        }
+        val expectedStorageEvent = when (completion) {
+            SessionlessResourceCompletion.SUCCESS -> StorageEvent.Resource(
+                testedScope.resourceId,
+                fakeStopTime.nanoTime
+            )
+            else -> StorageEvent.Error(testedScope.resourceId, fakeStopTime.nanoTime)
+        }
+
+        // When
+        val result = testedScope.handleEvent(fakeStopEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        assertThat(result).isNull()
+        verifyNoInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(fakeParentContext.viewId.orEmpty(), expectedStorageEvent)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
+    }
+
     @Test
     fun `M notify about error W handleEvent() { resource write failed }`(
         @Forgery kind: RumResourceKind,
@@ -4187,6 +4263,12 @@ internal class RumResourceScopeTest {
     }
 
     // endregion
+
+    internal enum class SessionlessResourceCompletion {
+        SUCCESS,
+        ERROR,
+        STACK_TRACE
+    }
 
     companion object {
         private const val RESOURCE_DURATION_MS = 50L

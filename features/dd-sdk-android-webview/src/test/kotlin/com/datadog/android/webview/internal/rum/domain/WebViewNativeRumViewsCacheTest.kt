@@ -13,6 +13,7 @@ import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -35,6 +36,9 @@ import java.util.concurrent.TimeUnit
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class WebViewNativeRumViewsCacheTest {
+
+    @StringForgery
+    private lateinit var fakeApplicationId: String
 
     private lateinit var fakeIdGenerator: FakeIdGenerator
 
@@ -69,13 +73,19 @@ internal class WebViewNativeRumViewsCacheTest {
         val fakeEntries = forge.aList(size = forge.anInt(min = 1, max = 10)) {
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
-                    RumContext(viewId = fakeIdGenerator.generateId(), viewTimestamp = nextTimestamp(), hasReplay = true)
+                    RumContext(
+                        applicationId = fakeApplicationId,
+                        viewId = fakeIdGenerator.generateId(),
+                        viewTimestamp = nextTimestamp(),
+                        hasReplay = true
+                    )
             )
         }
         val fakeNoReplayEntries = forge.aList(size = forge.anInt(min = 1, max = 10)) {
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
                     RumContext(
+                        applicationId = fakeApplicationId,
                         viewId = fakeIdGenerator.generateId(),
                         viewTimestamp = nextTimestamp(),
                         hasReplay = false
@@ -106,6 +116,7 @@ internal class WebViewNativeRumViewsCacheTest {
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
                     RumContext(
+                        applicationId = fakeApplicationId,
                         viewId = fakeIdGenerator.generateId(),
                         viewTimestamp = nextTimestamp(),
                         hasReplay = false
@@ -134,6 +145,7 @@ internal class WebViewNativeRumViewsCacheTest {
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
                     RumContext(
+                        applicationId = fakeApplicationId,
                         viewId = fakeIdGenerator.generateId(),
                         viewTimestamp = nextTimestamp(),
                         hasReplay = forge.aBool()
@@ -172,6 +184,7 @@ internal class WebViewNativeRumViewsCacheTest {
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
                     RumContext(
+                        applicationId = fakeApplicationId,
                         viewId = fakeIdGenerator.generateId(),
                         viewTimestamp = nextTimestamp(),
                         hasReplay = forge.aBool()
@@ -200,6 +213,7 @@ internal class WebViewNativeRumViewsCacheTest {
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
                     RumContext(
+                        applicationId = fakeApplicationId,
                         viewId = fakeIdGenerator.generateId(),
                         viewTimestamp = ++oldEntryTimestamp,
                         hasReplay = forge.aBool()
@@ -221,6 +235,7 @@ internal class WebViewNativeRumViewsCacheTest {
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
                     RumContext(
+                        applicationId = fakeApplicationId,
                         viewId = fakeIdGenerator.generateId(),
                         viewTimestamp = ++newEntryTimestamp,
                         hasReplay = forge.aBool()
@@ -257,6 +272,7 @@ internal class WebViewNativeRumViewsCacheTest {
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
                     RumContext(
+                        applicationId = fakeApplicationId,
                         viewId = fakeIdGenerator.generateId() + index++,
                         viewTimestamp = nextTimestamp(),
                         hasReplay = forge.aBool()
@@ -290,7 +306,12 @@ internal class WebViewNativeRumViewsCacheTest {
         val fakeEntries = forge.aList(size = forge.anInt(min = 1, max = 10)) {
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
-                    RumContext(viewId = fakeViewId, viewTimestamp = nextTimestamp(), hasReplay = forge.aBool())
+                    RumContext(
+                        applicationId = fakeApplicationId,
+                        viewId = fakeViewId,
+                        viewTimestamp = nextTimestamp(),
+                        hasReplay = forge.aBool()
+                    )
             )
         }
         fakeEntries.forEach { testedCache.addToCache(it) }
@@ -318,6 +339,7 @@ internal class WebViewNativeRumViewsCacheTest {
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
                     RumContext(
+                        applicationId = fakeApplicationId,
                         viewId = fakeIdGenerator.generateId(),
                         viewTimestamp = nextTimestamp(),
                         hasReplay = forge.aBool()
@@ -333,6 +355,7 @@ internal class WebViewNativeRumViewsCacheTest {
             mapOf(
                 FeatureContextKeys.RUM_CONTEXT to
                     RumContext(
+                        applicationId = fakeApplicationId,
                         viewId = fakeIdGenerator.generateId(),
                         viewTimestamp = nextTimestamp(),
                         hasReplay = forge.aBool()

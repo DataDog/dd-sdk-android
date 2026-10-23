@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.util.Log
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
@@ -117,6 +118,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
+import org.mockito.Mockito
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -4283,7 +4285,7 @@ internal class RumViewScopeTest {
             assertThat(firstValue.rumContext).isEqualTo(
                 ProfilingRumContext(
                     applicationId = fakeParentContext.applicationId,
-                    sessionId = fakeParentContext.sessionId,
+                    sessionId = checkNotNull(fakeParentContext.sessionId),
                     viewId = testedScope.viewId,
                     viewName = fakeKey.name
                 )
@@ -6273,7 +6275,7 @@ internal class RumViewScopeTest {
             assertThat(firstValue.rumContext).isEqualTo(
                 ProfilingRumContext(
                     applicationId = fakeParentContext.applicationId,
-                    sessionId = fakeParentContext.sessionId,
+                    sessionId = checkNotNull(fakeParentContext.sessionId),
                     viewId = testedScope.viewId,
                     viewName = fakeKey.name
                 )
@@ -10737,7 +10739,7 @@ internal class RumViewScopeTest {
         assertThat(capturedProfilerEvent.rumContext).isEqualTo(
             ProfilingRumContext(
                 applicationId = fakeParentContext.applicationId,
-                sessionId = fakeParentContext.sessionId,
+                sessionId = checkNotNull(fakeParentContext.sessionId),
                 viewId = testedScope.viewId,
                 viewName = fakeKey.name
             )
@@ -10781,7 +10783,7 @@ internal class RumViewScopeTest {
         assertThat(capturedProfilerEvent.rumContext).isEqualTo(
             ProfilingRumContext(
                 applicationId = fakeParentContext.applicationId,
-                sessionId = fakeParentContext.sessionId,
+                sessionId = checkNotNull(fakeParentContext.sessionId),
                 viewId = testedScope.viewId,
                 viewName = fakeKey.name
             )
@@ -11058,6 +11060,37 @@ internal class RumViewScopeTest {
     }
 
     // endregion
+
+    @Test
+    fun `M omit synthetics correlation W initialization {no session}`(@StringForgery fakeTestId: String) {
+        // Given
+        fakeParentContext = fakeParentContext.copy(syntheticsTestId = fakeTestId, sessionId = null)
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
+        Mockito.mockStatic(Log::class.java).use { mockLog ->
+            // When
+            testedScope = newRumViewScope()
+
+            // Then
+            mockLog.verifyNoInteractions()
+        }
+    }
+
+    @Test
+    fun `M log synthetics correlation W initialization {session exists}`(@StringForgery fakeTestId: String) {
+        // Given
+        fakeParentContext = fakeParentContext.copy(syntheticsTestId = fakeTestId)
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
+        Mockito.mockStatic(Log::class.java).use { mockLog ->
+            // When
+            testedScope = newRumViewScope()
+
+            // Then
+            mockLog.verify { Log.i("DatadogSynthetics", "_dd.application.id=${fakeParentContext.applicationId}") }
+            mockLog.verify { Log.i("DatadogSynthetics", "_dd.session.id=${checkNotNull(fakeParentContext.sessionId)}") }
+            mockLog.verify { Log.i("DatadogSynthetics", "_dd.view.id=${testedScope.viewId}") }
+            mockLog.verifyNoMoreInteractions()
+        }
+    }
 
     private fun newRumViewScope(
         parentScope: RumScope = mockParentScope,

@@ -42,6 +42,9 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class WebViewRumFeatureTest {
 
+    @StringForgery
+    private lateinit var fakeApplicationId: String
+
     private lateinit var testedFeature: WebViewRumFeature
 
     @Mock
@@ -117,7 +120,7 @@ internal class WebViewRumFeatureTest {
     @Test
     fun `M cache rum context W onContextUpdate { RUM }`(@StringForgery fakeSessionId: String) {
         // Given
-        val fakeRumContext = RumContext(sessionId = fakeSessionId)
+        val fakeRumContext = RumContext(applicationId = fakeApplicationId, sessionId = fakeSessionId)
         val fakeContext = mapOf(FeatureContextKeys.RUM_CONTEXT to fakeRumContext)
 
         // When
@@ -160,7 +163,8 @@ internal class WebViewRumFeatureTest {
         testedFeature.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
             mapOf(
-                FeatureContextKeys.RUM_CONTEXT to RumContext(sessionId = fakeSessionId)
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(applicationId = fakeApplicationId, sessionId = fakeSessionId)
             )
         )
         testedFeature.onContextUpdate(Feature.TRACING_FEATURE_NAME, mapOf("okhttp_interceptor_sample_rate" to 50f))

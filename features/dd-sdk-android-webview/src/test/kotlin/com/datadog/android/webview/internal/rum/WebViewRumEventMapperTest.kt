@@ -635,7 +635,7 @@ internal class WebViewRumEventMapperTest {
         assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.APPLICATION_KEY_NAME))
             .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeRumContext.applicationId)
         assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.SESSION_KEY_NAME))
-            .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeRumContext.sessionId)
+            .hasField(WebViewRumEventMapper.ID_KEY_NAME, checkNotNull(fakeRumContext.sessionId))
             .hasField(
                 WebViewRumEventMapper.SESSION_IS_MAIN_PROCESS_NAME,
                 fakeDatadogContext.processInfo.isMainProcess

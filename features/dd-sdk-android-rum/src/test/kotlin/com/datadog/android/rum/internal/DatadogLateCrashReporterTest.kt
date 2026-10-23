@@ -74,6 +74,9 @@ import java.io.IOException
 @ForgeConfiguration(Configurator::class)
 internal class DatadogLateCrashReporterTest {
 
+    @StringForgery
+    private lateinit var fakeApplicationId: String
+
     private lateinit var testedHandler: LateCrashReporter
 
     @Mock
@@ -1224,7 +1227,10 @@ internal class DatadogLateCrashReporterTest {
             ),
             featuresContext = mapOf(
                 Feature.RUM_FEATURE_NAME to
-                    mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(sessionId = viewEvent.session.id))
+                    mapOf(
+                        FeatureContextKeys.RUM_CONTEXT to
+                            RumContext(applicationId = fakeApplicationId, sessionId = viewEvent.session.id)
+                    )
             )
         )
 

@@ -300,7 +300,7 @@ internal class RumTimeseriesSessionTransitionTest {
     fun `M send has_timeseries=true in final view W handleEvent(StopSession) { buffer not full, no pending work }`() {
         // Given
         handle(startViewEvent(fakeLongViewKey))
-        val sessionId = checkNotNull(testedScope.activeSession).sessionId
+        val sessionId = checkNotNull(checkNotNull(testedScope.activeSession).sessionId)
         runSamplingTicks(fakeBufferSize - 1)
 
         // When
@@ -324,7 +324,7 @@ internal class RumTimeseriesSessionTransitionTest {
         handle(startViewEvent(fakeNextViewKey))
 
         // Then
-        val newSessionId = checkNotNull(testedScope.activeSession).sessionId
+        val newSessionId = checkNotNull(checkNotNull(testedScope.activeSession).sessionId)
         assertThat(newSessionId).isNotEqualTo(previousSessionId)
         assertThat(viewEvents(newSessionId)).isNotEmpty.allSatisfy {
             assertThat(it.session.hasTimeseries).isFalse()
@@ -337,7 +337,7 @@ internal class RumTimeseriesSessionTransitionTest {
         val fakeTimeseriesEvent = JsonObject()
         whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeTimeseriesEvent
         handle(startViewEvent(fakeLongViewKey))
-        val previousSessionId = checkNotNull(testedScope.activeSession).sessionId
+        val previousSessionId = checkNotNull(checkNotNull(testedScope.activeSession).sessionId)
         runSamplingTicks(fakeBufferSize - 1)
         advanceTimeByNs(RumSessionScope.DEFAULT_SESSION_INACTIVITY_NS)
 
@@ -345,7 +345,7 @@ internal class RumTimeseriesSessionTransitionTest {
         handle(startViewEvent(fakeNextViewKey))
 
         // Then
-        val newSessionId = checkNotNull(testedScope.activeSession).sessionId
+        val newSessionId = checkNotNull(checkNotNull(testedScope.activeSession).sessionId)
         assertThat(newSessionId).isNotEqualTo(previousSessionId)
         verify(mockTimeseriesWriter).write(mockEventBatchWriter, fakeTimeseriesEvent, EventType.DEFAULT)
         assertThat(testedCollector.isTimeseriesCollected(previousSessionId)).isTrue()
@@ -365,7 +365,7 @@ internal class RumTimeseriesSessionTransitionTest {
                 eventTime = currentTime()
             )
         )
-        return checkNotNull(testedScope.activeSession).sessionId
+        return checkNotNull(checkNotNull(testedScope.activeSession).sessionId)
     }
 
     // The long view of the stopped session stays alive until its pending resource is reported as sent.

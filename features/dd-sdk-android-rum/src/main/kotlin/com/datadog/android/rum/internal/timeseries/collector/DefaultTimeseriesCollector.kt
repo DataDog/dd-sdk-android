@@ -110,7 +110,8 @@ internal class DefaultTimeseriesCollector(
 
     @WorkerThread
     override fun onRumContextUpdate(newRumContext: RumContext) {
-        if (newRumContext.sessionId != activeSessionId) return
+        val sessionId = newRumContext.sessionId ?: return
+        if (sessionId != activeSessionId) return
 
         stateGate.setRumContext(newRumContext, onUpdated = ::tryStartCollection)
     }
