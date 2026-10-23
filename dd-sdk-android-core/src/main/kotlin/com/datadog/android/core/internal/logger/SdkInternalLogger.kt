@@ -21,6 +21,7 @@ import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.attributes.enrichWithNonNullAttribute
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.time.DefaultTimeProvider
+import java.util.concurrent.ConcurrentHashMap
 
 internal class SdkInternalLogger(
     private val sdkCore: FeatureSdkCore?,
@@ -54,6 +55,8 @@ internal class SdkInternalLogger(
     private val onlyOnceUserMessages = mutableSetOf<String>()
     private val onlyOnceMaintainerMessages = mutableSetOf<String>()
     private val onlyOnceTelemetryMessages = mutableSetOf<String>()
+
+    private val onlyOnceApiUsages = ConcurrentHashMap<String, Boolean>()
 
     // region InternalLogger
 
@@ -152,10 +155,13 @@ internal class SdkInternalLogger(
         samplingRate: Float,
         apiUsageEventBuilder: () -> InternalTelemetryEvent.ApiUsage
     ) {
-        if (!sample(samplingRate)) return
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
 
         val event = apiUsageEventBuilder()
+        // Deduplicate before sampling, so that each usage gets a single sampling decision
+        // and the effective sample rate remains accurate.
+        if (onlyOnceApiUsages.putIfAbsent(event.onlyOnceKey(), true) != null || !sample(samplingRate)) return
+
         event.additionalProperties.enrichWithNonNullAttribute(
             LocalAttribute.Key.REPORTING_SAMPLING_RATE,
             samplingRate
@@ -261,6 +267,18 @@ internal class SdkInternalLogger(
             )
         }
         rumFeature.sendEvent(telemetryEvent)
+    }
+
+    // Usages with a configuration include it in the key, so that each variant is still reported once
+    // (e.g. every operation step type, or both OkHttp and Cronet instrumentations).
+    private fun InternalTelemetryEvent.ApiUsage.onlyOnceKey(): String {
+        val configuration = when (this) {
+            is InternalTelemetryEvent.ApiUsage.AddViewLoadingTime -> "$overwrite,$noView,$noActiveView"
+            is InternalTelemetryEvent.ApiUsage.AddOperationStepVital -> actionType.name
+            is InternalTelemetryEvent.ApiUsage.NetworkInstrumentation -> type.name
+            else -> ""
+        }
+        return "${javaClass.name}($configuration)"
     }
 
     private fun InternalLogger.Level.toLogLevel(): Int {

@@ -46,6 +46,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.mockingDetails
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -765,7 +766,7 @@ internal class SdkInternalLoggerTest {
     }
 
     @Test
-    fun `M send api usage telemetry W metric() {sampling x percent}`(
+    fun `M send api usage telemetry W logApiUsage() {sampling x percent}`(
         @FloatForgery(25f, 75f) fakeSampleRate: Float,
         @Forgery fakeApiUsageInternalTelemetryEvent: InternalTelemetryEvent.ApiUsage
     ) {
@@ -775,13 +776,117 @@ internal class SdkInternalLoggerTest {
         val marginOfError = (repeatCount * 0.25f).toInt()
 
         // When
-        repeat(100) {
-            testedInternalLogger.logApiUsage(fakeSampleRate) { fakeApiUsageInternalTelemetryEvent }
+        repeat(repeatCount) {
+            SdkInternalLogger(
+                sdkCore = mockSdkCore,
+                userLogHandlerFactory = { mockUserLogHandler },
+                maintainerLogHandlerFactory = { mockMaintainerLogHandler }
+            ).logApiUsage(fakeSampleRate) { fakeApiUsageInternalTelemetryEvent }
         }
 
         // Then
         val count = mockingDetails(mockRumFeatureScope).invocations.count { it.method.name == "sendEvent" }
         assertThat(count).isCloseTo(expectedCallCount, offset(marginOfError))
+    }
+
+    @Test
+    fun `M send api usage telemetry once W logApiUsage() { same usage repeated }`(
+        @Forgery fakeActionType: InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType
+    ) {
+        // When
+        repeat(10) {
+            testedInternalLogger.logApiUsage(100.0f) {
+                InternalTelemetryEvent.ApiUsage.AddOperationStepVital(fakeActionType)
+            }
+        }
+
+        // Then
+        argumentCaptor<InternalTelemetryEvent> {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            val apiUsageEvent = firstValue as InternalTelemetryEvent.ApiUsage.AddOperationStepVital
+            assertThat(apiUsageEvent.actionType).isEqualTo(fakeActionType)
+        }
+    }
+
+    @Test
+    fun `M send api usage telemetry once per configuration W logApiUsage() { distinct usages repeated }`() {
+        // Given
+        val fakeApiUsageEvents = allDistinctApiUsageEvents()
+
+        // When
+        (fakeApiUsageEvents + fakeApiUsageEvents).forEach { event ->
+            testedInternalLogger.logApiUsage(100.0f) { event }
+        }
+
+        // Then
+        argumentCaptor<InternalTelemetryEvent> {
+            verify(mockRumFeatureScope, times(fakeApiUsageEvents.size)).sendEvent(capture())
+            assertThat(allValues).containsExactlyElementsOf(fakeApiUsageEvents)
+        }
+    }
+
+    @Test
+    fun `M not send api usage telemetry W logApiUsage() { same usage sampled out before }`(
+        @Forgery fakeActionType: InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType
+    ) {
+        // Given
+        testedInternalLogger.logApiUsage(0.0f) {
+            InternalTelemetryEvent.ApiUsage.AddOperationStepVital(fakeActionType)
+        }
+
+        // When
+        testedInternalLogger.logApiUsage(100.0f) {
+            InternalTelemetryEvent.ApiUsage.AddOperationStepVital(fakeActionType)
+        }
+
+        // Then
+        verify(mockRumFeatureScope, never()).sendEvent(any())
+    }
+
+    @Test
+    fun `M send api usage telemetry W logApiUsage() { rum feature initialized after first usage }`(
+        @Forgery fakeApiUsageInternalTelemetryEvent: InternalTelemetryEvent.ApiUsage
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
+        testedInternalLogger.logApiUsage(100.0f) { fakeApiUsageInternalTelemetryEvent }
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+
+        // When
+        testedInternalLogger.logApiUsage(100.0f) { fakeApiUsageInternalTelemetryEvent }
+
+        // Then
+        verify(mockRumFeatureScope).sendEvent(fakeApiUsageInternalTelemetryEvent)
+    }
+
+    @Test
+    fun `M send api usage telemetry once per SDK instance W logApiUsage() { two SDK instances }`(
+        @Forgery fakeActionType: InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType
+    ) {
+        // Given
+        val mockSecondRumFeatureScope = mock<FeatureScope>()
+        val mockSecondSdkCore = mock<FeatureSdkCore> {
+            on { getFeature(Feature.RUM_FEATURE_NAME) } doReturn mockSecondRumFeatureScope
+        }
+        val secondInternalLogger = SdkInternalLogger(
+            sdkCore = mockSecondSdkCore,
+            userLogHandlerFactory = { mockUserLogHandler },
+            maintainerLogHandlerFactory = { mockMaintainerLogHandler }
+        )
+
+        // When
+        repeat(10) {
+            testedInternalLogger.logApiUsage(100.0f) {
+                InternalTelemetryEvent.ApiUsage.AddOperationStepVital(fakeActionType)
+            }
+            secondInternalLogger.logApiUsage(100.0f) {
+                InternalTelemetryEvent.ApiUsage.AddOperationStepVital(fakeActionType)
+            }
+        }
+
+        // Then
+        verify(mockRumFeatureScope).sendEvent(any<InternalTelemetryEvent.ApiUsage.AddOperationStepVital>())
+        verify(mockSecondRumFeatureScope).sendEvent(any<InternalTelemetryEvent.ApiUsage.AddOperationStepVital>())
     }
 
     @Test
@@ -884,6 +989,26 @@ internal class SdkInternalLoggerTest {
             userLogHandlerFactory = { mockUserLogHandler },
             maintainerLogHandlerFactory = { mockMaintainerLogHandler }
         )
+    }
+
+    private fun allDistinctApiUsageEvents(): List<InternalTelemetryEvent.ApiUsage> {
+        val booleans = listOf(true, false)
+        val addViewLoadingTimeEvents = booleans.flatMap { overwrite ->
+            booleans.flatMap { noView ->
+                booleans.map { noActiveView ->
+                    InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(overwrite, noView, noActiveView)
+                }
+            }
+        }
+        val addOperationStepVitalEvents = InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType.entries
+            .map { InternalTelemetryEvent.ApiUsage.AddOperationStepVital(it) }
+        val networkInstrumentationEvents = InternalTelemetryEvent.ApiUsage.NetworkInstrumentation.LibraryType.entries
+            .map { InternalTelemetryEvent.ApiUsage.NetworkInstrumentation(it) }
+        return addViewLoadingTimeEvents +
+            addOperationStepVitalEvents +
+            networkInstrumentationEvents +
+            InternalTelemetryEvent.ApiUsage.TrackWebView() +
+            InternalTelemetryEvent.ApiUsage.Timeseries()
     }
 
     private fun InternalLogger.Level.toLogLevel(): Int {
