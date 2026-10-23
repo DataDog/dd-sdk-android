@@ -75,8 +75,8 @@ internal class ExperimentationCallbackTest {
             override fun onFailure(error: Throwable) { callbackState = states.getCurrentState() }
         }
         states.addListener(object : FlagsStateListener {
-            override fun onStateChanged(state: FlagsClientState) {
-                if (state == FlagsClientState.Reconciling) {
+            override fun onStateChanged(newState: FlagsClientState) {
+                if (newState == FlagsClientState.Reconciling) {
                     testedManager.updateEvaluationsForContext(invalidContext(), callback)
                 }
             }
