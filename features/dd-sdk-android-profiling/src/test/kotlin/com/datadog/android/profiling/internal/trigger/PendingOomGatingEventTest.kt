@@ -33,13 +33,15 @@ internal class PendingOomGatingEventTest {
     fun `M preserve every field W toJson() then fromJson()`(
         @StringForgery fakeRumErrorId: String,
         @LongForgery fakeTimestampMs: Long,
-        @Forgery fakeRumContext: ProfilingRumContext
+        @Forgery fakeRumContext: ProfilingRumContext,
+        @LongForgery fakeBootNtpOffsetNs: Long
     ) {
         // Given
         val original = PendingOomGatingEvent(
             rumErrorId = fakeRumErrorId,
             timestampMs = fakeTimestampMs,
-            rumContext = fakeRumContext
+            rumContext = fakeRumContext,
+            bootNtpOffsetNs = fakeBootNtpOffsetNs
         )
 
         // When
@@ -56,7 +58,8 @@ internal class PendingOomGatingEventTest {
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeSessionId: String,
         @StringForgery fakeViewId: String,
-        @StringForgery fakeViewName: String
+        @StringForgery fakeViewName: String,
+        @LongForgery fakeBootNtpOffsetNs: Long
     ) {
         // Given
         // The gating event is written by the process that received it and read by
@@ -69,7 +72,8 @@ internal class PendingOomGatingEventTest {
               "application_id": "$fakeApplicationId",
               "session_id": "$fakeSessionId",
               "view_id": "$fakeViewId",
-              "view_name": "$fakeViewName"
+              "view_name": "$fakeViewName",
+              "boot_ntp": $fakeBootNtpOffsetNs
             }
         """.trimIndent()
 
@@ -86,7 +90,8 @@ internal class PendingOomGatingEventTest {
                     sessionId = fakeSessionId,
                     viewId = fakeViewId,
                     viewName = fakeViewName
-                )
+                ),
+                bootNtpOffsetNs = fakeBootNtpOffsetNs
             )
         )
     }
@@ -96,7 +101,8 @@ internal class PendingOomGatingEventTest {
         @StringForgery fakeRumErrorId: String,
         @LongForgery fakeTimestampMs: Long,
         @StringForgery fakeApplicationId: String,
-        @StringForgery fakeSessionId: String
+        @StringForgery fakeSessionId: String,
+        @LongForgery fakeBootNtpOffsetNs: Long
     ) {
         // Given
         val original = PendingOomGatingEvent(
@@ -107,7 +113,8 @@ internal class PendingOomGatingEventTest {
                 sessionId = fakeSessionId,
                 viewId = null,
                 viewName = null
-            )
+            ),
+            bootNtpOffsetNs = fakeBootNtpOffsetNs
         )
 
         // When
@@ -130,13 +137,16 @@ internal class PendingOomGatingEventTest {
     }
 
     @Test
-    fun `M return null W fromJson() {mandatory field missing}`() {
+    fun `M return null W fromJson() {mandatory field missing}`(
+        @LongForgery fakeBootNtpOffsetNs: Long
+    ) {
         // Given
         val serialized = """
             {
               "timestamp": 1700000000000,
               "application_id": "app-1",
-              "session_id": "sess-1"
+              "session_id": "sess-1",
+              "boot_ntp": $fakeBootNtpOffsetNs
             }
         """.trimIndent()
 
@@ -148,14 +158,41 @@ internal class PendingOomGatingEventTest {
     }
 
     @Test
-    fun `M return null W fromJson() {timestamp is not a number}`() {
+    fun `M return null W fromJson() {timestamp is not a number}`(
+        @LongForgery fakeBootNtpOffsetNs: Long
+    ) {
         // Given
         val serialized = """
             {
               "error_id": "err-1",
               "timestamp": "not-a-number",
               "application_id": "app-1",
-              "session_id": "sess-1"
+              "session_id": "sess-1",
+              "boot_ntp": $fakeBootNtpOffsetNs
+            }
+        """.trimIndent()
+
+        // When
+        val restored = PendingOomGatingEvent.fromJson(serialized)
+
+        // Then
+        assertThat(restored).isNull()
+    }
+
+    @Test
+    fun `M return null W fromJson() {boot ntp offset missing}`(
+        @StringForgery fakeErrorId: String,
+        @LongForgery fakeTimestampMs: Long,
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String
+    ) {
+        // Given
+        val serialized = """
+            {
+              "error_id": "$fakeErrorId",
+              "timestamp": $fakeTimestampMs,
+              "application_id": "$fakeApplicationId",
+              "session_id": "$fakeSessionId"
             }
         """.trimIndent()
 

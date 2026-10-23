@@ -23,17 +23,22 @@ import com.google.gson.JsonParser
  * @param rumErrorId id of the RUM error event describing the OOM.
  * @param timestampMs time the gating event was received, in milliseconds since epoch.
  * @param rumContext RUM context at the time of the OOM.
+ * @param bootNtpOffsetNs offset between NTP-corrected time and boot time, in nanoseconds, captured
+ * when the gating event was received. The deferred trigger result may be delivered after a device
+ * reboot, when the current offset no longer matches the boot the histogram was captured in.
  */
 internal data class PendingOomGatingEvent(
     val rumErrorId: String,
     val timestampMs: Long,
-    val rumContext: ProfilingRumContext
+    val rumContext: ProfilingRumContext,
+    val bootNtpOffsetNs: Long
 ) {
 
     fun toJson(): String {
         val json = JsonObject()
         json.addProperty(KEY_ERROR_ID, rumErrorId)
         json.addProperty(KEY_TIMESTAMP, timestampMs)
+        json.addProperty(KEY_BOOT_NTP, bootNtpOffsetNs)
         json.addProperty(KEY_APPLICATION_ID, rumContext.applicationId)
         json.addProperty(KEY_SESSION_ID, rumContext.sessionId)
         rumContext.viewId?.let { json.addProperty(KEY_VIEW_ID, it) }
@@ -45,6 +50,7 @@ internal data class PendingOomGatingEvent(
     companion object {
         internal const val KEY_ERROR_ID = "error_id"
         internal const val KEY_TIMESTAMP = "timestamp"
+        internal const val KEY_BOOT_NTP = "boot_ntp"
         internal const val KEY_APPLICATION_ID = "application_id"
         internal const val KEY_SESSION_ID = "session_id"
         internal const val KEY_VIEW_ID = "view_id"
@@ -68,7 +74,8 @@ internal data class PendingOomGatingEvent(
                         sessionId = json.string(KEY_SESSION_ID) ?: return null,
                         viewId = json.string(KEY_VIEW_ID),
                         viewName = json.string(KEY_VIEW_NAME)
-                    )
+                    ),
+                    bootNtpOffsetNs = json.long(KEY_BOOT_NTP) ?: return null
                 )
             } catch (e: Throwable) {
                 null

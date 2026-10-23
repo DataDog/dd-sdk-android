@@ -18,6 +18,7 @@ import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.ProfilingStorage
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.profiling.internal.utils.bootNtpOffsetNs
 import com.datadog.android.profiling.internal.utils.fileDeleteSafe
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
@@ -63,8 +64,10 @@ internal class PendingTriggerProfileStorage(
             // before this trigger result arrived: match them now instead of waiting for yet
             // another launch.
             matchDeferredOomGatingEvent()?.let { deferredGatingEvent ->
+                // The histogram was captured in the boot the gating event was received in, which a
+                // device reboot may have ended since.
                 persistPendingOomProfile(
-                    result = result,
+                    result = result.copy(bootNtpOffsetNs = deferredGatingEvent.bootNtpOffsetNs),
                     rumErrorId = deferredGatingEvent.rumErrorId,
                     rumContext = deferredGatingEvent.rumContext
                 )
@@ -88,7 +91,8 @@ internal class PendingTriggerProfileStorage(
                 PendingOomGatingEvent(
                     rumErrorId = event.id,
                     timestampMs = event.timestamp,
-                    rumContext = event.rumContext
+                    rumContext = event.rumContext,
+                    bootNtpOffsetNs = timeProvider.bootNtpOffsetNs()
                 )
             )
         }
