@@ -6,6 +6,8 @@
 
 package com.datadog.android.flags.internal.evaluation
 
+import android.os.Handler
+import android.os.Looper
 import com.datadog.android.api.InternalLogger
 import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
@@ -14,11 +16,15 @@ import java.util.concurrent.RejectedExecutionException
 /** Owns completion delivery until the queue drains, including after the Flags feature stops. */
 internal class EvaluationCallbackDispatcher(
     private val logger: InternalLogger,
+    private val scheduleRetry: (Runnable, Long) -> Boolean = { command, delay ->
+        Handler(Looper.getMainLooper()).postDelayed(command, delay)
+    },
     private val createWorker: () -> ExecutorService
 ) : Executor {
     private val lock = Any()
     private val pending = ArrayDeque<Runnable>()
     private var draining = false
+    private var failureReported = false
 
     override fun execute(command: Runnable) {
         synchronized(lock) {
@@ -26,6 +32,10 @@ internal class EvaluationCallbackDispatcher(
             if (draining) return
             draining = true
         }
+        startWorker()
+    }
+
+    private fun startWorker() {
         val worker = try {
             createWorker()
         } catch (exception: SecurityException) {
@@ -34,7 +44,7 @@ internal class EvaluationCallbackDispatcher(
         }
         try {
             // Only one task enters this fresh worker, so core backpressure cannot discard completions.
-            @Suppress("UnsafeThirdPartyFunctionCall") // Submission failures retain the queue for a later dispatch.
+            @Suppress("UnsafeThirdPartyFunctionCall") // Submission failures schedule another worker-start attempt.
             worker.execute(::drain)
         } catch (exception: RejectedExecutionException) {
             onSubmissionFailed(exception)
@@ -50,11 +60,24 @@ internal class EvaluationCallbackDispatcher(
     }
 
     private fun onSubmissionFailed(exception: RuntimeException) {
-        synchronized(lock) { draining = false }
         logWorkerFailure(exception)
+        // The main looper retries worker startup only. Customer callbacks stay on the worker.
+        if (!scheduleRetry(Runnable(::startWorker), RETRY_DELAY_MS)) {
+            synchronized(lock) { draining = false }
+            logger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { "Unable to retry the feature flags callback worker: the main looper is not accepting work." },
+                onlyOnce = true
+            )
+        }
     }
 
     private fun logWorkerFailure(exception: RuntimeException) {
+        synchronized(lock) {
+            if (failureReported) return
+            failureReported = true
+        }
         logger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
@@ -66,7 +89,12 @@ internal class EvaluationCallbackDispatcher(
     private fun drain() {
         while (true) {
             val command = synchronized(lock) {
-                pending.removeFirstOrNull().also { if (it == null) draining = false }
+                pending.removeFirstOrNull().also {
+                    if (it == null) {
+                        draining = false
+                        failureReported = false
+                    }
+                }
             } ?: return
             try {
                 command.run()
@@ -83,5 +111,9 @@ internal class EvaluationCallbackDispatcher(
                 )
             }
         }
+    }
+
+    private companion object {
+        const val RETRY_DELAY_MS = 1_000L
     }
 }

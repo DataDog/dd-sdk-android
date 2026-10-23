@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -38,11 +39,17 @@ internal class EvaluationCallbackDispatcherTest {
     @Mock lateinit var mockWorker: ExecutorService
     private lateinit var testedDispatcher: EvaluationCallbackDispatcher
     private val pending = ArrayDeque<Runnable>()
+    private val retries = ArrayDeque<Runnable>()
+    private val retryDelays = mutableListOf<Long>()
 
     @BeforeEach
     fun setUp() {
         doAnswer { pending.addLast(it.getArgument(0)); null }.whenever(mockWorker).execute(any())
-        testedDispatcher = EvaluationCallbackDispatcher(mockLogger) { mockWorker }
+        testedDispatcher = EvaluationCallbackDispatcher(mockLogger, scheduleRetry = { command, delay ->
+            retryDelays.add(delay)
+            retries.addLast(command)
+            true
+        }) { mockWorker }
     }
 
     @Test
@@ -87,7 +94,7 @@ internal class EvaluationCallbackDispatcherTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M retain pending delivery W execute() {submission fails}`(securityFailure: Boolean) {
+    fun `M retry sole callback W execute() {submission fails}`(securityFailure: Boolean) {
         // Given
         val fakeError = if (securityFailure) SecurityException("thread denied") else RejectedExecutionException()
         doThrow(fakeError).whenever(mockWorker).execute(any())
@@ -98,6 +105,9 @@ internal class EvaluationCallbackDispatcherTest {
 
         // Then
         verify(mockWorker).shutdown()
+        assertThat(delivered).isZero()
+        assertThat(retries).hasSize(1)
+        assertThat(retryDelays).containsExactly(1_000L)
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
@@ -105,35 +115,137 @@ internal class EvaluationCallbackDispatcherTest {
             fakeError
         )
         doAnswer { pending.addLast(it.getArgument(0)); null }.whenever(mockWorker).execute(any())
-        testedDispatcher.execute { delivered++ }
+        retries.removeFirst().run()
         pending.removeFirst().run()
-        assertThat(delivered).isEqualTo(2)
+        assertThat(delivered).isEqualTo(1)
+        assertThat(retries).isEmpty()
+        verify(mockWorker, times(2)).shutdown()
     }
 
     @Test
-    fun `M permit later worker creation W execute() {worker creation denied}`() {
+    fun `M retry sole callback W execute() {worker creation denied}`() {
         // Given
         var attempts = 0
         var delivered = 0
         val fakeError = SecurityException("worker denied")
-        testedDispatcher = EvaluationCallbackDispatcher(mockLogger) {
+        testedDispatcher = EvaluationCallbackDispatcher(mockLogger, scheduleRetry = { command, _ ->
+            retries.addLast(command)
+            true
+        }) {
             if (attempts++ == 0) throw fakeError
             mockWorker
         }
 
         // When
         testedDispatcher.execute { delivered++ }
-        testedDispatcher.execute { delivered++ }
+        retries.removeFirst().run()
         pending.removeFirst().run()
 
         // Then
-        assertThat(delivered).isEqualTo(2)
+        assertThat(delivered).isEqualTo(1)
+        assertThat(attempts).isEqualTo(2)
+        assertThat(retries).isEmpty()
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             "Unable to start or stop the feature flags callback worker.",
             fakeError
         )
+    }
+
+    @Test
+    fun `M retain one retry and all callbacks W execute() {new completion while worker fails repeatedly}`() {
+        // Given
+        val fakeError = SecurityException("thread denied")
+        doThrow(fakeError).whenever(mockWorker).execute(any())
+        val delivered = mutableListOf<Int>()
+        testedDispatcher.execute { delivered.add(1) }
+
+        // When
+        testedDispatcher.execute { delivered.add(2) }
+        repeat(3) { retries.removeFirst().run() }
+
+        // Then
+        assertThat(retries).hasSize(1)
+        assertThat(retryDelays).containsExactly(1_000L, 1_000L, 1_000L, 1_000L)
+        assertThat(delivered).isEmpty()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            "Unable to start or stop the feature flags callback worker.",
+            fakeError
+        )
+        doAnswer { pending.addLast(it.getArgument(0)); null }.whenever(mockWorker).execute(any())
+        retries.removeFirst().run()
+        pending.removeFirst().run()
+        assertThat(delivered).containsExactly(1, 2)
+        assertThat(retries).isEmpty()
+        verify(mockWorker, times(5)).shutdown()
+    }
+
+    @Test
+    fun `M accept concurrent completion W execute() {retry scheduling in progress}`() {
+        // Given
+        val scheduling = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val producer = Executors.newSingleThreadExecutor()
+        val delivered = mutableListOf<Int>()
+        doThrow(RejectedExecutionException()).whenever(mockWorker).execute(any())
+        testedDispatcher = EvaluationCallbackDispatcher(mockLogger, scheduleRetry = { command, _ ->
+            retries.addLast(command)
+            scheduling.countDown()
+            check(release.await(5, TimeUnit.SECONDS))
+            true
+        }) { mockWorker }
+
+        try {
+            val submitted = producer.submit { testedDispatcher.execute { delivered.add(1) } }
+            check(scheduling.await(5, TimeUnit.SECONDS))
+
+            // When
+            testedDispatcher.execute { delivered.add(2) }
+            release.countDown()
+            submitted.get(5, TimeUnit.SECONDS)
+            doAnswer { pending.addLast(it.getArgument(0)); null }.whenever(mockWorker).execute(any())
+            retries.removeFirst().run()
+            pending.removeFirst().run()
+
+            // Then
+            assertThat(delivered).containsExactly(1, 2)
+            assertThat(retries).isEmpty()
+            verify(mockWorker, times(2)).shutdown()
+        } finally {
+            release.countDown()
+            producer.shutdownNow()
+            assertThat(producer.awaitTermination(5, TimeUnit.SECONDS)).isTrue()
+        }
+    }
+
+    @Test
+    fun `M log unavailable retry W execute() {looper rejects work}`() {
+        // Given
+        var attempts = 0
+        var delivered = 0
+        val fakeError = SecurityException("worker denied")
+        testedDispatcher = EvaluationCallbackDispatcher(mockLogger, scheduleRetry = { _, _ -> false }) {
+            if (attempts++ == 0) throw fakeError
+            mockWorker
+        }
+
+        // When
+        testedDispatcher.execute { delivered++ }
+
+        // Then
+        assertThat(delivered).isZero()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            "Unable to retry the feature flags callback worker: the main looper is not accepting work.",
+            onlyOnce = true
+        )
+        testedDispatcher.execute { delivered++ }
+        pending.removeFirst().run()
+        assertThat(delivered).isEqualTo(2)
     }
 
     @Test

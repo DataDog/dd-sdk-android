@@ -120,10 +120,22 @@ client.setEvaluationContext(
     EvaluationContext(
         targetingKey = "user-123",
         attributes = mapOf("dd_experimentation_opt_out_at" to "2026-10-21T10:00:00Z")
-    )
+    ),
+    object : EvaluationContextCallback {
+        override fun onSuccess() {
+            val enabled = client.resolveBooleanValue("new-feature", false)
+            // Use the resolved value here.
+        }
+
+        override fun onFailure(error: Throwable) {
+            // Keep the application's default behavior and handle the error here.
+        }
+    }
 )
-val enabled = client.resolveBooleanValue("new-feature", false)
 ```
+
+`setEvaluationContext` is asynchronous. Resolve the flag after its success callback.
+Callbacks run on a background thread. Dispatch UI changes to the main thread.
 
 | Mode | Behavior when the subject timestamp is present |
 | --- | --- |
