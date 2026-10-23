@@ -132,7 +132,9 @@ val enabled = client.resolveBooleanValue("new-feature", false)
 | `FUTURE_EXPERIMENTS_ONLY` | Continue experiments activated before the timestamp. Exclude newer experiments and those with unknown activation times. |
 
 Provide the customer's stored RFC3339 opt-out timestamp. Do not replace it with the current time on each launch.
-A future timestamp also takes effect immediately. Omit the attribute to permit experimentation.
+In `IMMEDIATE` mode, any valid timestamp, including a future timestamp, excludes the subject from experiments now.
+In `FUTURE_EXPERIMENTS_ONLY` mode, a future timestamp keeps experiments activated before that timestamp eligible.
+Omit the attribute to permit experimentation.
 Invalid timestamps return application defaults with `INVALID_CONTEXT` and do not send an assignment request.
 An absent timestamp sends an ordinary assignment request without `evaluation_options`, including in enabled modes.
 
@@ -146,10 +148,46 @@ The backend skips experiment allocations and continues through ordinary feature 
 The SDK requires the backend to acknowledge exclusion before using the response.
 When the subject has no effective opt-out policy, responses explicitly marked as filtered are rejected.
 Future mode requires the matching mode and exact cutoff in the acknowledgement.
-During a context change, assignments from a different context are unavailable.
+In either enabled mode, assignments from a different context are unavailable, including for subjects without the timestamp attribute.
+At startup, call `setEvaluationContext` with the matching context before the client can use persisted assignments.
+Until matching assignments are available, evaluation returns the application default with `PROVIDER_NOT_READY`.
+A malformed timestamp returns `INVALID_CONTEXT` instead. With `DISABLED`, persisted and previous assignments remain available.
 Previously accepted assignments can be reused only for the same context, cutoff, and mode.
 Evaluation telemetry is independent of experimentation opt-out.
+Enable this option only after acknowledgement, ordinary fallback, and activation metadata are available on the customer's site.
+Without acknowledgement or matching cached assignments, evaluation returns defaults with `PROVIDER_NOT_READY`.
+A later successful `setEvaluationContext` call recovers the client. The SDK does not retry this operation automatically.
+
+`ErrorCode.INVALID_CONTEXT` is a new public enum constant. Exhaustive Kotlin `when` expressions must handle it.
+The context callback reports malformed timestamps through `FlagsInvalidContextException`.
+
 Immediate withdrawal can change an enrolled subject's experience. Account for this change in experiment analysis.
+
+### Control evaluation telemetry
+
+Enable the local telemetry control when creating a client:
+
+```kotlin
+import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.setEvaluationTelemetryOptOut
+
+val client = FlagsClient.Builder("app")
+    .enableEvaluationTelemetryOptOutParameter(true)
+    .build()
+
+// Your application owns this decision.
+client.setEvaluationTelemetryOptOut(customerOptedOut)
+```
+
+When `customerOptedOut` is `true`, the client suppresses new evaluation events, counts, and automatic RUM flag annotations. Flag values and exposure logging remain unchanged.
+
+The native targeting context contains strings. Use the typed setter above; a string `"true"` in the context does not activate opt-out. The [OpenFeature provider](../dd-sdk-android-flags-openfeature/README.md#control-evaluation-telemetry) accepts a boolean context attribute instead.
+
+The `dd_evaluation_telemetry_opt_out` context attribute remains available for targeting and exposure reporting. Changing it through `setEvaluationContext` uses the normal assignment refresh path. Targeting rules can change assignments, and normal exposure deduplication applies.
+
+The setter applies locally without fetching assignments or clearing cached values. Update the decision when the subject or your policy changes. Set it to `false` to resume evaluation telemetry. Activation defaults to disabled. Each named client retains its original configuration.
+
+Previously recorded events, existing RUM annotations, manual annotations, and unrelated telemetry remain unchanged. Exposure events can still contain subject data. This control does not replace SDK tracking consent.
 
 ### Set evaluation context
 

@@ -12,6 +12,7 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.internal.model.FlagsStateEntry
+import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
@@ -41,6 +42,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
@@ -125,6 +127,63 @@ internal class DefaultFlagsRepositoryTest {
                 reason = "TARGETING_MATCH"
             )
         )
+    }
+
+    @Test
+    fun `M store generated assignments W setFlagsAndContext() { forged assignments }`(forge: Forge) {
+        // Given
+        val assignments = forge.getForgery<PrecomputedAssignments>()
+
+        // When
+        testedRepository.setFlagsAndContext(testContext, assignments.flags, assignments.obfuscation)
+
+        // Then
+        assertThat(testedRepository.getFlagsSnapshot()).isEqualTo(assignments.flags)
+    }
+
+    @Test
+    fun `M return snapshot without waiting W getPrecomputedFlagWithContext() {persistence pending}`(forge: Forge) {
+        // Given
+        doAnswer { null }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        val testedRepository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = forge.anAlphabeticalString(),
+            persistenceLoadTimeoutMs = TimeUnit.SECONDS.toMillis(10)
+        )
+        val fakeKey = forge.anAlphabeticalString()
+        val executor = Executors.newSingleThreadExecutor()
+
+        try {
+            // When
+            val snapshot = executor.submit<Pair<PrecomputedFlag?, EvaluationContext>?> {
+                testedRepository.getPrecomputedFlagWithContext(fakeKey)
+            }
+
+            // Then
+            assertThat(snapshot.get(1, TimeUnit.SECONDS)).isNull()
+        } finally {
+            executor.shutdownNow()
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue()
+        }
+    }
+
+    @Test
+    fun `M retain context W getPrecomputedFlagWithContext() {flag missing}`(forge: Forge) {
+        // Given
+        testedRepository.setFlagsAndContext(testContext, emptyMap())
+
+        // When
+        val result = testedRepository.getPrecomputedFlagWithContext(forge.anAlphabeticalString())
+
+        // Then
+        assertThat(result?.first).isNull()
+        assertThat(result?.second).isEqualTo(testContext)
     }
 
     @Test

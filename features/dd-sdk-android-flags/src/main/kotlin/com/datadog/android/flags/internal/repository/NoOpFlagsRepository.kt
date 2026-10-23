@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.internal.repository
 
+import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
 
@@ -15,28 +16,32 @@ internal class NoOpFlagsRepository : FlagsRepository {
 
     override fun getEvaluationContext(): EvaluationContext? = null
 
-    override fun getResolutionSnapshot(key: String): FlagsResolutionSnapshot? = null
-
     override fun installFlagsAndContext(
         context: EvaluationContext,
-        flags: Map<String, PrecomputedFlag>
+        flags: Map<String, PrecomputedFlag>,
+        obfuscation: FlagKeyObfuscation?
     ) = FlagsInstallation { onInstalled -> onInstalled() }
 
     override fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
+        obfuscation: FlagKeyObfuscation?,
         onInstalled: () -> Unit
     ) {
         onInstalled()
     }
 
-    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? = null
+    override fun waitForPersistenceLoad() = Unit
+
+    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>? = null
 
     override val firstFlags = FirstFlagsLatch()
 
     override fun hasFlags(): Boolean = false
 
     override fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean = false
+
+    override fun getAssignmentsSnapshot(): FlagsAssignmentsSnapshot? = null
 
     override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> = emptyMap()
 }

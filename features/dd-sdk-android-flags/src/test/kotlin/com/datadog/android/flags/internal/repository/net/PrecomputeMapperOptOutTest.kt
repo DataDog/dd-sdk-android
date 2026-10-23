@@ -29,7 +29,7 @@ internal class PrecomputeMapperOptOutTest {
         val result = testedMapper.map(response(null), request.takeIf { it.optedOut })
 
         // Then
-        assertThat(result?.get("flag")?.variationValue).isEqualTo("true")
+        assertThat(result?.flags?.get("flag")?.variationValue).isEqualTo("true")
     }
 
     @ParameterizedTest

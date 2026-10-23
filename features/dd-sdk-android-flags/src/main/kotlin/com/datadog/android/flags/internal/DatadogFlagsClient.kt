@@ -33,8 +33,8 @@ import org.json.JSONObject
  * This implementation fetches precomputed flag values from the local repository and handles
  * type conversion with appropriate fallback to default values.
  *
- * Thread safety: All resolve methods are thread-safe read operations.
- * The [setEvaluationContext] method is thread-safe
+ * Thread safety: Resolve methods capture assignments and the subject policy together.
+ * When opt-out is disabled, reads do not acquire the policy lock. [setEvaluationContext] is thread-safe
  * but triggers asynchronous background operations for fetching updated flag evaluations.
  *
  * @param featureSdkCore the SDK core for logging and internal operations
@@ -45,7 +45,8 @@ import org.json.JSONObject
  * @param exposureProcessor responsible for writing exposure batches to be sent to flags backend.
  * @param evaluationsFeature the evaluations subfeature for accessing processor and context (optional).
  * @param flagStateManager channel for managing state change listeners
- * @param experimentationOptOut validates the active opt-out context before resolution
+ * @param evaluationTelemetryOptOutParameterEnabled whether this client accepts the local telemetry policy
+ * @param experimentationOptOut validates the requested context before assignment resolution
  */
 @Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
 internal class DatadogFlagsClient(
@@ -57,8 +58,16 @@ internal class DatadogFlagsClient(
     private val exposureProcessor: EventsProcessor,
     private val evaluationsFeature: EvaluationsFeature?,
     private val flagStateManager: FlagsStateManager,
+    internal val evaluationTelemetryOptOutParameterEnabled: Boolean,
     internal val experimentationOptOut: ExperimentationOptOut = ExperimentationOptOut()
 ) : FlagsClient {
+
+    @Volatile
+    private var evaluationTelemetryOptOut: Boolean = false
+    private val telemetryLock = experimentationOptOut.stateLock
+    private val subjectOptOut = mutableMapOf<String, Boolean>()
+    private val pendingSubjects = mutableMapOf<String, Int>()
+    private var requestedSubject: String? = null
 
     override val state: StateObservable = flagStateManager
 
@@ -90,20 +99,58 @@ internal class DatadogFlagsClient(
      *
      * This method converts the public [EvaluationContext] to an internal format,
      * validates the context data, and asynchronously fetches updated flag evaluations
-     * from the Datadog service. If context validation fails, the operation is logged
-     * and silently ignored.
+     * from the Datadog service. If experimentation opt-out validation fails, the client enters
+     * [FlagsClientState.Error] and the callback receives a [com.datadog.android.flags.FlagsInvalidContextException].
      *
      * This method is thread-safe and non-blocking. Flag updates will be available
      * for subsequent resolve calls once the background operation completes.
      *
      * @param context The evaluation context containing targeting key and attributes.
-     * Must contain a valid targeting key; invalid contexts are logged and ignored.
+     * Must contain a valid targeting key. An invalid experimentation opt-out timestamp fails the operation.
      * @param callback Optional callback to notify when the operation completes or fails.
      * Invoked on a background executor thread. See [EvaluationContextCallback] for timeout behavior.
      */
     override fun setEvaluationContext(context: EvaluationContext, callback: EvaluationContextCallback?) {
-        evaluationsManager.updateEvaluationsForContext(context, callback)
+        setEvaluationContext(context, callback, null)
     }
+
+    internal fun setEvaluationContext(
+        context: EvaluationContext,
+        callback: EvaluationContextCallback?,
+        telemetryOptedOut: Boolean?
+    ) {
+        if (!evaluationTelemetryOptOutParameterEnabled) {
+            evaluationsManager.updateEvaluationsForContext(context, callback)
+            return
+        }
+        val request = synchronized(telemetryLock) {
+            // Register the typed decision and its request together, before any callbacks or dispatch.
+            if (telemetryOptedOut != null) subjectOptOut[context.targetingKey] = telemetryOptedOut
+            requestedSubject = context.targetingKey
+            pendingSubjects[context.targetingKey] = (pendingSubjects[context.targetingKey] ?: 0) + 1
+            experimentationOptOut.prepare(context)
+        }
+        evaluationsManager.updatePreparedEvaluations(request, callback) {
+            val installedSubject = flagsRepository.getEvaluationContext()?.targetingKey
+            synchronized(telemetryLock) {
+                val remaining = (pendingSubjects[context.targetingKey] ?: 1) - 1
+                if (remaining == 0) {
+                    pendingSubjects.remove(context.targetingKey)
+                } else {
+                    pendingSubjects[context.targetingKey] = remaining
+                }
+                subjectOptOut.keys.retainAll(pendingSubjects.keys + listOfNotNull(installedSubject, requestedSubject))
+            }
+        }
+    }
+
+    internal fun setEvaluationTelemetryOptOut(optOut: Boolean) {
+        evaluationTelemetryOptOut = evaluationTelemetryOptOutParameterEnabled && optOut
+    }
+
+    private fun isSubjectOptedOut(subject: String?): Boolean =
+        evaluationTelemetryOptOut ||
+            (subjectOptOut[requestedSubject] == true) || (subjectOptOut[subject] == true)
 
     /**
      * Resolves a boolean flag value.
@@ -265,12 +312,14 @@ internal class DatadogFlagsClient(
 
     private sealed class InternalResolution<T : Any> {
         abstract val flagKey: String
+        abstract val telemetryOptedOut: Boolean
 
         data class Success<T : Any>(
             override val flagKey: String,
             val value: T,
             val flag: PrecomputedFlag,
-            val context: EvaluationContext
+            val context: EvaluationContext,
+            override val telemetryOptedOut: Boolean = false
         ) : InternalResolution<T>()
 
         data class Error<T : Any>(
@@ -278,25 +327,60 @@ internal class DatadogFlagsClient(
             val defaultValue: T,
             val errorCode: ErrorCode,
             val errorMessage: String,
-            val context: EvaluationContext
+            val context: EvaluationContext = EvaluationContext.EMPTY,
+            override val telemetryOptedOut: Boolean = false
         ) : InternalResolution<T>()
     }
 
-    private fun <T : Any> checkExperimentationContext(
+    private data class EvaluationSnapshot(
+        val context: EvaluationContext?,
+        val flag: PrecomputedFlag?,
+        val telemetryOptedOut: Boolean,
+        val errorCode: ErrorCode?
+    )
+
+    private fun evaluationSnapshot(flagKey: String): EvaluationSnapshot {
+        flagsRepository.waitForPersistenceLoad()
+        // Keep the subject decision alive until it has been captured with the
+        // assignments. Repository reads inside this lock must not wait for persistence.
+        return if (evaluationTelemetryOptOutParameterEnabled || experimentationOptOut.enabled) {
+            synchronized(telemetryLock) { readEvaluationSnapshot(flagKey) }
+        } else {
+            readEvaluationSnapshot(flagKey)
+        }
+    }
+
+    private fun readEvaluationSnapshot(flagKey: String): EvaluationSnapshot {
+        val pair = flagsRepository.getPrecomputedFlagWithContext(flagKey)
+        val policy = experimentationOptOut.resolutionContext(pair?.second)
+        val context = if (experimentationOptOut.enabled) policy.context else pair?.second
+        return EvaluationSnapshot(
+            context,
+            pair?.first,
+            evaluationTelemetryOptOutParameterEnabled && isSubjectOptedOut(context?.targetingKey),
+            policy.errorCode
+        )
+    }
+
+    private fun <T : Any> unavailableResolution(
         flagKey: String,
         defaultValue: T,
-        resolutionContext: ExperimentationOptOut.ResolutionContext
-    ): InternalResolution.Error<T>? = resolutionContext.errorCode?.let { error ->
-        InternalResolution.Error(
+        snapshot: EvaluationSnapshot
+    ): InternalResolution.Error<T> {
+        val ready = snapshot.context != null
+        val error = snapshot.errorCode ?: if (ready) ErrorCode.FLAG_NOT_FOUND else ErrorCode.PROVIDER_NOT_READY
+        val message = when (error) {
+            ErrorCode.INVALID_CONTEXT -> ExperimentationOptOut.INVALID_CONTEXT_MESSAGE
+            ErrorCode.FLAG_NOT_FOUND -> "Flag not found"
+            else -> "Assignments for the current evaluation context are not available."
+        }
+        return InternalResolution.Error(
             flagKey,
             defaultValue,
             error,
-            if (error == ErrorCode.INVALID_CONTEXT) {
-                ExperimentationOptOut.INVALID_CONTEXT_MESSAGE
-            } else {
-                "Assignments for the current evaluation context are not available."
-            },
-            resolutionContext.context
+            message,
+            context = snapshot.context ?: EvaluationContext.EMPTY,
+            telemetryOptedOut = snapshot.telemetryOptedOut
         )
     }
 
@@ -320,38 +404,13 @@ internal class DatadogFlagsClient(
         flagKey: String,
         defaultValue: T
     ): InternalResolution<T> {
-        val snapshot = flagsRepository.getResolutionSnapshot(flagKey)
-        val resolutionContext = experimentationOptOut.resolutionContext(snapshot?.context)
-        checkExperimentationContext(flagKey, defaultValue, resolutionContext)?.let { return it }
-        if (snapshot == null) {
-            return InternalResolution.Error(
-                flagKey = flagKey,
-                defaultValue = defaultValue,
-                errorCode = ErrorCode.PROVIDER_NOT_READY,
-                errorMessage = "Provider not ready - call setEvaluationContext() before resolving flags",
-                context = resolutionContext.context
-            )
-        }
+        val snapshot = evaluationSnapshot(flagKey)
+        val context = snapshot.context
         val flag = snapshot.flag
-        if (flag == null) {
-            return InternalResolution.Error(
-                flagKey = flagKey,
-                defaultValue = defaultValue,
-                errorCode = ErrorCode.FLAG_NOT_FOUND,
-                errorMessage = "Flag not found",
-                context = resolutionContext.context
-            )
+        if (snapshot.errorCode != null || context == null || flag == null) {
+            return unavailableResolution(flagKey, defaultValue, snapshot)
         }
 
-        return parseAssignment(flagKey, defaultValue, flag, snapshot.context)
-    }
-
-    private fun <T : Any> parseAssignment(
-        flagKey: String,
-        defaultValue: T,
-        flag: PrecomputedFlag,
-        context: EvaluationContext
-    ): InternalResolution<T> {
         val conversionResult = FlagValueConverter.convert(
             variationValue = flag.variationValue,
             variationType = flag.variationType,
@@ -364,7 +423,8 @@ internal class DatadogFlagsClient(
                     flagKey = flagKey,
                     value = parsedValue,
                     flag = flag,
-                    context = context
+                    context = context,
+                    telemetryOptedOut = snapshot.telemetryOptedOut
                 )
             },
             onFailure = { exception ->
@@ -395,7 +455,8 @@ internal class DatadogFlagsClient(
                     defaultValue = defaultValue,
                     errorCode = errorCode,
                     errorMessage = errorMessage,
-                    context = context
+                    context = context,
+                    telemetryOptedOut = snapshot.telemetryOptedOut
                 )
             }
         )
@@ -502,19 +563,24 @@ internal class DatadogFlagsClient(
     }
 
     private fun <T : Any> trackResolution(resolution: InternalResolution.Success<T>) {
-        trackResolution(resolution.flagKey, resolution.flag, resolution.context)
+        trackResolution(resolution.flagKey, resolution.flag, resolution.context, resolution.telemetryOptedOut)
     }
 
     private fun trackResolution(
         flagKey: String,
         flag: UnparsedFlag,
-        context: EvaluationContext
+        context: EvaluationContext,
+        telemetryOptedOut: Boolean
     ) {
         // Exposure logging (only when doLog=true)
         if (flag.doLog) {
             if (flagsConfiguration.trackExposures) {
                 writeExposureEvent(flagKey, flag, context)
             }
+        }
+
+        if (telemetryOptedOut) {
+            return
         }
 
         // RUM feature flag tracking - fires for all successful evaluations with a variant key
@@ -536,7 +602,7 @@ internal class DatadogFlagsClient(
     }
 
     private fun <T : Any> trackErrorResolution(resolution: InternalResolution.Error<T>) {
-        if (!flagsConfiguration.trackEvaluations) {
+        if (resolution.telemetryOptedOut || !flagsConfiguration.trackEvaluations) {
             return
         }
 
@@ -561,12 +627,17 @@ internal class DatadogFlagsClient(
      *
      * @return A map of flag key to an unparsed flag, or an empty map if no flags are available or the client is not ready.
      */
-    internal fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag> =
-        if (experimentationOptOut.resolutionError(flagsRepository.getEvaluationContext()) == null) {
-            flagsRepository.getFlagsSnapshot()
-        } else {
-            emptyMap()
+    internal fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag> {
+        flagsRepository.waitForPersistenceLoad()
+        return synchronized(telemetryLock) {
+            val snapshot = flagsRepository.getAssignmentsSnapshot()
+            if (snapshot != null && experimentationOptOut.resolutionError(snapshot.context) == null) {
+                snapshot.flags
+            } else {
+                emptyMap()
+            }
         }
+    }
 
     /**
      * Tracks the evaluation of a flag from an exact flags state snapshot.
@@ -574,9 +645,11 @@ internal class DatadogFlagsClient(
      * Supposed to be used by internal Datadog packages to track flag evaluations from an exact flags state snapshot.
      */
     internal fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
-        if (experimentationOptOut.resolutionError(context) == null) {
-            trackResolution(flagKey, flag, context)
+        val optedOut = synchronized(telemetryLock) {
+            if (experimentationOptOut.resolutionError(context) != null) return
+            isSubjectOptedOut(context.targetingKey)
         }
+        trackResolution(flagKey, flag, context, optedOut)
     }
 
     // endregion

@@ -640,6 +640,7 @@ internal class WebViewRumEventMapperTest {
                 WebViewRumEventMapper.SESSION_IS_MAIN_PROCESS_NAME,
                 fakeDatadogContext.processInfo.isMainProcess
             )
+            .hasField(WebViewRumEventMapper.SESSION_HAS_TIMESERIES_NAME, fakeRumContext.hasTimeseries)
         assertThat(mappedEvent).hasField(
             WebViewRumEventMapper.DATE_KEY_NAME,
             expectedDate

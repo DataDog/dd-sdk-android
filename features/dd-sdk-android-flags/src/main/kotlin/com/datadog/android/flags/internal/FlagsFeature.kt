@@ -15,6 +15,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.evaluation.InitializationTimeoutScheduler
@@ -149,15 +150,26 @@ internal class FlagsFeature(
      */
     internal fun getClient(name: String): FlagsClient? = synchronized(registeredClients) { registeredClients[name] }
 
-    internal fun getOrRegisterNewClient(name: String, newClientFactory: () -> FlagsClient): FlagsClient {
+    internal fun getOrRegisterNewClient(
+        name: String,
+        experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
+        newClientFactory: () -> FlagsClient
+    ): FlagsClient {
         val existingClient = synchronized(registeredClients) {
             registeredClients[name]
         }
         if (existingClient != null) {
+            val existingMode = (existingClient as? DatadogFlagsClient)?.experimentationOptOut?.mode
+            val message = if (existingMode != null && existingMode != experimentationOptOutMode) {
+                "Attempted to create a FlagsClient named '$name' with experimentation opt-out mode " +
+                    "$experimentationOptOutMode, but one already exists with mode $existingMode. " +
+                    "The existing client will be used. Use a separate client name for each mode."
+            } else {
+                "Attempted to create a FlagsClient named '$name', but one already " +
+                    "exists. The existing client will be used, and new configuration will be ignored."
+            }
             logErrorWithPolicy(
-                message = "Attempted to create a FlagsClient named '$name', but one already " +
-                    "exists. The existing client will be used, and new configuration " +
-                    "will be ignored.",
+                message = message,
                 level = InternalLogger.Level.WARN,
                 shouldCrashInStrict = true
             )

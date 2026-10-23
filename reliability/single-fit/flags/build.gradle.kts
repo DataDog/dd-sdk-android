@@ -36,6 +36,7 @@ dependencies {
     implementation(libs.kotlinRuntime)
 
     // Testing
+    testImplementation(project(":features:dd-sdk-android-flags-openfeature"))
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -47,11 +48,12 @@ dependencies {
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(project(":reliability:stub-core"))
-    testImplementation(project(":features:dd-sdk-android-flags-openfeature"))
     testImplementation(libs.coroutinesTest)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttp)
+    testImplementation(libs.gson)
+    testImplementation(libs.coroutinesCore)
     unmock(libs.robolectric)
 }
 

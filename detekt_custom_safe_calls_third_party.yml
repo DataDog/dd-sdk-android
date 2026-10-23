@@ -115,7 +115,6 @@ datadog:
       - "com.google.gson.JsonPrimitive.constructor(kotlin.String?)"
       # endregion
       # region Java Collections
-      - "java.text.ParsePosition.constructor(kotlin.Int)"
       - "java.util.ArrayList.add(com.datadog.android.rum.internal.timeseries.DataPoint)"
       - "java.util.ArrayList.clear()"
       - "java.util.ArrayList.forEach(kotlin.Function1)"
@@ -327,6 +326,7 @@ datadog:
       - "java.io.close()"
       # endregion
       # region Java misc
+      - "java.text.ParsePosition.constructor(kotlin.Int)"
       - "java.lang.Character.isWhitespace(kotlin.Int)"
       - "java.lang.Class.hashCode()"
       - "java.lang.Class.isInstance(kotlin.Any?)"
@@ -494,6 +494,7 @@ datadog:
       - "kotlin.collections.Iterable.toJsonArray()"
       - "kotlin.collections.Iterable.toList()"
       - "kotlin.collections.Iterable.toMap(kotlin.collections.MutableMap)"
+      - "kotlin.collections.Iterator.forEach(kotlin.Function1)"
       - "kotlin.collections.LinkedHashMap()"
       - "kotlin.collections.LinkedHashMap(kotlin.collections.MutableMap?)"
       - "kotlin.collections.List.all(kotlin.Function1)"
@@ -691,6 +692,7 @@ datadog:
       - "kotlin.collections.MutableMap.iterator()"
       - "kotlin.collections.MutableMap.orEmpty()"
       - "kotlin.collections.MutableMap.map(kotlin.Function1)"
+      - "kotlin.collections.MutableMap.mapNotNull(kotlin.Function1)"
       - "kotlin.collections.MutableMap.mapValues(kotlin.Function1)"
       - "kotlin.collections.MutableMap.put(java.lang.Class, kotlin.String?)"
       - "kotlin.collections.MutableMap.put(kotlin.Any, kotlin.Any?)"
@@ -739,6 +741,7 @@ datadog:
       - "kotlin.collections.MutableSet.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableSet.elementAtOrNull(kotlin.Int)"
       - "kotlin.collections.MutableSet.indexOf(kotlin.String)"
+      - "kotlin.collections.MutableSet.iterator()"
       - "kotlin.collections.MutableSet.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
       - "kotlin.collections.MutableSet.map(kotlin.Function1)"
       - "kotlin.collections.MutableSet.remove(android.app.Activity?)"
@@ -869,7 +872,9 @@ datadog:
       - "kotlin.ByteArray.constructor(kotlin.Int)"
       - "kotlin.ByteArray.copyTo(kotlin.Int, kotlin.ByteArray, kotlin.Int, kotlin.Int, com.datadog.android.api.InternalLogger)"
       - "kotlin.Char.digitToIntOrNull()"
+      - "kotlin.Char.isHighSurrogate()"
       - "kotlin.Char.isLowerCase()"
+      - "kotlin.Char.isLowSurrogate()"
       - "kotlin.Char.titlecase(java.util.Locale)"
       - "kotlin.CharArray.constructor(kotlin.Int, kotlin.Function1)"
       - "kotlin.Double.coerceAtMost(kotlin.Double)"
@@ -987,6 +992,7 @@ datadog:
       - "kotlin.String.count(kotlin.Function1)"
       - "kotlin.String.endsWith(kotlin.Char, kotlin.Boolean)"
       - "kotlin.String.endsWith(kotlin.String, kotlin.Boolean)"
+      - "kotlin.String.equals(kotlin.String?, kotlin.Boolean)"
       - "kotlin.String.filter(kotlin.Function1)"
       - "kotlin.String.format(java.util.Locale?, kotlin.Array)"
       - "kotlin.String.format(java.util.Locale?, kotlin.String, kotlin.Array)"

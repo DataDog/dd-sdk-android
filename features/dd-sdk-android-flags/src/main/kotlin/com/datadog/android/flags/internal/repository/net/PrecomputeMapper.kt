@@ -10,103 +10,88 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.evaluation.wireValue
-import com.datadog.android.flags.internal.model.JsonKeys
+import com.datadog.android.flags.internal.model.AssignmentsResponse
+import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.model.PrecomputedFlag
-import org.json.JSONException
-import org.json.JSONObject
+import com.datadog.android.flags.internal.serialization.FlagsJson
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import com.google.gson.JsonParseException
 
 /**
  * Responsible for parsing network response to [PrecomputedFlag] objects.
  */
 internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
-    // JSONObject methods accept non-null String parameters despite Detekt's incorrect nullable interpretation
-    // All getJsonObject calls are wrapped in try-catch for JSONException which is the actual exception thrown
-    @Suppress("UnsafeThirdPartyFunctionCall")
     internal fun map(
         rawJson: String,
         experimentationOptOut: ExperimentationOptOut.Request? = null
-    ): Map<String, PrecomputedFlag>? {
-        return try {
-            val jsonResponse = JSONObject(rawJson)
-            val data = jsonResponse.getJSONObject("data")
-            val attributes = data.getJSONObject("attributes")
-            if (!acknowledgesOptOut(attributes.optJSONObject("evaluation_options"), experimentationOptOut)) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { "The feature flags response does not match the requested experimentation opt-out policy." }
-                )
-                return null
+    ): PrecomputedAssignments? = try {
+        val attributes = AssignmentsResponse.fromJson(rawJson).data.attributes
+        val metadata = JsonObject().apply {
+            attributes.additionalProperties.forEach { (key, value) ->
+                add(key, value as? JsonElement)
             }
-            val flags = attributes.getJSONObject("flags")
-
-            val flagsMap = mutableMapOf<String, PrecomputedFlag>()
-
-            val flagKeys = flags.keys()
-            while (flagKeys.hasNext()) {
-                val flagKey = flagKeys.next()
-                val flagData = flags.getJSONObject(flagKey)
-
-                val precomputedFlag = PrecomputedFlag(
-                    variationType = flagData.getString(JsonKeys.VARIATION_TYPE.value),
-                    variationValue = when (val value = flagData.get(JsonKeys.VARIATION_VALUE.value)) {
-                        is Boolean -> value.toString()
-                        is String -> value
-                        is Number -> value.toString()
-                        else -> value.toString()
-                    },
-                    doLog = flagData.getBoolean(JsonKeys.DO_LOG.value),
-                    allocationKey = flagData.getString(JsonKeys.ALLOCATION_KEY.value),
-                    variationKey = flagData.getString(JsonKeys.VARIATION_KEY.value),
-                    extraLogging = flagData.getJSONObject(JsonKeys.EXTRA_LOGGING.value),
-                    reason = flagData.getString(JsonKeys.REASON.value),
-                    serialId = (flagData.opt(JsonKeys.SERIAL_ID.value) as? Number)?.toLong()
-                )
-
-                flagsMap[flagKey] = precomputedFlag
-            }
-
-            flagsMap
-        } catch (e: JSONException) {
-            internalLogger.log(
-                level = InternalLogger.Level.WARN,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { ERROR_FAILED_TO_PARSE_RESPONSE },
-                throwable = e
+        }
+        val options = metadata.get("evaluation_options")?.takeIf { it.isJsonObject }?.asJsonObject
+        if (acknowledgesOptOut(options, experimentationOptOut)) {
+            val obfuscation = FlagsJson.readObfuscation(metadata)
+            val flags = attributes.flags.additionalProperties
+            if (obfuscation != null) FlagsJson.validateKeys(flags.keys.iterator())
+            PrecomputedAssignments(
+                flags.mapValues { FlagsJson.readAssignment(FlagsJson.objectValue(it.value)) },
+                obfuscation
             )
-
+        } else {
             internalLogger.log(
-                level = InternalLogger.Level.WARN,
-                target = InternalLogger.Target.TELEMETRY,
-                messageBuilder = { ERROR_FAILED_TO_PARSE_RESPONSE },
-                throwable = e,
-                onlyOnce = true
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { "The response does not match the requested experimentation opt-out policy." }
             )
-
             null
+        }
+    } catch (e: JsonParseException) {
+        internalLogger.log(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.MAINTAINER,
+            messageBuilder = { ERROR_FAILED_TO_PARSE_RESPONSE },
+            throwable = e
+        )
+
+        internalLogger.log(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.TELEMETRY,
+            messageBuilder = { ERROR_FAILED_TO_PARSE_RESPONSE },
+            throwable = e,
+            onlyOnce = true
+        )
+
+        null
+    }
+
+    private fun acknowledgesOptOut(options: JsonObject?, request: ExperimentationOptOut.Request?): Boolean {
+        val mode = options?.get("experimentation_opt_out_mode")
+        val acknowledgedMode = mode?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }?.asString
+        val legacy = options?.get("experimentation_opt_out")
+        val acknowledged = legacy?.isJsonPrimitive == true && legacy.asJsonPrimitive.isBoolean && legacy.asBoolean
+        return when (request?.mode) {
+            null, ExperimentationOptOutMode.DISABLED ->
+                !acknowledged &&
+                    acknowledgedMode != ExperimentationOptOutMode.IMMEDIATE.wireValue &&
+                    acknowledgedMode != ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY.wireValue
+            ExperimentationOptOutMode.IMMEDIATE ->
+                acknowledged &&
+                    (mode == null || acknowledgedMode == request.mode.wireValue)
+            ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY -> {
+                val cutoff = options?.get(ExperimentationOptOut.ATTRIBUTE)
+                acknowledgedMode == request.mode.wireValue && ExperimentationOptOut.timestampsMatch(
+                    request.context.attributes[ExperimentationOptOut.ATTRIBUTE],
+                    cutoff?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }?.asString
+                )
+            }
         }
     }
 
-    private fun acknowledgesOptOut(options: JSONObject?, request: ExperimentationOptOut.Request?): Boolean =
-        when (request?.mode) {
-            null, ExperimentationOptOutMode.DISABLED -> options?.opt("experimentation_opt_out") != true &&
-                options?.opt(OPT_OUT_MODE) != ExperimentationOptOutMode.IMMEDIATE.wireValue &&
-                options?.opt(OPT_OUT_MODE) != ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY.wireValue
-            ExperimentationOptOutMode.IMMEDIATE -> options?.opt("experimentation_opt_out") == true &&
-                (
-                    !options.has(OPT_OUT_MODE) ||
-                        options.opt(OPT_OUT_MODE) == request.mode.wireValue
-                    )
-            ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY ->
-                options?.opt(OPT_OUT_MODE) == request.mode.wireValue &&
-                    ExperimentationOptOut.timestampsMatch(
-                        request.context.attributes[ExperimentationOptOut.ATTRIBUTE],
-                        options.opt(ExperimentationOptOut.ATTRIBUTE) as? String
-                    )
-        }
-
     private companion object {
-        const val OPT_OUT_MODE = "experimentation_opt_out_mode"
         const val ERROR_FAILED_TO_PARSE_RESPONSE = "Failed to parse precomputed response"
     }
 }

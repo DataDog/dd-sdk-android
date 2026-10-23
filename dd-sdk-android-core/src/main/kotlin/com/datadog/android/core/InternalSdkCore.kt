@@ -26,6 +26,10 @@ import java.util.concurrent.ExecutorService
  */
 interface InternalSdkCore : FeatureSdkCore {
 
+    /** SDK source configured during initialization, available without scheduling a context read. */
+    @InternalApi
+    val source: String
+
     /**
      * Returns current state of network connection.
      */

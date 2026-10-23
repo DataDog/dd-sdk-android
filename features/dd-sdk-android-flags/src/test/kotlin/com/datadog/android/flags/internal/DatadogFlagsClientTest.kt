@@ -19,8 +19,8 @@ import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.FirstFlagsLatch
+import com.datadog.android.flags.internal.repository.FlagsAssignmentsSnapshot
 import com.datadog.android.flags.internal.repository.FlagsRepository
-import com.datadog.android.flags.internal.repository.FlagsResolutionSnapshot
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientEvent
@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -54,7 +55,10 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -128,8 +132,8 @@ internal class DatadogFlagsClientTest {
             attributes = emptyMap()
         )
 
-        whenever(mockFlagsRepository.getResolutionSnapshot(any())) doReturn
-            FlagsResolutionSnapshot(null, fakeDefaultContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(any())) doReturn
+            Pair(null, fakeDefaultContext)
 
         testedClient = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
@@ -142,7 +146,8 @@ internal class DatadogFlagsClientTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
             evaluationsFeature = null,
-            flagStateManager = mockFlagsStateManager
+            flagStateManager = mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = false
         )
     }
 
@@ -168,7 +173,8 @@ internal class DatadogFlagsClientTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
             evaluationsFeature = mockEvaluationsFeature,
-            flagStateManager = mockFlagsStateManager
+            flagStateManager = mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = false
         )
 
         // When
@@ -176,9 +182,9 @@ internal class DatadogFlagsClientTest {
 
         // Then
         assertThat(value).isFalse()
-        verify(mockRepository).getResolutionSnapshot(fakeJsonKey)
+        verify(mockRepository).getPrecomputedFlagWithContext(fakeJsonKey)
         verify(mockRepository, never()).getEvaluationContext()
-        verify(mockRepository, never()).getPrecomputedFlagWithContext(any())
+        verify(mockRepository).waitForPersistenceLoad()
     }
 
     @ParameterizedTest
@@ -195,8 +201,8 @@ internal class DatadogFlagsClientTest {
         )
         val policy = ExperimentationOptOut(ExperimentationOptOutMode.IMMEDIATE)
         policy.prepare(fakeRequestedContext)
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeJsonKey)) doReturn
-            FlagsResolutionSnapshot(null, fakePreviousContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeJsonKey)) doReturn
+            Pair(null, fakePreviousContext)
         val mockEvaluationsFeature = mock<EvaluationsFeature>()
         testedClient = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
@@ -208,7 +214,8 @@ internal class DatadogFlagsClientTest {
             exposureProcessor = mockProcessor,
             evaluationsFeature = mockEvaluationsFeature,
             flagStateManager = mockFlagsStateManager,
-            experimentationOptOut = policy
+            experimentationOptOut = policy,
+            evaluationTelemetryOptOutParameterEnabled = false
         )
         val expectedError = if (optOutAt == "invalid") ErrorCode.INVALID_CONTEXT else ErrorCode.PROVIDER_NOT_READY
 
@@ -265,6 +272,95 @@ internal class DatadogFlagsClientTest {
 
     // region resolveBooleanValue()
 
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M allow concurrent waits and context updates W resolve() {persistence pending}`(
+        enabled: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeContext = forge.getForgery<EvaluationContext>()
+        val firstWaitEntered = CountDownLatch(1)
+        val bothWaitsEntered = CountDownLatch(2)
+        val persistenceFinished = CountDownLatch(1)
+        whenever(mockFlagsRepository.waitForPersistenceLoad()).thenAnswer {
+            firstWaitEntered.countDown()
+            bothWaitsEntered.countDown()
+            check(persistenceFinished.await(5, TimeUnit.SECONDS))
+        }
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
+            FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
+            null, mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = enabled
+        )
+        val executor = Executors.newFixedThreadPool(3)
+
+        try {
+            // When
+            val first = executor.submit<Boolean> { testedClient.resolveBooleanValue(fakeKey, false) }
+            assertThat(firstWaitEntered.await(1, TimeUnit.SECONDS)).isTrue()
+            val second = executor.submit<Boolean> { testedClient.resolveBooleanValue(fakeKey, false) }
+            val update = executor.submit { testedClient.setEvaluationContext(fakeContext, null, true) }
+
+            // Then: both readers wait independently, without blocking a policy update.
+            assertThat(bothWaitsEntered.await(1, TimeUnit.SECONDS)).isTrue()
+            update.get(1, TimeUnit.SECONDS)
+            persistenceFinished.countDown()
+            assertThat(first.get(1, TimeUnit.SECONDS)).isFalse()
+            assertThat(second.get(1, TimeUnit.SECONDS)).isFalse()
+        } finally {
+            persistenceFinished.countDown()
+            executor.shutdownNow()
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue()
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M gate evaluation telemetry W resolve() {opt-out set}`(enabled: Boolean, forge: Forge) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeContext = forge.getForgery<EvaluationContext>()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = "true",
+            reason = ResolutionReason.TARGETING_MATCH.name,
+            doLog = true
+        )
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeKey)) doReturn (fakeFlag to fakeContext)
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
+            FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
+            mockEvaluationsFeature, mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = enabled
+        )
+
+        testedClient.setEvaluationTelemetryOptOut(true)
+
+        // When
+        val result = testedClient.resolve(fakeKey, false)
+
+        // Then
+        assertThat(result.value).isTrue()
+        verify(mockProcessor).processEvent(fakeKey, fakeContext, fakeFlag)
+        verifyNoInteractions(mockEvaluationsManager)
+        if (enabled) {
+            verifyNoInteractions(mockRumEvaluationLogger, mockEvaluationsFeature)
+        } else {
+            verify(mockEvaluationsFeature).processEvaluation(
+                fakeKey,
+                fakeContext,
+                fakeFlag.variationKey,
+                fakeFlag.allocationKey,
+                null,
+                null
+            )
+        }
+    }
+
     @Test
     fun `M return default value W resolveBooleanValue() { flag exists with invalid boolean string }`(forge: Forge) {
         // Given
@@ -278,8 +374,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
@@ -293,8 +389,8 @@ internal class DatadogFlagsClientTest {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aBool()
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(null, fakeDefaultContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(null, fakeDefaultContext)
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
@@ -308,7 +404,7 @@ internal class DatadogFlagsClientTest {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aBool()
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn null
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
@@ -328,8 +424,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(null, fakeEvaluationContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(null, fakeEvaluationContext)
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
@@ -352,8 +448,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeEvaluationContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeEvaluationContext)
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
@@ -378,8 +474,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeEvaluationContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeEvaluationContext)
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
@@ -401,8 +497,8 @@ internal class DatadogFlagsClientTest {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.anAlphabeticalString()
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(null, fakeDefaultContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(null, fakeDefaultContext)
 
         // When
         val result = testedClient.resolveStringValue(fakeFlagKey, fakeDefaultValue)
@@ -416,7 +512,7 @@ internal class DatadogFlagsClientTest {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.anAlphabeticalString()
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn null
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
 
         // When
         val result = testedClient.resolveStringValue(fakeFlagKey, fakeDefaultValue)
@@ -444,8 +540,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
@@ -459,8 +555,8 @@ internal class DatadogFlagsClientTest {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.anInt()
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(null, fakeDefaultContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(null, fakeDefaultContext)
 
         // When
         val result = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
@@ -474,7 +570,7 @@ internal class DatadogFlagsClientTest {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.anInt()
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn null
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
 
         // When
         val result = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
@@ -494,8 +590,8 @@ internal class DatadogFlagsClientTest {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aDouble()
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(null, fakeDefaultContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(null, fakeDefaultContext)
 
         // When
         val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue)
@@ -509,7 +605,7 @@ internal class DatadogFlagsClientTest {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aDouble()
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn null
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
 
         // When
         val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue)
@@ -536,8 +632,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolveStructureValue(fakeFlagKey, fakeJsonDefaultValue)
@@ -559,8 +655,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolveStructureValue(fakeFlagKey, fakeJsonDefaultValue)
@@ -582,8 +678,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolveStructureValue(fakeFlagKey, fakeJsonDefaultValue)
@@ -597,8 +693,8 @@ internal class DatadogFlagsClientTest {
     fun `M return default value W resolveStructureValue() {flag does not exist}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(null, fakeDefaultContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(null, fakeDefaultContext)
 
         // When
         val result = testedClient.resolveStructureValue(fakeFlagKey, fakeJsonDefaultValue)
@@ -611,7 +707,7 @@ internal class DatadogFlagsClientTest {
     fun `M return default value W resolveStructureValue() { provider not ready }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn null
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
 
         // When
         val result = testedClient.resolveStructureValue(fakeFlagKey, fakeJsonDefaultValue)
@@ -630,8 +726,8 @@ internal class DatadogFlagsClientTest {
     fun `M return default map W resolveStructureValue() {map default, flag does not exist}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(null, fakeDefaultContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(null, fakeDefaultContext)
 
         // When
         val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultMapValue)
@@ -645,7 +741,7 @@ internal class DatadogFlagsClientTest {
     fun `M return default map W resolveStructureValue() {map default, provider not ready}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn null
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
 
         // When
         val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultMapValue)
@@ -661,8 +757,8 @@ internal class DatadogFlagsClientTest {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = emptyMap<String, Any?>()
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(null, fakeDefaultContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(null, fakeDefaultContext)
 
         // When
         val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
@@ -685,8 +781,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultMapValue)
@@ -714,8 +810,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(customRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(customRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         testedClient = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
@@ -725,7 +821,8 @@ internal class DatadogFlagsClientTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
             evaluationsFeature = null,
-            flagStateManager = mockFlagsStateManager
+            flagStateManager = mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = false
         )
 
         // When
@@ -735,7 +832,7 @@ internal class DatadogFlagsClientTest {
 
         assertThat(result).isEqualTo(fakeFlagValue)
 
-        verify(customRepository).getResolutionSnapshot(fakeFlagKey)
+        verify(customRepository).getPrecomputedFlagWithContext(fakeFlagKey)
     }
 
     // endregion
@@ -762,8 +859,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
@@ -788,8 +885,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
@@ -815,8 +912,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
@@ -847,8 +944,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
@@ -875,8 +972,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
@@ -904,8 +1001,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
@@ -934,8 +1031,8 @@ internal class DatadogFlagsClientTest {
         )
         val mockEvaluationsFeature = mock<EvaluationsFeature>()
 
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(null, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(null, fakeContext)
 
         val clientWithEvaluationTracking = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
@@ -947,7 +1044,8 @@ internal class DatadogFlagsClientTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
             evaluationsFeature = mockEvaluationsFeature,
-            flagStateManager = mockFlagsStateManager
+            flagStateManager = mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = false
         )
 
         // When
@@ -983,8 +1081,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
@@ -1000,6 +1098,21 @@ internal class DatadogFlagsClientTest {
     }
 
     // endregion
+
+    @Test
+    fun `M read repository once W resolveBooleanValue() {repository not ready}`(forge: Forge) {
+        // Given
+        val key = forge.anAlphabeticalString()
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(key)) doReturn null
+
+        // When
+        assertThat(testedClient.resolveBooleanValue(key, false)).isFalse()
+
+        // Then: no second disk wait or context from a later repository state.
+        verify(mockFlagsRepository).waitForPersistenceLoad()
+        verify(mockFlagsRepository).getPrecomputedFlagWithContext(key)
+        verify(mockFlagsRepository, never()).getEvaluationContext()
+    }
 
     // region setEvaluationContext()
 
@@ -1022,7 +1135,8 @@ internal class DatadogFlagsClientTest {
         val contextCaptor = argumentCaptor<EvaluationContext>()
         verify(mockEvaluationsManager).updateEvaluationsForContext(
             contextCaptor.capture(),
-            anyOrNull()
+            anyOrNull(),
+            any()
         )
 
         val capturedContext = contextCaptor.firstValue
@@ -1048,7 +1162,8 @@ internal class DatadogFlagsClientTest {
         val contextCaptor = argumentCaptor<EvaluationContext>()
         verify(mockEvaluationsManager).updateEvaluationsForContext(
             contextCaptor.capture(),
-            anyOrNull()
+            anyOrNull(),
+            any()
         )
 
         val capturedContext = contextCaptor.firstValue
@@ -1068,7 +1183,8 @@ internal class DatadogFlagsClientTest {
         val contextCaptor = argumentCaptor<EvaluationContext>()
         verify(mockEvaluationsManager).updateEvaluationsForContext(
             contextCaptor.capture(),
-            anyOrNull()
+            anyOrNull(),
+            any()
         )
 
         val capturedContext = contextCaptor.firstValue
@@ -1134,8 +1250,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
@@ -1176,8 +1292,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
@@ -1220,8 +1336,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
@@ -1262,8 +1378,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolveStringValue(fakeFlagKey, fakeDefaultValue)
@@ -1316,12 +1432,12 @@ internal class DatadogFlagsClientTest {
             attributes = emptyMap()
         )
 
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey1)) doReturn
-            FlagsResolutionSnapshot(numberFlag, fakeContext)
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey2)) doReturn
-            FlagsResolutionSnapshot(floatFlag, fakeContext)
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey3)) doReturn
-            FlagsResolutionSnapshot(intFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey1)) doReturn
+            Pair(numberFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey2)) doReturn
+            Pair(floatFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey3)) doReturn
+            Pair(intFlag, fakeContext)
 
         // When
         val result1 = testedClient.resolveDoubleValue(fakeFlagKey1, fakeDefaultValue)
@@ -1349,8 +1465,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getResolutionSnapshot(fakeFlagKey)) doReturn
-            FlagsResolutionSnapshot(fakeFlag, fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeContext)
 
         // When
         val result = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
@@ -1397,6 +1513,35 @@ internal class DatadogFlagsClientTest {
 
     // region Internal APIs exposed through _FlagsInternalProxy
 
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M validate one assignment snapshot W getFlagAssignmentsSnapshot() {context changes during read}`(
+        mode: ExperimentationOptOutMode
+    ) {
+        // Given
+        val policy = ExperimentationOptOut(mode)
+        policy.prepare(fakeDefaultContext)
+        val fakeFlags = mapOf(fakeJsonKey to mock<PrecomputedFlag>())
+        whenever(mockFlagsRepository.getAssignmentsSnapshot()).thenAnswer {
+            policy.prepare(EvaluationContext("new-subject"))
+            FlagsAssignmentsSnapshot(fakeFlags, fakeDefaultContext)
+        }
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository, FlagsConfiguration.Builder().build(),
+            mockRumEvaluationLogger, mockProcessor, null, mockFlagsStateManager, true, policy
+        )
+
+        // When
+        val snapshot = testedClient.getFlagAssignmentsSnapshot()
+
+        // Then
+        assertThat(snapshot).isEqualTo(if (mode == ExperimentationOptOutMode.DISABLED) fakeFlags else emptyMap())
+        verify(mockFlagsRepository).waitForPersistenceLoad()
+        verify(mockFlagsRepository).getAssignmentsSnapshot()
+        verify(mockFlagsRepository, never()).getEvaluationContext()
+        verify(mockFlagsRepository, never()).getFlagsSnapshot()
+    }
+
     @Test
     fun `M delegate to repository W getFlagAssignmentsSnapshot()`() {
         // Given
@@ -1404,14 +1549,16 @@ internal class DatadogFlagsClientTest {
             "flag1" to mock(),
             "flag2" to mock()
         )
-        whenever(mockFlagsRepository.getFlagsSnapshot()) doReturn mockSnapshot
+        whenever(mockFlagsRepository.getAssignmentsSnapshot()) doReturn
+            FlagsAssignmentsSnapshot(mockSnapshot, fakeDefaultContext)
 
         // When
         val result = testedClient.getFlagAssignmentsSnapshot()
 
         // Then
         assertThat(result).isSameAs(mockSnapshot)
-        verify(mockFlagsRepository).getFlagsSnapshot()
+        verify(mockFlagsRepository).getAssignmentsSnapshot()
+        verify(mockFlagsRepository).waitForPersistenceLoad()
     }
 
     @Test
@@ -1618,7 +1765,8 @@ internal class DatadogFlagsClientTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
             evaluationsFeature = null,
-            flagStateManager = mockFlagsStateManager
+            flagStateManager = mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = false
         )
 
         // When
@@ -1658,7 +1806,8 @@ internal class DatadogFlagsClientTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
             evaluationsFeature = null,
-            flagStateManager = mockFlagsStateManager
+            flagStateManager = mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = false
         )
 
         // When

@@ -69,6 +69,7 @@ interface FlagsClient {
     /**
      * Invokes [listener] once with the keys from the first installed cached or downloaded flags,
      * including an empty configuration. Missing or invalid cache does not trigger this callback.
+     * Obfuscated configurations return an empty key list because the original keys are not available.
      * Each registration receives a separate event with a copy of the retained first keys,
      * even after subsequent flag updates.
      * Replaying an available result reads retained memory and does not perform I/O.
@@ -245,10 +246,14 @@ interface FlagsClient {
         /**
          * Controls how this client uses the subject's `dd_experimentation_opt_out_at` attribute.
          * Configure this before building the client. An existing named client retains its configuration.
+         *
+         * @param mode the opt-out mode. Defaults to [ExperimentationOptOutMode.DISABLED].
+         * @return this [Builder] instance.
          */
         fun experimentationOptOutMode(mode: ExperimentationOptOutMode): Builder = apply {
             experimentationOptOutMode = mode
         }
+        private var evaluationTelemetryOptOutParameterEnabled: Boolean = false
 
         /**
          * Creates a builder for a named [FlagsClient].
@@ -272,6 +277,20 @@ interface FlagsClient {
                 DEFAULT_CLIENT_NAME
             }
             this.sdkCore = sdkCore as FeatureSdkCore
+        }
+
+        /**
+         * Enables the local evaluation telemetry opt-out parameter for this client.
+         *
+         * Disabled by default. When enabled, [setEvaluationTelemetryOptOut] controls new evaluation
+         * telemetry and automatic RUM flag annotations. Flag values and exposures remain unchanged.
+         * OpenFeature accepts only Boolean `true` in `dd_evaluation_telemetry_opt_out`.
+         *
+         * @param enabled whether to enable the parameter.
+         * @return this [Builder] instance.
+         */
+        fun enableEvaluationTelemetryOptOutParameter(enabled: Boolean): Builder = apply {
+            evaluationTelemetryOptOutParameterEnabled = enabled
         }
 
         /**
@@ -323,14 +342,15 @@ interface FlagsClient {
                 .getFeature(FLAGS_EVALUATIONS_FEATURE_NAME)
                 ?.unwrap<EvaluationsFeature>()
 
-            return flagsFeature.getOrRegisterNewClient(name) {
+            return flagsFeature.getOrRegisterNewClient(name, experimentationOptOutMode) {
                 createInternal(
                     configuration = flagsFeature.flagsConfiguration,
                     featureSdkCore = sdkCore,
                     flagsFeature = flagsFeature,
                     evaluationsFeature = evaluationsFeature,
                     name = name,
-                    experimentationOptOutMode = experimentationOptOutMode
+                    experimentationOptOutMode = experimentationOptOutMode,
+                    evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled
                 )
             }
         }
@@ -418,6 +438,7 @@ interface FlagsClient {
 
         internal const val FLAGS_NETWORK_EXECUTOR_NAME = "flags-network"
         internal const val FLAGS_FIRST_FLAGS_EXECUTOR_NAME = "flags-first-flags"
+        internal const val FLAGS_CALLBACK_EXECUTOR_NAME = "flags-callbacks"
 
         @Suppress("LongMethod")
         internal fun createInternal(
@@ -426,7 +447,8 @@ interface FlagsClient {
             flagsFeature: FlagsFeature,
             evaluationsFeature: EvaluationsFeature?,
             name: String,
-            experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED
+            experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
+            evaluationTelemetryOptOutParameterEnabled: Boolean
         ): FlagsClient {
             val experimentationOptOut = ExperimentationOptOut(experimentationOptOutMode)
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
@@ -487,7 +509,8 @@ interface FlagsClient {
                 flagStateManager = flagStateManager,
                 initializationTimeoutMs = configuration.initializationTimeoutMs,
                 initializationTimeoutScheduler = flagsFeature.initializationTimeoutScheduler,
-                experimentationOptOut = experimentationOptOut
+                experimentationOptOut = experimentationOptOut,
+                callbackExecutor = featureSdkCore.createSingleThreadExecutorService(FLAGS_CALLBACK_EXECUTOR_NAME)
             )
 
             val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)
@@ -501,7 +524,8 @@ interface FlagsClient {
                 exposureProcessor = flagsFeature.processor,
                 evaluationsFeature = evaluationsFeature,
                 flagStateManager = flagStateManager,
-                experimentationOptOut = experimentationOptOut
+                experimentationOptOut = experimentationOptOut,
+                evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled
             )
         }
 

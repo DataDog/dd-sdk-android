@@ -241,6 +241,7 @@ interface com.datadog.android.api.storage.datastore.DataStoreWriteCallback
   fun onSuccess()
   fun onFailure()
 interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.feature.FeatureSdkCore
+  val source: String
   val networkInfo: com.datadog.android.api.context.NetworkInfo
   val trackingConsent: com.datadog.android.privacy.TrackingConsent
   val rootStorageDir: java.io.File?

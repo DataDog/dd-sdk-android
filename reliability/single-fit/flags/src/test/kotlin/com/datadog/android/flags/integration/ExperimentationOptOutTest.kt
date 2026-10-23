@@ -35,6 +35,9 @@ import org.json.JSONObject
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.NullSource
 import org.junit.jupiter.params.provider.ValueSource
 
@@ -425,17 +428,120 @@ internal class ExperimentationOptOutTest {
         assertThat(stubSdkCore.eventsWritten(Feature.FLAGS_FEATURE_NAME)).isEmpty()
     }
 
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M isolate pending and failed subjects W setEvaluationContext() {no cutoff}`(
+        mode: ExperimentationOptOutMode,
+        forge: Forge
+    ) {
+        // Given
+        val stubSdkCore = FlagsClientTest.createStubSdkCore(forge)
+        val testedClient = buildClient(stubSdkCore, mode)
+        stubSdkCore.stubNetworkResponses { httpResponse(it, body = response(true, doLog = true)) }
+        testedClient.setEvaluationContext(EvaluationContext("previous-subject"))
+        var pendingValue: Boolean? = null
+        var pendingError: ErrorCode? = null
+        stubSdkCore.stubNetworkResponses {
+            val pending = testedClient.resolve("flag", false)
+            pendingValue = pending.value
+            pendingError = pending.errorCode
+            null
+        }
+
+        // When
+        testedClient.setEvaluationContext(EvaluationContext("requested-subject"))
+        val result = testedClient.resolve("flag", false)
+
+        // Then
+        val disabled = mode == ExperimentationOptOutMode.DISABLED
+        assertThat(pendingValue).isEqualTo(disabled)
+        assertThat(result.value).isEqualTo(disabled)
+        assertThat(pendingError).isEqualTo(if (disabled) null else ErrorCode.PROVIDER_NOT_READY)
+        assertThat(result.errorCode).isEqualTo(if (disabled) null else ErrorCode.PROVIDER_NOT_READY)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M require requested context before cache reuse W resolve() {startup without cutoff}`(
+        mode: ExperimentationOptOutMode,
+        forge: Forge
+    ) {
+        // Given
+        val initialCore = FlagsClientTest.createStubSdkCore(forge)
+        val store = initialCore.stubDataStore(Feature.FLAGS_FEATURE_NAME)
+        val initialClient = buildClient(initialCore, mode, store)
+        initialCore.stubNetworkResponses { httpResponse(it, body = response(true, doLog = true)) }
+        val context = EvaluationContext("subject")
+        initialClient.setEvaluationContext(context)
+        val restartedCore = FlagsClientTest.createStubSdkCore(forge)
+        val testedClient = buildClient(restartedCore, mode, store)
+
+        // When
+        val beforeContext = testedClient.resolve("flag", false)
+        testedClient.setEvaluationContext(context)
+        val afterContext = testedClient.resolve("flag", false)
+
+        // Then
+        val disabled = mode == ExperimentationOptOutMode.DISABLED
+        assertThat(beforeContext.value).isEqualTo(disabled)
+        assertThat(beforeContext.errorCode).isEqualTo(if (disabled) null else ErrorCode.PROVIDER_NOT_READY)
+        assertThat(afterContext.value).isTrue()
+        assertThat(afterContext.errorCode).isNull()
+    }
+
+    @ParameterizedTest
+    @MethodSource("independentControls")
+    fun `M keep telemetry and experimentation independent W initialize() {OpenFeature}`(
+        mode: ExperimentationOptOutMode,
+        telemetryOptedOut: Boolean,
+        forge: Forge
+    ) = runTest {
+        // Given
+        val stubSdkCore = FlagsClientTest.createStubSdkCore(forge)
+        val testedClient = buildClient(stubSdkCore, mode, telemetryParameterEnabled = true)
+        val provider = testedClient.asOpenFeatureProvider()
+        val attributes = mapOf(
+            OPT_OUT_ATTRIBUTE to Value.String(OPT_OUT_TIME),
+            "dd_evaluation_telemetry_opt_out" to Value.Boolean(telemetryOptedOut)
+        )
+        val body = JSONObject(response(true, acknowledgment = true))
+        if (mode == ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY) {
+            body.getJSONObject("data").getJSONObject("attributes").getJSONObject("evaluation_options")
+                .put("experimentation_opt_out_mode", "future_experiments_only")
+                .put(OPT_OUT_ATTRIBUTE, OPT_OUT_TIME)
+        }
+        stubSdkCore.stubNetworkResponses { httpResponse(it, body = body.toString()) }
+        val context = ImmutableContext("subject", attributes)
+
+        // When
+        provider.initialize(context)
+        val result = provider.getBooleanEvaluation("flag", false, context)
+        stubSdkCore.stopFeatures()
+
+        // Then
+        assertThat(result.value).isTrue()
+        assertThat(result.errorCode).isNull()
+        assertThat(stubSdkCore.eventsWritten(Feature.FLAGS_FEATURE_NAME)).isEmpty()
+        assertThat(stubSdkCore.eventsWritten(Feature.FLAGS_EVALUATIONS_FEATURE_NAME))
+            .hasSize(if (telemetryOptedOut) 0 else 1)
+        val request = stubSdkCore.requestsSent().single().bodyAsJson()
+            .getJSONObject("data").getJSONObject("attributes").getJSONObject("subject")
+        assertThat(request.getString("targeting_key")).isEqualTo("subject")
+    }
+
     private fun buildClient(
         sdkCore: StubSDKCore,
         mode: ExperimentationOptOutMode = ExperimentationOptOutMode.IMMEDIATE,
-        dataStore: DataStoreHandler = StubDataStoreHandler()
+        dataStore: DataStoreHandler = StubDataStoreHandler(),
+        telemetryParameterEnabled: Boolean = false
     ): FlagsClient {
         sdkCore.stubDataStore(Feature.FLAGS_FEATURE_NAME, dataStore)
         Flags.enable(
             FlagsConfiguration.Builder().useCustomFlagEndpoint("https://flags.example/precompute").build(),
             sdkCore
         )
-        return FlagsClient.Builder(sdkCore = sdkCore).experimentationOptOutMode(mode).build()
+        return FlagsClient.Builder(sdkCore = sdkCore).experimentationOptOutMode(mode)
+            .enableEvaluationTelemetryOptOutParameter(telemetryParameterEnabled).build()
     }
 
     private fun optedOutContext() = EvaluationContext("subject", mapOf(OPT_OUT_ATTRIBUTE to OPT_OUT_TIME))
@@ -457,6 +563,14 @@ internal class ExperimentationOptOutTest {
     }
 
     private companion object {
+        @JvmStatic
+        fun independentControls() = listOf(
+            Arguments.of(ExperimentationOptOutMode.IMMEDIATE, false),
+            Arguments.of(ExperimentationOptOutMode.IMMEDIATE, true),
+            Arguments.of(ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY, false),
+            Arguments.of(ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY, true)
+        )
+
         const val OPT_OUT_ATTRIBUTE = "dd_experimentation_opt_out_at"
         const val OPT_OUT_TIME = "2026-10-21T10:00:00Z"
     }
