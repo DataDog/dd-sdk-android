@@ -19,6 +19,8 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
@@ -57,7 +59,6 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
-import java.util.UUID
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat as assertThatLog
 
 @Extensions(
@@ -97,17 +98,17 @@ internal class LogsFeatureTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
-    @Forgery
-    lateinit var fakeRumApplicationId: UUID
+    @StringForgery
+    lateinit var fakeRumApplicationId: String
 
-    @Forgery
-    lateinit var fakeRumSessionId: UUID
+    @StringForgery
+    lateinit var fakeRumSessionId: String
 
-    @Forgery
-    lateinit var fakeRumViewId: UUID
+    @StringForgery
+    lateinit var fakeRumViewId: String
 
-    @Forgery
-    lateinit var fakeRumActionId: UUID
+    @StringForgery
+    lateinit var fakeRumActionId: String
 
     @StringForgery(regex = "https://[a-z]+\\.com")
     lateinit var fakeEndpointUrl: String
@@ -157,10 +158,12 @@ internal class LogsFeatureTest {
                 put(
                     Feature.RUM_FEATURE_NAME,
                     mapOf(
-                        "application_id" to fakeRumApplicationId,
-                        "session_id" to fakeRumSessionId,
-                        "view_id" to fakeRumViewId,
-                        "action_id" to fakeRumActionId
+                        FeatureContextKeys.RUM_CONTEXT to RumContext(
+                            applicationId = fakeRumApplicationId,
+                            sessionId = fakeRumSessionId,
+                            viewId = fakeRumViewId,
+                            actionId = fakeRumActionId
+                        )
                     )
                 )
                 put(

@@ -29,6 +29,8 @@ import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType
 import com.datadog.android.internal.thread.NamedCallable
@@ -51,7 +53,6 @@ import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
@@ -61,6 +62,7 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.rum.internal.domain.setRumContext
 import com.datadog.android.rum.internal.heatmaps.NativeHeatmapActionData
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
@@ -173,7 +175,7 @@ internal class DatadogRumMonitor(
                 ?.getRumContext()
                 ?.let {
                     val sessionId = it.sessionId
-                    if (it.sessionState == RumSessionScope.State.NOT_TRACKED ||
+                    if (it.sessionState == RumSessionState.NOT_TRACKED ||
                         sessionId == RumContext.NULL_UUID
                     ) {
                         null
@@ -973,8 +975,7 @@ internal class DatadogRumMonitor(
                         rootScope.handleEvent(event, datadogContext, eventWriteScope, writer)
                         val rumContext = currentRumContext()
                         sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
-                            it.clear()
-                            rumContext?.toMap()?.let(it::putAll)
+                            it.setRumContext(rumContext)
                         }
                     }
                 }
@@ -1018,8 +1019,7 @@ internal class DatadogRumMonitor(
                         val rumContext = future?.getSafe("Rum get context", sdkCore.internalLogger)
                         // we are on the context thread already, so useContextThread=false
                         sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
-                            it.clear()
-                            rumContext?.toMap()?.let(it::putAll)
+                            it.setRumContext(rumContext)
                         }
                     }
                 }
