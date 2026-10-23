@@ -14,6 +14,8 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.internal.FlagsStateManager
+import com.datadog.android.flags.internal.diagnostics.FlagsRequestDiagnostics
+import com.datadog.android.flags.internal.diagnostics.UUIDv7Generator
 import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
@@ -94,6 +96,9 @@ internal class EvaluationsManager(
     private val initializationTimeoutMs: Long?,
     private val initializationTimeoutScheduler: InitializationTimeoutScheduler
 ) {
+    private val instanceId = UUIDv7Generator.generate(sdkCore.timeProvider.getDeviceTimestampMillis()).toString()
+    private val fetchSequenceLock = Any()
+    private var fetchSequence = 0L
     private val didStartInitialization = AtomicBoolean(false)
     private val initializationTerminalLock = Any()
 
@@ -112,11 +117,24 @@ internal class EvaluationsManager(
      * @param callback Optional callback invoked when the context is set and the flags have been fetched successfully or not.
      * @param onFetchFinished Releases request state when the fetch terminates, not when initialization times out.
      */
+    @Suppress("LongMethod") // Keep logical diagnostics acceptance with the existing fetch lifecycle.
     fun updateEvaluationsForContext(
         context: EvaluationContext,
         callback: EvaluationContextCallback? = null,
         onFetchFinished: () -> Unit = {}
     ) {
+        val diagnostics = synchronized(fetchSequenceLock) {
+            fetchSequence = (fetchSequence + 1).coerceAtMost(MAX_FETCH_SEQUENCE)
+            FlagsRequestDiagnostics(
+                instanceId,
+                fetchSequence,
+                if (fetchSequence == 1L) {
+                    FlagsRequestDiagnostics.Trigger.INITIALIZATION
+                } else {
+                    FlagsRequestDiagnostics.Trigger.CONTEXT_CHANGE
+                }
+            )
+        }
         val matchingCachedAssignments = AtomicBoolean(false)
         val initializationCompletion = startInitializationTimeout(context, callback, matchingCachedAssignments) {
             flagStateManager.updateState(FlagsClientState.Reconciling)
@@ -147,7 +165,7 @@ internal class EvaluationsManager(
                 matchingCachedAssignments.set(
                     hadFlags && flagsRepository.getEvaluationContext() == context
                 )
-                val response = datadogContext?.let { assignmentsReader.readPrecomputedFlags(context, it) }
+                val response = datadogContext?.let { assignmentsReader.readPrecomputedFlags(context, it, diagnostics) }
                 val assignments = response?.let { precomputeMapper.map(it) }
                     ?.takeIf { it.obfuscation == null || supportsObfuscation }
                 if (assignments != null) {
@@ -253,6 +271,7 @@ internal class EvaluationsManager(
     }
 
     companion object {
+        private const val MAX_FETCH_SEQUENCE = 9_007_199_254_740_991L
         private const val FETCH_AND_STORE_OPERATION_NAME = "Fetch and store flags for evaluation context"
         private const val INVALID_RESPONSE_MESSAGE = "Unable to read the feature flags response."
         private const val NETWORK_REQUEST_FAILED_MESSAGE =

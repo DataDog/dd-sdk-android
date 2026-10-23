@@ -10,8 +10,10 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.flags.internal.diagnostics.FlagsRequestDiagnostics
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -60,6 +62,43 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         )
 
         testedFactory = PrecomputedAssignmentsRequestFactory(mockInternalLogger, null)
+    }
+
+    @ParameterizedTest
+    @EnumSource(FlagsRequestDiagnostics.Trigger::class)
+    fun `M include diagnostics in request body W create()`(
+        trigger: FlagsRequestDiagnostics.Trigger,
+        @Forgery fakeDiagnostics: FlagsRequestDiagnostics,
+        @Forgery fakeEvaluationContext: EvaluationContext
+    ) {
+        // Given
+        val diagnostics = fakeDiagnostics.copy(trigger = trigger)
+        val expectedTrigger = when (trigger) {
+            FlagsRequestDiagnostics.Trigger.INITIALIZATION -> "initialization"
+            FlagsRequestDiagnostics.Trigger.CONTEXT_CHANGE -> "context_change"
+        }
+        val expectedDiagnostics = JsonParser.parseString(
+            """
+            {
+              "sdk": {"instance_id": "${diagnostics.instanceId}"},
+              "fetch": {"sequence": ${diagnostics.sequence}, "trigger": "$expectedTrigger"}
+            }
+            """.trimIndent()
+        )
+
+        // When
+        val request = testedFactory.create(fakeEvaluationContext, fakeDatadogContext, diagnostics)
+        val requestWithoutDiagnostics = testedFactory.create(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        val actualRequest = checkNotNull(request) { "Expected request with diagnostics" }
+        val originalRequest = checkNotNull(requestWithoutDiagnostics) { "Expected request without diagnostics" }
+        val body = JsonParser.parseString(extractRequestBodyAsString(actualRequest)).asJsonObject
+        val originalBody = JsonParser.parseString(extractRequestBodyAsString(originalRequest)).asJsonObject
+        assertThat(body.remove("diagnostics")).isEqualTo(expectedDiagnostics)
+        assertThat(body).isEqualTo(originalBody)
+        assertThat(originalBody.has("diagnostics")).isFalse()
+        assertThat(actualRequest.headers).isEqualTo(originalRequest.headers)
     }
 
     // region create() - Success cases
