@@ -6,11 +6,14 @@
 
 package com.datadog.android.flags.internal.model
 
+import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKey
 import com.datadog.android.flags.model.EvaluationContext
 
 /** The flag, context and consent from a single read of the installed configuration. */
 internal data class FlagEvaluationSnapshot(
     val flag: PrecomputedFlag?,
     val context: EvaluationContext,
-    val observeFullEvaluationData: Boolean
+    val observeFullEvaluationData: Boolean,
+    val telemetryTargetingKey: EvaluationTargetingKey =
+        EvaluationTargetingKey.create(context.targetingKey, observeFullEvaluationData)
 )

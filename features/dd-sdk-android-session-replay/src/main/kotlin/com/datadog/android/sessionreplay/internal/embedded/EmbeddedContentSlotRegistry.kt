@@ -43,7 +43,7 @@ internal class EmbeddedContentSlotRegistry {
      * Records the placeholders a snapshot written for [viewId] at [timestamp] carries, as [slotIds].
      *
      * [slotIds] is the complete set drawn at that moment, not an addition to it, so a slot absent
-     * from it has no placeholder any more. A repeat in the same view keeps the original timestamp —
+     * from it has no placeholder anymore. A repeat in the same view keeps the original timestamp —
      * the first placeholder in a view is the one records have to follow — so listeners fire only for
      * a slot's first placeholder in a view.
      */

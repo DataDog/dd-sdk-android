@@ -144,7 +144,7 @@ internal class PrecomputedAssignmentsRequestFactory(
             .put("sdk_version", datadogContext.sdkVersion)
 
     private val DatadogContext.rumApplicationId: String?
-        get() = featuresContext.get(Feature.RUM_FEATURE_NAME)
+        get() = featuresContext[Feature.RUM_FEATURE_NAME]
             ?.get("application_id") as? String
 
     companion object {

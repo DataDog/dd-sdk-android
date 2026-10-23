@@ -11,6 +11,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKey
 import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
@@ -35,6 +36,8 @@ internal class DefaultFlagsRepository(
         val obfuscation: FlagKeyObfuscation?,
         val observeFullEvaluationData: Boolean
     ) {
+        val telemetryTargetingKey = EvaluationTargetingKey.create(context.targetingKey, observeFullEvaluationData)
+
         operator fun get(key: String): PrecomputedFlag? =
             if (obfuscation == null) flags[key] else obfuscation.encode(key)?.let { flags[it] }
     }
@@ -179,7 +182,7 @@ internal class DefaultFlagsRepository(
     override fun getEvaluationSnapshot(key: String): FlagEvaluationSnapshot? {
         val state = readableState ?: return null
         val flag = state[key]
-        return FlagEvaluationSnapshot(flag, state.context, state.observeFullEvaluationData)
+        return FlagEvaluationSnapshot(flag, state.context, state.observeFullEvaluationData, state.telemetryTargetingKey)
     }
 
     override fun waitForPersistenceLoad() {

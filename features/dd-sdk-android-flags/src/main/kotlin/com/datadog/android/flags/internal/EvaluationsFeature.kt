@@ -15,6 +15,7 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.aggregation.EvaluationAggregator
+import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKey
 import com.datadog.android.flags.internal.net.EvaluationsRequestFactory
 import com.datadog.android.flags.internal.storage.EvaluationEventRecordWriter
 import com.datadog.android.flags.model.EvaluationContext
@@ -134,7 +135,8 @@ internal class EvaluationsFeature(
         errorCode: String?,
         errorMessage: String?,
         observeFullEvaluationData: Boolean = false,
-        telemetryTargetingKey: String? = context?.targetingKey
+        telemetryTargetingKey: String? = context?.targetingKey,
+        preparedTargetingKey: EvaluationTargetingKey? = null
     ) {
         val processor = evaluationProcessor ?: return
         val currentDdContext = rumContext
@@ -149,7 +151,8 @@ internal class EvaluationsFeature(
             errorCode = errorCode,
             errorMessage = errorMessage,
             observeFullEvaluationData = observeFullEvaluationData,
-            telemetryTargetingKey = telemetryTargetingKey
+            telemetryTargetingKey = telemetryTargetingKey,
+            preparedTargetingKey = preparedTargetingKey
         )
     }
 

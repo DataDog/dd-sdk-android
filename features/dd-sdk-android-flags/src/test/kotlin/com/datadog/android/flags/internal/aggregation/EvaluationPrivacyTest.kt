@@ -31,16 +31,26 @@ internal class EvaluationPrivacyTest {
     @NullAndEmptySource
     fun `M preserve empty and omit missing W targetingKey()`(fakeKey: String?) {
         // When / Then
-        assertThat(EvaluationPrivacy.targetingKey(fakeKey, false)).isEqualTo(fakeKey)
+        listOf(false, true).forEach { fakeConsent ->
+            assertThat(EvaluationPrivacy.targetingKey(fakeKey, fakeConsent)).isEqualTo(fakeKey)
+        }
     }
 
-    @Test
-    fun `M omit malformed UTF16 W targetingKey()`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M omit malformed UTF16 W targetingKey()`(fakeConsent: Boolean) {
         // Given
-        val fakeKeys = listOf("\uD800", "\uDC00", "a\uD800b", "\uD800\uD800")
+        val fakeKeys = listOf("\uD800", "\uDC00", "a\uD800b", "\uD800\uD800", "\uDC00\uD800", "😀\uDC00")
 
         // When / Then
-        fakeKeys.forEach { assertThat(EvaluationPrivacy.targetingKey(it, false)).isNull() }
+        fakeKeys.forEach { assertThat(EvaluationPrivacy.targetingKey(it, fakeConsent)).isNull() }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["é", "e\u0301", "😀", "before😀after"])
+    fun `M preserve valid Unicode W targetingKey() {full consent}`(fakeKey: String) {
+        // When / Then
+        assertThat(EvaluationPrivacy.targetingKey(fakeKey, true)).isEqualTo(fakeKey)
     }
 
     @ParameterizedTest

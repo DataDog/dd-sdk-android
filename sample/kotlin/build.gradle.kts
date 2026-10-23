@@ -4,7 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.SAMPLE_APP_REGIONS
 import com.datadog.gradle.config.configureFlavorForSampleApp
@@ -105,10 +104,10 @@ android {
     externalNativeBuild {
         cmake {
             path = File("$projectDir/src/main/cpp/CMakeLists.txt")
-            version = Dependencies.Versions.CMake
+            version = libs.versions.cmake.get()
         }
     }
-    ndkVersion = Dependencies.Versions.Ndk
+    ndkVersion = libs.versions.ndk.get()
 
     val e2ePassword = providers.environmentVariable("E2E_STORE_PASSWD").orNull
     signingConfigs {

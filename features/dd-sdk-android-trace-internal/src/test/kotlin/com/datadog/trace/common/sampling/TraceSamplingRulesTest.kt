@@ -20,7 +20,7 @@ internal class TraceSamplingRulesTest {
         val rules = TraceSamplingRules.deserialize("[]")
 
         // Then
-        assertThat(rules.isEmpty()).isTrue()
+        assertThat(rules.isEmpty).isTrue()
     }
 
     @Test
@@ -90,7 +90,7 @@ internal class TraceSamplingRulesTest {
         )
 
         // Then
-        assertThat(rules.isEmpty()).isTrue()
+        assertThat(rules.isEmpty).isTrue()
     }
 
     @ParameterizedTest
@@ -100,7 +100,7 @@ internal class TraceSamplingRulesTest {
         val rules = TraceSamplingRules.deserialize(jsonRules)
 
         // Then
-        assertThat(rules.isEmpty()).isTrue()
+        assertThat(rules.isEmpty).isTrue()
     }
 
     @Test

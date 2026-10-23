@@ -32,7 +32,7 @@ enum class TraceContextInjection {
 
     /**
      * Injects trace context only into sampled requests.
-     * For example if the request trace is sampled out neither the trace context or the sampling priority will
+     * For example if the request trace is sampled out neither the trace context nor the sampling priority will
      * be injected into the request headers leaving the server side to make the sampling decision.
      * This will mean that if the server side sampling rate is higher than the client side sampling rate there will
      * be a chance that a trace will be created down the stream.

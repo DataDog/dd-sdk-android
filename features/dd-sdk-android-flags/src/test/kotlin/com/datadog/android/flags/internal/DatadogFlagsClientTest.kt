@@ -13,6 +13,7 @@ import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags._FlagsInternalProxy
+import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKey
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.PrecomputedFlag
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.NullAndEmptySource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
@@ -48,8 +50,10 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
@@ -194,6 +198,102 @@ internal class DatadogFlagsClientTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
+    fun `M reuse captured identity W resolve() {success missing and invalid flags}`(
+        fakeConsent: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val fakeContext = forge.getForgery<EvaluationContext>()
+        val fakeIdentity = EvaluationTargetingKey.create(fakeContext.targetingKey, fakeConsent)
+        val fakeBooleanFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = "boolean",
+            variationValue = "true",
+            observeFullEvaluationData = !fakeConsent
+        )
+        val fakeInvalidFlag = fakeBooleanFlag.copy(variationType = "object", variationValue = "{invalid")
+        whenever(mockFlagsRepository.getEvaluationSnapshot("assigned")) doReturn
+            FlagEvaluationSnapshot(fakeBooleanFlag, fakeContext, fakeConsent, fakeIdentity)
+        whenever(mockFlagsRepository.getEvaluationSnapshot("invalid")) doReturn
+            FlagEvaluationSnapshot(fakeInvalidFlag, fakeContext, fakeConsent, fakeIdentity)
+        whenever(mockFlagsRepository.getEvaluationSnapshot("missing")) doReturn
+            FlagEvaluationSnapshot(null, fakeContext, fakeConsent, fakeIdentity)
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
+            FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
+            mockEvaluationsFeature, mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = false
+        )
+
+        // When
+        testedClient.resolve("assigned", false)
+        testedClient.resolve("assigned", "default")
+        testedClient.resolve("invalid", JSONObject())
+        testedClient.resolve("missing", false)
+
+        // Then
+        val keyCaptor = argumentCaptor<String>()
+        val variantCaptor = argumentCaptor<String>()
+        val allocationCaptor = argumentCaptor<String>()
+        val errorCaptor = argumentCaptor<String>()
+        val messageCaptor = argumentCaptor<String>()
+        val identityCaptor = argumentCaptor<EvaluationTargetingKey>()
+        verify(mockEvaluationsFeature, times(4)).processEvaluation(
+            keyCaptor.capture(), eq(fakeContext), variantCaptor.capture(), allocationCaptor.capture(),
+            errorCaptor.capture(), messageCaptor.capture(), eq(fakeConsent), eq(fakeContext.targetingKey),
+            identityCaptor.capture()
+        )
+        assertThat(keyCaptor.allValues).containsExactly("assigned", "assigned", "invalid", "missing")
+        assertThat(variantCaptor.allValues).containsExactly(fakeBooleanFlag.variationKey, null, null, null)
+        assertThat(allocationCaptor.allValues).containsExactly(fakeBooleanFlag.allocationKey, null, null, null)
+        assertThat(errorCaptor.allValues).containsExactly(null, "TYPE_MISMATCH", "PARSE_ERROR", "FLAG_NOT_FOUND")
+        assertThat(messageCaptor.allValues.first()).isNull()
+        assertThat(messageCaptor.allValues.drop(1)).allSatisfy { assertThat(it).isNotBlank() }
+        identityCaptor.allValues.forEach { assertThat(it).isSameAs(fakeIdentity) }
+        verify(mockFlagsRepository, never()).getEvaluationContext()
+    }
+
+    @Test
+    fun `M retain bridge identity W resolveBooleanValue() {native provider not ready}`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeContext = EvaluationContext("jane.doe@datadoghq.com")
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(observeFullEvaluationData = false)
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+        whenever(mockFlagsRepository.getEvaluationSnapshot(fakeFlagKey)) doReturn null
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
+            FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
+            mockEvaluationsFeature, mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = false
+        )
+        val testedProxy = _FlagsInternalProxy(testedClient)
+
+        // When
+        testedProxy.trackFlagSnapshotEvaluation(fakeFlagKey, fakeFlag, fakeContext)
+        testedClient.resolveBooleanValue(fakeFlagKey, false)
+        testedProxy.trackFlagSnapshotEvaluation(fakeFlagKey, fakeFlag, fakeContext)
+
+        // Then
+        val bridgeIdentityCaptor = argumentCaptor<EvaluationTargetingKey>()
+        verify(mockEvaluationsFeature, times(2)).processEvaluation(
+            eq(fakeFlagKey), eq(fakeContext), eq(fakeFlag.variationKey), eq(fakeFlag.allocationKey),
+            isNull(), isNull(), eq(false), eq(fakeContext.targetingKey), bridgeIdentityCaptor.capture()
+        )
+        val missingIdentityCaptor = argumentCaptor<EvaluationTargetingKey>()
+        verify(mockEvaluationsFeature).processEvaluation(
+            eq(fakeFlagKey), isNull(), isNull(), isNull(), eq("PROVIDER_NOT_READY"),
+            eq("Provider not ready - call setEvaluationContext() before resolving flags"),
+            eq(false), isNull(), missingIdentityCaptor.capture()
+        )
+        assertThat(missingIdentityCaptor.firstValue.value).isNull()
+        assertThat(bridgeIdentityCaptor.firstValue.value)
+            .isEqualTo("sha256_b4698f9b6d186781fa8dc59e533578fa2d8379a46b1cf6db85cda6aa9c99e51b")
+        assertThat(bridgeIdentityCaptor.firstValue).isSameAs(bridgeIdentityCaptor.lastValue)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
     fun `M isolate event keys W subscriber mutates delivered list`(completeBeforeRegistration: Boolean) {
         // Given
         val latch = FirstFlagsLatch()
@@ -311,7 +411,10 @@ internal class DatadogFlagsClientTest {
                 fakeFlag.variationKey,
                 fakeFlag.allocationKey,
                 null,
-                null
+                null,
+                false,
+                fakeContext.targetingKey,
+                EvaluationTargetingKey.create(fakeContext.targetingKey, false)
             )
         }
     }
@@ -345,6 +448,120 @@ internal class DatadogFlagsClientTest {
         // Then
         verify(mockProcessor).processEvent(fakeFlagKey, fakeContext, fakeFlag)
         verifyNoInteractions(mockRumEvaluationLogger, mockEvaluationsFeature)
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "false, false, false",
+        "false, false, true",
+        "false, true, false",
+        "false, true, true",
+        "true, false, false",
+        "true, false, true",
+        "true, true, false",
+        "true, true, true"
+    )
+    fun `M respect opt-out W trackFlagExposure() + trackFlagEvaluationEvent() + trackFlagRumEvaluation()`(
+        enabled: Boolean,
+        telemetryOptedOut: Boolean,
+        perSubject: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeContext = forge.getForgery<EvaluationContext>()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(doLog = true)
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
+            FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
+            mockEvaluationsFeature, mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = enabled
+        )
+        val testedProxy = _FlagsInternalProxy(testedClient)
+        if (perSubject) {
+            testedProxy.setEvaluationContext(fakeContext, null, telemetryOptedOut)
+        } else {
+            testedClient.setEvaluationTelemetryOptOut(telemetryOptedOut)
+        }
+
+        // When
+        testedProxy.trackFlagExposure(fakeKey, fakeFlag, fakeContext)
+        testedProxy.trackFlagEvaluationEvent(fakeKey, fakeFlag, fakeContext, null)
+        testedProxy.trackFlagEvaluationEvent(fakeKey, null, fakeContext, null)
+        testedProxy.trackFlagEvaluationEvent(fakeKey, null, fakeContext, "FLAG_NOT_FOUND")
+        testedProxy.trackFlagRumEvaluation(fakeKey, fakeFlag.variationKey, fakeContext)
+
+        // Then
+        verify(mockProcessor).processEvent(fakeKey, fakeContext, fakeFlag)
+        if (enabled && telemetryOptedOut) {
+            verifyNoInteractions(mockEvaluationsFeature, mockRumEvaluationLogger)
+        } else {
+            verify(mockRumEvaluationLogger).logEvaluation(fakeKey, fakeFlag.variationKey)
+            verify(mockEvaluationsFeature).processEvaluation(
+                fakeKey,
+                fakeContext,
+                fakeFlag.variationKey,
+                fakeFlag.allocationKey,
+                null,
+                null,
+                false,
+                fakeContext.targetingKey,
+                EvaluationTargetingKey.create(fakeContext.targetingKey, false)
+            )
+            verify(mockEvaluationsFeature).processEvaluation(
+                fakeKey, fakeContext, null, null, null, null,
+                false, fakeContext.targetingKey, EvaluationTargetingKey.create(fakeContext.targetingKey, false)
+            )
+            verify(mockEvaluationsFeature).processEvaluation(
+                fakeKey,
+                fakeContext,
+                null,
+                null,
+                "FLAG_NOT_FOUND",
+                "FLAG_NOT_FOUND",
+                false,
+                fakeContext.targetingKey,
+                EvaluationTargetingKey.create(fakeContext.targetingKey, false)
+            )
+        }
+        verifyNoMoreInteractions(mockProcessor, mockEvaluationsFeature, mockRumEvaluationLogger)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M opt out W trackFlagSnapshotEvaluation() + trackFlagEvaluationEvent() + trackFlagRumEvaluation()`(
+        requestedSubjectOptedOut: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeContext = forge.getForgery<EvaluationContext>()
+        val fakeNextContext = forge.getForgery<EvaluationContext>().copy(
+            targetingKey = "${fakeContext.targetingKey}-next"
+        )
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(doLog = true)
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
+            FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
+            mockEvaluationsFeature, mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = true
+        )
+        val testedProxy = _FlagsInternalProxy(testedClient)
+        testedProxy.setEvaluationContext(fakeContext, null, !requestedSubjectOptedOut)
+        testedProxy.setEvaluationContext(fakeNextContext, null, requestedSubjectOptedOut)
+
+        // When
+        testedProxy.trackFlagSnapshotEvaluation(fakeKey, fakeFlag, fakeContext)
+        testedProxy.trackFlagRumEvaluation(fakeKey, fakeFlag.variationKey, fakeContext)
+        testedProxy.trackFlagEvaluationEvent(fakeKey, fakeFlag, fakeContext, null)
+        testedProxy.trackFlagEvaluationEvent(fakeKey, null, fakeContext, "FLAG_NOT_FOUND")
+
+        // Then
+        verify(mockProcessor).processEvent(fakeKey, fakeContext, fakeFlag)
+        verifyNoInteractions(mockEvaluationsFeature, mockRumEvaluationLogger)
+        verifyNoMoreInteractions(mockProcessor)
     }
 
     @Test
@@ -1058,7 +1275,8 @@ internal class DatadogFlagsClientTest {
             errorCode = eq(ErrorCode.FLAG_NOT_FOUND.name),
             errorMessage = eq("Flag not found"),
             observeFullEvaluationData = eq(false),
-            telemetryTargetingKey = eq(fakeContext.targetingKey)
+            telemetryTargetingKey = eq(fakeContext.targetingKey),
+            preparedTargetingKey = eq(EvaluationTargetingKey.create(fakeContext.targetingKey, false))
         )
     }
 

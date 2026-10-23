@@ -132,7 +132,7 @@ class NoOpFactorySymbolProcessor(
                     .apply {
                         interfaceDeclaration.getAllSuperTypes()
                             .map { it.declaration.containingFile }
-                            .let { it.plus(declarationSourceFile) }
+                            .plus(declarationSourceFile)
                             .filterNotNull()
                             .flatMap { it.getAnnotationsByType(Suppress::class).flatMap { it.names.toList() } }
                             .toSet()

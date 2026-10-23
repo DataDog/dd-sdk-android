@@ -96,7 +96,7 @@ internal class LogcatLogHandler(
     internal fun getCallerStackElement(): StackTraceElement? {
         return if (isDebug && useClassnameAsTag) {
             val stackTrace = Throwable().stackTrace
-            return findValidCallStackElement(stackTrace)
+            findValidCallStackElement(stackTrace)
         } else {
             null
         }

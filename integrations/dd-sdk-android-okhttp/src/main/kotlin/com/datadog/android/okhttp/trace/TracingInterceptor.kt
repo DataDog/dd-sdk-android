@@ -883,7 +883,7 @@ internal constructor(
          * sampling between RUM sessions and APM traces.
          *
          * @param traceSampler the trace sampler controlling the sampling of APM traces.
-         * By default it is a sampler accepting 100% of the traces.
+         * By default, it is a sampler accepting 100% of the traces.
          */
         fun setTraceSampler(traceSampler: Sampler<DatadogSpan>): R {
             this.traceSampler = traceSampler
@@ -892,7 +892,7 @@ internal constructor(
 
         /**
          * Set the trace context injection behavior for this interceptor in the intercepted requests.
-         * By default this is set to [TraceContextInjection.SAMPLED], meaning that only the sampled request will
+         * By default, this is set to [TraceContextInjection.SAMPLED], meaning that only the sampled request will
          * propagate the trace context. In case of [TraceContextInjection.ALL] all the trace context
          * will be propagated in the intercepted requests no matter if the span created around the request
          * is sampled or not.
@@ -909,7 +909,7 @@ internal constructor(
          * Deprecated. Use setTraceContextInjection(com.datadog.android.trace.TraceContextInjection) instead.
          *
          * Set the trace context injection behavior for this interceptor in the intercepted requests.
-         * By default this is set to [TraceContextInjection.SAMPLED], meaning that only the sampled request will
+         * By default, this is set to [TraceContextInjection.SAMPLED], meaning that only the sampled request will
          * propagate the trace context. In case of [TraceContextInjection.ALL] all the trace context
          * will be propagated in the intercepted requests no matter if the span created around the request
          * is sampled or not.

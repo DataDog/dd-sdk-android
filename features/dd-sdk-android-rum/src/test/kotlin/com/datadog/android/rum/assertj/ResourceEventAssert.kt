@@ -9,11 +9,11 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionStartReason
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.internal.domain.scope.toResourceMethod
 import com.datadog.android.rum.internal.domain.scope.toResourceSessionPrecondition
@@ -541,7 +541,7 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
-    fun hasStartReason(reason: RumSessionScope.StartReason): ResourceEventAssert {
+    fun hasStartReason(reason: RumSessionStartReason): ResourceEventAssert {
         assertThat(actual.dd.session?.sessionPrecondition)
             .overridingErrorMessage(
                 "Expected event to have a session sessionPrecondition of ${reason.name} " +

@@ -13,7 +13,7 @@ import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 
 /**
  * In case you need to provide different configuration for a specific Android UI framework that
- * is not supported by our SR instrumentation layer (e.g Material elements)
+ * is not supported by our SR instrumentation layer (e.g. Material elements)
  * you can implement this class.
  * @see [SessionReplayConfiguration.Builder.addExtensionSupport]
  */

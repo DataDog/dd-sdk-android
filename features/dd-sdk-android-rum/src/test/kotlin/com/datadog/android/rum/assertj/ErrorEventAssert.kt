@@ -11,10 +11,10 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.internal.profiling.quota.QuotaReason
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionStartReason
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceMethod
-import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.internal.domain.scope.toErrorMethod
 import com.datadog.android.rum.internal.domain.scope.toErrorQuotaReason
@@ -474,7 +474,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
-    fun hasStartReason(reason: RumSessionScope.StartReason): ErrorEventAssert {
+    fun hasStartReason(reason: RumSessionStartReason): ErrorEventAssert {
         assertThat(actual.dd.session?.sessionPrecondition)
             .overridingErrorMessage(
                 "Expected event to have a session sessionPrecondition of ${reason.name} " +

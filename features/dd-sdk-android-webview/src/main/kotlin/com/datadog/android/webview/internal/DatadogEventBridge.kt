@@ -12,6 +12,8 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.sampling.DeterministicSampler
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.internal.sampling.DeterministicSampling
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
@@ -120,10 +122,10 @@ internal class DatadogEventBridge(
     companion object {
         internal const val WEB_VIEW_TRACKING_FEATURE_NAME = "WebView"
 
-        private const val SESSION_ID_KEY = "session_id"
-        private const val SESSION_STATE_KEY = "session_state"
-        private const val SESSION_SAMPLE_RATE_KEY = "session_sample_rate"
-        private const val TRACKED_STATE = "TRACKED"
+        private const val SESSION_ID_KEY = FeatureContextKeys.RUM_SESSION_ID
+        private const val SESSION_STATE_KEY = FeatureContextKeys.RUM_SESSION_STATE
+        private const val SESSION_SAMPLE_RATE_KEY = FeatureContextKeys.RUM_SESSION_SAMPLE_RATE
+        private const val TRACKED_STATE = RumSessionConstants.TRACKED_SESSION_STATE
         private const val TRACE_SAMPLE_RATE_KEY = "okhttp_interceptor_sample_rate"
 
         private const val TRUE_STRING = "true"

@@ -17,14 +17,18 @@ internal object EvaluationPrivacy {
     private const val HEX_DIGITS = "0123456789abcdef"
 
     fun targetingKey(value: String?, observeFullEvaluationData: Boolean): String? {
-        if (value == null || observeFullEvaluationData || value.isEmpty()) return value
+        if (value.isNullOrEmpty()) return value
         return try {
             val bytes = value.encodeToByteArray(throwOnInvalidSequence = true)
-            val digest = MessageDigest.getInstance("SHA-256")
-            digest.update(bytes)
-            "sha256_" + digest.digest().joinToString("") { byte ->
-                val unsigned = byte.toInt() and BYTE_MASK
-                HEX_DIGITS[unsigned ushr HEX_DIGIT_BITS].toString() + HEX_DIGITS[unsigned and HEX_DIGIT_MASK]
+            if (observeFullEvaluationData) {
+                value
+            } else {
+                val digest = MessageDigest.getInstance("SHA-256")
+                digest.update(bytes)
+                "sha256_" + digest.digest().joinToString("") { byte ->
+                    val unsigned = byte.toInt() and BYTE_MASK
+                    HEX_DIGITS[unsigned ushr HEX_DIGIT_BITS].toString() + HEX_DIGITS[unsigned and HEX_DIGIT_MASK]
+                }
             }
         } catch (_: CharacterCodingException) {
             // Invalid UTF-16 must be omitted, never hashed with replacement characters.

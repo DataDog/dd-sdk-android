@@ -108,7 +108,7 @@ abstract class GenerateVerificationXmlTask : DefaultTask() {
 
     fun File.sha256(): String {
         return MessageDigest.getInstance("SHA-256")
-            .digest(readBytes()).fold("", { str, byte -> str + "%02x".format(byte) })
+            .digest(readBytes()).fold("") { str, byte -> str + "%02x".format(byte) }
     }
 
     // endregion

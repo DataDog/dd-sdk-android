@@ -6,7 +6,7 @@
 
 package com.datadog.android.webview.internal.rum.domain
 
-import java.util.UUID
+import com.datadog.android.internal.rum.RumSessionConstants
 
 internal data class RumContext(
     val applicationId: String,
@@ -16,6 +16,6 @@ internal data class RumContext(
 ) {
 
     companion object {
-        val NULL_UUID = UUID(0, 0).toString()
+        const val NULL_UUID = RumSessionConstants.EMPTY_RUM_SESSION_ID
     }
 }

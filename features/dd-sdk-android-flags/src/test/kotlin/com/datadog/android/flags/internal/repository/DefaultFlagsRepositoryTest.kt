@@ -11,6 +11,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.flags.internal.aggregation.EvaluationPrivacy
 import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedAssignments
@@ -185,6 +186,82 @@ internal class DefaultFlagsRepositoryTest {
         // Then
         assertThat(result?.flag).isNull()
         assertThat(result?.context).isEqualTo(testContext)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M reuse telemetry identity across flags W getEvaluationSnapshot()`(fakeConsent: Boolean, forge: Forge) {
+        // Given
+        testedRepository.setFlagsAndContext(testContext, multipleFlagsMap, observeFullEvaluationData = fakeConsent)
+        val fakeMissingKey = forge.anAlphabeticalString() + multipleFlagsMap.keys.joinToString()
+
+        // When
+        val snapshots = (multipleFlagsMap.keys + fakeMissingKey).map {
+            checkNotNull(testedRepository.getEvaluationSnapshot(it))
+        }
+        val repeated = checkNotNull(testedRepository.getEvaluationSnapshot(multipleFlagsMap.keys.first()))
+
+        // Then
+        val preparedIdentity = snapshots.first().telemetryTargetingKey
+        assertThat(preparedIdentity.value)
+            .isEqualTo(EvaluationPrivacy.targetingKey(testContext.targetingKey, fakeConsent))
+        snapshots.forEach { assertThat(it.telemetryTargetingKey).isSameAs(preparedIdentity) }
+        assertThat(repeated.telemetryTargetingKey).isSameAs(preparedIdentity)
+        assertThat(snapshots.last().flag).isNull()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M replace telemetry identity and retain old snapshots W setFlagsAndContext()`(
+        fakeConsent: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val fakeKey = multipleFlagsMap.keys.first()
+        val fakeNextContext = testContext.copy(targetingKey = testContext.targetingKey + forge.anAlphabeticalString())
+        testedRepository.setFlagsAndContext(testContext, multipleFlagsMap, observeFullEvaluationData = fakeConsent)
+        val initial = checkNotNull(testedRepository.getEvaluationSnapshot(fakeKey))
+
+        // When
+        testedRepository.setFlagsAndContext(testContext, multipleFlagsMap, observeFullEvaluationData = !fakeConsent)
+        val consentChanged = checkNotNull(testedRepository.getEvaluationSnapshot(fakeKey))
+        testedRepository.setFlagsAndContext(fakeNextContext, multipleFlagsMap, observeFullEvaluationData = !fakeConsent)
+        val contextChanged = checkNotNull(testedRepository.getEvaluationSnapshot(fakeKey))
+
+        // Then
+        assertThat(initial.telemetryTargetingKey.value)
+            .isEqualTo(EvaluationPrivacy.targetingKey(testContext.targetingKey, fakeConsent))
+        assertThat(initial.observeFullEvaluationData).isEqualTo(fakeConsent)
+        assertThat(consentChanged.telemetryTargetingKey.value)
+            .isEqualTo(EvaluationPrivacy.targetingKey(testContext.targetingKey, !fakeConsent))
+        assertThat(consentChanged.telemetryTargetingKey).isNotSameAs(initial.telemetryTargetingKey)
+        assertThat(contextChanged.telemetryTargetingKey.value)
+            .isEqualTo(EvaluationPrivacy.targetingKey(fakeNextContext.targetingKey, !fakeConsent))
+        assertThat(contextChanged.telemetryTargetingKey).isNotSameAs(consentChanged.telemetryTargetingKey)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M prepare reusable restored identity W getEvaluationSnapshot() {cached state}`(
+        fakeConsent: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val callback = preparePersistenceLoad(forge)
+        val fakeEntry = FlagsStateEntry(testContext, multipleFlagsMap, forge.aLong(), fakeConsent)
+        callback.onSuccess(DataStoreContent(forge.anInt(), fakeEntry))
+
+        // When
+        val snapshots = multipleFlagsMap.keys.map { checkNotNull(testedRepository.getEvaluationSnapshot(it)) }
+
+        // Then
+        val identity = snapshots.first().telemetryTargetingKey
+        assertThat(identity.value).isEqualTo(EvaluationPrivacy.targetingKey(testContext.targetingKey, fakeConsent))
+        snapshots.forEach {
+            assertThat(it.telemetryTargetingKey).isSameAs(identity)
+            assertThat(it.observeFullEvaluationData).isEqualTo(fakeConsent)
+            assertThat(checkNotNull(it.flag).reason).isEqualTo(ResolutionReason.CACHED.name)
+        }
     }
 
     @Test

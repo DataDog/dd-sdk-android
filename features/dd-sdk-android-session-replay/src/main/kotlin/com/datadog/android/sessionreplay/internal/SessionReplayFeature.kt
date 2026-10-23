@@ -446,11 +446,10 @@ internal class SessionReplayFeature(
         val recordCallback = SessionReplayRecordCallback(sdkCore)
         return SessionReplayRecordWriter(
             sdkCore,
-            recordCallback,
-            { viewId, recordsCount ->
-                recordCallback.onEmbeddedRecordsForViewSent(viewId, recordsCount)
-            }
-        )
+            recordCallback
+        ) { viewId, recordsCount ->
+            recordCallback.onEmbeddedRecordsForViewSent(viewId, recordsCount)
+        }
     }
 
     /**

@@ -33,8 +33,12 @@ sha256sum /tmp/flags-artifacts/*.aar
 `FlagsPrivacyTest` covers direct SDK and OpenFeature evaluation, the five consent states, mixed
 consent before shutdown flush, stable error/default counts, context omission, original assignment
 inputs, offline cache restoration, failed refresh, retry payloads, missing/empty/malformed targeting
-keys, object-result metadata, tracking disable, and retained native snapshots. `doLog=false` is
-used throughout these privacy fixtures to ensure it cannot suppress evaluation telemetry. Existing
+keys in both consent modes, valid Unicode including surrogate pairs, object-result metadata, tracking
+disable, and retained native snapshots. `FlagsBridgePrivacyTest` exercises both evaluation-only
+bridge overloads with retained consent, successful and default/error evaluations, unknown error
+codes, distinct omitted and empty telemetry keys, and no exposure or RUM side effects. The bridge
+fixtures use `doLog=true` to prove that evaluation-only hooks do not trigger exposure logging.
+`FlagsPrivacyTest` uses `doLog=false` to ensure it cannot suppress evaluation telemetry. Existing
 processor unit tests cover concurrent recording, draining, periodic flush and shutdown.
 
 Only precomputed evaluation is supported by this implementation. These tests do not claim a
@@ -45,8 +49,9 @@ rules-based evaluator, live backend acceptance, or transport retry scheduling co
 `FlagsPrivacyInstrumentedTest` runs the release SDK and provider on ART with the real SDK core,
 file persistence, scheduled aggregation, upload scheduling and a loopback HTTP server. It covers
 five-state consent parsing, protected/full buckets across refresh, stable errors, context omission,
-malformed/empty keys, tracking opt-out, periodic upload with a 503 retry, and consent restored from
-disk after restarting the SDK and failing a refresh. Both native and OpenFeature paths are covered;
+malformed/empty keys and valid Unicode in both consent modes, tracking opt-out, periodic upload
+with a 503 retry, and consent and malformed keys restored from disk after restarting the SDK and
+failing a refresh. There are 16 parameterized cases per device. Both native and OpenFeature paths are covered;
 the offline-restart cases call the provider directly to isolate cache behavior from OpenFeature's
 failed-initialization policy. The shutdown cases invoke the feature's stop callback and the core's
 existing test drain hook; the retry cases use normal scheduled uploads.
@@ -74,6 +79,13 @@ and implement `UnparsedFlagWithConsent` when reconstructing the assignment in
 `convertMapToUnparsedFlag`. Only literal `true` opts in. Replaying through
 `_FlagsInternalProxy.trackFlagSnapshotEvaluation` must use that captured value, never current
 configuration or a JS-side hash.
+
+The separate `trackFlagEvaluationEvent` hook has an overload accepting the captured consent
+boolean and a nullable telemetry targeting key. Use it for evaluation-only hooks, especially
+errors without an assignment: consent must come from the evaluation, not the current native
+configuration. The original overload derives consent from the flag and defaults to protected
+mode when none is available. Null and empty identities remain distinct; neither evaluation-only
+overload emits exposures or RUM annotations.
 
 Existing implementations of `UnparsedFlag` remain ABI-compatible and replay in protected mode.
 Native success/error metadata also carries `__dd_observe_full_evaluation_data`. Android and the

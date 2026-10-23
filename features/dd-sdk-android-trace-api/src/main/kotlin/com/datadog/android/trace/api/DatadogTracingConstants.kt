@@ -25,8 +25,8 @@ object DatadogTracingConstants {
         const val KEY_HTTP_URL: String = "http.url"
 
         /**
-         * Represents the key used for tagging the kind of a span in the Datadog tracer.
-         * It is used to indicate the role or type of a span, such as client, server, producer, or consumer.
+         * Represents the key used for tagging the kind of span in the Datadog tracer.
+         * It is used to indicate the role or type of span, such as client, server, producer, or consumer.
          */
         const val KEY_SPAN_KIND: String = "span.kind"
 
@@ -42,7 +42,7 @@ object DatadogTracingConstants {
         /** String representing the type of the error. */
         const val KEY_ERROR_TYPE: String = "error.type"
 
-        /** Human readable version of the stack. */
+        /** Human-readable version of the stack. */
         const val KEY_ERROR_STACK: String = "error.stack"
 
         /**

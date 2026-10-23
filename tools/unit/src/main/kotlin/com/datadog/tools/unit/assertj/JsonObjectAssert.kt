@@ -50,7 +50,7 @@ open class JsonObjectAssert(
 
     /**
      *  Verifies that the actual jsonObject contains a field with the given name and `null` value.
-     *  This assertions is also valid if the named field is absent altogether
+     *  This assertion is also valid if the named field is absent altogether
      *  @param name the field name
      */
     fun hasNullField(name: String): JsonObjectAssert {

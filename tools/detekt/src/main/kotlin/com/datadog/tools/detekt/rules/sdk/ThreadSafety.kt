@@ -56,7 +56,7 @@ class ThreadSafety(
         }
 
         companion object {
-            internal val allowedCalls: Map<ThreadGroup, Array<ThreadGroup>> = mapOf(
+            val allowedCalls: Map<ThreadGroup, Array<ThreadGroup>> = mapOf(
                 UNKNOWN to arrayOf(UNKNOWN, ANY),
                 ANY to arrayOf(UNKNOWN, ANY),
                 MAIN to arrayOf(UNKNOWN, ANY, MAIN, UI),
@@ -180,7 +180,7 @@ class ThreadSafety(
                     resolvedName.replace(fqTypeName(hostType, includeTypeArguments = false), it.asString())
                 }
 
-            listOf(resolvedName, aliasedName).filterNotNull().toSet()
+            listOfNotNull(resolvedName, aliasedName).toSet()
         } else {
             setOf(resolvedName)
         }

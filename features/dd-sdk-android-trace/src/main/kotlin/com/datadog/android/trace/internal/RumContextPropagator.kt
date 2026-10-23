@@ -10,6 +10,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.getContextFuture
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.api.span.DatadogSpan
@@ -59,12 +60,12 @@ class RumContextPropagator(private val sdkCoreProvider: () -> FeatureSdkCore?) {
                     .orEmpty()
 
                 instance.setTag(LogAttributes.RUM_APPLICATION_ID, rumContext["application_id"])
-                instance.setTag(LogAttributes.RUM_SESSION_ID, rumContext["session_id"])
+                instance.setTag(LogAttributes.RUM_SESSION_ID, rumContext[FeatureContextKeys.RUM_SESSION_ID])
                 instance.setTag(LogAttributes.RUM_VIEW_ID, rumContext["view_id"])
                 instance.setTag(LogAttributes.RUM_ACTION_ID, rumContext["action_id"])
                 instance.setTag(
                     LogAttributes.RUM_SESSION_SAMPLE_RATE,
-                    rumContext[LogAttributes.RUM_SESSION_SAMPLE_RATE]
+                    rumContext[FeatureContextKeys.RUM_SESSION_SAMPLE_RATE]
                 )
                 instance.setTag(HttpCodec.RUM_KEY_USER_ID, datadogContext.userInfo.id)
                 instance.setTag(HttpCodec.RUM_KEY_ACCOUNT_ID, datadogContext.accountInfo?.id)

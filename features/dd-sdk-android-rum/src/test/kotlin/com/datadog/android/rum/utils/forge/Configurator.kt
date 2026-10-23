@@ -14,6 +14,7 @@ import com.datadog.android.internal.tests.elmyr.InternalTelemetryEventForgeryFac
 import com.datadog.android.internal.tests.elmyr.InternalTelemetryMetricForgeryFactory
 import com.datadog.android.internal.tests.elmyr.ProfilingAnrDetectedEventForgeryFactory
 import com.datadog.android.internal.tests.elmyr.ProfilingThreadDumpForgeryFactory
+import com.datadog.android.internal.tests.elmyr.RumContextForgeryFactory
 import com.datadog.android.internal.tests.elmyr.TracingHeaderTypesSetForgeryFactory
 import com.datadog.android.rum.tests.elmyr.BatteryInfoForgeryFactory
 import com.datadog.android.rum.tests.elmyr.DisplayInfoForgeryFactory

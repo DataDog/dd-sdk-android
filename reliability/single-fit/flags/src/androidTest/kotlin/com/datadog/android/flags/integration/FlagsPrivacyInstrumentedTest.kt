@@ -165,18 +165,34 @@ internal class FlagsPrivacyInstrumentedTest(private val useOpenFeature: Boolean)
         startSdk()
 
         // When
-        listOf("", "\uD800", "\uDC00").forEach { key ->
-            refresh(key)
-            assertTrue(booleanValue("enabled"))
+        listOf(false, true).forEach { consent ->
+            assignmentBody.set(assignments(consent))
+            listOf("", "\uD800", "\uDC00", UNICODE_KEY).forEach { key ->
+                refresh(key)
+                assertTrue(booleanValue("enabled"))
+            }
         }
         flushOnStop()
-        val events = events(takeUpload())
+        val wire = takeUpload()
+        val events = events(wire)
 
         // Then
-        assertEquals(2, events.size)
-        assertEquals(1, events.single { it.has("targeting_key") }.getInt("evaluation_count"))
-        assertEquals("", events.single { it.has("targeting_key") }.getString("targeting_key"))
-        assertEquals(2, events.single { !it.has("targeting_key") }.getInt("evaluation_count"))
+        assertEquals(6, events.size)
+        assertEquals(8, events.sumOf { it.getInt("evaluation_count") })
+        val emptyKeys = events.filter { it.opt("targeting_key") == "" }
+        assertEquals(2, emptyKeys.size)
+        assertTrue(emptyKeys.all { it.getInt("evaluation_count") == 1 })
+        val omittedKeys = events.filter { !it.has("targeting_key") }
+        assertEquals(2, omittedKeys.size)
+        assertTrue(omittedKeys.all { it.getInt("evaluation_count") == 2 })
+        assertEquals(
+            setOf(UNICODE_KEY, HASHED_UNICODE_KEY),
+            events.filter { it.has("targeting_key") && it.getString("targeting_key").isNotEmpty() }
+                .map { it.getString("targeting_key") }.toSet()
+        )
+        assertTrue(events.all { !it.getJSONObject("context").has("evaluation") })
+        assertFalse(wire.contains(PRIVATE_CONTEXT))
+        assertEquals(0, exposureCount.get())
     }
 
     @Test
@@ -207,11 +223,25 @@ internal class FlagsPrivacyInstrumentedTest(private val useOpenFeature: Boolean)
         assertRestoredConsent(true)
     }
 
-    private fun assertRestoredConsent(consent: Boolean) {
+    @Test
+    fun mustOmitMalformedProtectedCachedKey_whenRestartAndRefreshFails() {
+        assertRestoredConsent(false, "\uD800", null)
+    }
+
+    @Test
+    fun mustOmitMalformedFullCachedKey_whenRestartAndRefreshFails() {
+        assertRestoredConsent(true, "\uDC00", null)
+    }
+
+    private fun assertRestoredConsent(
+        consent: Boolean,
+        key: String = TARGETING_KEY,
+        expectedKey: String? = if (consent) key else HASHED_KEY
+    ) {
         // Given
         startSdk()
         assignmentBody.set(assignments(consent))
-        refresh()
+        refresh(key)
         runBlocking { OpenFeatureAPI.shutdown() }
         Datadog._internalProxy().flushAndShutdownExecutors()
         Datadog.stopInstance()
@@ -219,7 +249,7 @@ internal class FlagsPrivacyInstrumentedTest(private val useOpenFeature: Boolean)
 
         // When
         startSdk()
-        val failure = updateNativeContext(TARGETING_KEY)
+        val failure = updateNativeContext(key)
         if (useOpenFeature) {
             val provider = client.asOpenFeatureProvider()
             assertTrue(provider.getBooleanEvaluation("enabled", false, null).value)
@@ -235,7 +265,11 @@ internal class FlagsPrivacyInstrumentedTest(private val useOpenFeature: Boolean)
         assertTrue("Expected the offline refresh to fail", failure != null)
         assertEquals(2, events(wire).size)
         events(wire).forEach {
-            assertEquals(if (consent) TARGETING_KEY else HASHED_KEY, it.getString("targeting_key"))
+            if (expectedKey == null) {
+                assertFalse(it.has("targeting_key"))
+            } else {
+                assertEquals(expectedKey, it.getString("targeting_key"))
+            }
             assertEquals(1, it.getInt("evaluation_count"))
         }
         assertFalse(wire.contains(PRIVATE_CONTEXT))
@@ -330,6 +364,8 @@ internal class FlagsPrivacyInstrumentedTest(private val useOpenFeature: Boolean)
 
     companion object {
         private const val WAIT_MS = 60_000L
+        private const val UNICODE_KEY = "café-\uD83D\uDE00"
+        private const val HASHED_UNICODE_KEY = "sha256_8b6ed8e437d3dd3fe8b31c664aaa82cb983764a56c2f81cb7d5319d011e9895d"
         private const val TARGETING_KEY = "jane.doe@datadoghq.com"
         private const val HASHED_KEY = "sha256_b4698f9b6d186781fa8dc59e533578fa2d8379a46b1cf6db85cda6aa9c99e51b"
         private const val PRIVATE_CONTEXT = "private-context-canary@example.com"

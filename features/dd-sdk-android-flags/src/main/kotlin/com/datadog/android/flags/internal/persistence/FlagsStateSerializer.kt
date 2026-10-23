@@ -36,7 +36,7 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
             obfuscated = true.takeIf { model.obfuscation != null },
             obfuscation = model.obfuscation?.let { FlagsState.Obfuscation(FlagKeyObfuscation.SCHEME, it.salt) }
         ).toJson().toString()
-        escapeUnpairedSurrogates(json)
+        json.escapeUnpairedSurrogates()
     } catch (e: JsonParseException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
@@ -47,7 +47,8 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
         ""
     }
 
-    private fun escapeUnpairedSurrogates(json: String): String {
+    private fun String.escapeUnpairedSurrogates(): String {
+        val json = this
         if (json.none { it.isSurrogate() }) return json
 
         // JSON writers leave lone surrogates unescaped, and UTF-8 storage would replace them.

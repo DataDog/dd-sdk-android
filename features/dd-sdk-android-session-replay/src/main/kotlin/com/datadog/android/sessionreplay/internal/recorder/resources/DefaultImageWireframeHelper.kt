@@ -347,7 +347,7 @@ internal class DefaultImageWireframeHelper(
                 )
 
                 val resourceCacheKey = if (customResourceIdCacheKey != null) {
-                    "$customResourceIdCacheKey" + "_$compoundDrawableIndex"
+                    "${customResourceIdCacheKey}_$compoundDrawableIndex"
                 } else {
                     null
                 }

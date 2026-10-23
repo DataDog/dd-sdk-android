@@ -39,14 +39,18 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
         errorCode: String?,
         errorMessage: String?,
         observeFullEvaluationData: Boolean = false,
-        telemetryTargetingKey: String? = context?.targetingKey
+        telemetryTargetingKey: String? = context?.targetingKey,
+        preparedTargetingKey: EvaluationTargetingKey? = null
     ): List<EvaluationAggregationStats> {
         val safeErrorCode = EvaluationPrivacy.errorCode(errorCode, errorMessage)
         val key = EvaluationAggregationKey(
             flagKey = flagKey,
             variantKey = variantKey,
             allocationKey = allocationKey,
-            targetingKey = EvaluationPrivacy.targetingKey(telemetryTargetingKey, observeFullEvaluationData),
+            targetingKey = (
+                preparedTargetingKey
+                    ?: EvaluationTargetingKey.create(telemetryTargetingKey, observeFullEvaluationData)
+                ).value,
             viewName = rumViewName,
             errorCode = safeErrorCode,
             observeFullEvaluationData = observeFullEvaluationData
@@ -54,7 +58,7 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
 
         val drained = mapLock.withLock {
             @Suppress("UnsafeThirdPartyFunctionCall") // Only throws if null is passed
-            val existing = aggregationMap.get(key) ?: EvaluationAggregationStats(
+            val existing = aggregationMap[key] ?: EvaluationAggregationStats(
                 aggregationKey = key,
                 count = 0,
                 firstEvaluation = timestamp,
@@ -62,13 +66,10 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
                 rumApplicationId = rumApplicationId
             )
             @Suppress("UnsafeThirdPartyFunctionCall") // safe - non-null key and value
-            aggregationMap.put(
-                key,
-                existing.copy(
-                    count = existing.count + 1,
-                    firstEvaluation = minOf(existing.firstEvaluation, timestamp),
-                    lastEvaluation = maxOf(existing.lastEvaluation, timestamp)
-                )
+            aggregationMap[key] = existing.copy(
+                count = existing.count + 1,
+                firstEvaluation = minOf(existing.firstEvaluation, timestamp),
+                lastEvaluation = maxOf(existing.lastEvaluation, timestamp)
             )
 
             if (aggregationMap.size < maxAggregations) emptyMap() else drainAggregationStats()

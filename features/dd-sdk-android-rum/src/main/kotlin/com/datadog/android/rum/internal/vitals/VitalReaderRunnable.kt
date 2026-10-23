@@ -10,8 +10,9 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.scheduleSafe
-import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.scope.RumViewType
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumViewType
+import com.datadog.android.internal.rum.rumContext
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
@@ -45,7 +46,7 @@ internal class VitalReaderRunnable(
 
     override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName == Feature.RUM_FEATURE_NAME) {
-            currentRumContext = RumContext.fromFeatureContext(context)
+            currentRumContext = context.rumContext()
         }
     }
 }

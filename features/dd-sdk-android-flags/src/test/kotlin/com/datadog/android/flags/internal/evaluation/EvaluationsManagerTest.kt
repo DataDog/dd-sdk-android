@@ -600,7 +600,7 @@ internal class EvaluationsManagerTest {
         val testedManager = createManager(
             flagStateManager = stateManager,
             initializationTimeoutMs = 2_500L,
-            scheduler = InitializationTimeoutScheduler { _, action ->
+            scheduler = { _, action ->
                 timeoutAction = action
                 {}
             }
@@ -644,7 +644,7 @@ internal class EvaluationsManagerTest {
         val testedManager = createManager(
             flagStateManager = stateManager,
             initializationTimeoutMs = 2_500L,
-            scheduler = InitializationTimeoutScheduler { _, action ->
+            scheduler = { _, action ->
                 timeoutAction = action
                 {}
             }
@@ -679,7 +679,7 @@ internal class EvaluationsManagerTest {
         val testedManager = createManager(
             flagStateManager = stateManager,
             initializationTimeoutMs = 2_500L,
-            scheduler = InitializationTimeoutScheduler { _, action ->
+            scheduler = { _, action ->
                 timeoutAction = action
                 {}
             }
@@ -774,7 +774,7 @@ internal class EvaluationsManagerTest {
         testedManager = createManager(
             flagStateManager = stateManager,
             initializationTimeoutMs = 2_500L,
-            scheduler = InitializationTimeoutScheduler { _, action ->
+            scheduler = { _, action ->
                 timeoutAction = action
                 {}
             }
@@ -1014,7 +1014,7 @@ internal class EvaluationsManagerTest {
         val testedManager = createManager(
             flagStateManager = stateManager,
             initializationTimeoutMs = 2_500L,
-            scheduler = InitializationTimeoutScheduler { _, action ->
+            scheduler = { _, action ->
                 timeoutAction = action
                 {}
             }
@@ -1043,7 +1043,7 @@ internal class EvaluationsManagerTest {
         val testedManager = createManager(
             flagStateManager = stateManager,
             initializationTimeoutMs = 0,
-            scheduler = InitializationTimeoutScheduler { _, action ->
+            scheduler = { _, action ->
                 action()
                 val cancelTimeout: () -> Unit = {}
                 cancelTimeout
@@ -1146,13 +1146,18 @@ internal class EvaluationsManagerTest {
         }.whenever(mockExecutorService).execute(any())
         lateinit var timeout: () -> Unit
         val manager = EvaluationsManager(
-            mockSdkCore, mockExecutorService, mockInternalLogger, repository,
-            mockAssignmentsDownloader, mockPrecomputeMapper, state, 1000,
-            { _, action ->
-                timeout = action;
-                {}
-            }
-        )
+            mockSdkCore,
+            mockExecutorService,
+            mockInternalLogger,
+            repository,
+            mockAssignmentsDownloader,
+            mockPrecomputeMapper,
+            state,
+            1000
+        ) { _, action ->
+            timeout = action;
+            {}
+        }
         val context = EvaluationContext(fakeTargetingKey)
         val callback = mock<EvaluationContextCallback>()
         val firstKeys = mutableListOf<List<String>>()
@@ -1202,13 +1207,18 @@ internal class EvaluationsManagerTest {
         lateinit var timeout: () -> Unit
         var cancelled = false
         val manager = EvaluationsManager(
-            mockSdkCore, mockExecutorService, mockInternalLogger, repository,
-            mockAssignmentsDownloader, mockPrecomputeMapper, state, 1000,
-            { _, action ->
-                timeout = action;
-                { cancelled = true }
-            }
-        )
+            mockSdkCore,
+            mockExecutorService,
+            mockInternalLogger,
+            repository,
+            mockAssignmentsDownloader,
+            mockPrecomputeMapper,
+            state,
+            1000
+        ) { _, action ->
+            timeout = action;
+            { cancelled = true }
+        }
         val context = EvaluationContext(fakeTargetingKey)
         val callback = mock<EvaluationContextCallback>()
         var firstFlagsCount = 0

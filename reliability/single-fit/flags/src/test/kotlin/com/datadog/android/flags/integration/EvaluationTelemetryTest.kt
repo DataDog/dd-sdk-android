@@ -487,7 +487,7 @@ internal class EvaluationTelemetryTest {
     }
 
     @Test
-    fun `M preserve current policy W getBooleanEvaluation() {older refresh completes}`() = runBlocking<Unit> {
+    fun `M preserve current policy W getBooleanEvaluation() {older refresh completes}`() = runBlocking {
         // Given
         val provider = newClient().asOpenFeatureProvider()
         val optedIn = context(Value.Boolean(false))

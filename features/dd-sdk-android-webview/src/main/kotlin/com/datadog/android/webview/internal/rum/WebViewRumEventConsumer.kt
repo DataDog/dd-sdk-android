@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.replay.WebViewReplayEventConsumer
 import com.datadog.android.webview.internal.rum.domain.RumContext
@@ -45,7 +46,7 @@ internal class WebViewRumEventConsumer(
                 )
             ) { datadogContext, writeScope ->
                 val rumContext = contextProvider.getRumContext(datadogContext)
-                if (rumContext != null && rumContext.sessionState == "TRACKED") {
+                if (rumContext != null && rumContext.sessionState == RumSessionConstants.TRACKED_SESSION_STATE) {
                     val sessionReplayFeatureContext = datadogContext.featuresContext[
                         Feature.SESSION_REPLAY_FEATURE_NAME
                     ]

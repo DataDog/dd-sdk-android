@@ -125,7 +125,6 @@ internal class RumRequestFactoryTest {
         val request = testedFactory.create(fakeDatadogContext, fakeExecutionContext, batchData, batchMetadata)
 
         // Then
-        requireNotNull(request)
         assertThat(request.url).isEqualTo(expectedUrl(fakeEndpoint))
         assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
         assertThat(

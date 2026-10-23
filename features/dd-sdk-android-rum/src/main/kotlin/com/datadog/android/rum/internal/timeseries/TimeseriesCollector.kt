@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.internal.timeseries
 
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation

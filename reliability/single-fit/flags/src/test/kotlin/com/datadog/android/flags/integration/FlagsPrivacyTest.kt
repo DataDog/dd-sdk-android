@@ -40,6 +40,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 
 @ExtendWith(ForgeExtension::class)
@@ -186,14 +188,15 @@ internal class FlagsPrivacyTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["\uD800", "\uDC00", "a\uD800b"])
+    @MethodSource("malformedKeysAndConsent")
     fun `M omit malformed cached keys without losing counts W build + resolve + stop`(
         fakeKey: String,
+        fakeConsent: Boolean,
         forge: Forge
     ) {
         // Given
         val dataStore = stubSdkCore.stubDataStore(Feature.FLAGS_FEATURE_NAME)
-        stubAssignments(false)
+        stubAssignments(fakeConsent)
         buildClient().setEvaluationContext(EvaluationContext(fakeKey))
         stubSdkCore.stopFeatures()
         stubSdkCore = createStubSdkCore(forge)
@@ -213,8 +216,9 @@ internal class FlagsPrivacyTest {
         assertThat(success.value).isTrue()
         assertThat(missing.value).isFalse()
         assertThat(afterFailedRefresh).isTrue()
-        assertThat(success.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", false)
-        assertThat(missing.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", false)
+        assertThat(success.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", fakeConsent)
+        assertThat(missing.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", fakeConsent)
+        assertThat(events.map { it.getJSONObject("context").has("evaluation") }).containsOnly(false)
         assertThat(events).hasSize(2)
         assertThat(events.map { it.has("targeting_key") }).containsOnly(false)
         assertThat(events.sumOf { it.getInt("evaluation_count") }).isEqualTo(3)
@@ -223,15 +227,16 @@ internal class FlagsPrivacyTest {
         assertThat(error.getInt("evaluation_count")).isEqualTo(1)
     }
 
-    @Test
-    fun `M retain empty and omit malformed or missing keys W resolve + stop`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M retain valid and omit malformed or missing keys W resolve + stop`(fakeConsent: Boolean) {
         // Given
         val client = buildClient()
-        stubAssignments(false)
+        stubAssignments(fakeConsent)
 
         // When
         client.resolveBooleanValue("not-ready", false)
-        listOf("", "\uD800", "\uDC00").forEachIndexed { index, key ->
+        listOf("", "\uD800", "\uDC00", UNICODE_KEY).forEachIndexed { index, key ->
             client.setEvaluationContext(EvaluationContext(key))
             client.resolveBooleanValue("flag-$index", false)
         }
@@ -239,11 +244,15 @@ internal class FlagsPrivacyTest {
         val events = wireBody().lineSequence().filter { it.isNotBlank() }.map(::JSONObject).toList()
 
         // Then
-        assertThat(events).hasSize(4)
+        assertThat(events).hasSize(5)
         assertThat(events[0].has("targeting_key")).isFalse()
         assertThat(events[0].getJSONObject("error").getString("message")).isEqualTo("PROVIDER_NOT_READY")
         assertThat(events[1].getString("targeting_key")).isEmpty()
-        assertThat(events.drop(2).map { it.has("targeting_key") }).containsOnly(false)
+        assertThat(events.subList(2, 4).map { it.has("targeting_key") }).containsOnly(false)
+        assertThat(events[4].getString("targeting_key"))
+            .isEqualTo(if (fakeConsent) UNICODE_KEY else HASHED_UNICODE_KEY)
+        assertThat(events.sumOf { it.getInt("evaluation_count") }).isEqualTo(5)
+        assertThat(events.map { it.getJSONObject("context").has("evaluation") }).containsOnly(false)
     }
 
     @Test
@@ -305,10 +314,11 @@ internal class FlagsPrivacyTest {
         assertThat(events.map { it.getJSONObject("context").has("evaluation") }).containsOnly(false)
     }
 
-    @Test
-    fun `M omit malformed telemetry identity W trackFlagSnapshotEvaluation + stop`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M omit malformed telemetry identity W trackFlagSnapshotEvaluation + stop`(fakeConsent: Boolean) {
         // Given
-        stubAssignments(false)
+        stubAssignments(fakeConsent)
         val client = buildClient()
         val context = EvaluationContext(TARGETING_KEY)
         client.setEvaluationContext(context)
@@ -324,6 +334,7 @@ internal class FlagsPrivacyTest {
 
         // Then
         assertThat(event.has("targeting_key")).isFalse()
+        assertThat(event.getJSONObject("context").has("evaluation")).isFalse()
         assertThat(event.getInt("evaluation_count")).isEqualTo(3)
     }
 
@@ -443,9 +454,16 @@ internal class FlagsPrivacyTest {
     }
 
     private companion object {
+        const val UNICODE_KEY = "café-\uD83D\uDE00"
+        const val HASHED_UNICODE_KEY = "sha256_8b6ed8e437d3dd3fe8b31c664aaa82cb983764a56c2f81cb7d5319d011e9895d"
         const val TARGETING_KEY = "jane.doe@datadoghq.com"
         const val HASHED_KEY = "sha256_b4698f9b6d186781fa8dc59e533578fa2d8379a46b1cf6db85cda6aa9c99e51b"
         const val CONTEXT_CANARY = "private-context-canary@example.com"
         const val ERROR_CANARY = "private-error-canary@example.com"
+
+        @JvmStatic
+        fun malformedKeysAndConsent(): List<Arguments> = listOf(false, true).flatMap { consent ->
+            listOf("\uD800", "\uDC00", "a\uD800b").map { key -> Arguments.of(key, consent) }
+        }
     }
 }
