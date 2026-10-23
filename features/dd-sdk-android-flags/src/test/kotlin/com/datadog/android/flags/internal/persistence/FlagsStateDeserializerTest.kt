@@ -7,14 +7,18 @@
 package com.datadog.android.flags.internal.persistence
 
 import com.datadog.android.api.InternalLogger
+import com.google.gson.JsonParseException
+import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.json.JSONException
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -36,6 +40,73 @@ internal class FlagsStateDeserializerTest {
     @BeforeEach
     fun `set up`() {
         testedDeserializer = FlagsStateDeserializer(mockInternalLogger)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M preserve strict consent W deserialize() {empty plain or encoded cache}`(encoded: Boolean, forge: Forge) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val consentValues = listOf(true, false, JSONObject.NULL, "true", 1, JSONObject(), null)
+        val json = JSONObject(buildStateJson(fakeKey, JSONObject()))
+        if (encoded) {
+            json.remove("flags")
+            json.put("encodedFlags", JSONObject())
+            json.put("obfuscated", true)
+            json.put(
+                "obfuscation",
+                JSONObject().put("scheme", "flag-key-sha256-v1")
+                    .put("salt", "000102030405060708090a0b0c0d0e0f")
+            )
+        }
+
+        // When
+        val restored = consentValues.map { consent ->
+            json.put("observeFullEvaluationData", consent)
+            checkNotNull(testedDeserializer.deserialize(json.toString()))
+        }
+
+        // Then
+        assertThat(restored.map { it.observeFullEvaluationData })
+            .containsExactly(true, false, false, false, false, false, false)
+        assertThat(restored.map { it.flags }).allMatch { it.isEmpty() }
+        assertThat(restored.map { it.evaluationContext.targetingKey }).containsOnly(fakeKey)
+        assertThat(restored.map { it.obfuscation != null }).containsOnly(encoded)
+    }
+
+    @Test
+    fun `M reject malformed encoded keys W deserialize() {valid descriptor}`(forge: Forge) {
+        // Given
+        val json = JSONObject(buildStateJson(forge.anAlphabeticalString(), JSONObject()))
+            .put("obfuscated", true)
+            .put(
+                "obfuscation",
+                JSONObject().put("scheme", "flag-key-sha256-v1")
+                    .put("salt", "000102030405060708090a0b0c0d0e0f")
+            )
+            .put("encodedFlags", JSONObject().put("plaintext-key", buildFlagJson()))
+
+        // When
+        val actual = testedDeserializer.deserialize(json.toString())
+
+        // Then
+        assertThat(actual).isNull()
+    }
+
+    @ParameterizedTest
+    @MethodSource("com.datadog.android.flags.internal.serialization.FlagsJsonTest#invalidMetadata")
+    fun `M reject invalid metadata W deserialize() {encoded cache}`(metadata: String, forge: Forge) {
+        // Given
+        val json = JSONObject(buildStateJson(forge.anAlphabeticalString(), JSONObject()))
+            .put("encodedFlags", JSONObject().put("a".repeat(64), buildFlagJson()))
+        val descriptor = JSONObject(metadata)
+        descriptor.keys().forEach { json.put(it, descriptor.get(it)) }
+
+        // When
+        val actual = testedDeserializer.deserialize(json.toString())
+
+        // Then
+        assertThat(actual).isNull()
     }
 
     @Test
@@ -171,7 +242,7 @@ internal class FlagsStateDeserializerTest {
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.MAINTAINER),
             maintainerMessageCaptor.capture(),
-            isA<JSONException>(),
+            isA<JsonParseException>(),
             eq(false),
             eq(null)
         )
@@ -183,7 +254,7 @@ internal class FlagsStateDeserializerTest {
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.TELEMETRY),
             telemetryMessageCaptor.capture(),
-            isA<JSONException>(),
+            isA<JsonParseException>(),
             eq(true),
             eq(null)
         )
@@ -272,7 +343,7 @@ internal class FlagsStateDeserializerTest {
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.MAINTAINER),
             isA<() -> String>(),
-            isA<JSONException>(),
+            isA<JsonParseException>(),
             eq(false),
             eq(null)
         )
@@ -317,6 +388,86 @@ internal class FlagsStateDeserializerTest {
         assertThat(result.evaluationContext.attributes["valid_string"]).isEqualTo(validString)
         assertThat(result.evaluationContext.attributes["valid_number"]).isEqualTo(validNumber)
         assertThat(result.evaluationContext.attributes["valid_boolean"]).isEqualTo(validBoolean)
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["null", "[]", "true", "0", "\"text\""])
+    fun `M reject nonobject cache W deserialize() { generated model }`(json: String) {
+        // Given
+        // When
+        val result = testedDeserializer.deserialize(json)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["null", "[]", "true", "\"invalid\""])
+    fun `M preserve legacy attributes fallback W deserialize() { invalid attributes }`(
+        attributes: String,
+        forge: Forge
+    ) {
+        // Given
+        val targetingKey = forge.anAlphabeticalString()
+        val json = JSONObject(buildStateJson(targetingKey, JSONObject().put("flag", buildFlagJson())))
+        json.getJSONObject("evaluationContext").put("attributes", JSONObject("{\"value\":$attributes}").get("value"))
+        json.put("encodedFlags", JSONObject.NULL)
+
+        // When
+        val result = checkNotNull(testedDeserializer.deserialize(json.toString()))
+
+        // Then
+        assertThat(result.evaluationContext.targetingKey).isEqualTo(targetingKey)
+        assertThat(result.evaluationContext.attributes).isEmpty()
+        assertThat(result.flags.getValue("flag").variationValue).isEqualTo("true")
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["null", "[]", "{}", "true", "\"invalid\""])
+    fun `M reject invalid cache timestamp W deserialize() { generated model }`(timestamp: String, forge: Forge) {
+        // Given
+        val json = JSONObject(buildStateJson(forge.anAlphabeticalString(), JSONObject()))
+        json.put("lastUpdateTimestamp", JSONObject("{\"value\":$timestamp}").get("value"))
+
+        // When
+        val result = testedDeserializer.deserialize(json.toString())
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M preserve legacy values W serialize() and deserialize() { generated models }`(forge: Forge) {
+        // Given
+        val targetingKey = forge.anAlphabeticalString()
+        val value = forge.anAlphabeticalString()
+        val flags = JSONObject()
+        val variants = listOf("true", forge.anInt().toString(), value, "{\"nested\":[true,null,1]}", "null")
+        variants.forEachIndexed { index, variant ->
+            flags.put(
+                "flag-$index",
+                buildFlagJson().apply {
+                    put("variationValue", variant)
+                    put("extraLogging", JSONObject("{\"nested\":{\"array\":[true,null,1]},\"text\":\"<>&\"}"))
+                }
+            )
+        }
+        val legacy = buildStateJson(targetingKey, flags)
+
+        // When
+        val loaded = checkNotNull(testedDeserializer.deserialize(legacy))
+        val rewritten = FlagsStateSerializer(mockInternalLogger).serialize(loaded)
+        val restored = checkNotNull(testedDeserializer.deserialize(rewritten))
+
+        // Then
+        val expected = JsonParser.parseString(legacy).asJsonObject.apply {
+            addProperty("observeFullEvaluationData", false)
+        }
+        assertThat(JsonParser.parseString(rewritten)).isEqualTo(expected)
+        assertThat(restored.evaluationContext).isEqualTo(loaded.evaluationContext)
+        variants.forEachIndexed { index, variant ->
+            assertThat(restored.flags.getValue("flag-$index").variationValue).isEqualTo(variant)
+        }
     }
 
     private fun buildFlagJson(): JSONObject = JSONObject().apply {

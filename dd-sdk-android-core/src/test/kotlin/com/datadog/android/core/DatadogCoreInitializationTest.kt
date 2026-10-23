@@ -447,7 +447,7 @@ internal class DatadogCoreInitializationTest {
     // region AdditionalConfig
 
     @Test
-    fun `M apply source name W applyAdditionalConfig(config) { with source name }`(
+    fun `M apply source name W initialize() { with source name }`(
         @StringForgery(type = StringForgeryType.ALPHABETICAL) source: String
     ) {
         // When
@@ -461,11 +461,11 @@ internal class DatadogCoreInitializationTest {
         }
 
         // Then
-        assertThat(testedCore.coreFeature.sourceName).isEqualTo(source)
+        assertThat(testedCore.source).isEqualTo(source)
     }
 
     @Test
-    fun `M use default source name W applyAdditionalConfig(config) { with empty source name }`(
+    fun `M use default source name W initialize() { with empty source name }`(
         @StringForgery(type = StringForgeryType.WHITESPACE) source: String
     ) {
         // When
@@ -481,11 +481,11 @@ internal class DatadogCoreInitializationTest {
         }
 
         // Then
-        assertThat(testedCore.coreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
+        assertThat(testedCore.source).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
     }
 
     @Test
-    fun `M use default source name W applyAdditionalConfig(config) { with source name !string }`(
+    fun `M use default source name W initialize() { with source name !string }`(
         @IntForgery source: Int
     ) {
         // When
@@ -501,11 +501,11 @@ internal class DatadogCoreInitializationTest {
         }
 
         // Then
-        assertThat(testedCore.coreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
+        assertThat(testedCore.source).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
     }
 
     @Test
-    fun `M use default source name W applyAdditionalConfig(config) { without source name }`(
+    fun `M use default source name W initialize() { without source name }`(
         @Forgery customAttributes: CustomAttributes
     ) {
         // When
@@ -519,7 +519,7 @@ internal class DatadogCoreInitializationTest {
         }
 
         // Then
-        assertThat(testedCore.coreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
+        assertThat(testedCore.source).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
     }
 
     @Test

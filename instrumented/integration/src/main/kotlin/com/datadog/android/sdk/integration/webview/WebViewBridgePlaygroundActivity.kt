@@ -14,12 +14,16 @@ import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.okhttp.DatadogInterceptor
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.Rum
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
+import com.datadog.android.rum.timeseries.TimeseriesType
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getTrackingConsent
 import com.datadog.android.trace.Trace
 import com.datadog.android.webview.WebViewTracking
 
+@OptIn(ExperimentalRumApi::class)
 internal class WebViewBridgePlaygroundActivity : AppCompatActivity() {
 
     lateinit var webView: WebView
@@ -36,7 +40,13 @@ internal class WebViewBridgePlaygroundActivity : AppCompatActivity() {
             Datadog.initialize(this, config, trackingConsent)
         )
 
-        Rum.enable(RuntimeConfig.rumConfigBuilder().build(), sdkCore)
+        // Timeseries collection lets the tests check session.has_timeseries on WebView events.
+        Rum.enable(
+            RuntimeConfig.rumConfigBuilder()
+                .setTimeseriesConfiguration(TimeseriesConfiguration(setOf(TimeseriesType.MEMORY)))
+                .build(),
+            sdkCore
+        )
 
         // Trace.enable registers the "tracing" feature scope, which is required for
         // updateFeatureContext to work. The interceptor then populates

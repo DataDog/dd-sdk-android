@@ -17,6 +17,6 @@ internal class PrecomputedAssignmentsForgeryFactory : ForgeryFactory<Precomputed
         val flags = forge.aList {
             anAlphabeticalString() to getForgery<PrecomputedFlag>().copy(observeFullEvaluationData = consent)
         }.toMap()
-        return PrecomputedAssignments(flags, consent)
+        return PrecomputedAssignments(flags, observeFullEvaluationData = consent)
     }
 }

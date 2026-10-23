@@ -152,6 +152,7 @@ createRumEventsFormatCloneTask("cloneTelemetrySchema") {
 createJsonModelsGenerationTask("generateRumModelsFromJson") {
     inputDirPath = "src/main/json/rum"
     targetPackageName = "com.datadog.android.rum.model"
+    schemasWithoutConstructorDefaults = listOf("view_update-schema.json")
     ignoredFiles = listOf(
         "_common-schema.json",
         "_action-child-schema.json",

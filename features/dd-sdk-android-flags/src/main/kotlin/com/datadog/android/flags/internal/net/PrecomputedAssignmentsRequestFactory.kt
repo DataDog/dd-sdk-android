@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.internal.getFlagsEndpoint
+import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Headers
 import okhttp3.Request
@@ -65,6 +66,14 @@ internal class PrecomputedAssignmentsRequestFactory(
             headersBuilder
                 .add(HEADER_CLIENT_TOKEN, datadogContext.clientToken)
                 .add(HEADER_CONTENT_TYPE, CONTENT_TYPE_VND_JSON)
+
+            // Bridge SDKs that consume raw snapshots cannot resolve encoded keys yet.
+            if (datadogContext.source == "android") {
+                headersBuilder.add(
+                    "X-DD-FEATURE-FLAGS-CAPABILITIES",
+                    listOf(FlagKeyObfuscation.CAPABILITY).sorted().joinToString(",")
+                )
+            }
 
             datadogContext.rumApplicationId?.let {
                 headersBuilder.add(HEADER_APPLICATION_ID, it)

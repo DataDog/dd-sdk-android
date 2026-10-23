@@ -25,6 +25,7 @@ internal class WebViewRumEventContextProvider(private val internalLogger: Intern
         val rumApplicationId = rumContext?.get("application_id") as? String
         val rumSessionId = rumContext?.get("session_id") as? String
         val rumSessionState = rumContext?.get("session_state") as? String
+        val rumSessionHasTimeseries = rumContext?.get("session_has_timeseries") as? Boolean ?: false
 
         return if (rumApplicationId == null ||
             rumApplicationId == RumContext.NULL_UUID ||
@@ -40,7 +41,7 @@ internal class WebViewRumEventContextProvider(private val internalLogger: Intern
             )
             null
         } else {
-            RumContext(rumApplicationId, rumSessionId, rumSessionState)
+            RumContext(rumApplicationId, rumSessionId, rumSessionState, rumSessionHasTimeseries)
         }
     }
 

@@ -8,5 +8,6 @@ package com.datadog.android.flags.internal.model
 
 internal data class PrecomputedAssignments(
     val flags: Map<String, PrecomputedFlag>,
-    val observeFullEvaluationData: Boolean
+    val obfuscation: FlagKeyObfuscation? = null,
+    val observeFullEvaluationData: Boolean = false
 )

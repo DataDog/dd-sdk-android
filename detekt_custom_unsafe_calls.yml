@@ -55,7 +55,6 @@ datadog:
       - "android.widget.LinearLayout.addView(android.view.View):java.lang.IllegalArgumentException"
       - "androidx.collection.LruCache.constructor(kotlin.Int):java.lang.IllegalArgumentException"
       - "androidx.collection.LruCache.get(java.io.File):java.lang.NullPointerException"
-      - "androidx.collection.LruCache.get(kotlin.String):java.lang.NullPointerException"
       - "androidx.collection.LruCache.put(java.io.File, kotlin.Unit):java.lang.NullPointerException"
       - "androidx.collection.LruCache.put(kotlin.String, kotlin.Unit):java.lang.NullPointerException"
       - "androidx.collection.LruCache.remove(java.io.File):java.lang.NullPointerException"
@@ -194,6 +193,7 @@ datadog:
       - "java.util.zip.Deflater.deflate(kotlin.ByteArray, kotlin.Int, kotlin.Int, kotlin.Int):java.lang.IllegalArgumentException"
       # endregion
       # region Kotlin primitives
+      - "kotlin.ByteArray.constructor(kotlin.Int, kotlin.Function1):java.lang.NegativeArraySizeException"
       - "kotlin.ByteArray.copyOf(kotlin.Int):java.lang.NegativeArraySizeException"
       - "kotlin.ByteArray.copyOfRange(kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException,java.lang.IllegalArgumentException"
       - "kotlin.ByteArray.get(kotlin.Int):java.lang.IndexOutOfBoundsException"
@@ -209,6 +209,7 @@ datadog:
       - "kotlin.String.substring(kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "kotlin.String.takeLast(kotlin.Int):java.lang.IllegalArgumentException"
       - "kotlin.String.takeLast(kotlin.Int):kotlin.IllegalArgumentException"
+      - "kotlin.String.toInt(kotlin.Int):java.lang.NumberFormatException,java.lang.IllegalArgumentException"
       - "kotlin.String.toLong():java.lang.NumberFormatException"
       - "kotlin.collections.MutableSet.first():java.util.NoSuchElementException"
       - "kotlin.String.format(kotlin.Array):java.util.IllegalFormatException"

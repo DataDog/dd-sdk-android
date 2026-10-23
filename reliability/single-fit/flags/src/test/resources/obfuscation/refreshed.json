@@ -1,0 +1,123 @@
+{
+  "data": {
+    "type": "precomputed-assignments",
+    "attributes": {
+      "flags": {
+        "e9da87d1d051b4e9ae47e00e97c87a11d939a8746280eed92f475a9fb495ae18": {
+          "variationType": "boolean",
+          "variationValue": false,
+          "allocationKey": "allocation",
+          "variationKey": "variant",
+          "doLog": true,
+          "serialId": 123,
+          "reason": "TARGETING_MATCH",
+          "extraLogging": {
+            "test": "metadata"
+          },
+          "future-field": true
+        },
+        "4abdc372f2736843d88aab09234961645d4c033e006b834766cc46e37347b872": {
+          "variationType": "string",
+          "variationValue": "visible",
+          "allocationKey": "allocation",
+          "variationKey": "variant",
+          "doLog": true,
+          "serialId": 123,
+          "reason": "TARGETING_MATCH",
+          "extraLogging": {
+            "test": "metadata"
+          },
+          "future-field": true
+        },
+        "8346778adfa902f906c69d4ed59870c99d56efff9399db8c584cf6074b3e5011": {
+          "variationType": "integer",
+          "variationValue": 42,
+          "allocationKey": "allocation",
+          "variationKey": "variant",
+          "doLog": true,
+          "serialId": 123,
+          "reason": "TARGETING_MATCH",
+          "extraLogging": {
+            "test": "metadata"
+          },
+          "future-field": true
+        },
+        "1b7113b78114045d1763d16316e9dee141ac1edb43c04f680f5ffeaf8e887786": {
+          "variationType": "number",
+          "variationValue": 12.5,
+          "allocationKey": "allocation",
+          "variationKey": "variant",
+          "doLog": true,
+          "serialId": 123,
+          "reason": "TARGETING_MATCH",
+          "extraLogging": {
+            "test": "metadata"
+          },
+          "future-field": true
+        },
+        "8a9965eba87255f32438eb47410ef1be76be3387369f6c69df72c8d55a754539": {
+          "variationType": "object",
+          "variationValue": {
+            "nested": [
+              42
+            ]
+          },
+          "allocationKey": "allocation",
+          "variationKey": "variant",
+          "doLog": true,
+          "serialId": 123,
+          "reason": "TARGETING_MATCH",
+          "extraLogging": {
+            "test": "metadata"
+          },
+          "future-field": true
+        },
+        "cdd6deebb0103ad58c9adeb13a59139c1231beb4a77a30d84c70fdf4a86bbe47": {
+          "variationType": "boolean",
+          "variationValue": "invalid",
+          "allocationKey": "allocation",
+          "variationKey": "variant",
+          "doLog": true,
+          "serialId": 123,
+          "reason": "TARGETING_MATCH",
+          "extraLogging": {
+            "test": "metadata"
+          },
+          "future-field": true
+        },
+        "d4b49a53705bac06a2ebd5fbb2110f3b3a7214f4b020406ebf536b24e6c19c83": {
+          "variationType": "boolean",
+          "variationValue": true,
+          "allocationKey": "allocation",
+          "variationKey": "variant",
+          "doLog": true,
+          "serialId": 123,
+          "reason": "TARGETING_MATCH",
+          "extraLogging": {
+            "test": "metadata"
+          },
+          "future-field": true
+        },
+        "7cb43857a178cd33bfcff5eba1d73a68ca8c8de170ac3c6f63a585fcf5adfdec": {
+          "variationType": "future-type",
+          "variationValue": true,
+          "allocationKey": "allocation",
+          "variationKey": "variant",
+          "doLog": true,
+          "serialId": 123,
+          "reason": "TARGETING_MATCH",
+          "extraLogging": {
+            "test": "metadata"
+          },
+          "future-field": true
+        }
+      },
+      "future-field": true,
+      "obfuscated": true,
+      "obfuscation": {
+        "scheme": "flag-key-sha256-v1",
+        "salt": "ffffffffffffffffffffffffffffffff"
+      }
+    }
+  }
+}

@@ -7,7 +7,7 @@
 package com.datadog.android.flags.internal.aggregation
 
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.flags.model.FlagEvaluation
+import com.datadog.android.flags.internal.model.FlagEvaluation
 
 /**
  * Immutable aggregation statistics for evaluation logging.

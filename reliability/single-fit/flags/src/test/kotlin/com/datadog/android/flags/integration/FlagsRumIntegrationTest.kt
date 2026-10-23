@@ -35,6 +35,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -124,6 +126,28 @@ class FlagsRumIntegrationTest {
         // Then
         val featureFlags = lastViewEvent().optJSONObject("feature_flags")
         assertThat(featureFlags?.has(fakeFlagKey) ?: false).isFalse()
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["encoded", "refreshed"])
+    fun `M report original flag key W resolveBooleanValue() {obfuscated RUM evaluation}`(
+        fixture: String,
+        @StringForgery fakeViewKey: String,
+        @StringForgery fakeViewName: String
+    ) {
+        // Given
+        stubSdkCore.stubNetworkResponses { httpResponse(it, body = FlagsObfuscationTest.readFixture(fixture)) }
+        val client = enableRumAndFlags(rumIntegrationEnabled = true)
+        GlobalRumMonitor.get(stubSdkCore).startView(fakeViewKey, fakeViewName)
+
+        // When
+        client.resolveBooleanValue("flag", false)
+        GlobalRumMonitor.get(stubSdkCore).stopView(fakeViewKey)
+
+        // Then
+        val flags = lastViewEvent().getJSONObject("feature_flags")
+        assertThat(flags.keys().asSequence().toList()).containsExactly("flag")
+        assertThat(flags.getString("flag")).isEqualTo("variant")
     }
 
     // region Internal

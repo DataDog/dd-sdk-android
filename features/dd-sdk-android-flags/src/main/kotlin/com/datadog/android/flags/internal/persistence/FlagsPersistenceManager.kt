@@ -11,6 +11,7 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
@@ -33,13 +34,15 @@ internal class FlagsPersistenceManager(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
         currentTimestamp: Long,
-        observeFullEvaluationData: Boolean = false,
-        callback: DataStoreWriteCallback? = null
+        callback: DataStoreWriteCallback? = null,
+        obfuscation: FlagKeyObfuscation? = null,
+        observeFullEvaluationData: Boolean = false
     ) {
         val entry = FlagsStateEntry(
             evaluationContext = context,
             flags = flags,
             lastUpdateTimestamp = currentTimestamp,
+            obfuscation = obfuscation,
             observeFullEvaluationData = observeFullEvaluationData
         )
 

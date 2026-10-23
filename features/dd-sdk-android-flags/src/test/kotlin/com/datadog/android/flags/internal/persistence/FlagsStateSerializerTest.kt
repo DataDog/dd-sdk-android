@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal.persistence
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
@@ -64,17 +65,63 @@ internal class FlagsStateSerializerTest {
     fun `M preserve context through UTF8 storage W serialize()`(fakeKey: String) {
         // Given
         val fakeContext = EvaluationContext(fakeKey, mapOf("value" to fakeKey))
-        val fakeState = FlagsStateEntry(fakeContext, emptyMap(), fakeTimestamp, observeFullEvaluationData = true)
+        val encoding = FlagKeyObfuscation.fromSalt("000102030405060708090a0b0c0d0e0f")
+        val fakeStates = listOf(null, encoding).map { obfuscation ->
+            FlagsStateEntry(
+                fakeContext,
+                emptyMap(),
+                fakeTimestamp,
+                observeFullEvaluationData = true,
+                obfuscation = obfuscation
+            )
+        }
 
         // When
-        val persistedBytes = testedSerializer.serialize(fakeState).toByteArray(Charsets.UTF_8)
-        val restored = FlagsStateDeserializer(mockInternalLogger).deserialize(persistedBytes.toString(Charsets.UTF_8))
+        val restored = fakeStates.map { state ->
+            val persistedBytes = testedSerializer.serialize(state).toByteArray(Charsets.UTF_8)
+            checkNotNull(
+                FlagsStateDeserializer(mockInternalLogger).deserialize(persistedBytes.toString(Charsets.UTF_8))
+            )
+        }
 
         // Then
-        val restoredState = checkNotNull(restored)
-        assertThat(restoredState.evaluationContext).isEqualTo(fakeContext)
-        assertThat(restoredState.observeFullEvaluationData).isTrue()
-        assertThat(restoredState.flags).isEmpty()
+        assertThat(restored.map { it.evaluationContext }).containsOnly(fakeContext)
+        assertThat(restored.map { it.observeFullEvaluationData }).containsOnly(true)
+        assertThat(restored.map { it.flags }).allMatch { it.isEmpty() }
+        assertThat(restored.map { it.obfuscation }).containsExactly(null, encoding)
+    }
+
+    @Test
+    fun `M separate encoded flags from legacy cache W serialize() {obfuscated state}`(forge: Forge) {
+        // Given
+        val encoding = FlagKeyObfuscation.fromSalt("000102030405060708090a0b0c0d0e0f")
+        val key = forge.anAlphabeticalString()
+        val encodedKey = checkNotNull(encoding.encode(key))
+        val flag = PrecomputedFlag(
+            "boolean",
+            "true",
+            true,
+            forge.anAlphabeticalString(),
+            forge.anAlphabeticalString(),
+            JSONObject(),
+            "TARGETING_MATCH"
+        )
+        val state = FlagsStateEntry(
+            EvaluationContext(forge.anAlphabeticalString()),
+            mapOf(encodedKey to flag),
+            fakeTimestamp,
+            obfuscation = encoding
+        )
+
+        // When
+        val json = JSONObject(testedSerializer.serialize(state))
+
+        // Then
+        assertThat(json.has("flags")).isFalse()
+        assertThat(json.getJSONObject("encodedFlags").keys().asSequence().toList()).containsExactly(encodedKey)
+        assertThat(json.getBoolean("obfuscated")).isTrue()
+        assertThat(json.getJSONObject("obfuscation").getString("salt")).isEqualTo(encoding.salt)
+        assertThat(json.getJSONObject("obfuscation").getString("scheme")).isEqualTo(FlagKeyObfuscation.SCHEME)
     }
 
     @Test

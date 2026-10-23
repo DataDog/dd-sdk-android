@@ -6,7 +6,7 @@
 
 package com.datadog.android.flags.utils.forge
 
-import com.datadog.android.flags.model.FlagEvaluation
+import com.datadog.android.flags.internal.model.FlagEvaluation
 import com.datadog.android.flags.model.ResolutionReason
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory

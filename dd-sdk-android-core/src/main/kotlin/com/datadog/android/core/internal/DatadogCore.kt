@@ -123,6 +123,10 @@ internal class DatadogCore(
         get() = coreFeature.serviceName
 
     /** @inheritDoc */
+    override val source: String
+        get() = coreFeature.sourceName
+
+    /** @inheritDoc */
     override val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver
         get() = coreFeature.firstPartyHostHeaderTypeResolver
 

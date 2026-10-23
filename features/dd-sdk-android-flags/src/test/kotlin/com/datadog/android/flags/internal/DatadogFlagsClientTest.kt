@@ -50,7 +50,10 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -138,7 +141,8 @@ internal class DatadogFlagsClientTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
             evaluationsFeature = null,
-            flagStateManager = mockFlagsStateManager
+            flagStateManager = mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = false
         )
     }
 
@@ -155,7 +159,7 @@ internal class DatadogFlagsClientTest {
 
         // Then
         val contextCaptor = argumentCaptor<EvaluationContext>()
-        verify(mockEvaluationsManager).updateEvaluationsForContext(contextCaptor.capture(), isNull())
+        verify(mockEvaluationsManager).updateEvaluationsForContext(contextCaptor.capture(), isNull(), any())
         assertThat(contextCaptor.firstValue.attributes).isEqualTo(fakeOriginalAttributes)
     }
 
@@ -219,6 +223,96 @@ internal class DatadogFlagsClientTest {
     }
 
     // region resolveBooleanValue()
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M allow concurrent waits and context updates W resolve() {persistence pending}`(
+        enabled: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeContext = forge.getForgery<EvaluationContext>()
+        val firstWaitEntered = CountDownLatch(1)
+        val bothWaitsEntered = CountDownLatch(2)
+        val persistenceFinished = CountDownLatch(1)
+        whenever(mockFlagsRepository.waitForPersistenceLoad()).thenAnswer {
+            firstWaitEntered.countDown()
+            bothWaitsEntered.countDown()
+            check(persistenceFinished.await(5, TimeUnit.SECONDS))
+        }
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
+            FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
+            null, mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = enabled
+        )
+        val executor = Executors.newFixedThreadPool(3)
+
+        try {
+            // When
+            val first = executor.submit<Boolean> { testedClient.resolveBooleanValue(fakeKey, false) }
+            assertThat(firstWaitEntered.await(1, TimeUnit.SECONDS)).isTrue()
+            val second = executor.submit<Boolean> { testedClient.resolveBooleanValue(fakeKey, false) }
+            val update = executor.submit { testedClient.setEvaluationContext(fakeContext, null, true) }
+
+            // Then: both readers wait independently, without blocking a policy update.
+            assertThat(bothWaitsEntered.await(1, TimeUnit.SECONDS)).isTrue()
+            update.get(1, TimeUnit.SECONDS)
+            persistenceFinished.countDown()
+            assertThat(first.get(1, TimeUnit.SECONDS)).isFalse()
+            assertThat(second.get(1, TimeUnit.SECONDS)).isFalse()
+        } finally {
+            persistenceFinished.countDown()
+            executor.shutdownNow()
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue()
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M gate evaluation telemetry W resolve() {opt-out set}`(enabled: Boolean, forge: Forge) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeContext = forge.getForgery<EvaluationContext>()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = "true",
+            reason = ResolutionReason.TARGETING_MATCH.name,
+            doLog = true
+        )
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+        whenever(mockFlagsRepository.getEvaluationSnapshot(fakeKey)) doReturn
+            FlagEvaluationSnapshot(fakeFlag, fakeContext, false)
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
+            FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
+            mockEvaluationsFeature, mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = enabled
+        )
+
+        testedClient.setEvaluationTelemetryOptOut(true)
+
+        // When
+        val result = testedClient.resolve(fakeKey, false)
+
+        // Then
+        assertThat(result.value).isTrue()
+        verify(mockProcessor).processEvent(fakeKey, fakeContext, fakeFlag)
+        verifyNoInteractions(mockEvaluationsManager)
+        if (enabled) {
+            verifyNoInteractions(mockRumEvaluationLogger, mockEvaluationsFeature)
+        } else {
+            verify(mockEvaluationsFeature).processEvaluation(
+                fakeKey,
+                fakeContext,
+                fakeFlag.variationKey,
+                fakeFlag.allocationKey,
+                null,
+                null
+            )
+        }
+    }
 
     @Test
     fun `M return default value W resolveBooleanValue() { flag exists with invalid boolean string }`(forge: Forge) {
@@ -687,7 +781,8 @@ internal class DatadogFlagsClientTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
             evaluationsFeature = null,
-            flagStateManager = mockFlagsStateManager
+            flagStateManager = mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = false
         )
 
         // When
@@ -910,7 +1005,8 @@ internal class DatadogFlagsClientTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
             evaluationsFeature = mockEvaluationsFeature,
-            flagStateManager = mockFlagsStateManager
+            flagStateManager = mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = false
         )
 
         // When
@@ -965,6 +1061,21 @@ internal class DatadogFlagsClientTest {
 
     // endregion
 
+    @Test
+    fun `M read repository once W resolveBooleanValue() {repository not ready}`(forge: Forge) {
+        // Given
+        val key = forge.anAlphabeticalString()
+        whenever(mockFlagsRepository.getEvaluationSnapshot(key)) doReturn null
+
+        // When
+        assertThat(testedClient.resolveBooleanValue(key, false)).isFalse()
+
+        // Then: no second disk wait or context from a later repository state.
+        verify(mockFlagsRepository).waitForPersistenceLoad()
+        verify(mockFlagsRepository).getEvaluationSnapshot(key)
+        verify(mockFlagsRepository, never()).getEvaluationContext()
+    }
+
     // region setEvaluationContext()
 
     @Test
@@ -986,7 +1097,8 @@ internal class DatadogFlagsClientTest {
         val contextCaptor = argumentCaptor<EvaluationContext>()
         verify(mockEvaluationsManager).updateEvaluationsForContext(
             contextCaptor.capture(),
-            anyOrNull()
+            anyOrNull(),
+            any()
         )
 
         val capturedContext = contextCaptor.firstValue
@@ -1012,7 +1124,8 @@ internal class DatadogFlagsClientTest {
         val contextCaptor = argumentCaptor<EvaluationContext>()
         verify(mockEvaluationsManager).updateEvaluationsForContext(
             contextCaptor.capture(),
-            anyOrNull()
+            anyOrNull(),
+            any()
         )
 
         val capturedContext = contextCaptor.firstValue
@@ -1032,7 +1145,8 @@ internal class DatadogFlagsClientTest {
         val contextCaptor = argumentCaptor<EvaluationContext>()
         verify(mockEvaluationsManager).updateEvaluationsForContext(
             contextCaptor.capture(),
-            anyOrNull()
+            anyOrNull(),
+            any()
         )
 
         val capturedContext = contextCaptor.firstValue
@@ -1582,7 +1696,8 @@ internal class DatadogFlagsClientTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
             evaluationsFeature = null,
-            flagStateManager = mockFlagsStateManager
+            flagStateManager = mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = false
         )
 
         // When
@@ -1622,7 +1737,8 @@ internal class DatadogFlagsClientTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             exposureProcessor = mockProcessor,
             evaluationsFeature = null,
-            flagStateManager = mockFlagsStateManager
+            flagStateManager = mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = false
         )
 
         // When
