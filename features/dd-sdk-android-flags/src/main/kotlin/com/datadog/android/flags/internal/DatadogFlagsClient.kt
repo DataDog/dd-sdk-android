@@ -148,6 +148,10 @@ internal class DatadogFlagsClient(
         evaluationTelemetryOptOut ||
             (subjectOptOut[requestedSubject] == true) || (subjectOptOut[subject] == true)
 
+    private fun isEvaluationTelemetryOptedOut(context: EvaluationContext): Boolean =
+        evaluationTelemetryOptOutParameterEnabled &&
+            synchronized(telemetryLock) { isSubjectOptedOut(context.targetingKey) }
+
     /**
      * Resolves a boolean flag value.
      *
@@ -559,12 +563,7 @@ internal class DatadogFlagsClient(
         context: EvaluationContext,
         telemetryOptedOut: Boolean
     ) {
-        // Exposure logging (only when doLog=true)
-        if (flag.doLog) {
-            if (flagsConfiguration.trackExposures) {
-                writeExposureEvent(flagKey, flag, context)
-            }
-        }
+        trackFlagExposure(flagKey, flag, context)
 
         if (telemetryOptedOut) {
             return
@@ -575,7 +574,6 @@ internal class DatadogFlagsClient(
             logEvaluation(flagKey, flag.variationKey)
         }
 
-        // Evaluation logging for all evaluations (when enabled)
         if (flagsConfiguration.trackEvaluations) {
             writeEvaluationEvent(
                 flagKey = flagKey,
@@ -622,9 +620,61 @@ internal class DatadogFlagsClient(
      * Supposed to be used by internal Datadog packages to track flag evaluations from an exact flags state snapshot.
      */
     internal fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
-        val optedOut = synchronized(telemetryLock) { isSubjectOptedOut(context.targetingKey) }
-        trackResolution(flagKey, flag, context, optedOut)
+        trackResolution(flagKey, flag, context, isEvaluationTelemetryOptedOut(context))
+    }
+
+    internal fun trackFlagExposure(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
+        if (flagsConfiguration.trackExposures && flag.doLog) {
+            writeExposureEvent(flagKey, flag, context)
+        }
+    }
+
+    internal fun trackFlagEvaluationEvent(
+        flagKey: String,
+        flag: UnparsedFlag?,
+        context: EvaluationContext,
+        errorCode: String?
+    ) {
+        if (!flagsConfiguration.trackEvaluations || isEvaluationTelemetryOptedOut(context)) {
+            return
+        }
+
+        // Hook errors can contain arbitrary customer data. Only forward standard OpenFeature codes.
+        val sanitizedErrorCode = when (errorCode) {
+            null -> null
+            in ALLOWED_EVALUATION_ERROR_CODES -> errorCode
+            else -> "GENERAL"
+        }
+        writeEvaluationEvent(
+            flagKey = flagKey,
+            context = context,
+            variantKey = flag?.variationKey.takeIf { sanitizedErrorCode == null },
+            allocationKey = flag?.allocationKey.takeIf { sanitizedErrorCode == null },
+            errorCode = sanitizedErrorCode,
+            errorMessage = sanitizedErrorCode
+        )
+    }
+
+    internal fun trackFlagRumEvaluation(flagKey: String, variantKey: String, context: EvaluationContext) {
+        if (flagsConfiguration.rumIntegrationEnabled && variantKey.isNotBlank() &&
+            !isEvaluationTelemetryOptedOut(context)
+        ) {
+            logEvaluation(flagKey, variantKey)
+        }
     }
 
     // endregion
+
+    private companion object {
+        val ALLOWED_EVALUATION_ERROR_CODES = setOf(
+            "PROVIDER_NOT_READY",
+            "PROVIDER_FATAL",
+            "FLAG_NOT_FOUND",
+            "PARSE_ERROR",
+            "TYPE_MISMATCH",
+            "TARGETING_KEY_MISSING",
+            "INVALID_CONTEXT",
+            "GENERAL"
+        )
+    }
 }
