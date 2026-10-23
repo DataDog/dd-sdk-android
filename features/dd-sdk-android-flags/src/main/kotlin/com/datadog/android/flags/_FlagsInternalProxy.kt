@@ -24,6 +24,8 @@ import com.datadog.android.lint.InternalApi
 @InternalApi
 @Suppress("ClassName", "ClassNaming", "UndocumentedPublicFunction")
 class _FlagsInternalProxy(private val client: FlagsClient) {
+    fun isExperimentationOptOutEnabled(): Boolean =
+        (client as? DatadogFlagsClient)?.experimentationOptOut?.enabled == true
     fun setEvaluationContext(
         context: EvaluationContext,
         callback: EvaluationContextCallback?,

@@ -23,8 +23,11 @@ import com.datadog.android.flags.internal.LogWithPolicy
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.NoOpRumEvaluationLogger
 import com.datadog.android.flags.internal.RumEvaluationLogger
+import com.datadog.android.flags.internal.evaluation.EvaluationCallbackDispatcher
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
+import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
@@ -239,6 +242,18 @@ interface FlagsClient {
     class Builder {
         private val name: String
         private val sdkCore: FeatureSdkCore
+        private var experimentationOptOutMode = ExperimentationOptOutMode.DISABLED
+
+        /**
+         * Controls how this client uses the subject's `dd_experimentation_opt_out_at` attribute.
+         * Configure this before building the client. An existing named client retains its configuration.
+         *
+         * @param mode the opt-out mode. Defaults to [ExperimentationOptOutMode.DISABLED].
+         * @return this [Builder] instance.
+         */
+        fun experimentationOptOutMode(mode: ExperimentationOptOutMode): Builder = apply {
+            experimentationOptOutMode = mode
+        }
         private var evaluationTelemetryOptOutParameterEnabled: Boolean = false
 
         /**
@@ -328,13 +343,14 @@ interface FlagsClient {
                 .getFeature(FLAGS_EVALUATIONS_FEATURE_NAME)
                 ?.unwrap<EvaluationsFeature>()
 
-            return flagsFeature.getOrRegisterNewClient(name) {
+            return flagsFeature.getOrRegisterNewClient(name, experimentationOptOutMode) {
                 createInternal(
                     configuration = flagsFeature.flagsConfiguration,
                     featureSdkCore = sdkCore,
                     flagsFeature = flagsFeature,
                     evaluationsFeature = evaluationsFeature,
                     name = name,
+                    experimentationOptOutMode = experimentationOptOutMode,
                     evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled
                 )
             }
@@ -423,6 +439,7 @@ interface FlagsClient {
 
         internal const val FLAGS_NETWORK_EXECUTOR_NAME = "flags-network"
         internal const val FLAGS_FIRST_FLAGS_EXECUTOR_NAME = "flags-first-flags"
+        internal const val FLAGS_CALLBACK_EXECUTOR_NAME = "flags-callbacks"
 
         @Suppress("LongMethod")
         internal fun createInternal(
@@ -431,8 +448,10 @@ interface FlagsClient {
             flagsFeature: FlagsFeature,
             evaluationsFeature: EvaluationsFeature?,
             name: String,
+            experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
             evaluationTelemetryOptOutParameterEnabled: Boolean
         ): FlagsClient {
+            val experimentationOptOut = ExperimentationOptOut(experimentationOptOutMode)
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
             )
@@ -443,6 +462,7 @@ interface FlagsClient {
                     featureSdkCore = featureSdkCore,
                     dataStore = datastore,
                     instanceName = name,
+                    experimentationOptOutMode = experimentationOptOutMode,
                     deliverFirstFlags = { delivery ->
                         val worker = featureSdkCore.createSingleThreadExecutorService(FLAGS_FIRST_FLAGS_EXECUTOR_NAME)
                         try {
@@ -460,7 +480,15 @@ interface FlagsClient {
             val assignmentsDownloader = PrecomputedAssignmentsDownloader(
                 internalLogger = featureSdkCore.internalLogger,
                 callFactory = callFactory,
-                requestFactory = flagsFeature.precomputedRequestFactory
+                requestFactory = if (experimentationOptOut.enabled) {
+                    PrecomputedAssignmentsRequestFactory(
+                        featureSdkCore.internalLogger,
+                        configuration.customFlagEndpoint,
+                        experimentationOptOutMode = experimentationOptOutMode
+                    )
+                } else {
+                    flagsFeature.precomputedRequestFactory
+                }
             )
 
             val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
@@ -481,7 +509,11 @@ interface FlagsClient {
                 precomputeMapper = precomputeMapper,
                 flagStateManager = flagStateManager,
                 initializationTimeoutMs = configuration.initializationTimeoutMs,
-                initializationTimeoutScheduler = flagsFeature.initializationTimeoutScheduler
+                initializationTimeoutScheduler = flagsFeature.initializationTimeoutScheduler,
+                experimentationOptOut = experimentationOptOut,
+                callbackExecutor = EvaluationCallbackDispatcher(featureSdkCore.internalLogger) {
+                    featureSdkCore.createSingleThreadExecutorService(FLAGS_CALLBACK_EXECUTOR_NAME)
+                }
             )
 
             val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)
@@ -495,6 +527,7 @@ interface FlagsClient {
                 exposureProcessor = flagsFeature.processor,
                 evaluationsFeature = evaluationsFeature,
                 flagStateManager = flagStateManager,
+                experimentationOptOut = experimentationOptOut,
                 evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled
             )
         }

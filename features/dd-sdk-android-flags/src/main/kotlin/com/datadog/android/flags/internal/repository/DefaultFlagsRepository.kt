@@ -11,6 +11,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
@@ -26,7 +27,8 @@ internal class DefaultFlagsRepository(
     private val dataStore: DataStoreHandler,
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
     private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS,
-    private val deliverFirstFlags: (Runnable) -> Unit = Runnable::run
+    private val deliverFirstFlags: (Runnable) -> Unit = Runnable::run,
+    experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED
 ) : FlagsRepository {
     private data class FlagsState(
         val context: EvaluationContext,
@@ -50,7 +52,8 @@ internal class DefaultFlagsRepository(
     private val persistenceManager = FlagsPersistenceManager(
         dataStore = dataStore,
         instanceName = instanceName,
-        internalLogger = internalLogger
+        internalLogger = internalLogger,
+        experimentationOptOutMode = experimentationOptOutMode
     ) { persistedState ->
         val cachedState = try {
             persistedState?.let {
@@ -74,6 +77,14 @@ internal class DefaultFlagsRepository(
         obfuscation: FlagKeyObfuscation?,
         onInstalled: () -> Unit
     ) {
+        installFlagsAndContext(context, flags, obfuscation).complete(onInstalled)
+    }
+
+    override fun installFlagsAndContext(
+        context: EvaluationContext,
+        flags: Map<String, PrecomputedFlag>,
+        obfuscation: FlagKeyObfuscation?
+    ): FlagsInstallation {
         val newState = FlagsState(context, flags, obfuscation)
 
         val previousState = atomicState.getAndSet(newState)
@@ -81,6 +92,21 @@ internal class DefaultFlagsRepository(
             (previousState.obfuscation != null && !obfuscationSupported)
         persistenceLoadedLatch.countDown()
 
+        return FlagsInstallation { onInstalled ->
+            persistFlags(context, flags, obfuscation)
+            try {
+                onInstalled()
+            } finally {
+                if (firstInstallation) publishFirstFlags(newState, flags.keys)
+            }
+        }
+    }
+
+    private fun persistFlags(
+        context: EvaluationContext,
+        flags: Map<String, PrecomputedFlag>,
+        obfuscation: FlagKeyObfuscation?
+    ) {
         try {
             persistenceManager.saveFlagsState(
                 context = context,
@@ -112,14 +138,11 @@ internal class DefaultFlagsRepository(
                 exception
             )
         }
+    }
 
-        try {
-            onInstalled()
-        } finally {
-            if (firstInstallation) {
-                publishFirstFlags(newState, flags.keys)
-            }
-        }
+    override fun getAssignmentsSnapshot(): FlagsAssignmentsSnapshot? {
+        val state = readableState ?: return null
+        return FlagsAssignmentsSnapshot(if (state.obfuscation == null) state.flags else emptyMap(), state.context)
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {

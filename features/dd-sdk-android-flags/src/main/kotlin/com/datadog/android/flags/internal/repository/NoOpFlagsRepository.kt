@@ -16,6 +16,12 @@ internal class NoOpFlagsRepository : FlagsRepository {
 
     override fun getEvaluationContext(): EvaluationContext? = null
 
+    override fun installFlagsAndContext(
+        context: EvaluationContext,
+        flags: Map<String, PrecomputedFlag>,
+        obfuscation: FlagKeyObfuscation?
+    ) = FlagsInstallation { onInstalled -> onInstalled() }
+
     override fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
@@ -34,6 +40,8 @@ internal class NoOpFlagsRepository : FlagsRepository {
     override fun hasFlags(): Boolean = false
 
     override fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean = false
+
+    override fun getAssignmentsSnapshot(): FlagsAssignmentsSnapshot? = null
 
     override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> = emptyMap()
 }

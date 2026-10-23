@@ -9,6 +9,7 @@ package com.datadog.android.flags.openfeature.internal
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInitializationTimeoutException
+import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
@@ -53,9 +54,13 @@ internal suspend fun FlagsClient.setEvaluationContextSuspend(
                     continuation.resume(Unit)
                 } else {
                     continuation.resumeWithException(
-                        OpenFeatureError.GeneralError(
-                            error.message ?: "Unknown error: ${error::class.simpleName}"
-                        )
+                        if (error is FlagsInvalidContextException) {
+                            OpenFeatureError.InvalidContextError(error.message ?: "Invalid evaluation context")
+                        } else {
+                            OpenFeatureError.GeneralError(
+                                error.message ?: "Unknown error: ${error::class.simpleName}"
+                            )
+                        }
                     )
                 }
             }

@@ -107,6 +107,74 @@ val client = FlagsClient.Builder().build()
 val analyticsClient = FlagsClient.Builder("analytics").build()
 ```
 
+### Exclude a subject from experimentation
+
+Configure the client to honor `dd_experimentation_opt_out_at`:
+
+```kotlin
+val client = FlagsClient.Builder()
+    .experimentationOptOutMode(ExperimentationOptOutMode.IMMEDIATE)
+    .build()
+
+client.setEvaluationContext(
+    EvaluationContext(
+        targetingKey = "user-123",
+        attributes = mapOf("dd_experimentation_opt_out_at" to "2026-10-21T10:00:00Z")
+    ),
+    object : EvaluationContextCallback {
+        override fun onSuccess() {
+            val enabled = client.resolveBooleanValue("new-feature", false)
+            // Use the resolved value here.
+        }
+
+        override fun onFailure(error: Throwable) {
+            // Keep the application's default behavior and handle the error here.
+        }
+    }
+)
+```
+
+`setEvaluationContext` is asynchronous. Resolve the flag after its success callback.
+Callbacks run on a background thread. Dispatch UI changes to the main thread.
+
+| Mode | Behavior when the subject timestamp is present |
+| --- | --- |
+| `DISABLED` (default) | Ignore the timestamp. |
+| `IMMEDIATE` | Exclude all experiment allocations, including experiments already in progress. |
+| `FUTURE_EXPERIMENTS_ONLY` | Continue experiments activated before the timestamp. Exclude newer experiments and those with unknown activation times. |
+
+Provide the customer's stored RFC3339 opt-out timestamp. Do not replace it with the current time on each launch.
+In `IMMEDIATE` mode, any valid timestamp, including a future timestamp, excludes the subject from experiments now.
+In `FUTURE_EXPERIMENTS_ONLY` mode, a future timestamp keeps experiments activated before that timestamp eligible.
+Omit the attribute to permit experimentation.
+Invalid timestamps return application defaults with `INVALID_CONTEXT` and do not send an assignment request.
+An absent timestamp sends an ordinary assignment request without `evaluation_options`, including in enabled modes.
+
+Timestamps use Gregorian calendar dates with years `0000` through `9999`, both before and after UTC normalization.
+Use `YYYY-MM-DDTHH:mm:ss`, optional fractional seconds, and `Z` or a numeric `±HH:mm` offset
+(hours `00`–`23`, minutes `00`–`59`). Lowercase `t` and `z` are accepted. Fractions beyond nine digits
+are truncated without rounding, and comparisons preserve nanosecond precision. Leap seconds, invalid dates,
+whitespace and named timezones are rejected.
+
+The backend skips experiment allocations and continues through ordinary feature allocations.
+The SDK requires the backend to acknowledge exclusion before using the response.
+When the subject has no effective opt-out policy, responses explicitly marked as filtered are rejected.
+Future mode requires the matching mode and exact cutoff in the acknowledgement.
+In either enabled mode, assignments from a different context are unavailable, including for subjects without the timestamp attribute.
+At startup, call `setEvaluationContext` with the matching context before the client can use persisted assignments.
+Until matching assignments are available, evaluation returns the application default with `PROVIDER_NOT_READY`.
+A malformed timestamp returns `INVALID_CONTEXT` instead. With `DISABLED`, persisted and previous assignments remain available.
+Previously accepted assignments can be reused only for the same context, cutoff, and mode.
+Evaluation telemetry is independent of experimentation opt-out.
+Enable this option only after acknowledgement, ordinary fallback, and activation metadata are available on the customer's site.
+Without acknowledgement or matching cached assignments, evaluation returns defaults with `PROVIDER_NOT_READY`.
+A later successful `setEvaluationContext` call recovers the client. The SDK does not retry this operation automatically.
+
+`ErrorCode.INVALID_CONTEXT` is a new public enum constant. Exhaustive Kotlin `when` expressions must handle it.
+The context callback reports malformed timestamps through `FlagsInvalidContextException`.
+
+Immediate withdrawal can change an enrolled subject's experience. Account for this change in experiment analysis.
+
 ### Control evaluation telemetry
 
 Enable the local telemetry control when creating a client:
