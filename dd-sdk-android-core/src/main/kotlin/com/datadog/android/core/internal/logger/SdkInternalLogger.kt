@@ -21,7 +21,6 @@ import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.attributes.enrichWithNonNullAttribute
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.time.DefaultTimeProvider
-import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
 internal class SdkInternalLogger(
@@ -57,8 +56,7 @@ internal class SdkInternalLogger(
     private val onlyOnceMaintainerMessages = mutableSetOf<String>()
     private val onlyOnceTelemetryMessages = mutableSetOf<String>()
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // the argument is always empty
-    private val onlyOnceApiUsages: MutableSet<String> = Collections.newSetFromMap(ConcurrentHashMap())
+    private val onlyOnceApiUsages = ConcurrentHashMap<String, Boolean>()
 
     // region InternalLogger
 
@@ -162,7 +160,7 @@ internal class SdkInternalLogger(
         val event = apiUsageEventBuilder()
         // Deduplicate before sampling, so that each usage gets a single sampling decision
         // and the effective sample rate remains accurate.
-        if (!onlyOnceApiUsages.add(event.onlyOnceKey()) || !sample(samplingRate)) return
+        if (onlyOnceApiUsages.putIfAbsent(event.onlyOnceKey(), true) != null || !sample(samplingRate)) return
 
         event.additionalProperties.enrichWithNonNullAttribute(
             LocalAttribute.Key.REPORTING_SAMPLING_RATE,
