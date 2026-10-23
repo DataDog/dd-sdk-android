@@ -38,14 +38,13 @@ abstract class GenerateCompilerMetaTask @Inject constructor(
 
         val classFile = classesDir
             .walkTopDown()
-            .filter {
+            .firstOrNull {
                 val relativePath = it.relativeTo(classesDir).path
                 it.extension == "class" &&
                     !it.name.contains("$") &&
                     it.path.contains("datadog") &&
                     !relativePath.contains("test", ignoreCase = true)
             }
-            .firstOrNull()
 
         checkNotNull(classFile) {
             "Couldn't find any class file to get compilation metadata, did a search in $classesDir"
@@ -58,15 +57,13 @@ abstract class GenerateCompilerMetaTask @Inject constructor(
             .map { it.trim() }
 
         val kotlinAbiVersion = result
-            .filter { it.startsWith("mv=[") }
-            .first()
+            .first { it.startsWith("mv=[") }
             .removePrefix("mv=[")
             .removeSuffix("]")
             .replace(",", ".")
 
         val jvmBytecodeVersion = result
-            .filter { it.startsWith("major version: ") }
-            .first()
+            .first { it.startsWith("major version: ") }
             .removePrefix("major version: ")
             .toInt()
             .let {

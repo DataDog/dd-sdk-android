@@ -169,7 +169,7 @@ internal class RumDataWriterTest {
         val fakeDebugEvent = forge.getForgery(TelemetryDebugEvent::class.java)
         val fakeErrorEvent = forge.getForgery(TelemetryErrorEvent::class.java)
         val fakeUsageEvent = forge.getForgery(TelemetryUsageEvent::class.java)
-        val fakeEvents = listOf<Any>(
+        val fakeEvents = listOf(
             fakeConfigurationEvent,
             fakeDebugEvent,
             fakeErrorEvent,

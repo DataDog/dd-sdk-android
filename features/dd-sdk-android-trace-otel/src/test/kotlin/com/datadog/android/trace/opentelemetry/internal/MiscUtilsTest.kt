@@ -43,8 +43,8 @@ internal class MiscUtilsTest {
         @StringForgery defaultValue: String
     ) {
         // Given
-        val throwble = Throwable()
-        val action: () -> String = { throw throwble }
+        val throwable = Throwable()
+        val action: () -> String = { throw throwable }
 
         // When
         val result =
@@ -56,7 +56,7 @@ internal class MiscUtilsTest {
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             NEEDS_DESUGARING_ERROR_MESSAGE,
-            throwble
+            throwable
         )
     }
 

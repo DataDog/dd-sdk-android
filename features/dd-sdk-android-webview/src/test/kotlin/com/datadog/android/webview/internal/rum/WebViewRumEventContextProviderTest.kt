@@ -13,6 +13,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.android.webview.internal.rum.domain.RumContext
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -52,8 +53,11 @@ internal class WebViewRumEventContextProviderTest {
     @Forgery
     lateinit var fakeSessionId: UUID
 
-    @StringForgery()
+    @StringForgery
     lateinit var fakeSessionState: String
+
+    @BoolForgery
+    var fakeSessionHasTimeseries: Boolean = false
 
     @BeforeEach
     fun `set up`() {
@@ -64,7 +68,8 @@ internal class WebViewRumEventContextProviderTest {
                     mapOf(
                         "application_id" to fakeApplicationId.toString(),
                         "session_id" to fakeSessionId.toString(),
-                        "session_state" to fakeSessionState
+                        "session_state" to fakeSessionState,
+                        "session_has_timeseries" to fakeSessionHasTimeseries
                     )
                 )
             }
@@ -82,6 +87,31 @@ internal class WebViewRumEventContextProviderTest {
             .isEqualTo(fakeApplicationId.toString())
         assertThat(rumContext?.sessionId)
             .isEqualTo(fakeSessionId.toString())
+        assertThat(checkNotNull(rumContext).hasTimeseries)
+            .isEqualTo(fakeSessionHasTimeseries)
+    }
+
+    @Test
+    fun `M return hasTimeseries false W getRumContext() { session_has_timeseries missing }`() {
+        // Given
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.RUM_FEATURE_NAME,
+                    mapOf(
+                        "application_id" to fakeApplicationId.toString(),
+                        "session_id" to fakeSessionId.toString(),
+                        "session_state" to fakeSessionState
+                    )
+                )
+            }
+        )
+
+        // When
+        val rumContext = testedContextProvider.getRumContext(fakeDatadogContext)
+
+        // Then
+        assertThat(checkNotNull(rumContext).hasTimeseries).isFalse()
     }
 
     @ParameterizedTest

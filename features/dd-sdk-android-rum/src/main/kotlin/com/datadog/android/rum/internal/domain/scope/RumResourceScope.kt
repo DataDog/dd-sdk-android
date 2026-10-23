@@ -14,6 +14,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.DdTagsUtils
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -21,7 +22,6 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -231,15 +231,18 @@ internal class RumResourceScope(
         val rulePsr = resourceAttributes.remove(RumAttributes.RULE_PSR) as? Number
 
         val rumContext = getRumContext()
+        val hasTimeseries = resolveHasTimeseries(rumContext)
+        val syntheticsTestId = rumContext.syntheticsTestId
+        val syntheticsResultId = rumContext.syntheticsResultId
         val syntheticsAttribute = if (
-            rumContext.syntheticsTestId.isNullOrBlank() ||
-            rumContext.syntheticsResultId.isNullOrBlank()
+            syntheticsTestId.isNullOrBlank() ||
+            syntheticsResultId.isNullOrBlank()
         ) {
             null
         } else {
             ResourceEvent.Synthetics(
-                testId = rumContext.syntheticsTestId,
-                resultId = rumContext.syntheticsResultId
+                testId = syntheticsTestId,
+                resultId = syntheticsResultId
             )
         }
         val sessionType = when {
@@ -348,7 +351,8 @@ internal class RumResourceScope(
                     id = rumContext.sessionId,
                     type = sessionType,
                     hasReplay = hasReplay,
-                    isMainProcess = datadogContext.processInfo.isMainProcess
+                    isMainProcess = datadogContext.processInfo.isMainProcess,
+                    hasTimeseries = hasTimeseries
                 ),
                 synthetics = syntheticsAttribute,
                 source = ResourceEvent.ResourceEventSource.tryFromSource(
@@ -440,16 +444,19 @@ internal class RumResourceScope(
     ) {
         val errorFingerprint = resourceAttributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
         val rumContext = getRumContext()
+        val hasTimeseries = resolveHasTimeseries(rumContext)
 
+        val syntheticsTestId = rumContext.syntheticsTestId
+        val syntheticsResultId = rumContext.syntheticsResultId
         val syntheticsAttribute = if (
-            rumContext.syntheticsTestId.isNullOrBlank() ||
-            rumContext.syntheticsResultId.isNullOrBlank()
+            syntheticsTestId.isNullOrBlank() ||
+            syntheticsResultId.isNullOrBlank()
         ) {
             null
         } else {
             ErrorEvent.Synthetics(
-                testId = rumContext.syntheticsTestId,
-                resultId = rumContext.syntheticsResultId
+                testId = syntheticsTestId,
+                resultId = syntheticsResultId
             )
         }
 
@@ -515,7 +522,8 @@ internal class RumResourceScope(
                     id = rumContext.sessionId,
                     type = sessionType,
                     hasReplay = hasReplay,
-                    isMainProcess = datadogContext.processInfo.isMainProcess
+                    isMainProcess = datadogContext.processInfo.isMainProcess,
+                    hasTimeseries = hasTimeseries
                 ),
                 synthetics = syntheticsAttribute,
                 source = ErrorEvent.ErrorEventSource.tryFromSource(
@@ -562,6 +570,14 @@ internal class RumResourceScope(
             .submit()
 
         sent = true
+    }
+
+    // rumContext is frozen at resource start, while timeseries may be collected for its session afterwards.
+    // The parent context is only trusted while it still belongs to the same session.
+    private fun resolveHasTimeseries(rumContext: RumContext): Boolean {
+        if (rumContext.hasTimeseries) return true
+        val parentContext = parentScope.getRumContext()
+        return parentContext.sessionId == rumContext.sessionId && parentContext.hasTimeseries
     }
 
     private fun resolveErrorProvider(): ErrorEvent.Provider? {

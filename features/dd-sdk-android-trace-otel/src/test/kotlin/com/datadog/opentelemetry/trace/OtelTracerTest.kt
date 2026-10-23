@@ -41,7 +41,7 @@ internal class OtelTracerTest {
     lateinit var mockDelegateTracer: DatadogTracer
 
     @StringForgery
-    lateinit var fakeIntstrumentationName: String
+    lateinit var fakeInstrumentationName: String
 
     @StringForgery
     lateinit var fakeSpanName: String
@@ -58,7 +58,7 @@ internal class OtelTracerTest {
     fun `set up`() {
         whenever(mockDelegateSpanBuilder.withResourceName(any())).thenReturn(mockDelegateSpanBuilder)
         whenever(mockDelegateTracer.buildSpan(any(), any())).thenReturn(mockDelegateSpanBuilder)
-        testedTracer = OtelTracer(fakeIntstrumentationName, mockDelegateTracer, mockLogger)
+        testedTracer = OtelTracer(fakeInstrumentationName, mockDelegateTracer, mockLogger)
     }
 
     @Test
@@ -75,7 +75,7 @@ internal class OtelTracerTest {
         // Given
         val mockDecoratedSpanBuilder: SpanBuilder = mock()
         val decorator: (SpanBuilder) -> SpanBuilder = { mockDecoratedSpanBuilder }
-        testedTracer = OtelTracer(fakeIntstrumentationName, mockDelegateTracer, mockLogger, decorator)
+        testedTracer = OtelTracer(fakeInstrumentationName, mockDelegateTracer, mockLogger, decorator)
 
         // When
         val builder = testedTracer.spanBuilder(fakeSpanName)

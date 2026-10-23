@@ -30,5 +30,3 @@ class NodeListSequence(
         }
     }
 }
-
-fun NodeList.asSequence() = NodeListSequence(this)

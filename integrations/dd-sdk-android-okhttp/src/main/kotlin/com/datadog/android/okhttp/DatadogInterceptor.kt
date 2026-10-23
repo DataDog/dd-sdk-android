@@ -223,7 +223,7 @@ open class DatadogInterceptor internal constructor(
             else -> RumResourceKind.fromMimeType(mimeType)
         }
         val attributes = if (!isSampled || span == null) {
-            emptyMap<String, Any?>()
+            emptyMap()
         } else {
             val graphQLAttributes = okHttpGraphQLAdapter.readGraphQLAttributesFromTag(request)
             val graphQLErrorAttributes = okHttpGraphQLAdapter.extractGraphQLErrorAttributes(

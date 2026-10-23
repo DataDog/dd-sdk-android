@@ -158,8 +158,7 @@ internal class ResourceDataStoreManager(
     private fun didDataStoreExpire(lastUpdateTimestampMs: Long): Boolean {
         val currentTimestampMs = featureSdkCore.timeProvider.getDeviceTimestampMillis()
 
-        return lastUpdateTimestampMs <= 0 ||
-            lastUpdateTimestampMs > currentTimestampMs ||
+        return lastUpdateTimestampMs !in 1..currentTimestampMs ||
             currentTimestampMs - lastUpdateTimestampMs > DATASTORE_EXPIRATION_MS
     }
 

@@ -62,7 +62,7 @@ class UploadWorker(
             return Result.success()
         }
 
-        val features = sdkCore.getAllFeatures().mapNotNull { it as? SdkFeature }.shuffled()
+        val features = sdkCore.getAllFeatures().filterIsInstance<SdkFeature>().shuffled()
 
         val tasksQueue = LinkedList<UploadNextBatchTask>()
 

@@ -141,7 +141,7 @@ class FlagsEvaluationTest {
         assertThat(client.resolveDoubleValue("double", fakeDouble + 1)).isEqualTo(fakeDouble)
         assertThat(client.resolveStructureValue("object", JSONObject()).getString(fakeStructureKey))
             .isEqualTo(fakeStructureValue)
-        assertThat(client.resolveStructureValue("object", emptyMap<String, Any?>()))
+        assertThat(client.resolveStructureValue("object", emptyMap()))
             .containsEntry(fakeStructureKey, fakeStructureValue)
     }
 

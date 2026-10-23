@@ -48,5 +48,3 @@ internal fun JsonPrimitiveType?.asKotlinTypeName(): TypeName {
         null -> NOTHING_NULLABLE
     }
 }
-
-internal fun TypeName.asNullable() = copy(nullable = true)

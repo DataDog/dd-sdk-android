@@ -2149,7 +2149,7 @@ Functional changes in comparison with `1.19.2`:
 * [FEATURE] Use Gzip for log upload requests
 * [OTHER] Analyse Benchmark reports in the CI
 * [OTHER] Fix the flaky test in DataDogTimeProviderTest
-* [OTHER] Generate a report on the SDK API changes ([dd-sdk-android/apiSurface](dd-sdk-android/apiSurface))
+* [OTHER] Generate a report on the SDK API changes ([dd-sdk-android/apiSurface](https://github.com/DataDog/dd-sdk-android/blob/f68d577ece9599dc4b1bf382688edf14cf20e9ef/dd-sdk-android/apiSurface))
 
 # 1.1.1 / 2020-01-07
 

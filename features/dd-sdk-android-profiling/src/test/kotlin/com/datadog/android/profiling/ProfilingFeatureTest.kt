@@ -23,6 +23,7 @@ import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnomalyDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
+import com.datadog.android.internal.profiling.quota.QuotaReason
 import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -41,7 +42,6 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.perfetto.ProfileType
 import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
 import com.datadog.android.profiling.internal.quota.QuotaChecker
-import com.datadog.android.profiling.internal.quota.QuotaReason
 import com.datadog.android.profiling.internal.quota.QuotaResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
@@ -2139,7 +2139,7 @@ internal class ProfilingFeatureTest {
 
         // Then
         assertThat(fakeProfilingContext[FeatureContextKeys.PROFILING_QUOTA_REASON])
-            .isEqualTo(QuotaResult.QUOTA_EXCEEDED.reason.rawValue)
+            .isEqualTo(QuotaResult.QUOTA_EXCEEDED.reason)
         assertThat(fakeProfilingContext[FeatureContextKeys.PROFILING_QUOTA_SESSION_ID])
             .isEqualTo(fakeQuotaSessionId)
         assertThat(testedFeature.continuousProfilingScheduler?.lastQuotaResult)
@@ -2152,7 +2152,7 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         val fakeProfilingContext = mutableMapOf<String, Any?>(
-            FeatureContextKeys.PROFILING_QUOTA_REASON to "stale-reason",
+            FeatureContextKeys.PROFILING_QUOTA_REASON to QuotaReason.QUOTA_EXCEEDED,
             FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to "stale-session"
         )
         whenever(

@@ -26,7 +26,7 @@ internal class MutationResolver(private val internalLogger: InternalLogger) {
      * the same `id` can appear in both arrays, which
      * indicates one of two things determined by `newElement == oldElement`
      * either the element was not altered and can be skipped in diff,
-     * or the element was changed and it should be reflect in the output.
+     * or the element was changed, and it should be reflected in the output.
      *
      *
      * Like original algorithm, our implementation uses 6 passes over both arrays to determine diff

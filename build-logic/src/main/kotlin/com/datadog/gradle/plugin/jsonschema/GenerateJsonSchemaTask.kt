@@ -11,6 +11,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Task
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
@@ -24,6 +25,7 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import javax.inject.Inject
 
 // TODO test all from https://github.com/json-schema-org/JSON-Schema-Test-Suite/tree/master/tests/draft2019-09
 
@@ -33,11 +35,14 @@ import org.gradle.api.tasks.TaskAction
  * It will read source JsonSchema files and generate the relevant Kotlin data classes.
  */
 @CacheableTask
-abstract class GenerateJsonSchemaTask : DefaultTask() {
+abstract class GenerateJsonSchemaTask @Inject constructor(
+    private val fileSystemOperations: FileSystemOperations
+) : DefaultTask() {
 
     init {
         group = "datadog"
         description = "Read source JSON schema files and generate the relevant Kotlin data classes"
+        internalModels.convention(false)
     }
 
     // region Input/Output
@@ -53,7 +58,7 @@ abstract class GenerateJsonSchemaTask : DefaultTask() {
     @get:InputFiles
     abstract val inputFiles: ConfigurableFileCollection
 
-    // this is kind of hack: sometimes json can reference other json outside of the module,
+    // this is kind of hack: sometimes json can reference other json outside the module,
     // so we need just to watch such external dir for changes, otherwise task is cached when external changes not seen
     @get:PathSensitive(PathSensitivity.RELATIVE)
     @get:Optional
@@ -80,6 +85,10 @@ abstract class GenerateJsonSchemaTask : DefaultTask() {
     @get:Input
     abstract val targetPackageName: Property<String>
 
+    /** Keep generated models out of the public SDK API when requested. */
+    @get:Input
+    abstract val internalModels: Property<Boolean>
+
     /**
      * The list of schema files to be ignored.
      */
@@ -94,12 +103,21 @@ abstract class GenerateJsonSchemaTask : DefaultTask() {
     abstract val inputNameMapping: MapProperty<String, String>
 
     /**
+     * Root schema filenames whose generated classes, including nested classes, require
+     * explicit constructor arguments even for optional properties.
+     */
+    @get:Input
+    abstract val schemasWithoutConstructorDefaults: ListProperty<String>
+
+    /**
      * The [OutputDirectory] where the generated files are written, in a package-agnostic way
      * (the `{out_package}` subdirectories are created by the generator itself).
      *
      * Note that this is wired to the Android variant sources through
      * `SourceDirectories.addGeneratedSourceDirectory`, which sets a *convention* on this property,
      * hence the location set by the caller always wins.
+     *
+     * Its content is deleted on every run, so it must be dedicated to this task.
      */
     @get:OutputDirectory
     abstract val destinationGenDirectory: DirectoryProperty
@@ -115,6 +133,9 @@ abstract class GenerateJsonSchemaTask : DefaultTask() {
     fun performTask() {
         val inputDir = inputDir.get().asFile
         val outputDir = destinationGenDirectory.get().asFile
+        // Gradle doesn't remove previous outputs of non-incremental tasks, so models generated from
+        // schemas that were since removed or renamed would otherwise stay and get compiled.
+        fileSystemOperations.delete { delete(outputDir.listFiles().orEmpty()) }
         val files = inputFiles
             .filter {
                 it.name !in ignoredFiles.get() && it.parentFile == inputDir
@@ -124,9 +145,15 @@ abstract class GenerateJsonSchemaTask : DefaultTask() {
         logger.info("Found ${files.size} files in input dir: $inputDir")
 
         val reader = JsonSchemaReader(inputNameMapping.get(), logger)
-        val generator = FileGenerator(outputDir, targetPackageName.get(), logger)
         files.forEach {
             val type = reader.readSchema(it)
+            val generator = FileGenerator(
+                outputDir,
+                targetPackageName.get(),
+                logger,
+                internalModels = internalModels.get(),
+                generateConstructorDefaults = it.name !in schemasWithoutConstructorDefaults.get()
+            )
             generator.generate(type)
         }
     }

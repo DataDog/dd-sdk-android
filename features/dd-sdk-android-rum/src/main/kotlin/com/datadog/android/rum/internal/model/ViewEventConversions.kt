@@ -88,13 +88,27 @@ internal fun ViewEvent.PerformanceCls.toViewUpdate() = ViewUpdateEvent.Performan
 internal fun ViewEvent.Inp.toViewUpdate() = ViewUpdateEvent.Inp(
     duration = duration,
     timestamp = timestamp,
-    targetSelector = targetSelector
+    targetSelector = targetSelector,
+    subParts = subParts?.let {
+        ViewUpdateEvent.InpSubParts(
+            inputDelay = it.inputDelay,
+            processingTime = it.processingTime,
+            presentationDelay = it.presentationDelay
+        )
+    }
 )
 
 internal fun ViewEvent.Lcp.toViewUpdate() = ViewUpdateEvent.Lcp(
     timestamp = timestamp,
     targetSelector = targetSelector,
-    resourceUrl = resourceUrl
+    resourceUrl = resourceUrl,
+    subParts = subParts?.let {
+        ViewUpdateEvent.LcpSubParts(
+            loadDelay = it.loadDelay,
+            loadTime = it.loadTime,
+            renderDelay = it.renderDelay
+        )
+    }
 )
 
 // endregion
@@ -209,6 +223,16 @@ internal fun ViewEvent.State.toViewUpdate() = when (this) {
     ViewEvent.State.HIDDEN -> ViewUpdateEvent.State.HIDDEN
     ViewEvent.State.FROZEN -> ViewUpdateEvent.State.FROZEN
     ViewEvent.State.TERMINATED -> ViewUpdateEvent.State.TERMINATED
+}
+
+internal fun ViewEvent.QuotaReason.toViewUpdate() = when (this) {
+    ViewEvent.QuotaReason.QUOTA_OK -> ViewUpdateEvent.QuotaReason.QUOTA_OK
+    ViewEvent.QuotaReason.QUOTA_EXCEEDED -> ViewUpdateEvent.QuotaReason.QUOTA_EXCEEDED
+    ViewEvent.QuotaReason.ORG_DISABLED -> ViewUpdateEvent.QuotaReason.ORG_DISABLED
+    ViewEvent.QuotaReason.BACKEND_UNAVAILABLE -> ViewUpdateEvent.QuotaReason.BACKEND_UNAVAILABLE
+    ViewEvent.QuotaReason.UNDEFINED -> ViewUpdateEvent.QuotaReason.UNDEFINED
+    ViewEvent.QuotaReason.TIMEOUT -> ViewUpdateEvent.QuotaReason.TIMEOUT
+    ViewEvent.QuotaReason.API_ERROR -> ViewUpdateEvent.QuotaReason.API_ERROR
 }
 
 // endregion

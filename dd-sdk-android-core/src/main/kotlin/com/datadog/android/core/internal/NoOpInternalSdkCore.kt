@@ -69,6 +69,8 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     // region InternalSdkCore
 
+    override val source: String = ""
+
     override val networkInfo: NetworkInfo
         get() = NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)
     override val trackingConsent: TrackingConsent

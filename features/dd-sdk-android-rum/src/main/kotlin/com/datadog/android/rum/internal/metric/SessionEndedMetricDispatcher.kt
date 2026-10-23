@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.metric
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.internal.rum.RumSessionStartReason
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.model.ViewEvent
 import java.util.concurrent.ConcurrentHashMap
@@ -22,7 +22,7 @@ internal class SessionEndedMetricDispatcher(
 
     override fun startMetric(
         sessionId: String,
-        startReason: RumSessionScope.StartReason,
+        startReason: RumSessionStartReason,
         ntpOffsetAtStartMs: Long,
         backgroundEventTracking: Boolean
     ) {

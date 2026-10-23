@@ -15,9 +15,10 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumViewType
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.scope.RumViewType
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.timeseries.collector.DefaultTimeseriesCollector
 import com.datadog.android.rum.internal.timeseries.factory.EventFactory
 import com.datadog.android.rum.internal.timeseries.provider.DataPointsReader
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -105,6 +107,12 @@ internal class DefaultTimeseriesCollectorTest {
     @Mock
     lateinit var mockEventFactoryB: EventFactory<Double, JsonObject>
 
+    @Mock
+    lateinit var mockCollectedSessionsRegistry: CollectedTimeseriesSessionRegistry
+
+    @Mock
+    lateinit var mockInsightsCollector: InsightsCollector
+
     private lateinit var bufferA: Buffer<Double>
     private lateinit var bufferB: Buffer<Double>
 
@@ -116,6 +124,9 @@ internal class DefaultTimeseriesCollectorTest {
 
     @LongForgery(min = 60_001L, max = 120_000L)
     var fakeIntervalBMs: Long = 0L
+
+    @LongForgery(min = 1L, max = 999L)
+    var fakeViewTransitionDelayMs: Long = 0L
 
     @IntForgery(min = 2, max = 16)
     var fakeBufferSize: Int = 0
@@ -139,23 +150,28 @@ internal class DefaultTimeseriesCollectorTest {
     ): DefaultTimeseriesCollector {
         val mockPipelinesFactory: PipelineFactory = mock()
         whenever(mockPipelinesFactory.create(any())) doReturn pipelines
-        return DefaultTimeseriesCollector(
-            internalLogger = mockInternalLogger,
-            pipelinesFactory = mockPipelinesFactory,
-            scheduledExecutorService = mockExecutor
-        )
+        return createCollector(mockPipelinesFactory)
     }
+
+    private fun createCollector(pipelinesFactory: PipelineFactory) = DefaultTimeseriesCollector(
+        sdkCore = mockSdkCore,
+        viewTransitionDelayMs = fakeViewTransitionDelayMs,
+        pipelinesFactory = pipelinesFactory,
+        scheduledExecutorService = mockExecutor,
+        sessionRegistry = mockCollectedSessionsRegistry
+    )
 
     // Single foreground pipeline wired to reader/event factory A, with a buffer the test controls.
     private fun createTimeseriesWithBuffer(buffer: Buffer<Double>) = createTimeseries(
         listOf(
             Pipeline(
+                buffer,
                 mockSdkCore,
                 mockReaderA,
-                buffer,
-                mockEventFactoryA,
                 mockDataWriter,
-                internalLogger = mockInternalLogger
+                mockEventFactoryA,
+                insightsCollector = mockInsightsCollector,
+                collectedSessionsRegistry = mockCollectedSessionsRegistry
             )
         )
     )
@@ -192,24 +208,61 @@ internal class DefaultTimeseriesCollectorTest {
         bufferA = Buffer(fakeBufferSize)
         bufferB = Buffer(fakeBufferSize)
         pipelineA = Pipeline(
+            bufferA,
             mockSdkCore,
             mockReaderA,
-            bufferA,
-            mockEventFactoryA,
             mockDataWriter,
-            internalLogger = mockInternalLogger
+            mockEventFactoryA,
+            insightsCollector = mockInsightsCollector,
+            collectedSessionsRegistry = mockCollectedSessionsRegistry
         )
         pipelineB = Pipeline(
+            bufferB,
             mockSdkCore,
             mockReaderB,
-            bufferB,
-            mockEventFactoryB,
             mockDataWriter,
-            internalLogger = mockInternalLogger
+            mockEventFactoryB,
+            insightsCollector = mockInsightsCollector,
+            collectedSessionsRegistry = mockCollectedSessionsRegistry
         )
 
         testedTimeseriesCollector = createTimeseries()
         testedTimeseriesCollector.startInForeground()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M delegate to registry W isTimeseriesCollected()`(
+        fakeHasTimeseries: Boolean,
+        @Forgery fakeSessionId: UUID
+    ) {
+        // Given
+        whenever(mockCollectedSessionsRegistry.isTimeseriesCollected(fakeSessionId.toString())) doReturn
+            fakeHasTimeseries
+
+        // When
+        val result = testedTimeseriesCollector.isTimeseriesCollected(fakeSessionId.toString())
+
+        // Then
+        assertThat(result).isEqualTo(fakeHasTimeseries)
+    }
+
+    @Test
+    fun `M create pipelines for each session W onSessionStart() { session renewed }`(
+        @Forgery fakeOldSessionId: UUID,
+        @Forgery fakeNewSessionId: UUID
+    ) {
+        // Given
+        val mockPipelinesFactory: PipelineFactory = mock()
+        val testedCollector = createCollector(mockPipelinesFactory)
+        testedCollector.onSessionStart(fakeOldSessionId.toString(), fakeSessionType)
+        testedCollector.onSessionStop(fakeOldSessionId.toString())
+
+        // When
+        testedCollector.onSessionStart(fakeNewSessionId.toString(), fakeSessionType)
+
+        // Then
+        verify(mockPipelinesFactory, times(2)).create(fakeSessionType)
     }
 
     @ParameterizedTest
@@ -237,11 +290,7 @@ internal class DefaultTimeseriesCollectorTest {
         val mockPipelinesFactory: PipelineFactory = mock()
         whenever(mockPipelinesFactory.create(any()))
             .thenReturn(listOf(mockPreviousPipeline), listOf(mockNextPipeline))
-        val collector = DefaultTimeseriesCollector(
-            internalLogger = mockInternalLogger,
-            pipelinesFactory = mockPipelinesFactory,
-            scheduledExecutorService = mockExecutor
-        )
+        val collector = createCollector(mockPipelinesFactory)
         collector.startInForeground()
         collector.startSession()
         val fakeNextSessionId = "${fakeRumContext.sessionId}-next"
@@ -265,11 +314,7 @@ internal class DefaultTimeseriesCollectorTest {
         val mockPipelinesFactory: PipelineFactory = mock()
         whenever(mockPipelinesFactory.create(any()))
             .thenReturn(listOf(mockPreviousPipeline), listOf(mockCurrentPipeline))
-        val collector = DefaultTimeseriesCollector(
-            internalLogger = mockInternalLogger,
-            pipelinesFactory = mockPipelinesFactory,
-            scheduledExecutorService = mockExecutor
-        )
+        val collector = createCollector(mockPipelinesFactory)
         collector.startInForeground()
         collector.startSession(sessionId = fakePreviousSessionId)
         collector.startSession(sessionId = fakeCurrentSessionId)
@@ -299,11 +344,7 @@ internal class DefaultTimeseriesCollectorTest {
         val mockPipelinesFactory: PipelineFactory = mock()
         whenever(mockPipelinesFactory.create(any()))
             .thenReturn(listOf(mockPreviousPipeline), listOf(mockCurrentPipeline))
-        val collector = DefaultTimeseriesCollector(
-            internalLogger = mockInternalLogger,
-            pipelinesFactory = mockPipelinesFactory,
-            scheduledExecutorService = mockExecutor
-        )
+        val collector = createCollector(mockPipelinesFactory)
         collector.startInForeground()
         collector.startSession(sessionId = fakePreviousSessionId)
         collector.startSession(sessionId = fakeCurrentSessionId)
@@ -377,12 +418,13 @@ internal class DefaultTimeseriesCollectorTest {
         whenever(mockEventFactoryB.create(any(), any(), any())) doReturn fakeJson
         val failingPipeline =
             Pipeline(
+                mockBuffer,
                 mockSdkCore,
                 mockReaderA,
-                mockBuffer,
-                mockEventFactoryA,
                 mockDataWriter,
-                internalLogger = mockInternalLogger
+                mockEventFactoryA,
+                collectedSessionsRegistry = mockCollectedSessionsRegistry,
+                insightsCollector = mockInsightsCollector
             )
         testedTimeseriesCollector = createTimeseries(listOf(failingPipeline, pipelineB))
         testedTimeseriesCollector.startInForeground()
@@ -590,11 +632,7 @@ internal class DefaultTimeseriesCollectorTest {
         val mockPipelinesFactory: PipelineFactory = mock()
         whenever(mockPipelinesFactory.create(any()))
             .thenReturn(listOf(mockPreviousPipeline), listOf(mockNextPipeline))
-        val collector = DefaultTimeseriesCollector(
-            internalLogger = mockInternalLogger,
-            pipelinesFactory = mockPipelinesFactory,
-            scheduledExecutorService = mockExecutor
-        )
+        val collector = createCollector(mockPipelinesFactory)
         collector.startInForeground()
         collector.startSession(sessionId = fakePreviousSessionId)
         collector.onUiHidden()
@@ -647,7 +685,7 @@ internal class DefaultTimeseriesCollectorTest {
         verify(mockExecutor)
             .schedule(
                 any<Runnable>(),
-                eq(DefaultTimeseriesCollector.BACKGROUND_TRANSITION_DELAY),
+                eq(fakeViewTransitionDelayMs),
                 eq(TimeUnit.MILLISECONDS)
             )
         verifyNoInteractions(mockEventFactoryA)
@@ -758,7 +796,7 @@ internal class DefaultTimeseriesCollectorTest {
         verify(mockExecutor, atLeastOnce())
             .schedule(
                 captor.capture(),
-                eq(DefaultTimeseriesCollector.BACKGROUND_TRANSITION_DELAY),
+                eq(fakeViewTransitionDelayMs),
                 eq(TimeUnit.MILLISECONDS)
             )
         return captor.lastValue

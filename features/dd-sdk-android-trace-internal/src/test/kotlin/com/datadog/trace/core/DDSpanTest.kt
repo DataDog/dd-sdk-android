@@ -39,6 +39,7 @@ import java.io.Closeable
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
+import kotlin.math.max
 
 internal class DDSpanTest : DDCoreSpecification() {
     private val sampler = RateByServiceTraceSampler()
@@ -230,7 +231,7 @@ internal class DDSpanTest : DDCoreSpecification() {
         span.finish()
 
         // Then
-        val total = Math.max(1, System.currentTimeMillis() - start)
+        val total = max(1, System.currentTimeMillis() - start)
         val timeDifference = TimeUnit.NANOSECONDS.toSeconds(span.startTime) -
             TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
         assertThat(timeDifference).isLessThan(5)

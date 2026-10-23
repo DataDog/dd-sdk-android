@@ -14,7 +14,7 @@ private const val ATTRIBUTE_CONTAINER = "attribute.container"
 /**
  * A wrap function of [withinSRBenchmarkSpan] dedicated to session replay span recording.
  */
-internal inline fun <T : Any?> withinSRBenchmarkSpan(
+internal inline fun <T> withinSRBenchmarkSpan(
     spanName: String,
     isContainer: Boolean = false,
     block: BenchmarkSpan.() -> T

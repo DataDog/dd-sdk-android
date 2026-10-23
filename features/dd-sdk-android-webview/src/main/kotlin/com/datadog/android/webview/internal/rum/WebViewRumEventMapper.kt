@@ -65,6 +65,8 @@ internal class WebViewRumEventMapper(
             val session = event.getAsJsonObject(SESSION_KEY_NAME)?.asJsonObject ?: JsonObject()
             application.addProperty(ID_KEY_NAME, rumContext.applicationId)
             session.addProperty(ID_KEY_NAME, rumContext.sessionId)
+            session.addProperty(SESSION_IS_MAIN_PROCESS_NAME, datadogContext.processInfo.isMainProcess)
+            session.addProperty(SESSION_HAS_TIMESERIES_NAME, rumContext.hasTimeseries)
             if (!sessionReplayEnabled) {
                 // RUM-4084 disable webview SR if host app doesn't have SR
                 session.remove(SESSION_HAS_REPLAY_NAME)
@@ -104,6 +106,8 @@ internal class WebViewRumEventMapper(
         internal const val DATE_KEY_NAME = "date"
         internal const val ID_KEY_NAME = "id"
         internal const val SESSION_HAS_REPLAY_NAME = "has_replay"
+        internal const val SESSION_IS_MAIN_PROCESS_NAME = "is_main_process"
+        internal const val SESSION_HAS_TIMESERIES_NAME = "has_timeseries"
         internal const val VIEW_KEY_NAME = "view"
         internal const val CONTAINER_KEY_NAME = "container"
         internal const val SOURCE_KEY_NAME = "source"

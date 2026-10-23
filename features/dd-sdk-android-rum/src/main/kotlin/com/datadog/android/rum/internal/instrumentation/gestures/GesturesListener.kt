@@ -114,7 +114,7 @@ internal class GesturesListener(
             scrollTarget?.let { target ->
                 scrollTargetReference = target
                 val attributes = resolveAttributes(target, null)
-                // although we report scroll here, while it can be swipe in the end, it is fine,
+                // although we report scroll here, while it can be a swipe in the end, it is fine,
                 // because the final type is taken from stopAction call anyway
                 rumMonitor.startAction(
                     RumActionType.SCROLL,

@@ -214,7 +214,7 @@ internal class ProfilingDataWriterTest {
             .hasLongTaskIds(fakeLongTasks.map { it.id })
 
         val actualMetadata = ProfilingBatchMetadata
-            .fromBytesOrNull(argumentCaptor.firstValue.metadata, mock<InternalLogger>())
+            .fromBytesOrNull(argumentCaptor.firstValue.metadata, mock())
         checkNotNull(actualMetadata)
         assertThat(actualMetadata.perfettoBytes).isEqualTo(fakePerfettoBytes)
 
@@ -464,7 +464,7 @@ internal class ProfilingDataWriterTest {
             .hasErrorIds(emptyList())
 
         val actualMetadata = ProfilingBatchMetadata
-            .fromBytesOrNull(argumentCaptor.firstValue.metadata, mock<InternalLogger>())
+            .fromBytesOrNull(argumentCaptor.firstValue.metadata, mock())
         checkNotNull(actualMetadata)
         assertThat(actualMetadata.perfettoBytes).isEqualTo(fakePerfettoBytes)
         val actualMetadataEvents = JsonParser.parseString(String(actualMetadata.rumMobileEventsBytes))

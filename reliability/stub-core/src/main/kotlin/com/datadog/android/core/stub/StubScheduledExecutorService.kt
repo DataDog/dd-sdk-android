@@ -18,6 +18,7 @@ import kotlin.math.sign
 
 /**
  * Stubbed version of a [ScheduledExecutorService].
+ * Delayed tasks run only when [runDueTasks] is called after advancing the supplied clock.
  */
 @Suppress("UndocumentedPublicFunction")
 class StubScheduledExecutorService(
@@ -27,6 +28,8 @@ class StubScheduledExecutorService(
 
     private var isShutdown = false
     private var isTerminated = false
+
+    private val pendingTasks = mutableListOf<ScheduledFutureTask<*>>()
 
     init {
         println("Stubbing a ScheduledExecutorService with context: $executorContext")
@@ -98,35 +101,11 @@ class StubScheduledExecutorService(
     }
 
     override fun schedule(command: Runnable, delay: Long, unit: TimeUnit): ScheduledFuture<*> {
-        val futureTask = FutureTask(command, null)
-        val delayMs = unit.toMillis(delay)
-        val triggerTimestamp = nowProvider() + delayMs
-        val scheduledFutureTask = ScheduledFutureTask(
-            futureTask,
-            triggerTimestamp,
-            nowProvider
-        )
-        Thread {
-            Thread.sleep(delayMs)
-            futureTask.run()
-        }.start()
-        return scheduledFutureTask
+        return scheduleTask(FutureTask(command, null), delay, unit)
     }
 
     override fun <V> schedule(callable: Callable<V>, delay: Long, unit: TimeUnit): ScheduledFuture<V> {
-        val futureTask = FutureTask(callable)
-        val delayMs = unit.toMillis(delay)
-        val triggerTimestamp = nowProvider() + delayMs
-        val scheduledFutureTask = ScheduledFutureTask(
-            futureTask,
-            triggerTimestamp,
-            nowProvider
-        )
-        Thread {
-            Thread.sleep(delayMs)
-            futureTask.run()
-        }.start()
-        return scheduledFutureTask
+        return scheduleTask(FutureTask(callable), delay, unit)
     }
 
     override fun scheduleAtFixedRate(
@@ -145,6 +124,30 @@ class StubScheduledExecutorService(
         unit: TimeUnit
     ): ScheduledFuture<*> {
         return neverTriggeredTask(command, initialDelay, unit)
+    }
+
+    /**
+     * Runs queued one-shot tasks whose deadlines have passed according to [nowProvider].
+     * Tasks with the same deadline run in submission order. Periodic tasks remain disabled.
+     */
+    fun runDueTasks() {
+        while (true) {
+            val nextTask = pendingTasks.minByOrNull { it.triggerTimestamp } ?: return
+            if (nextTask.getDelay(TimeUnit.MILLISECONDS) > 0L) return
+            pendingTasks.remove(nextTask)
+            nextTask.run()
+        }
+    }
+
+    internal fun hasDueTasks(): Boolean {
+        return pendingTasks.any { it.getDelay(TimeUnit.MILLISECONDS) <= 0L }
+    }
+
+    private fun <V> scheduleTask(futureTask: FutureTask<V>, delay: Long, unit: TimeUnit): ScheduledFuture<V> {
+        val delayMs = unit.toMillis(delay)
+        val scheduledTask = ScheduledFutureTask(futureTask, nowProvider() + delayMs, nowProvider)
+        pendingTasks.add(scheduledTask)
+        return scheduledTask
     }
 
     // Periodic tasks are never triggered, to keep the tests deterministic: tests needing their

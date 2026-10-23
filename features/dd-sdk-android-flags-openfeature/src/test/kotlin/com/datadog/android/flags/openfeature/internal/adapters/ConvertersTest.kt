@@ -29,6 +29,27 @@ import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 @ForgeConfiguration(BaseConfigurator::class)
 internal class ConvertersTest {
 
+    @Test
+    fun `M retain telemetry attribute W toDatadogEvaluationContext()`(
+        @StringForgery(regex = "[a-zA-Z]+") fakeKey: String,
+        @StringForgery fakeValue: String,
+        @StringForgery fakeTargetingKey: String
+    ) {
+        // Given
+        val fakeControl = "dd_evaluation_telemetry_opt_out"
+        val fakeContext = ImmutableContext(
+            fakeTargetingKey,
+            mapOf(fakeControl to Value.Boolean(true), fakeKey to Value.String(fakeValue))
+        )
+
+        // When
+        val result = fakeContext.toDatadogEvaluationContext()
+
+        // Then
+        assertThat(result.attributes).containsOnlyKeys(fakeKey, fakeControl)
+            .containsEntry(fakeKey, fakeValue).containsEntry(fakeControl, "true")
+    }
+
     // region toProviderEvaluation
 
     @Test

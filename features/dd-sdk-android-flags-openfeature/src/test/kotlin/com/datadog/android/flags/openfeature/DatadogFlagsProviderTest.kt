@@ -89,7 +89,6 @@ internal class DatadogFlagsProviderTest {
 
         lenient().whenever(mockStateObservable.addListener(any())).doAnswer {
             capturedStateListener = it.getArgument(0)
-            Unit
         }
 
         lenient().apply { doNothing().whenever(mockStateObservable).removeListener(any()) }
@@ -385,7 +384,6 @@ internal class DatadogFlagsProviderTest {
         whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
             callback.onFailure(stubTimeoutError)
-            Unit
         }
 
         try {
@@ -415,7 +413,6 @@ internal class DatadogFlagsProviderTest {
         whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
             callback.onFailure(fakeTimeoutError)
-            Unit
         }
 
         // When

@@ -9,6 +9,7 @@ package com.datadog.android.profiling.internal.quota
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.internal.utils.submitSafe
+import com.datadog.android.internal.profiling.quota.QuotaReason
 import okhttp3.Call
 import okhttp3.Request
 import org.json.JSONException

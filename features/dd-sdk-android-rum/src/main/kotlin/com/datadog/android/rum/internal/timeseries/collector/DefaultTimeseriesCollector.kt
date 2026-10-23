@@ -10,9 +10,11 @@ import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.timeseries.CollectedTimeseriesSessionRegistry
 import com.datadog.android.rum.internal.timeseries.Pipeline
 import com.datadog.android.rum.internal.timeseries.PipelineFactory
 import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
@@ -69,7 +71,7 @@ import java.util.concurrent.atomic.AtomicInteger
  *                  └────────────╯
  * ```
  *
- * - **C** - [com.datadog.android.rum.internal.domain.RumContext] updates ([onRumContextUpdate]).
+ * - **C** - [com.datadog.android.internal.rum.RumContext] updates ([onRumContextUpdate]).
  * - **S** - session activity ([onSessionStart]/[onSessionStop]).
  * - **F** - app visibility ([onUiVisible]/[onUiHidden]), where [onUiHidden] debounces the update by claiming a
  *   [Gate] ticket ([Gate.startBackgroundTransition]) and applying it after a delay ([Gate.setForeground]),
@@ -82,9 +84,11 @@ import java.util.concurrent.atomic.AtomicInteger
  *   [Gate] is still open for the generation in which the loop started.
  */
 internal class DefaultTimeseriesCollector(
-    private val internalLogger: InternalLogger,
+    private val sdkCore: FeatureSdkCore,
+    private val viewTransitionDelayMs: Long,
+    private val pipelinesFactory: PipelineFactory,
     private val scheduledExecutorService: ScheduledExecutorService,
-    private val pipelinesFactory: PipelineFactory
+    private val sessionRegistry: CollectedTimeseriesSessionRegistry
 ) : TimeseriesCollector {
 
     private val stateGate = Gate()
@@ -96,6 +100,8 @@ internal class DefaultTimeseriesCollector(
         scheduledExecutorService = scheduledExecutorService
     )
     private val looperGeneration = AtomicInteger(NO_GENERATION)
+
+    internal val internalLogger: InternalLogger get() = sdkCore.internalLogger
 
     // Volatile as it could be accessed from both main and worker threads
     @Volatile
@@ -154,7 +160,7 @@ internal class DefaultTimeseriesCollector(
         val transitionId = stateGate.startBackgroundTransition()
         scheduledExecutorService.scheduleSafe(
             OPERATION_NAME_BACKGROUND_TRANSITION,
-            BACKGROUND_TRANSITION_DELAY,
+            viewTransitionDelayMs,
             TimeUnit.MILLISECONDS,
             internalLogger
         ) {
@@ -165,6 +171,9 @@ internal class DefaultTimeseriesCollector(
             )
         }
     }
+
+    @AnyThread
+    override fun isTimeseriesCollected(sessionId: String): Boolean = sessionRegistry.isTimeseriesCollected(sessionId)
 
     // @Suppress("unused") required here to avoid creating wrapping lambda in [onRumContextUpdate] method
     @AnyThread
@@ -197,10 +206,6 @@ internal class DefaultTimeseriesCollector(
     internal companion object {
         const val OPERATION_NAME_TIMESERIES_SAMPLING = "Timeseries sampling"
         const val OPERATION_NAME_BACKGROUND_TRANSITION = "Timeseries background transition"
-
-        // Matches ActivityViewTrackingStrategy.STOP_VIEW_DELAY_MS. Both delays keep the previous
-        // foreground state across short Activity recreation during configuration changes.
-        const val BACKGROUND_TRANSITION_DELAY = 200L
 
         // Should only being used for initialization
         const val NO_GENERATION = -1

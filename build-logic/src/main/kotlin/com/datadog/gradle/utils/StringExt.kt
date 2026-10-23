@@ -23,7 +23,7 @@ fun List<String>.joinToCamelCaseAsVar(): String = when (size) {
 @Suppress("ReturnCount")
 fun String.toCamelCase(): String {
     val split = this.split("_")
-    if (split.size == 0) return ""
+    if (split.isEmpty()) return ""
     if (split.size == 1) {
         return split[0].replaceFirstChar {
             if (it.isLowerCase()) {

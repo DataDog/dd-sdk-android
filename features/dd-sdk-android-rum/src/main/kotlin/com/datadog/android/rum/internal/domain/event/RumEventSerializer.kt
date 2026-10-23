@@ -370,7 +370,7 @@ internal class RumEventSerializer(
             RumAttributes.INTERNAL_ERROR_IS_CRASH
         )
 
-        // this are attributes which may come after the calls made by cross-platform SDKs (they are
+        // these are attributes which may come after the calls made by cross-platform SDKs (they are
         // needed only for the SDK internals) and we may silently drop them
         internal val crossPlatformTransitAttributes = setOf(
             RumAttributes.INTERNAL_TIMESTAMP,

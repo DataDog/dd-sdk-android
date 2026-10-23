@@ -10,6 +10,9 @@ package com.datadog.android.internal
  * Keys used to share state across features via the features context.
  */
 object FeatureContextKeys {
+    /** Immutable [com.datadog.android.internal.rum.RumContext] snapshot published by RUM. */
+    const val RUM_CONTEXT: String = "rum_context"
+
     /**
      * Indicates whether the profiler is currently running.
      * Written by the profiling feature and read by RUM and debug widget consumers.

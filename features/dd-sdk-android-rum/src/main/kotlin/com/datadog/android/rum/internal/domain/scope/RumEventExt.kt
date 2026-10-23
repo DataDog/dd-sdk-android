@@ -13,6 +13,8 @@ import com.datadog.android.api.context.DeviceInfo
 import com.datadog.android.api.context.DeviceType
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.internal.profiling.quota.QuotaReason
+import com.datadog.android.internal.rum.RumSessionStartReason
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -778,94 +780,93 @@ internal const val UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT = "You are using an unk
 
 // region SessionPrecondition conversion
 
-internal fun RumSessionScope.StartReason.toViewSessionPrecondition(): ViewEvent.SessionPrecondition {
+internal fun RumSessionStartReason.toViewSessionPrecondition(): ViewEvent.SessionPrecondition {
     return when (this) {
-        RumSessionScope.StartReason.USER_APP_LAUNCH -> ViewEvent.SessionPrecondition.USER_APP_LAUNCH
-        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> ViewEvent.SessionPrecondition.INACTIVITY_TIMEOUT
-        RumSessionScope.StartReason.MAX_DURATION -> ViewEvent.SessionPrecondition.MAX_DURATION
-        RumSessionScope.StartReason.EXPLICIT_STOP -> ViewEvent.SessionPrecondition.EXPLICIT_STOP
-        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> ViewEvent.SessionPrecondition.BACKGROUND_LAUNCH
-        RumSessionScope.StartReason.PREWARM -> ViewEvent.SessionPrecondition.PREWARM
-        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+        RumSessionStartReason.USER_APP_LAUNCH -> ViewEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionStartReason.INACTIVITY_TIMEOUT -> ViewEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionStartReason.MAX_DURATION -> ViewEvent.SessionPrecondition.MAX_DURATION
+        RumSessionStartReason.EXPLICIT_STOP -> ViewEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionStartReason.BACKGROUND_LAUNCH -> ViewEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionStartReason.PREWARM -> ViewEvent.SessionPrecondition.PREWARM
+        RumSessionStartReason.FROM_NON_INTERACTIVE_SESSION ->
             ViewEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
     }
 }
 
-internal fun RumSessionScope.StartReason.toActionSessionPrecondition(): ActionEvent.SessionPrecondition {
+internal fun RumSessionStartReason.toActionSessionPrecondition(): ActionEvent.SessionPrecondition {
     return when (this) {
-        RumSessionScope.StartReason.USER_APP_LAUNCH -> ActionEvent.SessionPrecondition.USER_APP_LAUNCH
-        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> ActionEvent.SessionPrecondition.INACTIVITY_TIMEOUT
-        RumSessionScope.StartReason.MAX_DURATION -> ActionEvent.SessionPrecondition.MAX_DURATION
-        RumSessionScope.StartReason.EXPLICIT_STOP -> ActionEvent.SessionPrecondition.EXPLICIT_STOP
-        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> ActionEvent.SessionPrecondition.BACKGROUND_LAUNCH
-        RumSessionScope.StartReason.PREWARM -> ActionEvent.SessionPrecondition.PREWARM
-        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+        RumSessionStartReason.USER_APP_LAUNCH -> ActionEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionStartReason.INACTIVITY_TIMEOUT -> ActionEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionStartReason.MAX_DURATION -> ActionEvent.SessionPrecondition.MAX_DURATION
+        RumSessionStartReason.EXPLICIT_STOP -> ActionEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionStartReason.BACKGROUND_LAUNCH -> ActionEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionStartReason.PREWARM -> ActionEvent.SessionPrecondition.PREWARM
+        RumSessionStartReason.FROM_NON_INTERACTIVE_SESSION ->
             ActionEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
     }
 }
 
-internal fun RumSessionScope.StartReason.toErrorSessionPrecondition(): ErrorEvent.SessionPrecondition {
+internal fun RumSessionStartReason.toErrorSessionPrecondition(): ErrorEvent.SessionPrecondition {
     return when (this) {
-        RumSessionScope.StartReason.USER_APP_LAUNCH -> ErrorEvent.SessionPrecondition.USER_APP_LAUNCH
-        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> ErrorEvent.SessionPrecondition.INACTIVITY_TIMEOUT
-        RumSessionScope.StartReason.MAX_DURATION -> ErrorEvent.SessionPrecondition.MAX_DURATION
-        RumSessionScope.StartReason.EXPLICIT_STOP -> ErrorEvent.SessionPrecondition.EXPLICIT_STOP
-        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> ErrorEvent.SessionPrecondition.BACKGROUND_LAUNCH
-        RumSessionScope.StartReason.PREWARM -> ErrorEvent.SessionPrecondition.PREWARM
-        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+        RumSessionStartReason.USER_APP_LAUNCH -> ErrorEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionStartReason.INACTIVITY_TIMEOUT -> ErrorEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionStartReason.MAX_DURATION -> ErrorEvent.SessionPrecondition.MAX_DURATION
+        RumSessionStartReason.EXPLICIT_STOP -> ErrorEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionStartReason.BACKGROUND_LAUNCH -> ErrorEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionStartReason.PREWARM -> ErrorEvent.SessionPrecondition.PREWARM
+        RumSessionStartReason.FROM_NON_INTERACTIVE_SESSION ->
             ErrorEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
     }
 }
 
-internal fun RumSessionScope.StartReason.toResourceSessionPrecondition(): ResourceEvent.SessionPrecondition {
+internal fun RumSessionStartReason.toResourceSessionPrecondition(): ResourceEvent.SessionPrecondition {
     return when (this) {
-        RumSessionScope.StartReason.USER_APP_LAUNCH -> ResourceEvent.SessionPrecondition.USER_APP_LAUNCH
-        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> ResourceEvent.SessionPrecondition.INACTIVITY_TIMEOUT
-        RumSessionScope.StartReason.MAX_DURATION -> ResourceEvent.SessionPrecondition.MAX_DURATION
-        RumSessionScope.StartReason.EXPLICIT_STOP -> ResourceEvent.SessionPrecondition.EXPLICIT_STOP
-        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> ResourceEvent.SessionPrecondition.BACKGROUND_LAUNCH
-        RumSessionScope.StartReason.PREWARM -> ResourceEvent.SessionPrecondition.PREWARM
-        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+        RumSessionStartReason.USER_APP_LAUNCH -> ResourceEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionStartReason.INACTIVITY_TIMEOUT -> ResourceEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionStartReason.MAX_DURATION -> ResourceEvent.SessionPrecondition.MAX_DURATION
+        RumSessionStartReason.EXPLICIT_STOP -> ResourceEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionStartReason.BACKGROUND_LAUNCH -> ResourceEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionStartReason.PREWARM -> ResourceEvent.SessionPrecondition.PREWARM
+        RumSessionStartReason.FROM_NON_INTERACTIVE_SESSION ->
             ResourceEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
     }
 }
 
-internal fun RumSessionScope.StartReason.toLongTaskSessionPrecondition(): LongTaskEvent.SessionPrecondition {
+internal fun RumSessionStartReason.toLongTaskSessionPrecondition(): LongTaskEvent.SessionPrecondition {
     return when (this) {
-        RumSessionScope.StartReason.USER_APP_LAUNCH -> LongTaskEvent.SessionPrecondition.USER_APP_LAUNCH
-        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> LongTaskEvent.SessionPrecondition.INACTIVITY_TIMEOUT
-        RumSessionScope.StartReason.MAX_DURATION -> LongTaskEvent.SessionPrecondition.MAX_DURATION
-        RumSessionScope.StartReason.EXPLICIT_STOP -> LongTaskEvent.SessionPrecondition.EXPLICIT_STOP
-        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> LongTaskEvent.SessionPrecondition.BACKGROUND_LAUNCH
-        RumSessionScope.StartReason.PREWARM -> LongTaskEvent.SessionPrecondition.PREWARM
-        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+        RumSessionStartReason.USER_APP_LAUNCH -> LongTaskEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionStartReason.INACTIVITY_TIMEOUT -> LongTaskEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionStartReason.MAX_DURATION -> LongTaskEvent.SessionPrecondition.MAX_DURATION
+        RumSessionStartReason.EXPLICIT_STOP -> LongTaskEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionStartReason.BACKGROUND_LAUNCH -> LongTaskEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionStartReason.PREWARM -> LongTaskEvent.SessionPrecondition.PREWARM
+        RumSessionStartReason.FROM_NON_INTERACTIVE_SESSION ->
             LongTaskEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
     }
 }
 
-internal fun RumSessionScope.StartReason.toTimeseriesCpuSessionPrecondition(): TimeseriesCpuEvent.SessionPrecondition {
+internal fun RumSessionStartReason.toTimeseriesCpuSessionPrecondition(): TimeseriesCpuEvent.SessionPrecondition {
     return when (this) {
-        RumSessionScope.StartReason.USER_APP_LAUNCH -> TimeseriesCpuEvent.SessionPrecondition.USER_APP_LAUNCH
-        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> TimeseriesCpuEvent.SessionPrecondition.INACTIVITY_TIMEOUT
-        RumSessionScope.StartReason.MAX_DURATION -> TimeseriesCpuEvent.SessionPrecondition.MAX_DURATION
-        RumSessionScope.StartReason.EXPLICIT_STOP -> TimeseriesCpuEvent.SessionPrecondition.EXPLICIT_STOP
-        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> TimeseriesCpuEvent.SessionPrecondition.BACKGROUND_LAUNCH
-        RumSessionScope.StartReason.PREWARM -> TimeseriesCpuEvent.SessionPrecondition.PREWARM
-        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+        RumSessionStartReason.USER_APP_LAUNCH -> TimeseriesCpuEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionStartReason.INACTIVITY_TIMEOUT -> TimeseriesCpuEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionStartReason.MAX_DURATION -> TimeseriesCpuEvent.SessionPrecondition.MAX_DURATION
+        RumSessionStartReason.EXPLICIT_STOP -> TimeseriesCpuEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionStartReason.BACKGROUND_LAUNCH -> TimeseriesCpuEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionStartReason.PREWARM -> TimeseriesCpuEvent.SessionPrecondition.PREWARM
+        RumSessionStartReason.FROM_NON_INTERACTIVE_SESSION ->
             TimeseriesCpuEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
     }
 }
 
-internal fun RumSessionScope.StartReason.toTimeseriesMemorySessionPrecondition():
-    TimeseriesMemoryEvent.SessionPrecondition {
+internal fun RumSessionStartReason.toTimeseriesMemorySessionPrecondition(): TimeseriesMemoryEvent.SessionPrecondition {
     return when (this) {
-        RumSessionScope.StartReason.USER_APP_LAUNCH -> TimeseriesMemoryEvent.SessionPrecondition.USER_APP_LAUNCH
-        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> TimeseriesMemoryEvent.SessionPrecondition.INACTIVITY_TIMEOUT
-        RumSessionScope.StartReason.MAX_DURATION -> TimeseriesMemoryEvent.SessionPrecondition.MAX_DURATION
-        RumSessionScope.StartReason.EXPLICIT_STOP -> TimeseriesMemoryEvent.SessionPrecondition.EXPLICIT_STOP
-        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> TimeseriesMemoryEvent.SessionPrecondition.BACKGROUND_LAUNCH
-        RumSessionScope.StartReason.PREWARM -> TimeseriesMemoryEvent.SessionPrecondition.PREWARM
-        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+        RumSessionStartReason.USER_APP_LAUNCH -> TimeseriesMemoryEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionStartReason.INACTIVITY_TIMEOUT -> TimeseriesMemoryEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionStartReason.MAX_DURATION -> TimeseriesMemoryEvent.SessionPrecondition.MAX_DURATION
+        RumSessionStartReason.EXPLICIT_STOP -> TimeseriesMemoryEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionStartReason.BACKGROUND_LAUNCH -> TimeseriesMemoryEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionStartReason.PREWARM -> TimeseriesMemoryEvent.SessionPrecondition.PREWARM
+        RumSessionStartReason.FROM_NON_INTERACTIVE_SESSION ->
             TimeseriesMemoryEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
     }
 }
@@ -874,34 +875,33 @@ internal fun RumSessionScope.StartReason.toTimeseriesMemorySessionPrecondition()
 
 // region Operation
 
-internal fun RumSessionScope.StartReason.toVitalOperationStepSessionPrecondition():
+internal fun RumSessionStartReason.toVitalOperationStepSessionPrecondition():
     VitalOperationStepEvent.SessionPrecondition {
     return when (this) {
-        RumSessionScope.StartReason.USER_APP_LAUNCH -> VitalOperationStepEvent.SessionPrecondition.USER_APP_LAUNCH
-        RumSessionScope.StartReason.INACTIVITY_TIMEOUT
+        RumSessionStartReason.USER_APP_LAUNCH -> VitalOperationStepEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionStartReason.INACTIVITY_TIMEOUT
         -> VitalOperationStepEvent.SessionPrecondition.INACTIVITY_TIMEOUT
-        RumSessionScope.StartReason.MAX_DURATION -> VitalOperationStepEvent.SessionPrecondition.MAX_DURATION
-        RumSessionScope.StartReason.EXPLICIT_STOP -> VitalOperationStepEvent.SessionPrecondition.EXPLICIT_STOP
-        RumSessionScope.StartReason.BACKGROUND_LAUNCH
+        RumSessionStartReason.MAX_DURATION -> VitalOperationStepEvent.SessionPrecondition.MAX_DURATION
+        RumSessionStartReason.EXPLICIT_STOP -> VitalOperationStepEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionStartReason.BACKGROUND_LAUNCH
         -> VitalOperationStepEvent.SessionPrecondition.BACKGROUND_LAUNCH
-        RumSessionScope.StartReason.PREWARM -> VitalOperationStepEvent.SessionPrecondition.PREWARM
-        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+        RumSessionStartReason.PREWARM -> VitalOperationStepEvent.SessionPrecondition.PREWARM
+        RumSessionStartReason.FROM_NON_INTERACTIVE_SESSION ->
             VitalOperationStepEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
     }
 }
 
-internal fun RumSessionScope.StartReason.toVitalAppLaunchSessionPrecondition():
-    VitalAppLaunchEvent.SessionPrecondition {
+internal fun RumSessionStartReason.toVitalAppLaunchSessionPrecondition(): VitalAppLaunchEvent.SessionPrecondition {
     return when (this) {
-        RumSessionScope.StartReason.USER_APP_LAUNCH -> VitalAppLaunchEvent.SessionPrecondition.USER_APP_LAUNCH
-        RumSessionScope.StartReason.INACTIVITY_TIMEOUT
+        RumSessionStartReason.USER_APP_LAUNCH -> VitalAppLaunchEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionStartReason.INACTIVITY_TIMEOUT
         -> VitalAppLaunchEvent.SessionPrecondition.INACTIVITY_TIMEOUT
-        RumSessionScope.StartReason.MAX_DURATION -> VitalAppLaunchEvent.SessionPrecondition.MAX_DURATION
-        RumSessionScope.StartReason.EXPLICIT_STOP -> VitalAppLaunchEvent.SessionPrecondition.EXPLICIT_STOP
-        RumSessionScope.StartReason.BACKGROUND_LAUNCH
+        RumSessionStartReason.MAX_DURATION -> VitalAppLaunchEvent.SessionPrecondition.MAX_DURATION
+        RumSessionStartReason.EXPLICIT_STOP -> VitalAppLaunchEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionStartReason.BACKGROUND_LAUNCH
         -> VitalAppLaunchEvent.SessionPrecondition.BACKGROUND_LAUNCH
-        RumSessionScope.StartReason.PREWARM -> VitalAppLaunchEvent.SessionPrecondition.PREWARM
-        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+        RumSessionStartReason.PREWARM -> VitalAppLaunchEvent.SessionPrecondition.PREWARM
+        RumSessionStartReason.FROM_NON_INTERACTIVE_SESSION ->
             VitalAppLaunchEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
     }
 }
@@ -921,4 +921,65 @@ internal fun RumStartupScenario.toVitalAppLaunchStartupType(): VitalAppLaunchEve
         is RumStartupScenario.WarmFirstActivity -> VitalAppLaunchEvent.StartupType.WARM_START
     }
 }
+
+internal fun QuotaReason.toLongTaskQuotaReason(): LongTaskEvent.QuotaReason {
+    return when (this) {
+        QuotaReason.QUOTA_OK -> LongTaskEvent.QuotaReason.QUOTA_OK
+        QuotaReason.QUOTA_EXCEEDED -> LongTaskEvent.QuotaReason.QUOTA_EXCEEDED
+        QuotaReason.ORG_DISABLED -> LongTaskEvent.QuotaReason.ORG_DISABLED
+        QuotaReason.BACKEND_UNAVAILABLE -> LongTaskEvent.QuotaReason.BACKEND_UNAVAILABLE
+        QuotaReason.UNDEFINED -> LongTaskEvent.QuotaReason.UNDEFINED
+        QuotaReason.TIMEOUT -> LongTaskEvent.QuotaReason.TIMEOUT
+        QuotaReason.API_ERROR -> LongTaskEvent.QuotaReason.API_ERROR
+    }
+}
+
+internal fun QuotaReason.toVitalOperationStepQuotaReason(): VitalOperationStepEvent.QuotaReason {
+    return when (this) {
+        QuotaReason.QUOTA_OK -> VitalOperationStepEvent.QuotaReason.QUOTA_OK
+        QuotaReason.QUOTA_EXCEEDED -> VitalOperationStepEvent.QuotaReason.QUOTA_EXCEEDED
+        QuotaReason.ORG_DISABLED -> VitalOperationStepEvent.QuotaReason.ORG_DISABLED
+        QuotaReason.BACKEND_UNAVAILABLE -> VitalOperationStepEvent.QuotaReason.BACKEND_UNAVAILABLE
+        QuotaReason.UNDEFINED -> VitalOperationStepEvent.QuotaReason.UNDEFINED
+        QuotaReason.TIMEOUT -> VitalOperationStepEvent.QuotaReason.TIMEOUT
+        QuotaReason.API_ERROR -> VitalOperationStepEvent.QuotaReason.API_ERROR
+    }
+}
+
+internal fun QuotaReason.toVitalAppLaunchQuotaReason(): VitalAppLaunchEvent.QuotaReason {
+    return when (this) {
+        QuotaReason.QUOTA_OK -> VitalAppLaunchEvent.QuotaReason.QUOTA_OK
+        QuotaReason.QUOTA_EXCEEDED -> VitalAppLaunchEvent.QuotaReason.QUOTA_EXCEEDED
+        QuotaReason.ORG_DISABLED -> VitalAppLaunchEvent.QuotaReason.ORG_DISABLED
+        QuotaReason.BACKEND_UNAVAILABLE -> VitalAppLaunchEvent.QuotaReason.BACKEND_UNAVAILABLE
+        QuotaReason.UNDEFINED -> VitalAppLaunchEvent.QuotaReason.UNDEFINED
+        QuotaReason.TIMEOUT -> VitalAppLaunchEvent.QuotaReason.TIMEOUT
+        QuotaReason.API_ERROR -> VitalAppLaunchEvent.QuotaReason.API_ERROR
+    }
+}
+
+internal fun QuotaReason.toViewQuotaReason(): ViewEvent.QuotaReason {
+    return when (this) {
+        QuotaReason.QUOTA_OK -> ViewEvent.QuotaReason.QUOTA_OK
+        QuotaReason.QUOTA_EXCEEDED -> ViewEvent.QuotaReason.QUOTA_EXCEEDED
+        QuotaReason.ORG_DISABLED -> ViewEvent.QuotaReason.ORG_DISABLED
+        QuotaReason.BACKEND_UNAVAILABLE -> ViewEvent.QuotaReason.BACKEND_UNAVAILABLE
+        QuotaReason.UNDEFINED -> ViewEvent.QuotaReason.UNDEFINED
+        QuotaReason.TIMEOUT -> ViewEvent.QuotaReason.TIMEOUT
+        QuotaReason.API_ERROR -> ViewEvent.QuotaReason.API_ERROR
+    }
+}
+
+internal fun QuotaReason.toErrorQuotaReason(): ErrorEvent.QuotaReason {
+    return when (this) {
+        QuotaReason.QUOTA_OK -> ErrorEvent.QuotaReason.QUOTA_OK
+        QuotaReason.QUOTA_EXCEEDED -> ErrorEvent.QuotaReason.QUOTA_EXCEEDED
+        QuotaReason.ORG_DISABLED -> ErrorEvent.QuotaReason.ORG_DISABLED
+        QuotaReason.BACKEND_UNAVAILABLE -> ErrorEvent.QuotaReason.BACKEND_UNAVAILABLE
+        QuotaReason.UNDEFINED -> ErrorEvent.QuotaReason.UNDEFINED
+        QuotaReason.TIMEOUT -> ErrorEvent.QuotaReason.TIMEOUT
+        QuotaReason.API_ERROR -> ErrorEvent.QuotaReason.API_ERROR
+    }
+}
+
 // endregion

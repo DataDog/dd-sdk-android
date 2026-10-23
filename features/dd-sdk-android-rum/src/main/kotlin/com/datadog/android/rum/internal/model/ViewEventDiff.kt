@@ -29,10 +29,17 @@ internal fun diffViewEvent(old: ViewEvent, new: ViewEvent): ViewUpdateEvent {
             source = diffEquals(ViewEvent::source)?.toViewUpdate(),
             usr = diffEquals(ViewEvent::usr)?.toViewUpdate(),
             account = diffEquals(ViewEvent::account)?.toViewUpdate(),
+            tab = diffEquals(ViewEvent::tab)?.let { ViewUpdateEvent.Tab(id = it.id) },
+            stream = diffEquals(ViewEvent::stream)?.let { ViewUpdateEvent.Stream(id = it.id) },
             connectivity = diffEquals(ViewEvent::connectivity)?.toViewUpdate(),
             display = diffEquals(ViewEvent::display)?.toViewUpdate(),
             synthetics = diffEquals(ViewEvent::synthetics)?.let {
-                ViewUpdateEvent.Synthetics(testId = it.testId, resultId = it.resultId, injected = it.injected)
+                ViewUpdateEvent.Synthetics(
+                    testId = it.testId,
+                    resultId = it.resultId,
+                    injected = it.injected,
+                    additionalProperties = it.additionalProperties
+                )
             },
             ciTest = diffEquals(ViewEvent::ciTest)?.let {
                 ViewUpdateEvent.CiTest(testExecutionId = it.testExecutionId)
@@ -76,7 +83,8 @@ private fun diffSession(
             hasReplay = diffEquals(ViewEvent.ViewEventSession::hasReplay),
             isActive = diffEquals(ViewEvent.ViewEventSession::isActive),
             sampledForReplay = diffEquals(ViewEvent.ViewEventSession::sampledForReplay),
-            isMainProcess = diffEquals(ViewEvent.ViewEventSession::isMainProcess)
+            isMainProcess = diffEquals(ViewEvent.ViewEventSession::isMainProcess),
+            hasTimeseries = diffEquals(ViewEvent.ViewEventSession::hasTimeseries)
         )
     }
 }
@@ -182,7 +190,9 @@ private fun diffDd(old: ViewEvent.Dd, new: ViewEvent.Dd): ViewUpdateEvent.Dd {
                     sessionReplaySampleRate = it.sessionReplaySampleRate,
                     profilingSampleRate = it.profilingSampleRate,
                     traceSampleRate = it.traceSampleRate,
-                    startSessionReplayRecordingManually = it.startSessionReplayRecordingManually
+                    startSessionReplayRecordingManually = it.startSessionReplayRecordingManually,
+                    remoteConfigurationId = it.remoteConfigurationId,
+                    sessionReplayExperimentalFeatures = it.sessionReplayExperimentalFeatures
                 )
             },
             browserSdkVersion = diffEquals(ViewEvent.Dd::browserSdkVersion),
@@ -197,7 +207,8 @@ private fun diffDd(old: ViewEvent.Dd, new: ViewEvent.Dd): ViewUpdateEvent.Dd {
             profiling = diffEquals(ViewEvent.Dd::profiling)?.let {
                 ViewUpdateEvent.Profiling(
                     status = it.status?.toViewUpdate(),
-                    errorReason = it.errorReason?.toViewUpdate()
+                    errorReason = it.errorReason?.toViewUpdate(),
+                    quotaReason = it.quotaReason?.toViewUpdate()
                 )
             },
             // pageStates uses diffList (drop-by-size), consistent with inForegroundPeriods.

@@ -9,12 +9,15 @@ package com.datadog.android.rum.integration.tests.assertj
 import com.datadog.android.core.stub.StubTelemetryEvent
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import org.assertj.core.api.AbstractObjectAssert
 
 class StubTelemetryEventAssert(actual: StubTelemetryEvent?) :
     AbstractObjectAssert<StubTelemetryEventAssert, StubTelemetryEvent>(actual, StubTelemetryEventAssert::class.java) {
 
-    val additionalPropertiesJson by lazy { Gson().toJsonTree(actual!!.additionalProperties).asJsonObject }
+    val additionalPropertiesJson: JsonObject by lazy {
+        Gson().toJsonTree(actual!!.additionalProperties).asJsonObject
+    }
 
     fun hasWasStopped(wasStopped: Boolean): StubTelemetryEventAssert {
         assertThat(additionalPropertiesJson, true).hasField("rse.was_stopped", wasStopped)

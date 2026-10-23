@@ -423,7 +423,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
             TracingInterceptor.DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
             TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER,
             TracingInterceptor.DATADOG_ORIGIN_HEADER
-        ).associate { it to forge.anAlphabeticalString() }
+        ).associateWith { forge.anAlphabeticalString() }
         val nonDatadogContextKey = forge.anAlphabeticalString()
         val nonDatadogContextKeyValue = forge.anAlphabeticalString()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)

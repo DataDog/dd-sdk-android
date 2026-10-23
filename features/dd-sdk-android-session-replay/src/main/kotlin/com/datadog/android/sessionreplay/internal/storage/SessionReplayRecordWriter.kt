@@ -63,7 +63,7 @@ internal class SessionReplayRecordWriter(
     private fun updateViewSent(record: EnrichedRecord) {
         /**
          * We have to see whether it's ok that this method is being called from the background.
-         * However this gives us the most certainty that the records were actually queued for
+         * However, this gives us the most certainty that the records were actually queued for
          * sending, and not optimized away in the processor. Depending upon the amount of time
          * that it takes to process the nodes, the view may not be relevant anymore.
          */

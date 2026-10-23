@@ -93,7 +93,7 @@ internal class UrlRequestBuilderExtTest {
     @Test
     fun `M not add any headers W addHeaders() {empty map}`() {
         // When
-        mockBuilder.addHeaders(emptyMap<String, List<String>>())
+        mockBuilder.addHeaders(emptyMap())
 
         // Then
         verifyNoInteractions(mockBuilder)

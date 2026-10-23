@@ -575,7 +575,7 @@ internal class ProfilingFeature(
         }
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
             if (result.decision == QuotaResult.Decision.DENIED) {
-                context[FeatureContextKeys.PROFILING_QUOTA_REASON] = result.reason.rawValue
+                context[FeatureContextKeys.PROFILING_QUOTA_REASON] = result.reason
                 context[FeatureContextKeys.PROFILING_QUOTA_SESSION_ID] = sessionId
             } else {
                 context.remove(FeatureContextKeys.PROFILING_QUOTA_REASON)

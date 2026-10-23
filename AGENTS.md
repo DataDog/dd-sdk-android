@@ -1,3 +1,19 @@
+# Start here
+
+Read the [contributor guide](CONTRIBUTING.md) for setup and contribution procedures.
+Use the [documentation map](docs/README.md) to select current SDK guidance and
+Foundation validation commands. Follow the module rules and validation tasks below.
+
+Include necessary documentation with each implementation change. Review accuracy,
+reader purpose, navigation, and instruction scope. Record actual validation evidence.
+For staged documentation validation, use a provisioned FactoryKit environment:
+
+```sh
+python ci/scripts/foundation_check.py --snapshot index --against HEAD --format json
+```
+
+This manual gate supplements the existing module validation tasks.
+
 # Module Map
 
 - `dd-sdk-android-core` — SDK core: `Datadog`, `InternalLogger`, storage/upload, shared executors (`CoreFeature`).
@@ -8,6 +24,19 @@
 - `instrumented/integration` — legacy integration test suite.
 - `tools/*` — custom detekt and lint rules, `noopfactory` code generator, shared unit test utilities (`tools/unit`).
 - `sample/*` — sample apps (`sample/kotlin` is the main one).
+
+# Agent Skills
+
+Load the matching project skill before these tasks. The links below point to the
+tracked sources in `ai/skills/`. The `.agents/skills/` and `.claude/skills/`
+directory aliases expose those same sources to agent hosts.
+
+- Writing, editing, or reviewing tests: [`sdk-tests`](ai/skills/sdk-tests/SKILL.md).
+- Reviewing a branch or PR: [`sdk-review`](ai/skills/sdk-review/SKILL.md).
+- Writing commit messages or PR titles: [`sdk-commit`](ai/skills/sdk-commit/SKILL.md).
+- Running pre-PR checks and regenerating generated files: [`sdk-pr-prepare`](ai/skills/sdk-pr-prepare/SKILL.md).
+- Creating or updating stacked PRs with Graphite: [`sdk-pr-stack`](ai/skills/sdk-pr-stack/SKILL.md).
+- Inspecting events emitted by the sample app: [`android-sdk-event-inspection`](.claude/skills/android-sdk-event-inspection/SKILL.md).
 
 # Build Commands
 
@@ -54,8 +83,6 @@ Detekt checks:
 ./gradlew detekt
 ```
 
-The full local CI pipeline is `./local_ci.sh` (see `./local_ci.sh --help` for options, e.g. `--analysis`, `--compile`, `--test`).
-
 # Before You Finish
 
 Run these for every module you changed before considering the work done:
@@ -99,6 +126,8 @@ These are rules that reviewers repeatedly enforce. Follow them when writing code
 
 ## Public API
 
+Exception for shared SDK internals: `dd-sdk-android-internal` is an `implementation` dependency of core and features; its cross-module types may be `public` (including data classes) without being customer API. Changes are allowed without customer-facing deprecation. Before changing signatures or removing members, check usages in SDK modules and cross-platform repositories (`dd-sdk-reactnative`, `dd-sdk-flutter`, `dd-sdk-unity`).
+
 - Keep everything `internal` unless it is meant for customers. Check the `api/apiSurface` diff for anything leaked by accident.
 - Don't expose `Impl` classes, internal types in public signatures, or internal classes in public KDoc. Cross-module internal access goes through `_RumInternalProxy`-style proxies or a cast inside the function body.
 - If a class is meant to be built via `Builder`, make its constructor `internal` or `private`.
@@ -112,6 +141,7 @@ These are rules that reviewers repeatedly enforce. Follow them when writing code
 - Don't create new threads or executors, if possible. Prefer to reuse existing ones such as `contextExecutorService` or `persistenceExecutorService` in `CoreFeature`. Use `submitSafe`/`executeSafe` from `ConcurrencyExt.kt`.
 - Don't block the main thread or SDK initialization. `getFeatureContext` takes a lock. On hot paths, subscribe with `FeatureContextUpdateReceiver` instead.
 - Don't stack concurrency primitives, e.g. an `AtomicBoolean` or `ConcurrentHashMap` inside `synchronized`. Prefer immutable data plus a single atomic swap (`getAndSet`) to multiple layers of locking.
+- Declare `AtomicXXX` fields as `val`, not `var`: reassigning the reference bypasses the atomic.
 - Multiple SDK core instances can coexist. Don't keep mutable state in `object`s or companion objects; scope it to the `SdkCore` instance, so that it doesn't leak between instances or get delivered to only one of them. If a feature holds shared state, add a test with two cores.
 
 ## Logging and Errors
@@ -127,7 +157,7 @@ These are rules that reviewers repeatedly enforce. Follow them when writing code
 - Android and third-party calls that can throw must be declared in `detekt_custom_unsafe_calls.yml` and handled. Only genuinely non-throwing calls go into the `detekt_custom_safe_calls_*.yml` files. Keep these files sorted. The `UnsafeThirdPartyFunctionCall` rule skips the SDK's own `com.datadog.*` calls, so handle exceptions thrown by SDK code explicitly; listing them in these files has no effect.
 - Place `@Suppress(...)` on the narrowest scope: the call site, not the whole method or class.
 - Use `Locale.US` for case conversions and formatting. The default locale gives wrong results in some locales (e.g. Turkish dotless `i`).
-- Dependencies go in `gradle/libs.versions.toml`. Prefer `implementation` over `api`. A new module must be registered in `settings.gradle.kts`. To make it publishable, apply the `maven-publish` and `signing` plugins and call `applyPublishingConfig(...)` in its `datadogBuild { }` block (see `integrations/dd-sdk-android-cronet/build.gradle.kts`). CI publishing (`publishToSonatype`) and `local_ci.sh` pick it up automatically.
+- Dependencies go in `gradle/libs.versions.toml`. Prefer `implementation` over `api`. A new module must be registered in `settings.gradle.kts`. To make it publishable, apply the `maven-publish` and `signing` plugins and call `applyPublishingConfig(...)` in its `datadogBuild { }` block (see `integrations/dd-sdk-android-cronet/build.gradle.kts`). CI publishing (`publishToSonatype`) picks it up automatically.
 - Prefer JSON schemas and generated models over hand-written JSON parsing (see [Generated Models](#generated-models)).
 - Don't put code into `dd-sdk-android-internal` if only one module uses it.
 
@@ -140,6 +170,8 @@ These are rules that reviewers repeatedly enforce. Follow them when writing code
 - Prefer the type system: sealed classes or enums over strings, `T : Any` over `T?`, Kotlin function types over `java.util.function.*`.
 
 # Testing
+
+Before creating, editing, or reviewing test code, load and follow the project `sdk-tests` skill from `.agents/skills/sdk-tests/SKILL.md`.
 
 ## Unit Tests
 
@@ -174,7 +206,7 @@ Test method naming: `` `M <expected behavior> W <method()> {context}` ``
 
 Test rules:
 
-- Always split the body with `// Given`, `// When`, `// Then` comments.
+- Always split the body with `// Given`, `// When`, `// Then` comments. A test whose action and assertion are a single expression may use one `// When / Then` marker instead.
 - Use forged values (`@StringForgery`, `@Forgery`, `forge.anXxx()`) for incidental data whose exact value doesn't matter. Randomize values that could clash with defaults. Keep fixed literals when the value defines the tested behavior (boundary values such as a `0f` sample rate, protocol constants).
 - Use `checkNotNull(x)` for smart casts instead of `!!` or `?.`.
 - Use `argumentCaptor` instead of `argThat`, since `argThat` gives a generic failure message. Don't use `any()` when the argument can be asserted. Don't add a captor whose value is never read.

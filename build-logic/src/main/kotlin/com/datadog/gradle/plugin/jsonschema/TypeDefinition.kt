@@ -50,7 +50,7 @@ sealed class TypeDefinition {
                 JsonType.STRING -> "asString"
                 JsonType.INTEGER -> "asLong"
                 JsonType.ARRAY -> "asArray"
-                JsonType.OBJECT -> "asObjext"
+                JsonType.OBJECT -> "asObject"
                 null -> TODO()
             }
         }
