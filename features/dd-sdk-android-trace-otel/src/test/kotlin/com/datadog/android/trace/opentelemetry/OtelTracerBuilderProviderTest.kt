@@ -24,7 +24,6 @@ import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.android.trace.opentelemetry.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.opentelemetry.trace.OtelSpan
@@ -73,12 +72,6 @@ internal class OtelTracerBuilderProviderTest {
 
     lateinit var testedOtelTracerProviderBuilder: OtelTracerProvider.Builder
     lateinit var fakeServiceName: String
-
-    val mockDatadogTracerBuilder: DatadogTracerBuilder = mock {
-        on { withServiceName(any()) } doReturn it
-        on { withTracingHeadersTypes(any()) } doReturn it
-        on { withPartialFlushMinSpans(any()) } doReturn it
-    }
 
     @Mock
     lateinit var mockTracingFeatureScope: FeatureScope

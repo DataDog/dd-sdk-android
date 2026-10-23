@@ -14,7 +14,7 @@ object RumAttributes {
     // region Tags
 
     /**
-     * The human readable version of the application. (String)
+     * The human-readable version of the application. (String)
      * This value is extracted from your application's manifest and
      * filled automatically by the [RumMonitor].
      */
@@ -29,7 +29,7 @@ object RumAttributes {
     /**
      * The name of the application or service generating the rum events. (String)
      * This values is configurable through the [Configuration.Builder] during the SDK initialization.
-     * By default it will take the application package name.
+     * By default, it will take the application package name.
      */
     const val SERVICE_NAME: String = "service"
 

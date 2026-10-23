@@ -97,8 +97,8 @@ internal data class RumEventMapper(
         val mappedEvent = mapRumEvent(event)
 
         // we need to check if the returned bundled mapped object is not null and same instance
-        // as the original one. Otherwise we will drop the event.
-        // In case the event is of type ViewEvent this cannot be null according with the interface
+        // as the original one. Otherwise, we will drop the event.
+        // In case the event is of type ViewEvent this cannot be null according to the interface,
         // but it can happen that if used from Java code to have null values. In this case we will
         // log a warning and we will use the original event.
         return if (event is ViewEvent && (mappedEvent == null || mappedEvent !== event)) {

@@ -13,7 +13,7 @@ internal object MotionEventUtils {
 
     // For Android SDK < 29 we will have to know the target View on which this event happened
     // and then to compute the absolute as target.absoluteX,Y + event.getX,Y(pointerIndex)
-    // This will not be handled now as it is too complex and not very optimised. For now we will
+    // This will not be handled now as it is too complex and not very optimised. For now, we will
     // not support multi finger gestures in the player for version < 29.
     fun getPointerAbsoluteX(
         event: MotionEvent,
@@ -23,7 +23,7 @@ internal object MotionEventUtils {
         return if (buildSdkVersionProvider.isAtLeastQ) {
             event.getRawX(pointerIndex)
         } else {
-            return event.rawX
+            event.rawX
         }
     }
 
@@ -35,7 +35,7 @@ internal object MotionEventUtils {
         return if (buildSdkVersionProvider.isAtLeastQ) {
             event.getRawY(pointerIndex)
         } else {
-            return event.rawY
+            event.rawY
         }
     }
 }

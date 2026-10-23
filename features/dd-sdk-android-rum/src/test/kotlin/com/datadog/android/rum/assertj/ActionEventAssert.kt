@@ -40,7 +40,7 @@ internal class ActionEventAssert(actual: ActionEvent) :
     fun hasNonNullId(): ActionEventAssert {
         assertThat(actual.action.id)
             .overridingErrorMessage(
-                "Expected event data to have non null action.id " +
+                "Expected event data to have non-null action.id " +
                     "but was ${actual.action.id}"
             )
             .isNotNull()

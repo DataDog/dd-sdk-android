@@ -41,7 +41,7 @@ object RumContextTestsUtils {
         userInfo: UserInfo = UserInfo()
     ): DatadogContext = getForgery<DatadogContext>().let {
         it.copy(
-            featuresContext = it.featuresContext + mapOf(Feature.Companion.RUM_FEATURE_NAME to rumContext),
+            featuresContext = it.featuresContext + mapOf(Feature.RUM_FEATURE_NAME to rumContext),
             accountInfo = accountInfo,
             userInfo = userInfo
         )

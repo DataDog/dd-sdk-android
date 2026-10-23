@@ -42,7 +42,7 @@ internal object WindowInspector {
     ): List<View> {
         return try {
             if (buildSdkVersionProvider.isAtLeastQ) {
-                // this can throw also maybe but we don't know what type exactly. In order to be
+                // this can throw also maybe, but we don't know what type exactly. In order to be
                 // safe as this function is being called on the MainThread every time we want to
                 // take a snapshot we will catch all the `Throwable`s in a single catch block.
                 WindowInspector.getGlobalWindowViews()
@@ -78,11 +78,11 @@ internal object WindowInspector {
             viewsField.isAccessible = true
             val decorViews = when (val views: Any? = viewsField.get(globalWmInstance)) {
                 is List<*> -> {
-                    views.mapNotNull { it as? View }
+                    views.filterIsInstance<View>()
                 }
 
                 is Array<*> -> {
-                    views.toList().mapNotNull { it as? View }
+                    views.toList().filterIsInstance<View>()
                 }
 
                 else -> {

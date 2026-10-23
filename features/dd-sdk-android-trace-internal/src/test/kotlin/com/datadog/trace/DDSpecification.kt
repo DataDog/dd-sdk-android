@@ -41,7 +41,7 @@ abstract class DDSpecification {
         System.getProperties().keys.forEach {
             val keyAsString = it.toString()
             if (keyAsString.lowercase().startsWith("dd_")) {
-                System.getProperty(keyAsString)?.let { keyValue -> removedProperties.put(keyAsString, keyValue) }
+                System.getProperty(keyAsString)?.let { keyValue -> removedProperties[keyAsString] = keyValue }
             }
         }
         removedProperties.keys.forEach { System.clearProperty(it) }

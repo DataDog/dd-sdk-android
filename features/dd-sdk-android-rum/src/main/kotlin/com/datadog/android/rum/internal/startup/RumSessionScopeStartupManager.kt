@@ -137,7 +137,7 @@ internal class RumSessionScopeStartupManagerImpl(
         )
 
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-            // startMs is different for different scenarios. For Cold it will be process start, for Warm
+            // startMs is different for different scenarios. For Cold, it will be process start, for Warm
             // it will be Activity.onCreate. But we have application launch profiling working for cold starts only anyway.
             ProfilerEvent.RumVitalEvent(
                 rumContext = ProfilingRumContext(

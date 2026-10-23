@@ -42,7 +42,7 @@ internal class DecorViewMapper(
         }
         val decorClassName = view.javaClass.name
         // we will add the window wireframe here which comes in handy whenever we have to record a
-        // pop - up. Usually the pop - up gets displayed in a smaller decorView in a upper Window.
+        // pop - up. Usually the pop - up gets displayed in a smaller decorView in an upper Window.
         // the window behind is blurred so we need this extra Wireframe here to achieve that
         // effect in the player. We will only do this for `DialogWindow@DecorView` and not for
         // `PopUpWindow@PopUpDecorView` types in order to follow what the system does. We do not have

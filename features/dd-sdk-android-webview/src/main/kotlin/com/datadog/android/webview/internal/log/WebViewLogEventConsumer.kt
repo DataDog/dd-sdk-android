@@ -136,7 +136,7 @@ internal class WebViewLogEventConsumer(
                 { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
-            emptyMap<String, String>()
+            emptyMap()
         } catch (e: IllegalStateException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -144,7 +144,7 @@ internal class WebViewLogEventConsumer(
                 { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
-            emptyMap<String, String>()
+            emptyMap()
         } catch (e: UnsupportedOperationException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -152,7 +152,7 @@ internal class WebViewLogEventConsumer(
                 { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
-            emptyMap<String, String>()
+            emptyMap()
         }
         event.addProperty(
             DDTAGS_KEY_NAME,

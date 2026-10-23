@@ -320,7 +320,7 @@ internal class CpuEventFactoryTest {
         // Given
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext + mapOf(
-                Feature.SESSION_REPLAY_FEATURE_NAME to emptyMap<String, Any?>(),
+                Feature.SESSION_REPLAY_FEATURE_NAME to emptyMap(),
                 Feature.TRACING_FEATURE_NAME to mapOf(RumViewScope.TRACE_SAMPLE_RATE to fakeNotASampleRate)
             )
         )
