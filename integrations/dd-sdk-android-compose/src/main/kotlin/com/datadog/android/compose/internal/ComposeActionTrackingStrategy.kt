@@ -58,7 +58,7 @@ internal class ComposeActionTrackingStrategy(
         y: Float,
         isScrollEvent: Boolean
     ): ViewTarget? {
-        val queue: Queue<LayoutNode> = LinkedList<LayoutNode>()
+        val queue: Queue<LayoutNode> = LinkedList()
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // Any exception will be caught.
             queue.add(owner.root)

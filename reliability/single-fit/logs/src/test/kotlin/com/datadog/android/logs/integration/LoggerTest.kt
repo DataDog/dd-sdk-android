@@ -1321,12 +1321,10 @@ class LoggerTest {
         @IntForgery(Log.VERBOSE, 10) fakeMappedLevel: Int
     ) {
         // Given
-        val stubMapper = object : EventMapper<LogEvent> {
-            override fun map(event: LogEvent): LogEvent {
-                event.message = fakeMappedMessage
-                event.status = LogEvent.Status.fromJson(LEVEL_NAMES[fakeMappedLevel])
-                return event
-            }
+        val stubMapper = EventMapper<LogEvent> { event ->
+            event.message = fakeMappedMessage
+            event.status = LogEvent.Status.fromJson(LEVEL_NAMES[fakeMappedLevel])
+            event
         }
         val fakeLogsConfiguration = LogsConfiguration.Builder()
             .setEventMapper(stubMapper)

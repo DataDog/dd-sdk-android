@@ -34,7 +34,7 @@ class JsonArrayAssert(actual: JsonArray) :
     }
 
     /**
-     * This methods is needed to build a new concrete instance of AbstractIterableAssert after a filtering operation is executed.
+     * This method is needed to build a new concrete instance of AbstractIterableAssert after a filtering operation is executed.
      *
      *
      * If you create your own subclass of AbstractIterableAssert, simply returns an instance of it in this method.

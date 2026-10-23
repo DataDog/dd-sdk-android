@@ -4,6 +4,9 @@
 # with gradle/gradle-daemon-jvm.properties and with .github/workflows/codeql-analysis.yml.
 jdk = "21"
 
+cmake = "3.22.1"
+ndk = "28.0.13004108"
+
 # Commons
 apollo = "4.3.3"
 cronetApi = "143.7445.0"

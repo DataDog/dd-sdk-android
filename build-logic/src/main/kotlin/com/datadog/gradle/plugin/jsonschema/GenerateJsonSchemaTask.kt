@@ -58,7 +58,7 @@ abstract class GenerateJsonSchemaTask @Inject constructor(
     @get:InputFiles
     abstract val inputFiles: ConfigurableFileCollection
 
-    // this is kind of hack: sometimes json can reference other json outside of the module,
+    // this is kind of hack: sometimes json can reference other json outside the module,
     // so we need just to watch such external dir for changes, otherwise task is cached when external changes not seen
     @get:PathSensitive(PathSensitivity.RELATIVE)
     @get:Optional
