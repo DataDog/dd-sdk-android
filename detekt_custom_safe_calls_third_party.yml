@@ -326,7 +326,6 @@ datadog:
       - "java.io.close()"
       # endregion
       # region Java misc
-      - "java.text.ParsePosition.constructor(kotlin.Int)"
       - "java.lang.Character.isWhitespace(kotlin.Int)"
       - "java.lang.Class.hashCode()"
       - "java.lang.Class.isInstance(kotlin.Any?)"
@@ -381,6 +380,7 @@ datadog:
       - "java.security.SecureRandom.nextFloat()"
       - "java.security.SecureRandom.nextInt()"
       - "java.security.SecureRandom.nextLong()"
+      - "java.text.ParsePosition.constructor(kotlin.Int)"
       - "java.util.Date.constructor(kotlin.Long)"
       - "java.util.function.Consumer(kotlin.Function1)"
       - "java.util.HashMap.clear()"
@@ -467,6 +467,7 @@ datadog:
       - "kotlin.ByteArray.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
       - "kotlin.arrayOf(kotlin.Array)"
       - "kotlin.collections.arrayListOf()"
+      - "kotlin.collections.ArrayDeque.addLast(java.lang.Runnable)"
       - "kotlin.collections.ArrayDeque.addLast(kotlin.Function0)"
       - "kotlin.collections.ArrayDeque.constructor()"
       - "kotlin.collections.ArrayDeque.removeFirstOrNull()"

@@ -131,8 +131,8 @@ internal class DatadogFlagsClient(
             experimentationOptOut.prepare(context)
         }
         evaluationsManager.updatePreparedEvaluations(request, callback) {
-            val installedSubject = flagsRepository.getEvaluationContext()?.targetingKey
             synchronized(telemetryLock) {
+                val installedSubject = flagsRepository.getAssignmentsSnapshot()?.context?.targetingKey
                 val remaining = (pendingSubjects[context.targetingKey] ?: 1) - 1
                 if (remaining == 0) {
                     pendingSubjects.remove(context.targetingKey)

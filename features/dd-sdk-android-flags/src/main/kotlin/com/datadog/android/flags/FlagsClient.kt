@@ -23,6 +23,7 @@ import com.datadog.android.flags.internal.LogWithPolicy
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.NoOpRumEvaluationLogger
 import com.datadog.android.flags.internal.RumEvaluationLogger
+import com.datadog.android.flags.internal.evaluation.EvaluationCallbackDispatcher
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
@@ -510,7 +511,9 @@ interface FlagsClient {
                 initializationTimeoutMs = configuration.initializationTimeoutMs,
                 initializationTimeoutScheduler = flagsFeature.initializationTimeoutScheduler,
                 experimentationOptOut = experimentationOptOut,
-                callbackExecutor = featureSdkCore.createSingleThreadExecutorService(FLAGS_CALLBACK_EXECUTOR_NAME)
+                callbackExecutor = EvaluationCallbackDispatcher(featureSdkCore.internalLogger) {
+                    featureSdkCore.createSingleThreadExecutorService(FLAGS_CALLBACK_EXECUTOR_NAME)
+                }
             )
 
             val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)

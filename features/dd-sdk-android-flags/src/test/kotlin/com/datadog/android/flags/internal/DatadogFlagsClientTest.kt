@@ -270,6 +270,29 @@ internal class DatadogFlagsClientTest {
         verifyNoInteractions(mockInternalLogger)
     }
 
+    @Test
+    fun `M avoid persistence wait W setEvaluationContext() {telemetry request cleanup}`() {
+        // Given
+        whenever(mockEvaluationsManager.updatePreparedEvaluations(any(), anyOrNull(), any())).thenAnswer {
+            it.getArgument<() -> Unit>(2).invoke()
+            null
+        }
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
+            FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
+            null, mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = true
+        )
+
+        // When
+        testedClient.setEvaluationContext(fakeDefaultContext, null, true)
+
+        // Then
+        verify(mockFlagsRepository).getAssignmentsSnapshot()
+        verify(mockFlagsRepository, never()).getEvaluationContext()
+        verify(mockFlagsRepository, never()).waitForPersistenceLoad()
+    }
+
     // region resolveBooleanValue()
 
     @ParameterizedTest
