@@ -105,7 +105,8 @@ internal class PipelineFactoryTest {
         ),
         batteryInfoProvider = mockBatteryInfoProvider,
         displayInfoProvider = mockDisplayInfoProvider,
-        sessionRegistry = mockCollectedSessionsRegistry
+        sessionRegistry = mockCollectedSessionsRegistry,
+        crossPlatformTraceSampleRate = null
     )
 
     private fun Pipeline<*>.reader() = getFieldValue<Any, Pipeline<*>>("reader")

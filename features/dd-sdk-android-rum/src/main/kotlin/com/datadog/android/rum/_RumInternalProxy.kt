@@ -141,6 +141,13 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
             return builder.setRumSessionTypeOverride(rumSessionTypeOverride)
         }
 
+        fun setTraceSampleRate(
+            builder: Builder,
+            traceSampleRate: Float
+        ): Builder {
+            return builder.setCrossPlatformTraceSampleRate(traceSampleRate)
+        }
+
         fun setDisableJankStats(
             builder: Builder,
             disable: Boolean

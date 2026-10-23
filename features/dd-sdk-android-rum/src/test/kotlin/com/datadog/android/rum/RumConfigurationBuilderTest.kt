@@ -702,6 +702,20 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
+    fun `M set crossPlatformTraceSampleRate W setTraceSampleRate()`(
+        @FloatForgery(min = 0f, max = 100f) fakeTraceSampleRate: Float
+    ) {
+        // When
+        _RumInternalProxy.setTraceSampleRate(testedBuilder, fakeTraceSampleRate)
+        val rumConfiguration = testedBuilder.build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
+            RumFeature.DEFAULT_RUM_CONFIG.copy(crossPlatformTraceSampleRate = fakeTraceSampleRate)
+        )
+    }
+
+    @Test
     fun `M enable accessibility settings collection W collectAccessibility`() {
         // When
         val rumConfiguration = testedBuilder

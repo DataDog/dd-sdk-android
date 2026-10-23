@@ -15,6 +15,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -346,7 +347,13 @@ internal class PipelineTest {
 
         // Then
         verify(mockRumFeatureScope).withWriteContext(
-            eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME, Feature.TRACING_FEATURE_NAME)),
+            eq(
+                setOf(
+                    Feature.SESSION_REPLAY_FEATURE_NAME,
+                    FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME,
+                    Feature.TRACING_FEATURE_NAME
+                )
+            ),
             any()
         )
     }

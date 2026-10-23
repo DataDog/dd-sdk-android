@@ -120,14 +120,16 @@ internal class MemoryEventFactoryTest {
 
     private fun testedFactory(
         sessionType: RumSessionType = RumSessionType.USER,
-        totalRamBytes: Long = fakeTotalRamBytes
+        totalRamBytes: Long = fakeTotalRamBytes,
+        crossPlatformTraceSampleRate: Float? = null
     ) = MemoryEventFactory(
         sessionType = sessionType,
         totalRamBytes = totalRamBytes,
         timeProvider = mockTimeProvider,
         batteryInfoProvider = stubBatteryInfoProvider,
         displayInfoProvider = stubDisplayInfoProvider,
-        internalLogger = mockInternalLogger
+        internalLogger = mockInternalLogger,
+        crossPlatformTraceSampleRate = crossPlatformTraceSampleRate
     )
 
     @Test

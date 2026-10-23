@@ -35,6 +35,7 @@ import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -278,6 +279,7 @@ internal class DatadogRumMonitorTest {
                 eq(
                     setOf(
                         Feature.SESSION_REPLAY_FEATURE_NAME,
+                        FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME,
                         Feature.PROFILING_FEATURE_NAME,
                         Feature.TRACING_FEATURE_NAME
                     )
@@ -290,7 +292,13 @@ internal class DatadogRumMonitorTest {
         }
         whenever(
             mockRumFeatureScope.withWriteContextSync(
-                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME)),
+                eq(
+                    setOf(
+                        Feature.SESSION_REPLAY_FEATURE_NAME,
+                        FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME,
+                        Feature.TRACING_FEATURE_NAME
+                    )
+                ),
                 any()
             )
         ) doAnswer {
@@ -1437,7 +1445,13 @@ internal class DatadogRumMonitorTest {
         // Given
         whenever(
             mockRumFeatureScope.withWriteContextSync(
-                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME)),
+                eq(
+                    setOf(
+                        Feature.SESSION_REPLAY_FEATURE_NAME,
+                        FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME,
+                        Feature.TRACING_FEATURE_NAME
+                    )
+                ),
                 any()
             )
         ) doReturn false
@@ -1464,7 +1478,13 @@ internal class DatadogRumMonitorTest {
         var rootScopeHeldWhileWaiting = true
         whenever(
             mockRumFeatureScope.withWriteContextSync(
-                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME)),
+                eq(
+                    setOf(
+                        Feature.SESSION_REPLAY_FEATURE_NAME,
+                        FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME,
+                        Feature.TRACING_FEATURE_NAME
+                    )
+                ),
                 any()
             )
         ) doAnswer {

@@ -35,6 +35,7 @@ internal class MemoryEventFactory(
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val internalLogger: InternalLogger,
+    private val crossPlatformTraceSampleRate: Float?,
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver()
 ) : EventFactory<Double, TimeseriesMemoryEvent> {
 
@@ -69,7 +70,7 @@ internal class MemoryEventFactory(
                 configuration = TimeseriesMemoryEvent.Configuration(
                     sessionSampleRate = rumContext.sessionSampleRate,
                     sessionReplaySampleRate = datadogContext.resolveSessionReplaySampleRate(),
-                    traceSampleRate = datadogContext.resolveTraceSampleRate()
+                    traceSampleRate = datadogContext.resolveTraceSampleRate(crossPlatformTraceSampleRate)
                 )
             ),
             application = TimeseriesMemoryEvent.Application(

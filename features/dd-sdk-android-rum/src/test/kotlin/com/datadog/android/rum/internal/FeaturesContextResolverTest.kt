@@ -265,4 +265,72 @@ internal class FeaturesContextResolverTest {
         // Then
         assertThat(viewRecordsCount).isEqualTo(0L)
     }
+
+    @Test
+    fun `M return true W resolveHasReplay {only cross-platform SR context isRecording}`(forge: Forge) {
+        // Given
+        val fakeFeaturesContext = mapOf(
+            FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME to mapOf(
+                fakeViewId to mapOf(FeaturesContextResolver.HAS_REPLAY_KEY to true)
+            )
+        )
+        val fakeDatadogContext: DatadogContext = forge.getForgery<DatadogContext>()
+            .copy(featuresContext = fakeFeaturesContext)
+
+        // When
+        val hasReplay = testedFeaturesContextResolver.resolveViewHasReplay(
+            fakeDatadogContext,
+            fakeViewId
+        )
+
+        // Then
+        assertThat(hasReplay).isTrue
+    }
+
+    @Test
+    fun `M prefer native SR context W resolveHasReplay {both SR contexts have the view}`(forge: Forge) {
+        // Given
+        val fakeFeaturesContext = mapOf(
+            Feature.SESSION_REPLAY_FEATURE_NAME to mapOf(
+                fakeViewId to mapOf(FeaturesContextResolver.HAS_REPLAY_KEY to false)
+            ),
+            FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME to mapOf(
+                fakeViewId to mapOf(FeaturesContextResolver.HAS_REPLAY_KEY to true)
+            )
+        )
+        val fakeDatadogContext: DatadogContext = forge.getForgery<DatadogContext>()
+            .copy(featuresContext = fakeFeaturesContext)
+
+        // When
+        val hasReplay = testedFeaturesContextResolver.resolveViewHasReplay(
+            fakeDatadogContext,
+            fakeViewId
+        )
+
+        // Then
+        assertThat(hasReplay).isFalse
+    }
+
+    @Test
+    fun `M return valid records count W resolveViewRecordsCount {only cross-platform SR context}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeFeaturesContext = mapOf(
+            FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME to mapOf(
+                fakeViewId to mapOf(FeaturesContextResolver.VIEW_RECORDS_COUNT_KEY to fakeRecordsCount)
+            )
+        )
+        val fakeDatadogContext: DatadogContext = forge.getForgery<DatadogContext>()
+            .copy(featuresContext = fakeFeaturesContext)
+
+        // When
+        val viewRecordsCount = testedFeaturesContextResolver.resolveViewRecordsCount(
+            fakeDatadogContext,
+            fakeViewId
+        )
+
+        // Then
+        assertThat(viewRecordsCount).isEqualTo(fakeRecordsCount)
+    }
 }

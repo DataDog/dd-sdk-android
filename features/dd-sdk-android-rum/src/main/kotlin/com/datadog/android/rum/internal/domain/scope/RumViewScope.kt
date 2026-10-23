@@ -31,6 +31,7 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.FeaturesContextResolver
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -259,8 +260,10 @@ internal open class RumViewScope(
         }
 
         return if (isViewComplete()) {
-            sdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME) {
-                it.remove(viewId)
+            SESSION_REPLAY_CONTEXT_NAMES.forEach { featureName ->
+                sdkCore.updateFeatureContext(featureName) {
+                    it.remove(viewId)
+                }
             }
             null
         } else {
@@ -1472,7 +1475,12 @@ internal open class RumViewScope(
                 configuration = ViewEvent.Configuration(
                     sessionSampleRate = sampleRate,
                     sessionReplaySampleRate = datadogContext.resolveSessionReplaySampleRate(),
-                    traceSampleRate = datadogContext.resolveTraceSampleRate(),
+                    traceSampleRate = datadogContext.resolveTraceSampleRate(
+                        fallback = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+                            ?.unwrap<RumFeature>()
+                            ?.configuration
+                            ?.crossPlatformTraceSampleRate
+                    ),
                     remoteConfigurationId = datadogContext.remoteConfigurationId
                 ),
                 profiling = resolveViewProfilingStatus(datadogContext)

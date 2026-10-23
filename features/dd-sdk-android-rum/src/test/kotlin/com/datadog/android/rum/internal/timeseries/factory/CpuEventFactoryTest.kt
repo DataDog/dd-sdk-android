@@ -115,13 +115,15 @@ internal class CpuEventFactoryTest {
     }
 
     private fun testedFactory(
-        sessionType: RumSessionType = RumSessionType.USER
+        sessionType: RumSessionType = RumSessionType.USER,
+        crossPlatformTraceSampleRate: Float? = null
     ) = CpuEventFactory(
         sessionType = sessionType,
         timeProvider = mockTimeProvider,
         batteryInfoProvider = stubBatteryInfoProvider,
         displayInfoProvider = stubDisplayInfoProvider,
-        internalLogger = mockInternalLogger
+        internalLogger = mockInternalLogger,
+        crossPlatformTraceSampleRate = crossPlatformTraceSampleRate
     )
 
     @Test
@@ -311,6 +313,65 @@ internal class CpuEventFactoryTest {
         val configuration = checkNotNull(event.dd.configuration)
         assertThat(configuration.sessionReplaySampleRate?.toLong()).isEqualTo(fakeSessionReplaySampleRate)
         assertThat(configuration.traceSampleRate?.toFloat()).isEqualTo(fakeTraceSampleRate)
+    }
+
+    @Test
+    fun `M fill dd configuration W create() { sample rates from cross-platform sources }`(
+        @LongForgery(min = 0L, max = 100L) fakeSessionReplaySampleRate: Long,
+        @FloatForgery(min = 0f, max = 100f) fakeTraceSampleRate: Float
+    ) {
+        // Given
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext + mapOf(
+                FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME to mapOf(
+                    RumViewScope.SESSION_REPLAY_SAMPLE_RATE_KEY to fakeSessionReplaySampleRate
+                )
+            )
+        )
+
+        // When
+        val event = checkNotNull(
+            testedFactory(crossPlatformTraceSampleRate = fakeTraceSampleRate)
+                .create(datadogContext, fakeSerializedRumContext, oneSample)
+        )
+
+        // Then
+        val configuration = checkNotNull(event.dd.configuration)
+        assertThat(configuration.sessionReplaySampleRate?.toLong()).isEqualTo(fakeSessionReplaySampleRate)
+        assertThat(configuration.traceSampleRate?.toFloat()).isEqualTo(fakeTraceSampleRate)
+    }
+
+    @Test
+    fun `M prefer native sample rates W create() { native and cross-platform sources }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeNativeSrRate = forge.aLong(min = 0L, max = 50L)
+        val fakeNativeTraceRate = forge.aFloat(min = 0f, max = 50f)
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext + mapOf(
+                Feature.SESSION_REPLAY_FEATURE_NAME to mapOf(
+                    RumViewScope.SESSION_REPLAY_SAMPLE_RATE_KEY to fakeNativeSrRate
+                ),
+                FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME to mapOf(
+                    RumViewScope.SESSION_REPLAY_SAMPLE_RATE_KEY to forge.aLong(min = 51L, max = 100L)
+                ),
+                Feature.TRACING_FEATURE_NAME to mapOf(
+                    RumViewScope.TRACE_SAMPLE_RATE to fakeNativeTraceRate
+                )
+            )
+        )
+
+        // When
+        val event = checkNotNull(
+            testedFactory(crossPlatformTraceSampleRate = forge.aFloat(min = 51f, max = 100f))
+                .create(datadogContext, fakeSerializedRumContext, oneSample)
+        )
+
+        // Then
+        val configuration = checkNotNull(event.dd.configuration)
+        assertThat(configuration.sessionReplaySampleRate?.toLong()).isEqualTo(fakeNativeSrRate)
+        assertThat(configuration.traceSampleRate?.toFloat()).isEqualTo(fakeNativeTraceRate)
     }
 
     @Test

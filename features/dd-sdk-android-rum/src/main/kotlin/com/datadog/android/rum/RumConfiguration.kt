@@ -511,6 +511,15 @@ data class RumConfiguration internal constructor(
         }
 
         /**
+         * Sets the trace sample rate reported on RUM events when the native Tracing feature
+         * doesn't publish one. Used by cross-platform SDKs which trace outside of the native SDK.
+         */
+        internal fun setCrossPlatformTraceSampleRate(traceSampleRate: Float): Builder {
+            rumConfig = rumConfig.copy(crossPlatformTraceSampleRate = traceSampleRate)
+            return this
+        }
+
+        /**
          * Disables JankStats tracking. This flag may be enabled by cross-platform SDKs where
          * native frame metrics are not meaningful.
          */

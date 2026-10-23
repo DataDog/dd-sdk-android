@@ -18,6 +18,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
@@ -606,14 +607,28 @@ internal fun DeviceInfo.toTimeseriesMemoryOs() = TimeseriesMemoryEvent.Os(
 // region Feature context sample rates
 
 internal fun DatadogContext.resolveSessionReplaySampleRate(): Long? {
-    val srContext = featuresContext[Feature.SESSION_REPLAY_FEATURE_NAME]
-    return srContext?.get(RumViewScope.SESSION_REPLAY_SAMPLE_RATE_KEY) as? Long
+    return SESSION_REPLAY_CONTEXT_NAMES.firstNotNullOfOrNull { featureName ->
+        featuresContext[featureName]?.get(RumViewScope.SESSION_REPLAY_SAMPLE_RATE_KEY) as? Long
+    }
 }
 
-internal fun DatadogContext.resolveTraceSampleRate(): Float? {
+/**
+ * @param fallback the rate to report when the native Tracing feature publishes none, set by
+ * cross-platform SDKs through [com.datadog.android.rum._RumInternalProxy.setTraceSampleRate].
+ */
+internal fun DatadogContext.resolveTraceSampleRate(fallback: Float?): Float? {
     val tracingContext = featuresContext[Feature.TRACING_FEATURE_NAME]
-    return tracingContext?.get(RumViewScope.TRACE_SAMPLE_RATE) as? Float
+    return (tracingContext?.get(RumViewScope.TRACE_SAMPLE_RATE) as? Float) ?: fallback
 }
+
+/**
+ * Feature contexts which carry Session Replay state, by precedence. Native Session Replay comes
+ * first; the cross-platform one is only read when native publishes nothing.
+ */
+internal val SESSION_REPLAY_CONTEXT_NAMES = listOf(
+    Feature.SESSION_REPLAY_FEATURE_NAME,
+    FeaturesContextResolver.CROSS_PLATFORM_SESSION_REPLAY_FEATURE_NAME
+)
 
 // endregion
 

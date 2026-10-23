@@ -345,7 +345,8 @@ internal class RumFeature(
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             sessionRegistry = sessionRegistry,
-            totalRamBytes = appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L
+            totalRamBytes = appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L,
+            crossPlatformTraceSampleRate = configuration.crossPlatformTraceSampleRate
         )
 
         timeseriesCollector = DefaultTimeseriesCollector(
@@ -962,6 +963,7 @@ internal class RumFeature(
         val additionalConfig: Map<String, Any>,
         val trackAnonymousUser: Boolean,
         val rumSessionTypeOverride: RumSessionType?,
+        val crossPlatformTraceSampleRate: Float?,
         val collectAccessibility: Boolean,
         val disableJankStats: Boolean,
         val insightsCollector: InsightsCollector,
@@ -1018,6 +1020,7 @@ internal class RumFeature(
             trackAnonymousUser = true,
             slowFramesConfiguration = SlowFramesConfiguration.DEFAULT,
             rumSessionTypeOverride = null,
+            crossPlatformTraceSampleRate = null,
             collectAccessibility = false,
             disableJankStats = false,
             insightsCollector = NoOpInsightsCollector(),
