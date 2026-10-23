@@ -12,6 +12,8 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.sampling.DeterministicSampling
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
 import com.datadog.android.rum.ExperimentalRumApi
@@ -284,12 +286,15 @@ class TraceCrossProductSamplingTest {
      */
     private fun stubRumSessionContext(sessionIdToken: Long, sessionSampleRate: Float) {
         val sessionId = sessionIdToFakeUuid(sessionIdToken)
-        val rumContext = mapOf<String, Any?>(
-            "application_id" to FAKE_APPLICATION_ID,
-            "session_id" to sessionId,
-            "view_id" to FAKE_VIEW_ID,
-            "action_id" to null,
-            "session_sample_rate" to sessionSampleRate
+        val rumContext = mapOf(
+            FeatureContextKeys.RUM_CONTEXT to
+                RumContext(
+                    applicationId = FAKE_APPLICATION_ID,
+                    sessionId = sessionId,
+                    viewId = FAKE_VIEW_ID,
+                    actionId = null,
+                    sessionSampleRate = sessionSampleRate
+                )
         )
         val datadogContext: DatadogContext = stubSdkCore.getDatadogContext().let { context ->
             context.copy(

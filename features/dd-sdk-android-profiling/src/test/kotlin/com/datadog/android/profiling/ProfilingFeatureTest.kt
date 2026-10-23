@@ -23,7 +23,9 @@ import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.profiling.quota.QuotaReason
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.rum.RumSessionConstants
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.time.TimeProvider
@@ -559,8 +561,8 @@ internal class ProfilingFeatureTest {
         testedFeature.onContextUpdate(
             fakeOtherFeatureName,
             mapOf(
-                FeatureContextKeys.RUM_SESSION_ID to UUID.randomUUID().toString(),
-                FeatureContextKeys.RUM_SESSION_SAMPLE_RATE to fakeSessionRate
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(sessionId = UUID.randomUUID().toString(), sessionSampleRate = fakeSessionRate)
             )
         )
 
@@ -579,8 +581,11 @@ internal class ProfilingFeatureTest {
         testedFeature.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
             mapOf(
-                FeatureContextKeys.RUM_SESSION_ID to RumSessionConstants.EMPTY_RUM_SESSION_ID,
-                FeatureContextKeys.RUM_SESSION_SAMPLE_RATE to fakeSessionRate
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(
+                        sessionId = RumSessionConstants.EMPTY_RUM_SESSION_ID,
+                        sessionSampleRate = fakeSessionRate
+                    )
             )
         )
 
@@ -589,7 +594,7 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M sample session out W onContextUpdate {session_sample_rate missing from context}`() {
+    fun `M sample session out W onContextUpdate {session sample rate is zero}`() {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         whenever(mockProfiler.isRunning()) doReturn false
@@ -599,7 +604,7 @@ internal class ProfilingFeatureTest {
         // When
         testedFeature.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(FeatureContextKeys.RUM_SESSION_ID to sessionId)
+            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(sessionId = sessionId, sessionSampleRate = 0f))
         )
 
         // Then
@@ -1854,8 +1859,7 @@ internal class ProfilingFeatureTest {
 
     @Test
     fun `M not fire quota check W onContextUpdate {RUM session not tracked}`(
-        @StringForgery fakeNewSessionId: String,
-        @StringForgery fakeSessionState: String
+        @StringForgery fakeNewSessionId: String
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
@@ -1864,7 +1868,7 @@ internal class ProfilingFeatureTest {
         testedFeature.quotaChecker = mockQuotaChecker
 
         // When
-        testedFeature.dispatchRumSession(fakeNewSessionId, 100f, sessionState = fakeSessionState)
+        testedFeature.dispatchRumSession(fakeNewSessionId, 100f, sessionState = RumSessionState.NOT_TRACKED)
 
         // Then
         verify(mockQuotaChecker, never()).checkAsync(any(), any())
@@ -1872,7 +1876,7 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M not fire quota check W onContextUpdate {RUM session state missing}`(
+    fun `M not fire quota check W onContextUpdate {RUM session state defaults to not tracked}`(
         @StringForgery fakeNewSessionId: String
     ) {
         // Given
@@ -1884,10 +1888,7 @@ internal class ProfilingFeatureTest {
         // When
         testedFeature.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(
-                FeatureContextKeys.RUM_SESSION_ID to fakeNewSessionId,
-                FeatureContextKeys.RUM_SESSION_SAMPLE_RATE to 100f
-            )
+            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(sessionId = fakeNewSessionId, sessionSampleRate = 100f))
         )
 
         // Then
@@ -2086,8 +2087,7 @@ internal class ProfilingFeatureTest {
 
     @Test
     fun `M drop launch event W app-launch profiling result received {RUM session not tracked}`(
-        @Forgery fakePerfettoResult: PerfettoResult,
-        @StringForgery fakeNotTrackedSessionState: String
+        @Forgery fakePerfettoResult: PerfettoResult
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
@@ -2099,7 +2099,7 @@ internal class ProfilingFeatureTest {
             eq(mockContext),
             callbackCaptor.capture()
         )
-        testedFeature.dispatchRumSession(fakeSessionId, 100f, sessionState = fakeNotTrackedSessionState)
+        testedFeature.dispatchRumSession(fakeSessionId, 100f, sessionState = RumSessionState.NOT_TRACKED)
         testedFeature.onReceive(fakeRumLongTaskEvent)
         testedFeature.onReceive(fakeTTID)
 
@@ -2120,8 +2120,7 @@ internal class ProfilingFeatureTest {
 
     @Test
     fun `M write launch event W later RUM session not tracked {launch session allowed}`(
-        @Forgery fakePerfettoResult: PerfettoResult,
-        @StringForgery fakeNotTrackedSessionState: String
+        @Forgery fakePerfettoResult: PerfettoResult
     ) {
         // Given
         initializeLaunchProfilingFeature()
@@ -2129,7 +2128,7 @@ internal class ProfilingFeatureTest {
         verify(mockProfiler).registerProfilingCallback(eq(mockContext), callbackCaptor.capture())
         testedFeature.dispatchRumSession(fakeSessionId, 100f)
         testedFeature.simulateQuotaAllowed()
-        testedFeature.dispatchRumSession("new-$fakeSessionId", 100f, sessionState = fakeNotTrackedSessionState)
+        testedFeature.dispatchRumSession("new-$fakeSessionId", 100f, sessionState = RumSessionState.NOT_TRACKED)
         testedFeature.onReceive(fakeTTID)
 
         // When
@@ -2176,14 +2175,13 @@ internal class ProfilingFeatureTest {
 
     @Test
     fun `M drop launch event W launch session not tracked {later session tracked and allowed}`(
-        @Forgery fakePerfettoResult: PerfettoResult,
-        @StringForgery fakeNotTrackedSessionState: String
+        @Forgery fakePerfettoResult: PerfettoResult
     ) {
         // Given
         initializeLaunchProfilingFeature()
         val callbackCaptor = argumentCaptor<ProfilerCallback>()
         verify(mockProfiler).registerProfilingCallback(eq(mockContext), callbackCaptor.capture())
-        testedFeature.dispatchRumSession(fakeSessionId, 100f, sessionState = fakeNotTrackedSessionState)
+        testedFeature.dispatchRumSession(fakeSessionId, 100f, sessionState = RumSessionState.NOT_TRACKED)
         testedFeature.dispatchRumSession("new-$fakeSessionId", 100f)
         testedFeature.simulateQuotaAllowed()
         testedFeature.onReceive(fakeTTID)
@@ -2215,8 +2213,7 @@ internal class ProfilingFeatureTest {
 
     @Test
     fun `M drop buffered launch event W untracked RUM session arrives after app-launch result`(
-        @Forgery fakePerfettoResult: PerfettoResult,
-        @StringForgery fakeNotTrackedSessionState: String
+        @Forgery fakePerfettoResult: PerfettoResult
     ) {
         // Given
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
@@ -2234,7 +2231,7 @@ internal class ProfilingFeatureTest {
         )
 
         // When
-        testedFeature.dispatchRumSession(fakeSessionId, 100f, sessionState = fakeNotTrackedSessionState)
+        testedFeature.dispatchRumSession(fakeSessionId, 100f, sessionState = RumSessionState.NOT_TRACKED)
         testedFeature.simulateQuotaAllowed()
 
         // Then
@@ -2303,14 +2300,13 @@ internal class ProfilingFeatureTest {
     private fun ProfilingFeature.dispatchRumSession(
         sessionId: String,
         sampleRate: Float,
-        sessionState: String = RumSessionConstants.TRACKED_SESSION_STATE
+        sessionState: RumSessionState = RumSessionState.TRACKED
     ) {
         onContextUpdate(
             Feature.RUM_FEATURE_NAME,
             mapOf(
-                FeatureContextKeys.RUM_SESSION_ID to sessionId,
-                FeatureContextKeys.RUM_SESSION_SAMPLE_RATE to sampleRate,
-                FeatureContextKeys.RUM_SESSION_STATE to sessionState
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(sessionId = sessionId, sessionSampleRate = sampleRate, sessionState = sessionState)
             )
         )
     }

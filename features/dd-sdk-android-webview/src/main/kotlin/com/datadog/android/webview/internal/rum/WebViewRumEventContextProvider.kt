@@ -9,30 +9,22 @@ package com.datadog.android.webview.internal.rum
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.rumContext
 import com.datadog.android.webview.internal.rum.domain.RumContext
 
 internal class WebViewRumEventContextProvider(private val internalLogger: InternalLogger) {
 
     private var rumFeatureDisabled = false
 
-    @Suppress("ComplexCondition")
     fun getRumContext(datadogContext: DatadogContext): RumContext? {
         if (rumFeatureDisabled) {
             return null
         }
 
-        val rumContext = datadogContext.featuresContext[Feature.RUM_FEATURE_NAME]
-        val rumApplicationId = rumContext?.get("application_id") as? String
-        val rumSessionId = rumContext?.get(FeatureContextKeys.RUM_SESSION_ID) as? String
-        val rumSessionState = rumContext?.get(FeatureContextKeys.RUM_SESSION_STATE) as? String
-        val rumSessionHasTimeseries = rumContext?.get("session_has_timeseries") as? Boolean ?: false
-
-        return if (rumApplicationId == null ||
-            rumApplicationId == RumContext.NULL_UUID ||
-            rumSessionId == null ||
-            rumSessionId == RumContext.NULL_UUID ||
-            rumSessionState.isNullOrBlank()
+        val rumContext = datadogContext.featuresContext[Feature.RUM_FEATURE_NAME]?.rumContext()
+        return if (rumContext == null ||
+            rumContext.applicationId == RumContext.NULL_UUID ||
+            rumContext.sessionId == RumContext.NULL_UUID
         ) {
             rumFeatureDisabled = true
             internalLogger.log(
@@ -42,7 +34,12 @@ internal class WebViewRumEventContextProvider(private val internalLogger: Intern
             )
             null
         } else {
-            RumContext(rumApplicationId, rumSessionId, rumSessionState, rumSessionHasTimeseries)
+            RumContext(
+                rumContext.applicationId,
+                rumContext.sessionId,
+                rumContext.sessionState.asString,
+                rumContext.hasTimeseries
+            )
         }
     }
 

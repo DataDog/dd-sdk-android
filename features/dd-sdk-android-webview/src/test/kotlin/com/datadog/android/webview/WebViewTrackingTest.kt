@@ -22,6 +22,9 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -723,12 +726,16 @@ internal class WebViewTrackingTest {
             feature.onInitialize(mock())
         }
         val fakeFeaturesContext = mapOf(
-            "rum" to mapOf<String, Any?>(
-                "application_id" to fakeApplicationId,
-                "session_id" to fakeSessionId,
-                "session_state" to "TRACKED",
-                "session_has_timeseries" to fakeSessionHasTimeseries
-            )
+            "rum" to
+                mapOf(
+                    FeatureContextKeys.RUM_CONTEXT to
+                        RumContext(
+                            applicationId = fakeApplicationId,
+                            sessionId = fakeSessionId,
+                            sessionState = RumSessionState.TRACKED,
+                            hasTimeseries = fakeSessionHasTimeseries
+                        )
+                )
         )
         whenever(mockDatadogContext.featuresContext) doReturn fakeFeaturesContext
         whenever(mockDatadogContext.userInfo) doReturn fakeUserInfo

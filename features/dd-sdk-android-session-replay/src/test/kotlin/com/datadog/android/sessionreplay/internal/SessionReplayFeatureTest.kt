@@ -18,13 +18,12 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.sessionreplay.NoOpSessionReplayInternalCallback
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_APPLICATION_ID_CONTEXT_KEY
-import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_SESSION_ID_CONTEXT_KEY
-import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_VIEW_ID_CONTEXT_KEY
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentReceiver
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
@@ -156,15 +155,16 @@ internal class SessionReplayFeatureTest {
         val fakeContextReceiver = argumentCaptor<FeatureContextUpdateReceiver>().also {
             verify(mockSdkCore).setContextUpdateReceiver(it.capture())
         }.firstValue
-        val fakeContext = mutableMapOf<String, Any?>(
-            RUM_APPLICATION_ID_CONTEXT_KEY to UUID.randomUUID().toString(),
-            RUM_SESSION_ID_CONTEXT_KEY to UUID.randomUUID().toString(),
-            RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString()
+        val fakeRumContext = RumContext(
+            applicationId = UUID.randomUUID().toString(),
+            sessionId = UUID.randomUUID().toString(),
+            viewId = UUID.randomUUID().toString()
         )
+        val fakeContext = mutableMapOf<String, Any?>(FeatureContextKeys.RUM_CONTEXT to fakeRumContext)
         fakeContextReceiver.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
 
         // When
-        fakeContext[RUM_VIEW_ID_CONTEXT_KEY] = UUID.randomUUID().toString()
+        fakeContext[FeatureContextKeys.RUM_CONTEXT] = fakeRumContext.copy(viewId = UUID.randomUUID().toString())
         fakeContextReceiver.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
         fakeContextReceiver.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
 
@@ -202,14 +202,14 @@ internal class SessionReplayFeatureTest {
         }.firstValue
         contextReceiver.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(viewId = UUID.randomUUID().toString()))
         )
         testedFeature.startRecording()
 
         // When
         contextReceiver.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(viewId = UUID.randomUUID().toString()))
         )
 
         // Then
@@ -233,7 +233,7 @@ internal class SessionReplayFeatureTest {
         // When
         contextReceiver.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(viewId = UUID.randomUUID().toString()))
         )
 
         // Then
@@ -256,7 +256,7 @@ internal class SessionReplayFeatureTest {
         // When
         contextReceiver.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+            mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(viewId = UUID.randomUUID().toString()))
         )
 
         // Then
@@ -322,9 +322,12 @@ internal class SessionReplayFeatureTest {
         contextReceiver.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
             mapOf(
-                RUM_APPLICATION_ID_CONTEXT_KEY to UUID.randomUUID().toString(),
-                RUM_SESSION_ID_CONTEXT_KEY to UUID.randomUUID().toString(),
-                RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString()
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(
+                        applicationId = UUID.randomUUID().toString(),
+                        sessionId = UUID.randomUUID().toString(),
+                        viewId = UUID.randomUUID().toString()
+                    )
             )
         )
         // Embedded records are held until the placeholder they composite into has been written.

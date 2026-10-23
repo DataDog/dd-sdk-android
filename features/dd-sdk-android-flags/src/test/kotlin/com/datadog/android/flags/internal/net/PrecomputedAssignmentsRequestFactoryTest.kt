@@ -12,6 +12,8 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -56,7 +58,13 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
                 exclude = listOf(DatadogSite.US1_FED, DatadogSite.US2_FED)
             ),
             featuresContext = fakeDatadogContext.featuresContext +
-                mapOf(Feature.RUM_FEATURE_NAME to mapOf("application_id" to fakeRumApplicationId.toString()))
+                mapOf(
+                    Feature.RUM_FEATURE_NAME to
+                        mapOf(
+                            FeatureContextKeys.RUM_CONTEXT to
+                                RumContext(applicationId = fakeRumApplicationId.toString())
+                        )
+                )
         )
 
         testedFactory = PrecomputedAssignmentsRequestFactory(mockInternalLogger, null)

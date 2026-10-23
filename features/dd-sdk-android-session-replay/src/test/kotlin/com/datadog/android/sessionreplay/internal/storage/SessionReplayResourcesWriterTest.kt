@@ -14,6 +14,8 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource
 import com.datadog.android.sessionreplay.internal.processor.asBinaryMetadata
@@ -93,7 +95,13 @@ internal class SessionReplayResourcesWriterTest {
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext
                 .toMutableMap().apply {
-                    put(Feature.RUM_FEATURE_NAME, mapOf("application_id" to fakeRumApplicationId.toString()))
+                    put(
+                        Feature.RUM_FEATURE_NAME,
+                        mapOf(
+                            FeatureContextKeys.RUM_CONTEXT to
+                                RumContext(applicationId = fakeRumApplicationId.toString())
+                        )
+                    )
                 }
         )
 

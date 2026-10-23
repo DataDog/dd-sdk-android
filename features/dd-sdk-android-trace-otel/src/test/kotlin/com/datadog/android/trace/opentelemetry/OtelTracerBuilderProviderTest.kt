@@ -14,6 +14,8 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.api.feature.getContextFuture
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.forceSamplingDecision
@@ -94,7 +96,7 @@ internal class OtelTracerBuilderProviderTest {
     @Mock
     lateinit var mockTraceWriter: DatadogSpanWriter
 
-    lateinit var fakeRumContext: Map<String, String>
+    lateinit var fakeRumContext: Map<String, Any?>
 
     @StringForgery(type = StringForgeryType.HEXADECIMAL)
     lateinit var fakeApplicationId: String
@@ -114,12 +116,16 @@ internal class OtelTracerBuilderProviderTest {
         whenever(
             mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         ) doReturn mockTracingFeatureScope
-        fakeRumContext = mapOf(
-            OtelTracerProvider.RUM_APPLICATION_ID_KEY to fakeApplicationId,
-            OtelTracerProvider.RUM_SESSION_ID_KEY to fakeSessionId,
-            OtelTracerProvider.RUM_VIEW_ID_KEY to fakeViewId,
-            OtelTracerProvider.RUM_ACTION_ID_KEY to fakeActionId
-        )
+        fakeRumContext =
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(
+                        applicationId = fakeApplicationId,
+                        sessionId = fakeSessionId,
+                        viewId = fakeViewId,
+                        actionId = fakeActionId
+                    )
+            )
         whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn fakeRumContext
         whenever(mockTracingFeatureScope.unwrap<Feature>()) doReturn mockTracingFeature
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()

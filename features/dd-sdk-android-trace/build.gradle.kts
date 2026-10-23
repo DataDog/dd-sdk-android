@@ -90,6 +90,7 @@ dependencies {
     testFixturesImplementation(libs.okHttp)
     testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.bundles.testTools)
+    testFixturesImplementation(project(":dd-sdk-android-internal"))
     testFixturesImplementation(project(":features:dd-sdk-android-trace-internal"))
 }
 

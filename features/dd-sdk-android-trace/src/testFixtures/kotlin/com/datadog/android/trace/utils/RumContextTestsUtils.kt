@@ -10,38 +10,31 @@ import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import fr.xgouchet.elmyr.Forge
 import java.util.UUID
 
 object RumContextTestsUtils {
-    const val RUM_CONTEXT_VIEW_ID = "view_id"
-    const val RUM_CONTEXT_ACTION_ID = "action_id"
-    const val RUM_CONTEXT_SESSION_ID = "session_id"
-    const val RUM_CONTEXT_APPLICATION_ID = "application_id"
-    const val RUM_CONTEXT_SESSION_SAMPLE_RATE = "session_sample_rate"
-
     private const val HEX = 16
 
-    fun Forge.aRumContext(sessionId: Long? = null) = buildMap {
-        put(RUM_CONTEXT_VIEW_ID, getForgery<UUID>().toString())
-        put(RUM_CONTEXT_ACTION_ID, getForgery<UUID>().toString())
-        put(RUM_CONTEXT_APPLICATION_ID, getForgery<UUID>().toString())
-        put(RUM_CONTEXT_SESSION_SAMPLE_RATE, aFloat(min = 0f, max = 100f))
-        sessionId?.let {
-            put(
-                RUM_CONTEXT_SESSION_ID,
-                "aaaaaaaa-bbbb-Mccc-Nddd-${(sessionId).toULong().toString(HEX)}"
-            )
-        }
-    }
+    fun Forge.aRumContext(sessionId: Long = aLong()) = RumContext(
+        viewId = getForgery<UUID>().toString(),
+        actionId = getForgery<UUID>().toString(),
+        applicationId = getForgery<UUID>().toString(),
+        sessionSampleRate = aFloat(min = 0f, max = 100f),
+        sessionId = "aaaaaaaa-bbbb-Mccc-Nddd-${sessionId.toULong().toString(HEX)}"
+    )
 
     fun Forge.aDatadogContextWithRumContext(
-        rumContext: Map<String, Any?>,
+        rumContext: RumContext?,
         accountInfo: AccountInfo? = null,
         userInfo: UserInfo = UserInfo()
     ): DatadogContext = getForgery<DatadogContext>().let {
         it.copy(
-            featuresContext = it.featuresContext + mapOf(Feature.RUM_FEATURE_NAME to rumContext),
+            featuresContext =
+            it.featuresContext +
+                mapOf(Feature.RUM_FEATURE_NAME to mapOf(FeatureContextKeys.RUM_CONTEXT to rumContext)),
             accountInfo = accountInfo,
             userInfo = userInfo
         )

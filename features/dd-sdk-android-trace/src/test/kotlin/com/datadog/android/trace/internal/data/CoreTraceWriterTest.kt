@@ -22,10 +22,6 @@ import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.domain.event.FORCE_DROP_SPAN
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
-import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_ACTION_ID
-import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_APPLICATION_ID
-import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_SESSION_ID
-import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_VIEW_ID
 import com.datadog.android.trace.utils.RumContextTestsUtils.aDatadogContextWithRumContext
 import com.datadog.android.trace.utils.RumContextTestsUtils.aRumContext
 import com.datadog.android.utils.forge.Configurator
@@ -186,11 +182,11 @@ internal class CoreTraceWriterTest {
             allValues.forEach { span ->
                 verify(span).setTag(
                     LogAttributes.RUM_APPLICATION_ID,
-                    fakeRumContext[RUM_CONTEXT_APPLICATION_ID]
+                    fakeRumContext.applicationId as Any?
                 )
-                verify(span).setTag(LogAttributes.RUM_SESSION_ID, fakeRumContext[RUM_CONTEXT_SESSION_ID])
-                verify(span).setTag(LogAttributes.RUM_VIEW_ID, fakeRumContext[RUM_CONTEXT_VIEW_ID])
-                verify(span).setTag(LogAttributes.RUM_ACTION_ID, fakeRumContext[RUM_CONTEXT_ACTION_ID])
+                verify(span).setTag(LogAttributes.RUM_SESSION_ID, fakeRumContext.sessionId as Any?)
+                verify(span).setTag(LogAttributes.RUM_VIEW_ID, fakeRumContext.viewId as Any?)
+                verify(span).setTag(LogAttributes.RUM_ACTION_ID, fakeRumContext.actionId as Any?)
                 verify(span).setTag(RumContextPropagator.DATADOG_INITIAL_CONTEXT, null as Any?)
             }
         }
@@ -203,7 +199,7 @@ internal class CoreTraceWriterTest {
         forge: Forge
     ) {
         // GIVEN
-        val fakeInitialDatadogContext = forge.aDatadogContextWithRumContext(emptyMap())
+        val fakeInitialDatadogContext = forge.aDatadogContextWithRumContext(null)
         val fakeLazyContext = mock<Future<DatadogContext>> { on { get() } doReturn fakeInitialDatadogContext }
         val ddSpans = createNonEmptyDdSpans(forge, includeDropSamplingPriority = false).map { span ->
             span.withLazyContext(fakeLazyContext)

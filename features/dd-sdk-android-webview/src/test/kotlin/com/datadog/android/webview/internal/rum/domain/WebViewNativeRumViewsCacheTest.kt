@@ -6,6 +6,9 @@
 
 package com.datadog.android.webview.internal.rum.domain
 
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.rumContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -65,16 +68,18 @@ internal class WebViewNativeRumViewsCacheTest {
         // Given
         val fakeEntries = forge.aList(size = forge.anInt(min = 1, max = 10)) {
             mapOf(
-                WebViewNativeRumViewsCache.VIEW_ID_KEY to fakeIdGenerator.generateId(),
-                WebViewNativeRumViewsCache.VIEW_TIMESTAMP_KEY to nextTimestamp(),
-                WebViewNativeRumViewsCache.VIEW_HAS_REPLAY_KEY to true
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(viewId = fakeIdGenerator.generateId(), viewTimestamp = nextTimestamp(), hasReplay = true)
             )
         }
         val fakeNoReplayEntries = forge.aList(size = forge.anInt(min = 1, max = 10)) {
             mapOf(
-                WebViewNativeRumViewsCache.VIEW_ID_KEY to fakeIdGenerator.generateId(),
-                WebViewNativeRumViewsCache.VIEW_TIMESTAMP_KEY to nextTimestamp(),
-                WebViewNativeRumViewsCache.VIEW_HAS_REPLAY_KEY to false
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(
+                        viewId = fakeIdGenerator.generateId(),
+                        viewTimestamp = nextTimestamp(),
+                        hasReplay = false
+                    )
             )
         }
         val fakeBrowserEventTimestampInMs = nextTimestamp()
@@ -89,7 +94,7 @@ internal class WebViewNativeRumViewsCacheTest {
         val resolvedParentId = testedCache.resolveLastParentIdForBrowserEvent(fakeBrowserEventTimestampInMs)
 
         // Then
-        assertThat(resolvedParentId).isEqualTo(fakeEntries.last()[WebViewNativeRumViewsCache.VIEW_ID_KEY])
+        assertThat(resolvedParentId).isEqualTo(fakeEntries.last().rumContext()?.viewId)
     }
 
     @Test
@@ -99,9 +104,12 @@ internal class WebViewNativeRumViewsCacheTest {
         // Given
         val fakeEntries = forge.aList {
             mapOf(
-                WebViewNativeRumViewsCache.VIEW_ID_KEY to fakeIdGenerator.generateId(),
-                WebViewNativeRumViewsCache.VIEW_TIMESTAMP_KEY to nextTimestamp(),
-                WebViewNativeRumViewsCache.VIEW_HAS_REPLAY_KEY to false
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(
+                        viewId = fakeIdGenerator.generateId(),
+                        viewTimestamp = nextTimestamp(),
+                        hasReplay = false
+                    )
             )
         }
         fakeEntries.forEach {
@@ -113,7 +121,7 @@ internal class WebViewNativeRumViewsCacheTest {
         val resolvedParentId = testedCache.resolveLastParentIdForBrowserEvent(fakeBrowserEventTimestampInMs)
 
         // Then
-        assertThat(resolvedParentId).isEqualTo(fakeEntries.last()[WebViewNativeRumViewsCache.VIEW_ID_KEY])
+        assertThat(resolvedParentId).isEqualTo(fakeEntries.last().rumContext()?.viewId)
     }
 
     @Test
@@ -124,9 +132,12 @@ internal class WebViewNativeRumViewsCacheTest {
         val fakeBrowserEventTimestampInMs = nextTimestamp()
         val fakeEntries = forge.aList {
             mapOf(
-                WebViewNativeRumViewsCache.VIEW_ID_KEY to fakeIdGenerator.generateId(),
-                WebViewNativeRumViewsCache.VIEW_TIMESTAMP_KEY to nextTimestamp(),
-                WebViewNativeRumViewsCache.VIEW_HAS_REPLAY_KEY to forge.aBool()
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(
+                        viewId = fakeIdGenerator.generateId(),
+                        viewTimestamp = nextTimestamp(),
+                        hasReplay = forge.aBool()
+                    )
             )
         }
         fakeEntries.forEach {
@@ -159,9 +170,12 @@ internal class WebViewNativeRumViewsCacheTest {
         // Given
         val fakeEntries = forge.aList {
             mapOf(
-                WebViewNativeRumViewsCache.VIEW_ID_KEY to fakeIdGenerator.generateId(),
-                WebViewNativeRumViewsCache.VIEW_TIMESTAMP_KEY to nextTimestamp(),
-                WebViewNativeRumViewsCache.VIEW_HAS_REPLAY_KEY to forge.aBool()
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(
+                        viewId = fakeIdGenerator.generateId(),
+                        viewTimestamp = nextTimestamp(),
+                        hasReplay = forge.aBool()
+                    )
             )
         }
         fakeEntries.forEach {
@@ -183,10 +197,13 @@ internal class WebViewNativeRumViewsCacheTest {
         testedCache = WebViewNativeRumViewsCache(mockTimeProvider, entriesTtlLimitInMs)
         var oldEntryTimestamp = oldEntriesTimestamp
         val fakeOldEntries = forge.aList(size = forge.anInt(min = 1, max = 10)) {
-            mapOf<String, Any>(
-                WebViewNativeRumViewsCache.VIEW_ID_KEY to fakeIdGenerator.generateId(),
-                WebViewNativeRumViewsCache.VIEW_TIMESTAMP_KEY to ++oldEntryTimestamp,
-                WebViewNativeRumViewsCache.VIEW_HAS_REPLAY_KEY to forge.aBool()
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(
+                        viewId = fakeIdGenerator.generateId(),
+                        viewTimestamp = ++oldEntryTimestamp,
+                        hasReplay = forge.aBool()
+                    )
             )
         }
         whenever(mockTimeProvider.getDeviceTimestampMillis()).thenReturn(oldEntriesTimestamp)
@@ -201,17 +218,20 @@ internal class WebViewNativeRumViewsCacheTest {
                 max = WebViewNativeRumViewsCache.DATA_CACHE_ENTRIES_LIMIT
             )
         ) {
-            mapOf<String, Any>(
-                WebViewNativeRumViewsCache.VIEW_ID_KEY to fakeIdGenerator.generateId(),
-                WebViewNativeRumViewsCache.VIEW_TIMESTAMP_KEY to ++newEntryTimestamp,
-                WebViewNativeRumViewsCache.VIEW_HAS_REPLAY_KEY to forge.aBool()
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(
+                        viewId = fakeIdGenerator.generateId(),
+                        viewTimestamp = ++newEntryTimestamp,
+                        hasReplay = forge.aBool()
+                    )
             )
         }
         val expectedCachedEntries = fakeNewEntries.reversed().map {
             WebViewNativeRumViewsCache.ViewEntry(
-                it[WebViewNativeRumViewsCache.VIEW_ID_KEY] as String,
-                it[WebViewNativeRumViewsCache.VIEW_TIMESTAMP_KEY] as Long,
-                it[WebViewNativeRumViewsCache.VIEW_HAS_REPLAY_KEY] as Boolean
+                checkNotNull(it.rumContext()?.viewId),
+                it.rumContext()?.viewTimestamp as Long,
+                it.rumContext()?.hasReplay as Boolean
             )
         }
         // Simulate time passing: device time is beyond TTL for old entries
@@ -234,10 +254,13 @@ internal class WebViewNativeRumViewsCacheTest {
                 max = WebViewNativeRumViewsCache.DATA_CACHE_ENTRIES_LIMIT * 2
             )
         ) {
-            mapOf<String, Any>(
-                WebViewNativeRumViewsCache.VIEW_ID_KEY to fakeIdGenerator.generateId() + index++,
-                WebViewNativeRumViewsCache.VIEW_TIMESTAMP_KEY to nextTimestamp(),
-                WebViewNativeRumViewsCache.VIEW_HAS_REPLAY_KEY to forge.aBool()
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(
+                        viewId = fakeIdGenerator.generateId() + index++,
+                        viewTimestamp = nextTimestamp(),
+                        hasReplay = forge.aBool()
+                    )
             )
         }
 
@@ -247,9 +270,9 @@ internal class WebViewNativeRumViewsCacheTest {
             .reversed()
             .map {
                 WebViewNativeRumViewsCache.ViewEntry(
-                    it[WebViewNativeRumViewsCache.VIEW_ID_KEY] as String,
-                    it[WebViewNativeRumViewsCache.VIEW_TIMESTAMP_KEY] as Long,
-                    it[WebViewNativeRumViewsCache.VIEW_HAS_REPLAY_KEY] as Boolean
+                    checkNotNull(it.rumContext()?.viewId),
+                    it.rumContext()?.viewTimestamp as Long,
+                    it.rumContext()?.hasReplay as Boolean
                 )
             }
         fakeEntries.forEach { testedCache.addToCache(it) }
@@ -265,10 +288,9 @@ internal class WebViewNativeRumViewsCacheTest {
         // Given
         val fakeViewId = fakeIdGenerator.generateId()
         val fakeEntries = forge.aList(size = forge.anInt(min = 1, max = 10)) {
-            mapOf<String, Any>(
-                WebViewNativeRumViewsCache.VIEW_ID_KEY to fakeViewId,
-                WebViewNativeRumViewsCache.VIEW_TIMESTAMP_KEY to nextTimestamp(),
-                WebViewNativeRumViewsCache.VIEW_HAS_REPLAY_KEY to forge.aBool()
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(viewId = fakeViewId, viewTimestamp = nextTimestamp(), hasReplay = forge.aBool())
             )
         }
         fakeEntries.forEach { testedCache.addToCache(it) }
@@ -278,8 +300,8 @@ internal class WebViewNativeRumViewsCacheTest {
         assertThat(testedCache.parentViewsHistoryQueue).containsOnly(
             WebViewNativeRumViewsCache.ViewEntry(
                 fakeViewId,
-                fakeEntries.last()[WebViewNativeRumViewsCache.VIEW_TIMESTAMP_KEY] as Long,
-                fakeEntries.last()[WebViewNativeRumViewsCache.VIEW_HAS_REPLAY_KEY] as Boolean
+                fakeEntries.last().rumContext()?.viewTimestamp as Long,
+                fakeEntries.last().rumContext()?.hasReplay as Boolean
             )
         )
     }
@@ -293,10 +315,13 @@ internal class WebViewNativeRumViewsCacheTest {
                 max = 10
             )
         ) {
-            mapOf<String, Any>(
-                WebViewNativeRumViewsCache.VIEW_ID_KEY to fakeIdGenerator.generateId(),
-                WebViewNativeRumViewsCache.VIEW_TIMESTAMP_KEY to nextTimestamp(),
-                WebViewNativeRumViewsCache.VIEW_HAS_REPLAY_KEY to forge.aBool()
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(
+                        viewId = fakeIdGenerator.generateId(),
+                        viewTimestamp = nextTimestamp(),
+                        hasReplay = forge.aBool()
+                    )
             )
         }
         val fakeEntries = forge.aList(
@@ -305,10 +330,13 @@ internal class WebViewNativeRumViewsCacheTest {
                 max = 10
             )
         ) {
-            mapOf<String, Any>(
-                WebViewNativeRumViewsCache.VIEW_ID_KEY to fakeIdGenerator.generateId(),
-                WebViewNativeRumViewsCache.VIEW_TIMESTAMP_KEY to nextTimestamp(),
-                WebViewNativeRumViewsCache.VIEW_HAS_REPLAY_KEY to forge.aBool()
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    RumContext(
+                        viewId = fakeIdGenerator.generateId(),
+                        viewTimestamp = nextTimestamp(),
+                        hasReplay = forge.aBool()
+                    )
             )
         }
 
@@ -322,9 +350,9 @@ internal class WebViewNativeRumViewsCacheTest {
                 .reversed()
                 .map {
                     WebViewNativeRumViewsCache.ViewEntry(
-                        it[WebViewNativeRumViewsCache.VIEW_ID_KEY] as String,
-                        it[WebViewNativeRumViewsCache.VIEW_TIMESTAMP_KEY] as Long,
-                        it[WebViewNativeRumViewsCache.VIEW_HAS_REPLAY_KEY] as Boolean
+                        checkNotNull(it.rumContext()?.viewId),
+                        it.rumContext()?.viewTimestamp as Long,
+                        it.rumContext()?.hasReplay as Boolean
                     )
                 }
         )
