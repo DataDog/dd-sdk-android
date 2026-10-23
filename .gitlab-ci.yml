@@ -28,7 +28,7 @@ variables:
   ORG_GRADLE_PROJECT_gradlePluginProxy: "https://depot-read-api-java.us1.ddbuild.io/magicmirror/magicmirror/@current/"
 
 include:
-  - local: 'ci/pipelines/default-pipeline.yml'
+  - local: 'ci/pipelines/kvm-trial-pipeline.yml'
     rules:
       - if: '$CI_PIPELINE_KEY == null'
   - local: 'ci/pipelines/check-release-pipeline.yml'

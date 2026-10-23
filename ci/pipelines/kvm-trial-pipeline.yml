@@ -1,0 +1,70 @@
+# Throwaway pipeline for CIEXE-2338: runs only the KVM core-it job, immediately.
+# Copies the minimum of default-pipeline.yml it depends on. Do not merge.
+
+stages:
+  - test-pyramid
+
+.snippets:
+  setup-gradle:
+    - export GRADLE_USER_HOME="cache/"
+    - echo "org.gradle.jvmargs=-Xmx4096m -javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG" >> gradle.properties
+    # Set max workers to keep memory under control
+    - echo "org.gradle.workers.max=4" >> gradle.properties
+    # Disable cache clean up if we won't upload the cache anywhere
+    - echo "org.gradle.cache.cleanup=$( [[ "$GRADLE_CACHE_CLEANUP" == "true" ]] && echo "always" || echo "disabled" )" >> gradle.properties
+    # Equal to --stacktrace
+    - echo "org.gradle.logging.stacktrace=all" >> gradle.properties
+    # Keep kotlin compiler in Gradle daemon process for more predictable memory
+    - echo "kotlin.compiler.execution.strategy=in-process" >> gradle.properties
+    - echo "--- gradle.properties ---" && cat gradle.properties
+
+.cpu-memory-intensive-job:
+  variables:
+    KUBERNETES_MEMORY_REQUEST: "8Gi"
+    KUBERNETES_MEMORY_LIMIT: "32Gi"
+    KUBERNETES_CPU_REQUEST: 20
+
+.base-cache-pull-job:
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/wrapper/
+      - cache/notifications/
+    policy: pull
+
+test-pyramid:core-it-latest-api-kvm:
+  extends:
+    - .base-cache-pull-job
+    - .cpu-memory-intensive-job
+  tags: [ "kvm:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  variables:
+    ANDROID_API: "37"
+    # KVM accelerates only guests that match the host architecture, hence x86_64 instead of arm64-v8a.
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API.0;google_apis_ps16k;x86_64"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API.0"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+  script:
+    # The CI image ships neither the emulator nor its shared-library dependencies.
+    - apt-get update && apt-get -y install --no-install-recommends libpulse0 libnss3 libx11-6 libxcb1 libxcomposite1 libxcursor1 libxi6 libxrandr2 libxtst6 libxkbfile1 libglib2.0-0 libasound2
+    - SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+    - echo y | $SDKMANAGER --install "emulator" "platform-tools" "$ANDROID_PLATFORM" "$ANDROID_BUILD_TOOLS" "$ANDROID_EMULATOR_IMAGE" >/dev/null
+    - echo "no" | $ANDROID_HOME/cmdline-tools/latest/bin/avdmanager --verbose create avd --force --name "$EMULATOR_NAME" --package "$ANDROID_EMULATOR_IMAGE"
+    # Fail fast with an explicit reason if the runner did not pass /dev/kvm through.
+    - $ANDROID_HOME/emulator/emulator -accel-check
+    - !reference [.snippets, setup-gradle]
+    - set +e
+    - exit_code=0
+    # Unlike the start-emulator snippet, no `-qemu -machine virt`: that machine type is ARM-only.
+    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose &
+    # Wait for boot so connectedDebugAndroidTest does not race the emulator on a warm Gradle cache.
+    - timeout 300 bash -c 'until [[ "$($ANDROID_HOME/platform-tools/adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" == "1" ]]; do sleep 2; done' || exit_code=$?
+    - if [[ "$exit_code" -ne 0 ]]; then echo "Emulator failed to boot"; exit 1; fi
+    - DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :reliability:core-it:connectedDebugAndroidTest || exit_code=$?
+    - $ANDROID_HOME/platform-tools/adb emu kill
+    - dd-sts exchange --policy dd-sdk-android -- datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname reliability/core-it/build/outputs/androidTest-results/connected/debug/ || true
+    - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
+    - exit 0
