@@ -43,6 +43,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.NullSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
@@ -525,6 +528,34 @@ internal class DatadogFlagsProviderTest {
         val providerError = events[0] as OpenFeatureProviderEvents.ProviderError
         assertThat(providerError.error).isInstanceOf(OpenFeatureError.GeneralError::class.java)
         assertThat(providerError.error).hasMessage(timeoutMessage)
+        assertThat(events[1]).isInstanceOf(OpenFeatureProviderEvents.ProviderReady::class.java)
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = ["Flag assignment request failed", ""])
+    fun `M emit recoverable ProviderError then ProviderReady W observe() {request recovers}`(
+        fakeErrorMessage: String?
+    ) = runTest {
+        // Given
+        val events = mutableListOf<OpenFeatureProviderEvents>()
+        val fakeError = fakeErrorMessage?.let { IllegalStateException(it) }
+
+        // When
+        val job = launch {
+            provider.observe().collect { events.add(it) }
+        }
+        testScheduler.runCurrent()
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Error(fakeError))
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Ready)
+        testScheduler.runCurrent()
+        job.cancel()
+
+        // Then
+        assertThat(events).hasSize(2)
+        val providerError = events[0] as OpenFeatureProviderEvents.ProviderError
+        assertThat(providerError.error).isInstanceOf(OpenFeatureError.GeneralError::class.java)
+        assertThat(providerError.error).hasMessage(fakeErrorMessage ?: "Unknown flags client error")
         assertThat(events[1]).isInstanceOf(OpenFeatureProviderEvents.ProviderReady::class.java)
     }
 
