@@ -17,14 +17,13 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider
-import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_APPLICATION_ID_CONTEXT_KEY
-import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_SESSION_ID_CONTEXT_KEY
-import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_VIEW_ID_CONTEXT_KEY
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
@@ -206,7 +205,10 @@ internal class WindowsOnDrawListenerTest {
     }
 
     @Test
-    fun `M resume without polling W context update {active RUM view disappears and returns}`() {
+    fun `M resume without polling W context update {active RUM view disappears and returns}`(
+        @Forgery fakeRumContext: RumContext,
+        @Forgery fakeViewId: UUID
+    ) {
         // Given: use the real context, queue and scheduler to exercise failed snapshot attempts.
         val mockHandler = mock<Handler>()
         val mockTimeProvider = mock<TimeProvider>()
@@ -234,7 +236,7 @@ internal class WindowsOnDrawListenerTest {
             }
             fakeClockMs = targetMs
         }
-        val fakeRumContextProvider = SessionReplayRumContextProvider(adaptiveCaptureSchedulingEnabled = true) {
+        val fakeRumContextProvider = SessionReplayRumContextProvider {
             testedListener.scheduleCapture()
         }
         val fakeQueueHandler = RecordedDataQueueHandler(
@@ -265,18 +267,14 @@ internal class WindowsOnDrawListenerTest {
             methodCallSamplingRate = 0f,
             rumContextProvider = fakeRumContextProvider
         )
-        val fakeViewId = UUID.randomUUID().toString()
-        val fakeContext = mutableMapOf<String, Any?>(
-            RUM_APPLICATION_ID_CONTEXT_KEY to UUID.randomUUID().toString(),
-            RUM_SESSION_ID_CONTEXT_KEY to UUID.randomUUID().toString(),
-            RUM_VIEW_ID_CONTEXT_KEY to fakeViewId
-        )
+        val fakeActiveRumContext = fakeRumContext.copy(viewId = fakeViewId.toString())
+        val fakeContext = mutableMapOf<String, Any?>(FeatureContextKeys.RUM_CONTEXT to fakeActiveRumContext)
         fakeRumContextProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
         advanceTo(0L)
         assertThat(fakeQueueHandler.recordedDataQueue).hasSize(1)
 
         // When: a draw occurs between RUM views, then the UI remains idle.
-        fakeContext.remove(RUM_VIEW_ID_CONTEXT_KEY)
+        fakeContext[FeatureContextKeys.RUM_CONTEXT] = fakeActiveRumContext.copy(viewId = null)
         fakeRumContextProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
         testedListener.onDraw()
         advanceTo(1_000L)
@@ -288,7 +286,7 @@ internal class WindowsOnDrawListenerTest {
         assertThat(fakeQueueHandler.recordedDataQueue).hasSize(1)
 
         // Restoring even the same view resumes capture from the notification alone.
-        fakeContext[RUM_VIEW_ID_CONTEXT_KEY] = fakeViewId
+        fakeContext[FeatureContextKeys.RUM_CONTEXT] = fakeActiveRumContext
         fakeRumContextProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
         advanceTo(1_000L)
         verify(mockSnapshotProducer, times(2)).beginSnapshot()
@@ -560,11 +558,13 @@ internal class WindowsOnDrawListenerTest {
 
     @Test
     fun `M pass viewUrl from RumContextProvider W onDraw()`(
+        @Forgery fakeRumContext: SessionReplayRumContext,
         @StringForgery fakeViewUrl: String
     ) {
+        // Given
         val mockRumContextProvider: RumContextProvider = mock {
             whenever(it.getRumContext()).thenReturn(
-                SessionReplayRumContext(viewUrl = fakeViewUrl)
+                fakeRumContext.copy(viewUrl = fakeViewUrl)
             )
         }
         val listenerWithProvider = WindowsOnDrawListener(
@@ -586,8 +586,10 @@ internal class WindowsOnDrawListenerTest {
             .thenReturn(fakeSnapshotQueueItem)
         fakeSnapshotQueueItem.pendingJobs.set(0)
 
+        // When
         listenerWithProvider.onDraw()
 
+        // Then
         verify(mockSnapshotProducer, times(fakeMockedDecorViews.size)).produce(
             rootView = any(),
             systemInformation = any(),

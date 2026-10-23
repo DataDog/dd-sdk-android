@@ -68,6 +68,7 @@ dependencies {
     ksp(project(":tools:noopfactory"))
 
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(libs.okHttp)
     testImplementation(libs.systemStubsJupiter)
     testImplementation(libs.msgPackCore)
@@ -90,6 +91,7 @@ dependencies {
     testFixturesImplementation(libs.okHttp)
     testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.bundles.testTools)
+    testFixturesImplementation(project(":dd-sdk-android-internal"))
     testFixturesImplementation(project(":features:dd-sdk-android-trace-internal"))
 }
 

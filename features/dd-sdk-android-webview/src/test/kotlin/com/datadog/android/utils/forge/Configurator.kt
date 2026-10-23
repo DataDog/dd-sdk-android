@@ -6,6 +6,7 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.internal.tests.elmyr.RumContextForgeryFactory
 import com.datadog.android.rum.utils.forge.useCommonRumFactories
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator

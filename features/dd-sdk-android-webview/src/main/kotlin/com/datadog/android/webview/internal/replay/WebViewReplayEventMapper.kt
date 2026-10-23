@@ -7,8 +7,8 @@
 package com.datadog.android.webview.internal.replay
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.webview.internal.rum.TimestampOffsetProvider
-import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.lang.ClassCastException

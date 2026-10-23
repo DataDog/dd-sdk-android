@@ -15,7 +15,7 @@ internal fun MutableMap<String, Any?>.setRumContext(context: RumContext?) {
 
     this[FeatureContextKeys.RUM_CONTEXT] = context
 
-    // Keep the flat fields for existing Android readers and Flutter Session Replay.
+    // Keep the flat fields for cross-platform consumers such as Flutter Session Replay.
     // TODO RUM-19153: Remove after all supported consumers have migrated to the typed snapshot.
     this["application_id"] = context.applicationId
     this["session_id"] = context.sessionId
