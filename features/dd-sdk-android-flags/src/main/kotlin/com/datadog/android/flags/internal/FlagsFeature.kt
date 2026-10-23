@@ -156,34 +156,27 @@ internal class FlagsFeature(
         newClientFactory: () -> FlagsClient
     ): FlagsClient {
         val existingClient = synchronized(registeredClients) {
-            registeredClients[name]
-        }
-        if (existingClient != null) {
-            val existingMode = (existingClient as? DatadogFlagsClient)?.experimentationOptOut?.mode
-            val message = if (existingMode != null && existingMode != experimentationOptOutMode) {
-                "Attempted to create a FlagsClient named '$name' with experimentation opt-out mode " +
-                    "$experimentationOptOutMode, but one already exists with mode $existingMode. " +
-                    "The existing client will be used. Use a separate client name for each mode."
-            } else {
-                "Attempted to create a FlagsClient named '$name', but one already " +
-                    "exists. The existing client will be used, and new configuration will be ignored."
-            }
-            logErrorWithPolicy(
-                message = message,
-                level = InternalLogger.Level.WARN,
-                shouldCrashInStrict = true
-            )
-            return existingClient
-        }
-
-        // Need to check again since we dropped the lock to log above.
-        return synchronized(registeredClients) {
             registeredClients[name] ?: run {
                 val newClient = newClientFactory()
                 registeredClients[name] = newClient
-                newClient
+                return newClient
             }
         }
+        val existingMode = (existingClient as? DatadogFlagsClient)?.experimentationOptOut?.mode
+        val message = if (existingMode != null && existingMode != experimentationOptOutMode) {
+            "Attempted to create a FlagsClient named '$name' with experimentation opt-out mode " +
+                "$experimentationOptOutMode, but one already exists with mode $existingMode. " +
+                "The existing client will be used. Use a separate client name for each mode."
+        } else {
+            "Attempted to create a FlagsClient named '$name', but one already " +
+                "exists. The existing client will be used, and new configuration will be ignored."
+        }
+        logErrorWithPolicy(
+            message = message,
+            level = InternalLogger.Level.WARN,
+            shouldCrashInStrict = true
+        )
+        return existingClient
     }
 
     internal fun unregisterClient(name: String) = registeredClients.remove(name)
