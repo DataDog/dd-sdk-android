@@ -227,6 +227,7 @@ test:debug:
         DD_TAGS="test.configuration.variant:debug" ./gradlew
         :dd-sdk-android-core:testDebugUnitTest
         :dd-sdk-android-internal:testDebugUnitTest
+        :reliability:stub-core:testDebugUnitTest
         :unitTestDebugFeatures
         :unitTestDebugIntegrations
         :unitTestDebugSamples
@@ -562,7 +563,7 @@ test-pyramid:publish-e2e-synthetics:
     - export E2E_DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_APP_KEY)
     - export E2E_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__E2E_MOBILE_APP_ID)
     - !reference [ .snippets, setup-gradle ]
-    - ./gradlew :sample:kotlin:packageUs1Release
+    - DD_API_KEY="$E2E_DD_API_KEY" ./gradlew :sample:kotlin:packageUs1Release
     - datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
   artifacts:
     when: always
@@ -590,7 +591,7 @@ test-pyramid:publish-webview-synthetics:
     - export E2E_DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_APP_KEY)
     - export E2E_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_MOBILE_APP_ID)
     - !reference [ .snippets, setup-gradle ]
-    - ./gradlew :sample:kotlin:packageUs1Release
+    - DD_API_KEY="$E2E_DD_API_KEY" ./gradlew :sample:kotlin:packageUs1Release
     - datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
   artifacts:
     when: always
@@ -618,7 +619,7 @@ test-pyramid:publish-staging-synthetics:
     - export E2E_DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_APP_KEY)
     - export E2E_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_APP_ID)
     - !reference [ .snippets, setup-gradle ]
-    - ./gradlew :sample:kotlin:packageStagingRelease
+    - DD_API_KEY="$E2E_DD_API_KEY" ./gradlew :sample:kotlin:packageStagingRelease
     - datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/staging/release/kotlin-staging-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest --datadogSite "datad0g.com"
   artifacts:
     when: always

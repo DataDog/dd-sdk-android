@@ -4,7 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.SAMPLE_APP_REGIONS
 import com.datadog.gradle.config.configureFlavorForSampleApp
@@ -12,6 +11,7 @@ import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.taskConfig
 import com.datadog.gradle.plugin.InstrumentationMode
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.util.Locale
 
 plugins {
     // Build
@@ -104,12 +104,12 @@ android {
     externalNativeBuild {
         cmake {
             path = File("$projectDir/src/main/cpp/CMakeLists.txt")
-            version = Dependencies.Versions.CMake
+            version = libs.versions.cmake.get()
         }
     }
-    ndkVersion = Dependencies.Versions.Ndk
+    ndkVersion = libs.versions.ndk.get()
 
-    val e2ePassword = System.getenv("E2E_STORE_PASSWD")
+    val e2ePassword = providers.environmentVariable("E2E_STORE_PASSWD").orNull
     signingConfigs {
         if (e2ePassword != null) {
             create("release") {
@@ -131,18 +131,41 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            isMinifyEnabled = false
-            if (e2ePassword != null) {
-                signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = if (e2ePassword != null) {
+                signingConfigs.getByName("release")
             } else {
-                signingConfig = signingConfigs.getByName("debug")
+                signingConfigs.getByName("debug")
             }
+        }
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val apiKey = providers.environmentVariable("DD_API_KEY").orNull
+        @Suppress("UnstableApiUsage")
+        if (variant.isMinifyEnabled && !apiKey.isNullOrEmpty()) {
+            val variantCapitalized = variant.name.replaceFirstChar { it.uppercaseChar() }
+            tasks
+                .named { it == "package$variantCapitalized" }.configureEach {
+                    finalizedBy("uploadMapping$variantCapitalized")
+                    finalizedBy("uploadNdkSymbolFiles$variantCapitalized")
+                }
         }
     }
 }
 
 datadog {
     composeInstrumentation = InstrumentationMode.AUTO
+    variants {
+        SAMPLE_APP_REGIONS.forEach {
+            register(it) {
+                site = it.uppercase(Locale.US)
+            }
+        }
+    }
 }
 
 dependencies {
@@ -221,13 +244,13 @@ dependencies {
 
     // Multithreading
     implementation(libs.rxJava3)
-    implementation("com.squareup.retrofit2:adapter-rxjava3:2.9.0")
+    implementation(libs.retrofitRxJava3Adapter)
     implementation(libs.rxJava3Android)
     implementation(libs.coroutinesCore)
 
     // Network
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation(libs.retrofit)
+    implementation(libs.retrofitConverterGson)
     implementation(libs.okHttp)
     implementation(libs.gson)
     implementation("com.launchdarkly:okhttp-eventsource:2.5.0")

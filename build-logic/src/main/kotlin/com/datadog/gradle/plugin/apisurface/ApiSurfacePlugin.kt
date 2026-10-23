@@ -8,9 +8,10 @@ package com.datadog.gradle.plugin.apisurface
 
 import com.datadog.gradle.config.taskConfig
 import com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask
+import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.ResolvableConfiguration
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.register
@@ -74,11 +75,13 @@ class ApiSurfacePlugin : Plugin<Project> {
             if (name == "compileDebugKotlin") {
                 finalizedBy(generateCompilerMetaTask)
             }
-            // Java API generation task does a clean-up of all files in the output
+            // Java API generation task does a cleanup of all files in the output
             // folder, so let it run first
             if (target.plugins.hasPlugin(GEN_JAVA_API_LAYOUT_PLUGIN)) {
-                val isCi = target.providers.environmentVariable("CI").isPresent
-                if (isCi) {
+                val isCi = target.providers.environmentVariable("CI")
+                    .map { it.toBoolean() }
+                    .orElse(false)
+                if (isCi.get()) {
                     // Java API generation wires to the release build type, so we can afford triggering compilation
                     // of release type locally when we run debug compilation, but we would like to avoid it on CI
                     if (name == "compileReleaseKotlin") {
@@ -98,24 +101,23 @@ class ApiSurfacePlugin : Plugin<Project> {
      * `kotlin-compiler-embeddable` off the buildscript classpath, where it would clash with the
      * one bundled with the Kotlin Gradle plugin.
      */
-    private fun Project.createParserConfiguration(): Configuration {
-        val kotlinVersion = extensions.getByType<VersionCatalogsExtension>()
+    @Suppress("UnstableApiUsage")
+    private fun Project.createParserConfiguration(): NamedDomainObjectProvider<ResolvableConfiguration> {
+        val compilerEmbeddable = extensions.getByType<VersionCatalogsExtension>()
             .named("libs")
-            .findVersion("kotlinBuildscript")
-            .orElseThrow { IllegalStateException("No `kotlin` version found in the version catalog") }
-        return configurations.create(CONFIGURATION_PARSER) {
-            isCanBeConsumed = false
-            isCanBeResolved = true
-            isVisible = false
-            dependencies.add(
-                this@createParserConfiguration.dependencies
-                    .create("org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlinVersion")
-            )
+            .findLibrary("kotlinCompilerEmbeddable")
+            .orElseThrow { IllegalStateException("No `kotlinCompilerEmbeddable` library found in the version catalog") }
+        val parserDependencies = configurations.dependencyScope(CONFIGURATION_PARSER_DEPENDENCIES) {
+            dependencies.addLater(compilerEmbeddable)
+        }
+        return configurations.resolvable(CONFIGURATION_PARSER) {
+            extendsFrom(parserDependencies)
         }
     }
 
     companion object {
         const val CONFIGURATION_PARSER = "apiSurfaceParser"
+        const val CONFIGURATION_PARSER_DEPENDENCIES = "apiSurfaceParserDependencies"
         const val TASK_GEN_KOTLIN_API_SURFACE = "generateApiSurface"
         const val TASK_GEN_COMPILER_METADATA = "generateCompilerMetadata"
         const val TASK_GEN_JAVA_API_SURFACE = "apiDump"

@@ -14,7 +14,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
-import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumVitalAppLaunchEventHelper
 import com.datadog.android.rum.internal.profiling.isProfilerRunning
@@ -137,7 +137,7 @@ internal class RumSessionScopeStartupManagerImpl(
         )
 
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-            // startMs is different for different scenarios. For Cold it will be process start, for Warm
+            // startMs is different for different scenarios. For Cold, it will be process start, for Warm
             // it will be Activity.onCreate. But we have application launch profiling working for cold starts only anyway.
             ProfilerEvent.RumVitalEvent(
                 rumContext = ProfilingRumContext(

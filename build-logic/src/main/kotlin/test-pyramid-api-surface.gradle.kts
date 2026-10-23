@@ -5,6 +5,7 @@
  */
 
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
+import com.datadog.gradle.utils.toCamelCase
 import dev.detekt.gradle.Detekt
 import org.gradle.api.attributes.Usage
 import org.gradle.kotlin.dsl.getByType
@@ -19,12 +20,20 @@ dependencies {
     detektPlugins(project(":tools:detekt"))
 }
 
-val apiSurfaceLogFile = layout.buildDirectory.file("reports/detekt-test-pyramid/apiSurface.log")
-val generatedConfigFile = layout.buildDirectory.file("tmp/detekt-test-pyramid/apiSurfaceTestPyramidConfig.yml")
+@Suppress("UnstableApiUsage")
+val apiSurfaceReportElements = configurations.consumable("apiSurfaceReportElements") {
+    attributes {
+        attribute(Usage.USAGE_ATTRIBUTE, named("test-pyramid-api-surface"))
+    }
+}
 
 val androidComponents = extensions.getByType<LibraryAndroidComponentsExtension>()
 androidComponents.onVariants(androidComponents.selector().withBuildType("debug")) { variant ->
-    val checkApiSurfaceTask = tasks.register<Detekt>("checkTestPyramidApiSurface") {
+    val apiSurfaceLogFile = layout.buildDirectory.file("reports/detekt-test-pyramid/${variant.name}/apiSurface.log")
+    val generatedConfigFile = layout.buildDirectory.file(
+        "tmp/detekt-test-pyramid/${variant.name}/apiSurfaceTestPyramidConfig.yml"
+    )
+    val checkApiSurfaceTask = tasks.register<Detekt>("checkTestPyramidApiSurface${variant.name.toCamelCase()}") {
         group = "verification"
         description = "Datadog test pyramid: collects the public API surface for coverage reporting."
 
@@ -61,11 +70,8 @@ androidComponents.onVariants(androidComponents.selector().withBuildType("debug")
         config.setFrom(generatedConfigFile)
         outputs.file(apiSurfaceLogFile)
 
-        // captured to be configuration cache compatible
-        val configFile = generatedConfigFile
-        val logFileProvider = apiSurfaceLogFile
         doFirst {
-            val generatedConfig = configFile.get().asFile
+            val generatedConfig = generatedConfigFile.get().asFile
             generatedConfig.parentFile.mkdirs()
             generatedConfig.writeText(
                 """
@@ -75,7 +81,7 @@ androidComponents.onVariants(androidComponents.selector().withBuildType("debug")
                   active: true
                   ApiSurface:
                     active: true
-                    outputFileName: '${logFileProvider.get().asFile.absolutePath}'
+                    outputFileName: '${apiSurfaceLogFile.get().asFile.absolutePath}'
                     internalPackagePrefix: 'com.datadog'
                     ignoredAnnotations:
                       - 'com.datadog.android.lint.InternalApi'
@@ -87,20 +93,17 @@ androidComponents.onVariants(androidComponents.selector().withBuildType("debug")
 
             // ApiSurface appends per-file - a fresh rule instance is created per analyzed file,
             // so truncate the shared output file once here, before analysis starts.
-            val logFile = logFileProvider.get().asFile
+            val logFile = apiSurfaceLogFile.get().asFile
             logFile.parentFile.mkdirs()
             logFile.writeText("")
         }
     }
 
-    configurations.consumable("apiSurfaceReportElements") {
-        attributes {
-            attribute(Usage.USAGE_ATTRIBUTE, named("test-pyramid-api-surface"))
-        }
+    apiSurfaceReportElements.configure {
         outgoing.artifact(apiSurfaceLogFile) {
             builtBy(checkApiSurfaceTask)
         }
     }
-
-    rootProject.dependencies.add("testPyramidApiSurfaceAggregation", project(project.path))
 }
+
+rootProject.dependencies.add("testPyramidApiSurfaceAggregation", project(project.path))

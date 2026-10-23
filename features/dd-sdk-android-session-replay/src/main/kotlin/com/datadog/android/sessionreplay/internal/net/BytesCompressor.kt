@@ -57,7 +57,7 @@ internal class BytesCompressor {
             @Suppress("UnsafeThirdPartyFunctionCall")
             // we are only calling this with valid flags
             bytesRead = deflater.deflate(buffer, 0, buffer.size, flag)
-            // according with the API if bytesRead >= buffer.size we need
+            // according to the API if bytesRead >= buffer.size we need
             // to retry with a bigger buffer
             retriesCounter += 1
         } while (bytesRead >= buffer.size)

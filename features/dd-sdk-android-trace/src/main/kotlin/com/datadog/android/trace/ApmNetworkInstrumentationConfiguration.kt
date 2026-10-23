@@ -145,7 +145,7 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
      * if you need correlated sampling between RUM sessions and APM traces.
      *
      * @param traceSampler the trace sampler controlling the sampling of APM traces.
-     * By default it is a sampler accepting 100% of the traces.
+     * By default, it is a sampler accepting 100% of the traces.
      */
     fun setTraceSampler(traceSampler: Sampler<DatadogSpan>) = apply {
         this.traceSampler = traceSampler
@@ -153,7 +153,7 @@ class ApmNetworkInstrumentationConfiguration internal constructor(
 
     /**
      * Set the trace context injection behavior for the intercepted requests.
-     * By default this is set to [TraceContextInjection.SAMPLED], meaning that only the sampled request will
+     * By default, this is set to [TraceContextInjection.SAMPLED], meaning that only the sampled request will
      * propagate the trace context. In case of [TraceContextInjection.ALL] all the trace context
      * will be propagated in the intercepted requests no matter if the span created around the request
      * is sampled or not.

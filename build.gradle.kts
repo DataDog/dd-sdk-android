@@ -8,6 +8,8 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.registerSubModuleAggregationTask
+import com.datadog.gradle.utils.CLONE_RUM_EVENTS_FORMAT_SCHEMAS_TASK_NAME
+import com.datadog.gradle.utils.GENERATE_JSON_MODELS_TASK_NAME
 
 plugins {
     `maven-publish`
@@ -53,7 +55,7 @@ allprojects {
     repositories.depotProxied(providers) {
         google()
         mavenCentral()
-        maven { setUrl(com.datadog.gradle.Dependencies.Repositories.Jitpack) }
+        maven { setUrl("https://jitpack.io") }
     }
 }
 
@@ -185,6 +187,25 @@ tasks.register("checkGeneratedFiles") {
 registerSubModuleAggregationTask("koverReportAll", "koverXmlReportRelease")
 registerSubModuleAggregationTask("koverReportFeatures", "koverXmlReportRelease", ":features:")
 registerSubModuleAggregationTask("koverReportIntegrations", "koverXmlReportRelease", ":integrations:")
+
+// when renaming these two, don't forget about them being referenced in rum-events-format
+registerSubModuleAggregationTask(
+    "cloneAllRumSchemas",
+    CLONE_RUM_EVENTS_FORMAT_SCHEMAS_TASK_NAME,
+    subModuleNamePrefix = ""
+) {
+    group = "datadog"
+    description = "Clones the rum-events-format schemas of every module"
+}
+registerSubModuleAggregationTask(
+    "generateAllJsonModels",
+    GENERATE_JSON_MODELS_TASK_NAME,
+    // tools/benchmark generates models too
+    subModuleNamePrefix = ""
+) {
+    group = "datadog"
+    description = "Generates the JSON schema models of every module"
+}
 
 tasks.register("instrumentTestAll") {
     dependsOn(":instrumented:integration:connectedCheck")

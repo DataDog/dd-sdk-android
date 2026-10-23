@@ -14,8 +14,9 @@ package com.datadog.android.sessionreplay
  *
  */
 enum class SessionReplayPrivacy {
-    /** Does not apply any privacy rule on the recorded data with an exception for strong privacy
-     * sensitive EditTextViews.
+    /**
+     * Does not apply any privacy rule on the recorded data with an exception for strong privacy-sensitive
+     * EditTextViews.
      * The EditTextViews which have email, password, postal address or phone number
      * inputType will be masked no matter what the privacy option with space-preserving "x" mask
      * (each char individually)

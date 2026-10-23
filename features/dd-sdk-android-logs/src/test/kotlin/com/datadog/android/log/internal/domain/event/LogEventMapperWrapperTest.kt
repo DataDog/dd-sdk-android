@@ -13,7 +13,6 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -66,7 +65,7 @@ internal class LogEventMapperWrapperTest {
 
         // THEN
         verify(mockWrappedEventMapper).map(mockLogEvent)
-        Assertions.assertThat(mappedEvent).isEqualTo(mockLogEvent)
+        assertThat(mappedEvent).isEqualTo(mockLogEvent)
     }
 
     @Test
@@ -79,7 +78,7 @@ internal class LogEventMapperWrapperTest {
 
         // THEN
         verify(mockWrappedEventMapper).map(mockLogEvent)
-        Assertions.assertThat(mappedEvent).isNull()
+        assertThat(mappedEvent).isNull()
     }
 
     @Test
@@ -119,7 +118,7 @@ internal class LogEventMapperWrapperTest {
 
         // THEN
         verify(mockWrappedEventMapper).map(mockLogEvent)
-        Assertions.assertThat(mappedEvent).isNull()
+        assertThat(mappedEvent).isNull()
     }
 
     @Test

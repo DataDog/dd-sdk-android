@@ -6,13 +6,11 @@
 
 package com.datadog.android.rum.timeseries
 
-import com.datadog.android.rum.ExperimentalRumApi
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 
-@OptIn(ExperimentalRumApi::class)
 internal class TimeseriesConfigurationTests {
 
     @Test
@@ -22,7 +20,7 @@ internal class TimeseriesConfigurationTests {
 
         // Then
         assertThat(testedConfiguration.bufferSize).isEqualTo(120)
-        assertThat(testedConfiguration.intervalMs).isEqualTo(1000L)
+        assertThat(testedConfiguration.samplingIntervalMs).isEqualTo(1000L)
     }
 
     @Test

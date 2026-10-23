@@ -202,7 +202,7 @@ internal class CollapsingLowestDenseStore(private val maxNumBins: Int) {
     fun writeTo(serializer: DDSketchSerializer) {
         if (isEmpty) return
 
-        // FIELD_BIN_COUNTS (1) is sparsely encoded bins and we don't use that format
+        // FIELD_BIN_COUNTS (1) is sparsely encoded bins, and we don't use that format
         serializer.writeCompactArray(FIELD_CONTIGUOUS_BIN_COUNTS, counts, minIndex - offset, maxIndex - minIndex + 1)
         serializer.writeSignedInt32(FIELD_CONTIGUOUS_BIN_INDEX_OFFSET, minIndex)
     }

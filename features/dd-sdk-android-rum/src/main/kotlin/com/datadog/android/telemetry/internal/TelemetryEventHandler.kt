@@ -17,12 +17,13 @@ import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.attributes.LocalAttribute
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.rumContext
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.RumFeature.Configuration
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.utils.HUNDRED
@@ -574,8 +575,7 @@ internal class TelemetryEventHandler(
     }
 
     private fun DatadogContext.rumContext(): RumContext {
-        val rumContext = featuresContext[Feature.RUM_FEATURE_NAME].orEmpty()
-        return RumContext.fromFeatureContext(rumContext)
+        return featuresContext[Feature.RUM_FEATURE_NAME]?.rumContext() ?: RumContext()
     }
 
     private fun computeEffectiveSampleRate(

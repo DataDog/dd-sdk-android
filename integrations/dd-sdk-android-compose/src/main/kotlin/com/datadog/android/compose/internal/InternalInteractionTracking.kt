@@ -29,7 +29,7 @@ internal suspend fun trackSwipe(
     isRtl: Boolean,
     attributes: Map<String, Any?>
 ) {
-    trackDragInteraction<SwipeStartProps>(
+    trackDragInteraction(
         interactionSource,
         onStart = { interactions, start ->
             interactions[start] = SwipeStartProps(

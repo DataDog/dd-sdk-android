@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.utils
 
-import java.util.UUID
+import com.datadog.android.internal.rum.RumSessionConstants
 
 /**
  * Provides the necessary RUM context for Session Replay records.
@@ -35,6 +35,6 @@ internal data class SessionReplayRumContext(
             sessionId != NULL_UUID
 
     companion object {
-        private val NULL_UUID = UUID(0, 0).toString()
+        private const val NULL_UUID = RumSessionConstants.EMPTY_RUM_SESSION_ID
     }
 }

@@ -16,6 +16,8 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
@@ -50,7 +52,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import android.util.Log as AndroidLog
@@ -81,16 +82,7 @@ internal class DatadogLogHandlerTest {
     lateinit var fakeDatadogContext: DatadogContext
 
     @Forgery
-    lateinit var fakeRumApplicationId: UUID
-
-    @Forgery
-    lateinit var fakeRumSessionId: UUID
-
-    @Forgery
-    lateinit var fakeRumViewId: UUID
-
-    @Forgery
-    lateinit var fakeRumActionId: UUID
+    lateinit var fakeRumContext: RumContext
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
@@ -140,10 +132,7 @@ internal class DatadogLogHandlerTest {
                 put(
                     Feature.RUM_FEATURE_NAME,
                     mapOf(
-                        "application_id" to fakeRumApplicationId,
-                        "session_id" to fakeRumSessionId,
-                        "view_id" to fakeRumViewId,
-                        "action_id" to fakeRumActionId
+                        FeatureContextKeys.RUM_CONTEXT to fakeRumContext
                     )
                 )
             }
@@ -213,10 +202,10 @@ internal class DatadogLogHandlerTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
-                        LogAttributes.RUM_VIEW_ID to fakeRumViewId,
-                        LogAttributes.RUM_ACTION_ID to fakeRumActionId
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -294,10 +283,10 @@ internal class DatadogLogHandlerTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
-                        LogAttributes.RUM_VIEW_ID to fakeRumViewId,
-                        LogAttributes.RUM_ACTION_ID to fakeRumActionId
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -358,10 +347,10 @@ internal class DatadogLogHandlerTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
-                        LogAttributes.RUM_VIEW_ID to fakeRumViewId,
-                        LogAttributes.RUM_ACTION_ID to fakeRumActionId
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -619,10 +608,10 @@ internal class DatadogLogHandlerTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
-                        LogAttributes.RUM_VIEW_ID to fakeRumViewId,
-                        LogAttributes.RUM_ACTION_ID to fakeRumActionId
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -682,10 +671,10 @@ internal class DatadogLogHandlerTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
-                        LogAttributes.RUM_VIEW_ID to fakeRumViewId,
-                        LogAttributes.RUM_ACTION_ID to fakeRumActionId
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -744,10 +733,10 @@ internal class DatadogLogHandlerTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
-                        LogAttributes.RUM_VIEW_ID to fakeRumViewId,
-                        LogAttributes.RUM_ACTION_ID to fakeRumActionId
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -1000,11 +989,11 @@ internal class DatadogLogHandlerTest {
             assertThat(lastValue.additionalProperties)
                 .containsEntry(
                     LogAttributes.RUM_APPLICATION_ID,
-                    fakeRumApplicationId
+                    fakeRumContext.applicationId
                 )
-                .containsEntry(LogAttributes.RUM_SESSION_ID, fakeRumSessionId)
-                .containsEntry(LogAttributes.RUM_VIEW_ID, fakeRumViewId)
-                .containsEntry(LogAttributes.RUM_ACTION_ID, fakeRumActionId)
+                .containsEntry(LogAttributes.RUM_SESSION_ID, fakeRumContext.sessionId)
+                .containsEntry(LogAttributes.RUM_VIEW_ID, fakeRumContext.viewId)
+                .containsEntry(LogAttributes.RUM_ACTION_ID, fakeRumContext.actionId)
         }
     }
 
@@ -1118,10 +1107,10 @@ internal class DatadogLogHandlerTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
-                        LogAttributes.RUM_VIEW_ID to fakeRumViewId,
-                        LogAttributes.RUM_ACTION_ID to fakeRumActionId
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
                     )
                 )
                 .hasExactlyTags(

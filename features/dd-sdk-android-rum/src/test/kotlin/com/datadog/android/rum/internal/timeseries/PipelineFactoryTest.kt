@@ -64,6 +64,9 @@ internal class PipelineFactoryTest {
     lateinit var mockDataWriter: DataWriter<Any>
 
     @Mock
+    lateinit var mockCollectedSessionsRegistry: CollectedTimeseriesSessionRegistry
+
+    @Mock
     lateinit var mockInsightsCollector: InsightsCollector
 
     @Mock
@@ -88,15 +91,21 @@ internal class PipelineFactoryTest {
         totalRamBytes: Long = fakeTotalRamBytes,
         enabledTypes: Set<TimeseriesType> = setOf(TimeseriesType.CPU, TimeseriesType.MEMORY),
         bufferSize: Int = TimeseriesConfiguration.DEFAULT_BUFFER_SIZE,
-        intervalMs: Long = TimeseriesConfiguration.DEFAULT_INTERVAL_MS
+        intervalMs: Long = TimeseriesConfiguration.DEFAULT_SAMPLING_INTERVAL_MS
     ) = PipelineFactory(
         totalRamBytes = totalRamBytes,
         sdkCore = mockSdkCore,
         dataWriter = mockDataWriter,
         insightsCollector = mockInsightsCollector,
-        configuration = TimeseriesConfiguration(enabledTypes, bufferSize, intervalMs),
+        configuration = TimeseriesConfiguration(
+            enabledTypes,
+            bufferSize,
+            intervalMs,
+            TimeseriesConfiguration.BACKGROUND_TRANSITION_DELAY_MS
+        ),
         batteryInfoProvider = mockBatteryInfoProvider,
-        displayInfoProvider = mockDisplayInfoProvider
+        displayInfoProvider = mockDisplayInfoProvider,
+        sessionRegistry = mockCollectedSessionsRegistry
     )
 
     private fun Pipeline<*>.reader() = getFieldValue<Any, Pipeline<*>>("reader")
@@ -122,6 +131,23 @@ internal class PipelineFactoryTest {
             assertThat(buffer.isFull()).isFalse()
             buffer.add(DataPoint(fakeBufferSize.toLong(), 0.0))
             assertThat(buffer.isFull()).isTrue()
+        }
+    }
+
+    @Test
+    fun `M pass collected sessions registry to all pipelines W create()`() {
+        // Given
+        val testedFactory = createTestedFactory()
+
+        // When
+        val pipelines = testedFactory.create(fakeSessionType)
+
+        // Then
+        assertThat(pipelines).hasSize(2)
+        pipelines.forEach { pipeline ->
+            assertThat(
+                pipeline.getFieldValue<CollectedTimeseriesSessionRegistry, Pipeline<*>>("collectedSessionsRegistry")
+            ).isSameAs(mockCollectedSessionsRegistry)
         }
     }
 

@@ -69,9 +69,8 @@ internal class StubFeatureScope(
         callback: (DatadogContext, EventWriteScope) -> Unit
     ) {
         callback(
-            datadogContextProvider(),
-            { it.invoke(eventBatchWriter) }
-        )
+            datadogContextProvider()
+        ) { it.invoke(eventBatchWriter) }
     }
 
     override fun withContext(withFeatureContexts: Set<String>, callback: (datadogContext: DatadogContext) -> Unit) {
@@ -83,9 +82,8 @@ internal class StubFeatureScope(
         callback: (DatadogContext, EventWriteScope) -> Unit
     ): Boolean {
         callback(
-            datadogContextProvider(),
-            { it.invoke(eventBatchWriter) }
-        )
+            datadogContextProvider()
+        ) { it.invoke(eventBatchWriter) }
         return true
     }
 

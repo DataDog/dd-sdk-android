@@ -27,21 +27,74 @@ class ViewUpdateEventForgeryFactory : ForgeryFactory<ViewUpdateEvent> {
                     )
                 },
                 isActive = forge.aNullable { aBool() },
-                isSlowRendered = forge.aNullable { aBool() }
+                isSlowRendered = forge.aNullable { aBool() },
+                loadingTime = null,
+                networkSettledTime = null,
+                interactionToNextViewTime = null,
+                loadingType = null,
+                timeSpent = null,
+                firstContentfulPaint = null,
+                largestContentfulPaint = null,
+                largestContentfulPaintTargetSelector = null,
+                firstInputDelay = null,
+                firstInputTime = null,
+                firstInputTargetSelector = null,
+                interactionToNextPaint = null,
+                interactionToNextPaintTime = null,
+                interactionToNextPaintTargetSelector = null,
+                cumulativeLayoutShift = null,
+                cumulativeLayoutShiftTime = null,
+                cumulativeLayoutShiftTargetSelector = null,
+                domComplete = null,
+                domContentLoaded = null,
+                domInteractive = null,
+                loadEvent = null,
+                firstByte = null,
+                action = null,
+                error = null,
+                crash = null,
+                longTask = null,
+                frozenFrame = null,
+                slowFrames = null,
+                resource = null,
+                frustration = null,
+                inForegroundPeriods = null,
+                memoryAverage = null,
+                memoryMax = null,
+                cpuTicksCount = null,
+                cpuTicksPerSecond = null,
+                refreshRateAverage = null,
+                refreshRateMin = null,
+                slowFramesRate = null,
+                freezeRate = null,
+                flutterBuildTime = null,
+                flutterRasterTime = null,
+                jsRefreshRate = null,
+                performance = null,
+                accessibility = null,
+                referrer = null,
+                name = null
             ),
             session = ViewUpdateEvent.ViewUpdateEventSession(
                 id = forge.getForgery<UUID>().toString(),
-                type = forge.aValueFrom(ViewUpdateEvent.ViewUpdateEventSessionType::class.java)
+                type = forge.aValueFrom(ViewUpdateEvent.ViewUpdateEventSessionType::class.java),
+                isActive = true,
+                sampledForReplay = null,
+                hasReplay = null,
+                isMainProcess = null,
+                hasTimeseries = null
             ),
             application = ViewUpdateEvent.Application(
-                id = forge.getForgery<UUID>().toString()
+                id = forge.getForgery<UUID>().toString(),
+                currentLocale = null
             ),
             usr = forge.aNullable {
                 ViewUpdateEvent.Usr(
                     id = aNullable { anHexadecimalString() },
                     name = aNullable { aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+") },
                     email = aNullable { aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}") },
-                    additionalProperties = exhaustiveAttributes(excludedKeys = setOf("id", "name", "email"))
+                    additionalProperties = exhaustiveAttributes(excludedKeys = setOf("id", "name", "email")),
+                    anonymousId = null
                 )
             },
             account = forge.aNullable {
@@ -60,7 +113,8 @@ class ViewUpdateEventForgeryFactory : ForgeryFactory<ViewUpdateEvent> {
                             technology = aNullable { anAlphabeticalString() },
                             carrierName = aNullable { anAlphabeticalString() }
                         )
-                    }
+                    },
+                    effectiveType = null
                 )
             },
             os = forge.aNullable {
@@ -83,7 +137,10 @@ class ViewUpdateEventForgeryFactory : ForgeryFactory<ViewUpdateEvent> {
                     timeZone = forge.aNullable { anAlphabeticalString() },
                     batteryLevel = forge.aNullable { aDouble(min = 0.0, max = 100.0) },
                     powerSavingMode = forge.aNullable { aBool() },
-                    brightnessLevel = forge.aNullable { aDouble(min = 0.0, max = 1.0) }
+                    brightnessLevel = forge.aNullable { aDouble(min = 0.0, max = 1.0) },
+                    logicalCpuCount = null,
+                    totalRam = null,
+                    isLowRam = null
                 )
             },
             context = forge.aNullable {
@@ -99,7 +156,9 @@ class ViewUpdateEventForgeryFactory : ForgeryFactory<ViewUpdateEvent> {
                         sessionReplaySampleRate = aNullable { aLong(min = 0, max = 100) },
                         profilingSampleRate = aNullable { aFloat(min = 0f, max = 100f) },
                         traceSampleRate = aNullable { aFloat(min = 0f, max = 100f) },
-                        startSessionReplayRecordingManually = aNullable { aBool() }
+                        startSessionReplayRecordingManually = aNullable { aBool() },
+                        remoteConfigurationId = null,
+                        sessionReplayExperimentalFeatures = null
                     )
                 },
                 replayStats = forge.aNullable {
@@ -111,8 +170,9 @@ class ViewUpdateEventForgeryFactory : ForgeryFactory<ViewUpdateEvent> {
                 },
                 profiling = forge.aNullable {
                     ViewUpdateEvent.Profiling(
-                        status = aNullable { aValueFrom(ViewUpdateEvent.ProfilingStatus::class.java) },
-                        errorReason = aNullable { aValueFrom(ViewUpdateEvent.ErrorReason::class.java) }
+                        status = aNullable { getForgery() },
+                        quotaReason = aNullable { getForgery() },
+                        errorReason = aNullable { getForgery() }
                     )
                 },
                 pageStates = forge.aNullable {
@@ -128,8 +188,25 @@ class ViewUpdateEventForgeryFactory : ForgeryFactory<ViewUpdateEvent> {
                 },
                 cls = forge.aNullable {
                     ViewUpdateEvent.DdCls(devicePixelRatio = aNullable { aDouble(min = 0.5, max = 4.0) })
-                }
-            )
+                },
+                session = null,
+                browserSdkVersion = null,
+                sdkName = null
+            ),
+            container = null,
+            featureFlags = null,
+            privacy = null,
+            display = null,
+            service = null,
+            version = null,
+            buildVersion = null,
+            buildId = null,
+            ddtags = null,
+            source = null,
+            tab = null,
+            synthetics = null,
+            ciTest = null,
+            stream = null
         )
     }
 }

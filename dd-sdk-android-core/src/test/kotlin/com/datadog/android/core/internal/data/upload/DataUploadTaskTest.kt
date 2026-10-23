@@ -498,7 +498,7 @@ internal class DataUploadTaskTest {
             )
         ) doReturn uploadStatus
 
-        // WHen
+        // When
         repeat(runCount) {
             assertThat(testedTask.call()).isEqualTo(fakeDelayUntilNextUploadMs)
         }

@@ -11,15 +11,27 @@ import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesExtension
 import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesTask
 import com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask
 import org.gradle.api.Project
+import org.gradle.api.Task
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.register
 import java.nio.file.Paths
 
 private const val RUM_EVENTS_FORMAT_REPO = "https://github.com/DataDog/rum-events-format.git"
-private const val CLONE_ALL_RUM_SCHEMAS_TASK_NAME = "cloneAllRumSchemas"
-private const val GENERATE_ALL_JSON_MODELS_TASK_NAME = "generateAllJsonModels"
 
-fun Project.createRumSchemaCloneTask(
+/**
+ * Per-module lifecycle task depending on every RUM schema clone task of the module, aggregated by
+ * the root `cloneAllRumSchemas` task.
+ */
+const val CLONE_RUM_EVENTS_FORMAT_SCHEMAS_TASK_NAME = "cloneRumEventsFormatSchemas"
+
+/**
+ * Per-module lifecycle task depending on every JSON models generation task of the module,
+ * aggregated by the root `generateAllJsonModels` task.
+ */
+const val GENERATE_JSON_MODELS_TASK_NAME = "generateJsonModels"
+
+fun Project.createRumEventsFormatCloneTask(
     taskName: String,
     action: GitCloneDependenciesExtension.() -> Unit
 ) {
@@ -28,9 +40,10 @@ fun Project.createRumSchemaCloneTask(
         projectDirPath.set(layout.projectDirectory.asFile.path)
     }
 
-    val rootTask = rootProject.tasks.maybeCreate(CLONE_ALL_RUM_SCHEMAS_TASK_NAME)
-
-    rootTask.dependsOn(task)
+    lifecycleTask(
+        CLONE_RUM_EVENTS_FORMAT_SCHEMAS_TASK_NAME,
+        "Clones every rum-events-format schema used by this module"
+    ).configure { dependsOn(task) }
 }
 
 fun GitCloneDependenciesExtension.cloneRumEventsFormat(
@@ -56,6 +69,7 @@ fun Project.createJsonModelsGenerationTask(
 ) {
     val task = tasks.register<GenerateJsonSchemaTask>(taskName) {
         inputNameMapping.convention(emptyMap())
+        schemasWithoutConstructorDefaults.convention(emptyList())
         ignoredFiles.convention(emptyList())
         inputDirPath.convention("")
         targetPackageName.convention("")
@@ -74,9 +88,10 @@ fun Project.createJsonModelsGenerationTask(
         )
     }
 
-    val rootTask = rootProject.tasks.maybeCreate(GENERATE_ALL_JSON_MODELS_TASK_NAME)
-
-    rootTask.dependsOn(task)
+    lifecycleTask(
+        GENERATE_JSON_MODELS_TASK_NAME,
+        "Generates every model of this module from its JSON schemas"
+    ).configure { dependsOn(task) }
 
     val androidComponents = extensions.findByType<LibraryAndroidComponentsExtension>()
         ?: error(
@@ -88,5 +103,13 @@ fun Project.createJsonModelsGenerationTask(
             task,
             GenerateJsonSchemaTask::destinationGenDirectory
         )
+    }
+}
+
+private fun Project.lifecycleTask(name: String, description: String): TaskProvider<Task> {
+    if (name in tasks.names) return tasks.named(name)
+    return tasks.register(name) {
+        group = "datadog"
+        this.description = description
     }
 }

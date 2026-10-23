@@ -50,11 +50,13 @@ internal fun Project.kotlinConfig(
         else -> error("Unsupported Kotlin extension type: ${kotlin::class.java.name}")
     }
 
+    val isCI = providers.environmentVariable("CI")
+        .map { it.toBoolean() }
+        .orElse(false)
     taskConfig<KotlinJvmCompile> {
         compilerOptions {
             jvmTarget.set(jvmBytecodeTarget)
-            val isCI = System.getenv("CI").toBoolean()
-            allWarningsAsErrors.set(evaluateWarningsAsErrors && isCI)
+            allWarningsAsErrors.set(isCI.map { evaluateWarningsAsErrors && it })
             apiVersion.set(kotlinApiVersion)
             languageVersion.set(kotlinLanguageVersion)
         }

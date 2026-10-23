@@ -11,7 +11,6 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
-import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Date
 
@@ -37,7 +36,6 @@ object JsonSerializer {
             is JsonObject -> item
             is JsonPrimitive -> item
             is JSONObject -> item.toJsonElement()
-            is JSONArray -> item.toJsonArray()
             else -> JsonPrimitive(item.toString())
         }
     }

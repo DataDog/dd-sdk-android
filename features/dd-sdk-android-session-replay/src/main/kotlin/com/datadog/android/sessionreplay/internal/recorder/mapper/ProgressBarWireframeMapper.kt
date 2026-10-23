@@ -201,9 +201,6 @@ internal open class ProgressBarWireframeMapper<P : ProgressBar>(
         internal const val DAY_MODE_COLOR = 0 // Black
         internal const val ACTIVE_TRACK_KEY_NAME = "seekbar_active_track"
         internal const val NON_ACTIVE_TRACK_KEY_NAME = "seekbar_non_active_track"
-        internal const val THUMB_KEY_NAME = "seekbar_thumb"
-
-        internal const val THUMB_SHAPE_CORNER_RADIUS = 10
         internal const val TRACK_HEIGHT_IN_PX = 8L
     }
 }

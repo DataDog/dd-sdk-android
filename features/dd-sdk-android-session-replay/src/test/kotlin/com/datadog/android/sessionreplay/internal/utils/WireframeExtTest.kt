@@ -64,9 +64,11 @@ internal class WireframeExtTest {
         assertThat(fakeTestWireframe.hasOpaqueBackground()).isFalse
     }
 
+    @Test
     fun `M return true W hasOpaqueBackground { PlaceholderWireframe }`(
-        fakeWireframe: MobileSegment.Wireframe.PlaceholderWireframe
+        @Forgery fakeWireframe: MobileSegment.Wireframe.PlaceholderWireframe
     ) {
+        // When + Then
         assertThat(fakeWireframe.hasOpaqueBackground()).isTrue
     }
 

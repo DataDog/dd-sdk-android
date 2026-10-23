@@ -19,6 +19,8 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
@@ -57,7 +59,6 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
-import java.util.UUID
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat as assertThatLog
 
 @Extensions(
@@ -98,16 +99,7 @@ internal class LogsFeatureTest {
     lateinit var fakeDatadogContext: DatadogContext
 
     @Forgery
-    lateinit var fakeRumApplicationId: UUID
-
-    @Forgery
-    lateinit var fakeRumSessionId: UUID
-
-    @Forgery
-    lateinit var fakeRumViewId: UUID
-
-    @Forgery
-    lateinit var fakeRumActionId: UUID
+    lateinit var fakeRumContext: RumContext
 
     @StringForgery(regex = "https://[a-z]+\\.com")
     lateinit var fakeEndpointUrl: String
@@ -157,10 +149,7 @@ internal class LogsFeatureTest {
                 put(
                     Feature.RUM_FEATURE_NAME,
                     mapOf(
-                        "application_id" to fakeRumApplicationId,
-                        "session_id" to fakeRumSessionId,
-                        "view_id" to fakeRumViewId,
-                        "action_id" to fakeRumActionId
+                        FeatureContextKeys.RUM_CONTEXT to fakeRumContext
                     )
                 )
                 put(
@@ -451,10 +440,10 @@ internal class LogsFeatureTest {
                 .hasBuildVersion(fakeDatadogContext.versionCode)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to fakeRumApplicationId,
-                        LogAttributes.RUM_SESSION_ID to fakeRumSessionId,
-                        LogAttributes.RUM_VIEW_ID to fakeRumViewId,
-                        LogAttributes.RUM_ACTION_ID to fakeRumActionId
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
                     )
                 )
                 .hasExactlyTags(

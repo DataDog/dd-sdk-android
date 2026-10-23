@@ -16,11 +16,13 @@ interface com.datadog.android.flags.FlagsClient
   val state: StateObservable
   class Builder
     constructor(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance())
+    fun enableEvaluationTelemetryOptOutParameter(Boolean): Builder
     fun build(): FlagsClient
   companion object 
     fun get(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
 interface com.datadog.android.flags.FlagsClientEventListener
   fun onEvent(com.datadog.android.flags.model.FlagsClientEvent)
+fun FlagsClient.setEvaluationTelemetryOptOut(Boolean)
 data class com.datadog.android.flags.FlagsConfiguration
   fun copy(Boolean = this.trackExposures, Boolean = this.trackEvaluations, String? = this.customExposureEndpoint, String? = this.customEvaluationEndpoint, String? = this.customFlagEndpoint, Long = this.evaluationFlushIntervalMs, Boolean = this.rumIntegrationEnabled, Boolean = this.gracefulModeEnabled): FlagsConfiguration
   class Builder
@@ -45,8 +47,13 @@ interface com.datadog.android.flags.StateObservable
   fun removeListener(FlagsStateListener)
 class com.datadog.android.flags._FlagsInternalProxy
   constructor(FlagsClient)
+  fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext, EvaluationContextCallback?, Boolean)
+  fun isEvaluationTelemetryOptOutParameterEnabled(): Boolean
   fun getFlagAssignmentsSnapshot(): Map<String, com.datadog.android.flags.model.UnparsedFlag>
   fun trackFlagSnapshotEvaluation(String, com.datadog.android.flags.model.UnparsedFlag, com.datadog.android.flags.model.EvaluationContext)
+  fun trackFlagExposure(String, com.datadog.android.flags.model.UnparsedFlag, com.datadog.android.flags.model.EvaluationContext)
+  fun trackFlagEvaluationEvent(String, com.datadog.android.flags.model.UnparsedFlag?, com.datadog.android.flags.model.EvaluationContext, String?)
+  fun trackFlagRumEvaluation(String, String, com.datadog.android.flags.model.EvaluationContext)
 enum com.datadog.android.flags.model.ErrorCode
   - PROVIDER_NOT_READY
   - FLAG_NOT_FOUND
@@ -88,81 +95,3 @@ interface com.datadog.android.flags.model.UnparsedFlag
   val extraLogging: org.json.JSONObject
   val reason: String
   val serialId: Long?
-data class com.datadog.android.flags.model.ExposureEvent
-  constructor(kotlin.Long, Identifier, Identifier, Identifier, Subject, kotlin.Long? = null)
-  fun toJson(): com.google.gson.JsonElement
-  companion object 
-    fun fromJson(kotlin.String): ExposureEvent
-    fun fromJsonObject(com.google.gson.JsonObject): ExposureEvent
-  data class Identifier
-    constructor(kotlin.String)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Identifier
-      fun fromJsonObject(com.google.gson.JsonObject): Identifier
-  data class Subject
-    constructor(kotlin.String, Attributes)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Subject
-      fun fromJsonObject(com.google.gson.JsonObject): Subject
-  data class Attributes
-    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.String> = mutableMapOf())
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Attributes
-      fun fromJsonObject(com.google.gson.JsonObject): Attributes
-data class com.datadog.android.flags.model.FlagEvaluation
-  constructor(kotlin.Long, Identifier, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Boolean? = null, kotlin.String? = null, Context? = null, Identifier? = null, Identifier? = null, Identifier? = null, Error? = null)
-  fun toJson(): com.google.gson.JsonElement
-  companion object 
-    fun fromJson(kotlin.String): FlagEvaluation
-    fun fromJsonObject(com.google.gson.JsonObject): FlagEvaluation
-  data class Identifier
-    constructor(kotlin.String)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Identifier
-      fun fromJsonObject(com.google.gson.JsonObject): Identifier
-  data class Context
-    constructor(Evaluation? = null, Dd? = null)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Context
-      fun fromJsonObject(com.google.gson.JsonObject): Context
-  data class Error
-    constructor(kotlin.String)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Error
-      fun fromJsonObject(com.google.gson.JsonObject): Error
-  data class Evaluation
-    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Evaluation
-      fun fromJsonObject(com.google.gson.JsonObject): Evaluation
-  data class Dd
-    constructor(kotlin.String? = null, Rum? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Dd
-      fun fromJsonObject(com.google.gson.JsonObject): Dd
-  data class Rum
-    constructor(Application? = null, View? = null)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Rum
-      fun fromJsonObject(com.google.gson.JsonObject): Rum
-  data class Application
-    constructor(kotlin.String? = null)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Application
-      fun fromJsonObject(com.google.gson.JsonObject): Application
-  data class View
-    constructor(kotlin.String? = null)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): View
-      fun fromJsonObject(com.google.gson.JsonObject): View

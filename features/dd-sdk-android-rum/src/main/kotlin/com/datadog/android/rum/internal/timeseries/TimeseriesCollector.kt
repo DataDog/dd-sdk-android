@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.internal.timeseries
 
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
@@ -32,4 +32,7 @@ internal interface TimeseriesCollector {
      * This is the app visibility state, which is independent of the RUM session state.
      */
     fun onUiHidden()
+
+    /** Whether at least one timeseries data point was collected for the session with [sessionId]. */
+    fun isTimeseriesCollected(sessionId: String): Boolean
 }

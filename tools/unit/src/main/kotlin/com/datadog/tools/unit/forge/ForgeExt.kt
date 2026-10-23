@@ -104,9 +104,7 @@ private fun generateMapWithExhaustiveValues(forge: Forge): MutableMap<String, An
             aList { anAlphabeticalString() },
             aList { aDouble() },
             null
-        )
-            .map { anAlphaNumericalString() to it }
-            .toMap(mutableMapOf())
+        ).associateByTo(mutableMapOf()) { anAlphaNumericalString() }
     }
 }
 
