@@ -15,8 +15,9 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
-import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.timeseries.factory.EventFactory
 import com.datadog.android.rum.internal.timeseries.provider.DataPointsReader
@@ -119,7 +120,7 @@ internal class PipelineTest {
         }
         whenever(mockDataWriter.write(any(), any(), any())) doReturn true
         whenever(mockEventFactory.eventName) doReturn "view.cpu"
-        whenever(mockDatadogContext.featuresContext) doReturn rumFeatureContextOf(RumSessionScope.State.TRACKED)
+        whenever(mockDatadogContext.featuresContext) doReturn rumFeatureContextOf(RumSessionState.TRACKED)
 
         buffer = Buffer(fakeBufferSize)
         testedPipeline = Pipeline(
@@ -362,9 +363,9 @@ internal class PipelineTest {
     }
 
     @ParameterizedTest
-    @EnumSource(RumSessionScope.State::class, names = ["TRACKED"], mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(RumSessionState::class, names = ["TRACKED"], mode = EnumSource.Mode.EXCLUDE)
     fun `M write buffered samples W flush() { RUM session no longer tracked before async write }`(
-        fakeSessionState: RumSessionScope.State,
+        fakeSessionState: RumSessionState,
         forge: Forge
     ) {
         // Given
@@ -595,8 +596,8 @@ internal class PipelineTest {
         addProperty("name", name)
     }
 
-    private fun rumFeatureContextOf(sessionState: RumSessionScope.State): Map<String, Map<String, Any?>> =
-        mapOf(Feature.RUM_FEATURE_NAME to mapOf(RumContext.SESSION_STATE to sessionState.asString))
+    private fun rumFeatureContextOf(sessionState: RumSessionState): Map<String, Map<String, Any?>> =
+        mapOf(Feature.RUM_FEATURE_NAME to mapOf(FeatureContextKeys.RUM_SESSION_STATE to sessionState.asString))
 
     private companion object {
         const val CONCURRENT_FLUSH_TIMEOUT_MS = 2000L

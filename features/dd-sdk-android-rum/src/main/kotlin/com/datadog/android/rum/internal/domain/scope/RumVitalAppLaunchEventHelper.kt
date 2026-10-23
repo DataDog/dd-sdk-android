@@ -10,9 +10,9 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.profiling.quota.QuotaReason
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.startup.RumStartupScenario
@@ -42,15 +42,17 @@ internal class RumVitalAppLaunchEventHelper(
         profilingStatus: VitalAppLaunchEvent.ProfilingStatus?,
         profilingQuotaReason: QuotaReason? = null
     ): VitalAppLaunchEvent {
+        val syntheticsTestId = rumContext.syntheticsTestId
+        val syntheticsResultId = rumContext.syntheticsResultId
         val syntheticsAttribute = if (
-            rumContext.syntheticsTestId.isNullOrBlank() ||
-            rumContext.syntheticsResultId.isNullOrBlank()
+            syntheticsTestId.isNullOrBlank() ||
+            syntheticsResultId.isNullOrBlank()
         ) {
             null
         } else {
             VitalAppLaunchEvent.Synthetics(
-                testId = rumContext.syntheticsTestId,
-                resultId = rumContext.syntheticsResultId
+                testId = syntheticsTestId,
+                resultId = syntheticsResultId
             )
         }
 

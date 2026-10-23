@@ -10,7 +10,7 @@ import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.internal.profiling.quota.QuotaReason
-import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.internal.rum.RumSessionStartReason
 import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.internal.domain.scope.toViewQuotaReason
 import com.datadog.android.rum.internal.domain.scope.toViewSessionPrecondition
@@ -579,7 +579,7 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
-    fun hasStartReason(reason: RumSessionScope.StartReason): ViewEventAssert {
+    fun hasStartReason(reason: RumSessionStartReason): ViewEventAssert {
         assertThat(actual.dd.session?.sessionPrecondition)
             .overridingErrorMessage(
                 "Expected event to have a session sessionPrecondition of ${reason.name} " +
