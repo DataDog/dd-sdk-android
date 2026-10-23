@@ -166,6 +166,34 @@ internal class FlagsInternalProxyTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M respect RUM setting W trackFlagRumEvaluation()`(enabled: Boolean) {
+        // Given
+        testedProxy = newProxy(fakeConfiguration.copy(rumIntegrationEnabled = enabled))
+
+        // When
+        testedProxy.trackFlagRumEvaluation(fakeFlagKey, fakeFlag.variationKey, fakeContext)
+
+        // Then
+        if (enabled) {
+            verify(mockRumEvaluationLogger).logEvaluation(fakeFlagKey, fakeFlag.variationKey)
+        } else {
+            verifyNoInteractions(mockRumEvaluationLogger)
+        }
+        verifyNoInteractions(mockExposureProcessor, mockEvaluationsFeature)
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["", " "])
+    fun `M skip RUM W trackFlagRumEvaluation() {blank variant}`(variant: String) {
+        // When
+        testedProxy.trackFlagRumEvaluation(fakeFlagKey, variant, fakeContext)
+
+        // Then
+        verifyNoInteractions(mockRumEvaluationLogger, mockExposureProcessor, mockEvaluationsFeature)
+    }
+
     @Test
     fun `M retain combined tracking W trackFlagSnapshotEvaluation()`() {
         // When
@@ -248,7 +276,7 @@ internal class FlagsInternalProxyTest {
     }
 
     @Test
-    fun `M do nothing W trackFlagExposure() + trackFlagEvaluationEvent() {fallback client}`() {
+    fun `M no-op on fallback W trackFlagExposure() + trackFlagEvaluationEvent() + trackFlagRumEvaluation()`() {
         // Given
         testedProxy = _FlagsInternalProxy(NoOpFlagsClient("test", "not initialized") { _, _ -> })
 
@@ -257,6 +285,7 @@ internal class FlagsInternalProxyTest {
             testedProxy.trackFlagExposure(fakeFlagKey, fakeFlag, fakeContext)
             testedProxy.trackFlagEvaluationEvent(fakeFlagKey, fakeFlag, fakeContext, null)
             testedProxy.trackFlagEvaluationEvent(fakeFlagKey, null, fakeContext, "PROVIDER_NOT_READY")
+            testedProxy.trackFlagRumEvaluation(fakeFlagKey, fakeFlag.variationKey, fakeContext)
         }
     }
 

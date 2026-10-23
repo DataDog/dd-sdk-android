@@ -280,7 +280,7 @@ internal class DatadogFlagsClientTest {
         "true, true, false",
         "true, true, true"
     )
-    fun `M respect opt-out W trackFlagExposure() + trackFlagEvaluationEvent() {global or subject policy}`(
+    fun `M respect opt-out W trackFlagExposure() + trackFlagEvaluationEvent() + trackFlagRumEvaluation()`(
         enabled: Boolean,
         telemetryOptedOut: Boolean,
         perSubject: Boolean,
@@ -309,13 +309,14 @@ internal class DatadogFlagsClientTest {
         testedProxy.trackFlagEvaluationEvent(fakeKey, fakeFlag, fakeContext, null)
         testedProxy.trackFlagEvaluationEvent(fakeKey, null, fakeContext, null)
         testedProxy.trackFlagEvaluationEvent(fakeKey, null, fakeContext, "FLAG_NOT_FOUND")
+        testedProxy.trackFlagRumEvaluation(fakeKey, fakeFlag.variationKey, fakeContext)
 
         // Then
         verify(mockProcessor).processEvent(fakeKey, fakeContext, fakeFlag)
-        verifyNoInteractions(mockRumEvaluationLogger)
         if (enabled && telemetryOptedOut) {
-            verifyNoInteractions(mockEvaluationsFeature)
+            verifyNoInteractions(mockEvaluationsFeature, mockRumEvaluationLogger)
         } else {
+            verify(mockRumEvaluationLogger).logEvaluation(fakeKey, fakeFlag.variationKey)
             verify(mockEvaluationsFeature).processEvaluation(
                 fakeKey,
                 fakeContext,
@@ -334,12 +335,12 @@ internal class DatadogFlagsClientTest {
                 "FLAG_NOT_FOUND"
             )
         }
-        verifyNoMoreInteractions(mockProcessor, mockEvaluationsFeature)
+        verifyNoMoreInteractions(mockProcessor, mockEvaluationsFeature, mockRumEvaluationLogger)
     }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M respect opt-out W trackFlagSnapshotEvaluation() + trackFlagEvaluationEvent() {subject switch}`(
+    fun `M opt out W trackFlagSnapshotEvaluation() + trackFlagEvaluationEvent() + trackFlagRumEvaluation()`(
         requestedSubjectOptedOut: Boolean,
         forge: Forge
     ) {
@@ -363,6 +364,7 @@ internal class DatadogFlagsClientTest {
 
         // When
         testedProxy.trackFlagSnapshotEvaluation(fakeKey, fakeFlag, fakeContext)
+        testedProxy.trackFlagRumEvaluation(fakeKey, fakeFlag.variationKey, fakeContext)
         testedProxy.trackFlagEvaluationEvent(fakeKey, fakeFlag, fakeContext, null)
         testedProxy.trackFlagEvaluationEvent(fakeKey, null, fakeContext, "FLAG_NOT_FOUND")
 

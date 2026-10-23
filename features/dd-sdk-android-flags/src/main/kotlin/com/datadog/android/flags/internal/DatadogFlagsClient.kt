@@ -655,6 +655,14 @@ internal class DatadogFlagsClient(
         )
     }
 
+    internal fun trackFlagRumEvaluation(flagKey: String, variantKey: String, context: EvaluationContext) {
+        if (flagsConfiguration.rumIntegrationEnabled && variantKey.isNotBlank() &&
+            !isEvaluationTelemetryOptedOut(context)
+        ) {
+            logEvaluation(flagKey, variantKey)
+        }
+    }
+
     // endregion
 
     private companion object {

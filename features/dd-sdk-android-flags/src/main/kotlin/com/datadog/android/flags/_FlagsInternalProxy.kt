@@ -81,4 +81,14 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
             client.trackFlagEvaluationEvent(flagKey, flag, context, errorCode)
         }
     }
+
+    /**
+     * Records only a RUM flag annotation, respecting the client's evaluation telemetry opt-out settings.
+     * Does not fetch configuration, record an exposure, or record an evaluation event.
+     */
+    fun trackFlagRumEvaluation(flagKey: String, variantKey: String, context: EvaluationContext) {
+        if (client is DatadogFlagsClient) {
+            client.trackFlagRumEvaluation(flagKey, variantKey, context)
+        }
+    }
 }
