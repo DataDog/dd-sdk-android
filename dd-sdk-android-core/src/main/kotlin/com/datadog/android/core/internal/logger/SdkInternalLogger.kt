@@ -269,6 +269,9 @@ internal class SdkInternalLogger(
         rumFeature.sendEvent(telemetryEvent)
     }
 
+    // The configuration is part of the key, so that each variant of a usage is still reported once
+    // (e.g. every operation step type, or both OkHttp and Cronet instrumentations).
+    // The exhaustive `when` makes new usage types declare their configuration.
     private fun InternalTelemetryEvent.ApiUsage.onlyOnceKey(): String {
         val configuration = when (this) {
             is InternalTelemetryEvent.ApiUsage.AddViewLoadingTime -> "$overwrite,$noView,$noActiveView"
