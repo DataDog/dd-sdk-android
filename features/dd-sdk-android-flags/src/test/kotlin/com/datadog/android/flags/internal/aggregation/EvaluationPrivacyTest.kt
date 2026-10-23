@@ -87,7 +87,6 @@ internal class EvaluationPrivacyTest {
         // Then
         assertThat(result).hasSize(1)
         assertThat(result.single().count).isEqualTo(2)
-        assertThat(result.single().errorMessage).isEqualTo("GENERAL")
         assertThat(result.single().aggregationKey.errorCode).isEqualTo("GENERAL")
         assertThat(result.toString()).doesNotContain("private context canary", "unknown error")
     }

@@ -58,8 +58,7 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
                 count = 0,
                 firstEvaluation = timestamp,
                 lastEvaluation = timestamp,
-                rumApplicationId = rumApplicationId,
-                errorMessage = safeErrorCode
+                rumApplicationId = rumApplicationId
             )
             @Suppress("UnsafeThirdPartyFunctionCall") // safe - non-null key and value
             aggregationMap.put(
@@ -67,8 +66,7 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
                 existing.copy(
                     count = existing.count + 1,
                     firstEvaluation = minOf(existing.firstEvaluation, timestamp),
-                    lastEvaluation = maxOf(existing.lastEvaluation, timestamp),
-                    errorMessage = safeErrorCode
+                    lastEvaluation = maxOf(existing.lastEvaluation, timestamp)
                 )
             )
 

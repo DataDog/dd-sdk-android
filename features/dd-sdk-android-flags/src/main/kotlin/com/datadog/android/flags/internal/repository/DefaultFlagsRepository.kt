@@ -160,7 +160,6 @@ internal class DefaultFlagsRepository(
         return state?.context == context && state.flags.isNotEmpty()
     }
 
-    @Suppress("ReturnCount")
     override fun getEvaluationSnapshot(key: String): FlagEvaluationSnapshot? {
         waitForPersistenceLoad()
         val state = atomicState.get() ?: return null

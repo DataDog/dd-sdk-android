@@ -460,7 +460,7 @@ internal class DatadogFlagsClient(
         if (precomputedFlag.allocationKey.isNotBlank()) {
             metadata["allocationKey"] = precomputedFlag.allocationKey
         }
-        metadata["__dd_observe_full_evaluation_data"] = observeFullEvaluationData
+        metadata[OBSERVE_FULL_EVALUATION_DATA_METADATA_KEY] = observeFullEvaluationData
         return metadata
     }
 
@@ -476,7 +476,7 @@ internal class DatadogFlagsClient(
         reason = ResolutionReason.ERROR,
         errorCode = errorCode,
         errorMessage = "Flag '$flagKey': $errorMessage",
-        flagMetadata = mapOf("__dd_observe_full_evaluation_data" to observeFullEvaluationData)
+        flagMetadata = mapOf(OBSERVE_FULL_EVALUATION_DATA_METADATA_KEY to observeFullEvaluationData)
     )
 
     private fun parseReason(reasonString: String): ResolutionReason? {
@@ -572,4 +572,7 @@ internal class DatadogFlagsClient(
     }
 
     // endregion
+    private companion object {
+        const val OBSERVE_FULL_EVALUATION_DATA_METADATA_KEY = "__dd_observe_full_evaluation_data"
+    }
 }

@@ -16,6 +16,7 @@ package com.datadog.android.flags.internal.aggregation
  * - targeting key
  * - RUM view name (or null when RUM is not active or no view available)
  * - error code (ErrorCode enum name for aggregation, e.g., "FLAG_NOT_FOUND")
+ * - full evaluation data consent mode
  *
  * Context aggregation is reserved for future use and not implemented.
  */

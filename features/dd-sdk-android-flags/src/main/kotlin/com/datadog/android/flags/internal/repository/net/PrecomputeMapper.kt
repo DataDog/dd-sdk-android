@@ -25,7 +25,7 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
         val data = jsonResponse.getJSONObject("data")
         val attributes = data.getJSONObject("attributes")
         val flags = attributes.getJSONObject("flags")
-        val observeFullEvaluationData = attributes.opt("observeFullEvaluationData") == true
+        val observeFullEvaluationData = attributes.opt(JsonKeys.OBSERVE_FULL_EVALUATION_DATA.value) == true
 
         val flagsMap = mutableMapOf<String, PrecomputedFlag>()
 

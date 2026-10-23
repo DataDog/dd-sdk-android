@@ -15,6 +15,7 @@ internal enum class JsonKeys(val value: String) {
     // FlagsStateEntry keys
     FLAGS("flags"),
     LAST_UPDATE_TIMESTAMP("lastUpdateTimestamp"),
+    OBSERVE_FULL_EVALUATION_DATA("observeFullEvaluationData"),
 
     // PrecomputedFlag keys
     VARIATION_TYPE("variationType"),

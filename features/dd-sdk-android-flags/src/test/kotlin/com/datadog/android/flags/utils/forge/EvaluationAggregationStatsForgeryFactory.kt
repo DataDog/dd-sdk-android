@@ -8,6 +8,7 @@ package com.datadog.android.flags.utils.forge
 
 import com.datadog.android.flags.internal.aggregation.EvaluationAggregationKey
 import com.datadog.android.flags.internal.aggregation.EvaluationAggregationStats
+import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.ResolutionReason
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -22,16 +23,14 @@ internal class EvaluationAggregationStatsForgeryFactory : ForgeryFactory<Evaluat
         val lastEvalTimestamp = firstEvalTimestamp + forge.aLong(min = 0, max = 10_000)
 
         return EvaluationAggregationStats(
-
             aggregationKey = EvaluationAggregationKey(
                 flagKey = forge.anAlphabeticalString(),
                 variantKey = if (!isDefaultOrError) forge.anAlphabeticalString() else null,
                 allocationKey = if (!isDefaultOrError) forge.anAlphabeticalString() else null,
                 targetingKey = forge.aNullable { anAlphabeticalString() },
                 viewName = forge.aNullable { anAlphabeticalString() },
-                errorCode = if (hasError) forge.anAlphabeticalString() else null
+                errorCode = if (hasError) forge.aValueFrom(ErrorCode::class.java).name else null
             ),
-            errorMessage = if (hasError) forge.anAlphabeticalString() else null,
             count = forge.anInt(min = 1, max = 10_000),
             firstEvaluation = firstEvalTimestamp,
             lastEvaluation = lastEvalTimestamp,

@@ -36,7 +36,7 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
         json.put(JsonKeys.FLAGS.value, flagsJson)
 
         json.put(JsonKeys.LAST_UPDATE_TIMESTAMP.value, model.lastUpdateTimestamp)
-        json.put("observeFullEvaluationData", model.observeFullEvaluationData)
+        json.put(JsonKeys.OBSERVE_FULL_EVALUATION_DATA.value, model.observeFullEvaluationData)
 
         escapeUnpairedSurrogates(json.toString())
     } catch (e: JSONException) {
