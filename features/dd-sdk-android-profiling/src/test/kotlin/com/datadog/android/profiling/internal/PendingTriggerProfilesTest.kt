@@ -17,6 +17,7 @@ import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.perfetto.ProfileType
 import com.datadog.android.profiling.internal.trigger.PendingOomGatingEvent
+import com.datadog.android.profiling.internal.trigger.PendingOomProfile
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfileStorage
 import com.datadog.android.profiling.internal.trigger.PendingTriggerProfiles
 import com.datadog.android.utils.verifyLog
@@ -37,6 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
@@ -395,17 +397,17 @@ internal class PendingTriggerProfilesTest {
     }
 
     @Test
-    fun `M consume buffered result W setProfilingResult {deferred OOM gating event, within max age}`(
-        @StringForgery fakeErrorId: String,
+    fun `M persist with the gating event boot offset W setProfilingResult {deferred OOM gating event, within max age}`(
+        @Forgery fakeGatingEvent: PendingOomGatingEvent,
         @StringForgery fakePath: String,
-        @Forgery fakeRumContext: ProfilingRumContext,
         @LongForgery(min = 1_000L, max = 1_000_000L) fakeNowMs: Long
     ) {
         // Given
-        val deferredGatingEvent = PendingOomGatingEvent(
-            rumErrorId = fakeErrorId,
+        // The result may be delivered after a reboot: its offset comes from the current boot,
+        // while the histogram was captured in the boot the gating event was received in.
+        val deferredGatingEvent = fakeGatingEvent.copy(
             timestampMs = fakeNowMs,
-            rumContext = fakeRumContext
+            bootNtpOffsetNs = fakeBootNtpOffsetNs + 1L
         )
         whenever(
             mockSharedPreferencesStorage.getString(
@@ -428,6 +430,14 @@ internal class PendingTriggerProfilesTest {
         )
 
         // Then
+        val pendingProfileCaptor = argumentCaptor<String>()
+        verify(mockSharedPreferencesStorage).putString(
+            eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+            pendingProfileCaptor.capture(),
+            eq(true)
+        )
+        val pendingProfile = checkNotNull(PendingOomProfile.fromJson(pendingProfileCaptor.firstValue))
+        assertThat(pendingProfile.bootNtpOffsetNs).isEqualTo(deferredGatingEvent.bootNtpOffsetNs)
         assertThat(deferredReadyCount).isEqualTo(1)
         assertThat(buffer.clear()).isNull()
     }

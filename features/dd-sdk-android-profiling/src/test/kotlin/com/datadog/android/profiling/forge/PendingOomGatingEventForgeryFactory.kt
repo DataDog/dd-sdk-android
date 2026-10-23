@@ -15,7 +15,8 @@ internal class PendingOomGatingEventForgeryFactory : ForgeryFactory<PendingOomGa
         return PendingOomGatingEvent(
             rumErrorId = forge.anAlphabeticalString(),
             timestampMs = forge.aLong(),
-            rumContext = forge.getForgery()
+            rumContext = forge.getForgery(),
+            bootNtpOffsetNs = forge.aLong()
         )
     }
 }

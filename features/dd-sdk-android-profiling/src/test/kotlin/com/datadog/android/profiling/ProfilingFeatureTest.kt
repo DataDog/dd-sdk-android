@@ -2626,9 +2626,13 @@ internal class ProfilingFeatureTest {
 
     @Test
     fun `M persist gating event synchronously W onReceive() {RumOomErrorEvent}`(
-        @Forgery fakeOomEvent: ProfilerEvent.RumOomErrorEvent
+        @Forgery fakeOomEvent: ProfilerEvent.RumOomErrorEvent,
+        @LongForgery(min = 1_000_000L, max = 1_000_000_000L) fakeServerMs: Long,
+        @LongForgery(min = 1L, max = 1_000_000L) fakeElapsedNs: Long
     ) {
         // Given
+        whenever(mockTimeProvider.getServerTimestampMillis()) doReturn fakeServerMs
+        whenever(mockTimeProvider.getDeviceElapsedRealtimeNanos()) doReturn fakeElapsedNs
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         testedFeature.onInitialize(mockContext)
 
@@ -2646,7 +2650,8 @@ internal class ProfilingFeatureTest {
             PendingOomGatingEvent(
                 rumErrorId = fakeOomEvent.id,
                 timestampMs = fakeOomEvent.timestamp,
-                rumContext = fakeOomEvent.rumContext
+                rumContext = fakeOomEvent.rumContext,
+                bootNtpOffsetNs = TimeUnit.MILLISECONDS.toNanos(fakeServerMs) - fakeElapsedNs
             )
         )
     }
@@ -2704,7 +2709,7 @@ internal class ProfilingFeatureTest {
             resultFilePath = fakeOomResult.resultFilePath,
             startMs = fakeCaptureMs,
             endMs = fakeCaptureMs,
-            bootNtpOffsetNs = fakeOomResult.bootNtpOffsetNs,
+            bootNtpOffsetNs = fakeDeferredGatingEvent.bootNtpOffsetNs,
             rumErrorId = fakeDeferredGatingEvent.rumErrorId,
             rumContext = fakeDeferredGatingEvent.rumContext
         )
