@@ -38,14 +38,15 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
         allocationKey: String?,
         errorCode: String?,
         errorMessage: String?,
-        observeFullEvaluationData: Boolean = false
+        observeFullEvaluationData: Boolean = false,
+        telemetryTargetingKey: String? = context?.targetingKey
     ): List<EvaluationAggregationStats> {
         val safeErrorCode = EvaluationPrivacy.errorCode(errorCode, errorMessage)
         val key = EvaluationAggregationKey(
             flagKey = flagKey,
             variantKey = variantKey,
             allocationKey = allocationKey,
-            targetingKey = EvaluationPrivacy.targetingKey(context?.targetingKey, observeFullEvaluationData),
+            targetingKey = EvaluationPrivacy.targetingKey(telemetryTargetingKey, observeFullEvaluationData),
             viewName = rumViewName,
             errorCode = safeErrorCode,
             observeFullEvaluationData = observeFullEvaluationData

@@ -46,8 +46,23 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
     }
 
     fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
+        trackFlagSnapshotEvaluation(flagKey, flag, context, context.targetingKey)
+    }
+
+    /**
+     * Replays an evaluation with a separate identity for evaluation telemetry.
+     *
+     * [telemetryTargetingKey] is omitted when null and preserved when empty. Non-empty values follow
+     * the snapshot's telemetry consent. [context] still identifies the subject for exposures and opt-out.
+     */
+    fun trackFlagSnapshotEvaluation(
+        flagKey: String,
+        flag: UnparsedFlag,
+        context: EvaluationContext,
+        telemetryTargetingKey: String?
+    ) {
         if (client is DatadogFlagsClient) {
-            client.trackFlagSnapshotEvaluation(flagKey, flag, context)
+            client.trackFlagSnapshotEvaluation(flagKey, flag, context, telemetryTargetingKey)
         }
     }
 }

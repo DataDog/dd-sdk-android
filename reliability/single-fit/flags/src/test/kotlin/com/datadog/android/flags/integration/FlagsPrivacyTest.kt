@@ -269,6 +269,66 @@ internal class FlagsPrivacyTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
+    fun `M preserve separate telemetry identity and snapshot consent W trackFlagSnapshotEvaluation + stop`(
+        fakeConsent: Boolean
+    ) {
+        // Given
+        stubAssignments(fakeConsent)
+        val client = buildClient()
+        val context = EvaluationContext(TARGETING_KEY, mapOf("email" to CONTEXT_CANARY))
+        client.setEvaluationContext(context)
+        val proxy = _FlagsInternalProxy(client)
+        val flag = checkNotNull(proxy.getFlagAssignmentsSnapshot()["flag-0"])
+        stubAssignments(!fakeConsent)
+        client.setEvaluationContext(context)
+
+        // When
+        listOf(null, "", "abc").forEach { telemetryTargetingKey ->
+            repeat(2) {
+                proxy.trackFlagSnapshotEvaluation("flag-0", flag, context, telemetryTargetingKey)
+            }
+        }
+        stubSdkCore.stopFeatures()
+        val wire = wireBody()
+        val events = wire.lineSequence().filter { it.isNotBlank() }.map(::JSONObject).toList()
+
+        // Then
+        assertThat(events).hasSize(3)
+        assertThat(events.map { it.getInt("evaluation_count") }).containsOnly(2)
+        assertThat(events.count { !it.has("targeting_key") }).isEqualTo(1)
+        assertThat(events.filter { it.has("targeting_key") }.map { it.getString("targeting_key") })
+            .containsExactlyInAnyOrder(
+                "",
+                if (fakeConsent) "abc" else "sha256_ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+            )
+        assertThat(wire).doesNotContain(TARGETING_KEY, CONTEXT_CANARY)
+        assertThat(events.map { it.getJSONObject("context").has("evaluation") }).containsOnly(false)
+    }
+
+    @Test
+    fun `M omit malformed telemetry identity W trackFlagSnapshotEvaluation + stop`() {
+        // Given
+        stubAssignments(false)
+        val client = buildClient()
+        val context = EvaluationContext(TARGETING_KEY)
+        client.setEvaluationContext(context)
+        val proxy = _FlagsInternalProxy(client)
+        val flag = checkNotNull(proxy.getFlagAssignmentsSnapshot()["flag-0"])
+
+        // When
+        listOf("\uD800", "\uDC00", "a\uD800b").forEach { telemetryTargetingKey ->
+            proxy.trackFlagSnapshotEvaluation("flag-0", flag, context, telemetryTargetingKey)
+        }
+        stubSdkCore.stopFeatures()
+        val event = JSONObject(wireBody())
+
+        // Then
+        assertThat(event.has("targeting_key")).isFalse()
+        assertThat(event.getInt("evaluation_count")).isEqualTo(3)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
     fun `M honor tracking disable W resolve + stop`(fakeConsent: Boolean) {
         // Given
         stubAssignments(fakeConsent)

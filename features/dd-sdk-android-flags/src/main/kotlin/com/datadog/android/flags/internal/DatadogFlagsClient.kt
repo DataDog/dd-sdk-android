@@ -287,7 +287,8 @@ internal class DatadogFlagsClient(
         allocationKey: String?,
         errorCode: String?,
         errorMessage: String?,
-        observeFullEvaluationData: Boolean
+        observeFullEvaluationData: Boolean,
+        telemetryTargetingKey: String? = context?.targetingKey
     ) {
         evaluationsFeature?.processEvaluation(
             flagKey = flagKey,
@@ -296,7 +297,8 @@ internal class DatadogFlagsClient(
             allocationKey = allocationKey,
             errorCode = errorCode,
             errorMessage = errorMessage,
-            observeFullEvaluationData = observeFullEvaluationData
+            observeFullEvaluationData = observeFullEvaluationData,
+            telemetryTargetingKey = telemetryTargetingKey
         )
     }
 
@@ -593,7 +595,8 @@ internal class DatadogFlagsClient(
         flag: UnparsedFlag,
         context: EvaluationContext,
         telemetryOptedOut: Boolean,
-        observeFullEvaluationData: Boolean = (flag as? UnparsedFlagWithConsent)?.observeFullEvaluationData == true
+        observeFullEvaluationData: Boolean = (flag as? UnparsedFlagWithConsent)?.observeFullEvaluationData == true,
+        telemetryTargetingKey: String? = context.targetingKey
     ) {
         // Exposure logging (only when doLog=true)
         if (flag.doLog) {
@@ -620,7 +623,8 @@ internal class DatadogFlagsClient(
                 allocationKey = flag.allocationKey,
                 errorCode = null,
                 errorMessage = null,
-                observeFullEvaluationData = observeFullEvaluationData
+                observeFullEvaluationData = observeFullEvaluationData,
+                telemetryTargetingKey = telemetryTargetingKey
             )
         }
     }
@@ -659,9 +663,14 @@ internal class DatadogFlagsClient(
      *
      * Supposed to be used by internal Datadog packages to track flag evaluations from an exact flags state snapshot.
      */
-    internal fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
+    internal fun trackFlagSnapshotEvaluation(
+        flagKey: String,
+        flag: UnparsedFlag,
+        context: EvaluationContext,
+        telemetryTargetingKey: String? = context.targetingKey
+    ) {
         val optedOut = synchronized(telemetryLock) { isSubjectOptedOut(context.targetingKey) }
-        trackResolution(flagKey, flag, context, optedOut)
+        trackResolution(flagKey, flag, context, optedOut, telemetryTargetingKey = telemetryTargetingKey)
     }
 
     // endregion

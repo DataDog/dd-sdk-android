@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.PrecomputedFlag
@@ -34,6 +35,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.NullAndEmptySource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -312,6 +314,37 @@ internal class DatadogFlagsClientTest {
                 null
             )
         }
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = ["different-telemetry-subject"])
+    fun `M retain subject opt-out and exposure context W trackFlagSnapshotEvaluation`(
+        fakeTelemetryTargetingKey: String?,
+        forge: Forge
+    ) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeContext = forge.getForgery<EvaluationContext>()
+        val fakeOtherContext = EvaluationContext(forge.anAlphabeticalString())
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(doLog = true)
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
+            FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
+            mockEvaluationsFeature, mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = true
+        )
+        val proxy = _FlagsInternalProxy(testedClient)
+        proxy.setEvaluationContext(fakeContext, null, true)
+        proxy.setEvaluationContext(fakeOtherContext, null, false)
+
+        // When
+        proxy.trackFlagSnapshotEvaluation(fakeFlagKey, fakeFlag, fakeContext, fakeTelemetryTargetingKey)
+
+        // Then
+        verify(mockProcessor).processEvent(fakeFlagKey, fakeContext, fakeFlag)
+        verifyNoInteractions(mockRumEvaluationLogger, mockEvaluationsFeature)
     }
 
     @Test
@@ -1024,7 +1057,8 @@ internal class DatadogFlagsClientTest {
             allocationKey = isNull(),
             errorCode = eq(ErrorCode.FLAG_NOT_FOUND.name),
             errorMessage = eq("Flag not found"),
-            observeFullEvaluationData = eq(false)
+            observeFullEvaluationData = eq(false),
+            telemetryTargetingKey = eq(fakeContext.targetingKey)
         )
     }
 

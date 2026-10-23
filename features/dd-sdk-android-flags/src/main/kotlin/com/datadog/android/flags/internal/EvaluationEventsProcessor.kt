@@ -49,7 +49,8 @@ internal class EvaluationEventsProcessor(
         allocationKey: String?,
         errorCode: String?,
         errorMessage: String?,
-        observeFullEvaluationData: Boolean = false
+        observeFullEvaluationData: Boolean = false,
+        telemetryTargetingKey: String? = context?.targetingKey
     ) {
         val drainedEvents = aggregator.record(
             timestamp = timeProvider.getDeviceTimestampMillis(),
@@ -61,7 +62,8 @@ internal class EvaluationEventsProcessor(
             allocationKey = allocationKey,
             errorCode = errorCode,
             errorMessage = errorMessage,
-            observeFullEvaluationData = observeFullEvaluationData
+            observeFullEvaluationData = observeFullEvaluationData,
+            telemetryTargetingKey = telemetryTargetingKey
         )
 
         if (drainedEvents.isNotEmpty()) {
