@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import java.security.MessageDigest
@@ -67,17 +68,19 @@ internal class EvaluationTelemetryTest {
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = [true, false])
+    @CsvSource("true,true", "true,false", "false,true", "false,false")
     fun `M preserve telemetry policy W resolve() {encoded assignments and missing flag}`(
         optedOut: Boolean,
+        consent: Boolean,
         @StringForgery fakeTargetingKey: String,
         @StringForgery fakeFlagKey: String,
         @StringForgery(regex = "[0-9a-f]{32}") fakeSalt: String,
         @BoolForgery fakeValue: Boolean
     ) {
         // Given
-        val response = encodedResponse(fakeFlagKey, fakeValue, fakeSalt)
-        fixture.stubCore.stubNetworkResponses { httpResponse(it, body = response) }
+        val response = JSONObject(encodedResponse(fakeFlagKey, fakeValue, fakeSalt))
+        response.getJSONObject("data").getJSONObject("attributes").put("observeFullEvaluationData", consent)
+        fixture.stubCore.stubNetworkResponses { httpResponse(it, body = response.toString()) }
         val client = newClient()
         client.setEvaluationContext(EvaluationContext(fakeTargetingKey))
         client.setEvaluationTelemetryOptOut(optedOut)
@@ -89,6 +92,16 @@ internal class EvaluationTelemetryTest {
 
         // Then
         assertThat(assigned.value).isEqualTo(fakeValue)
+        assertThat(assigned.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", consent)
+        assertThat(missing.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", consent)
+        val evaluationEvents = fixture.events(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)
+        if (!optedOut) {
+            assertThat(evaluationEvents.map { it["targeting_key"].asString }).allMatch {
+                if (consent) it == fakeTargetingKey else it.startsWith("sha256_") && it != fakeTargetingKey
+            }
+            assertThat(evaluationEvents.single { it.has("error") }["error"].asJsonObject["message"].asString)
+                .isEqualTo("FLAG_NOT_FOUND")
+        }
         assertThat(missing.errorCode).isEqualTo(ErrorCode.FLAG_NOT_FOUND)
         assertThat(fixture.evaluationCount()).isEqualTo(if (optedOut) 0 else 2)
         assertThat(fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).hasSize(if (optedOut) 0 else 1)

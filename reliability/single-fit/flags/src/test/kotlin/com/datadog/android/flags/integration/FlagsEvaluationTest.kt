@@ -425,7 +425,7 @@ class FlagsEvaluationTest {
         assertThat(evaluation.getJSONObject("flag").getString("key")).isEqualTo(fakeFlagKey)
         assertThat(evaluation.getJSONObject("variant").getString("key")).isEqualTo(fakeVariationKey)
         assertThat(evaluation.getJSONObject("allocation").getString("key")).isEqualTo(fakeAllocationKey)
-        assertThat(evaluation.getString("targeting_key")).isEqualTo(fakeTargetingKey)
+        assertThat(evaluation.getString("targeting_key")).matches("sha256_[0-9a-f]{64}")
         assertThat(evaluation.getInt("evaluation_count")).isEqualTo(fakeEvaluationCount)
     }
 

@@ -27,11 +27,17 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
             }
         }
         val obfuscation = FlagsJson.readObfuscation(metadata)
+        val observeFullEvaluationData = FlagsJson.readConsent(metadata)
         val flags = attributes.flags.additionalProperties
         if (obfuscation != null) FlagsJson.validateKeys(flags.keys.iterator())
         PrecomputedAssignments(
-            flags.mapValues { FlagsJson.readAssignment(FlagsJson.objectValue(it.value)) },
-            obfuscation
+            flags.mapValues {
+                FlagsJson.readAssignment(FlagsJson.objectValue(it.value)).copy(
+                    observeFullEvaluationData = observeFullEvaluationData
+                )
+            },
+            obfuscation,
+            observeFullEvaluationData
         )
     } catch (e: JsonParseException) {
         internalLogger.log(

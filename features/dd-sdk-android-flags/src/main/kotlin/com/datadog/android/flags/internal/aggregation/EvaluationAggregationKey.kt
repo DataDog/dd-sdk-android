@@ -16,9 +16,7 @@ package com.datadog.android.flags.internal.aggregation
  * - targeting key
  * - RUM view name (or null when RUM is not active or no view available)
  * - error code (ErrorCode enum name for aggregation, e.g., "FLAG_NOT_FOUND")
- *
- * Note: Error messages are stored in AggregationStats but not used for aggregation
- * to keep the number of unique keys bounded while preserving debugging information.
+ * - full evaluation data consent mode
  *
  * Context aggregation is reserved for future use and not implemented.
  */
@@ -28,5 +26,6 @@ internal data class EvaluationAggregationKey(
     val allocationKey: String?,
     val targetingKey: String?,
     val viewName: String?,
-    val errorCode: String?
+    val errorCode: String?,
+    val observeFullEvaluationData: Boolean = false
 )

@@ -50,8 +50,23 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
      * Use the separate operations below for independently selected tracking hooks.
      */
     fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
+        trackFlagSnapshotEvaluation(flagKey, flag, context, context.targetingKey)
+    }
+
+    /**
+     * Replays an evaluation with a separate identity for evaluation telemetry.
+     *
+     * [telemetryTargetingKey] is omitted when null and preserved when empty. Non-empty values follow
+     * the snapshot's telemetry consent. [context] still identifies the subject for exposures and opt-out.
+     */
+    fun trackFlagSnapshotEvaluation(
+        flagKey: String,
+        flag: UnparsedFlag,
+        context: EvaluationContext,
+        telemetryTargetingKey: String?
+    ) {
         if (client is DatadogFlagsClient) {
-            client.trackFlagSnapshotEvaluation(flagKey, flag, context)
+            client.trackFlagSnapshotEvaluation(flagKey, flag, context, telemetryTargetingKey)
         }
     }
 
@@ -79,6 +94,31 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
     ) {
         if (client is DatadogFlagsClient) {
             client.trackFlagEvaluationEvent(flagKey, flag, context, errorCode)
+        }
+    }
+
+    /**
+     * Records an evaluation with the consent and telemetry identity captured by the bridge.
+     * This also preserves consent for errors without an assignment. Null identities are omitted;
+     * empty identities remain empty. [context] continues to identify the subject for opt-out.
+     */
+    fun trackFlagEvaluationEvent(
+        flagKey: String,
+        flag: UnparsedFlag?,
+        context: EvaluationContext,
+        errorCode: String?,
+        observeFullEvaluationData: Boolean,
+        telemetryTargetingKey: String?
+    ) {
+        if (client is DatadogFlagsClient) {
+            client.trackFlagEvaluationEvent(
+                flagKey,
+                flag,
+                context,
+                errorCode,
+                observeFullEvaluationData,
+                telemetryTargetingKey
+            )
         }
     }
 

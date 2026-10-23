@@ -142,9 +142,9 @@ internal class EvaluationsManagerTest {
         }
 
         doAnswer {
-            it.getArgument<() -> Unit>(3).invoke()
+            it.getArgument<() -> Unit>(4).invoke()
             null
-        }.whenever(mockFlagsRepository).setFlagsAndContext(any(), any(), anyOrNull(), any())
+        }.whenever(mockFlagsRepository).setFlagsAndContext(any(), any(), anyOrNull(), any(), any())
 
         // Mock executor to run tasks synchronously for testing
         whenever(mockExecutorService.execute(any())).thenAnswer { invocation ->
@@ -265,7 +265,7 @@ internal class EvaluationsManagerTest {
         evaluationsManager.updateEvaluationsForContext(context)
 
         // Then
-        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(expectedFlags), anyOrNull(), any())
+        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(expectedFlags), anyOrNull(), eq(false), any())
         verify(mockInternalLogger, times(2)).log(
             eq(InternalLogger.Level.DEBUG),
             eq(InternalLogger.Target.MAINTAINER),
@@ -328,7 +328,7 @@ internal class EvaluationsManagerTest {
         evaluationsManager.updateEvaluationsForContext(context, callback)
 
         // Then
-        verify(mockFlagsRepository, never()).setFlagsAndContext(any(), any(), anyOrNull(), any())
+        verify(mockFlagsRepository, never()).setFlagsAndContext(any(), any(), anyOrNull(), any(), any())
         verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
         verify(mockFlagsStateManager, never()).updateState(FlagsClientState.Ready)
         verify(callback).onFailure(any())
@@ -462,7 +462,7 @@ internal class EvaluationsManagerTest {
         // Then
         verify(mockCallback).onSuccess()
         verify(mockCallback, never()).onFailure(any())
-        verify(mockFlagsRepository).setFlagsAndContext(eq(publicContext), eq(emptyMap()), anyOrNull(), any())
+        verify(mockFlagsRepository).setFlagsAndContext(eq(publicContext), eq(emptyMap()), anyOrNull(), eq(false), any())
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
     }
 
@@ -906,7 +906,7 @@ internal class EvaluationsManagerTest {
         // Then
         verify(mockCallback).onFailure(any<FlagsInitializationTimeoutException>())
         verify(mockCallback, never()).onSuccess()
-        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(emptyMap()), anyOrNull(), any())
+        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(emptyMap()), anyOrNull(), eq(false), any())
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
     }
 

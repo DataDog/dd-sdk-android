@@ -23,7 +23,7 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
                 FlagsJson.writeAssignment(it.value).toJson()
             }.toMutableMap()
         )
-        FlagsState(
+        val json = FlagsState(
             evaluationContext = FlagsState.EvaluationContext(
                 targetingKey = model.evaluationContext.targetingKey,
                 attributes = FlagsState.Flags(model.evaluationContext.attributes.toMutableMap())
@@ -32,9 +32,11 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
             flags = flags.takeIf { model.obfuscation == null },
             encodedFlags = flags.takeIf { model.obfuscation != null },
             lastUpdateTimestamp = model.lastUpdateTimestamp,
+            observeFullEvaluationData = model.observeFullEvaluationData,
             obfuscated = true.takeIf { model.obfuscation != null },
             obfuscation = model.obfuscation?.let { FlagsState.Obfuscation(FlagKeyObfuscation.SCHEME, it.salt) }
         ).toJson().toString()
+        json.escapeUnpairedSurrogates()
     } catch (e: JsonParseException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
@@ -43,5 +45,31 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
             e
         )
         ""
+    }
+
+    private fun String.escapeUnpairedSurrogates(): String {
+        val json = this
+        if (json.none { it.isSurrogate() }) return json
+
+        // JSON writers leave lone surrogates unescaped, and UTF-8 storage would replace them.
+        return buildString(json.length) {
+            json.forEachIndexed { index, character ->
+                val isPaired = when {
+                    character.isHighSurrogate() -> json.getOrNull(index + 1)?.isLowSurrogate() == true
+                    character.isLowSurrogate() -> json.getOrNull(index - 1)?.isHighSurrogate() == true
+                    else -> true
+                }
+                if (isPaired) {
+                    append(character)
+                } else {
+                    append("\\u")
+                    append(character.code.toString(HEX_RADIX))
+                }
+            }
+        }
+    }
+
+    private companion object {
+        const val HEX_RADIX = 16
     }
 }

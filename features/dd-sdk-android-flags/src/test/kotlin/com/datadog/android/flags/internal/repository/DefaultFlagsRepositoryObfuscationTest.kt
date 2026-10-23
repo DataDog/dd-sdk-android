@@ -104,7 +104,7 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         val testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore)
 
         // Then
-        val (flag, context) = checkNotNull(testedRepository.getPrecomputedFlagWithContext(fakeFlagKey))
+        val (flag, context) = checkNotNull(testedRepository.getEvaluationSnapshot(fakeFlagKey))
         assertThat(context).isEqualTo(fakeContext)
         checkNotNull(flag)
         assertThat(flag.variationValue).isEqualTo(fakeFlag.variationValue)
@@ -138,7 +138,7 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         assertThat(testedRepository.hasFlags()).isEqualTo(readable)
         assertThat(testedRepository.hasLoadedFlagsForContext(fakeContext)).isEqualTo(readable)
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(if (readable) fakeContext else null)
-        assertThat(testedRepository.getPrecomputedFlagWithContext(fakeFlagKey) != null).isEqualTo(readable)
+        assertThat(testedRepository.getEvaluationSnapshot(fakeFlagKey) != null).isEqualTo(readable)
         assertThat(testedRepository.getFlagsSnapshot().isEmpty()).isEqualTo(encoded)
         assertThat(firstFlags).hasSize(if (readable) 1 else 0)
         if (readable) {
@@ -186,7 +186,7 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         fakeContext,
         mapOf((if (encoded) encodedKey else fakeFlagKey) to fakeFlag),
         fakeTimestamp,
-        encoding.takeIf { encoded }
+        obfuscation = encoding.takeIf { encoded }
     )
 
     private fun install(encoded: Boolean) {
