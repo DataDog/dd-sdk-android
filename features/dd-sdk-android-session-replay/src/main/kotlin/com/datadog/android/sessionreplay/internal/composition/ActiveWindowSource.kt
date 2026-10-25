@@ -63,12 +63,15 @@ internal class ActiveWindowSource(
         }
     }
 
-    /** Redraws require a live privacy check; unchanged policies keep the same gesture scope. */
-    fun onDraw(views: List<View>) {
+    /** Marks only the drawing window dirty; live hierarchy checks happen on demand before touches. */
+    fun onDraw(root: View) {
         synchronized(lock) {
             drawVersion++
-            privacyOverrides.filter { entry -> views.any { it === entry.root.get() } }
-                .forEach { it.dirtyRevision = drawVersion }
+            for (entry in privacyOverrides) {
+                if (entry.root.get() === root) {
+                    entry.dirtyRevision = drawVersion
+                }
+            }
         }
     }
 

@@ -38,17 +38,17 @@ import org.mockito.kotlin.whenever
 internal class AndroidSnapshotCaptureLifecycleTest {
 
     @Test
-    fun `M signal source window W onDraw`() {
+    fun `M signal source window W repeated draws`() {
         // Given
         val view = mock<View>()
         val changedWindows = mutableListOf<List<View>>()
         val listener = CompositionOnDrawListener(view) { changedWindows += it }
 
         // When
-        listener.onDraw()
+        repeat(2) { listener.onDraw() }
 
         // Then
-        assertThat(changedWindows).containsExactly(listOf(view))
+        assertThat(changedWindows).containsExactly(listOf(view), listOf(view))
     }
 
     @Test

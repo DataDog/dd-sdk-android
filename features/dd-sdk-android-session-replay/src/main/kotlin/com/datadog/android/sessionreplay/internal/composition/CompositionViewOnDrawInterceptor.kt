@@ -53,7 +53,7 @@ internal class CompositionViewOnDrawInterceptor(
         val source = windowSource
         val changeListener = onWindowsChanged
         val listener = CompositionOnDrawListener(view) { roots ->
-            source.onDraw(roots)
+            source.onDraw(view)
             changeListener.onWindowsChanged(roots)
         }
         val reserved = synchronized(lock) {
