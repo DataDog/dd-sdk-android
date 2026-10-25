@@ -50,6 +50,7 @@ internal class CapturedTextViewMapper(
 
     override fun capture(view: TextView, mappingContext: CapturedMappingContext): CapturedViewData {
         val layout = view.layout
+        val hasLayout = layout != null
         return CapturedTextViewData(
             bounds = (
                 mappingContext.bounds
@@ -71,15 +72,15 @@ internal class CapturedTextViewMapper(
                 TextUtils.TruncateAt.MARQUEE -> CapturedTruncationMode.CLIP
                 null -> null
             },
-            paddingTopPx = if (layout != null) view.totalPaddingTop else view.paddingTop,
-            paddingBottomPx = if (layout != null) view.totalPaddingBottom else view.paddingBottom,
-            paddingLeftPx = if (layout != null) view.totalPaddingLeft else view.paddingLeft,
-            paddingRightPx = if (layout != null) view.totalPaddingRight else view.paddingRight,
+            paddingTopPx = if (hasLayout) view.totalPaddingTop else view.paddingTop,
+            paddingBottomPx = if (hasLayout) view.totalPaddingBottom else view.paddingBottom,
+            paddingLeftPx = if (hasLayout) view.totalPaddingLeft else view.paddingLeft,
+            paddingRightPx = if (hasLayout) view.totalPaddingRight else view.paddingRight,
             textAlignment = view.textAlignment,
             gravity = view.gravity,
             isParagraphRtl = isParagraphRtl(view),
             isLayoutRtl = view.layoutDirection == TextView.LAYOUT_DIRECTION_RTL,
-            hasLayout = layout != null,
+            hasLayout = hasLayout,
             colorStringFormatter = colorStringFormatter
         )
     }

@@ -14,8 +14,10 @@ import android.graphics.drawable.ColorDrawable
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewParent
 import android.view.ViewStub
 import android.webkit.WebView
+import androidx.compose.ui.platform.ComposeView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TouchPrivacy
@@ -195,6 +197,41 @@ internal class AndroidWindowTraversalTest {
         assertThat(copiedView.bounds).isEqualTo(
             CapturedBounds(normalized.x, normalized.y, normalized.width, normalized.height)
         )
+    }
+
+    @Test
+    fun `M skip reparented child W traverseWindow { distinct parents compare equal }`(
+        @Forgery fakeBounds: GlobalBounds
+    ) {
+        // Given: both children are queued before mapping the first child changes the second's parent.
+        val root = mockViewGroup(fakeBounds)
+        val firstChild = mockView(fakeBounds)
+        val movedChild = mockView(fakeBounds)
+        val fakeOriginalParent = EqualParent()
+        val fakeReplacementParent = EqualParent()
+        assertThat(fakeReplacementParent).isEqualTo(fakeOriginalParent).isNotSameAs(fakeOriginalParent)
+        whenever(movedChild.parent).thenReturn(fakeOriginalParent)
+        whenever(root.childCount).thenReturn(2)
+        whenever(root.getChildAt(0)).thenReturn(firstChild)
+        whenever(root.getChildAt(1)).thenReturn(movedChild)
+        val reparentingMapper = CapturedViewMapper<View> { view, _ ->
+            if (view === firstChild) {
+                whenever(movedChild.parent).thenReturn(fakeReplacementParent)
+            }
+            CapturedViewMapperResult.None
+        }
+
+        // When
+        val result = traversal(fallback = reparentingMapper).traverseWindow(
+            root,
+            identityFactory.window("window"),
+            identityFactory,
+            fakeContext
+        )
+
+        // Then: retain the root and first child, but reject the moved child's stale work item.
+        assertThat((result as WindowCopyResult.Present).window.views).hasSize(2)
+        verify(mockViewIdentifierResolver, never()).resolveViewId(movedChild)
     }
 
     @Test
@@ -494,13 +531,47 @@ internal class AndroidWindowTraversalTest {
     }
 
     @Test
+    fun `M hand off Compose host without visiting native children W traverseWindow { real Compose dependency }`(
+        @Forgery fakeRootBounds: GlobalBounds
+    ) {
+        // Given: an inline mock retains the real dependency's runtime class and package name.
+        val mockComposeHost: ComposeView = mock()
+        stubDefaults(mockComposeHost, fakeRootBounds)
+        val mockComposeChild = mockView(fakeRootBounds)
+        whenever(mockComposeHost.childCount).thenReturn(1)
+        whenever(mockComposeHost.getChildAt(0)).thenReturn(mockComposeChild)
+        val mockComposeHostCallback: CapturedInteropViewCallback = mock()
+        whenever(mockComposeHostCallback.map(eq(mockComposeHost), any())).thenReturn(CapturedViewMapperResult.None)
+        val testedTraversal = AndroidWindowTraversal(
+            mapperRegistry = CapturedViewMapperRegistry(emptyList(), noOpFallback, mock()),
+            internalLogger = mock(),
+            viewIdentifierResolver = mockViewIdentifierResolver,
+            viewBoundsResolver = mockViewBoundsResolver,
+            composeHostCallback = mockComposeHostCallback
+        )
+
+        // When
+        val result = testedTraversal.traverseWindow(
+            mockComposeHost,
+            identityFactory.window("window"),
+            identityFactory,
+            fakeContext
+        )
+
+        // Then
+        verify(mockComposeHostCallback).map(eq(mockComposeHost), any())
+        verify(mockComposeHost, never()).getChildAt(any())
+        assertThat((result as WindowCopyResult.Present).window.views).hasSize(1)
+    }
+
+    @Test
     fun `M abort W deadline expires during compose host handoff {before next checkpoint tick}`(
         @Forgery fakeRootBounds: GlobalBounds,
         @LongForgery(min = 1L, max = 1000L) fakeDeadlineNs: Long
     ) {
         // Given
-        val composeHost = androidx.compose.ui.platform.ComposeView(mock(), fakeDensity)
-        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(composeHost, fakeDensity)).thenReturn(fakeRootBounds)
+        val composeHost: ComposeView = mock()
+        stubDefaults(composeHost, fakeRootBounds)
         val windowIdentity = identityFactory.window("window")
         var calls = 0
         val expiringContext = CaptureGenerationContext(
@@ -519,11 +590,6 @@ internal class AndroidWindowTraversalTest {
             internalLogger = mock(),
             viewIdentifierResolver = mockViewIdentifierResolver,
             viewBoundsResolver = mockViewBoundsResolver,
-            // The real ViewUtilsInternal calls isShown()/getWidth()/getHeight() on the view, which
-            // are permanently stubbed to false/0/0 for any real (non-mocked) View here since View
-            // isn't in this module's unMock keep-list - a mock instead, defaulting every check to
-            // false, isolates this test from that unrelated limitation.
-            viewUtilsInternal = mock(),
             composeHostCallback = CapturedInteropViewCallback { _, _ -> CapturedViewMapperResult.None }
         )
 
@@ -775,4 +841,10 @@ internal class AndroidWindowTraversalTest {
     }
 
     // endregion
+
+    private class EqualParent : ViewParent by mock<ViewParent>() {
+        override fun equals(other: Any?): Boolean = other is EqualParent
+
+        override fun hashCode(): Int = 0
+    }
 }

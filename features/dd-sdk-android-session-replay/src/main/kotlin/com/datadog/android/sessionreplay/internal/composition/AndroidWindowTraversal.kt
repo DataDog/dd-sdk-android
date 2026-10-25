@@ -103,13 +103,16 @@ internal class AndroidWindowTraversal(
         val view = item.view
         val isFiltered = viewUtilsInternal.isNotVisible(view) || viewUtilsInternal.isSystemNoise(view)
         if (isFiltered || viewUtilsInternal.isOnSecondaryDisplay(view) ||
-            view.parent !== item.expectedParent
+            !(view.parent isSameInstanceAs item.expectedParent)
         ) {
             return false
         }
         @Suppress("UnsafeThirdPartyFunctionCall") // UI-owned IdentityHashMap accepts this non-null key/value.
         return state.visited.put(view, true) == null
     }
+
+    // Queued work belongs to one parent instance, even when distinct parents compare equal.
+    private infix fun ViewParent?.isSameInstanceAs(other: ViewParent?): Boolean = this === other
 
     @UiThread
     private fun copyView(
@@ -130,6 +133,8 @@ internal class AndroidWindowTraversal(
             ?: viewBoundsResolver.resolveViewGlobalBounds(view, state.density).toCaptured()
         val mappingContext = CapturedMappingContext(state.identityFactory, identity, state.density, bounds)
         val hidden = view.getTag(R.id.datadog_hidden) == true
+        // Detect the public ComposeView by name to keep this module independent of Compose.
+        // Consumer rules preserve its name; Compose owns the host's native implementation children.
         val interop = composeHostCallback?.takeIf {
             !hidden && view.javaClass.name == COMPOSE_VIEW_CLASS_NAME
         }?.map(view, mappingContext)
