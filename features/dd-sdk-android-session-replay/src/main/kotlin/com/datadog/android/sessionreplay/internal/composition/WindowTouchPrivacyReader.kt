@@ -46,7 +46,8 @@ internal class WindowTouchPrivacyReader(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
             { "Unable to refresh composition touch privacy" },
-            e
+            e,
+            onlyOnce = true
         )
         null
     }
@@ -56,14 +57,14 @@ internal class WindowTouchPrivacyReader(
     @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall")
     private fun readWindow(root: View): Map<Rect, TouchPrivacy>? {
         val startedAtNs = timeProvider.elapsedRealtimeNanos()
-        if (!isMainThreadWindow(root) || isFiltered(root)) return null
+        if (!isMainThreadWindow(root) || shouldSkipSubtree(root)) return null
         val pending = ArrayDeque<View>()
         pending.addLast(root)
         val areas = mutableMapOf<Rect, TouchPrivacy>()
         while (pending.isNotEmpty()) {
             if (timeProvider.elapsedRealtimeNanos() - startedAtNs >= budgetNs) return null
             val view = pending.removeLast()
-            if (isFiltered(view)) continue
+            if (shouldSkipSubtree(view)) continue
             collectTouchOverrideArea(view, areas, internalLogger)
             if (!enqueueChildren(view, pending, startedAtNs)) return null
         }
@@ -91,7 +92,7 @@ internal class WindowTouchPrivacyReader(
     }
 
     @UiThread
-    private fun isFiltered(view: View): Boolean = viewUtils.isNotVisible(view) ||
+    private fun shouldSkipSubtree(view: View): Boolean = viewUtils.isNotVisible(view) ||
         viewUtils.isSystemNoise(view) || viewUtils.isOnSecondaryDisplay(view)
 }
 
@@ -106,7 +107,14 @@ internal fun collectTouchOverrideArea(
     val location = IntArray(2)
     @Suppress("UnsafeThirdPartyFunctionCall") // The coordinate array always has two entries.
     view.getLocationOnScreen(location)
-    val bounds = Rect(location[0], location[1], location[0] + view.width, location[1] + view.height)
+    val x = location[0]
+    val y = location[1]
+    val bounds = Rect(
+        x - view.paddingLeft,
+        y - view.paddingTop,
+        x + view.width + view.paddingRight,
+        y + view.height + view.paddingBottom
+    )
     try {
         areas.putTouchOverrideArea(bounds, TouchPrivacy.valueOf(tag.toString().uppercase(Locale.US)))
     } catch (e: IllegalArgumentException) {
