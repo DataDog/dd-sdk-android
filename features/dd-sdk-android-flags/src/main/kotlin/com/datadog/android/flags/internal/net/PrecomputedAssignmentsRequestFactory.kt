@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.internal.getFlagsEndpoint
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.internal.rum.rumContext
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -144,8 +145,7 @@ internal class PrecomputedAssignmentsRequestFactory(
             .put("sdk_version", datadogContext.sdkVersion)
 
     private val DatadogContext.rumApplicationId: String?
-        get() = featuresContext[Feature.RUM_FEATURE_NAME]
-            ?.get("application_id") as? String
+        get() = featuresContext[Feature.RUM_FEATURE_NAME]?.rumContext()?.applicationId
 
     companion object {
         private const val HEADER_APPLICATION_ID = "dd-application-id"

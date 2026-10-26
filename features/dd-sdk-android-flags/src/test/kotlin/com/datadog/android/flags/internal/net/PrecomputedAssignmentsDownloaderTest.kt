@@ -8,7 +8,6 @@ package com.datadog.android.flags.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -43,7 +42,6 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.IOException
 import java.net.UnknownHostException
-import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -70,17 +68,10 @@ internal class PrecomputedAssignmentsDownloaderTest {
     @Forgery
     private lateinit var fakeDatadogContext: DatadogContext
 
-    @Forgery
-    private lateinit var fakeRumApplicationId: UUID
     private lateinit var fakeEvaluationContext: EvaluationContext
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeDatadogContext = fakeDatadogContext.copy(
-            featuresContext = fakeDatadogContext.featuresContext +
-                mapOf(Feature.RUM_FEATURE_NAME to mapOf("application_id" to fakeRumApplicationId.toString()))
-        )
-
         fakeEvaluationContext = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
             attributes = mapOf("plan" to "premium")

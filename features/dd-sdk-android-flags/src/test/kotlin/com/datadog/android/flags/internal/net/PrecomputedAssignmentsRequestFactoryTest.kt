@@ -12,6 +12,8 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.utils.withRumContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -30,7 +32,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.util.UUID
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -44,7 +45,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     lateinit var fakeDatadogContext: DatadogContext
 
     @Forgery
-    lateinit var fakeRumApplicationId: UUID
+    lateinit var fakeRumContext: RumContext
 
     private lateinit var testedFactory: PrecomputedAssignmentsRequestFactory
 
@@ -54,10 +55,8 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             site = forge.aValueFrom(
                 DatadogSite::class.java,
                 exclude = listOf(DatadogSite.US1_FED, DatadogSite.US2_FED)
-            ),
-            featuresContext = fakeDatadogContext.featuresContext +
-                mapOf(Feature.RUM_FEATURE_NAME to mapOf("application_id" to fakeRumApplicationId.toString()))
-        )
+            )
+        ).withRumContext(fakeRumContext)
 
         testedFactory = PrecomputedAssignmentsRequestFactory(mockInternalLogger, null)
     }
@@ -125,7 +124,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         assertThat(request.url.toString()).isEqualTo("https://preview.ff-cdn.datadoghq.com/precompute-assignments")
         assertThat(request.method).isEqualTo("POST")
         assertThat(request.header("dd-client-token")).isEqualTo(fakeDatadogContext.clientToken)
-        assertThat(request.header("dd-application-id")).isEqualTo(fakeRumApplicationId.toString())
+        assertThat(request.header("dd-application-id")).isEqualTo(fakeRumContext.applicationId)
         assertThat(request.header("Content-Type")).isEqualTo("application/vnd.api+json")
     }
 

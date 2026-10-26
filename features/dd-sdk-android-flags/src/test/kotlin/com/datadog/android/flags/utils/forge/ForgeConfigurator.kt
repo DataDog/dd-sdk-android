@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.utils.forge
 
+import com.datadog.android.internal.tests.elmyr.RumContextForgeryFactory
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -17,6 +18,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
 
         // so that we can forge DatadogContext
         forge.useCoreFactories()
+        forge.addFactory(RumContextForgeryFactory())
 
         forge.addFactory(FlagsConfigurationForgeryFactory())
         forge.addFactory(PrecomputedFlagForgeryFactory())
