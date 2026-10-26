@@ -54,6 +54,7 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -205,7 +206,7 @@ internal class ProfilingDataWriterTest {
                     ).toSet()
             )
             .hasVitalIds(fakeVitals.map { it.id })
-            .hasVitalNames(fakeVitals.mapNotNull { it.name })
+            .hasVitalNames(fakeVitals.mapNotNull { it.name }.toSet())
             .hasErrorIds(fakeAnrs.map { it.id })
             .hasLongTaskIds(fakeLongTasks.map { it.id })
 
@@ -425,7 +426,12 @@ internal class ProfilingDataWriterTest {
         val fakePerfettoBytes = forge.aString().toByteArray()
         file.writeBytes(fakePerfettoBytes)
         val rumContext = fakeVitals.first().rumContext
-        val alignedVitals = fakeVitals.map {
+        val fakeVitalWithRepeatedName = fakeVitals.first().copy(name = forge.anAlphabeticalString())
+        val vitalsWithRepeatedNames = fakeVitals + listOf(
+            fakeVitalWithRepeatedName.copy(id = forge.getForgery<UUID>().toString()),
+            fakeVitalWithRepeatedName.copy(id = forge.getForgery<UUID>().toString())
+        )
+        val alignedVitals = vitalsWithRepeatedNames.map {
             it.copy(
                 rumContext = it.rumContext.copy(
                     applicationId = rumContext.applicationId,
@@ -455,7 +461,7 @@ internal class ProfilingDataWriterTest {
             .hasApplicationId(rumContext.applicationId)
             .hasSessionId(rumContext.sessionId)
             .hasVitalIds(alignedVitals.map { it.id })
-            .hasVitalNames(alignedVitals.mapNotNull { it.name })
+            .hasVitalNames(alignedVitals.mapNotNull { it.name }.toSet())
             .hasLongTaskIds(emptyList())
             .hasErrorIds(emptyList())
 
@@ -470,6 +476,7 @@ internal class ProfilingDataWriterTest {
         assertThat(vitalsMetadata).hasSize(alignedVitals.size)
         vitalsMetadata.forEach { vital ->
             val fakeVital = alignedVitals.first { it.id == vital.id }
+            assertThat(vital.name).isEqualTo(fakeVital.name)
             assertThat(vital.startNs).isEqualTo(TimeUnit.MILLISECONDS.toNanos(fakeVital.startMs))
             assertThat(vital.durationNs).isEqualTo(fakeVital.durationNs)
         }
