@@ -50,7 +50,7 @@ stages:
 
       gradle_options=(
         "-Dorg.gradle.jvmargs=${gradle_jvm_args[*]}"
-        "-Dorg.gradle.workers.max=16"
+        "-Dorg.gradle.workers.max=4"
         "-Dorg.gradle.logging.stacktrace=all"
       )
 
