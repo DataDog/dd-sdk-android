@@ -38,7 +38,7 @@ disable, and retained native snapshots. `FlagsBridgePrivacyTest` exercises both 
 bridge overloads with retained consent, successful and default/error evaluations, unknown error
 codes, distinct omitted and empty telemetry keys, and no exposure or RUM side effects. The bridge
 fixtures use `doLog=true` to prove that evaluation-only hooks do not trigger exposure logging.
-`FlagsPrivacyTest` uses `doLog=false` to ensure it cannot suppress evaluation telemetry. Existing
+`FlagsPrivacyTest` uses `doLog=false` to verify that it cannot suppress evaluation telemetry. Existing
 processor unit tests cover concurrent recording, draining, periodic flush and shutdown.
 
 Only precomputed evaluation is supported by this implementation. These tests do not claim a
@@ -72,23 +72,29 @@ actual Android HTTP uploads, but do not claim live backend acceptance or process
 
 ## React Native handoff
 
-Native Android owns evaluation telemetry protection. The internal assignment snapshot can now
+Native Android owns evaluation telemetry protection. The internal assignment snapshot can
 implement `UnparsedFlagWithConsent`; its `observeFullEvaluationData` value belongs to that snapshot.
 React Native must serialize this boolean in `convertUnparsedFlagToMap`, preserve it in its JS cache,
 and implement `UnparsedFlagWithConsent` when reconstructing the assignment in
 `convertMapToUnparsedFlag`. Only literal `true` opts in. Replaying through
 `_FlagsInternalProxy.trackFlagSnapshotEvaluation` must use that captured value, never current
-configuration or a JS-side hash.
+configuration or a JS-side hash. Its nullable telemetry targeting key parameter is separate from
+the context used for exposures and subject opt-out.
 
-The separate `trackFlagEvaluationEvent` hook has an overload accepting the captured consent
-boolean and a nullable telemetry targeting key. Use it for evaluation-only hooks, especially
-errors without an assignment: consent must come from the evaluation, not the current native
-configuration. The original overload derives consent from the flag and defaults to protected
-mode when none is available. Null and empty identities remain distinct; neither evaluation-only
-overload emits exposures or RUM annotations.
+Native Android owns telemetry validation and hashing. The installed configuration precomputes
+its telemetry identity, so repeated flag evaluations reuse it. Retained evaluations keep that
+identity across context or consent refreshes. Bridge replay uses a single cached identity per
+client, independent of the active configuration.
+
+The separate `_FlagsInternalProxy.trackFlagEvaluationEvent` hook has an overload accepting
+`observeFullEvaluationData` and a nullable `telemetryTargetingKey`. Pass the consent captured at
+evaluation time, including errors without an assignment, rather than the current native
+configuration. Pass null for an absent telemetry identity or an empty string for an explicitly
+empty identity. The original four-argument overload derives consent from the supplied flag and
+defaults to protected mode when none is available.
+Neither overload emits exposures or RUM annotations. Use the separate hooks for those tracks.
 
 Existing implementations of `UnparsedFlag` remain ABI-compatible and replay in protected mode.
 Native success/error metadata also carries `__dd_observe_full_evaluation_data`. Android and the
 provider must ship together as validated artifacts; React Native must consume and validate the
-protected native release before shipping its integration. SDK-owner review, release cutoff and
-published dependency versions remain release-owner decisions tracked by FFL-3437.
+protected native release before shipping its integration.

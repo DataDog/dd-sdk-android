@@ -2,43 +2,6 @@
 
 The Datadog Feature Flags SDK for Android allows you to evaluate feature flags and experiments in your Android application and automatically send flag evaluation data to Datadog for monitoring and analysis.
 
-## Evaluation telemetry privacy
-
-Evaluation telemetry protects targeting keys by default. Only a literal boolean `true` in the
-assignment response's `data.attributes.observeFullEvaluationData` enables raw targeting keys.
-Absent, false, null, or malformed consent values keep protection enabled without rejecting the
-assignments. Consent is cached with the assignments and changes on normal configuration refresh.
-Evaluations queued before a refresh retain the consent of the configuration they used.
-
-Protected nonempty targeting keys are SHA-256 hashes of the exact UTF-8 text, prefixed with
-`sha256_`. Empty keys remain empty; missing keys and malformed Unicode are omitted without losing
-the evaluation in both consent modes. Valid Unicode is preserved exactly, without normalization.
-Android continues to omit `context.evaluation` in both modes. This setting does
-not change evaluation inputs, assignment requests, exposure events, or RUM integration.
-
-Evaluation telemetry error messages contain stable error codes in both consent modes, with
-`GENERAL` for unknown failures. `trackEvaluations(false)` disables this track; assignment `doLog`
-controls exposures independently. Native resolution metadata includes
-`__dd_observe_full_evaluation_data` on success and error/default results.
-
-### Internal bridge replay
-
-Native Android owns telemetry validation and hashing. The installed configuration precomputes
-its telemetry identity, so repeated flag evaluations reuse it; retained evaluations keep that
-identity across context or consent refreshes. Bridge replay uses a single cached identity per
-client, independent of the active configuration.
-
-Cross-platform bridges preserve `UnparsedFlagWithConsent.observeFullEvaluationData` with each
-assignment snapshot. The existing `trackFlagSnapshotEvaluation` overload accepts a nullable
-telemetry targeting key separately from the context used for exposures and subject opt-out.
-
-For separate evaluation hooks, `_FlagsInternalProxy.trackFlagEvaluationEvent` also accepts
-`observeFullEvaluationData` and `telemetryTargetingKey`. Pass the consent captured at evaluation
-time, including errors without a flag, and pass null for an absent telemetry identity or an
-empty string for an explicitly empty identity. The original four-argument overload derives
-consent from the supplied flag and defaults to protected mode when it is unavailable.
-Neither overload emits exposures or RUM annotations; use the separate hooks for those tracks.
-
 ## Getting started
 
 Add the Datadog Feature Flags SDK to your application's `build.gradle.kts` file:
@@ -358,6 +321,24 @@ and `FlagsSubscription.unsubscribe`.
 
 The [Kotlin sample](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/SampleApplication.kt)
 registers an application-lifetime callback, logs keys, and evaluates `"my-flag-key"` with default `false`.
+
+## Evaluation telemetry privacy
+
+Evaluation telemetry protects targeting keys by default. Only a literal boolean `true` in the
+assignment response's `data.attributes.observeFullEvaluationData` enables raw targeting keys.
+Absent, false, null, or malformed consent values keep protection enabled without rejecting the
+assignments. Consent is cached with the assignments and changes on normal configuration refresh.
+Evaluations queued before a refresh retain the consent of the configuration they used.
+
+Protected nonempty targeting keys are SHA-256 hashes of the exact UTF-8 text, prefixed with
+`sha256_`. Empty keys remain empty; missing keys and malformed Unicode are omitted without losing
+the evaluation in both consent modes. Valid Unicode is preserved exactly, without normalization.
+Android continues to omit `context.evaluation` in both modes. The consent setting does
+not change evaluation inputs, assignment requests, exposure events, or RUM integration.
+
+Evaluation telemetry error messages contain stable error codes in both consent modes, with
+`GENERAL` for unknown failures. `trackEvaluations(false)` disables this track. Assignment `doLog`
+controls exposures independently.
 
 ## Integration with RUM
 
