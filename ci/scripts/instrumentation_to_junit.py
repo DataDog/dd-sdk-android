@@ -198,7 +198,7 @@ def write_junit(parser: InstrumentationParser, output_path: Path) -> None:
 
     total_duration = 0.0
     total_failures = 0
-    total_errors = len(parser.runner_failures)
+    total_errors = int(bool(parser.runner_failures))
     total_skipped = 0
 
     for class_name, tests in grouped_tests.items():
