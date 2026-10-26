@@ -143,8 +143,7 @@ analysis:generated-files-check:
   extends: .verification-gradle-job
   timeout: 30m
   script:
-    # TODO RUM-17809: configuration cache not supported by gradle-dependency-license-plugin; re-enable once fixed
-    - ./gradlew checkGeneratedFiles --no-configuration-cache
+    - ./gradlew checkGeneratedFiles
 
 analysis:ktlint:
   extends: .verification-gradle-job
