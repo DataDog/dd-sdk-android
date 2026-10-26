@@ -1115,6 +1115,7 @@ internal class DatadogRumMonitor(
             "ndk" -> RumErrorSourceType.NDK
             "ndk+il2cpp" -> RumErrorSourceType.NDK_IL2CPP
             "maui" -> RumErrorSourceType.MAUI
+            "unreal" -> RumErrorSourceType.UNREAL
             else -> RumErrorSourceType.ANDROID
         }
     }
