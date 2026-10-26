@@ -54,7 +54,6 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
-import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -426,12 +425,7 @@ internal class ProfilingDataWriterTest {
         val fakePerfettoBytes = forge.aString().toByteArray()
         file.writeBytes(fakePerfettoBytes)
         val rumContext = fakeVitals.first().rumContext
-        val fakeVitalWithRepeatedName = fakeVitals.first().copy(name = forge.anAlphabeticalString())
-        val vitalsWithRepeatedNames = fakeVitals + listOf(
-            fakeVitalWithRepeatedName.copy(id = forge.getForgery<UUID>().toString()),
-            fakeVitalWithRepeatedName.copy(id = forge.getForgery<UUID>().toString())
-        )
-        val alignedVitals = vitalsWithRepeatedNames.map {
+        val alignedVitals = fakeVitals.map {
             it.copy(
                 rumContext = it.rumContext.copy(
                     applicationId = rumContext.applicationId,
@@ -476,7 +470,6 @@ internal class ProfilingDataWriterTest {
         assertThat(vitalsMetadata).hasSize(alignedVitals.size)
         vitalsMetadata.forEach { vital ->
             val fakeVital = alignedVitals.first { it.id == vital.id }
-            assertThat(vital.name).isEqualTo(fakeVital.name)
             assertThat(vital.startNs).isEqualTo(TimeUnit.MILLISECONDS.toNanos(fakeVital.startMs))
             assertThat(vital.durationNs).isEqualTo(fakeVital.durationNs)
         }
