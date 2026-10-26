@@ -46,6 +46,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -136,14 +138,16 @@ internal class AndroidWindowTraversalTest {
 
     private fun traversal(
         fallback: CapturedViewMapper<View> = noOpFallback,
-        typedMappers: List<CapturedMapperTypeWrapper<*>> = emptyList()
+        typedMappers: List<CapturedMapperTypeWrapper<*>> = emptyList(),
+        interopViewCallback: CapturedInteropViewCallback? = null
     ) = AndroidWindowTraversal(
         mapperRegistry = CapturedViewMapperRegistry(typedMappers, fallback, mock()),
         internalLogger = mock(),
         viewIdentifierResolver = mockViewIdentifierResolver,
         viewBoundsResolver = mockViewBoundsResolver,
         drawableToColorMapper = mockDrawableToColorMapper,
-        viewUtilsInternal = ViewUtilsInternal()
+        viewUtilsInternal = ViewUtilsInternal(),
+        interopViewCallback = interopViewCallback
     )
 
     /** These trees are tiny and the deadline is generous, so a call is expected to complete in one slice. */
@@ -530,38 +534,118 @@ internal class AndroidWindowTraversalTest {
         assertThat(result.doneValue()).isEqualTo(WindowWalkResult.Aborted)
     }
 
-    @Test
-    fun `M hand off Compose host without visiting native children W traverseWindow { real Compose dependency }`(
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M hand off typed Compose host without visiting native children W traverseWindow`(
+        fakeReturnsWireframes: Boolean,
         @Forgery fakeRootBounds: GlobalBounds
     ) {
-        // Given: an inline mock retains the real dependency's runtime class and package name.
+        // Given: the integration recognizes the real Compose type and owns the host's whole subtree.
         val mockComposeHost: ComposeView = mock()
         stubDefaults(mockComposeHost, fakeRootBounds)
         val mockComposeChild = mockView(fakeRootBounds)
         whenever(mockComposeHost.childCount).thenReturn(1)
         whenever(mockComposeHost.getChildAt(0)).thenReturn(mockComposeChild)
-        val mockComposeHostCallback: CapturedInteropViewCallback = mock()
-        whenever(mockComposeHostCallback.map(eq(mockComposeHost), any())).thenReturn(CapturedViewMapperResult.None)
-        val testedTraversal = AndroidWindowTraversal(
-            mapperRegistry = CapturedViewMapperRegistry(emptyList(), noOpFallback, mock()),
-            internalLogger = mock(),
-            viewIdentifierResolver = mockViewIdentifierResolver,
-            viewBoundsResolver = mockViewBoundsResolver,
-            composeHostCallback = mockComposeHostCallback
-        )
+        val fakeMapping = if (fakeReturnsWireframes) {
+            CapturedViewMapperResult.Wireframes(emptyList())
+        } else {
+            CapturedViewMapperResult.None
+        }
+        val mockComposeMapper: CapturedViewMapper<ComposeView> = mock()
+        whenever(mockComposeMapper.map(eq(mockComposeHost), any())).thenReturn(fakeMapping)
+        val fakeInteropCallback = CapturedInteropViewCallback { view, context ->
+            (view as? ComposeView)?.let { mockComposeMapper.map(it, context) }
+        }
 
         // When
-        val result = testedTraversal.traverseWindow(
+        val result = traversal(interopViewCallback = fakeInteropCallback).traverseWindow(
             mockComposeHost,
             identityFactory.window("window"),
             identityFactory,
             fakeContext
         )
 
-        // Then
-        verify(mockComposeHostCallback).map(eq(mockComposeHost), any())
+        // Then: None is a handled host, not a request to fall back to native child traversal.
+        verify(mockComposeMapper).map(eq(mockComposeHost), any())
         verify(mockComposeHost, never()).getChildAt(any())
         assertThat((result as WindowCopyResult.Present).window.views).hasSize(1)
+    }
+
+    @Test
+    fun `M hand off non-Compose host W traverseWindow { integration recognizes view }`(
+        @Forgery fakeBounds: GlobalBounds
+    ) {
+        // Given: a framework integration can recognize a host without a Compose class-name gate.
+        val root = mockViewGroup(fakeBounds)
+        val child = mockView(fakeBounds)
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(child)
+        val fakeInteropCallback = CapturedInteropViewCallback { view, _ ->
+            if (view === root) CapturedViewMapperResult.None else null
+        }
+
+        // When
+        val result = traversal(interopViewCallback = fakeInteropCallback).traverseWindow(
+            root,
+            identityFactory.window("window"),
+            identityFactory,
+            fakeContext
+        )
+
+        // Then
+        assertThat((result as WindowCopyResult.Present).window.views).hasSize(1)
+        verify(root, never()).getChildAt(any())
+        verify(mockViewIdentifierResolver, never()).resolveViewId(child)
+    }
+
+    @Test
+    fun `M retain native mapping and children W traverseWindow { integration declines view }`(
+        @Forgery fakeBounds: GlobalBounds
+    ) {
+        // Given
+        val root = mockViewGroup(fakeBounds)
+        val child = mockView(fakeBounds)
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(child)
+        val mockInteropCallback: CapturedInteropViewCallback = mock()
+        val testedTraversal = traversal(fallback = markerMapper, interopViewCallback = mockInteropCallback)
+
+        // When
+        val result = testedTraversal.traverseWindow(
+            root,
+            identityFactory.window("window"),
+            identityFactory,
+            fakeContext
+        ).doneValue() as WindowWalkResult.Present
+
+        // Then: a null result preserves normal native mapping and recursion.
+        verify(mockInteropCallback).tryMap(eq(root), any())
+        verify(mockInteropCallback).tryMap(eq(child), any())
+        assertThat(result.layers).hasSize(2)
+        assertThat(result.wireframes).hasSize(2)
+    }
+
+    @Test
+    fun `M retain hidden placeholder W traverseWindow { interop callback supplied }`(
+        @Forgery fakeBounds: GlobalBounds
+    ) {
+        // Given
+        val mockComposeHost: ComposeView = mock()
+        stubDefaults(mockComposeHost, fakeBounds)
+        whenever(mockComposeHost.getTag(R.id.datadog_hidden)).thenReturn(true)
+        val mockInteropCallback: CapturedInteropViewCallback = mock()
+
+        // When
+        val result = traversal(interopViewCallback = mockInteropCallback).traverseWindow(
+            mockComposeHost,
+            identityFactory.window("window"),
+            identityFactory,
+            fakeContext
+        ).doneValue() as WindowWalkResult.Present
+
+        // Then: hidden hosts never reach the framework integration.
+        verify(mockInteropCallback, never()).tryMap(any(), any())
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
     }
 
     @Test
@@ -590,7 +674,9 @@ internal class AndroidWindowTraversalTest {
             internalLogger = mock(),
             viewIdentifierResolver = mockViewIdentifierResolver,
             viewBoundsResolver = mockViewBoundsResolver,
-            composeHostCallback = CapturedInteropViewCallback { _, _ -> CapturedViewMapperResult.None }
+            interopViewCallback = CapturedInteropViewCallback { view, _ ->
+                if (view is ComposeView) CapturedViewMapperResult.None else null
+            }
         )
 
         // When

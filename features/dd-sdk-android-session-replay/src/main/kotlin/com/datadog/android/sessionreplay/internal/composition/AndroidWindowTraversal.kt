@@ -53,7 +53,7 @@ internal class AndroidWindowTraversal(
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
     private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault(),
     private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
-    private val composeHostCallback: CapturedInteropViewCallback? = null,
+    private val interopViewCallback: CapturedInteropViewCallback? = null,
     private val drawingOrderResolver: ViewGroupDrawingOrderResolver = ViewGroupDrawingOrderResolver(internalLogger)
 ) {
     private val occlusionDetector = ViewOcclusionDetector(drawableToColorMapper, viewUtilsInternal, internalLogger)
@@ -133,11 +133,7 @@ internal class AndroidWindowTraversal(
             ?: viewBoundsResolver.resolveViewGlobalBounds(view, state.density).toCaptured()
         val mappingContext = CapturedMappingContext(state.identityFactory, identity, state.density, bounds)
         val hidden = view.getTag(R.id.datadog_hidden) == true
-        // Detect the public ComposeView by name to keep this module independent of Compose.
-        // Consumer rules preserve its name; Compose owns the host's native implementation children.
-        val interop = composeHostCallback?.takeIf {
-            !hidden && view.javaClass.name == COMPOSE_VIEW_CLASS_NAME
-        }?.map(view, mappingContext)
+        val interop = if (hidden) null else interopViewCallback?.tryMap(view, mappingContext)
         if (!context.shouldContinue()) return
         val viewData = interop?.let { CapturedViewData.Mapped(it) }
             ?: (if (hidden) hiddenViewMapper else mapperRegistry.resolve(view)).capture(view, mappingContext)
@@ -256,10 +252,6 @@ internal class AndroidWindowTraversal(
         val isGeometryReliable: Boolean = true,
         val expectedParent: ViewParent? = view.parent
     )
-
-    private companion object {
-        const val COMPOSE_VIEW_CLASS_NAME = "androidx.compose.ui.platform.ComposeView"
-    }
 }
 
 /** Explicit view clips apply to the view and its whole subtree, regardless of clipChildren. */
