@@ -13,6 +13,7 @@ import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.rum.RumContext
@@ -57,6 +58,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -157,6 +160,11 @@ internal class RumViewManagerScopeTest {
     lateinit var mockViewEventMapper: ViewEventMapper
 
     @Mock
+    lateinit var mockEventBatchWriter: EventBatchWriter
+
+    private var savedProcessImportance: Int = 0
+
+    @Mock
     lateinit var mockBatteryInfoProvider: InfoProvider<BatteryInfo>
 
     @Mock
@@ -174,6 +182,7 @@ internal class RumViewManagerScopeTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        savedProcessImportance = DdRumContentProvider.processImportance
         fakeSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 
         whenever(mockSdkCore.time) doReturn fakeTime
@@ -221,6 +230,7 @@ internal class RumViewManagerScopeTest {
 
     @AfterEach
     fun `tear down`() {
+        DdRumContentProvider.processImportance = savedProcessImportance
         // whatever happens
         assertThat(testedScope.getRumContext()).isEqualTo(fakeParentContext)
     }
@@ -835,7 +845,6 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        val mockEventBatchWriter: EventBatchWriter = mock()
         whenever(mockEventWriteScope.invoke(any())) doAnswer {
             val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
             callback.invoke(mockEventBatchWriter)
@@ -942,52 +951,30 @@ internal class RumViewManagerScopeTest {
         assertThat(viewEvents[2].third).isTrue()
     }
 
-    @Test
-    fun `M write the background view once W handleEvent { StartAction, StartResource or non fatal error }`(
+    @ParameterizedTest
+    @EnumSource(BackgroundEventCase::class)
+    fun `M write the background view exactly once W handleEvent { event creating a background view }`(
+        case: BackgroundEventCase,
         forge: Forge
     ) {
         // Given
         stubWriteScopeAndMapper()
         testedScope.applicationDisplayed = true
-        val fakeEvent = forge.anElementFrom(
-            forge.startActionEvent(),
-            forge.startResourceEvent(),
-            forge.addErrorEvent().copy(isFatal = false)
-        )
+        val fakeEvent = case.create(forge)
 
         // When
         testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        val viewEvents = captureWrittenData().mapNotNull { it.asViewEvent() }
-        assertThat(viewEvents).hasSize(1)
-        assertThat(viewEvents[0].view.name).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_NAME)
-        assertThat(viewEvents[0].dd.documentVersion).isEqualTo(2L)
-    }
-
-    @Test
-    fun `M not write the background view twice W handleEvent { fatal error or StartOperation }`(
-        forge: Forge
-    ) {
-        // Given
-        stubWriteScopeAndMapper()
-        testedScope.applicationDisplayed = true
-        val fakeEvent = forge.anElementFrom(
-            forge.addErrorEvent().copy(isFatal = true),
-            forge.startOperationEvent()
-        )
-
-        // When
-        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        val viewEvents = captureWrittenData().mapNotNull { it.asViewEvent() }
-        assertThat(viewEvents.map { it.dd.documentVersion }).containsOnlyOnce(2L)
-        assertThat(viewEvents).allMatch { it.view.name == RumViewManagerScope.RUM_BACKGROUND_VIEW_NAME }
+        val viewWrites = captureWrites().filter { it.data.asViewEvent() != null }
+        assertThat(viewWrites).hasSize(1)
+        val viewEvent = checkNotNull(viewWrites[0].data.asViewEvent())
+        assertThat(viewEvent.view.name).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_NAME)
+        assertThat(viewEvent.dd.documentVersion).isEqualTo(2L)
+        assertThat(viewWrites[0].eventType).isEqualTo(case.expectedViewEventType)
     }
 
     private fun stubWriteScopeAndMapper() {
-        val mockEventBatchWriter: EventBatchWriter = mock()
         whenever(mockEventWriteScope.invoke(any())) doAnswer {
             val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
             callback.invoke(mockEventBatchWriter)
@@ -995,10 +982,26 @@ internal class RumViewManagerScopeTest {
         whenever(mockViewEventMapper.map(any())) doAnswer { it.getArgument(0) }
     }
 
-    private fun captureWrittenData(): List<Any> {
-        val captor = argumentCaptor<Any>()
-        verify(mockWriter, atLeast(0)).write(any(), captor.capture(), any())
-        return captor.allValues
+    private fun captureWrites(): List<CapturedWrite> {
+        val dataCaptor = argumentCaptor<Any>()
+        val eventTypeCaptor = argumentCaptor<EventType>()
+        verify(mockWriter, atLeast(0)).write(eq(mockEventBatchWriter), dataCaptor.capture(), eventTypeCaptor.capture())
+        return dataCaptor.allValues.zip(eventTypeCaptor.allValues) { data, type -> CapturedWrite(data, type) }
+    }
+
+    private fun captureWrittenData(): List<Any> = captureWrites().map { it.data }
+
+    private data class CapturedWrite(val data: Any, val eventType: EventType)
+
+    enum class BackgroundEventCase(
+        val create: (Forge) -> RumRawEvent,
+        val expectedViewEventType: EventType
+    ) {
+        START_ACTION({ it.startActionEvent() }, EventType.DEFAULT),
+        START_RESOURCE({ it.startResourceEvent() }, EventType.DEFAULT),
+        NON_FATAL_ERROR({ it.addErrorEvent().copy(isFatal = false) }, EventType.DEFAULT),
+        FATAL_ERROR({ it.addErrorEvent().copy(isFatal = true) }, EventType.CRASH),
+        START_OPERATION({ it.startOperationEvent() }, EventType.DEFAULT)
     }
 
     private fun Any.asViewEvent(): ViewEvent? = when (this) {

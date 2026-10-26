@@ -47,6 +47,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -169,8 +170,11 @@ internal class RumApplicationScopeTest {
     @Forgery
     private lateinit var fakeEventTime: Time
 
+    private var savedProcessImportance: Int = 0
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        savedProcessImportance = DdRumContentProvider.processImportance
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
@@ -213,6 +217,11 @@ internal class RumApplicationScopeTest {
             heatmapIdentifierRegistry = null,
             timeseriesCollector = mockTimeseriesCollector
         )
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        DdRumContentProvider.processImportance = savedProcessImportance
     }
 
     @Test
