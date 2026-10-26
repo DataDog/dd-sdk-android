@@ -216,6 +216,18 @@ internal class FlagsConfigurationTest {
     }
 
     @Test
+    fun `M keep null lists as absent W flagSelection() { null lists }`() {
+        // When
+        val configuration = FlagsConfiguration.Builder()
+            .flagSelection(tags = null, keyPatterns = listOf("checkout-*"))
+            .build()
+
+        // Then
+        assertThat(configuration.flagSelection)
+            .isEqualTo(FlagSelection(tags = null, keyPatterns = listOf("checkout-*")))
+    }
+
+    @Test
     fun `M preserve the flag selection W copy() { legacy parameters }`() {
         // Given
         val testedConfiguration = FlagsConfiguration.Builder()

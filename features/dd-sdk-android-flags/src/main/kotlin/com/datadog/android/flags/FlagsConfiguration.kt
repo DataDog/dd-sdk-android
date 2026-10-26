@@ -192,8 +192,8 @@ data class FlagsConfiguration internal constructor(
          * @param keyPatterns The flag key patterns to load.
          * @return this [Builder] instance for method chaining.
          */
-        fun flagSelection(tags: List<String>, keyPatterns: List<String>): Builder = apply {
-            flagSelection = FlagSelection(tags.toList(), keyPatterns.toList())
+        fun flagSelection(tags: List<String>?, keyPatterns: List<String>?): Builder = apply {
+            flagSelection = FlagSelection(tags?.toList(), keyPatterns?.toList())
         }
 
         /**

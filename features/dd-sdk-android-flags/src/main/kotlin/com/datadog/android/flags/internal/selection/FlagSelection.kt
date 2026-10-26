@@ -8,11 +8,11 @@ package com.datadog.android.flags.internal.selection
 
 /**
  * The flag selection as configured by the application, before canonicalization.
- * Elements are nullable because Java callers can pass lists that hold nulls.
+ * Lists and elements are nullable because Java callers can pass nulls. A null list means the list is absent.
  */
 internal data class FlagSelection(
-    val tags: List<String?>,
-    val keyPatterns: List<String?>
+    val tags: List<String?>?,
+    val keyPatterns: List<String?>?
 )
 
 /**
@@ -69,8 +69,8 @@ internal object FlagSelectionCanonicalizer {
     @Suppress("ReturnCount")
     fun canonicalize(selection: FlagSelection?): FlagSelectionResult {
         if (selection == null) return FlagSelectionResult.None
-        val rawTags = selection.tags.wellFormedOrNull()
-        val rawKeyPatterns = selection.keyPatterns.wellFormedOrNull()
+        val rawTags = selection.tags.orEmpty().wellFormedOrNull()
+        val rawKeyPatterns = selection.keyPatterns.orEmpty().wellFormedOrNull()
         if (rawTags == null || rawKeyPatterns == null) {
             return FlagSelectionResult.Dropped(FlagSelectionError.MALFORMED_SELECTION)
         }

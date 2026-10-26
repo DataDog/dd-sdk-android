@@ -30,6 +30,34 @@ internal class FlagSelectionCanonicalizerTest {
     }
 
     @Test
+    fun `M return None W canonicalize() { both lists null }`() {
+        // Given
+        val selection = FlagSelection(tags = null, keyPatterns = null)
+
+        // When / Then
+        assertThat(FlagSelectionCanonicalizer.canonicalize(selection)).isEqualTo(FlagSelectionResult.None)
+    }
+
+    @Test
+    fun `M treat a null list as empty W canonicalize() { one list null }`() {
+        // Given
+        val tagsOnly = FlagSelection(tags = listOf("mobile"), keyPatterns = null)
+        val keyPatternsOnly = FlagSelection(tags = null, keyPatterns = listOf("checkout-*"))
+
+        // When
+        val tagsOnlyResult = FlagSelectionCanonicalizer.canonicalize(tagsOnly)
+        val keyPatternsOnlyResult = FlagSelectionCanonicalizer.canonicalize(keyPatternsOnly)
+
+        // Then
+        assertThat(tagsOnlyResult).isEqualTo(
+            FlagSelectionResult.Selected(CanonicalFlagSelection(tags = listOf("mobile"), keyPatterns = emptyList()))
+        )
+        assertThat(keyPatternsOnlyResult).isEqualTo(
+            FlagSelectionResult.Selected(CanonicalFlagSelection(tags = emptyList(), keyPatterns = listOf("checkout-*")))
+        )
+    }
+
+    @Test
     fun `M trim the Unicode White_Space set W canonicalize()`() {
         // Given
         val whiteSpace = "\t\n\u000B\u000C\r \u0085\u00A0\u1680\u2000\u200A\u2028\u2029\u202F\u205F\u3000"
