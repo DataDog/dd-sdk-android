@@ -23,7 +23,8 @@ internal class StubFeatureScope(
     private val datadogContextProvider: () -> DatadogContext,
     private val dataStoreProvider: () -> DataStoreHandler? = { null },
     private val eventReceiverProvider: () -> FeatureEventReceiver? = { null },
-    // Stub-only: recorded invocations would keep the feature (and its core) alive after the test
+    // Stub-only: recording every invocation would keep the feature (and its core) alive after the test.
+    // The last invocation is still kept.
     private val mockFeatureScope: FeatureScope = mock(stubOnly = true)
 ) : FeatureScope by mockFeatureScope {
 
