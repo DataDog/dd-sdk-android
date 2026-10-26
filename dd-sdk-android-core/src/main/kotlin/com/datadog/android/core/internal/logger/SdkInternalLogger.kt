@@ -276,7 +276,8 @@ internal class SdkInternalLogger(
             is InternalTelemetryEvent.ApiUsage.AddViewLoadingTime -> "$overwrite,$noView,$noActiveView"
             is InternalTelemetryEvent.ApiUsage.AddOperationStepVital -> actionType.name
             is InternalTelemetryEvent.ApiUsage.NetworkInstrumentation -> type.name
-            else -> ""
+            is InternalTelemetryEvent.ApiUsage.Timeseries,
+            is InternalTelemetryEvent.ApiUsage.TrackWebView -> ""
         }
         return "${javaClass.name}($configuration)"
     }
