@@ -22,6 +22,7 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -30,7 +31,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
@@ -80,12 +81,18 @@ internal class DefaultUISlownessMetricDispatcherTest {
         testedDispatcher.sendMetric(fakeViewId, fakeViewDurationNs)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
+        val propertiesCaptor = argumentCaptor<Map<String, Any?>>()
         verify(mockInternalLogger).logMetric(
-            argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
-            argThat { hasExpectedValue(1, KEY_RUM_UI_SLOWNESS, KEY_SLOW_FRAMES, KEY_COUNT) },
+            messageCaptor.capture(),
+            propertiesCaptor.capture(),
             eq(fakeSamplingRate),
             eq(null)
         )
+        assertThat(messageCaptor.firstValue.invoke())
+            .isEqualTo(DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE)
+        assertThat(propertiesCaptor.firstValue.nestedValue(KEY_RUM_UI_SLOWNESS, KEY_SLOW_FRAMES, KEY_COUNT))
+            .isEqualTo(1)
     }
 
     @Test
@@ -98,12 +105,18 @@ internal class DefaultUISlownessMetricDispatcherTest {
         testedDispatcher.sendMetric(fakeViewId, fakeViewDurationNs)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
+        val propertiesCaptor = argumentCaptor<Map<String, Any?>>()
         verify(mockInternalLogger).logMetric(
-            argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
-            argThat { hasExpectedValue(1, KEY_RUM_UI_SLOWNESS, KEY_SLOW_FRAMES, KEY_IGNORED_COUNT) },
+            messageCaptor.capture(),
+            propertiesCaptor.capture(),
             eq(fakeSamplingRate),
             eq(null)
         )
+        assertThat(messageCaptor.firstValue.invoke())
+            .isEqualTo(DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE)
+        assertThat(propertiesCaptor.firstValue.nestedValue(KEY_RUM_UI_SLOWNESS, KEY_SLOW_FRAMES, KEY_IGNORED_COUNT))
+            .isEqualTo(1)
     }
 
     @Test
@@ -116,12 +129,18 @@ internal class DefaultUISlownessMetricDispatcherTest {
         testedDispatcher.sendMetric(fakeViewId, fakeViewDurationNs)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
+        val propertiesCaptor = argumentCaptor<Map<String, Any?>>()
         verify(mockInternalLogger).logMetric(
-            argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
-            argThat { hasExpectedValue(1, KEY_RUM_UI_SLOWNESS, KEY_SLOW_FRAMES, KEY_MISSED_COUNT) },
+            messageCaptor.capture(),
+            propertiesCaptor.capture(),
             eq(fakeSamplingRate),
             eq(null)
         )
+        assertThat(messageCaptor.firstValue.invoke())
+            .isEqualTo(DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE)
+        assertThat(propertiesCaptor.firstValue.nestedValue(KEY_RUM_UI_SLOWNESS, KEY_SLOW_FRAMES, KEY_MISSED_COUNT))
+            .isEqualTo(1)
     }
 
     @Test
@@ -134,12 +153,18 @@ internal class DefaultUISlownessMetricDispatcherTest {
         testedDispatcher.sendMetric(fakeViewId, fakeViewDurationNs)
 
         // Then
+        val messageCaptor = argumentCaptor<() -> String>()
+        val propertiesCaptor = argumentCaptor<Map<String, Any?>>()
         verify(mockInternalLogger).logMetric(
-            argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
-            argThat { hasExpectedValue(fakeViewDurationNs, KEY_RUM_UI_SLOWNESS, KEY_VIEW_DURATION) },
+            messageCaptor.capture(),
+            propertiesCaptor.capture(),
             eq(fakeSamplingRate),
             eq(null)
         )
+        assertThat(messageCaptor.firstValue.invoke())
+            .isEqualTo(DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE)
+        assertThat(propertiesCaptor.firstValue.nestedValue(KEY_RUM_UI_SLOWNESS, KEY_VIEW_DURATION))
+            .isEqualTo(fakeViewDurationNs)
     }
 
     @Test
@@ -152,12 +177,15 @@ internal class DefaultUISlownessMetricDispatcherTest {
         testedDispatcher.sendMetric(fakeViewId, fakeViewDurationNs)
 
         // Then
-        verify(mockInternalLogger).logMetric(
-            argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
-            any(),
-            eq(fakeSamplingRate),
-            eq(null)
-        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).logMetric(
+                capture(),
+                any(),
+                eq(fakeSamplingRate),
+                eq(null)
+            )
+            assertThat(firstValue.invoke()).isEqualTo(DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE)
+        }
     }
 
     @Test
@@ -170,14 +198,17 @@ internal class DefaultUISlownessMetricDispatcherTest {
         testedDispatcher.sendMetric(fakeViewId, fakeViewDurationNs)
 
         // Then
-        verify(mockInternalLogger).log(
-            level = eq(InternalLogger.Level.WARN),
-            target = eq(Target.TELEMETRY),
-            messageBuilder = argThat { invoke() == "No telemetry found for viewId=$fakeViewId" },
-            throwable = eq(null),
-            onlyOnce = eq(false),
-            additionalProperties = eq(null)
-        )
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                level = eq(InternalLogger.Level.WARN),
+                target = eq(Target.TELEMETRY),
+                messageBuilder = capture(),
+                throwable = eq(null),
+                onlyOnce = eq(false),
+                additionalProperties = eq(null)
+            )
+            assertThat(firstValue.invoke()).isEqualTo("No telemetry found for viewId=$fakeViewId")
+        }
     }
 
     @Test
@@ -203,13 +234,13 @@ internal class DefaultUISlownessMetricDispatcherTest {
 
     companion object {
         @Suppress("UNCHECKED_CAST", "SameParameterValue")
-        private fun Map<String, Any?>.hasExpectedValue(value: Any, vararg keys: String): Boolean {
+        private fun Map<String, Any?>.nestedValue(vararg keys: String): Any? {
             var targetMap = this
             for (key in keys.slice(0 until keys.size - 1)) {
                 targetMap = targetMap[key] as Map<String, Any>
             }
 
-            return targetMap[keys.last()] == value
+            return targetMap[keys.last()]
         }
     }
 }

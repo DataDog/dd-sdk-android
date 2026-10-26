@@ -32,7 +32,7 @@ dependencies {
     implementation(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.bundles.androidXNavigation)
 
     // Testing

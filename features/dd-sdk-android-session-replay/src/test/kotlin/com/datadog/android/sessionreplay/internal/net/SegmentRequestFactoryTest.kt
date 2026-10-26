@@ -113,7 +113,6 @@ internal class SegmentRequestFactoryTest {
         )
 
         // Then
-        requireNotNull(request)
         assertThat(request.url).isEqualTo("${fakeDatadogContext.site.intakeEndpoint}/api/v2/replay")
         assertThat(request.contentType).isEqualTo(fakeMediaType.toString())
         assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
@@ -147,7 +146,6 @@ internal class SegmentRequestFactoryTest {
         )
 
         // Then
-        requireNotNull(request)
         assertThat(request.url).isEqualTo(fakeEndpoint)
         assertThat(request.contentType).isEqualTo(fakeMediaType.toString())
         assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(

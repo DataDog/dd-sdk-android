@@ -75,6 +75,7 @@ object SessionReplay {
                     sampleRate = effectiveConfiguration.sampleRate,
                     startRecordingImmediately = effectiveConfiguration.startRecordingImmediately,
                     dynamicOptimizationEnabled = effectiveConfiguration.dynamicOptimizationEnabled,
+                    adaptiveCaptureSchedulingEnabled = effectiveConfiguration.adaptiveCaptureSchedulingEnabled,
                     internalCallback = effectiveConfiguration.internalCallback,
                     heatmapsEnabled = effectiveConfiguration.heatmapsEnabled,
                     compositionTreeRecordingEnabled = effectiveConfiguration.compositionTreeRecordingEnabled
@@ -124,7 +125,7 @@ object SessionReplay {
     internal fun registeredFeature(): SessionReplayFeature? {
         return (currentRegisteredCore?.get() as? FeatureSdkCore)
             ?.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)
-            ?.unwrap<SessionReplayFeature>()
+            ?.unwrap()
     }
 
     private fun isAlreadyRegistered() =

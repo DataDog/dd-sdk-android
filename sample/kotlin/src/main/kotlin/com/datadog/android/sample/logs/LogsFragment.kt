@@ -29,7 +29,6 @@ internal class LogsFragment :
     private lateinit var messageInput: EditText
     private lateinit var levelSpinner: Spinner
 
-    @Suppress("CheckInternal")
     private val logger: Logger by lazy {
         Logger.Builder()
             .setName("logs_fragment")

@@ -11,7 +11,7 @@ import com.datadog.android.api.instrumentation.network.HttpResponseInfo
 import okhttp3.Request
 import okhttp3.Response
 
-internal fun Request.toHttpRequestInfo() = OkHttpRequestInfo(this)
+internal fun Request.toHttpRequestInfo(internalLogger: InternalLogger) = OkHttpRequestInfo(this, internalLogger)
 internal fun HttpRequestInfo.toOkHttpRequest(): Request? = (this as? OkHttpRequestInfo)?.originalRequest
 internal fun HttpResponseInfo.toOkHttpResponse(): Response? = (this as? OkHttpResponseInfo)?.originalResponse
 internal fun Response.toHttpResponseInfo(internalLogger: InternalLogger) = OkHttpResponseInfo(this, internalLogger)

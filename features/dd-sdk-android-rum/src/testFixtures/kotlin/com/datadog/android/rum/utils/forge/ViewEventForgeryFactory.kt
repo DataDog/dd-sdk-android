@@ -106,7 +106,9 @@ class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
             session = ViewEvent.ViewEventSession(
                 id = forge.getForgery<UUID>().toString(),
                 type = ViewEvent.ViewEventSessionType.USER,
-                hasReplay = forge.aNullable { aBool() }
+                hasReplay = forge.aNullable { aBool() },
+                isMainProcess = forge.aNullable { aBool() },
+                hasTimeseries = forge.aNullable { aBool() }
             ),
             source = forge.aNullable { aValueFrom(ViewEvent.ViewEventSource::class.java) },
             ciTest = forge.aNullable {
@@ -165,8 +167,9 @@ class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                 },
                 profiling = forge.aNullable {
                     ViewEvent.Profiling(
-                        status = aNullable { aValueFrom(ViewEvent.ProfilingStatus::class.java) },
-                        errorReason = aNullable { aValueFrom(ViewEvent.ErrorReason::class.java) }
+                        status = aNullable { getForgery() },
+                        quotaReason = aNullable { getForgery() },
+                        errorReason = aNullable { getForgery() }
                     )
                 },
                 pageStates = forge.aNullable {

@@ -9,11 +9,11 @@ package com.datadog.android.rum.internal.timeseries.factory
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.internal.utils.DdTagsUtils
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.scope.resolveSessionReplaySampleRate
@@ -49,15 +49,17 @@ internal class MemoryEventFactory(
         if (totalRamBytes <= 0L || dataPoints.isEmpty()) return null
 
         val deviceInfo = datadogContext.deviceInfo
+        val syntheticsTestId = rumContext.syntheticsTestId
+        val syntheticsResultId = rumContext.syntheticsResultId
         val syntheticsAttribute = if (
-            rumContext.syntheticsTestId.isNullOrBlank() ||
-            rumContext.syntheticsResultId.isNullOrBlank()
+            syntheticsTestId.isNullOrBlank() ||
+            syntheticsResultId.isNullOrBlank()
         ) {
             null
         } else {
             TimeseriesMemoryEvent.Synthetics(
-                testId = rumContext.syntheticsTestId,
-                resultId = rumContext.syntheticsResultId
+                testId = syntheticsTestId,
+                resultId = syntheticsResultId
             )
         }
 
@@ -82,7 +84,9 @@ internal class MemoryEventFactory(
                 hasReplay = featuresContextResolver.resolveViewHasReplay(
                     datadogContext,
                     rumContext.viewId.orEmpty()
-                )
+                ),
+                isMainProcess = datadogContext.processInfo.isMainProcess,
+                hasTimeseries = true
             ),
             synthetics = syntheticsAttribute,
             source = TimeseriesMemoryEvent.Source.tryFromSource(datadogContext.source, internalLogger),

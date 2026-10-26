@@ -19,6 +19,7 @@ import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.sessionreplay.SessionReplay
@@ -29,8 +30,14 @@ import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.benchmark.sample.config.BenchmarkConfig
-import com.datadog.benchmark.sample.config.SyntheticsRun
 import com.datadog.benchmark.sample.config.SyntheticsScenario
+import com.datadog.benchmark.sample.config.isInstrumentedRun
+import com.datadog.benchmark.sample.config.isLogsScenario
+import com.datadog.benchmark.sample.config.isProfilingScenario
+import com.datadog.benchmark.sample.config.isRumScenario
+import com.datadog.benchmark.sample.config.isSessionReplayScenario
+import com.datadog.benchmark.sample.config.isTimeseriesScenario
+import com.datadog.benchmark.sample.config.isTracingScenario
 import com.datadog.benchmark.sample.navigation.BenchmarkNavigationPredicate
 import com.datadog.sample.benchmark.BuildConfig
 import com.datadog.sample.benchmark.R
@@ -79,7 +86,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
     }
 
     private fun needToEnableProfiling(config: BenchmarkConfig): Boolean {
-        return isInstrumentedRun(config) && isProfilingScenario(config)
+        return config.isInstrumentedRun() && config.isProfilingScenario()
     }
 
     @OptIn(ExperimentalProfilingApi::class)
@@ -93,11 +100,8 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         }
     }
 
-    private fun isProfilingScenario(config: BenchmarkConfig) =
-        config.scenario == SyntheticsScenario.Profiling
-
     private fun needToEnableSessionReplay(config: BenchmarkConfig): Boolean {
-        return isInstrumentedRun(config) && isSessionReplayScenario(config)
+        return config.isInstrumentedRun() && config.isSessionReplayScenario()
     }
 
     @Suppress("DEPRECATION")
@@ -113,7 +117,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
     }
 
     private fun needToEnableLogs(config: BenchmarkConfig): Boolean {
-        return isInstrumentedRun(config) && isLogsScenario(config)
+        return config.isInstrumentedRun() && config.isLogsScenario()
     }
 
     private fun enableLogs() {
@@ -122,9 +126,11 @@ internal class DatadogFeaturesInitializer @Inject constructor(
     }
 
     private fun needToEnableRum(config: BenchmarkConfig): Boolean {
-        // Session Replay requires RUM, so RUM is enabled in both baseline and instrumented for SR
-        // scenarios — this way the diff isolates Session Replay overhead.
-        return isSessionReplayScenario(config) || (isInstrumentedRun(config) && isRumScenario(config))
+        // Session Replay and Timeseries require RUM, so RUM is enabled in both baseline and instrumented
+        // for these scenarios — this way the diff isolates Session Replay / Timeseries overhead.
+        return config.isSessionReplayScenario() ||
+            config.isTimeseriesScenario() ||
+            (config.isInstrumentedRun() && config.isRumScenario())
     }
 
     @OptIn(ExperimentalRumApi::class)
@@ -166,6 +172,8 @@ internal class DatadogFeaturesInitializer @Inject constructor(
                 }
             )
             enableComposeActionTracking()
+
+            configureTimeseries(config, ::setTimeseriesConfiguration)
         }.build()
     }
 
@@ -192,53 +200,8 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         rumMonitor.get()._getInternal()?.setSyntheticsAttributeFromIntent(intent)
     }
 
-    private fun isSessionReplayScenario(config: BenchmarkConfig) = when (config.scenario) {
-        SyntheticsScenario.SessionReplayCompose,
-        SyntheticsScenario.Upload,
-        SyntheticsScenario.SessionReplay -> true
-        SyntheticsScenario.RumManual,
-        SyntheticsScenario.Trace,
-        SyntheticsScenario.LogsCustom,
-        SyntheticsScenario.LogsHeavyTraffic,
-        SyntheticsScenario.RumAuto,
-        SyntheticsScenario.Profiling,
-        null -> false
-    }
-
-    private fun isRumScenario(config: BenchmarkConfig) = when (config.scenario) {
-        SyntheticsScenario.RumAuto,
-        SyntheticsScenario.RumManual,
-        SyntheticsScenario.Profiling -> true
-
-        SyntheticsScenario.SessionReplay,
-        SyntheticsScenario.SessionReplayCompose,
-        SyntheticsScenario.Trace,
-        SyntheticsScenario.LogsCustom,
-        SyntheticsScenario.LogsHeavyTraffic,
-        SyntheticsScenario.Upload,
-        null -> false
-    }
-
-    private fun isLogsScenario(config: BenchmarkConfig) = when (config.scenario) {
-        SyntheticsScenario.LogsCustom,
-        SyntheticsScenario.LogsHeavyTraffic -> true
-        SyntheticsScenario.SessionReplay,
-        SyntheticsScenario.SessionReplayCompose,
-        SyntheticsScenario.RumManual,
-        SyntheticsScenario.Trace,
-        SyntheticsScenario.Upload,
-        SyntheticsScenario.RumAuto,
-        SyntheticsScenario.Profiling,
-        null -> false
-    }
-
-    private fun isTracingScenario(config: BenchmarkConfig) = when (config.scenario) {
-        SyntheticsScenario.Trace -> true
-        else -> false
-    }
-
     private fun needToEnableTracing(config: BenchmarkConfig): Boolean {
-        return isInstrumentedRun(config) && isTracingScenario(config)
+        return config.isInstrumentedRun() && config.isTracingScenario()
     }
 
     private fun enableTracing() {
@@ -247,12 +210,19 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         Trace.enable(tracesConfig, sdkCore.get())
     }
 
-    private fun isInstrumentedRun(config: BenchmarkConfig) = config.run == SyntheticsRun.Instrumented
-
     companion object {
         private const val SAMPLE_IN_ALL_SESSIONS = 100f
         private const val ATTR_IS_MAPPED = "is_mapped"
         private const val SAMPLE_RATE_TELEMETRY = 100f
         private const val THRESHOLD_LONG_TASK_INTERVAL = 250L
+    }
+}
+
+internal fun configureTimeseries(
+    config: BenchmarkConfig,
+    setTimeseriesConfiguration: (TimeseriesConfiguration) -> Unit
+) {
+    if (config.isInstrumentedRun() && config.isTimeseriesScenario()) {
+        setTimeseriesConfiguration(TimeseriesConfiguration.DEFAULT)
     }
 }

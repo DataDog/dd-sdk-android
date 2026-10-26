@@ -58,7 +58,7 @@ internal class UnsupportedViewMapper(
     private fun resolveViewTitle(view: View): String {
         val viewUtilsInternal = ViewUtilsInternal()
         return if (viewUtilsInternal.isToolbar(view)) {
-            return TOOLBAR_LABEL
+            TOOLBAR_LABEL
         } else {
             DEFAULT_LABEL
         }

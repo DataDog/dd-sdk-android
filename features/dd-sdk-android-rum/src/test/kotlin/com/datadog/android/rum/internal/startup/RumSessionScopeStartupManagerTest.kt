@@ -21,11 +21,12 @@ import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
+import com.datadog.android.internal.profiling.quota.QuotaReason
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.VitalAppLaunchEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.VitalAppLaunchPropertiesAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
@@ -257,10 +258,10 @@ internal class RumSessionScopeStartupManagerTest {
     @MethodSource("testScenarios")
     fun `M not attach quota reason W onTTIDEvent {profiler running and quota reason present}`(
         scenario: RumStartupScenario,
+        @Forgery fakeQuotaReason: QuotaReason,
         forge: Forge
     ) {
         // Given
-        val fakeQuotaReason = forge.anAlphabeticalString()
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(
@@ -304,10 +305,10 @@ internal class RumSessionScopeStartupManagerTest {
     @MethodSource("testScenarios")
     fun `M attach quota reason W onTTIDEvent {profiler stopped by quota}`(
         scenario: RumStartupScenario,
+        @Forgery fakeQuotaReason: QuotaReason,
         forge: Forge
     ) {
         // Given — profiling is not running and the quota API denied the session
-        val fakeQuotaReason = forge.anAlphabeticalString()
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(
@@ -351,10 +352,10 @@ internal class RumSessionScopeStartupManagerTest {
     @MethodSource("testScenarios")
     fun `M ignore stale quota reason W onTTIDEvent {quota reason for other session}`(
         scenario: RumStartupScenario,
+        @Forgery fakeQuotaReason: QuotaReason,
         forge: Forge
     ) {
         // Given — a quota reason stamped with a session other than the current one
-        val fakeQuotaReason = forge.anAlphabeticalString()
         val fakeOtherSessionId = forge.anHexadecimalString()
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
@@ -399,10 +400,10 @@ internal class RumSessionScopeStartupManagerTest {
     @MethodSource("testScenarios")
     fun `M attach quota reason W onTTFDEvent {profiler stopped by quota}`(
         scenario: RumStartupScenario,
+        @Forgery fakeQuotaReason: QuotaReason,
         forge: Forge
     ) {
         // Given — profiling is not running and the quota API denied the session
-        val fakeQuotaReason = forge.anAlphabeticalString()
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(
@@ -454,10 +455,10 @@ internal class RumSessionScopeStartupManagerTest {
     @MethodSource("testScenarios")
     fun `M not attach quota reason W onTTFDEvent {profiler running and quota reason present}`(
         scenario: RumStartupScenario,
+        @Forgery fakeQuotaReason: QuotaReason,
         forge: Forge
     ) {
         // Given — the profiler is still running but a quota-denied reason is also present
-        val fakeQuotaReason = forge.anAlphabeticalString()
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(
@@ -512,10 +513,10 @@ internal class RumSessionScopeStartupManagerTest {
     @MethodSource("testScenarios")
     fun `M ignore stale quota reason W onTTFDEvent {quota reason for other session}`(
         scenario: RumStartupScenario,
+        @Forgery fakeQuotaReason: QuotaReason,
         forge: Forge
     ) {
         // Given — a quota reason stamped with a session other than the current one
-        val fakeQuotaReason = forge.anAlphabeticalString()
         val fakeOtherSessionId = forge.anHexadecimalString()
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
@@ -1126,6 +1127,8 @@ internal class RumSessionScopeStartupManagerTest {
             hasSampleRate(fakeSampleRate)
             hasNoSyntheticsTest()
             hasSessionId(rumContext.sessionId)
+            hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+            hasSessionTimeseries(rumContext.hasTimeseries)
             hasSessionType(
                 fakeRumSessionType?.toVitalAppLaunch()
                     ?: VitalAppLaunchEvent.VitalAppLaunchEventSessionType.USER
@@ -1194,6 +1197,8 @@ internal class RumSessionScopeStartupManagerTest {
             hasSampleRate(fakeSampleRate)
             hasNoSyntheticsTest()
             hasSessionId(rumContext.sessionId)
+            hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+            hasSessionTimeseries(rumContext.hasTimeseries)
             hasSessionType(
                 fakeRumSessionType?.toVitalAppLaunch()
                     ?: VitalAppLaunchEvent.VitalAppLaunchEventSessionType.USER

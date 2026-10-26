@@ -262,8 +262,8 @@ internal class SessionReplayRecordWriterTest {
     }
 
     private fun Forge.forgeEnrichedRecord(): EnrichedRecord {
-        // We don't want to create a forgery for this as this lives in the session-replay module
-        // and we will need to copy all the records forgeries. Instead we just forge this record
+        // We don't want to create a forgery for this as this lives in the session-replay module,
+        // and we will need to copy all the records forgeries. Instead, we just forge this record
         // here with empty records as it will not matter in the tests. Later if we need it we might
         // end up doing that.
         val applicationId = getForgery<UUID>().toString()

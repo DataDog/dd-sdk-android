@@ -18,6 +18,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -26,7 +27,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -113,14 +114,18 @@ internal class RumAppStartupDetectorImplTest {
             activity = activity.wrapWeak(),
             appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
         )
+        val startupScenarioCaptor = argumentCaptor<RumStartupScenario>()
+        val ttidScenarioCaptor = argumentCaptor<RumStartupScenario>()
         inOrder(listener) {
-            verify(listener).onAppStartupDetected(matchingScenario(expectedScenario))
+            verify(listener).onAppStartupDetected(startupScenarioCaptor.capture())
             verify(listener).onTTIDComputed(
-                matchingScenario(expectedScenario),
+                ttidScenarioCaptor.capture(),
                 eq(3.seconds.inWholeNanoseconds),
                 eq(false)
             )
         }
+        assertScenarioMatches(startupScenarioCaptor.firstValue, expectedScenario)
+        assertScenarioMatches(ttidScenarioCaptor.firstValue, expectedScenario)
         verifyNoMoreInteractions(listener)
     }
 
@@ -149,14 +154,18 @@ internal class RumAppStartupDetectorImplTest {
             activity = activity.wrapWeak(),
             appStartActivityOnCreateGapNs = 11.seconds.inWholeNanoseconds
         )
+        val startupScenarioCaptor = argumentCaptor<RumStartupScenario>()
+        val ttidScenarioCaptor = argumentCaptor<RumStartupScenario>()
         inOrder(listener) {
-            verify(listener).onAppStartupDetected(matchingScenario(expectedScenario))
+            verify(listener).onAppStartupDetected(startupScenarioCaptor.capture())
             verify(listener).onTTIDComputed(
-                matchingScenario(expectedScenario),
+                ttidScenarioCaptor.capture(),
                 eq(0.seconds.inWholeNanoseconds),
                 eq(false)
             )
         }
+        assertScenarioMatches(startupScenarioCaptor.firstValue, expectedScenario)
+        assertScenarioMatches(ttidScenarioCaptor.firstValue, expectedScenario)
         verifyNoMoreInteractions(listener)
     }
 
@@ -206,21 +215,27 @@ internal class RumAppStartupDetectorImplTest {
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
             activity = activity.wrapWeak()
         )
+        val startupScenarioCaptor = argumentCaptor<RumStartupScenario>()
+        val ttidScenarioCaptor = argumentCaptor<RumStartupScenario>()
         inOrder(listener) {
-            verify(listener).onAppStartupDetected(matchingScenario(expectedColdScenario))
+            verify(listener).onAppStartupDetected(startupScenarioCaptor.capture())
             verify(listener).onTTIDComputed(
-                matchingScenario(expectedColdScenario),
+                ttidScenarioCaptor.capture(),
                 eq(3.seconds.inWholeNanoseconds),
                 eq(false)
             )
 
-            verify(listener).onAppStartupDetected(matchingScenario(expectedWarmScenario))
+            verify(listener).onAppStartupDetected(startupScenarioCaptor.capture())
             verify(listener).onTTIDComputed(
-                matchingScenario(expectedWarmScenario),
+                ttidScenarioCaptor.capture(),
                 eq(0L),
                 eq(false)
             )
         }
+        assertScenarioMatches(startupScenarioCaptor.firstValue, expectedColdScenario)
+        assertScenarioMatches(ttidScenarioCaptor.firstValue, expectedColdScenario)
+        assertScenarioMatches(startupScenarioCaptor.secondValue, expectedWarmScenario)
+        assertScenarioMatches(ttidScenarioCaptor.secondValue, expectedWarmScenario)
         verifyNoMoreInteractions(listener)
     }
 
@@ -254,16 +269,18 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then
-        verify(listener).onAppStartupDetected(
-            matchingScenario(
-                RumStartupScenario.Cold(
+        argumentCaptor<RumStartupScenario> {
+            verify(listener).onAppStartupDetected(capture())
+            assertScenarioMatches(
+                actual = firstValue,
+                expected = RumStartupScenario.Cold(
                     initialTime = Time(0, 0),
                     hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
                     activity = activity.wrapWeak(),
                     appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
                 )
             )
-        )
+        }
         verifyNoMoreInteractions(listener)
     }
 
@@ -301,16 +318,18 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then
-        verify(listener).onAppStartupDetected(
-            matchingScenario(
-                RumStartupScenario.Cold(
+        argumentCaptor<RumStartupScenario> {
+            verify(listener).onAppStartupDetected(capture())
+            assertScenarioMatches(
+                actual = firstValue,
+                expected = RumStartupScenario.Cold(
                     initialTime = Time(0, 0),
                     hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
                     activity = activity.wrapWeak(),
                     appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
                 )
             )
-        )
+        }
         verifyNoMoreInteractions(listener)
     }
 
@@ -363,21 +382,27 @@ internal class RumAppStartupDetectorImplTest {
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
             activity = activity2.wrapWeak()
         )
+        val startupScenarioCaptor = argumentCaptor<RumStartupScenario>()
+        val ttidScenarioCaptor = argumentCaptor<RumStartupScenario>()
         inOrder(listener) {
-            verify(listener).onAppStartupDetected(matchingScenario(expectedColdScenario))
+            verify(listener).onAppStartupDetected(startupScenarioCaptor.capture())
             verify(listener).onTTIDComputed(
-                matchingScenario(expectedColdScenario),
+                ttidScenarioCaptor.capture(),
                 eq(3.seconds.inWholeNanoseconds),
                 eq(false)
             )
 
-            verify(listener).onAppStartupDetected(matchingScenario(expectedWarmScenario))
+            verify(listener).onAppStartupDetected(startupScenarioCaptor.capture())
             verify(listener).onTTIDComputed(
-                matchingScenario(expectedWarmScenario),
+                ttidScenarioCaptor.capture(),
                 eq(0L),
                 eq(false)
             )
         }
+        assertScenarioMatches(startupScenarioCaptor.firstValue, expectedColdScenario)
+        assertScenarioMatches(ttidScenarioCaptor.firstValue, expectedColdScenario)
+        assertScenarioMatches(startupScenarioCaptor.secondValue, expectedWarmScenario)
+        assertScenarioMatches(ttidScenarioCaptor.secondValue, expectedWarmScenario)
         verifyNoMoreInteractions(listener)
     }
 
@@ -450,21 +475,27 @@ internal class RumAppStartupDetectorImplTest {
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle3,
             activity = activity3.wrapWeak()
         )
+        val startupScenarioCaptor = argumentCaptor<RumStartupScenario>()
+        val ttidScenarioCaptor = argumentCaptor<RumStartupScenario>()
         inOrder(listener) {
-            verify(listener).onAppStartupDetected(matchingScenario(expectedColdScenario))
+            verify(listener).onAppStartupDetected(startupScenarioCaptor.capture())
             verify(listener).onTTIDComputed(
-                matchingScenario(expectedColdScenario),
+                ttidScenarioCaptor.capture(),
                 eq(3.seconds.inWholeNanoseconds),
                 eq(false)
             )
 
-            verify(listener).onAppStartupDetected(matchingScenario(expectedWarmScenario))
+            verify(listener).onAppStartupDetected(startupScenarioCaptor.capture())
             verify(listener).onTTIDComputed(
-                matchingScenario(expectedWarmScenario),
+                ttidScenarioCaptor.capture(),
                 eq(0L),
                 eq(false)
             )
         }
+        assertScenarioMatches(startupScenarioCaptor.firstValue, expectedColdScenario)
+        assertScenarioMatches(ttidScenarioCaptor.firstValue, expectedColdScenario)
+        assertScenarioMatches(startupScenarioCaptor.secondValue, expectedWarmScenario)
+        assertScenarioMatches(ttidScenarioCaptor.secondValue, expectedWarmScenario)
         verifyNoMoreInteractions(listener)
     }
 
@@ -518,14 +549,18 @@ internal class RumAppStartupDetectorImplTest {
             activity = mainActivity.wrapWeak(),
             appStartActivityOnCreateGapNs = 4.seconds.inWholeNanoseconds
         )
+        val startupScenarioCaptor = argumentCaptor<RumStartupScenario>()
+        val ttidScenarioCaptor = argumentCaptor<RumStartupScenario>()
         inOrder(listener) {
-            verify(listener).onAppStartupDetected(matchingScenario(expectedScenario))
+            verify(listener).onAppStartupDetected(startupScenarioCaptor.capture())
             verify(listener).onTTIDComputed(
-                matchingScenario(expectedScenario),
+                ttidScenarioCaptor.capture(),
                 eq(4.seconds.inWholeNanoseconds),
                 eq(false)
             )
         }
+        assertScenarioMatches(startupScenarioCaptor.firstValue, expectedScenario)
+        assertScenarioMatches(ttidScenarioCaptor.firstValue, expectedScenario)
 
         verifyNoMoreInteractions(listener)
     }
@@ -616,14 +651,18 @@ internal class RumAppStartupDetectorImplTest {
             activity = includedActivity.wrapWeak(),
             appStartActivityOnCreateGapNs = 5.seconds.inWholeNanoseconds
         )
+        val startupScenarioCaptor = argumentCaptor<RumStartupScenario>()
+        val ttidScenarioCaptor = argumentCaptor<RumStartupScenario>()
         inOrder(listener) {
-            verify(listener).onAppStartupDetected(matchingScenario(expectedScenario))
+            verify(listener).onAppStartupDetected(startupScenarioCaptor.capture())
             verify(listener).onTTIDComputed(
-                matchingScenario(expectedScenario),
+                ttidScenarioCaptor.capture(),
                 eq(5.seconds.inWholeNanoseconds),
                 eq(false)
             )
         }
+        assertScenarioMatches(startupScenarioCaptor.firstValue, expectedScenario)
+        assertScenarioMatches(ttidScenarioCaptor.firstValue, expectedScenario)
 
         verifyNoMoreInteractions(listener)
     }
@@ -647,16 +686,18 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then - scenario detected (backward compatibility)
-        verify(listener).onAppStartupDetected(
-            matchingScenario(
-                RumStartupScenario.Cold(
+        argumentCaptor<RumStartupScenario> {
+            verify(listener).onAppStartupDetected(capture())
+            assertScenarioMatches(
+                actual = firstValue,
+                expected = RumStartupScenario.Cold(
                     initialTime = Time(0, 0),
                     hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
                     activity = activity.wrapWeak(),
                     appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
                 )
             )
-        )
+        }
 
         verifyNoMoreInteractions(listener)
     }
@@ -697,12 +738,16 @@ internal class RumAppStartupDetectorImplTest {
             activity = activity1.wrapWeak(),
             appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
         )
-        verify(listener).onAppStartupDetected(matchingScenario(expectedColdScenario))
+        val coldStartupScenarioCaptor = argumentCaptor<RumStartupScenario>()
+        val coldTtidScenarioCaptor = argumentCaptor<RumStartupScenario>()
+        verify(listener).onAppStartupDetected(coldStartupScenarioCaptor.capture())
         verify(listener).onTTIDComputed(
-            matchingScenario(expectedColdScenario),
+            coldTtidScenarioCaptor.capture(),
             eq(3.seconds.inWholeNanoseconds),
             eq(false)
         )
+        assertScenarioMatches(coldStartupScenarioCaptor.firstValue, expectedColdScenario)
+        assertScenarioMatches(coldTtidScenarioCaptor.firstValue, expectedColdScenario)
 
         // When - predicate changes to return false for activity1
         shouldTrackActivity1 = false
@@ -730,12 +775,16 @@ internal class RumAppStartupDetectorImplTest {
             hasSavedInstanceStateBundle = false,
             activity = activity2.wrapWeak()
         )
-        verify(listener).onAppStartupDetected(matchingScenario(expectedWarmScenario))
+        val startupScenarioCaptor = argumentCaptor<RumStartupScenario>()
+        val ttidScenarioCaptor = argumentCaptor<RumStartupScenario>()
+        verify(listener, times(2)).onAppStartupDetected(startupScenarioCaptor.capture())
         verify(listener).onTTIDComputed(
-            matchingScenario(expectedWarmScenario),
+            ttidScenarioCaptor.capture(),
             eq(0.seconds.inWholeNanoseconds),
             eq(false)
         )
+        assertScenarioMatches(startupScenarioCaptor.secondValue, expectedWarmScenario)
+        assertScenarioMatches(ttidScenarioCaptor.firstValue, expectedWarmScenario)
 
         verifyNoMoreInteractions(listener)
     }
@@ -954,14 +1003,18 @@ internal class RumAppStartupDetectorImplTest {
             activity = activity.wrapWeak(),
             appStartActivityOnCreateGapNs = 3.seconds.inWholeNanoseconds
         )
+        val startupScenarioCaptor = argumentCaptor<RumStartupScenario>()
+        val ttidScenarioCaptor = argumentCaptor<RumStartupScenario>()
         inOrder(listener) {
-            verify(listener).onAppStartupDetected(matchingScenario(expectedScenario))
+            verify(listener).onAppStartupDetected(startupScenarioCaptor.capture())
             verify(listener).onTTIDComputed(
-                matchingScenario(expectedScenario),
+                ttidScenarioCaptor.capture(),
                 eq(4.seconds.inWholeNanoseconds),
                 eq(false)
             )
         }
+        assertScenarioMatches(startupScenarioCaptor.firstValue, expectedScenario)
+        assertScenarioMatches(ttidScenarioCaptor.firstValue, expectedScenario)
         verifyNoMoreInteractions(listener)
     }
 
@@ -1028,13 +1081,11 @@ internal class RumAppStartupDetectorImplTest {
         detector.onActivityDestroyed(activity)
     }
 
-    private fun matchingScenario(expected: RumStartupScenario): RumStartupScenario {
-        return argThat { actual ->
-            (actual.activity.get() == expected.activity.get()) &&
-                (actual.hasSavedInstanceStateBundle == expected.hasSavedInstanceStateBundle) &&
-                (actual.initialTime == expected.initialTime) &&
-                (actual.javaClass == expected.javaClass)
-        }
+    private fun assertScenarioMatches(actual: RumStartupScenario, expected: RumStartupScenario) {
+        assertThat(actual.activity.get()).isEqualTo(expected.activity.get())
+        assertThat(actual.hasSavedInstanceStateBundle).isEqualTo(expected.hasSavedInstanceStateBundle)
+        assertThat(actual.initialTime).isEqualTo(expected.initialTime)
+        assertThat(actual.javaClass).isEqualTo(expected.javaClass)
     }
 }
 

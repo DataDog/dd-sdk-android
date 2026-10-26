@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.metric
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.internal.rum.RumSessionStartReason
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -43,7 +43,7 @@ internal class SessionEndedMetricDispatcherTest {
     private val fakeInternalLogger = FakeInternalLogger()
 
     @Forgery
-    private lateinit var fakeStartReason: RumSessionScope.StartReason
+    private lateinit var fakeStartReason: RumSessionStartReason
 
     @LongForgery
     private var fakeNtpOffsetAtStart: Long = 0L

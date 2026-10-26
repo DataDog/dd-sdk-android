@@ -9,7 +9,7 @@ package com.datadog.tools.unit.extensions.config
 import fr.xgouchet.elmyr.Forge
 
 /**
- * Implements a self contained Test configuration.
+ * Implements a self-contained Test configuration.
  * The [setUp] and [tearDown] methods will be called before/after each test.
  *
  * Any implementation should make sure that any global/static state set in the [setUp] method

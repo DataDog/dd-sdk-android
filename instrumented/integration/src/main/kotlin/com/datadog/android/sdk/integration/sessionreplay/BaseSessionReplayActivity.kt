@@ -23,7 +23,6 @@ import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import java.util.Random
 
 internal abstract class BaseSessionReplayActivity : AppCompatActivity() {
-    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val config = RuntimeConfig.configBuilder().build()

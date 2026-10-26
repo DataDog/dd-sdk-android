@@ -52,7 +52,6 @@
     },
     "profiling": {
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "continuousSampleRate": { "type": "number", "minimum": 0, "maximum": 100 },
         "applicationLaunchSampleRate": { "type": "number", "minimum": 0, "maximum": 100 }

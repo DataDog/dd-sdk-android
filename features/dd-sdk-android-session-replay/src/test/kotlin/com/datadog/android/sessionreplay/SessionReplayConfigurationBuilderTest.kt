@@ -29,6 +29,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -75,8 +77,23 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.customMappers).isEmpty()
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
         assertThat(sessionReplayConfiguration.dynamicOptimizationEnabled).isEqualTo(true)
+        assertThat(sessionReplayConfiguration.adaptiveCaptureSchedulingEnabled).isFalse()
         assertThat(sessionReplayConfiguration.heatmapsEnabled).isFalse()
         assertThat(sessionReplayConfiguration.compositionTreeRecordingEnabled).isFalse()
+    }
+
+    @Test
+    fun `M keep opt in scoped to each configuration W build() {builder reused}`() {
+        // Given
+        val fakeEnabledConfiguration = testedBuilder.setAdaptiveCaptureSchedulingEnabled(true).build()
+
+        // When
+        val fakeDisabledConfiguration = testedBuilder.setAdaptiveCaptureSchedulingEnabled(false).build()
+
+        // Then
+        assertThat(fakeEnabledConfiguration.adaptiveCaptureSchedulingEnabled).isTrue()
+        assertThat(fakeDisabledConfiguration.adaptiveCaptureSchedulingEnabled).isFalse()
+        assertThat(SessionReplayConfiguration.Builder().build().adaptiveCaptureSchedulingEnabled).isFalse()
     }
 
     @Test
@@ -90,9 +107,15 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.heatmapsEnabled).isTrue()
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
     @OptIn(ExperimentalSessionReplayApi::class)
-    fun `M set compositionTreeRecordingEnabled to true W setCompositionTreeRecordingEnabled()`() {
+    fun `M preserve both pipeline options W setCompositionTreeRecordingEnabled() and build()`(
+        fakeSchedulingEnabled: Boolean
+    ) {
+        // Given
+        testedBuilder.setAdaptiveCaptureSchedulingEnabled(fakeSchedulingEnabled)
+
         // When
         val sessionReplayConfiguration = testedBuilder
             .setCompositionTreeRecordingEnabled(true)
@@ -100,6 +123,7 @@ internal class SessionReplayConfigurationBuilderTest {
 
         // Then
         assertThat(sessionReplayConfiguration.compositionTreeRecordingEnabled).isTrue()
+        assertThat(sessionReplayConfiguration.adaptiveCaptureSchedulingEnabled).isEqualTo(fakeSchedulingEnabled)
     }
 
     @Test
@@ -412,7 +436,7 @@ internal class SessionReplayConfigurationBuilderTest {
 
         testedBuilder.build()
 
-        val expected = String.format(DUPLICATE_MAPPER_DETECTED, ImageView::class.java)
+        val expected = String.format(Locale.US, DUPLICATE_MAPPER_DETECTED, ImageView::class.java)
 
         // Then
         mockLogger.verifyLog(

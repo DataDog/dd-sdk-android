@@ -70,7 +70,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -333,9 +332,10 @@ internal class SdkFeatureTest {
         testedFeature.stop()
 
         // Then
-        verify(appContext.mockInstance).unregisterActivityLifecycleCallbacks(
-            argThat { this is ProcessLifecycleMonitor }
-        )
+        argumentCaptor<Application.ActivityLifecycleCallbacks> {
+            verify(appContext.mockInstance).unregisterActivityLifecycleCallbacks(capture())
+            assertThat(firstValue).isInstanceOf(ProcessLifecycleMonitor::class.java)
+        }
     }
 
     @Test
@@ -755,7 +755,7 @@ internal class SdkFeatureTest {
         assertThrows<ClassCastException> {
             // strange enough nothing is thrown if we don't save the result.
             // Kotlin compiler removing/optimizing code unused?
-            @Suppress("UNUSED_VARIABLE")
+            @Suppress("UnusedVariable", "unused")
             val result = testedFeature.unwrap<AnotherFakeFeature>()
         }
     }

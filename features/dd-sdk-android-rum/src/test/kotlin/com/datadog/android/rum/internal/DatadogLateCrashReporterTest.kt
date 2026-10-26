@@ -19,6 +19,8 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.ErrorEventAssert
@@ -26,7 +28,6 @@ import com.datadog.android.rum.assertj.ViewEventAssert
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.anr.AndroidTraceParser
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
@@ -191,6 +192,8 @@ internal class DatadogLateCrashReporterTest {
                 .hasErrorId()
                 .hasApplicationId(fakeViewEvent.application.id)
                 .hasSessionId(fakeViewEvent.session.id)
+                .hasIsMainProcess(fakeViewEvent.session.isMainProcess)
+                .hasSessionTimeseries(fakeViewEvent.session.hasTimeseries)
                 .hasView(
                     fakeViewEvent.view.id,
                     fakeViewEvent.view.name,
@@ -1220,7 +1223,8 @@ internal class DatadogLateCrashReporterTest {
                 serverTimeOffsetMs = fakeServerOffset
             ),
             featuresContext = mapOf(
-                Feature.RUM_FEATURE_NAME to mapOf(RumContext.SESSION_ID to viewEvent.session.id)
+                Feature.RUM_FEATURE_NAME to
+                    mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(sessionId = viewEvent.session.id))
             )
         )
 

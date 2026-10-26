@@ -14,10 +14,10 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
-import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonObject
 
 internal class WebViewLogEventConsumer(
@@ -136,7 +136,7 @@ internal class WebViewLogEventConsumer(
                 { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
-            emptyMap<String, String>()
+            emptyMap()
         } catch (e: IllegalStateException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -144,7 +144,7 @@ internal class WebViewLogEventConsumer(
                 { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
-            emptyMap<String, String>()
+            emptyMap()
         } catch (e: UnsupportedOperationException) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -152,7 +152,7 @@ internal class WebViewLogEventConsumer(
                 { JSON_PARSING_ERROR_MESSAGE },
                 e
             )
-            emptyMap<String, String>()
+            emptyMap()
         }
         event.addProperty(
             DDTAGS_KEY_NAME,

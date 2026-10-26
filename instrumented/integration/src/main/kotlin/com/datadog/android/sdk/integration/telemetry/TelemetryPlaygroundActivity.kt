@@ -33,7 +33,6 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
 
     private val forge by lazy { Forge().apply { seed = intent.getForgeSeed() } }
 
-    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -61,7 +60,6 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
         submitTelemetry(intent)
     }
 
-    @Suppress("ThrowingInternalException", "CheckInternal")
     private fun submitTelemetry(intent: Intent) {
         val debugMessage = intent.getStringExtra(TELEMETRY_DEBUG_MESSAGE_KEY)
             ?: throw IllegalArgumentException("Telemetry debug message should be provided")

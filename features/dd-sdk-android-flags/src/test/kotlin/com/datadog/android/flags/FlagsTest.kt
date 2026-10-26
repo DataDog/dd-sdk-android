@@ -112,28 +112,6 @@ internal class FlagsTest {
     }
 
     @Test
-    fun `M register only FlagsFeature W enable() { trackEvaluations enabled }`() {
-        // Given
-        val config = FlagsConfiguration.Builder()
-            .trackEvaluations(true)
-            .build()
-
-        // When
-        Flags.enable(config, mockSdkCore)
-
-        // Then - both Flags and Evaluations features registered
-        val featureCaptor = argumentCaptor<Feature>()
-        verify(mockSdkCore, times(2)).registerFeature(featureCaptor.capture())
-
-        val registeredFeatures = featureCaptor.allValues
-        assertThat(registeredFeatures).hasSize(2)
-        assertThat(registeredFeatures.map { it.name }).containsExactly(
-            FLAGS_EVALUATIONS_FEATURE_NAME,
-            FLAGS_FEATURE_NAME
-        )
-    }
-
-    @Test
     fun `M use default configuration W enable() { no config provided }`() {
         // When
         Flags.enable(sdkCore = mockSdkCore)

@@ -7,7 +7,7 @@
 package com.datadog.android.rum
 
 /**
- * Describes the type of a method associated with resource call.
+ * Describes the type of method associated with resource call.
  * @see [RumMonitor]
  */
 enum class RumResourceMethod {

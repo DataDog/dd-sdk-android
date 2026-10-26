@@ -8,11 +8,11 @@ package com.datadog.android.rum.internal.timeseries.csv
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.InfoData
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
@@ -56,6 +56,8 @@ internal class CsvCollector(
         }
     }
 
+    override fun isTimeseriesCollected(sessionId: String): Boolean = emitted.isNotEmpty()
+
     private fun flush(buffer: Buffer<Double>, eventFactory: EventFactory<Double, *>) = buffer.drain()
         .takeIf { it.isNotEmpty() }
         ?.let { eventFactory.create(datadogContext, rumContext, it) }
@@ -66,6 +68,10 @@ internal class CsvCollector(
     override fun onSessionStop(sessionId: String) = Unit
 
     override fun onRumContextUpdate(newRumContext: RumContext) = Unit
+
+    override fun onUiVisible() = Unit
+
+    override fun onUiHidden() = Unit
 
     companion object {
 

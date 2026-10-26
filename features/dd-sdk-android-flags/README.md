@@ -107,6 +107,32 @@ val client = FlagsClient.Builder().build()
 val analyticsClient = FlagsClient.Builder("analytics").build()
 ```
 
+### Control evaluation telemetry
+
+Enable the local telemetry control when creating a client:
+
+```kotlin
+import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.setEvaluationTelemetryOptOut
+
+val client = FlagsClient.Builder("app")
+    .enableEvaluationTelemetryOptOutParameter(true)
+    .build()
+
+// Your application owns this decision.
+client.setEvaluationTelemetryOptOut(customerOptedOut)
+```
+
+When `customerOptedOut` is `true`, the client suppresses new evaluation events, counts, and automatic RUM flag annotations. Flag values and exposure logging remain unchanged.
+
+The native targeting context contains strings. Use the typed setter above; a string `"true"` in the context does not activate opt-out. The [OpenFeature provider](../dd-sdk-android-flags-openfeature/README.md#control-evaluation-telemetry) accepts a boolean context attribute instead.
+
+The `dd_evaluation_telemetry_opt_out` context attribute remains available for targeting and exposure reporting. Changing it through `setEvaluationContext` uses the normal assignment refresh path. Targeting rules can change assignments, and normal exposure deduplication applies.
+
+The setter applies locally without fetching assignments or clearing cached values. Update the decision when the subject or your policy changes. Set it to `false` to resume evaluation telemetry. Activation defaults to disabled. Each named client retains its original configuration.
+
+Previously recorded events, existing RUM annotations, manual annotations, and unrelated telemetry remain unchanged. Exposure events can still contain subject data. This control does not replace SDK tracking consent.
+
 ### Set evaluation context
 
 Before evaluating flags, set the evaluation context with a targeting key and optional attributes:
@@ -240,6 +266,61 @@ val analyticsClient = FlagsClient.get("analytics")
 ```
 
 **Note:** If you call `get()` before calling `build()` for that client name, a no-op client is returned that always returns default values and logs an error.
+
+### Wait for the first flags
+
+`client.onFirstFlags` notifies each registration once, when the client installs its first flags from disk
+cache or the network. This is one notification per registration, containing all keys in that first
+accepted configuration (possibly empty), not one callback per flag or an inventory of all server-side flags.
+For an Activity that owns a `client` (`render` is your own UI code):
+
+```kotlin
+import com.datadog.android.flags.FlagsSubscription
+import timber.log.Timber
+
+private var firstFlagsSubscription: FlagsSubscription? = null
+
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    firstFlagsSubscription = client.onFirstFlags { event ->
+        Timber.i("First installed flag keys: %s", event.flagsChanged)
+        val enabled = client.resolveBooleanValue("my-flag-key", false)
+        runOnUiThread { render(enabled) }
+    }
+}
+
+override fun onDestroy() {
+    firstFlagsSubscription?.unsubscribe()
+    super.onDestroy()
+}
+```
+
+- An available first result replays from retained memory without I/O, synchronously before registration
+  returns. Pending callbacks run
+  on a dedicated background thread. Dispatch UI work to the main thread.
+- Every registration receives the retained first result, even after later updates. Evaluations read
+  current flags, which may have changed since the event. Delivery order across registrations is not
+  guaranteed: a later registration may be notified before an earlier pending one.
+- Missing or unreadable cache and malformed network responses do not trigger the callback. A valid
+  empty configuration does trigger it with an empty key list.
+- Unsubscription is thread-safe and idempotent and releases pending captures. A callback already
+  claimed for delivery may still run; cancellation does not interrupt it or undo synchronous replay.
+- This is not a readiness signal. Use `client.state` to track readiness.
+- Ordinary callback exceptions are logged and isolated.
+
+Use `client.onFirstFlags { event -> ... }` from Kotlin or
+`client.onFirstFlags(event -> { ... })` from Java. The client retains the first installed keys
+and creates a separate event with a key-list copy for each delivery. Evaluations inside the callback
+read its current flags. Custom `FlagsClient` implementations
+must implement `onFirstFlags`; Kotlin interface delegation forwards it to the delegate.
+
+The listener and subscription are Kotlin functional interfaces: `FlagsClientEventListener.onEvent`
+and `FlagsSubscription.unsubscribe`.
+`FlagsClientEvent` is constructed internally by the SDK, snapshots its key list, and currently supports
+`CONFIGURATION_CHANGED`. Applications receive events through the listener.
+
+The [Kotlin sample](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/SampleApplication.kt)
+registers an application-lifetime callback, logs keys, and evaluates `"my-flag-key"` with default `false`.
 
 ## Integration with RUM
 

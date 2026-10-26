@@ -36,7 +36,7 @@ dependencies {
     implementation(project(":dd-sdk-android-core"))
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-trace-otel"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     // Desugaring SDK
     coreLibraryDesugaring(libs.androidDesugaringSdk)
@@ -54,6 +54,7 @@ dependencies {
     testImplementation(project(":dd-sdk-android-internal"))
     testImplementation(project(":features:dd-sdk-android-trace-internal"))
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)

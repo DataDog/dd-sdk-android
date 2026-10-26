@@ -6,7 +6,7 @@
 
 package com.datadog.android.flags.internal.storage
 
-import com.datadog.android.flags.model.ExposureEvent
+import com.datadog.android.flags.internal.model.ExposureEvent
 
 /**
  * Will persists the serialized [ExposureEvent] in the allocated caching location.

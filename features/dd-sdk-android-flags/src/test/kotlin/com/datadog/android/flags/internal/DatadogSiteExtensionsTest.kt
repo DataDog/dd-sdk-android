@@ -90,7 +90,6 @@ internal class DatadogSiteExtensionsTest {
     // endregion
 
     companion object {
-        @Suppress("unused")
         @JvmStatic
         fun supportedSitesWithCustomDomain(): List<Arguments> = listOf(
             Arguments.of(DatadogSite.US1, "ff-cdn.datadoghq.com"),
@@ -103,7 +102,6 @@ internal class DatadogSiteExtensionsTest {
             Arguments.of(DatadogSite.STAGING, "ff-cdn.datad0g.com")
         )
 
-        @Suppress("unused")
         @JvmStatic
         fun supportedSitesWithDefaultDomain(): List<Arguments> = listOf(
             Arguments.of(DatadogSite.US1, "preview.ff-cdn.datadoghq.com"),

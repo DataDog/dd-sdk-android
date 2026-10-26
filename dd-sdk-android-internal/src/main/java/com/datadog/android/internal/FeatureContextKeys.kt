@@ -10,6 +10,9 @@ package com.datadog.android.internal
  * Keys used to share state across features via the features context.
  */
 object FeatureContextKeys {
+    /** Immutable [com.datadog.android.internal.rum.RumContext] snapshot published by RUM. */
+    const val RUM_CONTEXT: String = "rum_context"
+
     /**
      * Indicates whether the profiler is currently running.
      * Written by the profiling feature and read by RUM and debug widget consumers.
@@ -47,6 +50,13 @@ object FeatureContextKeys {
      * own sampling.
      */
     const val RUM_SESSION_SAMPLE_RATE: String = "session_sample_rate"
+
+    /**
+     * State of the current RUM session (see [com.datadog.android.internal.rum.RumSessionConstants]).
+     * Written by the RUM feature into its own feature context; read by other features that need
+     * to know whether the session is tracked (sampled in).
+     */
+    const val RUM_SESSION_STATE: String = "session_state"
 
     /**
      * Reason profiling was denied by the quota API for the current RUM session.

@@ -12,6 +12,8 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.utils.withRumContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -30,7 +32,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.util.UUID
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -44,7 +45,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     lateinit var fakeDatadogContext: DatadogContext
 
     @Forgery
-    lateinit var fakeRumApplicationId: UUID
+    lateinit var fakeRumContext: RumContext
 
     private lateinit var testedFactory: PrecomputedAssignmentsRequestFactory
 
@@ -54,15 +55,53 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             site = forge.aValueFrom(
                 DatadogSite::class.java,
                 exclude = listOf(DatadogSite.US1_FED, DatadogSite.US2_FED)
-            ),
-            featuresContext = fakeDatadogContext.featuresContext +
-                mapOf(Feature.RUM_FEATURE_NAME to mapOf("application_id" to fakeRumApplicationId.toString()))
-        )
+            )
+        ).withRumContext(fakeRumContext)
 
         testedFactory = PrecomputedAssignmentsRequestFactory(mockInternalLogger, null)
     }
 
     // region create() - Success cases
+
+    @Test
+    fun `M advertise encoding capability W create() { native source }`(
+        @Forgery fakeEvaluationContext: EvaluationContext
+    ) {
+        // Given
+        val context = fakeDatadogContext.copy(source = "android")
+
+        // When
+        val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context))
+        val buffer = Buffer()
+        checkNotNull(request.body).writeTo(buffer)
+        val attributes = JSONObject(buffer.readUtf8()).getJSONObject("data").getJSONObject("attributes")
+
+        // Then
+        assertThat(request.header("X-DD-FEATURE-FLAGS-CAPABILITIES"))
+            .isEqualTo("assignment-encoding-flag-key-256-v1")
+        assertThat(attributes.has("supported_capabilities")).isFalse()
+        assertThat(attributes.getJSONObject("source").getString("sdk_version")).isEqualTo(context.sdkVersion)
+    }
+
+    @Test
+    fun `M omit encoding capability W create() { bridge sources }`(
+        @Forgery fakeEvaluationContext: EvaluationContext
+    ) {
+        for (source in listOf("react-native", "flutter", "unknown")) {
+            // Given
+            val context = fakeDatadogContext.copy(source = source)
+
+            // When
+            val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context))
+            val buffer = Buffer()
+            checkNotNull(request.body).writeTo(buffer)
+            val attributes = JSONObject(buffer.readUtf8()).getJSONObject("data").getJSONObject("attributes")
+
+            // Then
+            assertThat(attributes.has("supported_capabilities")).isFalse()
+            assertThat(request.header("X-DD-FEATURE-FLAGS-CAPABILITIES")).isNull()
+        }
+    }
 
     @Test
     fun `M create valid request W create() { all fields present }`(
@@ -85,7 +124,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         assertThat(request.url.toString()).isEqualTo("https://preview.ff-cdn.datadoghq.com/precompute-assignments")
         assertThat(request.method).isEqualTo("POST")
         assertThat(request.header("dd-client-token")).isEqualTo(fakeDatadogContext.clientToken)
-        assertThat(request.header("dd-application-id")).isEqualTo(fakeRumApplicationId.toString())
+        assertThat(request.header("dd-application-id")).isEqualTo(fakeRumContext.applicationId)
         assertThat(request.header("Content-Type")).isEqualTo("application/vnd.api+json")
     }
 

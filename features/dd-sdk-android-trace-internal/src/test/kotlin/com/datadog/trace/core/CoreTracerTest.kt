@@ -194,19 +194,6 @@ internal class CoreTracerTest : DDCoreSpecification() {
     }
 
     companion object {
-        @JvmStatic
-        fun serviceEnvVersionTags(): Stream<Arguments> {
-            return Stream.of(
-                Arguments.of(null, null, null),
-                Arguments.of("testService", null, null),
-                Arguments.of("testService", "staging", null),
-                Arguments.of("testService", null, "1"),
-                Arguments.of("testService", "staging", "1"),
-                Arguments.of(null, "staging", null),
-                Arguments.of(null, "staging", "1"),
-                Arguments.of(null, null, "1")
-            )
-        }
 
         @JvmStatic
         fun baggageMapping(): Stream<Arguments> {

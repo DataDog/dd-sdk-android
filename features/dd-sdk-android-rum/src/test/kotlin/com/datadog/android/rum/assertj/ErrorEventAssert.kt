@@ -10,12 +10,14 @@ import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.feature.event.ThreadDump
+import com.datadog.android.internal.profiling.quota.QuotaReason
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionStartReason
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceMethod
-import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.internal.domain.scope.toErrorMethod
+import com.datadog.android.rum.internal.domain.scope.toErrorQuotaReason
 import com.datadog.android.rum.internal.domain.scope.toErrorSessionPrecondition
 import com.datadog.android.rum.internal.domain.scope.toSchemaSource
 import com.datadog.android.rum.model.ErrorEvent
@@ -310,6 +312,26 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasIsMainProcess(expected: Boolean?): ErrorEventAssert {
+        assertThat(actual.session.isMainProcess)
+            .overridingErrorMessage(
+                "Expected event to have session.is_main_process:$expected " +
+                    "but was ${actual.session.isMainProcess}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasSessionTimeseries(expected: Boolean?): ErrorEventAssert {
+        assertThat(actual.session.hasTimeseries)
+            .overridingErrorMessage(
+                "Expected event to have session.has_timeseries:$expected " +
+                    "but was ${actual.session.hasTimeseries}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasSessionType(expected: ErrorEvent.ErrorEventSessionType): ErrorEventAssert {
         assertThat(actual.session.type)
             .overridingErrorMessage(
@@ -452,7 +474,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
-    fun hasStartReason(reason: RumSessionScope.StartReason): ErrorEventAssert {
+    fun hasStartReason(reason: RumSessionStartReason): ErrorEventAssert {
         assertThat(actual.dd.session?.sessionPrecondition)
             .overridingErrorMessage(
                 "Expected event to have a session sessionPrecondition of ${reason.name} " +
@@ -688,6 +710,16 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
             )
             .isNotNull
             .isNotBlank
+        return this
+    }
+
+    fun hasProfilingQuotaReason(quotaReason: QuotaReason?): ErrorEventAssert {
+        assertThat(actual.dd.profiling?.quotaReason)
+            .overridingErrorMessage(
+                "Expected RUM event to have profiling quota reason: $quotaReason" +
+                    " but instead was: ${actual.dd.profiling?.quotaReason}"
+            )
+            .isEqualTo(quotaReason?.toErrorQuotaReason())
         return this
     }
 

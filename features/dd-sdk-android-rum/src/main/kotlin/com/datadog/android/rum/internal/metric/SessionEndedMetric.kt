@@ -7,8 +7,8 @@
 package com.datadog.android.rum.internal.metric
 
 import com.datadog.android.core.metrics.PerformanceMetric
+import com.datadog.android.internal.rum.RumSessionStartReason
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
-import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.model.ViewEvent
 import java.util.concurrent.TimeUnit
@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger
 @Suppress("TooManyFunctions")
 internal class SessionEndedMetric(
     private val sessionId: String,
-    private val startReason: RumSessionScope.StartReason,
+    private val startReason: RumSessionStartReason,
     private val ntpOffsetAtStartMs: Long,
     private val hasTrackBackgroundEventsEnabled: Boolean
 ) {

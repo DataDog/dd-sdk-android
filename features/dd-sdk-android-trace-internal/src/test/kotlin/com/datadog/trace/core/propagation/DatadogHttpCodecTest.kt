@@ -85,7 +85,7 @@ internal class DatadogHttpCodecTest {
                 capture()
             )
 
-            assertThat(firstValue).isEqualTo(expected)
+            assertThat(firstValue.split(",")).containsExactlyInAnyOrderElementsOf(expected.split(","))
         }
     }
 

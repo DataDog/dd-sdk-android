@@ -23,7 +23,7 @@ internal class WebViewDataWriter(
 
     @WorkerThread
     override fun write(writer: EventBatchWriter, element: JsonObject, eventType: EventType): Boolean {
-        // TODO RUM-374 If event is RUM ViewEvent (as Json), we need to store it as last view
+        // TODO RUM-374 If event is RUM ViewEvent (as JSON), we need to store it as last view
         //  event for more precise NDK crash reporting
         val serialized = serializer.serializeToByteArray(element, internalLogger) ?: return false
         return synchronized(this) {

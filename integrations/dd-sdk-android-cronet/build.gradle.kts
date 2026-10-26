@@ -50,7 +50,7 @@ android {
 
 dependencies {
     api(libs.cronetApi)
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.androidXAnnotation)
 
     implementation(project(":dd-sdk-android-internal"))

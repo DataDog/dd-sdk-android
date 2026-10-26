@@ -129,6 +129,41 @@ class RecordingTimeBankTest {
         assertThat(actual).isEqualTo(true)
     }
 
+    @Test
+    fun `M estimate remaining recovery delay W timeUntilAvailableInNs()`() {
+        // Given
+        val testedTimeBank = RecordingTimeBank(50L)
+        testedTimeBank.updateAndCheck(0L)
+        testedTimeBank.consume(90_000_000L)
+
+        // When
+        val initialDelay = testedTimeBank.timeUntilAvailableInNs()
+        testedTimeBank.updateAndCheck(400_000_000L)
+        val remainingDelay = testedTimeBank.timeUntilAvailableInNs()
+        val recovered = testedTimeBank.updateAndCheck(800_000_000L)
+
+        // Then
+        assertThat(initialDelay).isEqualTo(800_000_000L)
+        assertThat(remainingDelay).isEqualTo(400_000_000L)
+        assertThat(recovered).isTrue()
+        assertThat(testedTimeBank.timeUntilAvailableInNs()).isZero()
+    }
+
+    @Test
+    fun `M round fractional recovery delay up W timeUntilAvailableInNs()`() {
+        // Given
+        val testedTimeBank = RecordingTimeBank(3L)
+        testedTimeBank.updateAndCheck(0L)
+        testedTimeBank.consume(3_000_001L)
+
+        // When
+        val delay = testedTimeBank.timeUntilAvailableInNs()
+
+        // Then
+        assertThat(delay).isEqualTo(334L)
+        assertThat(testedTimeBank.updateAndCheck(delay)).isTrue()
+    }
+
     companion object {
         private const val TEST_MAX_BALANCE_IN_MS = 100L
     }

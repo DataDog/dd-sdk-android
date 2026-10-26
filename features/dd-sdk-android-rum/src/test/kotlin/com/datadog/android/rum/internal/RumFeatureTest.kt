@@ -27,7 +27,6 @@ import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.asString
 import com.datadog.android.internal.utils.loggableStackTrace
-import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -52,8 +51,10 @@ import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
+import com.datadog.android.rum.internal.timeseries.CollectedTimeseriesSessionRegistry
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
 import com.datadog.android.rum.internal.timeseries.PipelineFactory
+import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
 import com.datadog.android.rum.internal.timeseries.collector.DefaultTimeseriesCollector
 import com.datadog.android.rum.internal.timeseries.collector.Looper
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
@@ -112,6 +113,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -856,32 +858,39 @@ internal class RumFeatureTest {
     fun `M stop active timeseries before resetting writer W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
-        val stubDatadogMonitor = mock<DatadogRumMonitor>()
+        val mockDatadogMonitor = mock<DatadogRumMonitor>()
         GlobalRumMonitor.clear()
-        GlobalRumMonitor.registerIfAbsent(stubDatadogMonitor, mockSdkCore)
+        GlobalRumMonitor.registerIfAbsent(mockDatadogMonitor, mockSdkCore)
 
         var writerAtStopTime: DataWriter<Any>? = null
         doAnswer {
             writerAtStopTime = testedFeature.dataWriter
-        }.whenever(stubDatadogMonitor).stopTimeseries()
+        }.whenever(mockDatadogMonitor).stop()
 
         // When
         testedFeature.onStop()
 
-        // Then — the last timeseries batch must still reach the real writer
+        // Then
+        verify(mockDatadogMonitor).stop()
         assertThat(writerAtStopTime).isNotNull
         assertThat(writerAtStopTime).isNotInstanceOf(NoOpDataWriter::class.java)
         assertThat(testedFeature.dataWriter).isInstanceOf(NoOpDataWriter::class.java)
     }
 
     @Test
-    @OptIn(ExperimentalRumApi::class)
     fun `M wire timeseries factory W initialize { timeseries enabled }`(
-        @LongForgery(min = 1L) fakeTotalRamBytes: Long
+        @LongForgery(min = 1L) fakeTotalRamBytes: Long,
+        @IntForgery(min = 2, max = 128) fakeBufferSize: Int,
+        @LongForgery(min = 1L, max = 1000L) fakeIntervalMs: Long
     ) {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
-            timeseriesConfiguration = TimeseriesConfiguration.DEFAULT
+            timeseriesConfiguration = TimeseriesConfiguration(
+                TimeseriesConfiguration.DEFAULT.collectTypes,
+                bufferSize = fakeBufferSize,
+                samplingIntervalMs = fakeIntervalMs,
+                viewTransitionDelayMs = TimeseriesConfiguration.BACKGROUND_TRANSITION_DELAY_MS
+            )
         )
         testedFeature = RumFeature(
             mockSdkCore,
@@ -910,16 +919,22 @@ internal class RumFeatureTest {
             looper.getFieldValue<ScheduledExecutorService, Looper>("scheduledExecutorService")
         ).isSameAs(testedFeature.vitalExecutorService)
 
+        val sessionRegistry = timeseriesCollector
+            .getFieldValue<CollectedTimeseriesSessionRegistry, DefaultTimeseriesCollector>("sessionRegistry")
+
         val pipelinesFactory = timeseriesCollector
             .getFieldValue<PipelineFactory, DefaultTimeseriesCollector>("pipelinesFactory")
+        assertThat(
+            pipelinesFactory.getFieldValue<CollectedTimeseriesSessionRegistry, PipelineFactory>("sessionRegistry")
+        ).isSameAs(sessionRegistry)
+        assertThat(pipelinesFactory.getFieldValue<InsightsCollector, PipelineFactory>("insightsCollector"))
+            .isSameAs(testedFeature.insightsCollector)
         assertThat(pipelinesFactory.getFieldValue<DataWriter<*>, PipelineFactory>("dataWriter"))
             .isSameAs(testedFeature.dataWriter)
-        assertThat(
-            pipelinesFactory.getFieldValue<InsightsCollector, PipelineFactory>("insightsCollector")
-        )
-            .isSameAs(testedFeature.insightsCollector)
         assertThat(pipelinesFactory.getFieldValue<Long, PipelineFactory>("totalRamBytes"))
             .isEqualTo(fakeTotalRamBytes)
+        assertThat(pipelinesFactory.getFieldValue<TimeseriesConfiguration, PipelineFactory>("configuration"))
+            .isSameAs(fakeConfiguration.timeseriesConfiguration)
         assertThat(
             pipelinesFactory.getFieldValue<InfoProvider<*>, PipelineFactory>("batteryInfoProvider")
         )
@@ -931,7 +946,6 @@ internal class RumFeatureTest {
     }
 
     @Test
-    @OptIn(ExperimentalRumApi::class)
     fun `M not wire timeseries factory and warn W initialize { timeseries enabled, non-Application context }`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
@@ -964,31 +978,89 @@ internal class RumFeatureTest {
     }
 
     @Test
-    @OptIn(ExperimentalRumApi::class)
-    fun `M unregister timeseries process lifecycle monitor W onStop() { timeseries enabled }`() {
+    fun `M register process lifecycle monitor W onInitialize() { timeseries disabled }`() {
         // Given
-        fakeConfiguration = fakeConfiguration.copy(
-            timeseriesConfiguration = TimeseriesConfiguration.DEFAULT
-        )
+        fakeConfiguration = fakeConfiguration.copy(timeseriesConfiguration = null)
         testedFeature = RumFeature(
             mockSdkCore,
             fakeApplicationId.toString(),
             fakeConfiguration,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
+
+        // When
         testedFeature.onInitialize(appContext.mockInstance)
-        val listener = checkNotNull(testedFeature.timeseriesProcessLifecycleMonitor)
+
+        // Then
+        val processLifecycleMonitor = checkNotNull(testedFeature.processLifecycleMonitor)
+        verify(appContext.mockInstance).registerActivityLifecycleCallbacks(processLifecycleMonitor)
+    }
+
+    @Test
+    fun `M check session expiry before notifying timeseries W onStarted()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val mockTimeseriesCollector = mock<TimeseriesCollector>()
+        testedFeature.timeseriesCollector = mockTimeseriesCollector
+        val callback = checkNotNull(testedFeature.processLifecycleMonitor).callback
+
+        // When
+        callback.onStarted()
+
+        // Then
+        inOrder(mockRumMonitor, mockTimeseriesCollector) {
+            verify(mockRumMonitor).checkSessionExpiry()
+            verify(mockTimeseriesCollector).onUiVisible()
+        }
+    }
+
+    @Test
+    fun `M notify timeseries W onStarted() { no RUM monitor registered }`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        GlobalRumMonitor.clear()
+        val mockTimeseriesCollector = mock<TimeseriesCollector>()
+        testedFeature.timeseriesCollector = mockTimeseriesCollector
+        val callback = checkNotNull(testedFeature.processLifecycleMonitor).callback
+
+        // When
+        callback.onStarted()
+
+        // Then
+        verify(mockTimeseriesCollector).onUiVisible()
+    }
+
+    @Test
+    fun `M notify timeseries without checking session expiry W onStopped()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val mockTimeseriesCollector = mock<TimeseriesCollector>()
+        testedFeature.timeseriesCollector = mockTimeseriesCollector
+        val callback = checkNotNull(testedFeature.processLifecycleMonitor).callback
+
+        // When
+        callback.onStopped()
+
+        // Then
+        verify(mockTimeseriesCollector).onUiHidden()
+        verify(mockRumMonitor, never()).checkSessionExpiry()
+    }
+
+    @Test
+    fun `M unregister process lifecycle monitor W onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val listener = checkNotNull(testedFeature.processLifecycleMonitor)
 
         // When
         testedFeature.onStop()
 
         // Then
         verify(appContext.mockInstance).unregisterActivityLifecycleCallbacks(listener)
-        assertThat(testedFeature.timeseriesProcessLifecycleMonitor).isNull()
+        assertThat(testedFeature.processLifecycleMonitor).isNull()
     }
 
     @Test
-    @OptIn(ExperimentalRumApi::class)
     fun `M initialize vital executor W initialize { frequency = NEVER and timeseries enabled }`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(

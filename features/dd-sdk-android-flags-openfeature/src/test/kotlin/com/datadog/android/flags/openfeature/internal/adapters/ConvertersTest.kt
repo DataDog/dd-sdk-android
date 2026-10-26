@@ -29,6 +29,27 @@ import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 @ForgeConfiguration(BaseConfigurator::class)
 internal class ConvertersTest {
 
+    @Test
+    fun `M retain telemetry attribute W toDatadogEvaluationContext()`(
+        @StringForgery(regex = "[a-zA-Z]+") fakeKey: String,
+        @StringForgery fakeValue: String,
+        @StringForgery fakeTargetingKey: String
+    ) {
+        // Given
+        val fakeControl = "dd_evaluation_telemetry_opt_out"
+        val fakeContext = ImmutableContext(
+            fakeTargetingKey,
+            mapOf(fakeControl to Value.Boolean(true), fakeKey to Value.String(fakeValue))
+        )
+
+        // When
+        val result = fakeContext.toDatadogEvaluationContext()
+
+        // Then
+        assertThat(result.attributes).containsOnlyKeys(fakeKey, fakeControl)
+            .containsEntry(fakeKey, fakeValue).containsEntry(fakeControl, "true")
+    }
+
     // region toProviderEvaluation
 
     @Test
@@ -137,6 +158,30 @@ internal class ConvertersTest {
         assertThat(result.value).isEqualTo(value)
         assertThat(result.variant).isEqualTo(variant)
         assertThat(result.reason).isEqualTo("SPLIT")
+        assertThat(result.errorCode).isNull()
+        assertThat(result.errorMessage).isNull()
+    }
+
+    @Test
+    fun `M convert CACHED reason W toProviderEvaluation() {resolution with CACHED reason}`(
+        @StringForgery variant: String,
+        forge: Forge
+    ) {
+        // Given
+        val value = forge.aBool()
+        val resolution = ResolutionDetails(
+            value = value,
+            variant = variant,
+            reason = ResolutionReason.CACHED
+        )
+
+        // When
+        val result = resolution.toProviderEvaluation()
+
+        // Then
+        assertThat(result.value).isEqualTo(value)
+        assertThat(result.variant).isEqualTo(variant)
+        assertThat(result.reason).isEqualTo("CACHED")
         assertThat(result.errorCode).isNull()
         assertThat(result.errorMessage).isNull()
     }

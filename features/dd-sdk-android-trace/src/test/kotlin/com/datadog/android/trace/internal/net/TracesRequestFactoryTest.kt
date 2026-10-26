@@ -52,18 +52,16 @@ internal class TracesRequestFactoryTest {
     @Test
     fun `M create a proper request W create()`(
         @Forgery batchData: List<RawBatchEvent>,
-        @StringForgery batchMetadata: String,
         @Forgery executionContext: RequestExecutionContext,
         forge: Forge
     ) {
         // Given
-        val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
+        val batchMetadata = forge.aNullable { forge.aString().toByteArray() }
 
         // When
         val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, batchMetadata)
 
         // Then
-        requireNotNull(request)
         assertThat(request.url).isEqualTo("${fakeDatadogContext.site.intakeEndpoint}/api/v2/spans")
         assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
         assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
@@ -89,19 +87,17 @@ internal class TracesRequestFactoryTest {
     fun `M create a proper request W create() { custom endpoint }`(
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeEndpoint: String,
         @Forgery batchData: List<RawBatchEvent>,
-        @StringForgery batchMetadata: String,
         @Forgery executionContext: RequestExecutionContext,
         forge: Forge
     ) {
         // Given
         testedFactory = TracesRequestFactory(customEndpointUrl = fakeEndpoint, internalLogger = InternalLogger.UNBOUND)
-        val batchMetadata = forge.aNullable { batchMetadata.toByteArray() }
+        val batchMetadata = forge.aNullable { forge.aString().toByteArray() }
 
         // When
         val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, batchMetadata)
 
         // Then
-        requireNotNull(request)
         assertThat(request.url).isEqualTo(fakeEndpoint)
         assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
         assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(

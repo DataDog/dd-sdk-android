@@ -17,7 +17,7 @@ import com.datadog.android.rum.internal.vitals.CpuStatReader
  *
  * CLK_TCK = 100 Hz on Android bionic: 100 ticks/s per core. Dividing by the core
  * count normalizes the result to [0, 100] relative to total device CPU capacity,
- * so multi-threaded work is represented correctly without artificial clamping.
+ * so multithreaded work is represented correctly without artificial clamping.
  * The first call always returns null.
  */
 internal class CpuDatapointReader(

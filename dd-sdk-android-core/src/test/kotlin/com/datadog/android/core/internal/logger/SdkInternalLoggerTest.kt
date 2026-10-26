@@ -87,18 +87,6 @@ internal class SdkInternalLoggerTest {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
     }
 
-    fun callWithLambda(i: Int, lambda: () -> String) {
-        if (i == 0) {
-            print(lambda())
-        }
-    }
-
-    fun callWithString(i: Int, str: String) {
-        if (i == 0) {
-            print(str)
-        }
-    }
-
     // region Target.USER
 
     @Test
@@ -475,7 +463,7 @@ internal class SdkInternalLoggerTest {
         // When
         val samplingRate = 100.0f
         val expectedCreationSampleRate = creationSampleRate.takeIf {
-            it > 0.0f // ValueSource doesn't allows to use null values
+            it > 0.0f // ValueSource doesn't allow to use null values
         }
 
         testedInternalLogger.logMetric(

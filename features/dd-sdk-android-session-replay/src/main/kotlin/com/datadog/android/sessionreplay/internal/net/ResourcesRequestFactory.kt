@@ -25,7 +25,6 @@ internal class ResourcesRequestFactory(
         ResourceRequestBodyFactory(internalLogger)
 ) : RequestFactory {
 
-    @Suppress("ThrowingInternalException")
     override fun create(
         context: DatadogContext,
         executionContext: RequestExecutionContext,

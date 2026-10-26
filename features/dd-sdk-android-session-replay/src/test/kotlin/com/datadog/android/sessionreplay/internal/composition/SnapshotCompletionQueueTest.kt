@@ -408,7 +408,7 @@ internal class SnapshotCompletionQueueTest {
         // Then
         verify(mockRecordWriter, never()).write(any(), any())
         assertThat(fakeGeneration.isActive()).isFalse()
-        val expectedCodes = fakeFailures.map { it.code }.distinct().sorted().map(Enum<*>::name)
+        val expectedCodes = fakeFailures.asSequence().map { it.code }.distinct().sorted().map(Enum<*>::name).toList()
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.TELEMETRY,

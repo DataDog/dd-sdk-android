@@ -17,6 +17,7 @@ import org.junit.jupiter.params.provider.CsvSource
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
+import kotlin.math.abs
 
 internal abstract class PendingTraceTestBase : DDCoreSpecification() {
 
@@ -134,7 +135,7 @@ internal abstract class PendingTraceTestBase : DDCoreSpecification() {
     fun `test getCurrentTimeNano`() {
         // Generous 5 seconds to execute this test
         assertThat(
-            Math.abs(
+            abs(
                 TimeUnit.NANOSECONDS.toSeconds(trace.currentTimeNano) -
                     TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
             )

@@ -42,6 +42,10 @@ data class Version(
         object Snapshot : Type() {
             override val suffix: String = "-SNAPSHOT"
         }
+
+        data class Dogfood(val shortSha: String) : Type() {
+            override val suffix: String = "-dogfood-$shortSha"
+        }
     }
 
     // endregion
@@ -53,7 +57,7 @@ data class Version(
     }
 
     /**
-     * @return a human readable Semantic Version name based on the information, with an optional suffix
+     * @return a human-readable Semantic Version name based on the information, with an optional suffix
      * (eg: 1.0.0, 2.3.0-rc1, 0.0.4-alpha1, etc...).
      * ** See also ** [Semantic Versioning](https://semver.org/)
      */
@@ -77,5 +81,20 @@ data class Version(
         internal const val MAX_HOTFIX = 10
         internal const val MAX_MINOR = 100
         internal const val MAX_MAJOR = 100
+    }
+}
+
+/**
+ * @return this version with a [Version.Type.Dogfood] type when building the `dogfooding` branch on CI,
+ * or this version unchanged otherwise.
+ */
+internal fun Version.forCi(
+    ciBranch: String? = System.getenv("CI_COMMIT_BRANCH"),
+    ciShortSha: String? = System.getenv("CI_COMMIT_SHORT_SHA")
+): Version {
+    return if (ciBranch == "dogfooding" && !ciShortSha.isNullOrBlank()) {
+        copy(type = Version.Type.Dogfood(ciShortSha))
+    } else {
+        this
     }
 }

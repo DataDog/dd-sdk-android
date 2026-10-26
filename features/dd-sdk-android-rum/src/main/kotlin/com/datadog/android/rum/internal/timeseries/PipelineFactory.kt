@@ -27,16 +27,17 @@ internal class PipelineFactory(
     private val sdkCore: FeatureSdkCore,
     private val dataWriter: DataWriter<Any>,
     private val insightsCollector: InsightsCollector,
-    private val enabledTypes: Set<TimeseriesType>,
+    private val configuration: TimeseriesConfiguration,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
-    private val displayInfoProvider: InfoProvider<DisplayInfo>
+    private val displayInfoProvider: InfoProvider<DisplayInfo>,
+    private val sessionRegistry: CollectedTimeseriesSessionRegistry
 ) {
     private val typesFactory = mapOf(
         TimeseriesType.CPU to ::createCpuPipeline,
         TimeseriesType.MEMORY to ::createMemoryPipeline
     )
 
-    fun create(sessionType: RumSessionType): List<Pipeline<*>> = enabledTypes.mapNotNull {
+    fun create(sessionType: RumSessionType): List<Pipeline<*>> = configuration.collectTypes.mapNotNull {
         typesFactory[it]?.invoke(sessionType)
     }
 
@@ -56,9 +57,9 @@ internal class PipelineFactory(
             reader = VitalReaderWrapper(
                 vitalReader = MemoryVitalReader(internalLogger = sdkCore.internalLogger),
                 timeProvider = sdkCore.timeProvider,
-                intervalMs = TimeseriesConfiguration.DEFAULT_INTERVAL_MS
+                intervalMs = configuration.samplingIntervalMs
             ),
-            buffer = Buffer(TimeseriesConfiguration.DEFAULT_BUFFER_SIZE),
+            buffer = Buffer(configuration.bufferSize),
             eventFactory = MemoryEventFactory(
                 sessionType = sessionType,
                 totalRamBytes = totalRamBytes,
@@ -68,19 +69,21 @@ internal class PipelineFactory(
                 internalLogger = sdkCore.internalLogger
             ),
             dataWriter = dataWriter,
-            insightsCollector = insightsCollector,
-            internalLogger = sdkCore.internalLogger
+            collectedSessionsRegistry = sessionRegistry,
+            insightsCollector = insightsCollector
         )
     }
 
-    private fun createCpuPipeline(sessionType: RumSessionType) = Pipeline(
+    private fun createCpuPipeline(
+        sessionType: RumSessionType
+    ) = Pipeline(
         sdkCore = sdkCore,
         reader = CpuDatapointReader(
             cpuStatReader = CpuStatReader(internalLogger = sdkCore.internalLogger),
             timeProvider = sdkCore.timeProvider,
-            intervalMs = TimeseriesConfiguration.DEFAULT_INTERVAL_MS
+            intervalMs = configuration.samplingIntervalMs
         ),
-        buffer = Buffer(TimeseriesConfiguration.DEFAULT_BUFFER_SIZE),
+        buffer = Buffer(configuration.bufferSize),
         eventFactory = CpuEventFactory(
             sessionType = sessionType,
             timeProvider = sdkCore.timeProvider,
@@ -89,8 +92,8 @@ internal class PipelineFactory(
             internalLogger = sdkCore.internalLogger
         ),
         dataWriter = dataWriter,
-        insightsCollector = insightsCollector,
-        internalLogger = sdkCore.internalLogger
+        collectedSessionsRegistry = sessionRegistry,
+        insightsCollector = insightsCollector
     )
 
     internal companion object {

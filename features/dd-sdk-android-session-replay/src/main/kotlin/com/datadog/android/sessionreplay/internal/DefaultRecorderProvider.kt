@@ -62,7 +62,9 @@ import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
-internal class DefaultRecorderProvider(
+internal class DefaultRecorderProvider
+@Suppress("LongParameterList")
+constructor(
     private val sdkCore: FeatureSdkCore,
     private val textAndInputPrivacy: TextAndInputPrivacy,
     private val imagePrivacy: ImagePrivacy,
@@ -71,6 +73,7 @@ internal class DefaultRecorderProvider(
     private val customOptionSelectorDetectors: List<OptionSelectorDetector>,
     private val customDrawableMappers: List<DrawableToColorMapper>,
     private val dynamicOptimizationEnabled: Boolean,
+    private val adaptiveCaptureSchedulingEnabled: Boolean,
     private val internalCallback: SessionReplayInternalCallback,
     private val heatmapsEnabled: Boolean,
     private val compositionTreeRecordingEnabled: Boolean,
@@ -118,6 +121,7 @@ internal class DefaultRecorderProvider(
                     customDrawableMappers = customDrawableMappers,
                     sdkCore = sdkCore,
                     dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+                    adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled,
                     internalCallback = internalCallback,
                     embeddedContentSlotRegistry = embeddedContentSlotRegistry,
                     heatmapIdentifierRegistry = heatmapIdentifierRegistry

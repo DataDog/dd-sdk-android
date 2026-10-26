@@ -9,16 +9,19 @@ import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import androidx.appcompat.widget.AppCompatSpinner
+import androidx.core.graphics.createBitmap
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.sample.R
+import timber.log.Timber
 import java.util.Locale
+import java.util.concurrent.CountDownLatch
+import kotlin.math.sqrt
 
 @Suppress("MagicNumber")
 internal class CrashFragment :
@@ -44,7 +47,8 @@ internal class CrashFragment :
 
         rootView.findViewById<View>(R.id.action_java_crash).setOnClickListener(this)
         rootView.findViewById<View>(R.id.action_ndk_crash).setOnClickListener(this)
-        rootView.findViewById<View>(R.id.action_anr).setOnClickListener(this)
+        rootView.findViewById<View>(R.id.action_anr_cpu).setOnClickListener(this)
+        rootView.findViewById<View>(R.id.action_anr_lock).setOnClickListener(this)
         rootView.findViewById<View>(R.id.action_oom).setOnClickListener(this)
 
         spinner = rootView.findViewById(R.id.signal_type_spinner)
@@ -72,7 +76,8 @@ internal class CrashFragment :
         when (v.id) {
             R.id.action_java_crash -> triggerCrash()
             R.id.action_ndk_crash -> triggerNdkCrash()
-            R.id.action_anr -> triggerANR()
+            R.id.action_anr_cpu -> triggerANRByCpuActivity()
+            R.id.action_anr_lock -> triggerANRByLockContention()
             R.id.action_oom -> triggerOOM()
         }
     }
@@ -92,7 +97,7 @@ internal class CrashFragment :
         simulateNdkCrash(signal)
     }
 
-    private fun triggerANR() {
+    private fun triggerANRByCpuActivity() {
         // Simulate an ANR by running a CPU-intensive busy loop on the main thread.
         // Unlike Thread.sleep, this keeps the main thread schedulable but fully blocked
         // processing work, which better exercises the system ANR detection path.
@@ -101,17 +106,33 @@ internal class CrashFragment :
             val end = System.currentTimeMillis() + 100_000L
             while (System.currentTimeMillis() < end) {
                 // Tight math loop to saturate the CPU on the main thread.
-                dummy += Math.sqrt(Math.random() * Double.MAX_VALUE)
+                dummy += sqrt(Math.random() * Double.MAX_VALUE)
                 if (dummy.isInfinite()) dummy = 0.0
             }
         }, 1)
     }
 
+    private fun triggerANRByLockContention() {
+        val lock = Any()
+        val latch = CountDownLatch(1)
+        Thread({
+            synchronized(lock) {
+                latch.countDown()
+                // hold it for 20s - 15s is ANR threshold on emulator
+                Thread.sleep(20_000L)
+            }
+        }, "lock-keeper").start()
+        latch.await()
+        synchronized(lock) {
+            // do nothing
+        }
+    }
+
     private fun triggerOOM() {
         Thread {
-            for (i in 0..128) {
-                bitmapList.add(Bitmap.createBitmap(3840, 2160, Bitmap.Config.ARGB_8888))
-                Log.i("OOM", "Allocated ${bitmapList.size} bitmaps")
+            repeat(128) {
+                bitmapList.add(createBitmap(3840, 2160))
+                Timber.i("OOM: Allocated ${bitmapList.size} bitmaps")
                 Thread.sleep(10)
             }
         }.start()

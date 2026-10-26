@@ -7,23 +7,47 @@ package com.datadog.android.rum.timeseries
 
 /**
  * Configuration for memory and CPU timeseries collection.
- *
- * @param collectTypes the timeseries types to collect. Passing an empty set disables
- * collection of every timeseries type.
  */
-class TimeseriesConfiguration(collectTypes: Set<TimeseriesType>) {
+class TimeseriesConfiguration internal constructor(
+    internal val collectTypes: Set<TimeseriesType>,
+    // Tests pass smaller values to shorten sampling and buffer fill waits.
+    internal val bufferSize: Int,
+    internal val samplingIntervalMs: Long,
+    // Experimental parameter for dogfooding - it looks like 200ms default delay might not be enough
+    internal val viewTransitionDelayMs: Long
+) {
 
-    internal val enabledTypes: Set<TimeseriesType> = collectTypes.toSet()
+    /**
+     * @param collectTypes the timeseries types to collect. Passing an empty set disables
+     * collection of every timeseries type.
+     */
+    constructor(collectTypes: Set<TimeseriesType>) : this(
+        collectTypes.toSet(),
+        DEFAULT_BUFFER_SIZE,
+        DEFAULT_SAMPLING_INTERVAL_MS,
+        BACKGROUND_TRANSITION_DELAY_MS
+    )
 
     companion object {
 
         /** Default [TimeseriesConfiguration] collecting CPU and MEMORY timeseries types. */
-        val DEFAULT: TimeseriesConfiguration = TimeseriesConfiguration(setOf(TimeseriesType.CPU, TimeseriesType.MEMORY))
+        val DEFAULT: TimeseriesConfiguration = TimeseriesConfiguration(
+            setOf(
+                TimeseriesType.CPU,
+                TimeseriesType.MEMORY
+            )
+        )
 
         /** Default number of samples to accumulate before emitting a timeseries event. */
         internal const val DEFAULT_BUFFER_SIZE: Int = 120
 
         /** Default sampling interval in milliseconds. */
-        internal const val DEFAULT_INTERVAL_MS: Long = 1000L
+        internal const val DEFAULT_SAMPLING_INTERVAL_MS: Long = 1000L
+
+        /** Default view transition delay in milliseconds
+         * Matches [com.datadog.android.rum.tracking.ActivityViewTrackingStrategy.STOP_VIEW_DELAY_MS]
+         * Both delays keep the previous foreground state across short Activity recreation during configuration changes.
+         */
+        internal const val BACKGROUND_TRANSITION_DELAY_MS = 200L
     }
 }

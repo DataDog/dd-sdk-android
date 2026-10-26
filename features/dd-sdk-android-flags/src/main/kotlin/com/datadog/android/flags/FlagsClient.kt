@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.Feature.Companion.FLAGS_EVALUATIONS_FEATU
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
 import com.datadog.android.flags.internal.EvaluationsFeature
@@ -62,6 +63,25 @@ import org.json.JSONObject
  * ```
  */
 interface FlagsClient {
+
+    /**
+     * Invokes [listener] once with the keys from the first installed cached or downloaded flags,
+     * including an empty configuration. Missing or invalid cache does not trigger this callback.
+     * Obfuscated configurations return an empty key list because the original keys are not available.
+     * Each registration receives a separate event with a copy of the retained first keys,
+     * even after subsequent flag updates.
+     * Replaying an available result reads retained memory and does not perform I/O.
+     * If the first result is available, delivery is immediate on the calling thread; otherwise it runs
+     * on a dedicated background thread. Exceptions from callbacks are logged and isolated; Errors are not caught.
+     * Pending callbacks are retained until delivery or cancellation. Unsubscribe the returned subscription
+     * when the owner is destroyed to release captured references if flags never become available.
+     * Unsubscription is thread-safe and idempotent. A callback already claimed
+     * for delivery may still run; cancellation does not interrupt or wait for it.
+     * Immediate replay may occur before this method returns; cancellation cannot undo delivery.
+     * This notification does not imply readiness. Dispatch UI work to the appropriate thread.
+     */
+    fun onFirstFlags(listener: FlagsClientEventListener): FlagsSubscription
+
     /**
      * Sets the [EvaluationContext] for flag resolution.
      *
@@ -219,6 +239,7 @@ interface FlagsClient {
     class Builder {
         private val name: String
         private val sdkCore: FeatureSdkCore
+        private var evaluationTelemetryOptOutParameterEnabled: Boolean = false
 
         /**
          * Creates a builder for a named [FlagsClient].
@@ -242,6 +263,20 @@ interface FlagsClient {
                 DEFAULT_CLIENT_NAME
             }
             this.sdkCore = sdkCore as FeatureSdkCore
+        }
+
+        /**
+         * Enables the local evaluation telemetry opt-out parameter for this client.
+         *
+         * Disabled by default. When enabled, [setEvaluationTelemetryOptOut] controls new evaluation
+         * telemetry and automatic RUM flag annotations. Flag values and exposures remain unchanged.
+         * OpenFeature accepts only Boolean `true` in `dd_evaluation_telemetry_opt_out`.
+         *
+         * @param enabled whether to enable the parameter.
+         * @return this [Builder] instance.
+         */
+        fun enableEvaluationTelemetryOptOutParameter(enabled: Boolean): Builder = apply {
+            evaluationTelemetryOptOutParameterEnabled = enabled
         }
 
         /**
@@ -299,7 +334,8 @@ interface FlagsClient {
                     featureSdkCore = sdkCore,
                     flagsFeature = flagsFeature,
                     evaluationsFeature = evaluationsFeature,
-                    name = name
+                    name = name,
+                    evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled
                 )
             }
         }
@@ -386,6 +422,7 @@ interface FlagsClient {
         // region Internal
 
         internal const val FLAGS_NETWORK_EXECUTOR_NAME = "flags-network"
+        internal const val FLAGS_FIRST_FLAGS_EXECUTOR_NAME = "flags-first-flags"
 
         @Suppress("LongMethod")
         internal fun createInternal(
@@ -393,7 +430,8 @@ interface FlagsClient {
             featureSdkCore: FeatureSdkCore,
             flagsFeature: FlagsFeature,
             evaluationsFeature: EvaluationsFeature?,
-            name: String
+            name: String,
+            evaluationTelemetryOptOutParameterEnabled: Boolean
         ): FlagsClient {
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
@@ -404,7 +442,15 @@ interface FlagsClient {
                 DefaultFlagsRepository(
                     featureSdkCore = featureSdkCore,
                     dataStore = datastore,
-                    instanceName = name
+                    instanceName = name,
+                    deliverFirstFlags = { delivery ->
+                        val worker = featureSdkCore.createSingleThreadExecutorService(FLAGS_FIRST_FLAGS_EXECUTOR_NAME)
+                        try {
+                            worker.executeSafe("Deliver first flags", featureSdkCore.internalLogger, delivery)
+                        } finally {
+                            worker.shutdown()
+                        }
+                    }
                 )
             } else {
                 NoOpFlagsRepository()
@@ -448,7 +494,8 @@ interface FlagsClient {
                 rumEvaluationLogger = rumEvaluationLogger,
                 exposureProcessor = flagsFeature.processor,
                 evaluationsFeature = evaluationsFeature,
-                flagStateManager = flagStateManager
+                flagStateManager = flagStateManager,
+                evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled
             )
         }
 

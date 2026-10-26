@@ -51,6 +51,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.net.HttpURLConnection
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import com.datadog.android.okhttp.TraceContext as DeprecatedTraceContext
@@ -590,6 +591,7 @@ internal constructor(
                 W3C_TRACEPARENT_KEY,
                 @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
                 W3C_TRACEPARENT_DROP_SAMPLING_DECISION.format(
+                    Locale.US,
                     traceId.padStart(length = W3C_TRACE_ID_LENGTH, padChar = '0'),
                     spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0')
                 )
@@ -597,7 +599,7 @@ internal constructor(
             // TODO RUM-2121 3rd party vendor information will be erased
             @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
             var traceStateHeader = W3C_TRACESTATE_DROP_SAMPLING_DECISION
-                .format(spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0'))
+                .format(Locale.US, spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0'))
             if (traceOrigin != null) {
                 traceStateHeader += ";o:$traceOrigin"
             }
@@ -881,7 +883,7 @@ internal constructor(
          * sampling between RUM sessions and APM traces.
          *
          * @param traceSampler the trace sampler controlling the sampling of APM traces.
-         * By default it is a sampler accepting 100% of the traces.
+         * By default, it is a sampler accepting 100% of the traces.
          */
         fun setTraceSampler(traceSampler: Sampler<DatadogSpan>): R {
             this.traceSampler = traceSampler
@@ -890,7 +892,7 @@ internal constructor(
 
         /**
          * Set the trace context injection behavior for this interceptor in the intercepted requests.
-         * By default this is set to [TraceContextInjection.SAMPLED], meaning that only the sampled request will
+         * By default, this is set to [TraceContextInjection.SAMPLED], meaning that only the sampled request will
          * propagate the trace context. In case of [TraceContextInjection.ALL] all the trace context
          * will be propagated in the intercepted requests no matter if the span created around the request
          * is sampled or not.
@@ -907,7 +909,7 @@ internal constructor(
          * Deprecated. Use setTraceContextInjection(com.datadog.android.trace.TraceContextInjection) instead.
          *
          * Set the trace context injection behavior for this interceptor in the intercepted requests.
-         * By default this is set to [TraceContextInjection.SAMPLED], meaning that only the sampled request will
+         * By default, this is set to [TraceContextInjection.SAMPLED], meaning that only the sampled request will
          * propagate the trace context. In case of [TraceContextInjection.ALL] all the trace context
          * will be propagated in the intercepted requests no matter if the span created around the request
          * is sampled or not.

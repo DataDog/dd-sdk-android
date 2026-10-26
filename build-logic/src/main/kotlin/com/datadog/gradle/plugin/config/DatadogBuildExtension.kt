@@ -13,6 +13,7 @@ import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import javax.inject.Inject
 
 /**
@@ -29,9 +30,11 @@ abstract class DatadogBuildExtension @Inject constructor(
     /** Aligns Kotlin compilation: bytecode target, API/language version and warning strictness. */
     fun applyKotlinConfig(
         evaluateWarningsAsErrors: Boolean = true,
-        jvmBytecodeTarget: JvmTarget = JvmTarget.JVM_17
+        jvmBytecodeTarget: JvmTarget = JvmTarget.JVM_17,
+        kotlinApiVersion: KotlinVersion = KotlinVersion.KOTLIN_2_0,
+        kotlinLanguageVersion: KotlinVersion = KotlinVersion.KOTLIN_2_0
     ) {
-        project.kotlinConfig(evaluateWarningsAsErrors, jvmBytecodeTarget)
+        project.kotlinConfig(evaluateWarningsAsErrors, jvmBytecodeTarget, kotlinApiVersion, kotlinLanguageVersion)
     }
 
     /** Applies the shared `com.android.library` setup: SDK levels, source sets, lint and packaging. */

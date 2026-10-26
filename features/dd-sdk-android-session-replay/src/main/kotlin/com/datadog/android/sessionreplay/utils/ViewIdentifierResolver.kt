@@ -27,7 +27,7 @@ interface ViewIdentifierResolver {
      * the parent [View] tag to provide consistency. In case there was already a value with the
      * same key in the tags and this was used by a different party we will try to use this value
      * as identifier if it's a [Long], in other case we will return null. This last scenario is
-     * highly unlikely but we are doing this in order to safely treat possible collisions with
+     * highly unlikely, but we are doing this in order to safely treat possible collisions with
      * client tags.
      * @param parent the parent [View] of the virtual child
      * @param childName the unique name of the virtual child
