@@ -56,15 +56,23 @@ test-pyramid:core-it-latest-api-kvm:
     - set +e
     - exit_code=0
     # Unlike the start-emulator snippet, no `-qemu -machine virt`: that machine type is ARM-only.
-    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose &
+    # The pod memory limit does not apply to the guest, which defaults to the avdmanager 2048 MB; the API 37 system crashed with it.
+    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -memory 4096 -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose &
     # Wait for boot so connectedDebugAndroidTest does not race the emulator on a warm Gradle cache.
     - timeout 300 bash -c 'until [[ "$($ANDROID_HOME/platform-tools/adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" == "1" ]]; do sleep 2; done' || exit_code=$?
     - if [[ "$exit_code" -ne 0 ]]; then echo "Emulator failed to boot"; exit 1; fi
+    # Stream rather than dump at the end: a guest system crash can wrap or wipe the logcat ring buffers.
+    - $ANDROID_HOME/platform-tools/adb logcat -b all -v threadtime > emulator-logcat.txt 2>&1 &
     - DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :reliability:core-it:connectedDebugAndroidTest || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - dd-sts exchange --policy dd-sdk-android -- datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname reliability/core-it/build/outputs/androidTest-results/connected/debug/ || true
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - emulator-logcat.txt
 
 # Scheduling smoke test: no cache, no resource overrides, no script beyond an echo.
 test-pyramid:kvm-hello-world:
