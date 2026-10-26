@@ -31,6 +31,7 @@ import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -48,8 +49,10 @@ import java.util.concurrent.TimeUnit
 @Suppress("UnsafeThirdPartyFunctionCall")
 class StubSDKCore(
     private val forge: Forge,
-    private val mockContext: Application = mock(),
-    private val mockSdkCore: InternalSdkCore = mock { on { name } doReturn toString() },
+    // Default mocks are stub-only: recorded invocations would reference the registered features,
+    // which reference this core, so Mockito's inline mock maker would never release it.
+    private val mockContext: Application = mock(stubOnly = true),
+    private val mockSdkCore: InternalSdkCore = mock(stubOnly = true) { on { name } doReturn toString() },
     private var datadogContext: DatadogContext = forge.getForgery<DatadogContext>().copy(source = "android")
 ) : InternalSdkCore by mockSdkCore {
 
@@ -79,7 +82,8 @@ class StubSDKCore(
         whenever(mockContext.resources) doReturn mockResources
         whenever(mockResources.configuration) doReturn mockConfiguration
         whenever(mockContext.contentResolver) doReturn mockContentResolver
-        whenever(mockContext.applicationContext) doReturn mockContext
+        // Answering with the invoked mock avoids a stubbing that strongly references its own mock
+        whenever(mockContext.applicationContext) doAnswer { it.mock as Application }
     }
 
     // region Stub
@@ -216,7 +220,6 @@ class StubSDKCore(
         featureScopes[feature.name] = featureScope
 
         feature.onInitialize(mockContext)
-        mockSdkCore.registerFeature(feature)
     }
 
     // endregion
@@ -268,16 +271,13 @@ class StubSDKCore(
 
     override fun setEventReceiver(featureName: String, receiver: FeatureEventReceiver) {
         eventReceivers[featureName] = receiver
-        mockSdkCore.setEventReceiver(featureName, receiver)
     }
 
     override fun removeEventReceiver(featureName: String) {
         eventReceivers.remove(featureName)
-        mockSdkCore.removeEventReceiver(featureName)
     }
 
     override fun getFeature(featureName: String): FeatureScope? {
-        mockSdkCore.getFeature(featureName)
         return featureScopes[featureName]
     }
 
