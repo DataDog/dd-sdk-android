@@ -48,9 +48,11 @@ test-pyramid:core-it-latest-api-kvm:
   script:
     # The CI image ships neither the emulator nor its shared-library dependencies.
     - apt-get update && apt-get -y install --no-install-recommends libpulse0 libnss3 libx11-6 libxcb1 libxcomposite1 libxcursor1 libxi6 libxrandr2 libxtst6 libxkbfile1 libglib2.0-0 libasound2
-    - SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+    # Older avdmanager versions write android-0 for android-37.0, disabling required graphics features.
+    - echo y | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "cmdline-tools;22.0" >/dev/null
+    - SDKMANAGER="$ANDROID_HOME/cmdline-tools/22.0/bin/sdkmanager"
     - echo y | $SDKMANAGER --install "emulator" "platform-tools" "$ANDROID_PLATFORM" "$ANDROID_BUILD_TOOLS" "$ANDROID_EMULATOR_IMAGE" >/dev/null
-    - echo "no" | $ANDROID_HOME/cmdline-tools/latest/bin/avdmanager --verbose create avd --force --name "$EMULATOR_NAME" --package "$ANDROID_EMULATOR_IMAGE"
+    - echo "no" | $ANDROID_HOME/cmdline-tools/22.0/bin/avdmanager --verbose create avd --force --name "$EMULATOR_NAME" --package "$ANDROID_EMULATOR_IMAGE"
     # Fail fast with an explicit reason if the runner did not pass /dev/kvm through.
     - $ANDROID_HOME/emulator/emulator -accel-check
     - !reference [.snippets, setup-gradle]
@@ -58,10 +60,8 @@ test-pyramid:core-it-latest-api-kvm:
     - exit_code=0
     # Unlike the start-emulator snippet, no `-qemu -machine virt`: that machine type is ARM-only.
     # The pod memory limit does not apply to the guest, which defaults to the avdmanager 2048 MB.
-    # Host-side rendering (lavapipe/swangle, swiftshader_indirect) aborts SurfaceFlinger on region sampling
-    # ('!rcEnc->featureInfo()->hasReadColorBufferDma'), which restarts system_server in a loop.
-    # The node has no GPU either way; guest mode renders on the CPU inside the guest instead.
-    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -memory 4096 -gpu guest -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose &
+    # Render on the CPU so the KVM node does not need a GPU.
+    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -memory 4096 -gpu software -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose &
     # Wait for boot so connectedDebugAndroidTest does not race the emulator on a warm Gradle cache.
     - timeout 300 bash -c 'until [[ "$($ANDROID_HOME/platform-tools/adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" == "1" ]]; do sleep 2; done' || exit_code=$?
     - if [[ "$exit_code" -ne 0 ]]; then echo "Emulator failed to boot"; exit 1; fi
