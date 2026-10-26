@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import java.util.Locale
 
 internal class FlagSelectionCanonicalizerTest {
 
@@ -150,8 +151,27 @@ internal class FlagSelectionCanonicalizerTest {
         assertThat(result).describedAs(description).isEqualTo(FlagSelectionResult.Dropped(expectedError))
     }
 
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("sharedVectorSelections")
+    fun `M match the shared selection vector W canonicalize()`(
+        vectorName: String,
+        selection: FlagSelection,
+        expectedResult: FlagSelectionResult
+    ) {
+        // When
+        val result = FlagSelectionCanonicalizer.canonicalize(selection)
+
+        // Then
+        assertThat(result).describedAs(vectorName).isEqualTo(expectedResult)
+    }
+
     companion object {
         private const val GRINNING_FACE = "\uD83D\uDE00"
+
+        private fun numbered(prefix: String, count: Int) = List(count) { "$prefix%02d".format(Locale.US, it + 1) }
+
+        private fun selected(tags: List<String>, keyPatterns: List<String>) =
+            FlagSelectionResult.Selected(CanonicalFlagSelection(tags, keyPatterns))
 
         private fun values(count: Int) = List(count) { "value-$it" }
 
@@ -170,6 +190,97 @@ internal class FlagSelectionCanonicalizerTest {
             Arguments.of("66 three-byte characters and 2 bytes", tags("\u20AC".repeat(66) + "ab")),
             Arguments.of("50 four-byte characters", keyPatterns(GRINNING_FACE.repeat(50))),
             Arguments.of("200 bytes after trimming", keyPatterns("  ${"a".repeat(200)}\u3000"))
+        )
+
+        // Cases with `sdk` expectations in DataDog/ffe-system-test-data@e8777633
+        // flag-selection/selection-vectors.json that the tests above do not already cover.
+        @JvmStatic
+        fun sharedVectorSelections() = listOf(
+            Arguments.of(
+                "leading star",
+                keyPatterns("*-v2"),
+                selected(emptyList(), listOf("*-v2"))
+            ),
+            Arguments.of(
+                "star matches an empty run and multiple stars are allowed",
+                keyPatterns("*search*auto*complete*"),
+                selected(emptyList(), listOf("*search*auto*complete*"))
+            ),
+            Arguments.of(
+                "lone star matches every key",
+                keyPatterns("*"),
+                selected(emptyList(), listOf("*"))
+            ),
+            Arguments.of(
+                "question mark and brackets are literal",
+                keyPatterns("search.ranking-v?", "[a]*", "{a,b}"),
+                selected(emptyList(), listOf("[a]*", "search.ranking-v?", "{a,b}"))
+            ),
+            Arguments.of(
+                "braces are literal even when an alternative names a flag",
+                keyPatterns("{mobile.dark-mode,missing}"),
+                selected(emptyList(), listOf("{mobile.dark-mode,missing}"))
+            ),
+            Arguments.of(
+                "tags are never globs",
+                tags("team:*"),
+                selected(listOf("team:*"), emptyList())
+            ),
+            Arguments.of(
+                "tags match case-sensitively",
+                tags("Team:Payments", "MOBILE"),
+                selected(listOf("MOBILE", "Team:Payments"), emptyList())
+            ),
+            Arguments.of(
+                "characters outside Unicode White_Space are not trimmed",
+                tags("\uFEFFmobile", "mobile\u200B"),
+                selected(listOf("mobile\u200B", "\uFEFFmobile"), emptyList())
+            ),
+            Arguments.of(
+                "values sort by UTF-8 bytes",
+                tags(GRINNING_FACE, "\uFF5E", "a", "Z"),
+                selected(listOf("Z", "a", "\uFF5E", GRINNING_FACE), emptyList())
+            ),
+            Arguments.of(
+                "31 values in each list are allowed",
+                FlagSelection(numbered("t", 31), numbered("p", 31)),
+                selected(numbered("t", 31), numbered("p", 31))
+            ),
+            Arguments.of(
+                "duplicates do not count toward the limit",
+                FlagSelection(numbered("t", 31) + "t01" + " t02 ", emptyList()),
+                selected(numbered("t", 31), emptyList())
+            ),
+            Arguments.of(
+                "key pattern length counts UTF-8 bytes: 100 two-byte characters are allowed",
+                keyPatterns("\u00E9".repeat(100)),
+                selected(emptyList(), listOf("\u00E9".repeat(100)))
+            ),
+            Arguments.of(
+                "tag length is measured after trimming",
+                tags("  ${"a".repeat(200)}  "),
+                selected(listOf("a".repeat(200)), emptyList())
+            ),
+            Arguments.of(
+                "32 values in one list are rejected even when the other is within the limit",
+                FlagSelection(numbered("t", 31), numbered("p", 32)),
+                FlagSelectionResult.Dropped(FlagSelectionError.TOO_MANY_VALUES)
+            ),
+            Arguments.of(
+                "key pattern length counts UTF-8 bytes: 201 bytes are invalid",
+                keyPatterns("x" + "\u00E9".repeat(100)),
+                FlagSelectionResult.Dropped(FlagSelectionError.INVALID_KEY_PATTERN)
+            ),
+            Arguments.of(
+                "a long tag invalidates the selection even when other tags match",
+                tags("mobile", "a".repeat(201)),
+                FlagSelectionResult.Dropped(FlagSelectionError.INVALID_TAG)
+            ),
+            Arguments.of(
+                "too_many_values takes precedence over invalid_tag",
+                FlagSelection(numbered("t", 31) + "a".repeat(201), emptyList()),
+                FlagSelectionResult.Dropped(FlagSelectionError.TOO_MANY_VALUES)
+            )
         )
 
         @JvmStatic
