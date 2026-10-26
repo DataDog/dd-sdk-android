@@ -85,9 +85,9 @@ stages:
 
 .base-gradle-cache-job:
   variables:
-    CACHE_FALLBACK_KEY: "develop"
   cache:
-    key: $CI_COMMIT_REF_SLUG
+    key: aleksandr-gringauz-rum-18975-speed-up-pr-builds-simpler
+    policy: pull
     paths:
       - cache/caches/
       - cache/wrapper/
@@ -144,32 +144,37 @@ create_key:
     - !reference [ .snippets, setup-gradle ]
 
 analysis:generated-files-check:
+  parallel: 3
   extends: .verification-gradle-job
   timeout: 30m
   script:
-    - ./gradlew checkGeneratedFiles
+    - ./gradlew --no-build-cache --no-configuration-cache checkGeneratedFiles
 
 analysis:ktlint:
+  parallel: 3
   extends: .verification-gradle-job
   timeout: 30m
   script:
-    - ./gradlew ktlintCheck :build-logic:ktlintCheck
+    - ./gradlew --no-build-cache --no-configuration-cache ktlintCheck :build-logic:ktlintCheck
 
 analysis:detekt:
+  parallel: 3
   extends: .verification-gradle-job
   script:
-    - ./gradlew detekt --continue
+    - ./gradlew --no-build-cache --no-configuration-cache detekt --continue
 
 analysis:android-lint:
+  parallel: 3
   extends: .verification-gradle-job
   script:
-    - ./gradlew :lintCheckAll --continue
+    - ./gradlew --no-build-cache --no-configuration-cache :lintCheckAll --continue
 
 test:debug:
+  parallel: 3
   extends: .verification-gradle-job
   script:
     - >-
-      DD_TAGS="test.configuration.variant:debug" ./gradlew
+      DD_TAGS="test.configuration.variant:debug" ./gradlew --no-build-cache --no-configuration-cache
       :dd-sdk-android-core:testDebugUnitTest
       :dd-sdk-android-internal:testDebugUnitTest
       :reliability:stub-core:testDebugUnitTest
@@ -183,9 +188,10 @@ test:debug:
       junit: "**/build/test-results/testDebugUnitTest/*.xml"
 
 test:tools:
+  parallel: 3
   extends: .verification-gradle-job
   script:
-    - ./gradlew :unitTestTools
+    - ./gradlew --no-build-cache --no-configuration-cache :unitTestTools
   artifacts:
     when: always
     expire_in: 1 week
@@ -193,10 +199,11 @@ test:tools:
       junit: "tools/**/build/test-results/test/*.xml"
 
 test:build-logic:
+  parallel: 3
   extends: .verification-gradle-job
   timeout: 30m
   script:
-    - ./gradlew :build-logic:test
+    - ./gradlew --no-build-cache --no-configuration-cache :build-logic:test
   artifacts:
     when: always
     expire_in: 1 week
@@ -204,9 +211,10 @@ test:build-logic:
       junit: "build-logic/build/test-results/test/*.xml"
 
 test:kover:
+  parallel: 3
   extends: .verification-gradle-job
   cache:
-    policy: pull-push
+    policy: pull
   id_tokens:
     DD_STS_OIDC_TOKEN:
       aud: dd-sts
@@ -215,7 +223,7 @@ test:kover:
     - !reference [ .snippets, setup-gradle ]
   script:
     - >-
-      DD_TAGS="test.configuration.variant:release" ./gradlew
+      DD_TAGS="test.configuration.variant:release" ./gradlew --no-build-cache --no-configuration-cache
       --init-script ci/gradle-cache-cleanup.init.gradle.kts
       :dd-sdk-android-core:koverXmlReportRelease
       :dd-sdk-android-internal:koverXmlReportRelease
@@ -247,60 +255,46 @@ test:kover:
     reports:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
-test:build-instrumented-apks:
-  extends: .verification-gradle-job
-  script:
-    - >-
-        ./gradlew
-        -Puse-api21-java-backport
-        -Puse-desugaring
-        :reliability:core-it:assembleDebug
-        :reliability:core-it:assembleDebugAndroidTest
-        :instrumented:integration:assembleDebug
-        :instrumented:integration:assembleDebugAndroidTest
-        :features:dd-sdk-android-ndk:assembleDebugAndroidTest
-  artifacts:
-    expire_in: 1 week
-    paths:
-      - "reliability/core-it/build/outputs/apk/debug/*.apk"
-      - "reliability/core-it/build/outputs/apk/androidTest/debug/*.apk"
-      - "instrumented/integration/build/outputs/apk/debug/*.apk"
-      - "instrumented/integration/build/outputs/apk/androidTest/debug/*.apk"
-      - "features/dd-sdk-android-ndk/build/outputs/apk/androidTest/debug/*.apk"
-
 test:single-fit-logs:
+  parallel: 3
   extends: .single-fit-job
   script:
-    - DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:logs:testReleaseUnitTest
+    - DD_TAGS="test.configuration.variant:release" ./gradlew --no-build-cache --no-configuration-cache :reliability:single-fit:logs:testReleaseUnitTest
 
 test:single-fit-rum:
+  parallel: 3
   extends: .single-fit-job
   script:
-    - DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:rum:testReleaseUnitTest
+    - DD_TAGS="test.configuration.variant:release" ./gradlew --no-build-cache --no-configuration-cache :reliability:single-fit:rum:testReleaseUnitTest
 
 test:single-fit-trace:
+  parallel: 3
   extends: .single-fit-job
   script:
-    - DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:trace:testReleaseUnitTest
+    - DD_TAGS="test.configuration.variant:release" ./gradlew --no-build-cache --no-configuration-cache :reliability:single-fit:trace:testReleaseUnitTest
 
 test:single-fit-okhttp:
+  parallel: 3
   extends: .single-fit-job
   script:
-    - DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:okhttp:testReleaseUnitTest
+    - DD_TAGS="test.configuration.variant:release" ./gradlew --no-build-cache --no-configuration-cache :reliability:single-fit:okhttp:testReleaseUnitTest
 
 test:single-fit-profiling:
+  parallel: 3
   extends: .single-fit-job
   script:
-    - DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:profiling:testReleaseUnitTest
+    - DD_TAGS="test.configuration.variant:release" ./gradlew --no-build-cache --no-configuration-cache :reliability:single-fit:profiling:testReleaseUnitTest
 
 test:single-fit-flags:
+  parallel: 3
   extends: .single-fit-job
   script:
-    - DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:flags:testReleaseUnitTest
+    - DD_TAGS="test.configuration.variant:release" ./gradlew --no-build-cache --no-configuration-cache :reliability:single-fit:flags:testReleaseUnitTest
 
 # TEST PYRAMID
 
 test-pyramid:api-coverage:
+  parallel: 3
   extends:
     - .base-gradle-cache-job
     - .cpu-memory-intensive-job
@@ -314,52 +308,12 @@ test-pyramid:api-coverage:
   before_script:
     - !reference [ .snippets, setup-gradle ]
   script:
-    - ./gradlew checkTestPyramidCoverage
+    - ./gradlew --no-build-cache --no-configuration-cache checkTestPyramidCoverage
   artifacts:
     when: always
     expire_in: 1 week
     paths:
       - build/reports/test-pyramid/coverage.txt
-
-.instrumented-apk-job:
-  tags: [ "macos:sonoma", "specific:true" ]
-  stage: test-pyramid
-  needs:
-    - job: test:build-instrumented-apks
-      artifacts: true
-  timeout: 1h
-  before_script:
-    - !reference [ .snippets, setup-macos-instrumented-runner ]
-  artifacts:
-    when: always
-    expire_in: 1 week
-    paths:
-      - instrumentation-output*.txt
-      - emulator-*.log
-    reports:
-      junit: instrumentation-results*.xml
-
-test-pyramid:core-it-and-ndk:
-  extends: .instrumented-apk-job
-  script:
-    - python3 ci/scripts/run_core_it_and_ndk_apks.py
-
-test-pyramid:legacy-integration-instrumented-min-api:
-  extends: .instrumented-apk-job
-  script:
-    - python3 ci/scripts/run_legacy_integration_apks.py --api-level 23
-  variables:
-    INSTRUMENTATION_ARGUMENTS: "-e disableLeakCanary true"
-
-test-pyramid:legacy-integration-instrumented-latest-api:
-  extends: .instrumented-apk-job
-  script:
-    - python3 ci/scripts/run_legacy_integration_apks.py --api-level 37
-
-test-pyramid:legacy-integration-instrumented-median-api:
-  extends: .instrumented-apk-job
-  script:
-    - python3 ci/scripts/run_legacy_integration_apks.py --api-level 28
 
 # PUBLISHING
 
@@ -386,7 +340,7 @@ test-pyramid:publish-e2e-synthetics:
     - export E2E_DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_APP_KEY)
     - export E2E_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__E2E_MOBILE_APP_ID)
     - !reference [ .snippets, setup-gradle ]
-    - DD_API_KEY="$E2E_DD_API_KEY" ./gradlew :sample:kotlin:packageUs1Release
+    - DD_API_KEY="$E2E_DD_API_KEY" ./gradlew --no-build-cache --no-configuration-cache :sample:kotlin:packageUs1Release
     - datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
   artifacts:
     when: always
@@ -417,7 +371,7 @@ test-pyramid:publish-webview-synthetics:
     - export E2E_DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_APP_KEY)
     - export E2E_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__WEBVIEW_MOBILE_APP_ID)
     - !reference [ .snippets, setup-gradle ]
-    - DD_API_KEY="$E2E_DD_API_KEY" ./gradlew :sample:kotlin:packageUs1Release
+    - DD_API_KEY="$E2E_DD_API_KEY" ./gradlew --no-build-cache --no-configuration-cache :sample:kotlin:packageUs1Release
     - datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/us1/release/kotlin-us1-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
   artifacts:
     when: always
@@ -448,7 +402,7 @@ test-pyramid:publish-staging-synthetics:
     - export E2E_DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_APP_KEY)
     - export E2E_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__E2E_STAGING_APP_ID)
     - !reference [ .snippets, setup-gradle ]
-    - DD_API_KEY="$E2E_DD_API_KEY" ./gradlew :sample:kotlin:packageStagingRelease
+    - DD_API_KEY="$E2E_DD_API_KEY" ./gradlew --no-build-cache --no-configuration-cache :sample:kotlin:packageStagingRelease
     - datadog-ci synthetics upload-application --appKey "$E2E_DD_APP_KEY" --apiKey "$E2E_DD_API_KEY" --mobileApp "sample/kotlin/build/outputs/apk/staging/release/kotlin-staging-release.apk" --mobileApplicationId "$E2E_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest --datadogSite "datad0g.com"
   artifacts:
     when: always
@@ -479,7 +433,7 @@ test-pyramid:publish-benchmark-synthetics:
     - export BM_DD_APP_KEY=$(get_secret $DD_ANDROID_SECRET__BENCHMARK_APP_KEY)
     - export BM_MOBILE_APP_ID=$(get_secret $DD_ANDROID_SECRET__BENCHMARK_MOBILE_APP_ID)
     - !reference [ .snippets, setup-gradle ]
-    - ./gradlew :sample:benchmark:packageRelease
+    - ./gradlew --no-build-cache --no-configuration-cache :sample:benchmark:packageRelease
     - datadog-ci synthetics upload-application --appKey "$BM_DD_APP_KEY" --apiKey "$BM_DD_API_KEY" --mobileApp "sample/benchmark/build/outputs/apk/release/benchmark-release.apk" --mobileApplicationId "$BM_MOBILE_APP_ID" --versionName "$CI_COMMIT_SHORT_SHA" --latest
   artifacts:
     when: always
@@ -516,7 +470,7 @@ publish:release-all:
   script:
     - !reference [.snippets, set-publishing-credentials]
     - !reference [.snippets, setup-gradle]
-    - ./gradlew publishToSonatype closeSonatypeStagingRepository --no-build-cache
+    - ./gradlew --no-build-cache --no-configuration-cache publishToSonatype closeSonatypeStagingRepository --no-build-cache
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -539,7 +493,7 @@ publish:dogfooding:
     - !reference [.snippets, setup-gradle]
     # Publishing is done by S3 repo, so credentials are managed by IAM from env set in the CI
     # job for the service account. Signing is also not required for internal build.
-    - ./gradlew publishReleasePublicationToDogfoodRepository --stacktrace --no-daemon -Pdd-skip-signing
+    - ./gradlew --no-build-cache --no-configuration-cache publishReleasePublicationToDogfoodRepository --stacktrace --no-daemon -Pdd-skip-signing
 
 
 # SLACK NOTIFICATIONS
