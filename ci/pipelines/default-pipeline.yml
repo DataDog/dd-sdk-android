@@ -78,10 +78,14 @@ stages:
     KUBERNETES_CPU_REQUEST: 20
     KUBERNETES_CPU_LIMIT: 20
 
+# Embeds the real commit SHA in the SDK. Only for jobs shipping artifacts, since it busts the build cache.
+.real-sdk-commit-sha-job:
+  variables:
+    GRADLE_OPTS: "-DsdkCommitSha1=$CI_COMMIT_SHA"
+
 .base-gradle-cache-job:
   variables:
     CACHE_FALLBACK_KEY: "develop"
-    GRADLE_OPTS: "-DsdkCommitSha1=0000000000000000000000000000000000000000"
   cache:
     key: $CI_COMMIT_REF_SLUG
     paths:
@@ -362,6 +366,7 @@ test-pyramid:legacy-integration-instrumented-median-api:
 test-pyramid:publish-e2e-synthetics:
   extends:
     - .base-gradle-cache-job
+    - .real-sdk-commit-sha-job
     - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
@@ -392,6 +397,7 @@ test-pyramid:publish-e2e-synthetics:
 test-pyramid:publish-webview-synthetics:
   extends:
     - .base-gradle-cache-job
+    - .real-sdk-commit-sha-job
     - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
@@ -422,6 +428,7 @@ test-pyramid:publish-webview-synthetics:
 test-pyramid:publish-staging-synthetics:
   extends:
     - .base-gradle-cache-job
+    - .real-sdk-commit-sha-job
     - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
@@ -452,6 +459,7 @@ test-pyramid:publish-staging-synthetics:
 test-pyramid:publish-benchmark-synthetics:
   extends:
     - .base-gradle-cache-job
+    - .real-sdk-commit-sha-job
     - .cpu-memory-intensive-job
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
@@ -496,6 +504,7 @@ test-pyramid:rum-fit-tests:
 publish:release-all:
   extends:
     - .cpu-memory-intensive-job
+    - .real-sdk-commit-sha-job
   tags: [ "arch:amd64" ]
   interruptible: false
   only:
@@ -518,6 +527,7 @@ publish:release-all:
 publish:dogfooding:
   extends:
     - .cpu-memory-intensive-job
+    - .real-sdk-commit-sha-job
   tags: [ "arch:amd64" ]
   only:
     - dogfooding
