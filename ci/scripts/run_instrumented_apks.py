@@ -24,7 +24,7 @@ from instrumentation_to_junit import convert_stream
 
 FIRST_EMULATOR_PORT = 5554
 BOOT_TIMEOUT_SECONDS = 360
-ANDROID_ARCH = "arm64-v8a"
+ANDROID_ARCH = "x86_64"
 AVD_NAME_PREFIX = "android_emulator"
 ANDROID_API_COMPONENTS = {
     23: ("23", "google_apis", "23.0.0"),
@@ -128,7 +128,7 @@ def emulator_for_api_level(
 def required_android_components(
     configurations: Sequence[EmulatorConfiguration],
 ) -> List[str]:
-    components = {"emulator", "platform-tools"}
+    components = set()
     for configuration in configurations:
         components.update(
             {
@@ -190,10 +190,6 @@ def emulator_launch_command(tools: AndroidSdkTools, plan: EmulatorPlan) -> List[
         "-no-audio",
         "-no-window",
         "-no-boot-anim",
-        "-verbose",
-        "-qemu",
-        "-machine",
-        "virt",
     ]
 
 
@@ -289,6 +285,11 @@ def upload_instrumented_junit(junit_reports: Sequence[Path]) -> int:
             continue
         result = subprocess.run(
             [
+                "dd-sts",
+                "exchange",
+                "--policy",
+                "dd-sdk-android",
+                "--",
                 "datadog-ci",
                 "junit",
                 "upload",

@@ -22,13 +22,25 @@ RUN set -x \
     expect \
     python3-distutils \
     python3-apt \
+    libasound2 \
+    libglib2.0-0 \
+    libnss3 \
+    libpulse0 \
+    libx11-6 \
+    libxcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxi6 \
+    libxkbfile1 \
+    libxrandr2 \
+    libxtst6 \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/*
 
 ENV GRADLE_VERSION 9.4.0
 ENV ANDROID_COMPILE_SDK 36
 ENV ANDROID_BUILD_TOOLS 36.0.0
-ENV ANDROID_SDK_TOOLS 13114758
+ENV ANDROID_SDK_TOOLS 15859902
 ENV NDK_VERSION 28.0.13004108
 ENV CMAKE_VERSION 3.22.1
 ENV DD_TRACER_VERSION 1.60.1
@@ -70,6 +82,7 @@ RUN \
     mv android-sdk-linux/cmdline-tools/cmdline-tools android-sdk-linux/cmdline-tools/latest && \
     echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager "platforms;android-${ANDROID_COMPILE_SDK}" >/dev/null && \
     echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager "platform-tools" >/dev/null && \
+    echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager "emulator" >/dev/null && \
     echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager "build-tools;${ANDROID_BUILD_TOOLS}" >/dev/null && \
     echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --install "ndk;${NDK_VERSION}" >/dev/null && \
     echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --install "cmake;${CMAKE_VERSION}" >/dev/null && \
@@ -81,6 +94,7 @@ ENV GRADLE_HOME /usr/local/gradle-${GRADLE_VERSION}
 ENV ANDROID_NDK $ANDROID_SDK_ROOT/ndk/${NDK_VERSION}
 ENV PATH $PATH:$GRADLE_HOME/bin
 ENV PATH $PATH:$ANDROID_HOME/platform-tools
+ENV PATH $PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/cmdline-tools/latest/bin
 ENV PATH $PATH:$ANDROID_SDK_ROOT/build-tools/${ANDROID_BUILD_TOOLS}:$ANDROID_NDK
 
 # Install Datadog CI
