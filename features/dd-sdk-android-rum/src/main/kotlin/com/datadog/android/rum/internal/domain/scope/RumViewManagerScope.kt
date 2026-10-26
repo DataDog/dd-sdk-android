@@ -184,6 +184,7 @@ internal class RumViewManagerScope(
         applicationDisplayed = true
         viewScope.handleEvent(event, datadogContext, writeScope, writer)
         childrenScopes.add(viewScope)
+        viewScope.sendInitialViewUpdateIfNeeded(event, datadogContext, writeScope, writer)
     }
 
     private fun sendViewUpdateToChildren(
@@ -339,6 +340,7 @@ internal class RumViewManagerScope(
             val viewScope = createBackgroundViewScope(event)
             viewScope.handleEvent(event, datadogContext, writeScope, writer)
             childrenScopes.add(viewScope)
+            viewScope.sendInitialViewUpdateIfNeeded(event, datadogContext, writeScope, writer)
             lastStoppedViewTime = null
         } else if (!isSilentOrphanEvent) {
             sdkCore.internalLogger.log(

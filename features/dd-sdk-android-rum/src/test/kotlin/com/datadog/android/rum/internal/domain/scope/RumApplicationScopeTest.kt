@@ -296,6 +296,8 @@ internal class RumApplicationScopeTest {
 
     @Test
     fun `delegates all events to child scope`() {
+        DdRumContentProvider.processImportance =
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED
         testedScope.childScopes.clear()
         testedScope.childScopes.add(mockChildScope)
 
