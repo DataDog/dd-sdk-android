@@ -7,7 +7,7 @@
 
 import com.datadog.gradle.utils.cloneRumEventsFormat
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
-import com.datadog.gradle.utils.createRumSchemaCloneTask
+import com.datadog.gradle.utils.createRumEventsFormatCloneTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -56,7 +56,7 @@ dependencies {
     api(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
     implementation(libs.okHttp)
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.gson)
     implementation(libs.androidXAppCompat)
 
@@ -71,6 +71,7 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     unmock(libs.robolectric)
 }
 
@@ -80,7 +81,7 @@ unMock {
     keep("android.graphics.drawable.GradientDrawable")
 }
 
-createRumSchemaCloneTask("cloneSessionReplayRootSchemas") {
+createRumEventsFormatCloneTask("cloneSessionReplayRootSchemas") {
     cloneRumEventsFormat(
         project = project,
         subFolder = "schemas/",
@@ -97,7 +98,7 @@ createRumSchemaCloneTask("cloneSessionReplayRootSchemas") {
     )
 }
 
-createRumSchemaCloneTask("cloneSessionReplayMobileSchemas") {
+createRumEventsFormatCloneTask("cloneSessionReplayMobileSchemas") {
     cloneRumEventsFormat(
         project = project,
         subFolder = "schemas/session-replay/mobile",
@@ -105,7 +106,7 @@ createRumSchemaCloneTask("cloneSessionReplayMobileSchemas") {
     )
 }
 
-createRumSchemaCloneTask("cloneSessionReplayCommonSchemas") {
+createRumEventsFormatCloneTask("cloneSessionReplayCommonSchemas") {
     cloneRumEventsFormat(
         project = project,
         subFolder = "schemas/session-replay/common",

@@ -39,7 +39,7 @@ internal open class ObservableLinkedBlockingQueue<E : Any>(
         val map = mutableMapOf<String, Int>()
         super.toArray().forEach { runnable ->
             (runnable as? NamedExecutionUnit)?.name?.let {
-                map.put(it, (map[it] ?: 0) + 1)
+                map[it] = (map[it] ?: 0) + 1
             }
         }
         return map

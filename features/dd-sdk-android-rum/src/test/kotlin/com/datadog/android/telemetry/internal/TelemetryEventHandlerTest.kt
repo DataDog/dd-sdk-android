@@ -20,11 +20,11 @@ import com.datadog.android.core.internal.remote.model.RemoteConfigSyncMetadata
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.attributes.LocalAttribute
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
@@ -188,12 +188,7 @@ internal class TelemetryEventHandlerTest {
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(
                     Feature.RUM_FEATURE_NAME,
-                    mapOf(
-                        "application_id" to fakeRumContext.applicationId,
-                        "session_id" to fakeRumContext.sessionId,
-                        "view_id" to fakeRumContext.viewId,
-                        "action_id" to fakeRumContext.actionId
-                    )
+                    mapOf(FeatureContextKeys.RUM_CONTEXT to fakeRumContext)
                 )
             },
             time = fakeDatadogContext.time.copy(

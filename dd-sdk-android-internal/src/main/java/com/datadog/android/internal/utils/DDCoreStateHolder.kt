@@ -68,7 +68,7 @@ interface DDCoreStateHolder<S : Any, L : Any> {
      * ordered against a broadcast in flight: registering from within a listener callback hands the
      * new listener the state being broadcast right away, ahead of the listeners that have not been
      * reached yet. The alternative - deferring until the broadcast finishes - would mean returning
-     * from this method with the listener not yet holding a state, which is the worse surprise of
+     * from this method with the listener not yet holding a state, which is the worst surprise of
      * the two.
      *
      * The listener is registered before that initial notification, so it stays registered even if

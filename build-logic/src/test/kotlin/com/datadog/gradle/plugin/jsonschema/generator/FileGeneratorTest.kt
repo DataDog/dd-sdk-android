@@ -19,6 +19,7 @@ import com.datadog.gradle.plugin.jsonschema.Customer
 import com.datadog.gradle.plugin.jsonschema.DateTime
 import com.datadog.gradle.plugin.jsonschema.Delivery
 import com.datadog.gradle.plugin.jsonschema.Demo
+import com.datadog.gradle.plugin.jsonschema.ExplicitArguments
 import com.datadog.gradle.plugin.jsonschema.Foo
 import com.datadog.gradle.plugin.jsonschema.Household
 import com.datadog.gradle.plugin.jsonschema.Jacket
@@ -41,6 +42,8 @@ import com.datadog.gradle.plugin.jsonschema.UserMerged
 import com.datadog.gradle.plugin.jsonschema.Version
 import com.datadog.gradle.plugin.jsonschema.Video
 import com.datadog.gradle.plugin.jsonschema.WeirdCombo
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
@@ -50,16 +53,35 @@ import java.nio.file.Paths
 
 class FileGeneratorTest {
 
+    @Test
+    fun `M generate internal model W generate() { internal package }`(@TempDir tempDir: File) {
+        // Given
+        val testedGenerator = FileGenerator(tempDir, "com.example.internal.model", NoOpLogger(), internalModels = true)
+
+        // When
+        testedGenerator.generate(Person)
+
+        // Then
+        val generated = File(tempDir, "com/example/internal/model/Person.kt")
+        assertThat(generated).content().contains("internal data class Person(")
+    }
+
     @ParameterizedTest
     @MethodSource("data")
     fun `generates a Poko file`(
         inputType: TypeDefinition,
         outputFile: String,
+        generateConstructorDefaults: Boolean,
         @TempDir tempDir: File
     ) {
         val clazz = FileGeneratorTest::class.java
         val outputPath = clazz.getResource("/output/$outputFile.kt").file
-        val testedGenerator = FileGenerator(tempDir, "com.example.model", NoOpLogger())
+        val testedGenerator = FileGenerator(
+            tempDir,
+            "com.example.model",
+            NoOpLogger(),
+            generateConstructorDefaults = generateConstructorDefaults
+        )
 
         testedGenerator.generate(inputType)
 
@@ -97,40 +119,41 @@ class FileGeneratorTest {
         @JvmStatic
         fun data(): Collection<Array<Any>> {
             return listOf(
-                arrayOf(Article, "Article"),
-                arrayOf(Animal, "Animal"),
-                arrayOf(Bike, "Bike"),
-                arrayOf(Book, "Book"),
-                arrayOf(Comment, "Comment"),
-                arrayOf(Company, "Company"),
-                arrayOf(Conflict, "Conflict"),
-                arrayOf(Customer, "Customer"),
-                arrayOf(DateTime, "DateTime"),
-                arrayOf(Delivery, "Delivery"),
-                arrayOf(Demo, "Demo"),
-                arrayOf(Foo, "Foo"),
-                arrayOf(Household, "Household"),
-                arrayOf(Jacket, "Jacket"),
-                arrayOf(Person, "Person"),
-                arrayOf(Location, "Location"),
-                arrayOf(Message, "Message"),
-                arrayOf(Order, "Order"),
-                arrayOf(Opus, "Opus"),
-                arrayOf(Paper, "Paper"),
-                arrayOf(Product, "Product"),
-                arrayOf(Shipping, "Shipping"),
-                arrayOf(Style, "Style"),
-                arrayOf(Order, "Order"),
-                arrayOf(User, "User"),
-                arrayOf(UserMerged, "UserMerged"),
-                arrayOf(Version, "Version"),
-                arrayOf(Video, "Video"),
-                arrayOf(WeirdCombo, "WeirdCombo"),
-                arrayOf(PathArrayWithInteger, "PathArrayWithInteger"),
-                arrayOf(PathArrayWithNumber, "PathArrayWithNumber"),
-                arrayOf(OneOfPrimitiveRef, "OneOfPrimitiveRef"),
-                arrayOf(CrossFileOneOfPrimitiveA, "CrossFileOneOfPrimitiveA"),
-                arrayOf(CrossFileOneOfPrimitiveB, "CrossFileOneOfPrimitiveB")
+                arrayOf(Article, "Article", true),
+                arrayOf(Animal, "Animal", true),
+                arrayOf(Bike, "Bike", true),
+                arrayOf(Book, "Book", true),
+                arrayOf(Comment, "Comment", true),
+                arrayOf(Company, "Company", true),
+                arrayOf(Conflict, "Conflict", true),
+                arrayOf(Customer, "Customer", true),
+                arrayOf(DateTime, "DateTime", true),
+                arrayOf(Delivery, "Delivery", true),
+                arrayOf(Demo, "Demo", true),
+                arrayOf(Foo, "Foo", true),
+                arrayOf(Household, "Household", true),
+                arrayOf(Jacket, "Jacket", true),
+                arrayOf(Person, "Person", true),
+                arrayOf(Location, "Location", true),
+                arrayOf(Message, "Message", true),
+                arrayOf(Order, "Order", true),
+                arrayOf(Opus, "Opus", true),
+                arrayOf(Paper, "Paper", true),
+                arrayOf(Product, "Product", true),
+                arrayOf(Shipping, "Shipping", true),
+                arrayOf(Style, "Style", true),
+                arrayOf(Order, "Order", true),
+                arrayOf(User, "User", true),
+                arrayOf(UserMerged, "UserMerged", true),
+                arrayOf(Version, "Version", true),
+                arrayOf(Video, "Video", true),
+                arrayOf(WeirdCombo, "WeirdCombo", true),
+                arrayOf(PathArrayWithInteger, "PathArrayWithInteger", true),
+                arrayOf(PathArrayWithNumber, "PathArrayWithNumber", true),
+                arrayOf(OneOfPrimitiveRef, "OneOfPrimitiveRef", true),
+                arrayOf(CrossFileOneOfPrimitiveA, "CrossFileOneOfPrimitiveA", true),
+                arrayOf(CrossFileOneOfPrimitiveB, "CrossFileOneOfPrimitiveB", true),
+                arrayOf(ExplicitArguments, "ExplicitArguments", false)
             )
         }
     }

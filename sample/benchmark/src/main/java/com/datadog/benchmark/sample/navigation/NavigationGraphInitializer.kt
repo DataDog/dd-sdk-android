@@ -48,7 +48,8 @@ internal class NavigationGraphInitializer @Inject constructor() {
             SyntheticsScenario.SessionReplayCompose -> error("Using fragments for SessionReplayCompose scenario")
             SyntheticsScenario.LogsCustom -> R.id.logs_fragment
             SyntheticsScenario.LogsHeavyTraffic -> R.id.logs_heavy_traffic_fragment
-            SyntheticsScenario.RumAuto -> R.id.characters_tab_navigation
+            SyntheticsScenario.RumAuto,
+            SyntheticsScenario.Timeseries -> R.id.characters_tab_navigation
             SyntheticsScenario.RumManual -> R.id.fragment_rum_manual_scenario
             SyntheticsScenario.Trace -> R.id.fragment_trace_scenario
             SyntheticsScenario.Profiling -> R.id.fragment_profiling
@@ -64,7 +65,8 @@ internal class NavigationGraphInitializer @Inject constructor() {
             SyntheticsScenario.SessionReplayCompose -> error("Using fragments for SessionReplayCompose scenario")
             SyntheticsScenario.LogsCustom -> navGraphLogs()
             SyntheticsScenario.LogsHeavyTraffic -> navGraphLogsHeavyTraffic()
-            SyntheticsScenario.RumAuto -> navGraphRumAutoScenario()
+            SyntheticsScenario.RumAuto,
+            SyntheticsScenario.Timeseries -> navGraphRumAutoScenario()
             SyntheticsScenario.RumManual -> navGraphRumManualScenario()
             SyntheticsScenario.Trace -> navGraphTraceScenario()
             SyntheticsScenario.Profiling -> navGraphProfilingScenario()

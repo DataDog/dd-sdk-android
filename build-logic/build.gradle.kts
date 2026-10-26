@@ -4,9 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
     `kotlin-dsl`
     alias(libs.plugins.ktlintGradlePlugin)
@@ -96,19 +93,14 @@ gradlePlugin {
     }
 }
 
-java.targetCompatibility = JavaVersion.VERSION_17
-java.sourceCompatibility = JavaVersion.VERSION_17
+kotlin {
+    jvmToolchain(libs.versions.jdk.get().toInt())
+}
 
 ktlint {
     version = provider { libs.versions.ktlint.get() }
     filter {
         exclude { it.file.invariantSeparatorsPath.contains("/build/generated") }
-    }
-}
-
-tasks.withType<KotlinCompile>().configureEach {
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 

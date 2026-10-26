@@ -34,7 +34,7 @@ dependencies {
     implementation(project(":features:dd-sdk-android-trace-otel"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":integrations:dd-sdk-android-okhttp-otel"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     // Testing
     testImplementation(project(":tools:unit")) {
@@ -47,6 +47,7 @@ dependencies {
     }
     testImplementation(project(":dd-sdk-android-internal"))
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     testImplementation(project(":reliability:stub-core"))
     testImplementation(project(":integrations:dd-sdk-android-apollo"))

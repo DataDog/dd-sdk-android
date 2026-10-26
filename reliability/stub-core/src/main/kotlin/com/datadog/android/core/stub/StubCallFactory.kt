@@ -16,14 +16,31 @@ import java.io.IOException
 /**
  * Stubbed version of a [Call.Factory], which never performs any real network call.
  *
- * Every [Call] it creates fails with an [IOException], letting the calling code exercise its
- * error handling path without reaching out to any host.
+ * Every [Call] is answered by the [responder]. When it returns null (the default), the call fails
+ * with an [IOException], letting the calling code exercise its error handling path without
+ * reaching out to any host.
  */
 class StubCallFactory : Call.Factory {
 
+    @Volatile
+    internal var responder: (Request) -> Response? = { null }
+
+    private val requests = mutableListOf<Request>()
+
+    /**
+     * Lists all the requests executed or enqueued through this factory.
+     * @return a list of [Request]
+     */
+    fun requestsSent(): List<Request> = synchronized(requests) { requests.toList() }
+
     override fun newCall(request: Request): Call = StubCall(request)
 
-    private class StubCall(private val request: Request) : Call {
+    private fun respond(request: Request): Response {
+        synchronized(requests) { requests.add(request) }
+        return responder(request) ?: throw IOException(ERROR_MESSAGE)
+    }
+
+    private inner class StubCall(private val request: Request) : Call {
 
         private var isExecuted = false
         private var isCanceled = false
@@ -32,12 +49,18 @@ class StubCallFactory : Call.Factory {
 
         override fun execute(): Response {
             isExecuted = true
-            throw IOException(ERROR_MESSAGE)
+            return respond(request)
         }
 
         override fun enqueue(responseCallback: Callback) {
             isExecuted = true
-            responseCallback.onFailure(this, IOException(ERROR_MESSAGE))
+            val response = try {
+                respond(request)
+            } catch (e: IOException) {
+                responseCallback.onFailure(this, e)
+                return
+            }
+            responseCallback.onResponse(this, response)
         }
 
         override fun cancel() {

@@ -16,6 +16,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
 import com.datadog.android.internal.heatmaps.HeatmapIdentifier
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -23,7 +24,6 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.heatmaps.HeatmapActionResolver
 import com.datadog.android.rum.internal.heatmaps.NativeHeatmapActionData
@@ -269,6 +269,8 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+                    hasSessionTimeseries(fakeParentContext.hasTimeseries)
                     hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)

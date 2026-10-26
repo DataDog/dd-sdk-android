@@ -10,6 +10,7 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.threads.FakeSameThreadExecutorService
+import com.datadog.android.internal.profiling.quota.QuotaReason
 import com.datadog.android.profiling.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -38,6 +39,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.IOException
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -65,6 +67,7 @@ internal class QuotaCheckerTest {
     private val executor = FakeSameThreadExecutorService()
 
     private val capturedResults = mutableListOf<QuotaResult>()
+    private val capturedSessionIds = mutableListOf<String>()
 
     private lateinit var testedChecker: QuotaChecker
 
@@ -76,7 +79,10 @@ internal class QuotaCheckerTest {
             callFactory = mockCallFactory,
             executor = executor,
             internalLogger = mockInternalLogger,
-            onResult = { capturedResults.add(it) }
+            onResult = { sessionId, result ->
+                capturedSessionIds.add(sessionId)
+                capturedResults.add(result)
+            }
         )
     }
 
@@ -193,6 +199,7 @@ internal class QuotaCheckerTest {
         // Then
         assertThat(capturedResults).hasSize(1)
         assertThat(capturedResults[0].decision).isEqualTo(QuotaResult.Decision.ALLOWED)
+        assertThat(capturedSessionIds).containsExactly(fakeSessionId)
     }
 
     // endregion
@@ -213,6 +220,7 @@ internal class QuotaCheckerTest {
         // Then
         val capturedRequest = requestCaptor.firstValue
         val expectedUrl = ProfilingQuotaChecker.QUOTA_URL_TEMPLATE.format(
+            Locale.US,
             fakeDatadogContext.site.intakeEndpoint.removePrefix("https://"),
             fakeSessionId
         )
@@ -430,6 +438,7 @@ internal class QuotaCheckerTest {
                 Request.Builder()
                     .url(
                         ProfilingQuotaChecker.QUOTA_URL_TEMPLATE.format(
+                            Locale.US,
                             fakeDatadogContext.site.intakeEndpoint.removePrefix("https://"),
                             fakeSessionId
                         )

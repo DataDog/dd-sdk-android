@@ -23,6 +23,7 @@ import com.datadog.trace.core.propagation.B3HttpCodec
 import com.datadog.trace.core.propagation.DatadogHttpCodec
 import com.datadog.trace.core.propagation.ExtractedContext
 import com.datadog.trace.core.propagation.W3CHttpCodec
+import java.util.Locale
 
 /**
  * For internal usage only.
@@ -439,6 +440,7 @@ class DatadogPropagationHelper internal constructor() {
                 W3CHttpCodec.TRACE_PARENT_KEY,
                 @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
                 W3C_TRACE_PARENT_DROP_SAMPLING_DECISION.format(
+                    Locale.US,
                     traceId.padStart(length = W3C_TRACE_ID_LENGTH, padChar = '0'),
                     spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0')
                 )
@@ -446,7 +448,7 @@ class DatadogPropagationHelper internal constructor() {
             // TODO RUM-2121 3rd party vendor information will be erased
             @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
             var traceStateHeader = W3C_TRACE_STATE_DROP_SAMPLING_DECISION
-                .format(spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0'))
+                .format(Locale.US, spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0'))
             if (traceOrigin != null) {
                 traceStateHeader += ";o:$traceOrigin"
             }

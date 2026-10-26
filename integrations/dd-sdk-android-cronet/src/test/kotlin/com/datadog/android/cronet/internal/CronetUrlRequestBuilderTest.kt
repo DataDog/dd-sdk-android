@@ -249,10 +249,10 @@ internal class CronetUrlRequestBuilderTest {
     ) {
         // Given
         val hash = ByteArray(5) { forge.anInt().toByte() }
-        val mockDictionary = mock<ByteBuffer>()
+        val fakeDictionary = ByteBuffer.allocate(5)
 
         // When
-        testedBuilder.setRawCompressionDictionary(hash, mockDictionary, dictionaryId)
+        testedBuilder.setRawCompressionDictionary(hash, fakeDictionary, dictionaryId)
         val result = testedBuilder.build()
 
         // Then

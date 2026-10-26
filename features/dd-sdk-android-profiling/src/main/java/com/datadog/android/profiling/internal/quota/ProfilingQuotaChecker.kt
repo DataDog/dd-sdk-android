@@ -9,6 +9,7 @@ package com.datadog.android.profiling.internal.quota
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.internal.utils.submitSafe
+import com.datadog.android.internal.profiling.quota.QuotaReason
 import okhttp3.Call
 import okhttp3.Request
 import org.json.JSONException
@@ -23,7 +24,7 @@ internal class ProfilingQuotaChecker(
     private val callFactory: Call.Factory,
     private val executor: ExecutorService,
     private val internalLogger: InternalLogger,
-    private val onResult: (QuotaResult) -> Unit = {}
+    private val onResult: (sessionId: String, result: QuotaResult) -> Unit = { _, _ -> }
 ) : QuotaChecker {
 
     private val pendingFuture = AtomicReference<Future<QuotaResult>?>()
@@ -44,7 +45,7 @@ internal class ProfilingQuotaChecker(
                 val result = performCheck(sessionId, datadogContext)
                 if (lastSessionId.get() == sessionId) {
                     lastResult = result
-                    onResult(result)
+                    onResult(sessionId, result)
                 }
                 result
             }

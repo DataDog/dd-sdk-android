@@ -1,0 +1,18 @@
+schema_version: 1
+kind: factoryspec
+id: dd-sdk-android.foundation
+description: Foundation-only Factoryspec for this repository.
+capabilities: [foundation]
+checks:
+  - id: dd-sdk-android.foundation.report
+    description: Run the repository-owned Foundation report.
+    ref:
+      path: factory/checks/foundation-report.yaml
+      id: dd-sdk-android.foundation.report
+nudges:
+  - id: dd-sdk-android.foundation.documentation-review
+    description: Give the selected baseline documentation reminder.
+    ref:
+      path: factory/nudges/baseline-documentation-review.yaml
+      id: dd-sdk-android.foundation.documentation-review
+skills: []

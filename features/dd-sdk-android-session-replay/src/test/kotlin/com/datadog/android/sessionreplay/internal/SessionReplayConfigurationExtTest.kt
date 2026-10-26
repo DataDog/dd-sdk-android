@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal
 
 import com.datadog.android.core.internal.remote.model.RemoteConfiguration
+import com.datadog.android.sessionreplay.ExperimentalSessionReplayApi
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -21,6 +22,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -38,6 +41,29 @@ internal class SessionReplayConfigurationExtTest {
     @BeforeEach
     fun setUp(forge: Forge) {
         testedConfiguration = forge.getForgery()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    @OptIn(ExperimentalSessionReplayApi::class)
+    fun `M preserve both pipeline options W applyRemoteConfiguration`(fakeSchedulingEnabled: Boolean) {
+        // Given
+        testedConfiguration = SessionReplayConfiguration.Builder()
+            .setAdaptiveCaptureSchedulingEnabled(fakeSchedulingEnabled)
+            .setCompositionTreeRecordingEnabled(true)
+            .build()
+        val fakeRc = RemoteConfiguration(sessionReplay = RemoteConfiguration.SessionReplay(sampleRate = 42f))
+
+        // When
+        val result = testedConfiguration.applyRemoteConfiguration(fakeRc)
+
+        // Then
+        assertThat(result.adaptiveCaptureSchedulingEnabled).isEqualTo(fakeSchedulingEnabled)
+        assertThat(result.compositionTreeRecordingEnabled).isTrue()
+        assertThat(result.sampleRate).isEqualTo(42f)
+        assertThat(result).isNotSameAs(testedConfiguration)
+        assertThat(testedConfiguration.sampleRate).isEqualTo(100f)
+        assertThat(testedConfiguration.adaptiveCaptureSchedulingEnabled).isEqualTo(fakeSchedulingEnabled)
     }
 
     // region null RC

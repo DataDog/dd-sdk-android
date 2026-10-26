@@ -59,7 +59,6 @@ internal class ExposuresRequestFactoryTest {
         val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, metaData)
 
         // Then
-        requireNotNull(request)
         assertThat(request.url).isEqualTo("${fakeDatadogContext.site.intakeEndpoint}/api/v2/exposures")
         assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
         assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
@@ -142,7 +141,6 @@ internal class ExposuresRequestFactoryTest {
         val request = factoryWithCustomEndpoint.create(fakeDatadogContext, executionContext, batchData, metadata)
 
         // Then
-        requireNotNull(request)
         assertThat(request.url).isEqualTo(customEndpoint)
         assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
         assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(

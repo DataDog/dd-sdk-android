@@ -28,7 +28,6 @@ internal class FragmentTrackingPlaygroundActivity : AppCompatActivity() {
     lateinit var btnNext: Button
     lateinit var btnLast: Button
 
-    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val config = RuntimeConfig.configBuilder()

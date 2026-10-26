@@ -9,9 +9,9 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionStartReason
 import com.datadog.android.rum.RumActionType
-import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.internal.domain.scope.toActionSessionPrecondition
 import com.datadog.android.rum.internal.domain.scope.toSchemaType
@@ -40,7 +40,7 @@ internal class ActionEventAssert(actual: ActionEvent) :
     fun hasNonNullId(): ActionEventAssert {
         assertThat(actual.action.id)
             .overridingErrorMessage(
-                "Expected event data to have non null action.id " +
+                "Expected event data to have non-null action.id " +
                     "but was ${actual.action.id}"
             )
             .isNotNull()
@@ -284,6 +284,26 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
+    fun hasIsMainProcess(expected: Boolean?): ActionEventAssert {
+        assertThat(actual.session.isMainProcess)
+            .overridingErrorMessage(
+                "Expected event to have session.is_main_process:$expected " +
+                    "but was ${actual.session.isMainProcess}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasSessionTimeseries(expected: Boolean?): ActionEventAssert {
+        assertThat(actual.session.hasTimeseries)
+            .overridingErrorMessage(
+                "Expected event to have session.has_timeseries:$expected " +
+                    "but was ${actual.session.hasTimeseries}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasSessionType(expected: ActionEvent.ActionEventSessionType): ActionEventAssert {
         assertThat(actual.session.type)
             .overridingErrorMessage {
@@ -346,7 +366,7 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
-    fun hasStartReason(reason: RumSessionScope.StartReason): ActionEventAssert {
+    fun hasStartReason(reason: RumSessionStartReason): ActionEventAssert {
         assertThat(actual.dd.session?.sessionPrecondition)
             .overridingErrorMessage(
                 "Expected event to have a session sessionPrecondition of ${reason.name} " +

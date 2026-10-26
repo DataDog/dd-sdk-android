@@ -19,10 +19,10 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.utils.DdTagsUtils
+import com.datadog.android.internal.rum.rumContext
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.anr.AndroidTraceParser
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.internal.domain.scope.tryFromSource
@@ -214,7 +214,9 @@ internal class DatadogLateCrashReporter(
             service = viewEvent.service,
             session = ErrorEvent.ErrorEventSession(
                 viewEvent.session.id,
-                ErrorEvent.ErrorEventSessionType.USER
+                ErrorEvent.ErrorEventSessionType.USER,
+                isMainProcess = viewEvent.session.isMainProcess,
+                hasTimeseries = viewEvent.session.hasTimeseries
             ),
             source = viewEvent.source?.toJson()?.asString?.let {
                 ErrorEvent.ErrorEventSource.tryFromSource(
@@ -376,8 +378,7 @@ internal class DatadogLateCrashReporter(
     }
 
     private val DatadogContext.rumSessionId: String?
-        get() = featuresContext[Feature.RUM_FEATURE_NAME]
-            .orEmpty()[RumContext.SESSION_ID] as? String
+        get() = featuresContext[Feature.RUM_FEATURE_NAME]?.rumContext()?.sessionId
 
     // endregion
 

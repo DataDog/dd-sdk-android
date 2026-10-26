@@ -95,8 +95,8 @@ import com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl
 import com.datadog.android.rum.internal.startup.RumFirstDrawTimeReporterImpl
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
-import com.datadog.android.rum.internal.startup.name
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
+import com.datadog.android.rum.internal.timeseries.CollectedTimeseriesSessionRegistry
 import com.datadog.android.rum.internal.timeseries.NoOpTimeseriesCollector
 import com.datadog.android.rum.internal.timeseries.PipelineFactory
 import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
@@ -190,7 +190,7 @@ internal class RumFeature(
     internal var debugActivityLifecycleListener =
         AtomicReference<Application.ActivityLifecycleCallbacks>(null)
     internal var frameStatesAggregator: Application.ActivityLifecycleCallbacks? = null
-    internal var timeseriesProcessLifecycleMonitor: ProcessLifecycleMonitor? = null
+    internal var processLifecycleMonitor: ProcessLifecycleMonitor? = null
     internal var sessionListener: RumSessionListener = NoOpRumSessionListener()
 
     internal var vitalExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
@@ -322,6 +322,8 @@ internal class RumFeature(
             }
         }
 
+        (appContext as? Application)?.registerProcessLifecycleMonitor()
+
         initRumAppStartupDetector()
 
         sdkCore.setEventReceiver(name, this)
@@ -333,25 +335,44 @@ internal class RumFeature(
         appContext: Application,
         timeseriesConfiguration: TimeseriesConfiguration
     ) {
+        val sessionRegistry = CollectedTimeseriesSessionRegistry()
+
         val pipelinesFactory = PipelineFactory(
-            totalRamBytes = appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L,
             sdkCore = sdkCore,
             dataWriter = dataWriter,
             insightsCollector = insightsCollector,
-            enabledTypes = timeseriesConfiguration.enabledTypes,
+            configuration = timeseriesConfiguration,
             batteryInfoProvider = batteryInfoProvider,
-            displayInfoProvider = displayInfoProvider
+            displayInfoProvider = displayInfoProvider,
+            sessionRegistry = sessionRegistry,
+            totalRamBytes = appContext.readTotalRamBytes(sdkCore.internalLogger) ?: 0L
         )
 
         timeseriesCollector = DefaultTimeseriesCollector(
-            scheduledExecutorService = vitalExecutorService,
+            sdkCore = sdkCore,
+            sessionRegistry = sessionRegistry,
             pipelinesFactory = pipelinesFactory,
-            internalLogger = sdkCore.internalLogger
-        ).also { collector ->
-            timeseriesProcessLifecycleMonitor = ProcessLifecycleMonitor(collector).apply {
-                appContext.registerActivityLifecycleCallbacks(this)
+            scheduledExecutorService = vitalExecutorService,
+            viewTransitionDelayMs = timeseriesConfiguration.viewTransitionDelayMs
+        )
+    }
+
+    private fun Application.registerProcessLifecycleMonitor() {
+        processLifecycleMonitor = ProcessLifecycleMonitor(
+            object : ProcessLifecycleMonitor.Callback {
+                @MainThread
+                override fun onStarted() {
+                    (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.checkSessionExpiry()
+                    timeseriesCollector.onUiVisible()
+                }
+
+                @MainThread
+                override fun onStopped() = timeseriesCollector.onUiHidden()
+
+                override fun onResumed() = Unit
+                override fun onPaused() = Unit
             }
-        }
+        ).also { registerActivityLifecycleCallbacks(it) }
     }
 
     private fun Application.initializeFrameStatesAggregator(listeners: List<FrameStateListener>) {
@@ -413,11 +434,11 @@ internal class RumFeature(
         unregisterTrackingStrategies(appContext)
 
         timeseriesCollector = NoOpTimeseriesCollector()
-        timeseriesProcessLifecycleMonitor?.let {
+        processLifecycleMonitor?.let {
             (appContext as? Application)?.unregisterActivityLifecycleCallbacks(it)
         }
-        timeseriesProcessLifecycleMonitor = null
-        (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.stopTimeseries()
+        processLifecycleMonitor = null
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.stop()
 
         dataWriter = NoOpDataWriter()
 

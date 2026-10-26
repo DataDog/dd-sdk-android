@@ -18,7 +18,7 @@ class ConditionWatcher(
      */
     private val pollingIntervalMs: Long = DEFAULT_INTERVAL_MS,
     /**
-     * If it throws any sub-class of [AssertionError], condition won't fail immediately,
+     * If it throws any subclass of [AssertionError], condition won't fail immediately,
      * but will poll once again. With any other [Throwable] produced by condition it will fail
      * immediately.
      */
@@ -62,7 +62,6 @@ class ConditionWatcher(
         }
     }
 
-    @Suppress("ThrowingInternalException") // not an issue in unit tests
     private fun reportTimeout(timeoutMs: Long, assertionError: AssertionError?) {
         val message = "Waiting took more than $timeoutMs milliseconds. Test stopped."
         if (assertionError == null) {

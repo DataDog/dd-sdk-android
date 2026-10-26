@@ -49,6 +49,9 @@ internal class CompositionCapturePipeline(
         )
     }
 
+    // Composition captures follow draw signals through the orchestrator's scheduler.
+    override fun onViewTransition() = Unit
+
     override fun stopRecorders() {
         lifecycle.stop()
         orchestrator.stop()

@@ -57,7 +57,7 @@ android {
 
 dependencies {
     api(libs.openTelemetryApi)
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.androidXAnnotation)
 
     api(project(":dd-sdk-android-core"))

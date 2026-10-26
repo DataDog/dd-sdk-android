@@ -417,7 +417,7 @@ data class com.datadog.android.rum.model.ActionEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class ActionEventSession
-    constructor(kotlin.String, ActionEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.String, ActionEventSessionType, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ActionEventSession
@@ -730,7 +730,7 @@ data class com.datadog.android.rum.model.ErrorEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class ErrorEventSession
-    constructor(kotlin.String, ErrorEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.String, ErrorEventSessionType, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ErrorEventSession
@@ -796,7 +796,7 @@ data class com.datadog.android.rum.model.ErrorEvent
       fun fromJson(kotlin.String): Device
       fun fromJsonObject(com.google.gson.JsonObject): Device
   data class Dd
-    constructor(DdSession? = null, Configuration? = null, kotlin.String? = null, kotlin.String? = null, Profiling? = null)
+    constructor(DdSession? = null, Configuration? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Number? = null, Profiling? = null, kotlin.collections.List<DebugId>? = null)
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
     companion object 
@@ -863,11 +863,17 @@ data class com.datadog.android.rum.model.ErrorEvent
       fun fromJson(kotlin.String): Configuration
       fun fromJsonObject(com.google.gson.JsonObject): Configuration
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
+    constructor(ProfilingStatus? = null, ErrorReason? = null, QuotaReason? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
       fun fromJsonObject(com.google.gson.JsonObject): Profiling
+  data class DebugId
+    constructor(kotlin.String, kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): DebugId
+      fun fromJsonObject(com.google.gson.JsonObject): DebugId
   data class ContainerView
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
@@ -881,7 +887,7 @@ data class com.datadog.android.rum.model.ErrorEvent
       fun fromJson(kotlin.String): Cause
       fun fromJsonObject(com.google.gson.JsonObject): Cause
   data class Resource
-    constructor(Method, kotlin.Long, kotlin.String, Provider? = null)
+    constructor(Method, kotlin.Long, kotlin.String, Provider? = null, Graphql? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Resource
@@ -916,6 +922,41 @@ data class com.datadog.android.rum.model.ErrorEvent
     companion object 
       fun fromJson(kotlin.String): Provider
       fun fromJsonObject(com.google.gson.JsonObject): Provider
+  data class Graphql
+    constructor(OperationType? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.collections.List<Error1>? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Graphql
+      fun fromJsonObject(com.google.gson.JsonObject): Graphql
+  data class Error1
+    constructor(kotlin.String, kotlin.String? = null, kotlin.collections.List<Location>? = null, kotlin.collections.List<Path>? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Error1
+      fun fromJsonObject(com.google.gson.JsonObject): Error1
+  data class Location
+    constructor(kotlin.Long, kotlin.Long)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Location
+      fun fromJsonObject(com.google.gson.JsonObject): Location
+  sealed class Path
+    abstract fun toJson(): com.google.gson.JsonElement
+    data class String : Path
+      constructor(kotlin.String)
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): kotlin.String
+        fun fromJsonPrimitive(com.google.gson.JsonPrimitive): kotlin.String
+    data class Long : Path
+      constructor(kotlin.Long)
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): kotlin.Long
+        fun fromJsonPrimitive(com.google.gson.JsonPrimitive): kotlin.Long
+    companion object 
+      fun fromJson(kotlin.String): Path
+      fun fromJsonElement(com.google.gson.JsonElement): Path
   enum ErrorEventSource
     constructor(kotlin.String)
     - ANDROID
@@ -1018,6 +1059,7 @@ data class com.datadog.android.rum.model.ErrorEvent
     constructor(kotlin.String)
     - ANDROID
     - BROWSER
+    - BROWSER_WASM
     - IOS
     - REACT_NATIVE
     - FLUTTER
@@ -1029,6 +1071,7 @@ data class com.datadog.android.rum.model.ErrorEvent
     - MACOS
     - LINUX
     - MAUI
+    - NODEJS
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): SourceType
@@ -1069,6 +1112,18 @@ data class com.datadog.android.rum.model.ErrorEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ErrorReason
+  enum QuotaReason
+    constructor(kotlin.String)
+    - QUOTA_OK
+    - QUOTA_EXCEEDED
+    - ORG_DISABLED
+    - BACKEND_UNAVAILABLE
+    - UNDEFINED
+    - TIMEOUT
+    - API_ERROR
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): QuotaReason
   enum Method
     constructor(kotlin.String)
     - POST
@@ -1109,6 +1164,14 @@ data class com.datadog.android.rum.model.ErrorEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ProviderType
+  enum OperationType
+    constructor(kotlin.String)
+    - QUERY
+    - MUTATION
+    - SUBSCRIPTION
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): OperationType
 data class com.datadog.android.rum.model.LongTaskEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, LongTaskEventSession, LongTaskEventSource? = null, LongTaskEventView, Usr? = null, Account? = null, Tab? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Stream? = null, Action? = null, Container? = null, LongTask)
   val type: kotlin.String
@@ -1123,7 +1186,7 @@ data class com.datadog.android.rum.model.LongTaskEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class LongTaskEventSession
-    constructor(kotlin.String, LongTaskEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.String, LongTaskEventSessionType, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): LongTaskEventSession
@@ -1189,7 +1252,7 @@ data class com.datadog.android.rum.model.LongTaskEvent
       fun fromJson(kotlin.String): Device
       fun fromJsonObject(com.google.gson.JsonObject): Device
   data class Dd
-    constructor(DdSession? = null, Configuration? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null, Profiling? = null)
+    constructor(DdSession? = null, Configuration? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Boolean? = null, Profiling? = null, kotlin.collections.List<DebugId>? = null)
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
     companion object 
@@ -1250,11 +1313,17 @@ data class com.datadog.android.rum.model.LongTaskEvent
       fun fromJson(kotlin.String): Configuration
       fun fromJsonObject(com.google.gson.JsonObject): Configuration
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
+    constructor(ProfilingStatus? = null, ErrorReason? = null, QuotaReason? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
       fun fromJsonObject(com.google.gson.JsonObject): Profiling
+  data class DebugId
+    constructor(kotlin.String, kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): DebugId
+      fun fromJsonObject(com.google.gson.JsonObject): DebugId
   data class ContainerView
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
@@ -1378,6 +1447,18 @@ data class com.datadog.android.rum.model.LongTaskEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ErrorReason
+  enum QuotaReason
+    constructor(kotlin.String)
+    - QUOTA_OK
+    - QUOTA_EXCEEDED
+    - ORG_DISABLED
+    - BACKEND_UNAVAILABLE
+    - UNDEFINED
+    - TIMEOUT
+    - API_ERROR
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): QuotaReason
   enum InvokerType
     constructor(kotlin.String)
     - USER_CALLBACK
@@ -1403,7 +1484,7 @@ data class com.datadog.android.rum.model.ResourceEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class ResourceEventSession
-    constructor(kotlin.String, ResourceEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.String, ResourceEventSessionType, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ResourceEventSession
@@ -1500,7 +1581,7 @@ data class com.datadog.android.rum.model.ResourceEvent
       fun fromJson(kotlin.String): Container
       fun fromJsonObject(com.google.gson.JsonObject): Container
   data class Resource
-    constructor(kotlin.String? = null, ResourceType, Method? = null, kotlin.String, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, RenderBlockingStatus? = null, Worker? = null, Redirect? = null, Dns? = null, Connect? = null, Ssl? = null, FirstByte? = null, Download? = null, kotlin.String? = null, DeliveryType? = null, Provider? = null, Request? = null, Response? = null, Graphql? = null)
+    constructor(kotlin.String? = null, ResourceType, Method? = null, kotlin.String, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, RenderBlockingStatus? = null, Worker? = null, Redirect? = null, Dns? = null, Connect? = null, Ssl? = null, FirstByte? = null, Download? = null, kotlin.String? = null, DeliveryType? = null, kotlin.Boolean? = null, Provider? = null, Request? = null, Response? = null, Graphql? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Resource
@@ -1808,7 +1889,7 @@ data class com.datadog.android.rum.model.TimeseriesCpuEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class TimeseriesCpuEventSession
-    constructor(kotlin.String, TimeseriesCpuEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.String, TimeseriesCpuEventSessionType, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): TimeseriesCpuEventSession
@@ -2036,7 +2117,7 @@ data class com.datadog.android.rum.model.TimeseriesMemoryEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class TimeseriesMemoryEventSession
-    constructor(kotlin.String, TimeseriesMemoryEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.String, TimeseriesMemoryEventSessionType, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): TimeseriesMemoryEventSession
@@ -2264,7 +2345,7 @@ data class com.datadog.android.rum.model.ViewEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class ViewEventSession
-    constructor(kotlin.String, ViewEventSessionType, kotlin.Boolean? = null, kotlin.Boolean? = true, kotlin.Boolean? = null)
+    constructor(kotlin.String, ViewEventSessionType, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = true, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ViewEventSession
@@ -2487,7 +2568,7 @@ data class com.datadog.android.rum.model.ViewEvent
       fun fromJson(kotlin.String): DdCls
       fun fromJsonObject(com.google.gson.JsonObject): DdCls
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
+    constructor(ProfilingStatus? = null, ErrorReason? = null, QuotaReason? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
@@ -2687,8 +2768,20 @@ data class com.datadog.android.rum.model.ViewEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ErrorReason
+  enum QuotaReason
+    constructor(kotlin.String)
+    - QUOTA_OK
+    - QUOTA_EXCEEDED
+    - ORG_DISABLED
+    - BACKEND_UNAVAILABLE
+    - UNDEFINED
+    - TIMEOUT
+    - API_ERROR
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): QuotaReason
 data class com.datadog.android.rum.model.ViewUpdateEvent
-  constructor(Container? = null, ViewUpdateEventView, ViewUpdateEventSession, FeatureFlags? = null, Privacy? = null, Display? = null, Dd, kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, ViewUpdateEventSource? = null, Usr? = null, Account? = null, Tab? = null, Connectivity? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, FeatureFlags? = null, Stream? = null)
+  constructor(Container?, ViewUpdateEventView, ViewUpdateEventSession, FeatureFlags?, Privacy?, Display?, Dd, kotlin.Long, Application, kotlin.String?, kotlin.String?, kotlin.String?, kotlin.String?, kotlin.String?, ViewUpdateEventSource?, Usr?, Account?, Tab?, Connectivity?, Synthetics?, CiTest?, Os?, Device?, FeatureFlags?, Stream?)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
@@ -2701,19 +2794,19 @@ data class com.datadog.android.rum.model.ViewUpdateEvent
       fun fromJson(kotlin.String): Container
       fun fromJsonObject(com.google.gson.JsonObject): Container
   data class ViewUpdateEventView
-    constructor(kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, LoadingType? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.Number? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, CustomTimings? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, Action? = null, Error? = null, Crash? = null, LongTask? = null, FrozenFrame? = null, kotlin.collections.List<SlowFrame>? = null, Resource? = null, Frustration? = null, kotlin.collections.List<InForegroundPeriod>? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, FlutterBuildTime? = null, FlutterBuildTime? = null, FlutterBuildTime? = null, Performance? = null, Accessibility? = null, kotlin.String, kotlin.String? = null, kotlin.String, kotlin.String? = null)
+    constructor(kotlin.Long?, kotlin.Long?, kotlin.Long?, LoadingType?, kotlin.Long?, kotlin.Long?, kotlin.Long?, kotlin.String?, kotlin.Long?, kotlin.Long?, kotlin.String?, kotlin.Long?, kotlin.Long?, kotlin.String?, kotlin.Number?, kotlin.Long?, kotlin.String?, kotlin.Long?, kotlin.Long?, kotlin.Long?, kotlin.Long?, kotlin.Long?, CustomTimings?, kotlin.Boolean?, kotlin.Boolean?, Action?, Error?, Crash?, LongTask?, FrozenFrame?, kotlin.collections.List<SlowFrame>?, Resource?, Frustration?, kotlin.collections.List<InForegroundPeriod>?, kotlin.Number?, kotlin.Number?, kotlin.Number?, kotlin.Number?, kotlin.Number?, kotlin.Number?, kotlin.Number?, kotlin.Number?, FlutterBuildTime?, FlutterBuildTime?, FlutterBuildTime?, Performance?, Accessibility?, kotlin.String, kotlin.String?, kotlin.String, kotlin.String?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ViewUpdateEventView
       fun fromJsonObject(com.google.gson.JsonObject): ViewUpdateEventView
   data class ViewUpdateEventSession
-    constructor(kotlin.Boolean? = true, kotlin.Boolean? = null, kotlin.String, ViewUpdateEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.Boolean?, kotlin.Boolean?, kotlin.String, ViewUpdateEventSessionType, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ViewUpdateEventSession
       fun fromJsonObject(com.google.gson.JsonObject): ViewUpdateEventSession
   data class FeatureFlags
-    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.Any?>)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): FeatureFlags
@@ -2725,32 +2818,32 @@ data class com.datadog.android.rum.model.ViewUpdateEvent
       fun fromJson(kotlin.String): Privacy
       fun fromJsonObject(com.google.gson.JsonObject): Privacy
   data class Display
-    constructor(Scroll? = null, Viewport? = null)
+    constructor(Scroll?, Viewport?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Display
       fun fromJsonObject(com.google.gson.JsonObject): Display
   data class Dd
-    constructor(kotlin.Long, kotlin.collections.List<PageState>? = null, ReplayStats? = null, DdCls? = null, Configuration? = null, Profiling? = null, DdSession? = null, kotlin.String? = null, kotlin.String? = null)
+    constructor(kotlin.Long, kotlin.collections.List<PageState>?, ReplayStats?, DdCls?, Configuration?, Profiling?, DdSession?, kotlin.String?, kotlin.String?)
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Dd
       fun fromJsonObject(com.google.gson.JsonObject): Dd
   data class Application
-    constructor(kotlin.String, kotlin.String? = null)
+    constructor(kotlin.String, kotlin.String?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class Usr
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    constructor(kotlin.String?, kotlin.String?, kotlin.String?, kotlin.String?, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?>)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Usr
       fun fromJsonObject(com.google.gson.JsonObject): Usr
   data class Account
-    constructor(kotlin.String, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    constructor(kotlin.String, kotlin.String?, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?>)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Account
@@ -2762,13 +2855,13 @@ data class com.datadog.android.rum.model.ViewUpdateEvent
       fun fromJson(kotlin.String): Tab
       fun fromJsonObject(com.google.gson.JsonObject): Tab
   data class Connectivity
-    constructor(ConnectivityStatus, kotlin.collections.List<Interface>? = null, EffectiveType? = null, Cellular? = null)
+    constructor(ConnectivityStatus, kotlin.collections.List<Interface>?, EffectiveType?, Cellular?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Connectivity
       fun fromJsonObject(com.google.gson.JsonObject): Connectivity
   data class Synthetics
-    constructor(kotlin.String, kotlin.String, kotlin.Boolean? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    constructor(kotlin.String, kotlin.String, kotlin.Boolean?, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?>)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Synthetics
@@ -2780,13 +2873,13 @@ data class com.datadog.android.rum.model.ViewUpdateEvent
       fun fromJson(kotlin.String): CiTest
       fun fromJsonObject(com.google.gson.JsonObject): CiTest
   data class Os
-    constructor(kotlin.String, kotlin.String, kotlin.String? = null, kotlin.String)
+    constructor(kotlin.String, kotlin.String, kotlin.String?, kotlin.String)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Os
       fun fromJsonObject(com.google.gson.JsonObject): Os
   data class Device
-    constructor(DeviceType? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.String? = null, kotlin.Number? = null, kotlin.Boolean? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Boolean? = null)
+    constructor(DeviceType?, kotlin.String?, kotlin.String?, kotlin.String?, kotlin.String?, kotlin.String?, kotlin.collections.List<kotlin.String>?, kotlin.String?, kotlin.Number?, kotlin.Boolean?, kotlin.Number?, kotlin.Number?, kotlin.Number?, kotlin.Boolean?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Device
@@ -2804,7 +2897,7 @@ data class com.datadog.android.rum.model.ViewUpdateEvent
       fun fromJson(kotlin.String): ContainerView
       fun fromJsonObject(com.google.gson.JsonObject): ContainerView
   data class CustomTimings
-    constructor(kotlin.collections.Map<kotlin.String, kotlin.Long> = mapOf())
+    constructor(kotlin.collections.Map<kotlin.String, kotlin.Long>)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): CustomTimings
@@ -2864,19 +2957,19 @@ data class com.datadog.android.rum.model.ViewUpdateEvent
       fun fromJson(kotlin.String): InForegroundPeriod
       fun fromJsonObject(com.google.gson.JsonObject): InForegroundPeriod
   data class FlutterBuildTime
-    constructor(kotlin.Number, kotlin.Number, kotlin.Number, kotlin.Number? = null)
+    constructor(kotlin.Number, kotlin.Number, kotlin.Number, kotlin.Number?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): FlutterBuildTime
       fun fromJsonObject(com.google.gson.JsonObject): FlutterBuildTime
   data class Performance
-    constructor(PerformanceCls? = null, Fcp? = null, Fid? = null, Inp? = null, Lcp? = null, Fbc? = null)
+    constructor(PerformanceCls?, Fcp?, Fid?, Inp?, Lcp?, Fbc?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Performance
       fun fromJsonObject(com.google.gson.JsonObject): Performance
   data class Accessibility
-    constructor(kotlin.String? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null)
+    constructor(kotlin.String?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?, kotlin.Boolean?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Accessibility
@@ -2900,43 +2993,43 @@ data class com.datadog.android.rum.model.ViewUpdateEvent
       fun fromJson(kotlin.String): PageState
       fun fromJsonObject(com.google.gson.JsonObject): PageState
   data class ReplayStats
-    constructor(kotlin.Long? = 0L, kotlin.Long? = 0L, kotlin.Long? = 0L)
+    constructor(kotlin.Long?, kotlin.Long?, kotlin.Long?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ReplayStats
       fun fromJsonObject(com.google.gson.JsonObject): ReplayStats
   data class DdCls
-    constructor(kotlin.Number? = null)
+    constructor(kotlin.Number?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): DdCls
       fun fromJsonObject(com.google.gson.JsonObject): DdCls
   data class Configuration
-    constructor(kotlin.Boolean? = null, kotlin.String? = null, kotlin.Number, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.collections.List<kotlin.String>? = null)
+    constructor(kotlin.Boolean?, kotlin.String?, kotlin.Number, kotlin.Number?, kotlin.Number?, kotlin.Number?, kotlin.collections.List<kotlin.String>?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Configuration
       fun fromJsonObject(com.google.gson.JsonObject): Configuration
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
+    constructor(ProfilingStatus?, ErrorReason?, QuotaReason?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
       fun fromJsonObject(com.google.gson.JsonObject): Profiling
   data class DdSession
-    constructor(Plan? = null, SessionPrecondition? = null)
+    constructor(Plan?, SessionPrecondition?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): DdSession
       fun fromJsonObject(com.google.gson.JsonObject): DdSession
   data class Cellular
-    constructor(kotlin.String? = null, kotlin.String? = null)
+    constructor(kotlin.String?, kotlin.String?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Cellular
       fun fromJsonObject(com.google.gson.JsonObject): Cellular
   data class PerformanceCls
-    constructor(kotlin.Number, kotlin.Long? = null, kotlin.String? = null, PreviousRect? = null, PreviousRect? = null)
+    constructor(kotlin.Number, kotlin.Long?, kotlin.String?, PreviousRect?, PreviousRect?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): PerformanceCls
@@ -2948,19 +3041,19 @@ data class com.datadog.android.rum.model.ViewUpdateEvent
       fun fromJson(kotlin.String): Fcp
       fun fromJsonObject(com.google.gson.JsonObject): Fcp
   data class Fid
-    constructor(kotlin.Long, kotlin.Long, kotlin.String? = null)
+    constructor(kotlin.Long, kotlin.Long, kotlin.String?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Fid
       fun fromJsonObject(com.google.gson.JsonObject): Fid
   data class Inp
-    constructor(kotlin.Long, kotlin.Long? = null, kotlin.String? = null, InpSubParts? = null)
+    constructor(kotlin.Long, kotlin.Long?, kotlin.String?, InpSubParts?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Inp
       fun fromJsonObject(com.google.gson.JsonObject): Inp
   data class Lcp
-    constructor(kotlin.Long, kotlin.String? = null, kotlin.String? = null, LcpSubParts? = null)
+    constructor(kotlin.Long, kotlin.String?, kotlin.String?, LcpSubParts?)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Lcp
@@ -3105,6 +3198,18 @@ data class com.datadog.android.rum.model.ViewUpdateEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ErrorReason
+  enum QuotaReason
+    constructor(kotlin.String)
+    - QUOTA_OK
+    - QUOTA_EXCEEDED
+    - ORG_DISABLED
+    - BACKEND_UNAVAILABLE
+    - UNDEFINED
+    - TIMEOUT
+    - API_ERROR
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): QuotaReason
   enum Plan
     constructor(kotlin.Number)
     - PLAN_1
@@ -3138,7 +3243,7 @@ data class com.datadog.android.rum.model.VitalAppLaunchEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class VitalAppLaunchEventSession
-    constructor(kotlin.String, VitalAppLaunchEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.String, VitalAppLaunchEventSessionType, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): VitalAppLaunchEventSession
@@ -3260,7 +3365,7 @@ data class com.datadog.android.rum.model.VitalAppLaunchEvent
       fun fromJson(kotlin.String): Configuration
       fun fromJsonObject(com.google.gson.JsonObject): Configuration
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
+    constructor(ProfilingStatus? = null, ErrorReason? = null, QuotaReason? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
@@ -3389,6 +3494,18 @@ data class com.datadog.android.rum.model.VitalAppLaunchEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ErrorReason
+  enum QuotaReason
+    constructor(kotlin.String)
+    - QUOTA_OK
+    - QUOTA_EXCEEDED
+    - ORG_DISABLED
+    - BACKEND_UNAVAILABLE
+    - UNDEFINED
+    - TIMEOUT
+    - API_ERROR
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): QuotaReason
 data class com.datadog.android.rum.model.VitalOperationStepEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, VitalOperationStepEventSession, VitalOperationStepEventSource? = null, VitalOperationStepEventView, Usr? = null, Account? = null, Tab? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Stream? = null, Container? = null, Vital)
   val type: kotlin.String
@@ -3403,7 +3520,7 @@ data class com.datadog.android.rum.model.VitalOperationStepEvent
       fun fromJson(kotlin.String): Application
       fun fromJsonObject(com.google.gson.JsonObject): Application
   data class VitalOperationStepEventSession
-    constructor(kotlin.String, VitalOperationStepEventSessionType, kotlin.Boolean? = null)
+    constructor(kotlin.String, VitalOperationStepEventSessionType, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): VitalOperationStepEventSession
@@ -3525,7 +3642,7 @@ data class com.datadog.android.rum.model.VitalOperationStepEvent
       fun fromJson(kotlin.String): Configuration
       fun fromJsonObject(com.google.gson.JsonObject): Configuration
   data class Profiling
-    constructor(ProfilingStatus? = null, ErrorReason? = null, kotlin.String? = null)
+    constructor(ProfilingStatus? = null, ErrorReason? = null, QuotaReason? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Profiling
@@ -3657,6 +3774,18 @@ data class com.datadog.android.rum.model.VitalOperationStepEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ErrorReason
+  enum QuotaReason
+    constructor(kotlin.String)
+    - QUOTA_OK
+    - QUOTA_EXCEEDED
+    - ORG_DISABLED
+    - BACKEND_UNAVAILABLE
+    - UNDEFINED
+    - TIMEOUT
+    - API_ERROR
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): QuotaReason
 data class com.datadog.android.telemetry.model.TelemetryConfigurationEvent
   constructor(Dd, kotlin.Long, kotlin.String, Source, kotlin.String, Application? = null, Session? = null, View? = null, Action? = null, kotlin.Number? = null, kotlin.collections.List<kotlin.String>? = null, Telemetry)
   val type: kotlin.String

@@ -16,6 +16,11 @@ import org.chromium.net.UploadDataProvider
 import org.chromium.net.UrlRequest
 import java.io.IOException
 
+// Deliberately does not implement PeekableBodyInfo, so HttpRequestInfo.peekBody() returns null for
+// Cronet requests: Cronet streams the payload straight out of the caller's UploadDataProvider,
+// which is read once and offers no way to rewind it in general. Exposing it would mean copying
+// every upload as it flows past, at a memory cost paid by every request whether a snapshot
+// is ever asked for.
 internal data class CronetHttpRequestInfo(
     private val requestContext: CronetRequestContext
 ) : HttpRequestInfo, ExtendedRequestInfo, MutableHttpRequestInfo {

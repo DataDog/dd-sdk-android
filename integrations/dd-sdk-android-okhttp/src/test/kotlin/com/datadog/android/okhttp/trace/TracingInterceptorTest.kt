@@ -73,6 +73,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -1160,7 +1161,7 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M create a span with info W intercept() { resource url with no query paramaters }`(
+    fun `M create a span with info W intercept() { resource url with no query parameters }`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         val fakeUrlWithoutQueryParams = forgeUrlWithoutQueryParams()
@@ -1803,7 +1804,7 @@ internal open class TracingInterceptorTest {
             InternalLogger.Target.USER,
             expectedMessage,
             StackOverflowError::class.java,
-            mode = org.mockito.kotlin.atLeast(1)
+            mode = atLeast(1)
         )
     }
 

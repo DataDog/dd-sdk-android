@@ -7,7 +7,6 @@
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.content.res.ColorStateList
-import android.graphics.Rect
 import android.widget.ProgressBar
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.utils.densityNormalized
@@ -76,9 +75,6 @@ internal class ProgressBarWireframeMapperTest :
 
     @Mock
     lateinit var mockProgressTintList: ColorStateList
-
-    @Mock
-    lateinit var mockThumbBounds: Rect
 
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider

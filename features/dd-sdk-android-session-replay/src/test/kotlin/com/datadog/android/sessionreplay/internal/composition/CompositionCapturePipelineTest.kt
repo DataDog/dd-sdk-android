@@ -261,6 +261,8 @@ internal class CompositionCapturePipelineTest {
 
         override fun requestCapture(slotIds: Set<String>) = Unit
 
+        override fun onViewTransition() = Unit
+
         override fun stopRecorders() = Unit
     }
 }

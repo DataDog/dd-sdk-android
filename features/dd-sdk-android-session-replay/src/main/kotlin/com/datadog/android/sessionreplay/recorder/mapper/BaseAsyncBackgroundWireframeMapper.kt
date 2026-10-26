@@ -133,7 +133,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View>(
     }
 
     /**
-     *  Function used to resolve the view background as a Image wireframe.
+     *  Function used to resolve the view background as an Image wireframe.
      *
      *  @param view the [View] to map
      *  @param bounds the [GlobalBounds] of the view.

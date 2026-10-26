@@ -6,7 +6,6 @@
 
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.java17
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Build
@@ -68,7 +67,7 @@ dependencies {
     if (project.hasProperty(com.datadog.gradle.Properties.USE_DESUGARING)) {
         coreLibraryDesugaring(libs.androidDesugaringSdk)
     }
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     // Testing
     androidTestImplementation(libs.assertJ)
@@ -84,6 +83,6 @@ dependencies {
 }
 
 datadogBuild {
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyJunitConfig()
 }

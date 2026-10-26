@@ -250,6 +250,8 @@ internal sealed class RumRawEvent {
 
     internal data class WebViewEvent(override val eventTime: Time) : RumRawEvent()
 
+    internal data class SessionExpiryCheck(override val eventTime: Time) : RumRawEvent()
+
     internal data class TelemetryEventWrapper(
         val event: InternalTelemetryEvent,
         override val eventTime: Time

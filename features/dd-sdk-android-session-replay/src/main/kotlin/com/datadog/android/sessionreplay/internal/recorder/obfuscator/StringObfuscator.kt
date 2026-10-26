@@ -13,7 +13,7 @@ import com.datadog.android.lint.InternalApi
  * Obfuscates string of text in session replay.
  *
  * DO NOT USE this class or its methods if you are not working on the internals of the Datadog SDK
- * or one of the cross platform frameworks.
+ * or one of the cross-platform frameworks.
  */
 @InternalApi
 interface StringObfuscator {

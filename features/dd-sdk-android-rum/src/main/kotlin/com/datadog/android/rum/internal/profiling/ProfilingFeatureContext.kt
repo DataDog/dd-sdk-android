@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.profiling
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.profiling.quota.QuotaReason
 
 /**
  * Whether the profiler is currently running, as published by the profiling feature.
@@ -25,9 +26,9 @@ internal fun DatadogContext.isProfilerRunning(): Boolean =
  * resolved — has a mismatching session id and is treated as absent.
  */
 @Suppress("ReturnCount")
-internal fun DatadogContext.resolveProfilingQuotaReason(currentSessionId: String?): String? {
+internal fun DatadogContext.resolveProfilingQuotaReason(currentSessionId: String?): QuotaReason? {
     val profilingContext = featuresContext[Feature.PROFILING_FEATURE_NAME] ?: return null
-    val reason = profilingContext[FeatureContextKeys.PROFILING_QUOTA_REASON] as? String ?: return null
+    val reason = profilingContext[FeatureContextKeys.PROFILING_QUOTA_REASON] as? QuotaReason ?: return null
     val quotaSessionId = profilingContext[FeatureContextKeys.PROFILING_QUOTA_SESSION_ID] as? String
     return reason.takeIf { quotaSessionId != null && quotaSessionId == currentSessionId }
 }

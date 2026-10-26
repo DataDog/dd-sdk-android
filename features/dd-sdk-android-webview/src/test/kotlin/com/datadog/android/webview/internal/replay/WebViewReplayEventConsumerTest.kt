@@ -15,10 +15,11 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
-import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -100,8 +101,7 @@ internal class WebViewReplayEventConsumerTest {
         }
         fakeValidBrowserEvent = forge.getForgery()
         fakeRumContext = fakeRumContext.copy(
-            sessionState =
-            WebViewReplayEventConsumer.SESSION_TRACKED_STATE
+            sessionState = RumSessionState.TRACKED
         )
         fakeDatadogContext = fakeDatadogContext.copy(
             time = fakeDatadogContext.time.copy(
@@ -252,7 +252,10 @@ internal class WebViewReplayEventConsumerTest {
         // Given
         whenever(
             mockRumContextProvider.getRumContext(fakeDatadogContext)
-        ) doReturn fakeRumContext.copy(sessionState = forge.anAlphabeticalString())
+        ) doReturn
+            fakeRumContext.copy(
+                sessionState = forge.anElementFrom(RumSessionState.NOT_TRACKED, RumSessionState.EXPIRED)
+            )
 
         // When
         testedConsumer.consume(fakeValidBrowserEvent)

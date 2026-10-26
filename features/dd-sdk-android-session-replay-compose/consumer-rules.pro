@@ -11,7 +11,7 @@
 -keepclassmembers class androidx.compose.ui.platform.AndroidComposeView {
      <fields>;
 }
--keepclassmembers class androidx.compose.foundation.text.modifiers.TextStringSimpleElement {
+-keep class androidx.compose.foundation.text.modifiers.TextStringSimpleElement {
      <fields>;
 }
 -keep class androidx.compose.material.CheckDrawingCache {
@@ -26,7 +26,7 @@
 -keep class androidx.compose.ui.draw.DrawBehindElement {
      <fields>;
 }
--keepclassmembers class androidx.compose.foundation.BackgroundElement {
+-keep class androidx.compose.foundation.BackgroundElement {
      <fields>;
 }
 -keep class androidx.compose.ui.node.LayoutNode {

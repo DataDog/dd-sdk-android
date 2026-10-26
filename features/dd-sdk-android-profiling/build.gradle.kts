@@ -7,7 +7,7 @@
 
 import com.datadog.gradle.utils.cloneRumEventsFormat
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
-import com.datadog.gradle.utils.createRumSchemaCloneTask
+import com.datadog.gradle.utils.createRumEventsFormatCloneTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -55,7 +55,7 @@ android {
 dependencies {
     api(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.androidXCore)
     implementation(libs.androidXCoreKtx)
     implementation(libs.gson)
@@ -78,7 +78,7 @@ dependencies {
     unmock(libs.robolectric)
 
     // Test Fixtures
-    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.kotlinRuntime)
     testFixturesImplementation(project(":dd-sdk-android-internal"))
     testFixturesImplementation(libs.androidXAnnotation)
 }
@@ -104,7 +104,7 @@ unMock {
     keepStartingWith("org.json")
 }
 
-createRumSchemaCloneTask("cloneProfilingSchema") {
+createRumEventsFormatCloneTask("cloneProfilingSchema") {
     cloneRumEventsFormat(
         project = project,
         subFolder = "schemas/profiling",

@@ -24,7 +24,6 @@ import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.android.trace.opentelemetry.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.opentelemetry.trace.OtelSpan
@@ -74,12 +73,6 @@ internal class OtelTracerBuilderProviderTest {
     lateinit var testedOtelTracerProviderBuilder: OtelTracerProvider.Builder
     lateinit var fakeServiceName: String
 
-    val mockDatadogTracerBuilder: DatadogTracerBuilder = mock {
-        on { withServiceName(any()) } doReturn it
-        on { withTracingHeadersTypes(any()) } doReturn it
-        on { withPartialFlushMinSpans(any()) } doReturn it
-    }
-
     @Mock
     lateinit var mockTracingFeatureScope: FeatureScope
 
@@ -101,33 +94,12 @@ internal class OtelTracerBuilderProviderTest {
     @Mock
     lateinit var mockTraceWriter: DatadogSpanWriter
 
-    lateinit var fakeRumContext: Map<String, String>
-
-    @StringForgery(type = StringForgeryType.HEXADECIMAL)
-    lateinit var fakeApplicationId: String
-
-    @StringForgery(type = StringForgeryType.HEXADECIMAL)
-    lateinit var fakeSessionId: String
-
-    @StringForgery(type = StringForgeryType.HEXADECIMAL)
-    lateinit var fakeViewId: String
-
-    @StringForgery(type = StringForgeryType.HEXADECIMAL)
-    lateinit var fakeActionId: String
-
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeServiceName = forge.anAlphabeticalString()
         whenever(
             mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         ) doReturn mockTracingFeatureScope
-        fakeRumContext = mapOf(
-            OtelTracerProvider.RUM_APPLICATION_ID_KEY to fakeApplicationId,
-            OtelTracerProvider.RUM_SESSION_ID_KEY to fakeSessionId,
-            OtelTracerProvider.RUM_VIEW_ID_KEY to fakeViewId,
-            OtelTracerProvider.RUM_ACTION_ID_KEY to fakeActionId
-        )
-        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn fakeRumContext
         whenever(mockTracingFeatureScope.unwrap<Feature>()) doReturn mockTracingFeature
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
         whenever(mockSdkCore.service) doReturn fakeServiceName

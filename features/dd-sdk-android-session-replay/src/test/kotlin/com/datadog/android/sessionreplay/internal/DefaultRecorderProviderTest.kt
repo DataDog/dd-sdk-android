@@ -181,6 +181,7 @@ internal class DefaultRecorderProviderTest {
         customOptionSelectorDetectors = emptyList(),
         customDrawableMappers = emptyList(),
         dynamicOptimizationEnabled = false,
+        adaptiveCaptureSchedulingEnabled = false,
         internalCallback = mock<SessionReplayInternalCallback>(),
         heatmapsEnabled = heatmapsEnabled,
         compositionTreeRecordingEnabled = compositionTreeRecordingEnabled,

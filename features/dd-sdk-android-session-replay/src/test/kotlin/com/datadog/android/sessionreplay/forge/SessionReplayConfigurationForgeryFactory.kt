@@ -38,6 +38,8 @@ class SessionReplayConfigurationForgeryFactory : ForgeryFactory<SessionReplayCon
                 .build(),
             heatmapsEnabled = forge.aBool(),
             compositionTreeRecordingEnabled = forge.aBool()
-        )
+        ).also {
+            it.adaptiveCaptureSchedulingEnabled = forge.aBool()
+        }
     }
 }

@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.sampling.DeterministicSampler.Companion.MAX_ID
 import com.datadog.android.core.sampling.DeterministicSampler.Companion.SAMPLER_HASHER
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.okhttp.RumContextPropagationTest.Companion.SAMPLING_THRESHOLD
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
 import com.datadog.android.okhttp.tests.utils.unregisterGlobalRumMonitor
@@ -30,13 +31,13 @@ import com.datadog.android.trace.api.TestIdGenerationStrategy
 import com.datadog.android.trace.api.replace
 import com.datadog.android.trace.api.setTestIdGenerationStrategy
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-import com.datadog.android.trace.utils.RumContextTestsUtils.aDatadogContextWithRumContext
-import com.datadog.android.trace.utils.RumContextTestsUtils.aRumContext
+import com.datadog.android.utils.aDatadogContextWithRumContext
 import com.datadog.tools.unit.completedFutureMock
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.getStaticValue
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.OkHttpClient
@@ -53,6 +54,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -82,12 +84,14 @@ class RumContextPropagationTest {
     }
 
     @Test
-    fun `M send rum sessionId in baggage header W call is made`(forge: Forge) {
+    fun `M send rum sessionId in baggage header W call is made`(
+        @Forgery fakeRumContext: RumContext,
+        forge: Forge
+    ) {
         // Given
-        val rumContext = forge.aRumContext(SAMPLED_IDS.random())
         val accountInfo = forge.getForgery<AccountInfo>()
         val userInfo = forge.getForgery<UserInfo>()
-        val datadogContext = forge.aDatadogContextWithRumContext(rumContext, accountInfo, userInfo)
+        val datadogContext = forge.aDatadogContextWithRumContext(fakeRumContext, accountInfo, userInfo)
         stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
         testedClient = prepareClient(stubSdkCore)
@@ -98,10 +102,12 @@ class RumContextPropagationTest {
 
         // Then
         assertSentRequest {
-            assertThat(getHeader(HEADER_BAGGAGE)).isEqualTo(
-                "account.id=${accountInfo.id}," +
-                    userInfo.id?.let { "user.id=$it," }.orEmpty() +
-                    "session.id=${rumContext[RUM_CONTEXT_SESSION_ID]}"
+            assertThat(getHeader(HEADER_BAGGAGE)?.split(",")).containsExactlyInAnyOrderElementsOf(
+                listOfNotNull(
+                    "account.id=${accountInfo.id}",
+                    userInfo.id?.let { "user.id=$it" },
+                    "session.id=${fakeRumContext.sessionId}"
+                )
             )
         }
     }
@@ -110,10 +116,11 @@ class RumContextPropagationTest {
 
     @Test
     fun `M set header x-datadog-sampling-priority=1 W call is made { sessionId sampled }`(
+        @Forgery fakeRumContext: RumContext,
         forge: Forge
     ) {
         // Given
-        val rumContext = forge.aRumContext(sessionId = SAMPLED_IDS.random())
+        val rumContext = fakeRumContext.copy(sessionId = UUID(0, forge.anElementFrom(SAMPLED_IDS)).toString())
         val datadogContext = forge.aDatadogContextWithRumContext(rumContext)
         stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
@@ -131,10 +138,11 @@ class RumContextPropagationTest {
 
     @Test
     fun `M set header x-datadog-sampling-priority=0 W call is made { sessionId not sampled }`(
+        @Forgery fakeRumContext: RumContext,
         forge: Forge
     ) {
         // Given
-        val rumContext = forge.aRumContext(sessionId = DROPPED_IDS.random())
+        val rumContext = fakeRumContext.copy(sessionId = UUID(0, forge.anElementFrom(DROPPED_IDS)).toString())
         val datadogContext = forge.aDatadogContextWithRumContext(rumContext)
         stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
@@ -156,8 +164,7 @@ class RumContextPropagationTest {
         forge: Forge
     ) {
         // Given
-        val rumContext = forge.aRumContext(sessionId = null)
-        val datadogContext = forge.aDatadogContextWithRumContext(rumContext)
+        val datadogContext = forge.aDatadogContextWithRumContext(null)
         stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
         testedClient = prepareClient(stubSdkCore)
@@ -178,8 +185,7 @@ class RumContextPropagationTest {
         forge: Forge
     ) {
         // Given
-        val rumContext = forge.aRumContext(sessionId = null)
-        val datadogContext = forge.aDatadogContextWithRumContext(rumContext)
+        val datadogContext = forge.aDatadogContextWithRumContext(null)
         stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
         testedClient = prepareClient(stubSdkCore)
@@ -238,8 +244,6 @@ class RumContextPropagationTest {
 
         private const val HEADER_BAGGAGE = "baggage"
         private const val HEADER_SAMPLE_PRIORITY = "x-datadog-sampling-priority"
-
-        private const val RUM_CONTEXT_SESSION_ID = "session_id"
 
         private fun RumContextPropagationTest.assertSentRequest(block: RecordedRequest.() -> Unit) {
             block(mockServer.takeRequest())

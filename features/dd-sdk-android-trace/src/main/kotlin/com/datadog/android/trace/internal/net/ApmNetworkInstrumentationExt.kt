@@ -5,8 +5,6 @@
  */
 package com.datadog.android.trace.internal.net
 
-import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.instrumentation.network.HttpRequestInfo
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.lint.InternalApi
@@ -25,9 +23,6 @@ import com.datadog.android.trace.internal._TraceInternalProxy
 import com.datadog.android.trace.internal._TraceInternalProxy.propagationHelper
 import com.datadog.android.trace.internal.domain.event.FORCE_DROP_SPAN
 import java.util.Locale
-
-internal val FeatureSdkCore?.isRumEnabled: Boolean
-    get() = this?.getFeature(Feature.RUM_FEATURE_NAME) != null
 
 /**
  * Returns the effective sample rate for the given [span].

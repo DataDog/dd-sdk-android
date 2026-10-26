@@ -10,15 +10,15 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.utils.DdTagsUtils
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionStartReason
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.TimeseriesMemoryEventAssert
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
-import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.domain.scope.toTimeseriesMemorySchemaType
 import com.datadog.android.rum.internal.timeseries.DataPoint
@@ -301,7 +301,7 @@ internal class MemoryEventFactoryTest {
     ) {
         // Given
         val rumContext = fakeSerializedRumContext.copy(
-            sessionStartReason = RumSessionScope.StartReason.INACTIVITY_TIMEOUT,
+            sessionStartReason = RumSessionStartReason.INACTIVITY_TIMEOUT,
             sessionSampleRate = fakeSampleRate.toFloat()
         )
 
@@ -348,7 +348,7 @@ internal class MemoryEventFactoryTest {
         // Given
         val datadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext + mapOf(
-                Feature.SESSION_REPLAY_FEATURE_NAME to emptyMap<String, Any?>(),
+                Feature.SESSION_REPLAY_FEATURE_NAME to emptyMap(),
                 Feature.TRACING_FEATURE_NAME to mapOf(RumViewScope.TRACE_SAMPLE_RATE to fakeNotASampleRate)
             )
         )
@@ -402,6 +402,24 @@ internal class MemoryEventFactoryTest {
 
         // Then
         assertThat(event.session.hasReplay).isFalse()
+    }
+
+    @Test
+    fun `M fill session isMainProcess W create()`() {
+        // When
+        val event = createEvent()
+
+        // Then
+        assertThat(event.session.isMainProcess).isEqualTo(fakeDatadogContext.processInfo.isMainProcess)
+    }
+
+    @Test
+    fun `M fill session hasTimeseries W create()`() {
+        // When
+        val event = createEvent()
+
+        // Then
+        assertThat(event.session.hasTimeseries).isTrue()
     }
 
     @Test

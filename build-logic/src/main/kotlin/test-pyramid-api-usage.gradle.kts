@@ -8,41 +8,49 @@ import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.api.variant.HasUnitTest
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import com.android.build.api.variant.Variant
-import io.gitlab.arturbosch.detekt.Detekt
-import org.gradle.api.artifacts.VersionCatalogsExtension
+import com.datadog.gradle.utils.toCamelCase
+import dev.detekt.gradle.Detekt
 import org.gradle.api.attributes.Usage
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.named
-import org.gradle.kotlin.dsl.the
 
-// Applying `io.gitlab.arturbosch.detekt` would also register its own detekt tasks and apply detekt.yml
-// - unwanted, since this plugin isn't linting, only using Detekt as an engine. All our own task actually needs
-// from the plugin is the engine classpath, so provide that directly via detached configurations instead of applying it.
-val detektVersion = the<VersionCatalogsExtension>().named("libs").findVersion("detekt").get().requiredVersion
-val detektEngineClasspath = configurations.detachedConfiguration(
-    dependencies.create("io.gitlab.arturbosch.detekt:detekt-cli:$detektVersion")
-)
-val detektPluginClasspath = configurations.detachedConfiguration(
-    dependencies.create(project(":tools:detekt"))
-)
+plugins {
+    // Provides the Detekt engine classpath and the defaults of the `Detekt` tasks
+    id("dev.detekt")
+}
 
-val apiUsageLogFile = layout.buildDirectory.file("reports/detekt-test-pyramid/apiUsage.log")
-val generatedConfigFile = layout.buildDirectory.file("tmp/detekt-test-pyramid/apiUsageTestPyramidConfig.yml")
+dependencies {
+    detektPlugins(project(":tools:detekt"))
+}
+
+// This plugin only uses Detekt as an engine: these modules aren't linted, so keep the root `detekt` task away from them
+tasks.detekt {
+    isEnabled = false
+}
+
+@Suppress("UnstableApiUsage")
+val apiUsageReportElements = configurations.consumable("apiUsageReportElements") {
+    attributes {
+        attribute(Usage.USAGE_ATTRIBUTE, named("test-pyramid-api-usage"))
+    }
+}
 
 fun configureApiUsageVariant(variant: Variant, bootClasspath: Provider<List<RegularFile>>) {
     // ApiUsage only recognizes JUnit5 Jupiter annotations, which `androidTest` doesn't use.
     val unitTest = (variant as? HasUnitTest)?.unitTest ?: return
 
-    val checkApiUsageTask = tasks.register<Detekt>("checkTestPyramidApiUsage") {
+    val apiUsageLogFile = layout.buildDirectory
+        .file("reports/detekt-test-pyramid/${variant.name}/apiUsage.log")
+    val generatedConfigFile = layout.buildDirectory
+        .file("tmp/detekt-test-pyramid/${variant.name}/apiUsageTestPyramidConfig.yml")
+    val checkApiUsageTask = tasks.register<Detekt>("checkTestPyramidApiUsage${variant.name.toCamelCase()}") {
         group = "verification"
         description = "Datadog test pyramid: collects internal API usage from unit tests for coverage reporting."
 
         unitTest.sources.java?.let { source(it.all) }
         unitTest.sources.kotlin?.let { source(it.all) }
-        detektClasspath.setFrom(detektEngineClasspath)
-        pluginClasspath.setFrom(detektPluginClasspath)
         classpath.setFrom(unitTest.compileClasspath, bootClasspath)
         jvmTarget = "17"
         buildUponDefaultConfig = false
@@ -52,21 +60,16 @@ fun configureApiUsageVariant(variant: Variant, bootClasspath: Provider<List<Regu
         reports {
             sarif.required = false
             html.required = false
-            xml.required = false
-            txt.required = false
-            md.required = false
+            markdown.required = false
+            checkstyle.required = false
         }
 
         localState.register(generatedConfigFile)
         config.setFrom(generatedConfigFile)
         outputs.file(apiUsageLogFile)
 
-        // `doFirst` is serialized into the configuration cache, so it can't reach through the
-        // enclosing script instance to read a top-level `val` - capture local copies instead.
-        val configFile = generatedConfigFile
-        val logFileProvider = apiUsageLogFile
         doFirst {
-            val generatedConfig = configFile.get().asFile
+            val generatedConfig = generatedConfigFile.get().asFile
             generatedConfig.parentFile.mkdirs()
             generatedConfig.writeText(
                 """
@@ -76,30 +79,27 @@ fun configureApiUsageVariant(variant: Variant, bootClasspath: Provider<List<Regu
                   active: true
                   ApiUsage:
                     active: true
-                    outputFileName: '${logFileProvider.get().asFile.absolutePath}'
+                    outputFileName: '${apiUsageLogFile.get().asFile.absolutePath}'
                     internalPackagePrefix: 'com.datadog'
                 """.trimIndent()
             )
 
             // ApiUsage appends per-file - a fresh rule instance is created per analyzed file,
             // so truncate the shared output file once here, before analysis starts.
-            val logFile = logFileProvider.get().asFile
+            val logFile = apiUsageLogFile.get().asFile
             logFile.parentFile.mkdirs()
             logFile.writeText("")
         }
     }
 
-    configurations.consumable("apiUsageReportElements") {
-        attributes {
-            attribute(Usage.USAGE_ATTRIBUTE, named("test-pyramid-api-usage"))
-        }
+    apiUsageReportElements.configure {
         outgoing.artifact(apiUsageLogFile) {
             builtBy(checkApiUsageTask)
         }
     }
-
-    rootProject.dependencies.add("testPyramidApiUsageAggregation", project(project.path))
 }
+
+rootProject.dependencies.add("testPyramidApiUsageAggregation", project(project.path))
 
 extensions.findByType<LibraryAndroidComponentsExtension>()?.let { components ->
     components.onVariants(components.selector().withBuildType("debug")) {

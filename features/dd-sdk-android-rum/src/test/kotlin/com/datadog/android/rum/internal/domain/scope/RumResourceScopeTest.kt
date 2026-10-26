@@ -14,6 +14,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -23,7 +24,6 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ResourceEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -83,6 +83,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.net.URL
 import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -300,6 +301,8 @@ internal class RumResourceScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+                    hasSessionTimeseries(fakeParentContext.hasTimeseries)
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
@@ -381,7 +384,7 @@ internal class RumResourceScopeTest {
                     hasReplay(fakeHasReplay)
                     hasRulePsr(null)
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
-                    hasProviderDomain(URL(fakeUrl).host)
+                    hasProviderDomain(@Suppress("DEPRECATION") URL(fakeUrl).host)
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
@@ -1301,6 +1304,8 @@ internal class RumResourceScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+                    hasSessionTimeseries(fakeParentContext.hasTimeseries)
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
@@ -1968,7 +1973,7 @@ internal class RumResourceScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
-                    hasProviderDomain(URL(fakeUrl).host)
+                    hasProviderDomain(@Suppress("DEPRECATION") URL(fakeUrl).host)
                     hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
@@ -2055,7 +2060,7 @@ internal class RumResourceScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
-                    hasProviderDomain(URL(fakeUrl).host)
+                    hasProviderDomain(@Suppress("DEPRECATION") URL(fakeUrl).host)
                     hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
@@ -3861,6 +3866,127 @@ internal class RumResourceScopeTest {
 
     // endregion
 
+    // region has_timeseries
+
+    @Test
+    fun `M report has_timeseries W handleEvent(StopResource) { timeseries collected after resource start }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long
+    ) {
+        // Given
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext.copy(hasTimeseries = false)
+        testedScope = createTestedScope()
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext.copy(hasTimeseries = true)
+
+        // When
+        mockEvent = RumRawEvent.StopResource(
+            key = fakeKey,
+            statusCode = statusCode,
+            size = size,
+            kind = kind,
+            attributes = emptyMap(),
+            eventTime = timeWithOffset(RESOURCE_DURATION_MS)
+        )
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue)
+                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionTimeseries(true)
+        }
+    }
+
+    @Test
+    fun `M report has_timeseries W handleEvent(StopResourceWithError) { timeseries collected after resource start }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable
+    ) {
+        // Given
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext.copy(hasTimeseries = false)
+        testedScope = createTestedScope()
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext.copy(hasTimeseries = true)
+
+        // When
+        mockEvent = RumRawEvent.StopResourceWithError(
+            fakeKey,
+            null,
+            message,
+            source,
+            throwable,
+            emptyMap(),
+            timeWithOffset(RESOURCE_DURATION_MS)
+        )
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue)
+                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionTimeseries(true)
+        }
+    }
+
+    @Test
+    fun `M keep has_timeseries from resource start W handleEvent(StopResource) { parent moved to another session }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @Forgery fakeNewSessionId: UUID
+    ) {
+        // Given
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext.copy(hasTimeseries = false)
+        testedScope = createTestedScope()
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext.copy(
+            sessionId = fakeNewSessionId.toString(),
+            hasTimeseries = true
+        )
+
+        // When
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap(), timeWithOffset(RESOURCE_DURATION_MS))
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue)
+                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionTimeseries(false)
+        }
+    }
+
+    @Test
+    fun `M keep has_timeseries W handleEvent(StopResource) { collected at resource start }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long
+    ) {
+        // Given
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext.copy(hasTimeseries = true)
+        testedScope = createTestedScope()
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext.copy(hasTimeseries = false)
+
+        // When
+        mockEvent =
+            RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap(), timeWithOffset(RESOURCE_DURATION_MS))
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue)
+                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionTimeseries(true)
+        }
+    }
+
+    // endregion
+
     // region InsightsCollector
 
     @Test
@@ -3903,6 +4029,23 @@ internal class RumResourceScopeTest {
     private fun resolveExpectedTimestamp(): Long {
         return fakeEventTime.timestamp + fakeServerOffset
     }
+
+    private fun createTestedScope() = RumResourceScope(
+        parentScope = mockParentScope,
+        sdkCore = rumMonitor.mockSdkCore,
+        url = fakeUrl,
+        method = fakeMethod,
+        key = fakeKey,
+        eventTime = fakeEventTime,
+        initialAttributes = fakeResourceAttributes,
+        serverTimeOffsetInMs = fakeServerOffset,
+        firstPartyHostHeaderTypeResolver = mockResolver,
+        featuresContextResolver = mockFeaturesContextResolver,
+        sampleRate = fakeSampleRate,
+        networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+        rumSessionTypeOverride = fakeRumSessionType,
+        insightsCollector = mockInsightsCollector
+    )
 
     // endregion
 

@@ -446,6 +446,7 @@ internal class SnapshotCaptureOrchestratorTest {
         val stubTimeBank = object : TimeBank {
             override fun consume(executionTime: Long) = Unit
             override fun updateAndCheck(timestamp: Long): Boolean = fakeAdmitted
+            override fun timeUntilAvailableInNs(): Long = 0L
         }
         val testedTimeBudget = TimeBankCaptureTimeBudget(stubTimeBank)
 

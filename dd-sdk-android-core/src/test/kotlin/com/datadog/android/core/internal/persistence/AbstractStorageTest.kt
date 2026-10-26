@@ -33,7 +33,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -85,10 +84,14 @@ internal class AbstractStorageTest {
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockPersistenceStrategyFactory.create(argThat { contains("/GRANTED") }, any(), any()))
-            .doReturn(mockGrantedPersistenceStrategy)
-        whenever(mockPersistenceStrategyFactory.create(argThat { contains("/PENDING") }, any(), any()))
-            .doReturn(mockPendingPersistenceStrategy)
+        whenever(mockPersistenceStrategyFactory.create(any(), any(), any())) doAnswer {
+            val identifier = it.getArgument<String>(0)
+            when {
+                identifier.contains("/GRANTED") -> mockGrantedPersistenceStrategy
+                identifier.contains("/PENDING") -> mockPendingPersistenceStrategy
+                else -> null
+            }
+        }
 
         testedStorage = AbstractStorage(
             fakeSdkInstanceId,

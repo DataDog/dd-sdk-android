@@ -10,7 +10,7 @@ androidx.lifecycle:lifecycle-common:2.6.2                       :   51 Kb
 androidx.lifecycle:lifecycle-runtime:2.6.2                      :   21 Kb
 androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
 com.google.code.gson:gson:2.10.1                                :  276 Kb
-com.squareup.okhttp3:okhttp:4.12.0                              :  771 Kb
+com.squareup.okhttp3:okhttp:4.12.1                              :  773 Kb
 com.squareup.okio:okio-jvm:3.6.0                                :  351 Kb
 org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
 org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
