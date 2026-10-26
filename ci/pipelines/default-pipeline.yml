@@ -52,6 +52,7 @@ stages:
         "-Dorg.gradle.jvmargs=${gradle_jvm_args[*]}"
         "-Dorg.gradle.workers.max=16"
         "-Dorg.gradle.logging.stacktrace=all"
+        "-Dorg.gradle.project.kotlin.compiler.execution.strategy=in-process"
       )
 
       printf -v configured_gradle_options ' %q' "${gradle_options[@]}"
