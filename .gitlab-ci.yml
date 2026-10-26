@@ -10,8 +10,6 @@ variables:
   # Disable the DD Javac compiler plugin auto-config; it injects annotations into all compiled classes, breaking R8 for consumers.
   DD_COMMON_AGENT_CONFIG: "dd.env=ci,dd.trace.enabled=false,dd.jmx.fetch.enabled=false,dd.civisibility.compiler.plugin.auto.configuration.enabled=false"
 
-  ANDROID_API: "36"
-  ANDROID_SDK_VERSION: "commandlinetools-mac-13114758_latest"
 
   SLACK_OPS_CHANNEL: "#dd-sdk-android-ops"
 
