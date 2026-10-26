@@ -36,9 +36,10 @@ test-pyramid:core-it-latest-api-kvm:
   timeout: 1h
   variables:
     # The 20 CPU request of .cpu-memory-intensive-job does not fit the KVM nodes.
-    KUBERNETES_CPU_REQUEST: 2
-    KUBERNETES_MEMORY_REQUEST: "8Gi"
+    KUBERNETES_CPU_REQUEST: 4
+    KUBERNETES_MEMORY_REQUEST: "32Gi"
     KUBERNETES_MEMORY_LIMIT: "32Gi"
+    KUBERNETES_POD_ANNOTATIONS_1: "ci.ddbuild.io/enforce-static-cpus=true"
     ANDROID_API: "37"
     # KVM accelerates only guests that match the host architecture, hence x86_64 instead of arm64-v8a.
     ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API.0;google_apis_ps16k;x86_64"
