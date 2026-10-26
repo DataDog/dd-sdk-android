@@ -25,6 +25,7 @@ import com.datadog.android.sessionreplay.model.MobileSegment.MobileIncrementalDa
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -41,10 +42,13 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
@@ -96,13 +100,14 @@ internal class CompositionWindowTouchCallbackTest {
 
     @LongForgery(min = 0L)
     private var fakeElapsedTimeNs: Long = 0L
-    private var fakeReadyScope: TouchPrivacyScope? = TouchPrivacyScope(RumViewIdentityScope("view"), 0L)
+    private var fakeReadyScope: TouchPrivacyScope? = null
 
     @BeforeEach
     fun `set up`() {
+        fakeReadyScope = TouchPrivacyScope(RumViewIdentityScope(fakeRumContext.viewId), 0L)
         val mockResources = mock<Resources> {
-            val displayMetrics = DisplayMetrics().apply { density = fakeDensity.toFloat() }
-            whenever(it.displayMetrics).thenReturn(displayMetrics)
+            val fakeDisplayMetrics = DisplayMetrics().apply { density = fakeDensity.toFloat() }
+            whenever(it.displayMetrics).thenReturn(fakeDisplayMetrics)
         }
         whenever(mockContext.resources).thenReturn(mockResources)
         whenever(mockTimeProvider.getDeviceTimestampMillis()).thenReturn(fakeTimestamp)
@@ -113,9 +118,8 @@ internal class CompositionWindowTouchCallbackTest {
     }
 
     @Test
-    fun `M delegate to the wrappedCallback W dispatchTouchEvent`(forge: Forge) {
+    fun `M delegate to the wrappedCallback W dispatchTouchEvent`(@BoolForgery fakeReturnedValue: Boolean) {
         // Given
-        val fakeReturnedValue = forge.aBool()
         val mockEvent: MotionEvent = mock()
         whenever(mockWrappedCallback.dispatchTouchEvent(mockEvent)).thenReturn(fakeReturnedValue)
 
@@ -151,14 +155,12 @@ internal class CompositionWindowTouchCallbackTest {
             InternalLogger.Target.USER,
             "CompositionWindowTouchCallback: intercepted null motion event"
         )
-        verify(mockRecordWriter, never()).write(any(), any())
-        // the null event is never forwarded - delegating it would only trip the wrapped callback's
-        // own non-null parameter check, logging a second, redundant error for the same root cause.
-        verify(mockWrappedCallback, never()).dispatchTouchEvent(any())
+        verifyNoInteractions(mockRecordWriter)
+        verifyNoInteractions(mockWrappedCallback)
     }
 
     @Test
-    fun `M log the exception W wrappedCallback throws { null parameter }`() {
+    fun `M log the exception W dispatchTouchEvent() { wrappedCallback throws, null parameter }`() {
         // Given
         val mockEvent: MotionEvent = mock()
         whenever(mockWrappedCallback.dispatchTouchEvent(mockEvent)).thenAnswer {
@@ -178,12 +180,14 @@ internal class CompositionWindowTouchCallbackTest {
     }
 
     @Test
-    fun `M propagate the exception W wrappedCallback throws`(@Forgery fakeException: Exception) {
+    fun `M propagate the exception W dispatchTouchEvent() { wrappedCallback throws }`(
+        @Forgery fakeException: Exception
+    ) {
         // Given
         val mockEvent: MotionEvent = mock()
         whenever(mockWrappedCallback.dispatchTouchEvent(mockEvent)).thenThrow(fakeException)
 
-        // When + Then
+        // When / Then
         val caught = assertThrows<Exception> { testedCallback.dispatchTouchEvent(mockEvent) }
         assertThat(caught).isEqualTo(fakeException)
     }
@@ -205,7 +209,7 @@ internal class CompositionWindowTouchCallbackTest {
         verify(mockEventUtils).getPointerAbsoluteY(mockEvent, 0)
         verify(mockEvent, never()).x
         verify(mockEvent, never()).y
-        verify(mockTouchPrivacyManager).shouldRecordTouch(any())
+        verify(mockTouchPrivacyManager).shouldRecordTouch(isA())
     }
 
     @Test
@@ -213,15 +217,15 @@ internal class CompositionWindowTouchCallbackTest {
         // Given
         whenever(mockTouchPrivacyManager.shouldRecordTouch(any())).thenReturn(false)
         val fakeRecords = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
-        val downEvent = fakeRecords.asMotionEvent()
+        val mockDownEvent = fakeRecords.asMockMotionEvent()
 
         // When
-        testedCallback.dispatchTouchEvent(downEvent)
-        val upEvent = forge.touchRecords(MobileSegment.PointerEventType.UP).asMotionEvent()
-        testedCallback.dispatchTouchEvent(upEvent)
+        testedCallback.dispatchTouchEvent(mockDownEvent)
+        val mockUpEvent = forge.touchRecords(MobileSegment.PointerEventType.UP).asMockMotionEvent()
+        testedCallback.dispatchTouchEvent(mockUpEvent)
 
         // Then
-        verify(mockRecordWriter, never()).write(any(), any())
+        verifyNoInteractions(mockRecordWriter)
     }
 
     @Test
@@ -232,15 +236,15 @@ internal class CompositionWindowTouchCallbackTest {
         val fakeUpRecords = forge.touchRecords(MobileSegment.PointerEventType.UP)
 
         // When
-        testedCallback.dispatchTouchEvent(fakeDownRecords.asMotionEvent())
+        testedCallback.dispatchTouchEvent(fakeDownRecords.asMockMotionEvent())
         fakeElapsedTimeNs += TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS
-        testedCallback.dispatchTouchEvent(fakeMoveRecords.asMotionEvent())
-        testedCallback.dispatchTouchEvent(fakeUpRecords.asMotionEvent())
+        testedCallback.dispatchTouchEvent(fakeMoveRecords.asMockMotionEvent())
+        testedCallback.dispatchTouchEvent(fakeUpRecords.asMockMotionEvent())
 
         // Then
         val expectedRecords = fakeDownRecords + fakeMoveRecords + fakeUpRecords
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockRecordWriter).write(captor.capture(), any())
+        verify(mockRecordWriter).write(captor.capture(), isA())
         assertThat(captor.firstValue).isEqualTo(
             EnrichedRecord(
                 applicationId = fakeRumContext.applicationId,
@@ -258,10 +262,10 @@ internal class CompositionWindowTouchCallbackTest {
         val fakeUpRecords = forge.touchRecords(MobileSegment.PointerEventType.UP)
 
         // When
-        testedCallback.dispatchTouchEvent(fakeUpRecords.asMotionEvent())
+        testedCallback.dispatchTouchEvent(fakeUpRecords.asMockMotionEvent())
 
         // Then
-        verify(mockRecordWriter, never()).write(any(), any())
+        verifyNoInteractions(mockRecordWriter)
     }
 
     @Test
@@ -274,20 +278,19 @@ internal class CompositionWindowTouchCallbackTest {
         val fakeEvent5Records = forge.touchRecords(MobileSegment.PointerEventType.UP)
 
         // When
-        testedCallback.dispatchTouchEvent(fakeEvent1Records.asMotionEvent())
+        testedCallback.dispatchTouchEvent(fakeEvent1Records.asMockMotionEvent())
         fakeElapsedTimeNs += TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS
-        testedCallback.dispatchTouchEvent(fakeEvent2Records.asMotionEvent())
-        // must skip event 3: the motion update delay was not reached
+        testedCallback.dispatchTouchEvent(fakeEvent2Records.asMockMotionEvent())
         fakeElapsedTimeNs += TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS / 2
-        testedCallback.dispatchTouchEvent(fakeEvent3Records.asMotionEvent())
+        testedCallback.dispatchTouchEvent(fakeEvent3Records.asMockMotionEvent())
         fakeElapsedTimeNs += TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS
-        testedCallback.dispatchTouchEvent(fakeEvent4Records.asMotionEvent())
-        testedCallback.dispatchTouchEvent(fakeEvent5Records.asMotionEvent())
+        testedCallback.dispatchTouchEvent(fakeEvent4Records.asMockMotionEvent())
+        testedCallback.dispatchTouchEvent(fakeEvent5Records.asMockMotionEvent())
 
         // Then
         val expectedRecords = fakeEvent1Records + fakeEvent2Records + fakeEvent4Records + fakeEvent5Records
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockRecordWriter).write(captor.capture(), any())
+        verify(mockRecordWriter).write(captor.capture(), isA())
         assertThat(captor.firstValue.records).isEqualTo(expectedRecords)
     }
 
@@ -299,60 +302,92 @@ internal class CompositionWindowTouchCallbackTest {
         val fakeMoveRecords2 = forge.touchRecords(MobileSegment.PointerEventType.MOVE)
 
         // When
-        testedCallback.dispatchTouchEvent(fakeDownRecords.asMotionEvent())
+        testedCallback.dispatchTouchEvent(fakeDownRecords.asMockMotionEvent())
         fakeElapsedTimeNs += TEST_FLUSH_BUFFER_THRESHOLD_NS
-        testedCallback.dispatchTouchEvent(fakeMoveRecords1.asMotionEvent())
+        testedCallback.dispatchTouchEvent(fakeMoveRecords1.asMockMotionEvent())
         fakeElapsedTimeNs += TEST_FLUSH_BUFFER_THRESHOLD_NS
-        testedCallback.dispatchTouchEvent(fakeMoveRecords2.asMotionEvent())
+        testedCallback.dispatchTouchEvent(fakeMoveRecords2.asMockMotionEvent())
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockRecordWriter, times(2)).write(captor.capture(), any())
+        verify(mockRecordWriter, times(2)).write(captor.capture(), isA())
         assertThat(captor.firstValue.records).isEqualTo(fakeDownRecords + fakeMoveRecords1)
         assertThat(captor.secondValue.records).isEqualTo(fakeMoveRecords2)
     }
 
     @Test
-    fun `M discard a gesture and its buffer W privacy scope changes`(forge: Forge) {
+    fun `M discard a gesture and its buffer W dispatchTouchEvent() { privacy scope changes }`(forge: Forge) {
         // Given
-        testedCallback.dispatchTouchEvent(forge.touchRecords(MobileSegment.PointerEventType.DOWN).asMotionEvent())
+        testedCallback.dispatchTouchEvent(forge.touchRecords(MobileSegment.PointerEventType.DOWN).asMockMotionEvent())
 
-        // When: the new scope is ready without an intervening event during initialization.
-        fakeReadyScope = TouchPrivacyScope(RumViewIdentityScope("next-view"), 0L)
-        testedCallback.dispatchTouchEvent(forge.touchRecords(MobileSegment.PointerEventType.UP).asMotionEvent())
+        // When
+        fakeReadyScope = TouchPrivacyScope(RumViewIdentityScope(fakeRumContext.viewId + "-next"), 0L)
+        testedCallback.dispatchTouchEvent(forge.touchRecords(MobileSegment.PointerEventType.UP).asMockMotionEvent())
 
         // Then
-        verify(mockRecordWriter, never()).write(any(), any())
+        verifyNoInteractions(mockRecordWriter)
+    }
+
+    @Test
+    fun `M record a fresh gesture W dispatchTouchEvent() { previous RUM view gesture discarded }`(forge: Forge) {
+        // Given
+        testedCallback.dispatchTouchEvent(forge.touchRecords(MobileSegment.PointerEventType.DOWN).asMockMotionEvent())
+
+        fakeReadyScope = TouchPrivacyScope(RumViewIdentityScope(fakeRumContext.viewId + "-next"), 0L)
+        testedCallback.dispatchTouchEvent(forge.touchRecords(MobileSegment.PointerEventType.UP).asMockMotionEvent())
+
         val fakeDownRecords = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
         val fakeUpRecords = forge.touchRecords(MobileSegment.PointerEventType.UP)
-        testedCallback.dispatchTouchEvent(fakeDownRecords.asMotionEvent())
-        testedCallback.dispatchTouchEvent(fakeUpRecords.asMotionEvent())
+
+        // When
+        testedCallback.dispatchTouchEvent(fakeDownRecords.asMockMotionEvent())
+        testedCallback.dispatchTouchEvent(fakeUpRecords.asMockMotionEvent())
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockRecordWriter).write(captor.capture(), any())
+
+        // Then
+        verify(mockRecordWriter).write(captor.capture(), isA())
         assertThat(captor.firstValue.records).isEqualTo(fakeDownRecords + fakeUpRecords)
     }
 
     @Test
-    fun `M discard buffered gesture W privacy revision changes in the same RUM view`(
+    fun `M discard buffered gesture W dispatchTouchEvent() { privacy revision changes in the same RUM view }`(
         @Forgery fakePrivacyScope: TouchPrivacyScope,
         forge: Forge
     ) {
         // Given
         fakeReadyScope = fakePrivacyScope
-        testedCallback.dispatchTouchEvent(forge.touchRecords(MobileSegment.PointerEventType.DOWN).asMotionEvent())
+        testedCallback.dispatchTouchEvent(forge.touchRecords(MobileSegment.PointerEventType.DOWN).asMockMotionEvent())
 
-        // When: a fresh map becomes ready without any touch event during the dirty interval.
+        // When
         fakeReadyScope = fakePrivacyScope.copy(version = fakePrivacyScope.version + 1)
-        testedCallback.dispatchTouchEvent(forge.touchRecords(MobileSegment.PointerEventType.UP).asMotionEvent())
+        testedCallback.dispatchTouchEvent(forge.touchRecords(MobileSegment.PointerEventType.UP).asMockMotionEvent())
 
         // Then
-        verify(mockRecordWriter, never()).write(any(), any())
+        verifyNoInteractions(mockRecordWriter)
+    }
+
+    @Test
+    fun `M record a fresh gesture W dispatchTouchEvent() { previous privacy revision discarded }`(
+        @Forgery fakePrivacyScope: TouchPrivacyScope,
+        forge: Forge
+    ) {
+        // Given
+        fakeReadyScope = fakePrivacyScope
+        testedCallback.dispatchTouchEvent(forge.touchRecords(MobileSegment.PointerEventType.DOWN).asMockMotionEvent())
+
+        fakeReadyScope = fakePrivacyScope.copy(version = fakePrivacyScope.version + 1)
+        testedCallback.dispatchTouchEvent(forge.touchRecords(MobileSegment.PointerEventType.UP).asMockMotionEvent())
+
         val fakeDownRecords = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
         val fakeUpRecords = forge.touchRecords(MobileSegment.PointerEventType.UP)
-        testedCallback.dispatchTouchEvent(fakeDownRecords.asMotionEvent())
-        testedCallback.dispatchTouchEvent(fakeUpRecords.asMotionEvent())
+
+        // When
+        testedCallback.dispatchTouchEvent(fakeDownRecords.asMockMotionEvent())
+        testedCallback.dispatchTouchEvent(fakeUpRecords.asMockMotionEvent())
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockRecordWriter).write(captor.capture(), any())
+
+        // Then
+        verify(mockRecordWriter).write(captor.capture(), isA())
         assertThat(captor.firstValue.records).isEqualTo(fakeDownRecords + fakeUpRecords)
     }
 
@@ -394,23 +429,19 @@ internal class CompositionWindowTouchCallbackTest {
             }
     }
 
-    private fun List<MobileRecord.MobileIncrementalSnapshotRecord>.asMotionEvent(): MotionEvent {
-        val mockMotionEvent: MotionEvent = mock { event ->
-            whenever(event.pointerCount).thenReturn(this@asMotionEvent.size)
+    private fun List<MobileRecord.MobileIncrementalSnapshotRecord>.asMockMotionEvent(): MotionEvent =
+        mock { mockEvent ->
+            on { pointerCount } doReturn this@asMockMotionEvent.size
+            this@asMockMotionEvent.forEachIndexed { index, record ->
+                val fakeInteraction = record.data as MobileIncrementalData.PointerInteractionData
+                on { getPointerId(index) } doReturn fakeInteraction.pointerId.toInt()
+                on { action } doReturn fakeInteraction.pointerEventType.asMotionEventAction()
+                val fakeX = fakeInteraction.x.toInt() * fakeDensity
+                val fakeY = fakeInteraction.y.toInt() * fakeDensity
+                whenever(mockEventUtils.getPointerAbsoluteX(mockEvent, index)).thenReturn(fakeX.toFloat())
+                whenever(mockEventUtils.getPointerAbsoluteY(mockEvent, index)).thenReturn(fakeY.toFloat())
+            }
         }
-        this.forEachIndexed { index, record ->
-            val pointerInteractionData = record.data as MobileIncrementalData.PointerInteractionData
-            val pointerId = pointerInteractionData.pointerId.toInt()
-            whenever(mockMotionEvent.getPointerId(index)).thenReturn(pointerId)
-            val motionEventAction = pointerInteractionData.pointerEventType.asMotionEventAction()
-            whenever(mockMotionEvent.action).thenReturn(motionEventAction)
-            val expectedXPos = (pointerInteractionData.x.toInt() * fakeDensity).toFloat()
-            val expectedYPos = (pointerInteractionData.y.toInt() * fakeDensity).toFloat()
-            whenever(mockEventUtils.getPointerAbsoluteX(mockMotionEvent, index)).thenReturn(expectedXPos)
-            whenever(mockEventUtils.getPointerAbsoluteY(mockMotionEvent, index)).thenReturn(expectedYPos)
-        }
-        return mockMotionEvent
-    }
 
     private fun MobileSegment.PointerEventType.asMotionEventAction(): Int = when (this) {
         MobileSegment.PointerEventType.DOWN -> MotionEvent.ACTION_DOWN

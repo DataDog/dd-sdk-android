@@ -62,12 +62,12 @@ internal class CapturedViewGroupFallbackMapperTest {
         // Given
         val mockView: View = mock()
         whenever(mockView.background).thenReturn(null)
-        val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
-        val owner = factory.view(factory.window("window"), "owner")
-        val mappingContext = CapturedMappingContext(factory, owner, screenDensity = fakeDensity)
+        val fakeFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
+        val fakeOwner = fakeFactory.view(fakeFactory.window("window"), "owner")
+        val fakeMappingContext = CapturedMappingContext(fakeFactory, fakeOwner, screenDensity = fakeDensity)
 
         // When
-        val result = testedMapper.map(mockView, mappingContext)
+        val result = testedMapper.map(mockView, fakeMappingContext)
 
         // Then
         assertThat(result).isEqualTo(CapturedViewMapperResult.None)
@@ -90,17 +90,18 @@ internal class CapturedViewGroupFallbackMapperTest {
         whenever(mockDrawableToColorMapper.mapDrawableToColor(mockDrawable, mockInternalLogger)).thenReturn(fakeColor)
         whenever(mockColorStringFormatter.formatColorAsHexString(fakeColor)).thenReturn(fakeColorHexString)
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockView, fakeDensity)).thenReturn(fakeBounds)
-        val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
-        val owner = factory.view(factory.window("window"), "owner")
-        val mappingContext = CapturedMappingContext(factory, owner, screenDensity = fakeDensity)
+        val fakeFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
+        val fakeOwner = fakeFactory.view(fakeFactory.window("window"), "owner")
+        val fakeMappingContext = CapturedMappingContext(fakeFactory, fakeOwner, screenDensity = fakeDensity)
 
         // When
-        val result = testedMapper.map(mockView, mappingContext) as CapturedViewMapperResult.Wireframes
+        val result = testedMapper.map(mockView, fakeMappingContext) as CapturedViewMapperResult.Wireframes
 
         // Then
         val wireframe = result.wireframes.single() as CapturedWireframe.Shape
-        assertThat(wireframe.style?.backgroundColor).isEqualTo(fakeColorHexString)
-        assertThat(wireframe.style?.opacity).isNull()
+        val style = checkNotNull(wireframe.style) { "Expected the view's captured background style" }
+        assertThat(style.backgroundColor).isEqualTo(fakeColorHexString)
+        assertThat(style.opacity).isNull()
         assertThat(wireframe.bounds.x).isEqualTo(fakeBounds.x)
     }
 }

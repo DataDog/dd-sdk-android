@@ -23,6 +23,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(RumContextForgeryFactory())
 
         // Session Replay
+        forge.addFactory(CompositionTestTreeForgeryFactory())
         forge.addFactory(CapturedNativeSnapshotForgeryFactory())
         forge.addFactory(CapturedNativeWindowForgeryFactory())
         forge.addFactory(CapturedNativeViewForgeryFactory())

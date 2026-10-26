@@ -20,95 +20,126 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
-@ExtendWith(ForgeExtension::class)
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
 @ForgeConfiguration(ForgeConfigurator::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class CompositionProcessingIsolationTest {
+
+    @Test
+    fun `M construct another capture W runCompletion() { preceding completion still busy }`(forge: Forge) {
+        // Given
+        val fakeFixture = ProcessingFixture(forge)
+        var fakeConstructedWhileBusy = 0
+        fakeFixture.onCompletion = {
+            if (fakeFixture.fakeCompletedCount == 1) {
+                fakeFixture.fakeNowNs = TimeUnit.MILLISECONDS.toNanos(64)
+                fakeFixture.beginCapture()
+                fakeFixture.runConstruction()
+                fakeConstructedWhileBusy = fakeFixture.fakeConstructedCount
+            }
+        }
+        fakeFixture.testedPipeline.resumeRecorders()
+        fakeFixture.beginCapture()
+        fakeFixture.runConstruction()
+
+        // When
+        fakeFixture.runCompletion()
+
+        // Then
+        assertThat(fakeConstructedWhileBusy).isEqualTo(2)
+    }
 
     @ParameterizedTest
     @CsvSource("140, true", "154, false")
-    fun `M construct the next capture W completion is busy { original deadline still applies }`(
+    fun `M retain original deadline W runCompletion() { completion queue was busy }`(
         fakeCompletionTimeMs: Long,
         fakeExpectedWrite: Boolean,
         forge: Forge
     ) {
         // Given
-        val fixture = ProcessingFixture(forge)
-        fixture.onCompletion = {
-            if (fixture.fakeCompletedCount == 1) {
-                // The next draw occurs while the preceding capture is still being mapped.
-                fixture.fakeNowNs = TimeUnit.MILLISECONDS.toNanos(64)
-                fixture.beginCapture()
-                fixture.runConstruction()
-                assertThat(fixture.fakeConstructedCount).isEqualTo(2)
-                fixture.fakeNowNs = TimeUnit.MILLISECONDS.toNanos(fakeCompletionTimeMs)
+        val fakeFixture = ProcessingFixture(forge)
+        fakeFixture.onCompletion = {
+            if (fakeFixture.fakeCompletedCount == 1) {
+                fakeFixture.fakeNowNs = TimeUnit.MILLISECONDS.toNanos(64)
+                fakeFixture.beginCapture()
+                fakeFixture.runConstruction()
+                fakeFixture.fakeNowNs = TimeUnit.MILLISECONDS.toNanos(fakeCompletionTimeMs)
             }
         }
-        fixture.testedPipeline.resumeRecorders()
-        fixture.beginCapture()
-        fixture.runConstruction()
+        fakeFixture.testedPipeline.resumeRecorders()
+        fakeFixture.beginCapture()
+        fakeFixture.runConstruction()
 
         // When
-        fixture.runCompletion()
+        fakeFixture.runCompletion()
 
         // Then
-        assertThat(fixture.fakeCompletedCount).isEqualTo(if (fakeExpectedWrite) 2 else 1)
+        assertThat(fakeFixture.fakeCompletedCount).isEqualTo(if (fakeExpectedWrite) 2 else 1)
         if (fakeExpectedWrite) {
             val records = argumentCaptor<EnrichedRecord>()
-            verify(fixture.mockWriter).write(records.capture(), any())
+            verify(fakeFixture.mockWriter).write(records.capture(), isA())
             val record = records.firstValue.records.single() as MobileSegment.MobileRecord.MobileFullSnapshotRecord
-            assertThat(record.timestamp).isEqualTo(fixture.fakeTimestamp + 2)
+            assertThat(record.timestamp).isEqualTo(fakeFixture.fakeTimestamp + 2)
         } else {
-            verifyNoInteractions(fixture.mockWriter)
+            verifyNoInteractions(fakeFixture.mockWriter)
         }
     }
 
     @Test
     fun `M discard queued construction W stopProcessingRecords`(forge: Forge) {
         // Given
-        val fixture = ProcessingFixture(forge)
-        fixture.testedPipeline.resumeRecorders()
-        fixture.beginCapture()
+        val fakeFixture = ProcessingFixture(forge)
+        fakeFixture.testedPipeline.resumeRecorders()
+        fakeFixture.beginCapture()
 
         // When
-        fixture.testedPipeline.stopProcessingRecords()
-        fixture.runConstruction()
+        fakeFixture.testedPipeline.stopProcessingRecords()
+        fakeFixture.runConstruction()
 
         // Then
-        assertThat(fixture.fakeConstructedCount).isZero()
-        assertThat(fixture.fakeCompletionTasks).isEmpty()
-        verify(fixture.mockConstructionExecutor).shutdownNow()
-        verify(fixture.mockCompletionExecutor).shutdownNow()
-        verifyNoInteractions(fixture.mockWriter)
+        assertThat(fakeFixture.fakeConstructedCount).isZero()
+        assertThat(fakeFixture.fakeCompletionTasks).isEmpty()
+        verify(fakeFixture.mockConstructionExecutor).shutdownNow()
+        verify(fakeFixture.mockCompletionExecutor).shutdownNow()
+        verifyNoInteractions(fakeFixture.mockWriter)
     }
 
     @Test
-    fun `M discard in-flight completion W stopProcessingRecords`(forge: Forge) {
+    fun `M discard in-flight completion W runCompletion() { stopProcessingRecords }`(forge: Forge) {
         // Given
-        val fixture = ProcessingFixture(forge)
-        fixture.onCompletion = { fixture.testedPipeline.stopProcessingRecords() }
-        fixture.testedPipeline.resumeRecorders()
-        fixture.beginCapture()
-        fixture.runConstruction()
+        val fakeFixture = ProcessingFixture(forge)
+        fakeFixture.onCompletion = { fakeFixture.testedPipeline.stopProcessingRecords() }
+        fakeFixture.testedPipeline.resumeRecorders()
+        fakeFixture.beginCapture()
+        fakeFixture.runConstruction()
 
         // When
-        fixture.runCompletion()
+        fakeFixture.runCompletion()
 
         // Then
-        verify(fixture.mockConstructionExecutor).shutdownNow()
-        verify(fixture.mockCompletionExecutor).shutdownNow()
-        verifyNoInteractions(fixture.mockWriter)
+        verify(fakeFixture.mockConstructionExecutor).shutdownNow()
+        verify(fakeFixture.mockCompletionExecutor).shutdownNow()
+        verifyNoInteractions(fakeFixture.mockWriter)
     }
 
     private class ProcessingFixture(forge: Forge) {

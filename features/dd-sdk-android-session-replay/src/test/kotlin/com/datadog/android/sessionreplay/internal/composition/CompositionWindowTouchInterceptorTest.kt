@@ -17,93 +17,200 @@ import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.TouchPrivacy
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.recorder.callback.NoOpWindowCallback
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.clearInvocations
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class CompositionWindowTouchInterceptorTest {
 
+    @Forgery
+    lateinit var fakeRumContext: SessionReplayRumContext
+
     @Test
-    fun `M defer wrapping until decor is available W intercept { decor initially missing }`() {
+    fun `M defer callback wrapping W intercept() { decor unavailable }`() {
         // Given
-        val mockRoot: View = mock()
-        val mockWindow: Window = mock()
-        val mockExistingCallback: Window.Callback = mock()
-        whenever(mockWindow.callback).thenReturn(mockExistingCallback)
-        whenever(mockWindow.peekDecorView()).thenReturn(null)
-        val fakeSource = ActiveWindowSource()
-        val mockPrivacyManager: TouchPrivacyManager = mock()
-        val mockRumProvider: RumContextProvider = mock()
-        whenever(mockRumProvider.getRumContext()).thenReturn(SessionReplayRumContext("app", "session", "view"))
-        val testedInterceptor = buildInterceptor(mockPrivacyManager, fakeSource, mockRumProvider)
-        val mockEvent: MotionEvent = mock()
-        whenever(mockEvent.action).thenReturn(MotionEvent.ACTION_DOWN)
+        val fakeFixture = CallbackFixture(decorAvailable = false)
 
         // When
-        testedInterceptor.intercept(listOf(mockWindow))
-        verify(mockWindow, never()).callback = any()
-        whenever(mockWindow.peekDecorView()).thenReturn(mockRoot)
-        fakeSource.update(listOf(mockRoot))
-        fakeSource.publishTouchPrivacy(fakeSource.snapshot(), listOf(mockRoot), RumViewIdentityScope("view")) {}
-        testedInterceptor.intercept(listOf(mockWindow))
-        val fakeCallback = argumentCaptor<Window.Callback>()
-        verify(mockWindow).callback = fakeCallback.capture()
-        whenever(mockWindow.callback).thenReturn(fakeCallback.firstValue)
-        testedInterceptor.intercept(listOf(mockWindow))
-        fakeCallback.firstValue.dispatchTouchEvent(mockEvent)
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
 
         // Then
-        verify(mockWindow).callback = any()
-        verify(mockPrivacyManager).shouldRecordTouch(any(), any())
-        verify(mockExistingCallback).dispatchTouchEvent(mockEvent)
-        testedInterceptor.stop()
-        verify(mockWindow).callback = mockExistingCallback
+        verify(fakeFixture.mockWindow, never()).callback = any()
     }
 
     @Test
-    fun `M gate installed callback on captured window and scope W intercept`() {
+    fun `M wrap callback W intercept() { previously missing decor becomes available }`() {
         // Given
-        val mockRoot: View = mock()
-        val mockWindow: Window = mock()
-        whenever(mockWindow.peekDecorView()).thenReturn(mockRoot)
-        val fakeSource = ActiveWindowSource().apply { update(listOf(mockRoot)) }
-        val mockPrivacyManager: TouchPrivacyManager = mock()
-        val mockRumProvider: RumContextProvider = mock()
-        whenever(mockRumProvider.getRumContext()).thenReturn(SessionReplayRumContext("app", "session", "view"))
-        val testedInterceptor = buildInterceptor(mockPrivacyManager, fakeSource, mockRumProvider)
-        testedInterceptor.intercept(listOf(mockWindow))
-        val fakeCallback = argumentCaptor<Window.Callback>()
-        verify(mockWindow).callback = fakeCallback.capture()
-        val mockEvent: MotionEvent = mock()
-        whenever(mockEvent.action).thenReturn(MotionEvent.ACTION_DOWN)
+        val fakeFixture = CallbackFixture(decorAvailable = false)
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+        fakeFixture.attachRoot()
 
         // When
-        fakeCallback.firstValue.dispatchTouchEvent(mockEvent)
-        verify(mockPrivacyManager, never()).shouldRecordTouch(any(), any())
-        fakeSource.publishTouchPrivacy(fakeSource.snapshot(), listOf(mockRoot), RumViewIdentityScope("view")) {}
-        fakeCallback.firstValue.dispatchTouchEvent(mockEvent)
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
 
         // Then
-        verify(mockPrivacyManager).shouldRecordTouch(any(), any())
-        whenever(mockRumProvider.getRumContext()).thenReturn(SessionReplayRumContext("app", "session", "new"))
-        fakeCallback.firstValue.dispatchTouchEvent(mockEvent)
-        verify(mockPrivacyManager).shouldRecordTouch(any(), any())
-        testedInterceptor.stop()
-        assertThat(fakeSource.hasTouchPrivacy(mockRoot, RumViewIdentityScope("view"))).isFalse()
+        verify(fakeFixture.mockWindow).callback = isA<CompositionWindowTouchCallback>()
+    }
+
+    @Test
+    fun `M retain wrapper W intercept() { decor appeared after initial interception }`() {
+        // Given
+        val fakeFixture = CallbackFixture(decorAvailable = false)
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+        fakeFixture.attachRoot()
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+
+        // When
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+
+        // Then
+        verify(fakeFixture.mockWindow).callback = isA<CompositionWindowTouchCallback>()
+    }
+
+    @Test
+    fun `M apply privacy W dispatchTouchEvent() { decor appeared after initial interception }`() {
+        // Given
+        val fakeFixture = CallbackFixture(decorAvailable = false)
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+        fakeFixture.attachRoot()
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+        fakeFixture.publish()
+        val mockEvent = fakeFixture.mockDownEvent()
+
+        // When
+        fakeFixture.installedCallback().dispatchTouchEvent(mockEvent)
+
+        // Then
+        verify(fakeFixture.mockPrivacyManager).shouldRecordTouch(isA(), isA())
+    }
+
+    @Test
+    fun `M delegate touch W dispatchTouchEvent() { decor appeared after initial interception }`() {
+        // Given
+        val fakeFixture = CallbackFixture(decorAvailable = false)
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+        fakeFixture.attachRoot()
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+        fakeFixture.publish()
+        val mockEvent = fakeFixture.mockDownEvent()
+
+        // When
+        fakeFixture.installedCallback().dispatchTouchEvent(mockEvent)
+
+        // Then
+        verify(fakeFixture.mockOriginalCallback).dispatchTouchEvent(mockEvent)
+    }
+
+    @Test
+    fun `M restore callback W stop() { decor appeared after initial interception }`() {
+        // Given
+        val fakeFixture = CallbackFixture(decorAvailable = false)
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+        fakeFixture.attachRoot()
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+
+        // When
+        fakeFixture.testedInterceptor.stop()
+
+        // Then
+        verify(fakeFixture.mockWindow).callback = fakeFixture.mockOriginalCallback
+    }
+
+    @Test
+    fun `M defer privacy checks W dispatchTouchEvent() { window privacy unpublished }`() {
+        // Given
+        val fakeFixture = CallbackFixture()
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+        val mockEvent = fakeFixture.mockDownEvent()
+
+        // When
+        fakeFixture.installedCallback().dispatchTouchEvent(mockEvent)
+
+        // Then
+        verifyNoInteractions(fakeFixture.mockPrivacyManager)
+    }
+
+    @Test
+    fun `M apply published privacy W dispatchTouchEvent() { current RUM scope }`() {
+        // Given
+        val fakeFixture = CallbackFixture()
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+        fakeFixture.publish()
+        val mockEvent = fakeFixture.mockDownEvent()
+
+        // When
+        fakeFixture.installedCallback().dispatchTouchEvent(mockEvent)
+
+        // Then
+        verify(fakeFixture.mockPrivacyManager).shouldRecordTouch(isA(), isA())
+    }
+
+    @Test
+    fun `M reject previous scope privacy W dispatchTouchEvent() { RUM scope changed }`() {
+        // Given
+        val fakeFixture = CallbackFixture()
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+        fakeFixture.publish()
+        whenever(
+            fakeFixture.mockRumProvider.getRumContext()
+        ).thenReturn(fakeRumContext.copy(viewId = fakeRumContext.viewId + "-new", viewTimeOffsetMs = 0L))
+        val mockEvent = fakeFixture.mockDownEvent()
+
+        // When
+        fakeFixture.installedCallback().dispatchTouchEvent(mockEvent)
+
+        // Then
+        verifyNoInteractions(fakeFixture.mockPrivacyManager)
+    }
+
+    @Test
+    fun `M clear window privacy W stop()`() {
+        // Given
+        val fakeFixture = CallbackFixture()
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+        fakeFixture.publish()
+
+        // When
+        fakeFixture.testedInterceptor.stop()
+
+        // Then
+        assertThat(
+            fakeFixture.fakeSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isFalse()
     }
 
     @Test
@@ -162,15 +269,15 @@ internal class CompositionWindowTouchInterceptorTest {
         val mockWindow = mockWindowWithDecor()
         val testedInterceptor = buildInterceptor()
         testedInterceptor.intercept(listOf(mockWindow))
-        val captor = argumentCaptor<Window.Callback>()
-        verify(mockWindow).callback = captor.capture()
-        whenever(mockWindow.callback).thenReturn(captor.firstValue)
+        val fakeCaptor = argumentCaptor<Window.Callback>()
+        verify(mockWindow).callback = fakeCaptor.capture()
+        whenever(mockWindow.callback).thenReturn(fakeCaptor.firstValue)
 
         // When
         testedInterceptor.intercept(listOf(mockWindow))
 
         // Then
-        verify(mockWindow, times(1)).callback = any()
+        verify(mockWindow, times(1)).callback = isA()
     }
 
     @Test
@@ -181,9 +288,9 @@ internal class CompositionWindowTouchInterceptorTest {
         whenever(mockWindow.callback).thenReturn(mockExistingCallback)
         val testedInterceptor = buildInterceptor()
         testedInterceptor.intercept(listOf(mockWindow))
-        val captor = argumentCaptor<Window.Callback>()
-        verify(mockWindow).callback = captor.capture()
-        whenever(mockWindow.callback).thenReturn(captor.firstValue)
+        val fakeCaptor = argumentCaptor<Window.Callback>()
+        verify(mockWindow).callback = fakeCaptor.capture()
+        whenever(mockWindow.callback).thenReturn(fakeCaptor.firstValue)
 
         // When
         testedInterceptor.intercept(emptyList())
@@ -199,9 +306,9 @@ internal class CompositionWindowTouchInterceptorTest {
         whenever(mockWindow.callback).thenReturn(null)
         val testedInterceptor = buildInterceptor()
         testedInterceptor.intercept(listOf(mockWindow))
-        val captor = argumentCaptor<Window.Callback>()
-        verify(mockWindow).callback = captor.capture()
-        whenever(mockWindow.callback).thenReturn(captor.firstValue)
+        val fakeCaptor = argumentCaptor<Window.Callback>()
+        verify(mockWindow).callback = fakeCaptor.capture()
+        whenever(mockWindow.callback).thenReturn(fakeCaptor.firstValue)
 
         // When
         testedInterceptor.intercept(emptyList())
@@ -211,13 +318,13 @@ internal class CompositionWindowTouchInterceptorTest {
     }
 
     @Test
-    fun `M leave the window untouched W intercept { callback replaced since wrapping }`() {
+    fun `M leave the window untouched W stop() { intercept, callback replaced since wrapping }`() {
         // Given
         val mockWindow = mockWindowWithDecor()
         val testedInterceptor = buildInterceptor()
         testedInterceptor.intercept(listOf(mockWindow))
-        val someoneElsesCallback = mock<Window.Callback>()
-        whenever(mockWindow.callback).thenReturn(someoneElsesCallback)
+        val mockOtherCallback = mock<Window.Callback>()
+        whenever(mockWindow.callback).thenReturn(mockOtherCallback)
         clearInvocations(mockWindow)
 
         // When
@@ -234,12 +341,12 @@ internal class CompositionWindowTouchInterceptorTest {
         val mockWindowB = mockWindowWithDecor()
         val testedInterceptor = buildInterceptor()
         testedInterceptor.intercept(listOf(mockWindowA, mockWindowB))
-        val captorA = argumentCaptor<Window.Callback>()
-        val captorB = argumentCaptor<Window.Callback>()
-        verify(mockWindowA).callback = captorA.capture()
-        verify(mockWindowB).callback = captorB.capture()
-        whenever(mockWindowA.callback).thenReturn(captorA.firstValue)
-        whenever(mockWindowB.callback).thenReturn(captorB.firstValue)
+        val fakeCaptorA = argumentCaptor<Window.Callback>()
+        val fakeCaptorB = argumentCaptor<Window.Callback>()
+        verify(mockWindowA).callback = fakeCaptorA.capture()
+        verify(mockWindowB).callback = fakeCaptorB.capture()
+        whenever(mockWindowA.callback).thenReturn(fakeCaptorA.firstValue)
+        whenever(mockWindowB.callback).thenReturn(fakeCaptorB.firstValue)
 
         // When
         testedInterceptor.stop()
@@ -252,71 +359,160 @@ internal class CompositionWindowTouchInterceptorTest {
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
     fun `M discard previous screen overrides W stop and resume`(fakeHasWindow: Boolean) {
-        // Given: a previously published SHOW area overrides the global HIDE policy.
+        // Given
         val fakePrivacyManager = TouchPrivacyManager(TouchPrivacy.HIDE)
-        val stubArea: Rect = mock()
-        whenever(stubArea.contains(any<Int>(), any<Int>())).thenReturn(true)
-        fakePrivacyManager.replaceCurrentTouchOverrideAreas(mapOf(stubArea to TouchPrivacy.SHOW))
+        val mockArea: Rect = mock()
+        whenever(mockArea.contains(any<Int>(), any<Int>())).thenReturn(true)
+        fakePrivacyManager.replaceCurrentTouchOverrideAreas(mapOf(mockArea to TouchPrivacy.SHOW))
         val testedInterceptor = buildInterceptor(fakePrivacyManager)
         val fakeWindows = if (fakeHasWindow) listOf(mockWindowWithDecor()) else emptyList()
         testedInterceptor.intercept(fakeWindows)
-        assertThat(fakePrivacyManager.shouldRecordTouch(Point())).isTrue()
 
-        // When: interception resumes before a new snapshot has published any overrides.
+        // When
         testedInterceptor.stop()
         testedInterceptor.intercept(fakeWindows)
 
-        // Then: old SHOW regions no longer apply, but fresh overrides can still be published.
+        // Then
         assertThat(fakePrivacyManager.getCurrentOverrideAreas()).isEmpty()
         assertThat(fakePrivacyManager.shouldRecordTouch(Point())).isFalse()
-        fakePrivacyManager.replaceCurrentTouchOverrideAreas(mapOf(stubArea to TouchPrivacy.SHOW))
-        assertThat(fakePrivacyManager.shouldRecordTouch(Point())).isTrue()
     }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M rewrap replaced callback once W intercept { replacement may delegate to old wrapper }`(
+    fun `M accept fresh overrides W replaceCurrentTouchOverrideAreas() { resumed }`(fakeHasWindow: Boolean) {
+        // Given
+        val fakePrivacyManager = TouchPrivacyManager(TouchPrivacy.HIDE)
+        val mockArea: Rect = mock()
+        whenever(mockArea.contains(any<Int>(), any<Int>())).thenReturn(true)
+        fakePrivacyManager.replaceCurrentTouchOverrideAreas(mapOf(mockArea to TouchPrivacy.SHOW))
+        val testedInterceptor = buildInterceptor(fakePrivacyManager)
+        val fakeWindows = if (fakeHasWindow) listOf(mockWindowWithDecor()) else emptyList()
+        testedInterceptor.intercept(fakeWindows)
+
+        testedInterceptor.stop()
+        testedInterceptor.intercept(fakeWindows)
+
+        // When
+        fakePrivacyManager.replaceCurrentTouchOverrideAreas(mapOf(mockArea to TouchPrivacy.SHOW))
+
+        // Then
+        assertThat(fakePrivacyManager.shouldRecordTouch(Point())).isTrue()
+    }
+
+    @Test
+    fun `M wrap replacement as delegate W intercept() { external callback replaced wrapper }`() {
+        // Given
+        val fakeFixture = CallbackFixture()
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+        val mockReplacement = fakeFixture.replaceCallback()
+
+        // When
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+
+        // Then
+        assertThat(fakeFixture.installedCallback().wrappedCallback).isSameAs(mockReplacement)
+    }
+
+    @Test
+    fun `M retain replacement wrapper W intercept() { replacement already wrapped }`() {
+        // Given
+        val fakeFixture = CallbackFixture()
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+        fakeFixture.replaceCallback()
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+
+        // When
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+
+        // Then
+        verify(fakeFixture.mockWindow, times(2)).callback = isA<CompositionWindowTouchCallback>()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M apply privacy once W dispatchTouchEvent() { replacement may delegate to old wrapper }`(
         fakeDelegatesToOldWrapper: Boolean
     ) {
         // Given
-        val mockRoot: View = mock()
-        val mockWindow: Window = mock()
-        whenever(mockWindow.peekDecorView()).thenReturn(mockRoot)
-        val fakeSource = ActiveWindowSource().apply { update(listOf(mockRoot)) }
-        val mockPrivacyManager: TouchPrivacyManager = mock()
-        val mockRumProvider: RumContextProvider = mock()
-        whenever(mockRumProvider.getRumContext()).thenReturn(SessionReplayRumContext("app", "session", "view"))
-        val testedInterceptor = buildInterceptor(mockPrivacyManager, fakeSource, mockRumProvider)
-        testedInterceptor.intercept(listOf(mockWindow))
-        val fakeCallbacks = argumentCaptor<Window.Callback>()
-        verify(mockWindow).callback = fakeCallbacks.capture()
-        val fakeOriginalWrapper = fakeCallbacks.firstValue
-        val mockReplacement: Window.Callback = mock()
-        if (fakeDelegatesToOldWrapper) {
-            whenever(mockReplacement.dispatchTouchEvent(any())).thenAnswer {
-                fakeOriginalWrapper.dispatchTouchEvent(it.getArgument(0))
-            }
-        }
-        whenever(mockWindow.callback).thenReturn(mockReplacement)
-        fakeSource.publishTouchPrivacy(fakeSource.snapshot(), listOf(mockRoot), RumViewIdentityScope("view")) {}
+        val fakeFixture = CallbackFixture()
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+        val mockReplacement = fakeFixture.replaceCallback(fakeDelegatesToOldWrapper)
+        fakeFixture.publish()
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+        val mockEvent = fakeFixture.mockDownEvent()
 
         // When
-        testedInterceptor.intercept(listOf(mockWindow))
-        verify(mockWindow, times(2)).callback = fakeCallbacks.capture()
-        val fakeNewWrapper = fakeCallbacks.lastValue as CompositionWindowTouchCallback
-        whenever(mockWindow.callback).thenReturn(fakeNewWrapper)
-        testedInterceptor.intercept(listOf(mockWindow))
-        val mockDown: MotionEvent = mock()
-        whenever(mockDown.action).thenReturn(MotionEvent.ACTION_DOWN)
-        fakeNewWrapper.dispatchTouchEvent(mockDown)
+        fakeFixture.installedCallback().dispatchTouchEvent(mockEvent)
 
-        // Then: preserve delegation, deactivate any nested old recorder and avoid repeated wrapping.
-        assertThat(fakeNewWrapper.wrappedCallback).isSameAs(mockReplacement)
-        verify(mockWindow, times(2)).callback = any()
-        verify(mockPrivacyManager).shouldRecordTouch(any(), any())
-        verify(mockReplacement).dispatchTouchEvent(mockDown)
-        testedInterceptor.stop()
-        verify(mockWindow).callback = mockReplacement
+        // Then
+        verify(fakeFixture.mockPrivacyManager).shouldRecordTouch(isA(), isA())
+        verify(mockReplacement).dispatchTouchEvent(mockEvent)
+    }
+
+    @Test
+    fun `M restore replacement callback W stop()`() {
+        // Given
+        val fakeFixture = CallbackFixture()
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+        val mockReplacement = fakeFixture.replaceCallback()
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockWindow))
+
+        // When
+        fakeFixture.testedInterceptor.stop()
+
+        // Then
+        verify(fakeFixture.mockWindow).callback = mockReplacement
+    }
+
+    private inner class CallbackFixture(decorAvailable: Boolean = true) {
+        val mockRoot: View = mock()
+        val mockOriginalCallback: Window.Callback = mock()
+        val mockPrivacyManager: TouchPrivacyManager = mock()
+        val mockRumProvider: RumContextProvider = mock {
+            on { getRumContext() } doReturn fakeRumContext.copy(viewTimeOffsetMs = 0L)
+        }
+        private var mockDecor: View? = mockRoot.takeIf { decorAvailable }
+        private var fakeCurrentCallback: Window.Callback? = mockOriginalCallback
+        val mockWindow: Window = mock {
+            on { peekDecorView() } doAnswer { mockDecor }
+            on { callback } doAnswer { fakeCurrentCallback }
+        }
+        val fakeSource = ActiveWindowSource().apply { update(listOf(mockRoot)) }
+        val testedInterceptor = buildInterceptor(mockPrivacyManager, fakeSource, mockRumProvider)
+
+        init {
+            doAnswer { fakeCurrentCallback = it.getArgument(0); null }
+                .whenever(mockWindow).callback = anyOrNull()
+        }
+
+        fun attachRoot() {
+            mockDecor = mockRoot
+            fakeSource.update(listOf(mockRoot))
+        }
+
+        fun installedCallback(): CompositionWindowTouchCallback = fakeCurrentCallback as CompositionWindowTouchCallback
+
+        fun publish() {
+            fakeSource.publishTouchPrivacy(
+                fakeSource.snapshot(),
+                listOf(mockRoot),
+                RumViewIdentityScope(fakeRumContext.viewId)
+            ) {}
+        }
+
+        fun mockDownEvent(): MotionEvent = mock { on { action } doReturn MotionEvent.ACTION_DOWN }
+
+        fun replaceCallback(delegateToOldWrapper: Boolean = false): Window.Callback {
+            val fakeOldWrapper = installedCallback()
+            val mockReplacement: Window.Callback = mock()
+            if (delegateToOldWrapper) {
+                whenever(mockReplacement.dispatchTouchEvent(any())).thenAnswer {
+                    fakeOldWrapper.dispatchTouchEvent(it.getArgument(0))
+                }
+            }
+            fakeCurrentCallback = mockReplacement
+            return mockReplacement
+        }
     }
 
     private fun mockWindowWithDecor(): Window = mock {

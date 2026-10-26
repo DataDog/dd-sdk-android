@@ -13,8 +13,12 @@ internal fun WindowCopyResult.buildWindow(context: CaptureGenerationContext): Wi
     WindowCopyResult.Aborted -> WindowWalkResult.Aborted
     WindowCopyResult.Filtered -> WindowWalkResult.Filtered
     is WindowCopyResult.Present -> {
-        val built = checkNotNull(CapturedNativeSnapshotBuilder().buildWindow(window, context))
-        WindowWalkResult.Present(built.rootLayer, built.layers, built.wireframes, touchOverrideAreas)
+        val built = CapturedNativeSnapshotBuilder().buildWindow(window, context)
+        if (built == null) {
+            WindowWalkResult.Aborted
+        } else {
+            WindowWalkResult.Present(built.rootLayer, built.layers, built.wireframes, touchOverrideAreas)
+        }
     }
 }
 

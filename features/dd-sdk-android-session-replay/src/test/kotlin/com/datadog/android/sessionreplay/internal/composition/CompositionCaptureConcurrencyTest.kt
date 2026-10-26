@@ -19,17 +19,23 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.kotlin.any
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -44,22 +50,41 @@ import java.util.concurrent.atomic.AtomicInteger
  * relative order.
  */
 @Extensions(
+    ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
 @ForgeConfiguration(ForgeConfigurator::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class CompositionCaptureConcurrencyTest {
 
+    private val fakeExecutors = mutableListOf<ExecutorService>()
+    private val fakeWorkers = mutableListOf<Thread>()
+    private val fakeCleanupActions = mutableListOf<() -> Unit>()
+
+    @AfterEach
+    fun tearDown() {
+        fakeWorkers.filter(Thread::isAlive).forEach(Thread::interrupt)
+        fakeCleanupActions.asReversed().forEach { it() }
+        fakeExecutors.forEach(ExecutorService::shutdownNow)
+        fakeWorkers.forEach { it.awaitCompletion() }
+        fakeExecutors.forEach {
+            assertThat(it.awaitTermination(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                .describedAs("The test executor must terminate")
+                .isTrue()
+        }
+    }
+
     @Test
-    fun `M not throw W generation work is tracked and invalidated from multiple threads`(
+    fun `M not throw W track() + tryAccept() { concurrent generation work }`(
         @IntForgery(min = 2, max = 5) fakeThreadCount: Int,
         forge: Forge
     ) {
         // Given
         val testedContext = forge.aGenerationContext(deadlineNs = Long.MAX_VALUE)
-        val failures = CopyOnWriteArrayList<Throwable>()
+        val fakeFailures = CopyOnWriteArrayList<Throwable>()
 
         // When
-        hammer(fakeThreadCount, failures) { threadIndex ->
+        hammer(fakeThreadCount, fakeFailures) { threadIndex ->
             repeat(ITERATIONS) {
                 val work = CancellableCaptureWork {}
                 testedContext.track(work)
@@ -70,11 +95,11 @@ internal class CompositionCaptureConcurrencyTest {
         }
 
         // Then
-        assertThat(failures).isEmpty()
+        assertThat(fakeFailures).isEmpty()
     }
 
     @Test
-    fun `M never expose a partially updated window set W windows are read while being replaced`(
+    fun `M expose consistent windows W update() + currentWindows() { concurrent replacement }`(
         @IntForgery(min = 2, max = 4) fakeReaderCount: Int,
         forge: Forge
     ) {
@@ -82,11 +107,11 @@ internal class CompositionCaptureConcurrencyTest {
         val testedWindowSource = ActiveWindowSource()
         val fakeFirstWindows = forge.aList(size = WINDOW_SET_SIZE) { mock<View>() }
         val fakeSecondWindows = forge.aList(size = WINDOW_SET_SIZE) { mock<View>() }
-        val failures = CopyOnWriteArrayList<Throwable>()
-        val mixedReads = AtomicInteger(0)
+        val fakeFailures = CopyOnWriteArrayList<Throwable>()
+        val fakeMixedReads = AtomicInteger(0)
 
         // When
-        hammer(fakeReaderCount + 1, failures) { threadIndex ->
+        hammer(fakeReaderCount + 1, fakeFailures) { threadIndex ->
             if (threadIndex == 0) {
                 repeat(ITERATIONS) {
                     testedWindowSource.update(if (it % 2 == 0) fakeFirstWindows else fakeSecondWindows)
@@ -97,32 +122,28 @@ internal class CompositionCaptureConcurrencyTest {
                     val isConsistent = windows.isEmpty() ||
                         windows == fakeFirstWindows ||
                         windows == fakeSecondWindows
-                    if (!isConsistent) mixedReads.incrementAndGet()
+                    if (!isConsistent) fakeMixedReads.incrementAndGet()
                 }
             }
         }
 
         // Then
-        assertThat(failures).isEmpty()
-        assertThat(mixedReads).hasValue(0)
+        assertThat(fakeFailures).isEmpty()
+        assertThat(fakeMixedReads).hasValue(0)
     }
 
     @Test
-    fun `M not throw W draw interception is refreshed and stopped from multiple threads`(
+    fun `M not throw W intercept() + stop() { draw interception is refreshed and stopped from multiple threads }`(
         @IntForgery(min = 2, max = 4) fakeThreadCount: Int,
         forge: Forge
     ) {
         // Given
-        val fakeDecorViews = forge.aList(size = WINDOW_SET_SIZE) { aliveDecorView() }
-        val testedInterceptor = CompositionViewOnDrawInterceptor(
-            windowSource = ActiveWindowSource(),
-            onWindowsChanged = CompositionChangeListener { },
-            internalLogger = mock()
-        )
-        val failures = CopyOnWriteArrayList<Throwable>()
+        val fakeDecorViews = forge.aList(size = WINDOW_SET_SIZE) { mockAliveDecorView() }
+        val testedInterceptor = drawInterceptor()
+        val fakeFailures = CopyOnWriteArrayList<Throwable>()
 
         // When
-        hammer(fakeThreadCount, failures) { threadIndex ->
+        hammer(fakeThreadCount, fakeFailures) { threadIndex ->
             repeat(ITERATIONS) {
                 if (threadIndex == 0 && it % INVALIDATION_INTERVAL == 0) {
                     testedInterceptor.stop()
@@ -133,28 +154,20 @@ internal class CompositionCaptureConcurrencyTest {
         }
 
         // Then
-        assertThat(failures).isEmpty()
+        assertThat(fakeFailures).isEmpty()
     }
 
     @Test
-    fun `M not throw W touch interception is refreshed and stopped from multiple threads`(
+    fun `M not throw W intercept() + stop() { touch interception is refreshed and stopped from multiple threads }`(
         @IntForgery(min = 2, max = 4) fakeThreadCount: Int
     ) {
         // Given
-        val fakeWindows = List(WINDOW_SET_SIZE) { touchableWindow() }
-        val testedInterceptor = CompositionWindowTouchInterceptor(
-            appContext = touchableAppContext(),
-            recordWriter = mock(),
-            timeProvider = mock(),
-            rumContextProvider = mock(),
-            touchPrivacyManager = mock(),
-            internalLogger = mock(),
-            windowSource = ActiveWindowSource()
-        )
-        val failures = CopyOnWriteArrayList<Throwable>()
+        val fakeWindows = List(WINDOW_SET_SIZE) { mockTouchableWindow() }
+        val testedInterceptor = touchInterceptor()
+        val fakeFailures = CopyOnWriteArrayList<Throwable>()
 
         // When
-        hammer(fakeThreadCount, failures) { threadIndex ->
+        hammer(fakeThreadCount, fakeFailures) { threadIndex ->
             repeat(ITERATIONS) {
                 if (threadIndex == 0 && it % INVALIDATION_INTERVAL == 0) {
                     testedInterceptor.stop()
@@ -165,178 +178,267 @@ internal class CompositionCaptureConcurrencyTest {
         }
 
         // Then
-        assertThat(failures).isEmpty()
+        assertThat(fakeFailures).isEmpty()
     }
 
     @Test
     fun `M wrap a window at most once W intercept calls race on the same window`() {
         // Given
-        // Forced interleaving: thread A is parked exactly where wrap() reads the window's existing
-        // callback - after intercept()'s synchronized "is this window new" check already said yes,
-        // but before the reservation is claimed. Thread B then runs intercept() for the same window
-        // while thread A is parked there, so both threads independently decide the window is new.
-        val enteredWindowCallback = CountDownLatch(1)
-        val releaseWindowCallback = CountDownLatch(1)
-        val blockNextAccess = AtomicBoolean(true)
-        val fakeWindow = touchableWindow()
-        whenever(fakeWindow.callback).thenAnswer {
-            if (blockNextAccess.compareAndSet(true, false)) {
-                enteredWindowCallback.countDown()
-                releaseWindowCallback.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-            }
-            null
-        }
-        val testedInterceptor = CompositionWindowTouchInterceptor(
-            appContext = touchableAppContext(),
-            recordWriter = mock(),
-            timeProvider = mock(),
-            rumContextProvider = mock(),
-            touchPrivacyManager = mock(),
-            internalLogger = mock(),
-            windowSource = ActiveWindowSource()
-        )
-        val failures = CopyOnWriteArrayList<Throwable>()
+        val fakeRace = ForcedInterceptionRace()
+        val mockWindow = mockTouchableWindow()
+        whenever(mockWindow.callback).thenAnswer { fakeRace.pauseFirstAccess(); null }
+        val testedInterceptor = touchInterceptor()
 
         // When
-        val threadA = Thread {
-            try {
-                testedInterceptor.intercept(listOf(fakeWindow))
-            } catch (e: Throwable) {
-                failures += e
-            }
-        }
-        threadA.start()
-        assertThat(enteredWindowCallback.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue()
-
-        val threadB = Thread {
-            try {
-                testedInterceptor.intercept(listOf(fakeWindow))
-            } catch (e: Throwable) {
-                failures += e
-            }
-        }
-        threadB.start()
-        threadB.join(AWAIT_TIMEOUT_MS)
-        releaseWindowCallback.countDown()
-        threadA.join(AWAIT_TIMEOUT_MS)
+        fakeRace.run { testedInterceptor.intercept(listOf(mockWindow)) }
 
         // Then
-        assertThat(failures).isEmpty()
-        verify(fakeWindow, times(1)).callback = any()
+        assertThat(fakeRace.failures).isEmpty()
+        verify(mockWindow, times(1)).callback = isA()
     }
 
     @Test
     fun `M register a draw listener at most once per view W intercept calls race on the same view`() {
         // Given
-        // Forced interleaving: thread A is parked exactly where addListener reads the view's
-        // ViewTreeObserver - after intercept()'s synchronized "is this view new" check already said
-        // yes, but before anything is registered or recorded. Thread B then runs intercept() for the
-        // same view while thread A is parked there, so both threads independently decide the view is
-        // new and both proceed to register a listener for it.
-        val enteredViewTreeObserver = CountDownLatch(1)
-        val releaseViewTreeObserver = CountDownLatch(1)
-        val blockNextAccess = AtomicBoolean(true)
+        val fakeRace = ForcedInterceptionRace()
         val mockObserver = mock<ViewTreeObserver>()
         whenever(mockObserver.isAlive).thenReturn(true)
-        val fakeView = mock<View>()
-        whenever(fakeView.viewTreeObserver).thenAnswer {
-            if (blockNextAccess.compareAndSet(true, false)) {
-                enteredViewTreeObserver.countDown()
-                releaseViewTreeObserver.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-            }
-            mockObserver
-        }
-        val testedInterceptor = CompositionViewOnDrawInterceptor(
-            windowSource = ActiveWindowSource(),
-            onWindowsChanged = CompositionChangeListener { },
-            internalLogger = mock()
-        )
-        val failures = CopyOnWriteArrayList<Throwable>()
+        val mockView = mock<View>()
+        whenever(mockView.viewTreeObserver).thenAnswer { fakeRace.pauseFirstAccess(); mockObserver }
+        val testedInterceptor = drawInterceptor()
 
         // When
-        val threadA = Thread {
-            try {
-                testedInterceptor.intercept(listOf(fakeView))
-            } catch (e: Throwable) {
-                failures += e
-            }
-        }
-        threadA.start()
-        assertThat(enteredViewTreeObserver.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue()
-
-        val threadB = Thread {
-            try {
-                testedInterceptor.intercept(listOf(fakeView))
-            } catch (e: Throwable) {
-                failures += e
-            }
-        }
-        threadB.start()
-        threadB.join(AWAIT_TIMEOUT_MS)
-        releaseViewTreeObserver.countDown()
-        threadA.join(AWAIT_TIMEOUT_MS)
+        fakeRace.run { testedInterceptor.intercept(listOf(mockView)) }
 
         // Then
-        assertThat(failures).isEmpty()
-        verify(mockObserver, times(1)).addOnDrawListener(any())
+        assertThat(fakeRace.failures).isEmpty()
+        verify(mockObserver, times(1)).addOnDrawListener(isA())
     }
 
     @Test
-    fun `M keep one generation active W draw signals arrive from multiple window threads`(
+    fun `M keep one generation active W requestCapture() { draw signals arrive from multiple window threads }`(
         @IntForgery(min = 2, max = 5) fakeWindowThreadCount: Int,
         forge: Forge
     ) {
         // Given
-        val concurrentCaptures = AtomicInteger(0)
-        val overlappingCaptures = AtomicInteger(0)
-        val fixture = ConcurrencyFixture(
+        val fakeConcurrentCaptures = AtomicInteger(0)
+        val fakeOverlappingCaptures = AtomicInteger(0)
+        val fakeFixture = ConcurrencyFixture(
             forge,
             onCapture = {
-                if (concurrentCaptures.incrementAndGet() > 1) overlappingCaptures.incrementAndGet()
-                concurrentCaptures.decrementAndGet()
+                if (fakeConcurrentCaptures.incrementAndGet() > 1) fakeOverlappingCaptures.incrementAndGet()
+                fakeConcurrentCaptures.decrementAndGet()
             }
         )
-        val failures = CopyOnWriteArrayList<Throwable>()
-        fixture.testedOrchestrator.start()
+        val fakeFailures = CopyOnWriteArrayList<Throwable>()
+        fakeFixture.testedOrchestrator.start()
 
         // When
-        hammer(fakeWindowThreadCount, failures) {
+        hammer(fakeWindowThreadCount, fakeFailures) {
             repeat(ITERATIONS) {
-                fixture.testedOrchestrator.requestCapture()
-                fixture.runScheduledCaptures()
+                fakeFixture.testedOrchestrator.requestCapture()
+                fakeFixture.runScheduledCaptures()
             }
         }
 
         // Then
-        assertThat(failures).isEmpty()
-        assertThat(overlappingCaptures).hasValue(0)
-        assertThat(fixture.generationIds()).doesNotHaveDuplicates()
+        assertThat(fakeFailures).isEmpty()
+        assertThat(fakeOverlappingCaptures).hasValue(0)
+        assertThat(fakeFixture.generationIds()).isNotEmpty().doesNotHaveDuplicates()
     }
 
     @Test
-    fun `M resolve every generation exactly once W expiry races a real async processor`(
+    fun `M resolve every generation exactly once W requestCapture() + stop() { expiry races a real async processor }`(
         @IntForgery(min = 2, max = 4) fakeWindowThreadCount: Int,
         forge: Forge
     ) {
         // Given
-        // Both schedulers below are real thread pools, distinct from the window threads and from
-        // each other: the expiry timer and the processor's completion callback genuinely race on
-        // separate threads for the same generation, unlike the other tests in this file which keep
-        // one of the two synchronous to test ordering instead.
-        val expiryExecutor = Executors.newScheduledThreadPool(2)
-        val processorExecutor = Executors.newFixedThreadPool(2)
+        val fakeFixture = AsyncExpiryRaceFixture(forge, RACE_GENERATION_BUDGET_NS, PROCESSOR_DELAY_RANGE_MS)
+        val fakeFailures = CopyOnWriteArrayList<Throwable>()
+        fakeFixture.testedOrchestrator.start()
+
+        // When
+        val deadlineNs = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(RACE_DURATION_MS)
+        hammer(fakeWindowThreadCount, fakeFailures) {
+            while (System.nanoTime() < deadlineNs) fakeFixture.testedOrchestrator.requestCapture()
+        }
+        Thread.sleep(SETTLE_MS)
+        fakeFixture.testedOrchestrator.stop()
+        val processorsTerminated = fakeFixture.stopExecutors()
+
+        // Then
+        assertThat(processorsTerminated).isTrue()
+        assertThat(fakeFailures).isEmpty()
+        assertThat(fakeFixture.createdGenerations).isNotEmpty()
+        assertThat(fakeFixture.consumedGenerationIds)
+            .describedAs("a generation resolved by both expiry and the processor would be consumed twice")
+            .doesNotHaveDuplicates()
+        assertThat(fakeFixture.createdGenerations.filter { it.isActive() })
+            .describedAs("no generation may stay active once the pipeline is stopped and in-flight work settles")
+            .isEmpty()
+    }
+
+    @Test
+    fun `M expire every generation W stop() { captures in flight }`(
+        @IntForgery(min = 2, max = 4) fakeWindowThreadCount: Int,
+        forge: Forge
+    ) {
+        // Given
+        val fakeFixture = ConcurrencyFixture(forge)
+        val fakeFailures = CopyOnWriteArrayList<Throwable>()
+        fakeFixture.testedOrchestrator.start()
+
+        // When
+        hammer(fakeWindowThreadCount + 1, fakeFailures) { threadIndex ->
+            if (threadIndex == 0) {
+                repeat(ITERATIONS / INVALIDATION_INTERVAL) {
+                    fakeFixture.testedOrchestrator.stop()
+                    fakeFixture.testedOrchestrator.start()
+                }
+            } else {
+                repeat(ITERATIONS) {
+                    fakeFixture.testedOrchestrator.requestCapture()
+                    fakeFixture.runScheduledCaptures()
+                }
+            }
+        }
+        fakeFixture.testedOrchestrator.stop()
+        fakeFixture.testedCompletionQueue.stop()
+
+        // Then
+        assertThat(fakeFailures).isEmpty()
+        assertThat(fakeFixture.createdGenerations.filter { it.isActive() })
+            .describedAs("no generation may stay active once the pipeline is stopped")
+            .isEmpty()
+    }
+
+    @Test
+    fun `M not process queued captures W consume() + stop() { the completion queue stops during processing }`(
+        @IntForgery(min = 2, max = 4) fakeQueuedCaptureCount: Int,
+        forge: Forge
+    ) {
+        // Given
+        val fakeProcessorEntered = CountDownLatch(1)
+        val fakeStopCompleted = CountDownLatch(1)
+        val fakeProcessedCaptures = CopyOnWriteArrayList<CompletedSnapshotCapture>()
+        val fakeExecutorService = Executors.newSingleThreadExecutor().also(fakeExecutors::add)
+        val testedQueue = SnapshotCompletionQueue(
+            executorService = fakeExecutorService,
+            processor = SnapshotCompletionProcessor { capture ->
+                fakeProcessedCaptures += capture
+                fakeProcessorEntered.countDown()
+                fakeStopCompleted.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            },
+            internalLogger = mock<InternalLogger>(),
+            maxQueuedCaptures = fakeQueuedCaptureCount + 1
+        ).also { fakeCleanupActions += it::stop }
+        val fakeCaptures = forge.aList(size = fakeQueuedCaptureCount + 1) { aCompletedCapture() }
+
+        // When
+        fakeCaptures.forEach(testedQueue::consume)
+        val processorStarted = fakeProcessorEntered.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        testedQueue.stop()
+        fakeStopCompleted.countDown()
+        fakeExecutorService.shutdownNow()
+        val executorTerminated = fakeExecutorService.awaitTermination(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+
+        // Then
+        assertThat(processorStarted).isTrue()
+        assertThat(executorTerminated).isTrue()
+        assertThat(fakeProcessedCaptures).hasSize(1)
+        assertThat(fakeCaptures.filter { it.generation.isActive() })
+            .describedAs("stop() must expire the in-flight capture and everything still queued")
+            .isEmpty()
+    }
+
+    @Test
+    fun `M expire oldest queued capture W consume() { concurrent completion blocked }`(
+        @IntForgery(min = 1, max = 4) fakeMaxQueuedCaptures: Int,
+        forge: Forge
+    ) {
+        // Given
+        val fakeFixture = QueueSaturationFixture(forge, fakeMaxQueuedCaptures)
+
+        // When
+        fakeFixture.fakeOverflowingCaptures.forEach(fakeFixture.testedQueue::consume)
+
+        // Then
+        assertThat(fakeFixture.fakeOverflowingCaptures.filterNot { it.generation.isActive() })
+            .containsExactly(fakeFixture.fakeOverflowingCaptures.first())
+    }
+
+    @Test
+    fun `M skip dropped capture W releaseAndDrain() { concurrent completion queue saturated }`(
+        @IntForgery(min = 1, max = 4) fakeMaxQueuedCaptures: Int,
+        forge: Forge
+    ) {
+        // Given
+        val fakeFixture = QueueSaturationFixture(forge, fakeMaxQueuedCaptures)
+        fakeFixture.fakeOverflowingCaptures.forEach(fakeFixture.testedQueue::consume)
+
+        // When
+        fakeFixture.releaseAndDrain()
+
+        // Then
+        assertThat(fakeFixture.fakeProcessedCaptures).doesNotContain(fakeFixture.fakeOverflowingCaptures.first())
+    }
+
+    /** Parks the first interception at its getter until the second interception returns. */
+    private inner class ForcedInterceptionRace {
+        private val firstEntered = CountDownLatch(1)
+        private val releaseFirst = CountDownLatch(1)
+        private val firstAccess = AtomicBoolean(true)
+        val failures = CopyOnWriteArrayList<Throwable>()
+
+        fun pauseFirstAccess() {
+            if (firstAccess.compareAndSet(true, false)) {
+                firstEntered.countDown()
+                check(releaseFirst.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                    "The first interception was not released"
+                }
+            }
+        }
+
+        fun run(intercept: () -> Unit) {
+            val first = worker(failures, intercept)
+            first.start()
+            try {
+                check(firstEntered.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                    "The first interception did not reach the blocked getter"
+                }
+                val second = worker(failures, intercept)
+                second.start()
+                second.awaitCompletion()
+            } finally {
+                releaseFirst.countDown()
+            }
+            first.awaitCompletion()
+        }
+    }
+
+    private inner class AsyncExpiryRaceFixture(
+        forge: Forge,
+        generationBudgetNs: Long,
+        processorDelayRangeMs: LongRange
+    ) {
+        private val expiryExecutor = Executors.newScheduledThreadPool(2).also(fakeExecutors::add)
+        private val processorExecutor = Executors.newFixedThreadPool(2).also(fakeExecutors::add)
         val createdGenerations = CopyOnWriteArrayList<CaptureGenerationContext>()
         val consumedGenerationIds = ConcurrentLinkedQueue<Long>()
-        val failures = CopyOnWriteArrayList<Throwable>()
-        val snapshot = forge.aCompositionTestTree().snapshot
+        private val fakeProcessorDelaysMs = forge.aList(size = ITERATIONS) {
+            aLong(min = processorDelayRangeMs.first, max = processorDelayRangeMs.last)
+        }
+        private val fakeSnapshot = forge.aCompositionTestTree().snapshot
         val testedOrchestrator = SnapshotCaptureOrchestrator(
             producer = CapturedSnapshotProducer { generation ->
                 createdGenerations += generation
-                snapshot
+                fakeSnapshot
             },
             processor = CapturedSnapshotProcessor { request, callback ->
+                val fakeDelayIndex = (request.generation.id % fakeProcessorDelaysMs.size).toInt()
+                val fakeDelayMs = fakeProcessorDelaysMs[fakeDelayIndex]
                 val future = processorExecutor.submit {
-                    Thread.sleep(PROCESSOR_DELAY_RANGE_MS.random())
+                    Thread.sleep(fakeDelayMs)
                     callback.onProcessed(
                         SnapshotProcessingResult.Completed(
                             request.generation.id,
@@ -348,163 +450,51 @@ internal class CompositionCaptureConcurrencyTest {
             },
             consumer = CompletedSnapshotConsumer { capture -> consumedGenerationIds += capture.generation.id },
             timeProvider = { System.nanoTime() },
-            captureScheduler = { _, task ->
-                task()
-                CancellableCaptureWork.NONE
-            },
-            mainThreadExecutor = { task ->
-                task()
-                CancellableCaptureWork.NONE
-            },
-            expiryScheduler = ExecutorCaptureTaskScheduler(
-                executorService = expiryExecutor,
-                internalLogger = mock()
-            ),
-            generationBudgetNs = RACE_GENERATION_BUDGET_NS,
+            captureScheduler = { _, task -> task(); CancellableCaptureWork.NONE },
+            mainThreadExecutor = { task -> task(); CancellableCaptureWork.NONE },
+            expiryScheduler = ExecutorCaptureTaskScheduler(expiryExecutor, mock()),
+            generationBudgetNs = generationBudgetNs,
             internalLogger = mock()
-        )
-        testedOrchestrator.start()
+        ).also { fakeCleanupActions += it::stop }
 
-        // When
-        val deadlineNs = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(RACE_DURATION_MS)
-        hammer(fakeWindowThreadCount, failures) {
-            while (System.nanoTime() < deadlineNs) {
-                testedOrchestrator.requestCapture()
-            }
+        fun stopExecutors(): Boolean {
+            processorExecutor.shutdown()
+            expiryExecutor.shutdownNow()
+            return processorExecutor.awaitTermination(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         }
-        // Lets whichever generation is still in flight resolve, via either the expiry timer or the
-        // processor callback, before the pipeline is torn down.
-        Thread.sleep(SETTLE_MS)
-        testedOrchestrator.stop()
-        processorExecutor.shutdown()
-        expiryExecutor.shutdownNow()
-        assertThat(processorExecutor.awaitTermination(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue()
-
-        // Then
-        assertThat(failures).isEmpty()
-        assertThat(createdGenerations).isNotEmpty()
-        assertThat(consumedGenerationIds)
-            .describedAs("a generation resolved by both expiry and the processor would be consumed twice")
-            .doesNotHaveDuplicates()
-        assertThat(createdGenerations.filter { it.isActive() })
-            .describedAs("no generation may stay active once the pipeline is stopped and in-flight work settles")
-            .isEmpty()
     }
 
-    @Test
-    fun `M expire every generation W the pipeline is stopped while captures are in flight`(
-        @IntForgery(min = 2, max = 4) fakeWindowThreadCount: Int,
-        forge: Forge
-    ) {
-        // Given
-        val fixture = ConcurrencyFixture(forge)
-        val failures = CopyOnWriteArrayList<Throwable>()
-        fixture.testedOrchestrator.start()
-
-        // When
-        hammer(fakeWindowThreadCount + 1, failures) { threadIndex ->
-            if (threadIndex == 0) {
-                repeat(ITERATIONS / INVALIDATION_INTERVAL) {
-                    fixture.testedOrchestrator.stop()
-                    fixture.testedOrchestrator.start()
-                }
-            } else {
-                repeat(ITERATIONS) {
-                    fixture.testedOrchestrator.requestCapture()
-                    fixture.runScheduledCaptures()
-                }
-            }
-        }
-        fixture.testedOrchestrator.stop()
-        fixture.testedCompletionQueue.stop()
-
-        // Then
-        assertThat(failures).isEmpty()
-        assertThat(fixture.createdGenerations.filter { it.isActive() })
-            .describedAs("no generation may stay active once the pipeline is stopped")
-            .isEmpty()
-    }
-
-    @Test
-    fun `M not process queued captures W the completion queue stops during processing`(
-        @IntForgery(min = 2, max = 4) fakeQueuedCaptureCount: Int,
-        forge: Forge
-    ) {
-        // Given
-        // Forced interleaving: the processor parks inside its critical section so that stop() is
-        // guaranteed to land while one capture is being processed and the rest are still queued.
-        val processorEntered = CountDownLatch(1)
-        val stopCompleted = CountDownLatch(1)
-        val processedCaptures = CopyOnWriteArrayList<CompletedSnapshotCapture>()
-        val executorService = Executors.newSingleThreadExecutor()
+    private inner class QueueSaturationFixture(forge: Forge, fakeCapacity: Int) {
+        private val fakeDrainBlocked = CountDownLatch(1)
+        private val fakeProcessorEntered = CountDownLatch(1)
+        val fakeProcessedCaptures = CopyOnWriteArrayList<CompletedSnapshotCapture>()
+        private val fakeExecutor = Executors.newSingleThreadExecutor().also(fakeExecutors::add)
         val testedQueue = SnapshotCompletionQueue(
-            executorService = executorService,
+            executorService = fakeExecutor,
             processor = SnapshotCompletionProcessor { capture ->
-                processedCaptures += capture
-                processorEntered.countDown()
-                stopCompleted.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                fakeProcessedCaptures += capture
+                fakeProcessorEntered.countDown()
+                fakeDrainBlocked.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             },
             internalLogger = mock<InternalLogger>(),
-            maxQueuedCaptures = fakeQueuedCaptureCount + 1
-        )
-        val fakeCaptures = forge.aList(size = fakeQueuedCaptureCount + 1) { aCompletedCapture() }
+            maxQueuedCaptures = fakeCapacity
+        ).also { fakeCleanupActions += it::stop }
+        val fakeOverflowingCaptures = forge.aList(size = fakeCapacity + 1) { aCompletedCapture() }
 
-        // When
-        fakeCaptures.forEach(testedQueue::consume)
-        assertThat(processorEntered.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue()
-        testedQueue.stop()
-        stopCompleted.countDown()
-        executorService.shutdownNow()
-        executorService.awaitTermination(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        init {
+            testedQueue.consume(forge.aCompletedCapture())
+            check(fakeProcessorEntered.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                "Completion worker must enter processing before the queue is saturated"
+            }
+        }
 
-        // Then
-        assertThat(processedCaptures).hasSize(1)
-        assertThat(fakeCaptures.filter { it.generation.isActive() })
-            .describedAs("stop() must expire the in-flight capture and everything still queued")
-            .isEmpty()
-    }
-
-    @Test
-    fun `M drop the oldest capture W the completion queue saturates`(
-        @IntForgery(min = 1, max = 4) fakeMaxQueuedCaptures: Int,
-        forge: Forge
-    ) {
-        // Given
-        val drainBlocked = CountDownLatch(1)
-        val processorEntered = CountDownLatch(1)
-        val processedCaptures = CopyOnWriteArrayList<CompletedSnapshotCapture>()
-        val executorService = Executors.newSingleThreadExecutor()
-        val testedQueue = SnapshotCompletionQueue(
-            executorService = executorService,
-            processor = SnapshotCompletionProcessor { capture ->
-                processedCaptures += capture
-                processorEntered.countDown()
-                drainBlocked.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-            },
-            internalLogger = mock<InternalLogger>(),
-            maxQueuedCaptures = fakeMaxQueuedCaptures
-        )
-        val fakeBlockingCapture = forge.aCompletedCapture()
-
-        // When
-        testedQueue.consume(fakeBlockingCapture)
-        assertThat(processorEntered.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue()
-        val fakeOverflowingCaptures = forge.aList(size = fakeMaxQueuedCaptures + 1) { aCompletedCapture() }
-        fakeOverflowingCaptures.forEach(testedQueue::consume)
-
-        // Then
-        val expiredCaptures = fakeOverflowingCaptures.filterNot { it.generation.isActive() }
-        assertThat(expiredCaptures)
-            .describedAs("the oldest queued capture is dropped and expired once the queue saturates")
-            .containsExactly(fakeOverflowingCaptures.first())
-
-        // When
-        drainBlocked.countDown()
-        executorService.shutdown()
-        executorService.awaitTermination(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-
-        // Then
-        assertThat(processedCaptures).doesNotContain(fakeOverflowingCaptures.first())
+        fun releaseAndDrain() {
+            fakeDrainBlocked.countDown()
+            fakeExecutor.shutdown()
+            check(fakeExecutor.awaitTermination(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                "Completion worker must drain the retained captures"
+            }
+        }
     }
 
     private fun hammer(
@@ -514,21 +504,51 @@ internal class CompositionCaptureConcurrencyTest {
     ) {
         val startLine = CountDownLatch(1)
         val threads = List(threadCount) { threadIndex ->
-            Thread {
-                try {
-                    startLine.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-                    block(threadIndex)
-                } catch (e: Throwable) {
-                    failures += e
+            worker(failures) {
+                check(startLine.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                    "Workers did not reach the start line"
                 }
+                assertDoesNotThrow { block(threadIndex) }
             }
         }
         threads.forEach(Thread::start)
         startLine.countDown()
-        threads.forEach { it.join(AWAIT_TIMEOUT_MS) }
+        threads.forEach { it.awaitCompletion() }
     }
 
-    private fun aliveDecorView(): View {
+    private fun worker(failures: MutableList<Throwable>, block: () -> Unit): Thread = Thread {
+        try {
+            block()
+        } catch (error: Throwable) {
+            failures += error
+        }
+    }.also { fakeThread ->
+        fakeThread.isDaemon = true
+        fakeWorkers += fakeThread
+    }
+
+    private fun drawInterceptor() = CompositionViewOnDrawInterceptor(
+        windowSource = ActiveWindowSource(),
+        onWindowsChanged = CompositionChangeListener { },
+        internalLogger = mock()
+    )
+
+    private fun touchInterceptor() = CompositionWindowTouchInterceptor(
+        appContext = mockTouchableAppContext(),
+        recordWriter = mock(),
+        timeProvider = mock(),
+        rumContextProvider = mock(),
+        touchPrivacyManager = mock(),
+        internalLogger = mock(),
+        windowSource = ActiveWindowSource()
+    )
+
+    private fun Thread.awaitCompletion() {
+        join(AWAIT_TIMEOUT_MS)
+        assertThat(isAlive).describedAs("Worker %s must finish", name).isFalse()
+    }
+
+    private fun mockAliveDecorView(): View {
         val mockObserver = mock<ViewTreeObserver>()
         whenever(mockObserver.isAlive).thenReturn(true)
         val mockView = mock<View>()
@@ -536,13 +556,13 @@ internal class CompositionCaptureConcurrencyTest {
         return mockView
     }
 
-    private fun touchableWindow(): Window = mock {
+    private fun mockTouchableWindow(): Window = mock {
         whenever(it.peekDecorView()).thenReturn(mock<View>())
     }
 
-    private fun touchableAppContext(): Application = mock { mockApplication ->
-        val displayMetrics = DisplayMetrics()
-        val mockResources = mock<Resources> { whenever(it.displayMetrics).thenReturn(displayMetrics) }
+    private fun mockTouchableAppContext(): Application = mock { mockApplication ->
+        val fakeDisplayMetrics = DisplayMetrics()
+        val mockResources = mock<Resources> { whenever(it.displayMetrics).thenReturn(fakeDisplayMetrics) }
         whenever(mockApplication.resources).thenReturn(mockResources)
     }
 
@@ -561,17 +581,17 @@ internal class CompositionCaptureConcurrencyTest {
     )
 
     /** Drives the orchestrator entirely on the calling thread, the way a draw callback does. */
-    private class ConcurrencyFixture(
+    private inner class ConcurrencyFixture(
         forge: Forge,
         onCapture: () -> Unit = {}
     ) {
         val createdGenerations = CopyOnWriteArrayList<CaptureGenerationContext>()
         val testedCompletionQueue = SnapshotCompletionQueue(
-            executorService = Executors.newSingleThreadExecutor(),
+            executorService = Executors.newSingleThreadExecutor().also(fakeExecutors::add),
             // Mirrors the production processor contract: every capture ends accepted or expired.
             processor = SnapshotCompletionProcessor { it.generation.tryAccept() },
             internalLogger = mock<InternalLogger>()
-        )
+        ).also { fakeCleanupActions += it::stop }
         private val scheduledCaptures = ConcurrentLinkedQueue<() -> Unit>()
         private val snapshot = forge.aCompositionTestTree().snapshot
         val testedOrchestrator = SnapshotCaptureOrchestrator(
@@ -593,7 +613,7 @@ internal class CompositionCaptureConcurrencyTest {
             },
             expiryScheduler = { _, _ -> CancellableCaptureWork.NONE },
             internalLogger = mock<InternalLogger>()
-        )
+        ).also { fakeCleanupActions += it::stop }
 
         fun runScheduledCaptures() {
             while (true) {

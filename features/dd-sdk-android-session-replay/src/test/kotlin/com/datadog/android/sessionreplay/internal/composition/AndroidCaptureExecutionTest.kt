@@ -16,64 +16,115 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 @Extensions(
+    ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
 @ForgeConfiguration(ForgeConfigurator::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class AndroidCaptureExecutionTest {
 
     @Test
-    fun `M execute and cancel main-thread task W handler accepts task`() {
+    fun `M post to main handler W execute()`() {
         // Given
-        val handler = mock<Handler>()
-        whenever(handler.post(any<Runnable>())).thenReturn(true)
-        val executor = HandlerCaptureMainThreadExecutor(handler)
-        var executed = false
+        val mockHandler: Handler = mock()
+        whenever(mockHandler.post(any<Runnable>())).thenReturn(true)
+        val testedExecutor = HandlerCaptureMainThreadExecutor(mockHandler)
 
         // When
-        val work = executor.execute { executed = true }
-        val runnable = argumentCaptor<Runnable>()
-        verify(handler).post(runnable.capture())
-        runnable.firstValue.run()
-        work.cancel()
+        testedExecutor.execute {}
 
         // Then
-        assertThat(executed).isTrue()
-        verify(handler).removeCallbacks(runnable.firstValue)
+        verify(mockHandler).post(isA<Runnable>())
     }
 
     @Test
-    fun `M schedule cancel and shutdown expiry W use scheduled executor`(
-        @LongForgery(min = 0L) fakeDelayNs: Long
-    ) {
+    fun `M invoke the action W run() { posted main-thread task }`() {
         // Given
-        val executorService = mock<ScheduledExecutorService>()
-        val future = mock<ScheduledFuture<Any>>()
-        whenever(
-            executorService.schedule(any<Runnable>(), eq(fakeDelayNs), eq(TimeUnit.NANOSECONDS))
-        ).thenReturn(future)
-        val scheduler = ExecutorCaptureTaskScheduler(
-            executorService,
-            mock<InternalLogger>()
-        )
+        val mockHandler: Handler = mock()
+        val fakeRunnable = argumentCaptor<Runnable>()
+        whenever(mockHandler.post(fakeRunnable.capture())).thenReturn(true)
+        val testedExecutor = HandlerCaptureMainThreadExecutor(mockHandler)
+        var fakeExecuted = false
+        testedExecutor.execute { fakeExecuted = true }
 
         // When
-        val work = scheduler.schedule(fakeDelayNs) {}
-        work.cancel()
-        scheduler.shutdown()
+        fakeRunnable.firstValue.run()
 
         // Then
-        verify(future).cancel(false)
-        verify(executorService).shutdownNow()
+        assertThat(fakeExecuted).isTrue()
+    }
+
+    @Test
+    fun `M remove posted task W cancel()`() {
+        // Given
+        val mockHandler: Handler = mock()
+        val fakeRunnable = argumentCaptor<Runnable>()
+        whenever(mockHandler.post(fakeRunnable.capture())).thenReturn(true)
+        val testedExecutor = HandlerCaptureMainThreadExecutor(mockHandler)
+        val fakeWork = testedExecutor.execute {}
+
+        // When
+        fakeWork.cancel()
+
+        // Then
+        verify(mockHandler).removeCallbacks(fakeRunnable.firstValue)
+    }
+
+    @Test
+    fun `M submit task with nanosecond delay W schedule()`(@LongForgery(min = 0L) fakeDelayNs: Long) {
+        // Given
+        val mockExecutor: ScheduledExecutorService = mock()
+        val testedScheduler = ExecutorCaptureTaskScheduler(mockExecutor, mock<InternalLogger>())
+
+        // When
+        testedScheduler.schedule(fakeDelayNs) {}
+
+        // Then
+        verify(mockExecutor).schedule(isA<Runnable>(), eq(fakeDelayNs), eq(TimeUnit.NANOSECONDS))
+    }
+
+    @Test
+    fun `M cancel scheduled future without interruption W cancel()`(@LongForgery(min = 0L) fakeDelayNs: Long) {
+        // Given
+        val mockExecutor: ScheduledExecutorService = mock()
+        val mockFuture: ScheduledFuture<Any> = mock()
+        whenever(mockExecutor.schedule(any<Runnable>(), eq(fakeDelayNs), eq(TimeUnit.NANOSECONDS)))
+            .thenReturn(mockFuture)
+        val testedScheduler = ExecutorCaptureTaskScheduler(mockExecutor, mock<InternalLogger>())
+        val fakeWork = testedScheduler.schedule(fakeDelayNs) {}
+
+        // When
+        fakeWork.cancel()
+
+        // Then
+        verify(mockFuture).cancel(false)
+    }
+
+    @Test
+    fun `M stop the expiry executor W shutdown()`() {
+        // Given
+        val mockExecutor: ScheduledExecutorService = mock()
+        val testedScheduler = ExecutorCaptureTaskScheduler(mockExecutor, mock<InternalLogger>())
+
+        // When
+        testedScheduler.shutdown()
+
+        // Then
+        verify(mockExecutor).shutdownNow()
     }
 }

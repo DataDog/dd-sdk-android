@@ -11,26 +11,28 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.utils.verifyLog
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.quality.Strictness
 
+@ExtendWith(MockitoExtension::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class CapturedViewMapperRegistryTest {
 
     private val mockInternalLogger: InternalLogger = mock()
-    private val textViewMapper: CapturedViewMapper<TextView> = mock()
-    private val fallbackMapper: CapturedViewMapper<View> = mock()
+    private val mockTextViewMapper: CapturedViewMapper<TextView> = mock()
+    private val mockFallbackMapper: CapturedViewMapper<View> = mock()
     private val testedRegistry = CapturedViewMapperRegistry(
-        mappers = listOf(CapturedMapperTypeWrapper(TextView::class.java, textViewMapper)),
-        fallbackMapper = fallbackMapper,
+        mappers = listOf(CapturedMapperTypeWrapper(TextView::class.java, mockTextViewMapper)),
+        fallbackMapper = mockFallbackMapper,
         internalLogger = mockInternalLogger
     )
 
@@ -43,7 +45,7 @@ internal class CapturedViewMapperRegistryTest {
         val resolved = testedRegistry.resolve(mockTextView)
 
         // Then
-        assertThat(resolved).isEqualTo(textViewMapper)
+        assertThat(resolved).isEqualTo(mockTextViewMapper)
     }
 
     @Test
@@ -51,6 +53,7 @@ internal class CapturedViewMapperRegistryTest {
         // Given
         val mockView: View = mock()
         val mockAnotherView: View = mock()
+        val fakeViewType = mockView.javaClass.canonicalName ?: mockView.javaClass.name
 
         // When
         val resolved = testedRegistry.resolve(mockView)
@@ -58,16 +61,15 @@ internal class CapturedViewMapperRegistryTest {
         val resolvedAnother = testedRegistry.resolve(mockAnotherView)
 
         // Then
-        assertThat(resolved).isEqualTo(fallbackMapper)
-        assertThat(resolvedAgain).isEqualTo(fallbackMapper)
-        assertThat(resolvedAnother).isEqualTo(fallbackMapper)
-        verify(mockInternalLogger).log(
-            level = eq(InternalLogger.Level.INFO),
-            target = eq(InternalLogger.Target.TELEMETRY),
-            messageBuilder = any(),
-            throwable = eq(null),
-            onlyOnce = eq(true),
-            additionalProperties = any()
+        assertThat(resolved).isEqualTo(mockFallbackMapper)
+        assertThat(resolvedAgain).isEqualTo(mockFallbackMapper)
+        assertThat(resolvedAnother).isEqualTo(mockFallbackMapper)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.TELEMETRY,
+            "No mapper found for view $fakeViewType",
+            onlyOnce = true,
+            additionalProperties = mapOf("replay.widget.type" to fakeViewType)
         )
         verifyNoMoreInteractions(mockInternalLogger)
     }
@@ -85,20 +87,16 @@ internal class CapturedViewMapperRegistryTest {
         testedRegistry.resolve(mockImageView)
 
         // Then
-        val properties = argumentCaptor<Map<String, Any?>>()
-        verify(mockInternalLogger, times(2)).log(
-            level = eq(InternalLogger.Level.INFO),
-            target = eq(InternalLogger.Target.TELEMETRY),
-            messageBuilder = any(),
-            throwable = eq(null),
-            onlyOnce = eq(true),
-            additionalProperties = properties.capture()
-        )
-        assertThat(properties.allValues.map { it["replay.widget.type"] })
-            .containsExactly(
-                mockView.javaClass.canonicalName ?: mockView.javaClass.name,
-                mockImageView.javaClass.canonicalName ?: mockImageView.javaClass.name
+        listOf(mockView, mockImageView).forEach { mockLeafView ->
+            val fakeViewType = mockLeafView.javaClass.canonicalName ?: mockLeafView.javaClass.name
+            mockInternalLogger.verifyLog(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.TELEMETRY,
+                "No mapper found for view $fakeViewType",
+                onlyOnce = true,
+                additionalProperties = mapOf("replay.widget.type" to fakeViewType)
             )
+        }
         verifyNoMoreInteractions(mockInternalLogger)
     }
 
@@ -111,14 +109,7 @@ internal class CapturedViewMapperRegistryTest {
         val resolved = testedRegistry.resolve(mockViewGroup)
 
         // Then
-        assertThat(resolved).isEqualTo(fallbackMapper)
-        verify(mockInternalLogger, never()).log(
-            level = any(),
-            target = any(),
-            messageBuilder = any(),
-            throwable = anyOrNull(),
-            onlyOnce = any(),
-            additionalProperties = anyOrNull()
-        )
+        assertThat(resolved).isEqualTo(mockFallbackMapper)
+        verifyNoInteractions(mockInternalLogger)
     }
 }

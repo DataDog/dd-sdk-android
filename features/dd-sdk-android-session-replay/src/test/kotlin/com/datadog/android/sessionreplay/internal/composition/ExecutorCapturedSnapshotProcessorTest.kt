@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -17,17 +18,22 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 import java.util.concurrent.Executor
 import java.util.concurrent.RejectedExecutionException
 
-@ExtendWith(ForgeExtension::class)
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
 @ForgeConfiguration(ForgeConfigurator::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class ExecutorCapturedSnapshotProcessorTest {
     private lateinit var fakeSnapshot: CapturedNativeSnapshot
     private lateinit var fakeFactory: DefaultCapturedIdentityFactory
@@ -47,7 +53,7 @@ internal class ExecutorCapturedSnapshotProcessorTest {
     )
 
     @Test
-    fun `M build on the executor W process`() {
+    fun `M defer snapshot construction W process() { executor task queued }`() {
         // Given
         val fakeQueue = mutableListOf<Runnable>()
         val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(fakeQueue::add), mock())
@@ -58,8 +64,22 @@ internal class ExecutorCapturedSnapshotProcessorTest {
 
         // Then
         assertThat(fakeResults).isEmpty()
+    }
+
+    @Test
+    fun `M construct the queued snapshot W run() { executor starts processing }`() {
+        // Given
+        val fakeQueue = mutableListOf<Runnable>()
+        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(fakeQueue::add), mock())
+        val fakeResults = mutableListOf<SnapshotProcessingResult>()
+
+        testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), fakeResults::add)
+
+        // When
         fakeQueue.single().run()
         val snapshot = (fakeResults.single() as SnapshotProcessingResult.Completed).snapshot
+
+        // Then
         assertThat(snapshot.timestamp).isEqualTo(fakeSnapshot.timestamp)
         assertThat(DefaultCapturedTreeValidator().validate(snapshot)).isEqualTo(CaptureValidationResult.Valid)
     }
@@ -67,12 +87,12 @@ internal class ExecutorCapturedSnapshotProcessorTest {
     @Test
     fun `M pass through a completed tree W process`(@Forgery fakeWindow: CapturedWindow) {
         // Given
-        val factory = DefaultCapturedIdentityFactory(fakeWindow.rootLayer.identity.scope)
+        val fakeFactory = DefaultCapturedIdentityFactory(fakeWindow.rootLayer.identity.scope)
         val fakeTree = CapturedFullSnapshot(
             fakeSnapshot.timestamp,
-            factory.scope,
+            fakeFactory.scope,
             CapturedLayer(
-                factory.screenRoot(),
+                fakeFactory.screenRoot(),
                 CapturedLayerKind.SYNTHETIC_SCREEN_ROOT,
                 fakeWindow.rootLayer.bounds,
                 listOf(CapturedChild.Layer(fakeWindow.rootLayer.identity))
@@ -91,8 +111,8 @@ internal class ExecutorCapturedSnapshotProcessorTest {
     }
 
     @Test
-    fun `M retain completed generation W callback runs before process returns`() {
-        // Given: a fast executor finishes before the orchestrator can register the returned handle.
+    fun `M retain completed generation W process() + cancel() { callback completes before process returns }`() {
+        // Given
         val fakeResults = mutableListOf<SnapshotProcessingResult>()
         val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(Runnable::run), mock())
 
@@ -100,7 +120,7 @@ internal class ExecutorCapturedSnapshotProcessorTest {
         val work = testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), fakeResults::add)
         work.cancel()
 
-        // Then: late registration cleanup must not revoke the snapshot already handed downstream.
+        // Then
         assertThat(fakeResults).hasSize(1)
         assertThat(fakeResults.single()).isInstanceOf(SnapshotProcessingResult.Completed::class.java)
         assertThat(fakeContext.isActive()).isTrue()
@@ -112,10 +132,10 @@ internal class ExecutorCapturedSnapshotProcessorTest {
         val fakeQueue = mutableListOf<Runnable>()
         val fakeResults = mutableListOf<SnapshotProcessingResult>()
         val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(fakeQueue::add), mock())
-        val work = testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), fakeResults::add)
+        val testedWork = testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), fakeResults::add)
 
         // When
-        work.cancel()
+        testedWork.cancel()
         fakeQueue.single().run()
 
         // Then
@@ -124,7 +144,7 @@ internal class ExecutorCapturedSnapshotProcessorTest {
     }
 
     @Test
-    fun `M stop construction W cancel during mapping`() {
+    fun `M stop construction W run() { cancel during mapping }`() {
         // Given
         val fakeQueue = mutableListOf<Runnable>()
         val fakeResults = mutableListOf<SnapshotProcessingResult>()
@@ -146,7 +166,7 @@ internal class ExecutorCapturedSnapshotProcessorTest {
     }
 
     @Test
-    fun `M report failure W executor rejects work`() {
+    fun `M report failure W process() { executor rejects work }`() {
         // Given
         val fakeResults = mutableListOf<SnapshotProcessingResult>()
         val fakeError = RejectedExecutionException()
@@ -158,20 +178,17 @@ internal class ExecutorCapturedSnapshotProcessorTest {
 
         // Then
         assertThat(fakeResults).containsExactly(SnapshotProcessingResult.Failed(fakeContext.id))
-        val fakeMessage = argumentCaptor<() -> String>()
-        verify(mockLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.TELEMETRY),
-            fakeMessage.capture(),
-            eq(fakeError),
-            eq(true),
-            eq(null)
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            "Unable to schedule composition snapshot construction",
+            throwable = fakeError,
+            onlyOnce = true
         )
-        assertThat(fakeMessage.firstValue()).isEqualTo("Unable to schedule composition snapshot construction")
     }
 
     @Test
-    fun `M contain mapper failure W construct snapshot`() {
+    fun `M contain mapper failure W process() { copied mapper throws }`() {
         // Given
         val fakeResults = mutableListOf<SnapshotProcessingResult>()
         val mockMapping: CapturedViewData = mock()
@@ -185,20 +202,17 @@ internal class ExecutorCapturedSnapshotProcessorTest {
 
         // Then
         assertThat(fakeResults).containsExactly(SnapshotProcessingResult.Failed(fakeContext.id))
-        val fakeMessage = argumentCaptor<() -> String>()
-        verify(mockLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.TELEMETRY),
-            fakeMessage.capture(),
-            eq(fakeError),
-            eq(true),
-            eq(null)
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            "Composition snapshot construction threw an exception",
+            throwable = fakeError,
+            onlyOnce = true
         )
-        assertThat(fakeMessage.firstValue()).isEqualTo("Composition snapshot construction threw an exception")
     }
 
     @Test
-    fun `M construct deep hierarchy without recursion W build`() {
+    fun `M construct deep hierarchy without recursion W buildWindow()`() {
         // Given
         val fakeWindowIdentity = fakeFactory.window("window")
         val fakeViews = List(5000) { index ->
@@ -219,8 +233,9 @@ internal class ExecutorCapturedSnapshotProcessorTest {
         val result = testedBuilder.buildWindow(CapturedNativeWindow(1f, fakeViews), fakeContext)
 
         // Then
-        assertThat(checkNotNull(result).layers).hasSize(5000)
-        assertThat(result.rootLayer.identity).isEqualTo(fakeWindowIdentity)
-        assertThat(result.layers.first().identity).isEqualTo(fakeViews.last().identity)
+        val window = checkNotNull(result) { "Expected the deep hierarchy to be built" }
+        assertThat(window.layers).hasSize(5000)
+        assertThat(window.rootLayer.identity).isEqualTo(fakeWindowIdentity)
+        assertThat(window.layers.first().identity).isEqualTo(fakeViews.last().identity)
     }
 }

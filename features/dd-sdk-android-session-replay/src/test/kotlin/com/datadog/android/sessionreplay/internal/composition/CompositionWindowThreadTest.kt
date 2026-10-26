@@ -15,34 +15,55 @@ import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.sessionreplay.TouchPrivacy
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.MockedStatic
 import org.mockito.Mockito.mockStatic
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class CompositionWindowThreadTest {
+
+    @StringForgery
+    lateinit var fakeScopeValue: String
+
     private val mockMainLooper: Looper = mock()
     private val mockMainHandler: Handler = mock()
     private val mockSecondaryHandler: Handler = mock()
@@ -63,15 +84,15 @@ internal class CompositionWindowThreadTest {
     @EnumSource(Owner::class)
     fun `M accept only attached main roots W isAttachedToMainLooper`(fakeOwner: Owner) {
         // Given
-        val root = root(fakeOwner)
+        val mockRoot = mockRoot(fakeOwner)
 
         // When
-        val accepted = isAttachedToMainLooper(root)
+        val accepted = isAttachedToMainLooper(mockRoot)
 
-        // Then: ownership checks must not inspect the hierarchy to determine its owner.
+        // Then
         assertThat(accepted).isEqualTo(fakeOwner == Owner.MAIN)
-        verify(root).handler
-        verifyNoMoreInteractions(root)
+        verify(mockRoot).handler
+        verifyNoMoreInteractions(mockRoot)
     }
 
     @ParameterizedTest
@@ -80,235 +101,288 @@ internal class CompositionWindowThreadTest {
         fakeTracked: Boolean,
         fakeOwner: Owner
     ) {
-        // Given: supported roots on either side preserve their original order.
-        val first = root(Owner.MAIN)
-        val unsupported = root(fakeOwner)
-        val last = root(Owner.MAIN)
-        val firstWindow = window(first)
-        val unsupportedWindow = window(unsupported)
-        val lastWindow = window(last)
-        val mockDrawInterceptor: CompositionViewOnDrawInterceptor = mock()
-        val mockTouchInterceptor: CompositionWindowTouchInterceptor = mock()
-        val mockWindowResolver: (View) -> Window? = mock()
-        val windows = mapOf(first to firstWindow, unsupported to unsupportedWindow, last to lastWindow)
-        whenever(mockWindowResolver.invoke(any())).thenAnswer { windows[it.getArgument<View>(0)] }
-        val testedLifecycle = AndroidSnapshotCaptureLifecycle(
-            application = mock(),
-            interceptor = mockDrawInterceptor,
-            touchInterceptor = mockTouchInterceptor,
-            internalLogger = mock(),
-            currentActivity = if (fakeTracked) activity(unsupportedWindow) else null,
-            uiHandler = immediateHandler(),
-            windowProvider = { listOf(first, unsupported, last) },
-            windowFromDecorView = mockWindowResolver
-        )
+        // Given
+        val mockFirst = mockRoot(Owner.MAIN)
+        val mockUnsupported = mockRoot(fakeOwner)
+        val mockLast = mockRoot(Owner.MAIN)
+        val fakeFixture =
+            DiscoveryFixture(
+                listOf(mockFirst, mockUnsupported, mockLast),
+                trackedRoot = mockUnsupported.takeIf {
+                    fakeTracked
+                }
+            )
 
         // When
-        testedLifecycle.start()
+        fakeFixture.testedLifecycle.start()
 
-        // Then: reject the root before reflection, draw interception or callback wrapping.
-        verify(mockDrawInterceptor).intercept(listOf(first, last))
-        verify(mockTouchInterceptor).intercept(listOf(firstWindow, lastWindow))
-        verify(mockWindowResolver, never()).invoke(unsupported)
-        verify(unsupported, atLeastOnce()).handler
+        // Then
+        verify(fakeFixture.mockDrawInterceptor).intercept(listOf(mockFirst, mockLast))
+        verify(
+            fakeFixture.mockTouchInterceptor
+        ).intercept(listOf(fakeFixture.mockWindowFor(mockFirst), fakeFixture.mockWindowFor(mockLast)))
+        verify(fakeFixture.mockWindowResolver, never()).invoke(mockUnsupported)
+        verify(mockUnsupported, atLeastOnce()).handler
         if (fakeTracked && fakeOwner == Owner.DETACHED) {
-            verify(unsupported).addOnAttachStateChangeListener(any())
+            verify(mockUnsupported).addOnAttachStateChangeListener(isA())
         }
-        verifyNoMoreInteractions(unsupported)
+        verifyNoMoreInteractions(mockUnsupported)
     }
 
     @ParameterizedTest
     @CsvSource("true, MAIN", "false, MAIN", "true, SECONDARY", "false, SECONDARY")
-    fun `M defer detached roots until main attachment W periodic refresh`(fakeTracked: Boolean, fakeOwner: Owner) {
-        // Given: an activity can be reported before its decor view is attached to any looper.
-        val root = root(Owner.DETACHED)
-        val window = window(root)
-        val mockDrawInterceptor: CompositionViewOnDrawInterceptor = mock()
-        val mockTouchInterceptor: CompositionWindowTouchInterceptor = mock()
-        val mockWindowResolver: (View) -> Window? = mock()
-        whenever(mockWindowResolver.invoke(root)).thenReturn(window)
-        val handler = immediateHandler()
-        var reportedRoots = if (fakeTracked) emptyList() else listOf(root)
-        val testedLifecycle = AndroidSnapshotCaptureLifecycle(
-            application = mock<Application>(),
-            interceptor = mockDrawInterceptor,
-            touchInterceptor = mockTouchInterceptor,
-            internalLogger = mock(),
-            currentActivity = if (fakeTracked) activity(window) else null,
-            uiHandler = handler,
-            windowProvider = { reportedRoots },
-            windowFromDecorView = mockWindowResolver
+    fun `M defer detached roots until main attachment W run() { periodic refresh }`(
+        fakeTracked: Boolean,
+        fakeOwner: Owner
+    ) {
+        // Given
+        val mockRoot = mockRoot(Owner.DETACHED)
+        val fakeFixture = DiscoveryFixture(
+            listOf(mockRoot),
+            trackedRoot = mockRoot.takeIf { fakeTracked },
+            reportedRoots = if (fakeTracked) emptyList() else listOf(mockRoot)
         )
-        testedLifecycle.start()
-        verify(mockDrawInterceptor).intercept(emptyList())
-        verify(mockTouchInterceptor).intercept(emptyList())
-        verify(mockWindowResolver, never()).invoke(any())
-        val scheduled = argumentCaptor<Runnable>()
-        verify(handler).postDelayed(scheduled.capture(), any())
+        fakeFixture.testedLifecycle.start()
+        verify(fakeFixture.mockDrawInterceptor).intercept(emptyList())
+        verify(fakeFixture.mockTouchInterceptor).intercept(emptyList())
+        verify(fakeFixture.mockWindowResolver, never()).invoke(any())
+        val fakeScheduled = fakeFixture.periodicRefresh()
 
-        // When: attachment becomes visible to the next refresh without another activity callback.
-        setOwner(root, fakeOwner)
-        reportedRoots = listOf(root)
-        scheduled.firstValue.run()
+        // When
+        setOwner(mockRoot, fakeOwner)
+        fakeFixture.reportedRoots = listOf(mockRoot)
+        fakeScheduled.run()
 
         // Then
         if (fakeOwner == Owner.MAIN) {
-            verify(mockDrawInterceptor).intercept(listOf(root))
-            verify(mockTouchInterceptor).intercept(listOf(window))
+            verify(fakeFixture.mockDrawInterceptor).intercept(listOf(mockRoot))
+            verify(fakeFixture.mockTouchInterceptor).intercept(listOf(fakeFixture.mockWindowFor(mockRoot)))
         } else {
-            verify(mockDrawInterceptor, times(2)).intercept(emptyList())
-            verify(mockTouchInterceptor, times(2)).intercept(emptyList())
-            verify(mockWindowResolver, never()).invoke(any())
+            verify(fakeFixture.mockDrawInterceptor, times(2)).intercept(emptyList())
+            verify(fakeFixture.mockTouchInterceptor, times(2)).intercept(emptyList())
+            verify(fakeFixture.mockWindowResolver, never()).invoke(any())
         }
     }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M intercept before polling W tracked activity root attaches`(fakeAlreadyResumed: Boolean) {
-        // Given: cover both an existing activity at start and a newly resumed activity.
-        val fixture = AttachmentFixture(fakeAlreadyResumed)
-        fixture.start()
-        val listener = fixture.attachmentListener()
-        clearInvocations(fixture.handler, fixture.mockDrawInterceptor, fixture.mockTouchInterceptor)
+    fun `M intercept before polling W onViewAttachedToWindow() { tracked activity root attaches }`(
+        fakeAlreadyResumed: Boolean
+    ) {
+        // Given
+        val fakeFixture = AttachmentFixture(fakeAlreadyResumed)
+        fakeFixture.start()
+        val fakeListener = fakeFixture.attachmentListener()
+        clearInvocations(fakeFixture.mockHandler, fakeFixture.mockDrawInterceptor, fakeFixture.mockTouchInterceptor)
 
-        // When: the framework attaches the decor view, without any timer or later lifecycle event.
-        setOwner(fixture.root, Owner.MAIN)
-        listener.onViewAttachedToWindow(fixture.root)
+        // When
+        setOwner(fakeFixture.mockRoot, Owner.MAIN)
+        fakeListener.onViewAttachedToWindow(fakeFixture.mockRoot)
 
         // Then
-        verify(fixture.mockDrawInterceptor).intercept(listOf(fixture.root))
-        verify(fixture.mockTouchInterceptor).intercept(listOf(fixture.window))
-        verify(fixture.root).removeOnAttachStateChangeListener(listener)
-        verify(fixture.root).addOnAttachStateChangeListener(any())
-        verify(fixture.handler, never()).post(any())
+        verify(fakeFixture.mockDrawInterceptor).intercept(listOf(fakeFixture.mockRoot))
+        verify(fakeFixture.mockTouchInterceptor).intercept(listOf(fakeFixture.mockWindow))
+        verify(fakeFixture.mockRoot).removeOnAttachStateChangeListener(fakeListener)
+        verify(fakeFixture.mockRoot).addOnAttachStateChangeListener(isA())
+        verify(fakeFixture.mockHandler, never()).post(any())
     }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M remove attachment listener W pending activity pauses or recording stops`(fakeStop: Boolean) {
+    fun `M remove attachment listener W onActivityPaused() + stop() { pending activity pauses or recording stops }`(
+        fakeStop: Boolean
+    ) {
         // Given
-        val fixture = AttachmentFixture()
-        fixture.start()
-        val listener = fixture.attachmentListener()
+        val fakeFixture = AttachmentFixture()
+        fakeFixture.start()
+        val fakeListener = fakeFixture.attachmentListener()
 
         // When
-        if (fakeStop) fixture.lifecycle.stop() else fixture.callbacks.onActivityPaused(fixture.activity)
+        if (fakeStop) {
+            fakeFixture.testedLifecycle.stop()
+        } else {
+            fakeFixture.testedCallbacks.onActivityPaused(
+                fakeFixture.mockActivity
+            )
+        }
 
-        // Then: even an already-dispatched callback must not revive the removed registration.
-        verify(fixture.root).removeOnAttachStateChangeListener(listener)
-        clearInvocations(fixture.mockDrawInterceptor, fixture.mockTouchInterceptor)
-        setOwner(fixture.root, Owner.MAIN)
-        listener.onViewAttachedToWindow(fixture.root)
-        verify(fixture.mockDrawInterceptor, never()).intercept(any())
-        verify(fixture.mockTouchInterceptor, never()).intercept(any())
+        // Then
+        verify(fakeFixture.mockRoot).removeOnAttachStateChangeListener(fakeListener)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M ignore detached listener W onViewAttachedToWindow() { activity paused or recording stopped }`(
+        fakeStop: Boolean
+    ) {
+        // Given
+        val fakeFixture = AttachmentFixture()
+        fakeFixture.start()
+        val fakeListener = fakeFixture.attachmentListener()
+
+        if (fakeStop) {
+            fakeFixture.testedLifecycle.stop()
+        } else {
+            fakeFixture.testedCallbacks.onActivityPaused(
+                fakeFixture.mockActivity
+            )
+        }
+
+        clearInvocations(fakeFixture.mockDrawInterceptor, fakeFixture.mockTouchInterceptor)
+        setOwner(fakeFixture.mockRoot, Owner.MAIN)
+
+        // When
+        fakeListener.onViewAttachedToWindow(fakeFixture.mockRoot)
+
+        // Then
+        verifyNoInteractions(fakeFixture.mockDrawInterceptor, fakeFixture.mockTouchInterceptor)
     }
 
     @Test
-    fun `M keep one attachment listener W detached activity is refreshed repeatedly`() {
+    fun `M keep one attachment listener W onActivityResumed() + run() { detached activity is refreshed repeatedly }`() {
         // Given
-        val fixture = AttachmentFixture()
-        fixture.start()
+        val fakeFixture = AttachmentFixture()
+        fakeFixture.start()
 
         // When
-        fixture.callbacks.onActivityResumed(fixture.activity)
+        fakeFixture.testedCallbacks.onActivityResumed(fakeFixture.mockActivity)
         val scheduled = argumentCaptor<Runnable>()
-        verify(fixture.handler).postDelayed(scheduled.capture(), any())
+        verify(fakeFixture.mockHandler).postDelayed(scheduled.capture(), eq(1_000L))
         scheduled.firstValue.run()
 
         // Then
-        verify(fixture.root).addOnAttachStateChangeListener(any())
-        verify(fixture.root, never()).removeOnAttachStateChangeListener(any())
+        verify(fakeFixture.mockRoot).addOnAttachStateChangeListener(isA())
+        verify(fakeFixture.mockRoot, never()).removeOnAttachStateChangeListener(any())
     }
 
     @Test
-    fun `M reject secondary owner W tracked root attaches off main thread`() {
-        // Given: defer posted work so we can distinguish the owner's callback from main-thread cleanup.
-        val fixture = AttachmentFixture()
-        fixture.start()
-        val listener = fixture.attachmentListener()
-        doAnswer { true }.whenever(fixture.handler).post(any())
-        clearInvocations(fixture.handler, fixture.mockDrawInterceptor, fixture.mockTouchInterceptor)
+    fun `M reject secondary owner W onViewAttachedToWindow() { tracked root attaches off main thread }`() {
+        // Given
+        val fakeFixture = AttachmentFixture()
+        fakeFixture.start()
+        val fakeListener = fakeFixture.attachmentListener()
+        doAnswer { true }.whenever(fakeFixture.mockHandler).post(any())
+        clearInvocations(fakeFixture.mockHandler, fakeFixture.mockDrawInterceptor, fakeFixture.mockTouchInterceptor)
 
         // When
-        setOwner(fixture.root, Owner.SECONDARY)
-        listener.onViewAttachedToWindow(fixture.root)
+        setOwner(fakeFixture.mockRoot, Owner.SECONDARY)
+        fakeListener.onViewAttachedToWindow(fakeFixture.mockRoot)
 
-        // Then: unregister on the owning thread, but never inspect or intercept its hierarchy.
-        verify(fixture.root).removeOnAttachStateChangeListener(listener)
-        verify(fixture.mockDrawInterceptor, never()).intercept(any())
-        verify(fixture.mockTouchInterceptor, never()).intercept(any())
-        val posted = argumentCaptor<Runnable>()
-        verify(fixture.handler).post(posted.capture())
-        posted.firstValue.run()
-        verify(fixture.mockDrawInterceptor).intercept(emptyList())
-        verify(fixture.mockTouchInterceptor).intercept(emptyList())
-        verify(fixture.root, never()).viewTreeObserver
+        // Then
+        verify(fakeFixture.mockRoot).removeOnAttachStateChangeListener(fakeListener)
+        verifyNoInteractions(fakeFixture.mockDrawInterceptor, fakeFixture.mockTouchInterceptor)
     }
 
     @Test
-    fun `M ignore old attachment callback W recording restarts before late callback`() {
+    fun `M exclude secondary owner W run() { posted attachment refresh }`() {
         // Given
-        val fixture = AttachmentFixture()
-        fixture.start()
-        val oldListener = fixture.attachmentListener()
-        fixture.lifecycle.stop()
-        fixture.lifecycle.start()
-        val registrations = argumentCaptor<View.OnAttachStateChangeListener>()
-        verify(fixture.root, times(2)).addOnAttachStateChangeListener(registrations.capture())
-        clearInvocations(fixture.mockDrawInterceptor, fixture.mockTouchInterceptor)
+        val fakeFixture = AttachmentFixture()
+        fakeFixture.start()
+        val fakeListener = fakeFixture.attachmentListener()
+        doAnswer { true }.whenever(fakeFixture.mockHandler).post(any())
+        clearInvocations(fakeFixture.mockHandler, fakeFixture.mockDrawInterceptor, fakeFixture.mockTouchInterceptor)
 
-        // When: a stale callback must not remove the new listener's registration.
-        setOwner(fixture.root, Owner.MAIN)
-        oldListener.onViewAttachedToWindow(fixture.root)
-        verify(fixture.mockDrawInterceptor, never()).intercept(any())
-        registrations.lastValue.onViewAttachedToWindow(fixture.root)
+        setOwner(fakeFixture.mockRoot, Owner.SECONDARY)
+        fakeListener.onViewAttachedToWindow(fakeFixture.mockRoot)
+
+        val fakePosted = argumentCaptor<Runnable>()
+        verify(fakeFixture.mockHandler).post(fakePosted.capture())
+
+        // When
+        fakePosted.firstValue.run()
 
         // Then
-        verify(fixture.mockDrawInterceptor).intercept(listOf(fixture.root))
-        verify(fixture.mockTouchInterceptor).intercept(listOf(fixture.window))
+        verify(fakeFixture.mockDrawInterceptor).intercept(emptyList())
+        verify(fakeFixture.mockTouchInterceptor).intercept(emptyList())
+        verify(fakeFixture.mockRoot, never()).viewTreeObserver
+    }
+
+    @Test
+    fun `M ignore stale attachment callback W onViewAttachedToWindow() { recording restarted }`() {
+        // Given
+        val fakeFixture = AttachmentFixture()
+        fakeFixture.start()
+        val fakeOldListener = fakeFixture.attachmentListener()
+        fakeFixture.testedLifecycle.stop()
+        fakeFixture.testedLifecycle.start()
+        val fakeRegistrations = argumentCaptor<View.OnAttachStateChangeListener>()
+        verify(fakeFixture.mockRoot, times(2)).addOnAttachStateChangeListener(fakeRegistrations.capture())
+        clearInvocations(fakeFixture.mockDrawInterceptor, fakeFixture.mockTouchInterceptor)
+
+        // When
+        setOwner(fakeFixture.mockRoot, Owner.MAIN)
+        fakeOldListener.onViewAttachedToWindow(fakeFixture.mockRoot)
+
+        // Then
+        verifyNoInteractions(fakeFixture.mockDrawInterceptor, fakeFixture.mockTouchInterceptor)
+    }
+
+    @Test
+    fun `M accept current attachment callback W onViewAttachedToWindow() { recording restarted }`() {
+        // Given
+        val fakeFixture = AttachmentFixture()
+        fakeFixture.start()
+        val fakeOldListener = fakeFixture.attachmentListener()
+        fakeFixture.testedLifecycle.stop()
+        fakeFixture.testedLifecycle.start()
+        val fakeRegistrations = argumentCaptor<View.OnAttachStateChangeListener>()
+        verify(fakeFixture.mockRoot, times(2)).addOnAttachStateChangeListener(fakeRegistrations.capture())
+        clearInvocations(fakeFixture.mockDrawInterceptor, fakeFixture.mockTouchInterceptor)
+
+        setOwner(fakeFixture.mockRoot, Owner.MAIN)
+        fakeOldListener.onViewAttachedToWindow(fakeFixture.mockRoot)
+
+        // When
+        fakeRegistrations.lastValue.onViewAttachedToWindow(fakeFixture.mockRoot)
+
+        // Then
+        verify(fakeFixture.mockDrawInterceptor).intercept(listOf(fakeFixture.mockRoot))
+        verify(fakeFixture.mockTouchInterceptor).intercept(listOf(fakeFixture.mockWindow))
     }
 
     @ParameterizedTest
     @EnumSource(value = Owner::class, names = ["SECONDARY", "DETACHED"])
     fun `M skip unsupported roots before identifying or traversing them W capture`(fakeOwner: Owner) {
-        // Given: the producer also guards against a stale or independently populated window source.
-        val first = root(Owner.MAIN)
-        val unsupported = root(fakeOwner)
-        val last = root(Owner.MAIN)
-        val fixture = CaptureFixture(listOf(first, unsupported, last))
+        // Given
+        val mockFirst = mockRoot(Owner.MAIN)
+        val mockUnsupported = mockRoot(fakeOwner)
+        val mockLast = mockRoot(Owner.MAIN)
+        val fakeFixture = CaptureFixture(fakeScopeValue, listOf(mockFirst, mockUnsupported, mockLast))
 
         // When
         val snapshot = (
-            fixture.producer.capture(
-                fixture.context
+            fakeFixture.producer.capture(
+                fakeFixture.context
             )
-            ).buildSnapshot(fixture.context)
+            ).buildSnapshot(fakeFixture.context)
 
         // Then
-        assertThat(snapshot!!.root!!.children.map { it.identity.localId }).containsExactly("1", "3")
-        fixture.verifyNotVisited(unsupported)
-        verify(unsupported, atLeastOnce()).handler
-        verifyNoMoreInteractions(unsupported)
+        val capturedSnapshot = checkNotNull(snapshot) { "Expected a snapshot of the supported windows" }
+        val root = checkNotNull(capturedSnapshot.root) { "Expected a synthetic screen root" }
+        assertThat(root.children.map { it.identity.localId }).containsExactly("1", "3")
+        fakeFixture.verifyNotVisited(mockUnsupported)
+        verify(mockUnsupported, atLeastOnce()).handler
+        verifyNoMoreInteractions(mockUnsupported)
     }
 
     @ParameterizedTest
     @EnumSource(value = Owner::class, names = ["SECONDARY", "DETACHED"])
     fun `M clear committed overrides W capture { no supported roots remain }`(fakeOwner: Owner) {
         // Given
-        val root = root(fakeOwner)
-        val fixture = CaptureFixture(listOf(root))
+        val mockRoot = mockRoot(fakeOwner)
+        val fakeFixture = CaptureFixture(fakeScopeValue, listOf(mockRoot))
 
         // When
         val snapshot = (
-            fixture.producer.capture(
-                fixture.context
+            fakeFixture.producer.capture(
+                fakeFixture.context
             )
-            ).buildSnapshot(fixture.context)
+            ).buildSnapshot(fakeFixture.context)
 
         // Then
         assertThat(snapshot).isNull()
-        fixture.verifyNotVisited(root)
-        verify(fixture.mockTouchPrivacyManager).replaceCurrentTouchOverrideAreas(emptyMap())
+        fakeFixture.verifyNotVisited(mockRoot)
+        verify(fakeFixture.mockTouchPrivacyManager).replaceCurrentTouchOverrideAreas(emptyMap())
     }
 
     @ParameterizedTest
@@ -317,76 +391,80 @@ internal class CompositionWindowThreadTest {
         fakeOwner: Owner
     ) {
         // Given
-        val first = root(Owner.MAIN)
-        val next = root(Owner.MAIN)
-        val fixture = CaptureFixture(listOf(first, next))
-        whenever(fixture.mockTraversal.traverseWindow(eq(first), any(), any(), any())).thenAnswer {
-            setOwner(next, fakeOwner)
-            fixture.windowResult(first)
+        val mockFirst = mockRoot(Owner.MAIN)
+        val mockNext = mockRoot(Owner.MAIN)
+        val fakeFixture = CaptureFixture(fakeScopeValue, listOf(mockFirst, mockNext))
+        whenever(fakeFixture.mockTraversal.traverseWindow(eq(mockFirst), any(), any(), any())).thenAnswer {
+            setOwner(mockNext, fakeOwner)
+            fakeFixture.windowResult(mockFirst)
         }
 
         // When
         val snapshot = (
-            fixture.producer.capture(
-                fixture.context
+            fakeFixture.producer.capture(
+                fakeFixture.context
             )
-            ).buildSnapshot(fixture.context)
+            ).buildSnapshot(fakeFixture.context)
 
-        // Then: abort rather than publish overrides from only the already completed window.
+        // Then
         assertThat(snapshot).isNull()
-        fixture.verifyNotVisited(next)
-        verify(fixture.mockTouchPrivacyManager, never()).replaceCurrentTouchOverrideAreas(any())
+        fakeFixture.verifyNotVisited(mockNext)
+        verify(fakeFixture.mockTouchPrivacyManager, never()).replaceCurrentTouchOverrideAreas(any())
     }
 
     @ParameterizedTest
     @EnumSource(Owner::class)
     fun `M recheck root owner W capture { ownership changes during copying }`(fakeOwner: Owner) {
         // Given
-        val root = root(Owner.MAIN)
-        val fixture = CaptureFixture(listOf(root))
-        whenever(fixture.mockTraversal.traverseWindow(eq(root), any(), any(), any())).thenAnswer {
-            setOwner(root, fakeOwner)
-            fixture.windowResult(root)
+        val mockRoot = mockRoot(Owner.MAIN)
+        val fakeFixture = CaptureFixture(fakeScopeValue, listOf(mockRoot))
+        whenever(fakeFixture.mockTraversal.traverseWindow(eq(mockRoot), any(), any(), any())).thenAnswer {
+            setOwner(mockRoot, fakeOwner)
+            fakeFixture.windowResult(mockRoot)
         }
 
         // When
-        val snapshot = (fixture.producer.capture(fixture.context))
+        val snapshot = (fakeFixture.producer.capture(fakeFixture.context))
 
         // Then
         if (fakeOwner == Owner.MAIN) {
             assertThat(snapshot).isNotNull()
-            verify(fixture.mockTouchPrivacyManager).replaceCurrentTouchOverrideAreas(any())
+            verify(fakeFixture.mockTouchPrivacyManager).replaceCurrentTouchOverrideAreas(
+                mapOf(
+                    Rect() to TouchPrivacy.SHOW
+                )
+            )
         } else {
             assertThat(snapshot).isNull()
-            verify(fixture.mockTouchPrivacyManager, never()).replaceCurrentTouchOverrideAreas(any())
+            verify(fakeFixture.mockTouchPrivacyManager, never()).replaceCurrentTouchOverrideAreas(any())
         }
     }
 
     @ParameterizedTest
     @EnumSource(value = Owner::class, names = ["SECONDARY", "DETACHED"])
     fun `M remove original draw listener without reading moved root W intercept`(fakeOwner: Owner) {
-        // Given: the listener belongs to the observer captured on the original UI thread.
-        val root = root(Owner.MAIN)
-        val observer: ViewTreeObserver = mock()
-        whenever(observer.isAlive).thenReturn(true)
-        whenever(root.viewTreeObserver).thenReturn(observer)
-        val source = ActiveWindowSource()
-        val testedInterceptor = CompositionViewOnDrawInterceptor(source, {}, mock())
-        testedInterceptor.intercept(listOf(root))
-        val registered = argumentCaptor<ViewTreeObserver.OnDrawListener>()
-        verify(observer).addOnDrawListener(registered.capture())
-        setOwner(root, fakeOwner)
-        whenever(root.viewTreeObserver).thenThrow(AssertionError("Must not read a moved hierarchy"))
+        // Given
+        val mockRoot = mockRoot(Owner.MAIN)
+        val mockObserver: ViewTreeObserver = mock()
+        whenever(mockObserver.isAlive).thenReturn(true)
+        whenever(mockRoot.viewTreeObserver).thenReturn(mockObserver)
+        val fakeSource = ActiveWindowSource()
+        val testedInterceptor = CompositionViewOnDrawInterceptor(fakeSource, {}, mock())
+        testedInterceptor.intercept(listOf(mockRoot))
+        val fakeRegistered = argumentCaptor<ViewTreeObserver.OnDrawListener>()
+        verify(mockObserver).addOnDrawListener(fakeRegistered.capture())
+        setOwner(mockRoot, fakeOwner)
+        whenever(mockRoot.viewTreeObserver).thenThrow(AssertionError("Must not read a moved hierarchy"))
 
         // When
         testedInterceptor.intercept(emptyList())
 
         // Then
-        verify(observer).removeOnDrawListener(registered.firstValue)
-        assertThat(source.currentWindows()).isEmpty()
+        verify(mockObserver).removeOnDrawListener(fakeRegistered.firstValue)
+        assertThat(fakeSource.currentWindows()).isEmpty()
     }
 
-    private fun root(owner: Owner): View = mock<View>().also { setOwner(it, owner) }
+    private fun mockRoot(owner: Owner): View = mock<View>().also { setOwner(it, owner) }
 
     private fun setOwner(root: View, owner: Owner) {
         whenever(root.handler).thenReturn(
@@ -398,58 +476,92 @@ internal class CompositionWindowThreadTest {
         )
     }
 
-    private fun window(root: View): Window = mock<Window>().also { whenever(it.peekDecorView()).thenReturn(root) }
-    private fun activity(window: Window): Activity = mock<Activity>().also { whenever(it.window).thenReturn(window) }
+    private fun mockWindow(root: View): Window = mock<Window>().also { whenever(it.peekDecorView()).thenReturn(root) }
+    private fun mockActivity(
+        window: Window
+    ): Activity = mock<Activity>().also { whenever(it.window).thenReturn(window) }
 
-    private fun immediateHandler(): Handler = mock<Handler>().also { handler ->
+    private fun mockImmediateHandler(): Handler = mock<Handler>().also { mockHandler ->
         doAnswer {
             it.getArgument<Runnable>(0).run()
             true
-        }.whenever(handler).post(any())
-        whenever(handler.postDelayed(any<Runnable>(), any())).thenReturn(true)
+        }.whenever(mockHandler).post(any())
+        whenever(mockHandler.postDelayed(any<Runnable>(), any())).thenReturn(true)
+    }
+
+    private inner class DiscoveryFixture(
+        roots: List<View>,
+        trackedRoot: View? = null,
+        var reportedRoots: List<View> = roots
+    ) {
+        private val windows = roots.associateWith(::mockWindow)
+        val mockDrawInterceptor: CompositionViewOnDrawInterceptor = mock()
+        val mockTouchInterceptor: CompositionWindowTouchInterceptor = mock()
+        val mockWindowResolver: (View) -> Window? = mock {
+            on { invoke(any()) } doAnswer { invocation -> windows[invocation.getArgument<View>(0)] }
+        }
+        private val mockHandler = mockImmediateHandler()
+        val testedLifecycle = AndroidSnapshotCaptureLifecycle(
+            application = mock<Application>(),
+            interceptor = mockDrawInterceptor,
+            touchInterceptor = mockTouchInterceptor,
+            internalLogger = mock(),
+            currentActivity = trackedRoot?.let { mockActivity(mockWindowFor(it)) },
+            uiHandler = mockHandler,
+            windowProvider = { reportedRoots },
+            windowFromDecorView = mockWindowResolver
+        )
+
+        fun mockWindowFor(root: View): Window = windows.getValue(root)
+
+        fun periodicRefresh(): Runnable {
+            val fakeRefresh = argumentCaptor<Runnable>()
+            verify(mockHandler).postDelayed(fakeRefresh.capture(), eq(1_000L))
+            return fakeRefresh.firstValue
+        }
     }
 
     private inner class AttachmentFixture(private val alreadyResumed: Boolean = true) {
-        val root = root(Owner.DETACHED)
-        val window = window(root)
-        val activity = activity(window)
-        val handler = immediateHandler()
+        val mockRoot = mockRoot(Owner.DETACHED)
+        val mockWindow = mockWindow(mockRoot)
+        val mockActivity = mockActivity(mockWindow)
+        val mockHandler = mockImmediateHandler()
         val mockApplication: Application = mock()
         val mockDrawInterceptor: CompositionViewOnDrawInterceptor = mock()
         val mockTouchInterceptor: CompositionWindowTouchInterceptor = mock()
-        lateinit var callbacks: Application.ActivityLifecycleCallbacks
-        val lifecycle = AndroidSnapshotCaptureLifecycle(
+        lateinit var testedCallbacks: Application.ActivityLifecycleCallbacks
+        val testedLifecycle = AndroidSnapshotCaptureLifecycle(
             application = mockApplication,
             interceptor = mockDrawInterceptor,
             touchInterceptor = mockTouchInterceptor,
             internalLogger = mock(),
-            currentActivity = if (alreadyResumed) activity else null,
-            uiHandler = handler,
+            currentActivity = if (alreadyResumed) mockActivity else null,
+            uiHandler = mockHandler,
             windowProvider = { emptyList() },
             windowFromDecorView = { null }
         )
 
         fun start() {
-            lifecycle.registerCallbacks()
+            testedLifecycle.registerCallbacks()
             val registered = argumentCaptor<Application.ActivityLifecycleCallbacks>()
             verify(mockApplication).registerActivityLifecycleCallbacks(registered.capture())
-            callbacks = registered.firstValue
-            lifecycle.start()
-            if (!alreadyResumed) callbacks.onActivityResumed(activity)
+            testedCallbacks = registered.firstValue
+            testedLifecycle.start()
+            if (!alreadyResumed) testedCallbacks.onActivityResumed(mockActivity)
         }
 
         fun attachmentListener(): View.OnAttachStateChangeListener {
             val registered = argumentCaptor<View.OnAttachStateChangeListener>()
-            verify(root).addOnAttachStateChangeListener(registered.capture())
+            verify(mockRoot).addOnAttachStateChangeListener(registered.capture())
             return registered.firstValue
         }
     }
 
-    private class CaptureFixture(private val windows: List<View>) {
+    private class CaptureFixture(private val fakeScopeValue: String, private val windows: List<View>) {
         val mockTraversal: AndroidWindowTraversal = mock()
         val mockIdentifiers: ViewIdentifierResolver = mock()
         val mockTouchPrivacyManager: TouchPrivacyManager = mock()
-        private val scope = CapturedRumViewScope(RumViewIdentityScope("view"), 0L)
+        private val scope = CapturedRumViewScope(RumViewIdentityScope(fakeScopeValue), 0L)
         private val identityFactory = DefaultCapturedIdentityFactory(scope.scope)
         val context = CaptureGenerationContext(1, 0, 1_000, CaptureTimeProvider { 0 })
 
