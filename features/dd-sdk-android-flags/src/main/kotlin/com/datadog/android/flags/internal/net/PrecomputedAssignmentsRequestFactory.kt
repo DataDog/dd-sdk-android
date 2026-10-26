@@ -31,6 +31,8 @@ internal class PrecomputedAssignmentsRequestFactory(
     private val flagSelection: CanonicalFlagSelection?
 ) {
 
+    val sendsFlagSelection: Boolean = flagSelection != null
+
     /**
      * Creates an OkHttp Request for fetching precomputed flag assignments.
      *

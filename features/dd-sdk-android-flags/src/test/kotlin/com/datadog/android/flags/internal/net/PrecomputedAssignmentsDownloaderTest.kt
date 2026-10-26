@@ -28,6 +28,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -110,30 +112,40 @@ internal class PrecomputedAssignmentsDownloaderTest {
         verify(mockRequestFactory).create(fakeEvaluationContext, fakeDatadogContext)
     }
 
-    @Test
-    fun `M return flag selection ignored reason W readPrecomputedFlags() { DD-Flag-Selection-Ignored header }`(
-        @StringForgery fakeResponseBody: String,
-        @StringForgery(regex = "[a-z_]+") fakeIgnoredReason: String,
-        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    @ParameterizedTest
+    @ValueSource(strings = ["too_many_values", "tag_load_failed", "Some Future-Reason"])
+    fun `M return the header value verbatim W readPrecomputedFlags() { selection sent, ignored header }`(
+        fakeIgnoredReason: String,
+        forge: Forge
     ) {
         // Given
-        val fakeRequest = Request.Builder()
-            .url(fakeUrl)
-            .build()
-        val fakeResponse = createSuccessfulResponse(fakeResponseBody, fakeUrl)
-            .newBuilder()
-            .header("DD-Flag-Selection-Ignored", fakeIgnoredReason)
-            .build()
-        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
-            .doReturn(fakeRequest)
-        whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
-        whenever(mockCall.execute()).doReturn(fakeResponse)
+        val fakeResponseBody = forge.anAlphabeticalString()
+        val fakeUrl = "https://${forge.anAlphabeticalString()}.com/precompute"
+        stubSuccessfulCall(fakeResponseBody, fakeUrl, ignoredReason = fakeIgnoredReason)
+        whenever(mockRequestFactory.sendsFlagSelection) doReturn true
 
         // When
         val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
 
         // Then
         assertThat(result).isEqualTo(PrecomputedAssignmentsResponse(fakeResponseBody, fakeIgnoredReason))
+    }
+
+    @Test
+    fun `M return no ignored reason W readPrecomputedFlags() { no selection sent, ignored header }`(
+        @StringForgery fakeResponseBody: String,
+        @StringForgery(regex = "[a-z_]+") fakeIgnoredReason: String,
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        stubSuccessfulCall(fakeResponseBody, fakeUrl, ignoredReason = fakeIgnoredReason)
+        whenever(mockRequestFactory.sendsFlagSelection) doReturn false
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isEqualTo(PrecomputedAssignmentsResponse(fakeResponseBody, null))
     }
 
     @Test
@@ -418,6 +430,17 @@ internal class PrecomputedAssignmentsDownloaderTest {
     // endregion
 
     // region Helper methods
+
+    private fun stubSuccessfulCall(body: String, url: String, ignoredReason: String) {
+        val fakeRequest = Request.Builder().url(url).build()
+        val fakeResponse = createSuccessfulResponse(body, url)
+            .newBuilder()
+            .header("DD-Flag-Selection-Ignored", ignoredReason)
+            .build()
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext)) doReturn fakeRequest
+        whenever(mockCallFactory.newCall(fakeRequest)) doReturn mockCall
+        whenever(mockCall.execute()) doReturn fakeResponse
+    }
 
     private fun createSuccessfulResponse(body: String, url: String): Response = Response.Builder()
         .request(Request.Builder().url(url).build())

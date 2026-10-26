@@ -321,6 +321,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         assertThat(flagSelection.keys().asSequence().toList()).containsExactlyInAnyOrder("tags", "key_patterns")
         assertThat(flagSelection.getJSONArray("tags").toString()).isEqualTo("""["mobile","web"]""")
         assertThat(flagSelection.getJSONArray("key_patterns").toString()).isEqualTo("""["checkout-*"]""")
+        assertThat(testedFactory.sendsFlagSelection).isTrue()
     }
 
     @Test
@@ -364,6 +365,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             .getJSONObject("data")
             .getJSONObject("attributes")
         assertThat(attributes.keys().asSequence().toList()).containsExactlyInAnyOrder("env", "source", "subject")
+        assertThat(testedFactory.sendsFlagSelection).isFalse()
     }
 
     // endregion

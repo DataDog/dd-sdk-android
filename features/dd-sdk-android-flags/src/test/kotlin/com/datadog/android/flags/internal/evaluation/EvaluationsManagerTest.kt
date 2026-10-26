@@ -52,6 +52,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -1397,9 +1398,10 @@ internal class EvaluationsManagerTest {
 
     // endregion
 
-    @Test
-    fun `M log and install the configuration W updateEvaluationsForContext() { flag selection ignored }`(
-        @StringForgery(regex = "[a-z_]+") fakeIgnoredReason: String
+    @ParameterizedTest
+    @ValueSource(strings = ["too_many_values", "tag_load_failed", "Some Future-Reason"])
+    fun `M log the reason verbatim and install W updateEvaluationsForContext() { flag selection ignored }`(
+        fakeIgnoredReason: String
     ) {
         // Given
         val context = EvaluationContext(fakeTargetingKey, emptyMap())
@@ -1424,6 +1426,31 @@ internal class EvaluationsManagerTest {
         )
         verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(emptyMap()), anyOrNull(), any())
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
+    }
+
+    @Test
+    fun `M not log a flag selection message W updateEvaluationsForContext() { no ignored reason }`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+            .thenReturn(PrecomputedAssignmentsResponse(EMPTY_FLAGS_RESPONSE_JSON, null))
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(context)
+
+        // Then
+        val messages = argumentCaptor<() -> String>()
+        verify(mockInternalLogger, atLeast(0)).log(
+            any<InternalLogger.Level>(),
+            any<InternalLogger.Target>(),
+            messages.capture(),
+            anyOrNull(),
+            any(),
+            anyOrNull()
+        )
+        assertThat(messages.allValues.map { it() }).noneMatch { "flagSelection" in it || "Flag selection" in it }
+        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(emptyMap()), anyOrNull(), any())
     }
 
     @Test

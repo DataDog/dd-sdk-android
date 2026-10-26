@@ -56,7 +56,11 @@ internal class PrecomputedAssignmentsDownloader(
         response.body?.use { it.string() }?.let { body ->
             PrecomputedAssignmentsResponse(
                 body = body,
-                flagSelectionIgnoredReason = response.header(HEADER_FLAG_SELECTION_IGNORED)
+                flagSelectionIgnoredReason = if (requestFactory.sendsFlagSelection) {
+                    response.header(HEADER_FLAG_SELECTION_IGNORED)
+                } else {
+                    null
+                }
             )
         }
     } else {
