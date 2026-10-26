@@ -7,6 +7,7 @@
 package com.datadog.android.flags
 
 import com.datadog.android.flags.internal.selection.FlagSelection
+import com.datadog.android.flags.model.ErrorCode
 
 private const val DEFAULT_INITIALIZATION_TIMEOUT_MS = 5_000L
 
@@ -180,16 +181,22 @@ data class FlagsConfiguration internal constructor(
          *
          * Tags match exactly and are case-sensitive; a flag matches if it has any of the tags. Key patterns are
          * whole-key globs where only `*` is special. Leading and trailing Unicode whitespace is trimmed from every
-         * value, empty values are dropped, and duplicates are removed. Each list accepts at most 31 values, and each
-         * tag and key pattern is at most 200 UTF-8 bytes. A selection over a limit is not sent, and the full flag
-         * configuration is loaded. Flags outside the selection are not loaded, so evaluating them returns the
-         * default value.
+         * value, empty values are dropped, and duplicates are removed. A null list is treated as absent.
+         *
+         * Each list accepts at most 31 values after duplicates are removed, and each tag and key pattern is at most
+         * 200 UTF-8 bytes. A selection over a limit, or one that contains a null value, is not sent, and the full
+         * flag configuration is loaded. The server may also ignore a very large selection (`too_many_values`), in
+         * which case the full flag configuration is loaded. Servers that do not support flag selection, or have it
+         * disabled, return the full flag configuration without a warning.
+         *
+         * Flags outside the selection are not loaded, so evaluating them returns the default value with
+         * [ErrorCode.FLAG_NOT_FOUND].
          *
          * The selection is fixed when the Flags feature is enabled. Calling this method again replaces the
          * previous selection.
          *
-         * @param tags The flag tags to load.
-         * @param keyPatterns The flag key patterns to load.
+         * @param tags The flag tags to load, or null for none.
+         * @param keyPatterns The flag key patterns to load, or null for none.
          * @return this [Builder] instance for method chaining.
          */
         fun flagSelection(tags: List<String>?, keyPatterns: List<String>?): Builder = apply {
