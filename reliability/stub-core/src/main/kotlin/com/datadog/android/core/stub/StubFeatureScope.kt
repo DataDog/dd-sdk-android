@@ -31,7 +31,7 @@ internal class StubFeatureScope(
 
     private val eventBatchWriter = object : EventBatchWriter {
         override fun write(event: RawBatchEvent, batchMetadata: ByteArray?, eventType: EventType): Boolean {
-            eventsWritten.add(event to batchMetadata)
+            synchronized(eventsWritten) { eventsWritten.add(event to batchMetadata) }
             return true
         }
     }
@@ -41,7 +41,7 @@ internal class StubFeatureScope(
     // region Stub
 
     fun eventsWritten(): List<StubEvent> {
-        return eventsWritten.map { (event, batchMetadata) ->
+        return synchronized(eventsWritten) { eventsWritten.toList() }.map { (event, batchMetadata) ->
             StubEvent(String(event.data), String(event.metadata), String(batchMetadata ?: ByteArray(0)))
         }
     }
