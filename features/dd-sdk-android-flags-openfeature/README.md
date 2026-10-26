@@ -2,14 +2,6 @@
 
 The Datadog OpenFeature Provider for Android allows you to use the [OpenFeature](https://openfeature.dev/) standard API with Datadog's Feature Flagging and Experimentation platform.
 
-## Evaluation telemetry privacy
-
-The provider delegates telemetry protection and emission to the Android Flags SDK. It preserves
-native evaluation-time consent metadata (`__dd_observe_full_evaluation_data`) for primitive and
-structured results, including error/default results. It does not emit a second evaluation event
-or hash targeting keys itself. Use the provider and Flags artifacts from the same SDK release;
-see the [native privacy behavior](../dd-sdk-android-flags/README.md#evaluation-telemetry-privacy).
-
 ## What is OpenFeature?
 
 OpenFeature is a vendor-neutral, community-driven specification and SDK for feature flagging. It provides a unified API for feature flag evaluation that works across different providers, making it easy to switch vendors or integrate multiple feature flag systems.
@@ -176,6 +168,14 @@ val isEnabled = client.getBooleanValue("my-feature", false)
 - For anonymous users, use a **persistent UUID** as the targeting key (persist it in a store such as `SharedPreferences`).
 
 For complete details on using the OpenFeature API, including flag evaluation methods, hooks, state management, and events, see the [OpenFeature Kotlin SDK documentation](https://openfeature.dev/docs/reference/technologies/client/kotlin/)
+
+## Evaluation telemetry privacy
+
+The provider delegates telemetry protection and emission to the Android Flags SDK. It preserves
+native evaluation-time consent metadata (`__dd_observe_full_evaluation_data`) for primitive and
+structured results, including error/default results. It does not emit a second evaluation event
+or hash targeting keys itself. Use the provider and Flags artifacts from the same SDK release;
+see the [native privacy behavior](../dd-sdk-android-flags/README.md#evaluation-telemetry-privacy).
 
 ## Integration with RUM
 
