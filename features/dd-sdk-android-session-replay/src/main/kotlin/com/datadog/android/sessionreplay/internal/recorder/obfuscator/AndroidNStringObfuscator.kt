@@ -21,7 +21,7 @@ internal class AndroidNStringObfuscator : StringObfuscator {
             stringValue.codePoints().forEach {
                 if (Character.isWhitespace(it)) {
                     // I don't think we should log this case here. I could not even reproduce it
-                    // in my tests. As long as there is a valid sdtring there there should not be
+                    // in my tests. As long as there is a valid string there should not be
                     // any problem.
                     @Suppress("SwallowedException")
                     try {

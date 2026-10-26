@@ -39,9 +39,10 @@ plugins {
     id("test-pyramid-api-surface")
 }
 
-createJsonModelsGenerationTask("generateFlagsModelsFromJson") {
+createJsonModelsGenerationTask("generateFlagsInternalModelsFromJson") {
     inputDirPath = "src/main/json/flags"
-    targetPackageName = "com.datadog.android.flags.model"
+    targetPackageName = "com.datadog.android.flags.internal.model"
+    internalModels.set(true)
 }
 
 // TODO RUM-18189 Support new AGP DSL
@@ -73,6 +74,7 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))
     testImplementation(libs.okHttpMock)
     unmock(libs.robolectric)

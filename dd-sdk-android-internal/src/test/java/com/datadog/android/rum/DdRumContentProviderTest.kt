@@ -62,7 +62,6 @@ class DdRumContentProviderTest {
                     invocation
                         .getArgument<ActivityManager.RunningAppProcessInfo>(0)
                         .importance = fakeImportance
-                    Unit
                 }
 
             // When
@@ -105,7 +104,6 @@ class DdRumContentProviderTest {
                     callCount++
                     invocation.getArgument<ActivityManager.RunningAppProcessInfo>(0)
                         .importance = if (callCount == 1) fakeImportance1 else fakeImportance2
-                    Unit
                 }
 
             // When
@@ -133,7 +131,6 @@ class DdRumContentProviderTest {
                 .thenAnswer { invocation ->
                     invocation.getArgument<ActivityManager.RunningAppProcessInfo>(0)
                         .importance = fakeImportance
-                    Unit
                 }
 
             // When
@@ -157,7 +154,6 @@ class DdRumContentProviderTest {
                     callCount++
                     invocation.getArgument<ActivityManager.RunningAppProcessInfo>(0)
                         .importance = if (callCount == 1) fakeImportance1 else fakeImportance2
-                    Unit
                 }
 
             // When

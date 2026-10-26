@@ -18,6 +18,8 @@ import com.datadog.android.flags.internal.aggregation.EvaluationAggregator
 import com.datadog.android.flags.internal.net.EvaluationsRequestFactory
 import com.datadog.android.flags.internal.storage.EvaluationEventRecordWriter
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.rumContext
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -32,11 +34,6 @@ internal class EvaluationsFeature(
     internal val flagsConfiguration: FlagsConfiguration
 ) : StorageBackedFeature,
     FeatureContextUpdateReceiver {
-
-    /**
-     * Cached Datadog context information for evaluation events.
-     */
-    private data class RumContext(val rumApplicationId: String?, val rumViewName: String?)
 
     internal val initialized = AtomicBoolean(false)
 
@@ -112,10 +109,7 @@ internal class EvaluationsFeature(
 
     override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName == Feature.RUM_FEATURE_NAME) {
-            rumContext = RumContext(
-                rumApplicationId = context[RUM_APPLICATION_ID] as? String,
-                rumViewName = context[RUM_VIEW_NAME] as? String
-            )
+            rumContext = context.rumContext()
         }
     }
 
@@ -140,8 +134,8 @@ internal class EvaluationsFeature(
         processor.processEvaluation(
             flagKey = flagKey,
             context = context,
-            rumApplicationId = currentDdContext?.rumApplicationId,
-            rumViewName = currentDdContext?.rumViewName,
+            rumApplicationId = currentDdContext?.applicationId,
+            rumViewName = currentDdContext?.viewName,
             variantKey = variantKey,
             allocationKey = allocationKey,
             errorCode = errorCode,
@@ -154,7 +148,5 @@ internal class EvaluationsFeature(
     internal companion object {
         internal const val DEFAULT_MAX_AGGREGATIONS = 1000
         private const val EXECUTOR_NAME = "flags-evaluation"
-        private const val RUM_APPLICATION_ID = "application_id"
-        private const val RUM_VIEW_NAME = "view_name"
     }
 }

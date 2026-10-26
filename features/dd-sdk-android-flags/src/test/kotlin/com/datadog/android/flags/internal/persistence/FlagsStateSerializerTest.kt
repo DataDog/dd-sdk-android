@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal.persistence
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
@@ -35,6 +36,39 @@ internal class FlagsStateSerializerTest {
     @BeforeEach
     fun `set up`() {
         testedSerializer = FlagsStateSerializer(mockInternalLogger)
+    }
+
+    @Test
+    fun `M separate encoded flags from legacy cache W serialize() {obfuscated state}`(forge: Forge) {
+        // Given
+        val encoding = FlagKeyObfuscation.fromSalt("000102030405060708090a0b0c0d0e0f")
+        val key = forge.anAlphabeticalString()
+        val encodedKey = checkNotNull(encoding.encode(key))
+        val flag = PrecomputedFlag(
+            "boolean",
+            "true",
+            true,
+            forge.anAlphabeticalString(),
+            forge.anAlphabeticalString(),
+            JSONObject(),
+            "TARGETING_MATCH"
+        )
+        val state = FlagsStateEntry(
+            EvaluationContext(forge.anAlphabeticalString()),
+            mapOf(encodedKey to flag),
+            fakeTimestamp,
+            encoding
+        )
+
+        // When
+        val json = JSONObject(testedSerializer.serialize(state))
+
+        // Then
+        assertThat(json.has("flags")).isFalse()
+        assertThat(json.getJSONObject("encodedFlags").keys().asSequence().toList()).containsExactly(encodedKey)
+        assertThat(json.getBoolean("obfuscated")).isTrue()
+        assertThat(json.getJSONObject("obfuscation").getString("salt")).isEqualTo(encoding.salt)
+        assertThat(json.getJSONObject("obfuscation").getString("scheme")).isEqualTo(FlagKeyObfuscation.SCHEME)
     }
 
     @Test

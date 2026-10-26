@@ -1090,7 +1090,7 @@ class ManualTrackingRumTest {
                 hasUsrId(fakeUserId)
                 hasUsrName(fakeUserName)
                 hasUsrEmail(fakeUserEmail)
-                userAdditionalAttributes.forEach { key, value ->
+                userAdditionalAttributes.forEach { (key, value) ->
                     hasUsrAdditionalAttributes(key, value)
                 }
                 hasActionCount(0)
@@ -1131,7 +1131,7 @@ class ManualTrackingRumTest {
                 hasViewName(name)
                 hasAccountId(fakeAccountId)
                 hasAccountName(fakeAccountName)
-                accountExtraInfo.forEach { key, value ->
+                accountExtraInfo.forEach { (key, value) ->
                     hasAccountExtraInfo(key, value)
                 }
                 hasActionCount(0)

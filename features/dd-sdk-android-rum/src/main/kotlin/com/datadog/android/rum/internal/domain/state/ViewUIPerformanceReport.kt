@@ -41,7 +41,7 @@ internal class ViewUIPerformanceReport private constructor(
         // lastOrNull here is a function of EvictingQueue, because generally for the queue it is O(N)
         get() = slowFramesRecords.lastOrNull()
 
-    fun snapshot(): ViewUIPerformanceReport.Snapshot = ViewUIPerformanceReport.Snapshot(
+    fun snapshot(): Snapshot = Snapshot(
         viewStartedTimeStamp = viewStartedTimeStamp,
         // iterator over ConcurrentLinkedDeque is weekly consistent, but we are ok with that
         slowFramesRecords = slowFramesRecords.toList(),

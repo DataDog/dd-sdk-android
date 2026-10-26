@@ -70,6 +70,7 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(libs.okHttp)
     unmock(libs.robolectric)
 }

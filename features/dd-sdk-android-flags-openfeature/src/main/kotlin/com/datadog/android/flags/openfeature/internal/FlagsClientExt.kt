@@ -9,6 +9,7 @@ package com.datadog.android.flags.openfeature.internal
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInitializationTimeoutException
+import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
@@ -25,14 +26,18 @@ import kotlin.coroutines.suspendCoroutine
  * A timeout with matching cached assignments completes successfully and leaves the provider stale.
  *
  * @param context The evaluation context to set
+ * @param telemetryOptedOut The typed subject decision, or null to preserve native telemetry configuration.
  * @throws [OpenFeatureError.GeneralError] if setting the context fails. The first context operation also
  * fails when the configured Flags initialization timeout elapses without matching cached assignments.
  */
-internal suspend fun FlagsClient.setEvaluationContextSuspend(context: EvaluationContext) {
+internal suspend fun FlagsClient.setEvaluationContextSuspend(
+    context: EvaluationContext,
+    telemetryOptedOut: Boolean? = null
+) {
     // Subsequent invocation of any resume function will produce
     // an IllegalStateException, but we are safe here
     @Suppress("UnsafeThirdPartyFunctionCall")
-    suspendCoroutine<Unit> { continuation ->
+    suspendCoroutine { continuation ->
         val callback = object : EvaluationContextCallback {
             override fun onSuccess() {
                 continuation.resume(Unit)
@@ -56,6 +61,10 @@ internal suspend fun FlagsClient.setEvaluationContextSuspend(context: Evaluation
             }
         }
 
-        setEvaluationContext(context, callback)
+        if (telemetryOptedOut == null) {
+            setEvaluationContext(context, callback)
+        } else {
+            _FlagsInternalProxy(this).setEvaluationContext(context, callback, telemetryOptedOut)
+        }
     }
 }

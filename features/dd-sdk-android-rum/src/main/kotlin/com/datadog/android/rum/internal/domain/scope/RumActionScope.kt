@@ -13,10 +13,10 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.utils.DdTagsUtils
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.heatmaps.HeatmapActionResolver
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
@@ -250,15 +250,17 @@ internal class RumActionScope(
         val eventResourceCount = resourceCount
         val loadingTime = max(endNanos - startedNanos, 1L)
 
+        val syntheticsTestId = rumContext.syntheticsTestId
+        val syntheticsResultId = rumContext.syntheticsResultId
         val syntheticsAttribute = if (
-            rumContext.syntheticsTestId.isNullOrBlank() ||
-            rumContext.syntheticsResultId.isNullOrBlank()
+            syntheticsTestId.isNullOrBlank() ||
+            syntheticsResultId.isNullOrBlank()
         ) {
             null
         } else {
             ActionEvent.Synthetics(
-                testId = rumContext.syntheticsTestId,
-                resultId = rumContext.syntheticsResultId
+                testId = syntheticsTestId,
+                resultId = syntheticsResultId
             )
         }
 

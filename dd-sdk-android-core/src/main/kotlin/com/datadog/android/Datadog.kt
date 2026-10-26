@@ -9,7 +9,6 @@ package com.datadog.android
 import android.content.Context
 import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
-import com.datadog.android.Datadog.clearAccountInfo
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.context.UserInfo

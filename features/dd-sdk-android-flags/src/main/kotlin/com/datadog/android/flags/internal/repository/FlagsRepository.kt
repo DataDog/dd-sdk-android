@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.internal.repository
 
+import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
 
@@ -20,9 +21,15 @@ internal interface FlagsRepository {
     fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
+        obfuscation: FlagKeyObfuscation? = null,
         onInstalled: () -> Unit = {}
     )
-    fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>?
+
+    /** Waits for initial persistence loading, up to the repository's timeout. Call without holding locks. */
+    fun waitForPersistenceLoad()
+
+    // Nonblocking snapshot. Missing flags retain their context from the same atomic state read.
+    fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>?
     val firstFlags: FirstFlagsLatch
     fun hasFlags(): Boolean
     fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean

@@ -552,7 +552,7 @@ class SwipeAndScrollActionTrackerTest {
             },
             mock<ScrollState>().apply {
                 // for ScrollState it is overall scroll offset, unlike for LazyList,
-                // where it is index
+                // where it is an index
                 val (startOffset, endOffset) = scrollStartAndStopPoints(
                     direction,
                     reverseLayout,

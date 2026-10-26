@@ -11,7 +11,7 @@ import android.view.View
 /**
  * Allows setting a view to be "hidden" in the hierarchy in Session Replay.
  * When hidden the view will be replaced with a placeholder in the replay and
- * no attempt will be made to record it's children.
+ * no attempt will be made to record its children.
  *
  * @param hide pass `true` to hide the view, or `false` to remove the override
  */

@@ -7,11 +7,6 @@
 package com.datadog.android.log
 
 import com.datadog.android.api.SdkCore
-import com.datadog.android.log.LogAttributes.ACCOUNT_ID
-import com.datadog.android.log.LogAttributes.ACCOUNT_NAME
-import com.datadog.android.log.LogAttributes.USR_EMAIL
-import com.datadog.android.log.LogAttributes.USR_ID
-import com.datadog.android.log.LogAttributes.USR_NAME
 
 /**
  * This class holds constant log attribute keys.

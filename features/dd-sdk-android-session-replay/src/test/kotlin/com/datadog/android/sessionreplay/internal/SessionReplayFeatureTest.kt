@@ -18,13 +18,12 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.sessionreplay.NoOpSessionReplayInternalCallback
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_APPLICATION_ID_CONTEXT_KEY
-import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_SESSION_ID_CONTEXT_KEY
-import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_VIEW_ID_CONTEXT_KEY
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentReceiver
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
@@ -91,6 +90,9 @@ internal class SessionReplayFeatureTest {
     private lateinit var testedFeature: SessionReplayFeature
 
     @Forgery
+    lateinit var fakeRumContext: RumContext
+
+    @Forgery
     lateinit var fakeConfiguration: SessionReplayConfiguration
 
     @Mock
@@ -114,6 +116,7 @@ internal class SessionReplayFeatureTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeRumContext = fakeRumContext.copy(viewId = forge.getForgery<UUID>().toString())
         fakeSampleRate = forge.aFloat(min = 1f, max = 100f)
         fakeSessionId = forge.getForgery<UUID>().toString()
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
@@ -138,7 +141,10 @@ internal class SessionReplayFeatureTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M schedule navigation W context update {core reuses mutable map}`(fakeSchedulingEnabled: Boolean) {
+    fun `M schedule navigation W context update {core reuses mutable map}`(
+        fakeSchedulingEnabled: Boolean,
+        @Forgery fakeNextViewId: UUID
+    ) {
         // Given
         testedFeature = SessionReplayFeature(
             sdkCore = mockSdkCore,
@@ -156,15 +162,11 @@ internal class SessionReplayFeatureTest {
         val fakeContextReceiver = argumentCaptor<FeatureContextUpdateReceiver>().also {
             verify(mockSdkCore).setContextUpdateReceiver(it.capture())
         }.firstValue
-        val fakeContext = mutableMapOf<String, Any?>(
-            RUM_APPLICATION_ID_CONTEXT_KEY to UUID.randomUUID().toString(),
-            RUM_SESSION_ID_CONTEXT_KEY to UUID.randomUUID().toString(),
-            RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString()
-        )
+        val fakeContext = mutableMapOf<String, Any?>(FeatureContextKeys.RUM_CONTEXT to fakeRumContext)
         fakeContextReceiver.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
 
         // When
-        fakeContext[RUM_VIEW_ID_CONTEXT_KEY] = UUID.randomUUID().toString()
+        fakeContext[FeatureContextKeys.RUM_CONTEXT] = fakeRumContext.copy(viewId = fakeNextViewId.toString())
         fakeContextReceiver.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
         fakeContextReceiver.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
 
@@ -192,7 +194,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `M request embedded capture W RUM view changes { recording active }`() {
+    fun `M request embedded capture W RUM view changes { recording active }`(@Forgery fakeNextViewId: UUID) {
         // Given
         val fakeRegistration = EmbeddedContentSlotRegistration(FAKE_EMBEDDED_SLOT_ID)
         testedFeature.embeddedContentSlotRegistry.notifySlotChanged(null, fakeRegistration)
@@ -202,14 +204,14 @@ internal class SessionReplayFeatureTest {
         }.firstValue
         contextReceiver.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+            mapOf(FeatureContextKeys.RUM_CONTEXT to fakeRumContext)
         )
         testedFeature.startRecording()
 
         // When
         contextReceiver.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+            mapOf(FeatureContextKeys.RUM_CONTEXT to fakeRumContext.copy(viewId = fakeNextViewId.toString()))
         )
 
         // Then
@@ -233,7 +235,7 @@ internal class SessionReplayFeatureTest {
         // When
         contextReceiver.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+            mapOf(FeatureContextKeys.RUM_CONTEXT to fakeRumContext)
         )
 
         // Then
@@ -256,7 +258,7 @@ internal class SessionReplayFeatureTest {
         // When
         contextReceiver.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+            mapOf(FeatureContextKeys.RUM_CONTEXT to fakeRumContext)
         )
 
         // Then
@@ -321,11 +323,7 @@ internal class SessionReplayFeatureTest {
         }.firstValue
         contextReceiver.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(
-                RUM_APPLICATION_ID_CONTEXT_KEY to UUID.randomUUID().toString(),
-                RUM_SESSION_ID_CONTEXT_KEY to UUID.randomUUID().toString(),
-                RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString()
-            )
+            mapOf(FeatureContextKeys.RUM_CONTEXT to fakeRumContext)
         )
         // Embedded records are held until the placeholder they composite into has been written.
         testedFeature.embeddedContentSlotRegistry.onPlaceholdersWritten(

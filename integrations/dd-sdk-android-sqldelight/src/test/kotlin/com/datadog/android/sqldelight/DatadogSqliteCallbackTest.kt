@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rx
+package com.datadog.android.sqldelight
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.datadog.android.api.SdkCore
@@ -12,7 +12,6 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.sqldelight.DatadogSqliteCallback
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension

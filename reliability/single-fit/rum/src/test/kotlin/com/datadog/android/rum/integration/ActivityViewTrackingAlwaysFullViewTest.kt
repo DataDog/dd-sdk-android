@@ -112,7 +112,7 @@ class ActivityViewTrackingAlwaysFullViewTest {
         // When
         testedViewTrackingStrategy.onActivityResumed(stubActivity)
         testedViewTrackingStrategy.onActivityStopped(stubActivity)
-        Thread.sleep(250L)
+        stubSdkCore.advanceTimeBy(200L)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -145,7 +145,7 @@ class ActivityViewTrackingAlwaysFullViewTest {
 
         // When
         testedViewTrackingStrategy.onActivityStopped(stubActivity)
-        Thread.sleep(250L)
+        stubSdkCore.advanceTimeBy(200L)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)

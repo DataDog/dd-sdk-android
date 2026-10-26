@@ -9,6 +9,7 @@ package com.datadog.android.trace.integration.otel
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.tests.ktx.getInt
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
@@ -16,6 +17,7 @@ import com.datadog.android.trace.integration.tests.assertj.SpansPayloadAssert
 import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeConfigurator
 import com.datadog.android.trace.integration.tests.utils.BlockingWriterWrapper
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider
+import com.datadog.android.utils.withRumContext
 import com.datadog.opentelemetry.trace.OtelConventions
 import com.datadog.tools.unit.completedFutureMock
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -25,6 +27,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.DoubleForgery
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -47,6 +50,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
 import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureNanoTime
 
@@ -1030,27 +1034,13 @@ internal class OtelTracerProviderTest {
     @RepeatedTest(10)
     fun `M send span with rum context W setBundleWithRumEnabled(true) + buildSpan() + start() + finish()`(
         @StringForgery fakeInstrumentationName: String,
-        @StringForgery fakeRumApplicationId: String,
-        @StringForgery fakeRumSessionId: String,
-        @StringForgery fakeRumViewId: String,
-        @StringForgery fakeRumActionId: String,
+        @Forgery fakeRumContext: RumContext,
+        @Forgery fakeRumViewId: UUID,
         @StringForgery fakeOperationName: String
     ) {
         // Given
-        val rumContext = mapOf(
-            "application_id" to fakeRumApplicationId,
-            "session_id" to fakeRumSessionId,
-            "view_id" to fakeRumViewId,
-            "action_id" to fakeRumActionId
-        )
-
-        val datadogContext = stubSdkCore.getDatadogContext().let { datadogContext ->
-            datadogContext.copy(
-                featuresContext = datadogContext.featuresContext.toMutableMap().apply {
-                    put(Feature.RUM_FEATURE_NAME, rumContext)
-                }
-            )
-        }
+        val fakeViewContext = fakeRumContext.copy(viewId = fakeRumViewId.toString())
+        val datadogContext = stubSdkCore.getDatadogContext().withRumContext(fakeViewContext)
 
         val rumFeature = mock<Feature> {
             on { name } doReturn Feature.RUM_FEATURE_NAME
@@ -1093,9 +1083,9 @@ internal class OtelTracerProviderTest {
                 hasName(DEFAULT_SPAN_NAME)
                 hasResource(fakeOperationName)
                 hasDurationBetween(OP_DURATION_NS, fullDuration)
-                hasApplicationId(fakeRumApplicationId)
-                hasSessionId(fakeRumSessionId)
-                hasViewId(fakeRumViewId)
+                hasApplicationId(fakeRumContext.applicationId)
+                hasSessionId(fakeRumContext.sessionId)
+                hasViewId(fakeRumViewId.toString())
             }
     }
 

@@ -166,7 +166,7 @@ internal constructor(internal var handler: LogHandler) {
     /**
      * Sends a log message with strings for error information.
      *
-     * This method is meant for non-native or cross platform frameworks (such as React Native or
+     * This method is meant for non-native or cross-platform frameworks (such as React Native or
      * Flutter) to send error information to Datadog. Although it can be used directly, it is
      * recommended to use other methods declared on `Logger`.
      *
@@ -287,7 +287,7 @@ internal constructor(internal var handler: LogHandler) {
 
         /**
          * Enables the logs bundling with the current active trace. If this feature is enabled all
-         * the logs from this moment on will be bundled with the current trace and you will be able
+         * the logs from this moment on will be bundled with the current trace, and you will be able
          * to see all the logs sent during a specific trace.
          * @param enabled true by default
          */
@@ -298,7 +298,7 @@ internal constructor(internal var handler: LogHandler) {
 
         /**
          * Enables the logs bundling with the current active View. If this feature is enabled all
-         * the logs from this moment on will be bundled with the current view information and you
+         * the logs from this moment on will be bundled with the current view information, and you
          * will be able to see all the logs sent during a specific view in the Rum Explorer.
          * @param enabled true by default
          */
@@ -402,7 +402,7 @@ internal constructor(internal var handler: LogHandler) {
      * longer, only the first 200 characters will be used.
      *
      * @param key the key for this tag
-     * @param value the (non null) value of this tag
+     * @param value the (non-null) value of this tag
      * @see [documentation](https://docs.datadoghq.com/tagging/#defining-tags)
      */
     fun addTag(key: String, value: String) {
@@ -418,7 +418,7 @@ internal constructor(internal var handler: LogHandler) {
      * Tags must be lowercase, and can be at most 200 characters. If the tag you provide is
      * longer, only the first 200 characters will be used.
      *
-     * @param tag the (non null) tag
+     * @param tag the (non-null) tag
      * @see [documentation](https://docs.datadoghq.com/tagging/#defining-tags)
      */
     fun addTag(tag: String) {
@@ -427,7 +427,7 @@ internal constructor(internal var handler: LogHandler) {
 
     /**
      * Remove a tag from all future logs sent by this logger.
-     * Previous logs won't lose the this tag if they were created prior to this call.
+     * Previous logs won't lose this tag if they were created prior to this call.
      * @param tag the tag to remove
      */
     fun removeTag(tag: String) {
@@ -436,7 +436,7 @@ internal constructor(internal var handler: LogHandler) {
 
     /**
      * Remove all tags with the given key from all future logs sent by this logger.
-     * Previous logs won't lose the this tag if they were created prior to this call.
+     * Previous logs won't lose this tag if they were created prior to this call.
      * @param key the key of the tags to remove
      */
     fun removeTagsWithKey(key: String) {
@@ -506,7 +506,7 @@ internal constructor(internal var handler: LogHandler) {
         // we first gather all the objects we want to remove based on a copy
         val toRemove: List<String> = tags.toTypedArray().filter(keyFilter)
         @Suppress("UnsafeThirdPartyFunctionCall")
-        // NPE cannot happen here (toRemove is explicitly non null)
+        // NPE cannot happen here (toRemove is explicitly non-null)
         // ClassCastException cannot happen, we're removing objects that come from the set
         tags.removeAll(toRemove)
     }
