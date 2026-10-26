@@ -1,6 +1,8 @@
 # Keep the Compose internals class name. We need this in the SR recorder.
 -keepnames class androidx.compose.ui.platform.ComposeView
 -keepnames class androidx.compose.material.DefaultButtonColors
+-keepnames class androidx.compose.foundation.BackgroundElement
+-keepnames class androidx.compose.foundation.text.modifiers.TextStringSimpleElement
 -keepclassmembers class androidx.compose.foundation.text.modifiers.TextStringSimpleElement {
      <fields>;
 }
