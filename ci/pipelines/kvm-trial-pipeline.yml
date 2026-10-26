@@ -58,9 +58,10 @@ test-pyramid:core-it-latest-api-kvm:
     - exit_code=0
     # Unlike the start-emulator snippet, no `-qemu -machine virt`: that machine type is ARM-only.
     # The pod memory limit does not apply to the guest, which defaults to the avdmanager 2048 MB.
-    # The auto-selected lavapipe/swangle GPU mode aborts SurfaceFlinger on region sampling
+    # Host-side rendering (lavapipe/swangle, swiftshader_indirect) aborts SurfaceFlinger on region sampling
     # ('!rcEnc->featureInfo()->hasReadColorBufferDma'), which restarts system_server in a loop.
-    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -memory 4096 -gpu swiftshader_indirect -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose &
+    # The node has no GPU either way; guest mode renders on the CPU inside the guest instead.
+    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -memory 4096 -gpu guest -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose &
     # Wait for boot so connectedDebugAndroidTest does not race the emulator on a warm Gradle cache.
     - timeout 300 bash -c 'until [[ "$($ANDROID_HOME/platform-tools/adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" == "1" ]]; do sleep 2; done' || exit_code=$?
     - if [[ "$exit_code" -ne 0 ]]; then echo "Emulator failed to boot"; exit 1; fi
