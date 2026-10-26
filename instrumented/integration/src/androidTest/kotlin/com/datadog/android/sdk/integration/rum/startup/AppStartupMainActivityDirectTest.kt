@@ -56,7 +56,7 @@ internal class AppStartupMainActivityDirectTest :
         // Expect application launch view for MainContentActivity
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
-                docVersion = 2
+                docVersion = 3
             )
         )
 

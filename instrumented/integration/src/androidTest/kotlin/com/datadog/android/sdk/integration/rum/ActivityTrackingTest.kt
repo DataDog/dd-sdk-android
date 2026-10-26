@@ -35,7 +35,7 @@ internal abstract class ActivityTrackingTest :
         // app launch view stopped
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
-                docVersion = 2
+                docVersion = 3
             )
         )
 
