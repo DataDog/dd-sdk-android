@@ -162,14 +162,14 @@ internal class DefaultRecorderProviderTest {
         val fakeDrawable: Drawable = mock()
         val mockDrawableMapper: DrawableToColorMapper = mock()
         whenever(mockDrawableMapper.mapDrawableToColor(fakeDrawable, mockInternalLogger)).thenReturn(fakeColor)
-        val fakeView: View = if (fakeTextView) mock<TextView>() else mock<ViewGroup>()
+        val mockView: View = if (fakeTextView) mock<TextView>() else mock<ViewGroup>()
         val stubResources: Resources = mock()
         whenever(stubResources.displayMetrics).thenReturn(DisplayMetrics().apply { density = 1f })
-        whenever(fakeView.resources).thenReturn(stubResources)
-        whenever(fakeView.isShown).thenReturn(true)
-        whenever(fakeView.width).thenReturn(100)
-        whenever(fakeView.height).thenReturn(100)
-        whenever(fakeView.background).thenReturn(fakeDrawable)
+        whenever(mockView.resources).thenReturn(stubResources)
+        whenever(mockView.isShown).thenReturn(true)
+        whenever(mockView.width).thenReturn(100)
+        whenever(mockView.height).thenReturn(100)
+        whenever(mockView.background).thenReturn(fakeDrawable)
         val traversals = mutableListOf<AndroidWindowTraversal>()
 
         // Keep the provider and factory wiring real, then exercise the traversal they give the producer.
@@ -196,7 +196,7 @@ internal class DefaultRecorderProviderTest {
             // When
             testedProvider.provideRecorder()
             val result = traversals.single().traverseWindow(
-                fakeView,
+                mockView,
                 fakeIdentityFactory.window("window"),
                 fakeIdentityFactory,
                 fakeContext

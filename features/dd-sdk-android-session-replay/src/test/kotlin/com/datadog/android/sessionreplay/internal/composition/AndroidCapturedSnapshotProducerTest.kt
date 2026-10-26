@@ -38,6 +38,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -74,20 +75,20 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
     }
 
-    private fun mockWindow(bounds: GlobalBounds): ViewGroup {
-        val view: ViewGroup = mock()
-        whenever(view.isShown).thenReturn(true)
-        whenever(view.width).thenReturn(bounds.width.toInt())
-        whenever(view.height).thenReturn(bounds.height.toInt())
-        whenever(view.getTag(any())).thenReturn(null)
-        whenever(view.childCount).thenReturn(0)
-        whenever(mockViewIdentifierResolver.resolveViewId(view)).thenReturn(nextViewId.getAndIncrement())
-        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(view, fakeDensity)).thenReturn(bounds)
-        val mockResources: Resources = mock()
-        val metrics = DisplayMetrics().apply { density = fakeDensity }
-        whenever(mockResources.displayMetrics).thenReturn(metrics)
-        whenever(view.resources).thenReturn(mockResources)
-        return view
+    private fun mockWindow(fakeBounds: GlobalBounds): ViewGroup {
+        val fakeMetrics = DisplayMetrics().apply { density = fakeDensity }
+        val mockResources: Resources = mock { on { displayMetrics } doReturn fakeMetrics }
+        val mockView: ViewGroup = mock {
+            on { isShown } doReturn true
+            on { width } doReturn fakeBounds.width.toInt()
+            on { height } doReturn fakeBounds.height.toInt()
+            on { getTag(any()) } doReturn null
+            on { childCount } doReturn 0
+            on { resources } doReturn mockResources
+        }
+        whenever(mockViewIdentifierResolver.resolveViewId(mockView)).thenReturn(nextViewId.getAndIncrement())
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockView, fakeDensity)).thenReturn(fakeBounds)
+        return mockView
     }
 
     private fun traversal() = AndroidWindowTraversal(
@@ -126,12 +127,12 @@ internal class AndroidCapturedSnapshotProducerTest {
         fakeDeviceTimestampMs: Long
     ): AndroidCapturedSnapshotProducer {
         val windowSource = ActiveWindowSource().apply { update(windows) }
-        val timeProvider: TimeProvider = mock()
-        whenever(timeProvider.getDeviceTimestampMillis()).thenReturn(fakeDeviceTimestampMs)
+        val mockTimeProvider: TimeProvider = mock()
+        whenever(mockTimeProvider.getDeviceTimestampMillis()).thenReturn(fakeDeviceTimestampMs)
         return AndroidCapturedSnapshotProducer(
             windowSource = windowSource,
             scopeProvider = RumViewScopeProvider { scope },
-            timeProvider = timeProvider,
+            timeProvider = mockTimeProvider,
             traversal = traversal(),
             touchPrivacyManager = mockTouchPrivacyManager,
             viewIdentifierResolver = mockViewIdentifierResolver,
@@ -194,11 +195,12 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedProducer.capture(fakeContext).doneValue()
+        val result = testedProducer.capture(fakeContext).doneValue()
 
         // Then
-        assertThat(snapshot?.timestamp).isEqualTo(fakeTimestamp + fakeOffset)
-        assertThat(snapshot?.scope).isEqualTo(RumViewIdentityScope(fakeViewId))
+        val snapshot = checkNotNull(result) { "Expected a captured snapshot with the current RUM scope" }
+        assertThat(snapshot.timestamp).isEqualTo(fakeTimestamp + fakeOffset)
+        assertThat(snapshot.scope).isEqualTo(RumViewIdentityScope(fakeViewId))
         verify(mockTouchPrivacyManager).replaceCurrentTouchOverrideAreas(emptyMap())
     }
 
@@ -211,10 +213,10 @@ internal class AndroidCapturedSnapshotProducerTest {
         @LongForgery fakeTimestamp: Long
     ) {
         // Given
-        val firstWindow = mockWindow(fakeFirstBounds)
-        val secondWindow = mockWindow(fakeSecondBounds)
+        val mockFirstWindow = mockWindow(fakeFirstBounds)
+        val mockSecondWindow = mockWindow(fakeSecondBounds)
         val testedProducer = producer(
-            windows = listOf(firstWindow, secondWindow),
+            windows = listOf(mockFirstWindow, mockSecondWindow),
             scope = CapturedRumViewScope(RumViewIdentityScope(fakeViewId), fakeOffset),
             fakeDeviceTimestampMs = fakeTimestamp
         )
@@ -223,13 +225,18 @@ internal class AndroidCapturedSnapshotProducerTest {
         val snapshot = testedProducer.capture(fakeContext).doneValue()
 
         // Then
-        val root = snapshot!!.root!!
+        val capturedSnapshot = checkNotNull(snapshot) { "Expected a snapshot containing both windows" }
+        val root = checkNotNull(capturedSnapshot.root) { "Expected a synthetic screen root" }
         assertThat(root.kind).isEqualTo(CapturedLayerKind.SYNTHETIC_SCREEN_ROOT)
         assertThat(root.children).hasSize(2)
-        val windowLayerIds = snapshot.layers
+        val windowLayerIds = capturedSnapshot.layers
             .filter { it.kind == CapturedLayerKind.WINDOW_ROOT }
             .map { it.identity }
         assertThat(root.children.map { it.identity }).isEqualTo(windowLayerIds)
+        assertThat(root.children.map { it.identity.localId }).containsExactly(
+            mockViewIdentifierResolver.resolveViewId(mockFirstWindow).toString(),
+            mockViewIdentifierResolver.resolveViewId(mockSecondWindow).toString()
+        )
     }
 
     @Test
@@ -243,21 +250,22 @@ internal class AndroidCapturedSnapshotProducerTest {
         @IntForgery(min = 0, max = 0xFFFFFF) fakeTextColor: Int
     ) {
         // Given
-        val window = mockWindow(fakeWindowBounds)
-        val textView: TextView = mock()
-        whenever(textView.isShown).thenReturn(true)
-        whenever(textView.width).thenReturn(fakeTextBounds.width.toInt())
-        whenever(textView.height).thenReturn(fakeTextBounds.height.toInt())
-        whenever(textView.getTag(any())).thenReturn(null)
-        whenever(textView.text).thenReturn(fakeText)
-        whenever(textView.background).thenReturn(null)
-        whenever(textView.currentTextColor).thenReturn(fakeTextColor)
-        whenever(mockViewIdentifierResolver.resolveViewId(textView)).thenReturn(nextViewId.getAndIncrement())
-        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(textView, fakeDensity)).thenReturn(fakeTextBounds)
-        whenever(window.childCount).thenReturn(1)
-        whenever(window.getChildAt(0)).thenReturn(textView)
+        val mockWindow = mockWindow(fakeWindowBounds)
+        val mockTextView: TextView = mock {
+            on { isShown } doReturn true
+            on { width } doReturn fakeTextBounds.width.toInt()
+            on { height } doReturn fakeTextBounds.height.toInt()
+            on { getTag(any()) } doReturn null
+            on { text } doReturn fakeText
+            on { background } doReturn null
+            on { currentTextColor } doReturn fakeTextColor
+        }
+        whenever(mockViewIdentifierResolver.resolveViewId(mockTextView)).thenReturn(nextViewId.getAndIncrement())
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockTextView, fakeDensity)).thenReturn(fakeTextBounds)
+        whenever(mockWindow.childCount).thenReturn(1)
+        whenever(mockWindow.getChildAt(0)).thenReturn(mockTextView)
         val testedProducer = producer(
-            windows = listOf(window),
+            windows = listOf(mockWindow),
             scope = CapturedRumViewScope(RumViewIdentityScope(fakeViewId), fakeOffset),
             fakeDeviceTimestampMs = fakeTimestamp
         )
@@ -266,7 +274,8 @@ internal class AndroidCapturedSnapshotProducerTest {
         val snapshot = testedProducer.capture(fakeContext).doneValue()
 
         // Then
-        val validation = DefaultCapturedTreeValidator().validate(snapshot!!)
+        val capturedSnapshot = checkNotNull(snapshot) { "Expected a snapshot containing the mixed tree" }
+        val validation = DefaultCapturedTreeValidator().validate(capturedSnapshot)
         assertThat(validation).isEqualTo(CaptureValidationResult.Valid)
     }
 }

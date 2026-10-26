@@ -6,67 +6,93 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 
+@ExtendWith(ForgeExtension::class)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class CapturedContractsTest {
 
-    @Test
-    fun `M preserve ordered references W construct captured layer`() {
-        // Given
-        val tree = compositionTestTree()
-        val secondLayer = tree.factory.layer(tree.window, "second-layer")
+    @Forgery
+    lateinit var fakeTree: CompositionTestTree
 
-        // When
-        val layer = tree.layer.copy(
-            children = listOf(
-                CapturedChild.Wireframe(tree.wireframeIdentity),
-                CapturedChild.Layer(secondLayer),
-                CapturedChild.Layer(tree.layer.identity)
-            ),
-            modifiers = listOf(
-                CapturedModifier.Opacity(0.5),
-                CapturedModifier.GaussianBlur(2.0)
-            )
+    @Test
+    fun `M preserve child reference order W copy()`() {
+        // Given
+        val fakeSecondLayer = fakeTree.factory.layer(fakeTree.window, fakeTree.layer.identity.localId + "-second-layer")
+        val fakeChildren = listOf(
+            CapturedChild.Wireframe(fakeTree.wireframeIdentity),
+            CapturedChild.Layer(fakeSecondLayer),
+            CapturedChild.Layer(fakeTree.layer.identity)
         )
 
+        // When
+        val result = fakeTree.layer.copy(children = fakeChildren)
+
         // Then
-        assertThat(layer.children.map { it.identity })
-            .containsExactly(tree.wireframeIdentity, secondLayer, tree.layer.identity)
-        assertThat(layer.modifiers)
-            .containsExactly(CapturedModifier.Opacity(0.5), CapturedModifier.GaussianBlur(2.0))
+        assertThat(result.children.map { it.identity })
+            .containsExactly(fakeTree.wireframeIdentity, fakeSecondLayer, fakeTree.layer.identity)
     }
 
     @Test
-    fun `M distinguish unchanged from cleared W construct mutation`() {
+    fun `M preserve modifier order W copy()`() {
         // Given
-        val tree = compositionTestTree()
+        val fakeModifiers = listOf(CapturedModifier.Opacity(0.5), CapturedModifier.GaussianBlur(2.0))
 
         // When
-        val unchanged = CapturedLayerUpdate(identity = tree.layer.identity)
-        val cleared = CapturedLayerUpdate(
-            identity = tree.layer.identity,
+        val result = fakeTree.layer.copy(modifiers = fakeModifiers)
+
+        // Then
+        assertThat(result.modifiers).containsExactly(CapturedModifier.Opacity(0.5), CapturedModifier.GaussianBlur(2.0))
+    }
+
+    @Test
+    fun `M leave omitted fields unchanged W CapturedLayerUpdate()`() {
+        // When
+        val result = CapturedLayerUpdate(identity = fakeTree.layer.identity)
+
+        // Then
+        assertThat(result.children).isEqualTo(CapturedChange.Unchanged)
+        assertThat(result.modifiers).isEqualTo(CapturedChange.Unchanged)
+    }
+
+    @Test
+    fun `M preserve explicit field clearing W CapturedLayerUpdate()`() {
+        // When
+        val result = CapturedLayerUpdate(
+            identity = fakeTree.layer.identity,
             children = CapturedChange.Set(emptyList()),
             modifiers = CapturedChange.Set(emptyList()),
             compositeOperation = CapturedChange.Set(null)
         )
 
         // Then
-        assertThat(unchanged.children).isEqualTo(CapturedChange.Unchanged)
-        assertThat(unchanged.modifiers).isEqualTo(CapturedChange.Unchanged)
-        assertThat(cleared.children).isEqualTo(CapturedChange.Set(emptyList<CapturedChild>()))
-        assertThat(cleared.modifiers).isEqualTo(CapturedChange.Set(emptyList<CapturedModifier>()))
-        assertThat(cleared.compositeOperation).isEqualTo(CapturedChange.Set(null))
+        assertThat(result.children).isEqualTo(CapturedChange.Set(emptyList<CapturedChild>()))
+        assertThat(result.modifiers).isEqualTo(CapturedChange.Set(emptyList<CapturedModifier>()))
+        assertThat(result.compositeOperation).isEqualTo(CapturedChange.Set(null))
     }
 
     @Test
-    fun `M represent resolved and unresolved resources W construct pixel resource`() {
-        // Given + When
-        val resolved: PixelResource = PixelResource.Resolved("resource")
-        val unresolved: PixelResource = PixelResource.Unresolved
+    fun `M preserve resolved resource ID W Resolved()`(@StringForgery fakeResourceId: String) {
+        // When
+        val result: PixelResource = PixelResource.Resolved(fakeResourceId)
 
         // Then
-        assertThat(resolved).isEqualTo(PixelResource.Resolved("resource"))
-        assertThat(unresolved).isSameAs(PixelResource.Unresolved)
+        assertThat(result).isEqualTo(PixelResource.Resolved(fakeResourceId))
+    }
+
+    @Test
+    fun `M retain unresolved resource sentinel W Unresolved`() {
+        // When
+        val result: PixelResource = PixelResource.Unresolved
+
+        // Then
+        assertThat(result).isSameAs(PixelResource.Unresolved)
     }
 }

@@ -42,7 +42,7 @@ internal class CaptureSkippedFrameNotifierTest {
     lateinit var mockRumFeature: FeatureScope
 
     @Test
-    fun `M send skipped-frame event W RUM feature exists`() {
+    fun `M send skipped-frame event W notifySkippedFrame() { RUM feature exists }`() {
         // Given
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)).thenReturn(mockRumFeature)
 
@@ -73,7 +73,7 @@ internal class CaptureSkippedFrameNotifierTest {
     }
 
     @Test
-    fun `M skip event W RUM feature is absent`() {
+    fun `M skip event W notifySkippedFrame() { RUM feature is absent }`() {
         // Given
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)).thenReturn(null)
 

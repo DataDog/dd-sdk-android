@@ -24,118 +24,135 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
 
 @Extensions(
+    ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
 @ForgeConfiguration(ForgeConfigurator::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class SnapshotCompletionQueueTest {
 
     @Test
-    fun `M process completed capture W generation remains valid`(forge: Forge) {
+    fun `M process completed capture W consume() { generation remains valid }`(forge: Forge) {
         // Given
-        val fixture = QueueFixture(forge)
-        val fakeCapture = fixture.aCapture()
+        val fakeFixture = QueueFixture(forge)
+        val fakeCapture = fakeFixture.aCapture()
 
         // When
-        fixture.testedQueue.consume(fakeCapture)
-        fixture.runQueuedTask()
+        fakeFixture.testedQueue.consume(fakeCapture)
+        fakeFixture.runQueuedTask()
 
         // Then
-        verify(fixture.mockProcessor).process(fakeCapture)
+        verify(fakeFixture.mockProcessor).process(fakeCapture)
     }
 
     @Test
-    fun `M drop completed capture W generation expires before handoff`(forge: Forge) {
+    fun `M drop completed capture W consume() { generation expires before handoff }`(forge: Forge) {
         // Given
-        val fixture = QueueFixture(forge)
-        val fakeCapture = fixture.aCapture()
+        val fakeFixture = QueueFixture(forge)
+        val fakeCapture = fakeFixture.aCapture()
 
         // When
-        fixture.fakeClock.nowNs = fakeCapture.generation.deadlineNs
-        fixture.testedQueue.consume(fakeCapture)
+        fakeFixture.fakeClock.nowNs = fakeCapture.generation.deadlineNs
+        fakeFixture.testedQueue.consume(fakeCapture)
 
         // Then
-        verify(fixture.mockExecutorService, never()).execute(any())
-        verify(fixture.mockProcessor, never()).process(any())
+        verifyNoInteractions(fakeFixture.mockExecutorService, fakeFixture.mockProcessor)
     }
 
     @Test
-    fun `M drop queued capture W generation expires before processing`(forge: Forge) {
+    fun `M drop queued capture W runQueuedTask() { generation expires before processing }`(forge: Forge) {
         // Given
-        val fixture = QueueFixture(forge)
-        val fakeCapture = fixture.aCapture()
-        fixture.testedQueue.consume(fakeCapture)
+        val fakeFixture = QueueFixture(forge)
+        val fakeCapture = fakeFixture.aCapture()
+        fakeFixture.testedQueue.consume(fakeCapture)
 
         // When
-        fixture.fakeClock.nowNs = fakeCapture.generation.deadlineNs
-        fixture.runQueuedTask()
+        fakeFixture.fakeClock.nowNs = fakeCapture.generation.deadlineNs
+        fakeFixture.runQueuedTask()
 
         // Then
-        verify(fixture.mockProcessor, never()).process(any())
+        verifyNoInteractions(fakeFixture.mockProcessor)
     }
 
     @Test
-    fun `M preserve capture order W multiple generations are handed off`(forge: Forge) {
+    fun `M preserve capture order W consume() { multiple generations are handed off }`(forge: Forge) {
         // Given
-        val fixture = QueueFixture(forge)
-        val fakeFirstCapture = fixture.aCapture(generationId = 1L)
-        val fakeSecondCapture = fixture.aCapture(generationId = 2L)
+        val fakeFixture = QueueFixture(forge)
+        val fakeFirstCapture = fakeFixture.aCapture(generationId = 1L)
+        val fakeSecondCapture = fakeFixture.aCapture(generationId = 2L)
 
         // When
-        fixture.testedQueue.consume(fakeFirstCapture)
-        fixture.testedQueue.consume(fakeSecondCapture)
-        fixture.runQueuedTask()
+        fakeFixture.testedQueue.consume(fakeFirstCapture)
+        fakeFixture.testedQueue.consume(fakeSecondCapture)
+        fakeFixture.runQueuedTask()
 
         // Then
-        inOrder(fixture.mockProcessor) {
-            verify(fixture.mockProcessor).process(fakeFirstCapture)
-            verify(fixture.mockProcessor).process(fakeSecondCapture)
+        inOrder(fakeFixture.mockProcessor) {
+            verify(fakeFixture.mockProcessor).process(fakeFirstCapture)
+            verify(fakeFixture.mockProcessor).process(fakeSecondCapture)
         }
-        verify(fixture.mockExecutorService).execute(any())
+        verify(fakeFixture.mockExecutorService).execute(isA())
     }
 
     @Test
-    fun `M reject handoff and cancel executor W stop`(forge: Forge) {
+    fun `M cancel completion executor W stop()`(forge: Forge) {
         // Given
-        val fixture = QueueFixture(forge)
+        val fakeFixture = QueueFixture(forge)
 
         // When
-        fixture.testedQueue.stop()
-        fixture.testedQueue.consume(fixture.aCapture())
+        fakeFixture.testedQueue.stop()
 
         // Then
-        verify(fixture.mockExecutorService).shutdownNow()
-        verify(fixture.mockExecutorService, never()).execute(any())
+        verify(fakeFixture.mockExecutorService).shutdownNow()
+    }
+
+    @Test
+    fun `M reject handoff W consume() { completion queue stopped }`(forge: Forge) {
+        // Given
+        val fakeFixture = QueueFixture(forge)
+        fakeFixture.testedQueue.stop()
+
+        // When
+        fakeFixture.testedQueue.consume(fakeFixture.aCapture())
+
+        // Then
+        verify(fakeFixture.mockExecutorService, never()).execute(any())
     }
 
     @Test
     fun `M expire refused capture W consume { queue already stopped }`(forge: Forge) {
         // Given
-        val fixture = QueueFixture(forge)
-        val fakeCapture = fixture.aCapture()
-        fixture.testedQueue.stop()
+        val fakeFixture = QueueFixture(forge)
+        val fakeCapture = fakeFixture.aCapture()
+        fakeFixture.testedQueue.stop()
 
         // When
-        fixture.testedQueue.consume(fakeCapture)
+        fakeFixture.testedQueue.consume(fakeCapture)
 
         // Then
         assertThat(fakeCapture.generation.isActive())
             .describedAs("a capture the queue refuses must not stay active")
             .isFalse()
-        verify(fixture.mockProcessor, never()).process(any())
+        verifyNoInteractions(fakeFixture.mockProcessor)
     }
 
     @Test
@@ -144,16 +161,16 @@ internal class SnapshotCompletionQueueTest {
         forge: Forge
     ) {
         // Given
-        val fixture = QueueFixture(forge, maxQueuedCaptures = fakeMaxQueuedCaptures)
-        val fakeCaptures = (0..fakeMaxQueuedCaptures).map { fixture.aCapture(generationId = it + 1L) }
+        val fakeFixture = QueueFixture(forge, maxQueuedCaptures = fakeMaxQueuedCaptures)
+        val fakeCaptures = (0..fakeMaxQueuedCaptures).map { fakeFixture.aCapture(generationId = it + 1L) }
 
         // When
-        fakeCaptures.forEach(fixture.testedQueue::consume)
+        fakeCaptures.forEach(fakeFixture.testedQueue::consume)
 
         // Then
         assertThat(fakeCaptures.first().generation.isActive()).isFalse()
         assertThat(fakeCaptures.drop(1)).allMatch { it.generation.isActive() }
-        fixture.mockInternalLogger.verifyLog(
+        fakeFixture.mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.TELEMETRY,
             SnapshotCompletionQueue.QUEUE_SATURATED_MESSAGE,
@@ -165,21 +182,21 @@ internal class SnapshotCompletionQueueTest {
     }
 
     @Test
-    fun `M process only the retained captures W drain { queue saturated }`(
+    fun `M process only the retained captures W runQueuedTask() { queue saturated }`(
         @IntForgery(min = 1, max = 4) fakeMaxQueuedCaptures: Int,
         forge: Forge
     ) {
         // Given
-        val fixture = QueueFixture(forge, maxQueuedCaptures = fakeMaxQueuedCaptures)
-        val fakeCaptures = (0..fakeMaxQueuedCaptures).map { fixture.aCapture(generationId = it + 1L) }
+        val fakeFixture = QueueFixture(forge, maxQueuedCaptures = fakeMaxQueuedCaptures)
+        val fakeCaptures = (0..fakeMaxQueuedCaptures).map { fakeFixture.aCapture(generationId = it + 1L) }
 
         // When
-        fakeCaptures.forEach(fixture.testedQueue::consume)
-        fixture.runQueuedTask()
+        fakeCaptures.forEach(fakeFixture.testedQueue::consume)
+        fakeFixture.runQueuedTask()
 
         // Then
-        verify(fixture.mockProcessor, never()).process(fakeCaptures.first())
-        fakeCaptures.drop(1).forEach { verify(fixture.mockProcessor).process(it) }
+        verify(fakeFixture.mockProcessor, never()).process(fakeCaptures.first())
+        fakeCaptures.drop(1).forEach { verify(fakeFixture.mockProcessor).process(it) }
     }
 
     @Test
@@ -188,19 +205,19 @@ internal class SnapshotCompletionQueueTest {
         forge: Forge
     ) {
         // Given
-        val fixture = QueueFixture(forge, maxQueuedCaptures = fakeInvalidMaxQueuedCaptures)
-        val fakeFirstCapture = fixture.aCapture(generationId = 1L)
-        val fakeSecondCapture = fixture.aCapture(generationId = 2L)
+        val fakeFixture = QueueFixture(forge, maxQueuedCaptures = fakeInvalidMaxQueuedCaptures)
+        val fakeFirstCapture = fakeFixture.aCapture(generationId = 1L)
+        val fakeSecondCapture = fakeFixture.aCapture(generationId = 2L)
 
         // When
-        fixture.testedQueue.consume(fakeFirstCapture)
-        fixture.testedQueue.consume(fakeSecondCapture)
-        fixture.runQueuedTask()
+        fakeFixture.testedQueue.consume(fakeFirstCapture)
+        fakeFixture.testedQueue.consume(fakeSecondCapture)
+        fakeFixture.runQueuedTask()
 
         // Then
         assertThat(fakeFirstCapture.generation.isActive()).isFalse()
-        verify(fixture.mockProcessor, never()).process(fakeFirstCapture)
-        verify(fixture.mockProcessor).process(fakeSecondCapture)
+        verify(fakeFixture.mockProcessor, never()).process(fakeFirstCapture)
+        verify(fakeFixture.mockProcessor).process(fakeSecondCapture)
     }
 
     @Test
@@ -210,15 +227,15 @@ internal class SnapshotCompletionQueueTest {
         forge: Forge
     ) {
         // Given
-        val fixture = QueueFixture(forge, maxQueuedCaptures = fakeMaxQueuedCaptures)
+        val fakeFixture = QueueFixture(forge, maxQueuedCaptures = fakeMaxQueuedCaptures)
         val fakeCaptureCount = fakeMaxQueuedCaptures + fakeDroppedCount
-        repeat(fakeCaptureCount) { fixture.testedQueue.consume(fixture.aCapture(generationId = it + 1L)) }
+        repeat(fakeCaptureCount) { fakeFixture.testedQueue.consume(fakeFixture.aCapture(generationId = it + 1L)) }
 
         // When
-        fixture.testedQueue.stop()
+        fakeFixture.testedQueue.stop()
 
         // Then
-        fixture.mockInternalLogger.verifyLog(
+        fakeFixture.mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.TELEMETRY,
             SnapshotCompletionQueue.DROPPED_CAPTURES_ON_STOP_MESSAGE,
@@ -231,20 +248,20 @@ internal class SnapshotCompletionQueueTest {
     @Test
     fun `M report an error and keep draining W consume { processor throws }`(forge: Forge) {
         // Given
-        val fixture = QueueFixture(forge)
-        val fakeThrowingCapture = fixture.aCapture(generationId = 1L)
+        val fakeFixture = QueueFixture(forge)
+        val fakeThrowingCapture = fakeFixture.aCapture(generationId = 1L)
         val fakeFailure = IllegalStateException("boom")
-        doThrow(fakeFailure).whenever(fixture.mockProcessor).process(fakeThrowingCapture)
-        val fakeFollowingCapture = fixture.aCapture(generationId = 2L)
+        doThrow(fakeFailure).whenever(fakeFixture.mockProcessor).process(fakeThrowingCapture)
+        val fakeFollowingCapture = fakeFixture.aCapture(generationId = 2L)
 
         // When
-        fixture.testedQueue.consume(fakeThrowingCapture)
-        fixture.testedQueue.consume(fakeFollowingCapture)
-        fixture.runQueuedTask()
+        fakeFixture.testedQueue.consume(fakeThrowingCapture)
+        fakeFixture.testedQueue.consume(fakeFollowingCapture)
+        fakeFixture.runQueuedTask()
 
         // Then
-        verify(fixture.mockProcessor).process(fakeFollowingCapture)
-        fixture.mockInternalLogger.verifyLog(
+        verify(fakeFixture.mockProcessor).process(fakeFollowingCapture)
+        fakeFixture.mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
             "Composition snapshot completion processing threw an exception",
@@ -253,15 +270,15 @@ internal class SnapshotCompletionQueueTest {
     }
 
     @Test
-    fun `M expire the in-flight capture W stop { called during processing }`(forge: Forge) {
+    fun `M expire the in-flight capture W runQueuedTask() { stop, called during processing }`(forge: Forge) {
         // Given
-        val fixture = QueueFixture(forge)
-        val fakeCapture = fixture.aCapture()
-        doAnswer { fixture.testedQueue.stop() }.whenever(fixture.mockProcessor).process(fakeCapture)
+        val fakeFixture = QueueFixture(forge)
+        val fakeCapture = fakeFixture.aCapture()
+        doAnswer { fakeFixture.testedQueue.stop() }.whenever(fakeFixture.mockProcessor).process(fakeCapture)
 
         // When
-        fixture.testedQueue.consume(fakeCapture)
-        fixture.runQueuedTask()
+        fakeFixture.testedQueue.consume(fakeCapture)
+        fakeFixture.runQueuedTask()
 
         // Then
         assertThat(fakeCapture.generation.isActive())
@@ -272,70 +289,73 @@ internal class SnapshotCompletionQueueTest {
     @Test
     fun `M not report any drop W stop { queue never saturated }`(forge: Forge) {
         // Given
-        val fixture = QueueFixture(forge)
-        fixture.testedQueue.consume(fixture.aCapture())
+        val fakeFixture = QueueFixture(forge)
+        fakeFixture.testedQueue.consume(fakeFixture.aCapture())
 
         // When
-        fixture.testedQueue.stop()
+        fakeFixture.testedQueue.stop()
 
         // Then
-        verifyNoInteractions(fixture.mockInternalLogger)
+        verifyNoInteractions(fakeFixture.mockInternalLogger)
     }
 
     @Test
-    fun `M write mapped snapshot W acceptance is immediately before deadline`(
+    fun `M write mapped snapshot W process() { acceptance is immediately before deadline }`(
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeSessionId: String,
         @LongForgery(min = 1L, max = 1_000_000L) fakeDeadlineNs: Long,
         forge: Forge
     ) {
         // Given
-        val fakeTree = forge.aCompositionTestTree()
-        val mockRecord = mock<MobileSegment.MobileRecord.MobileFullSnapshotRecord>()
-        val stubWireMapper = mock<CapturedTreeWireMapper>()
-        whenever(stubWireMapper.mapFullSnapshot(fakeTree.snapshot))
-            .thenReturn(CaptureWireMappingResult.Success(mockRecord))
-        val mockRecordWriter = mock<RecordWriter>()
-        val testedProcessor = DefaultSnapshotCompletionProcessor(
-            rumContextProvider = stubRumContextProvider(fakeApplicationId, fakeSessionId, fakeTree.scope.value),
-            recordWriter = mockRecordWriter,
-            internalLogger = mock(),
-            wireMapper = stubWireMapper
+        val fakeFixture = CompletionFixture(
+            forge,
+            fakeApplicationId,
+            fakeSessionId,
+            nowNs = fakeDeadlineNs - 1L,
+            deadlineNs = fakeDeadlineNs
         )
-        val fakeClock = FakeClock().apply { nowNs = fakeDeadlineNs - 1L }
 
         // When
-        testedProcessor.process(
-            CompletedSnapshotCapture(generation(fakeClock, deadlineNs = fakeDeadlineNs), fakeTree.snapshot)
-        )
+        fakeFixture.testedProcessor.process(fakeFixture.fakeCapture)
 
         // Then
         val recordCaptor = argumentCaptor<EnrichedRecord>()
-        verify(mockRecordWriter).write(recordCaptor.capture(), any())
+        verify(fakeFixture.mockRecordWriter).write(recordCaptor.capture(), isA())
         assertThat(recordCaptor.firstValue).isEqualTo(
-            EnrichedRecord(fakeApplicationId, fakeSessionId, fakeTree.scope.value, listOf(mockRecord))
+            EnrichedRecord(
+                fakeApplicationId,
+                fakeSessionId,
+                fakeFixture.fakeTree.scope.value,
+                listOf(fakeFixture.mockRecord)
+            )
         )
     }
 
     @Test
-    fun `M drop mapped snapshot W acceptance is exactly at deadline`(
+    fun `M drop mapped snapshot W process() { acceptance is exactly at deadline }`(
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeSessionId: String,
         @LongForgery(min = 1L, max = 1_000_000L) fakeDeadlineNs: Long,
         forge: Forge
     ) {
         // Given
-        val fakeNowNs = fakeDeadlineNs
+        val fakeFixture = CompletionFixture(
+            forge,
+            fakeApplicationId,
+            fakeSessionId,
+            nowNs = fakeDeadlineNs,
+            deadlineNs = fakeDeadlineNs
+        )
 
         // When
-        val mockRecordWriter = processSnapshotAt(forge, fakeNowNs, fakeDeadlineNs, fakeApplicationId, fakeSessionId)
+        fakeFixture.testedProcessor.process(fakeFixture.fakeCapture)
 
         // Then
-        verify(mockRecordWriter, never()).write(any(), any())
+        verifyNoInteractions(fakeFixture.mockRecordWriter)
     }
 
     @Test
-    fun `M drop mapped snapshot W acceptance is after deadline`(
+    fun `M drop mapped snapshot W process() { acceptance is after deadline }`(
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeSessionId: String,
         @LongForgery(min = 1L, max = 1_000_000L) fakeDeadlineNs: Long,
@@ -343,19 +363,19 @@ internal class SnapshotCompletionQueueTest {
         forge: Forge
     ) {
         // Given
-        val fakeNowNs = fakeDeadlineNs + fakeOverrunNs
-
-        // When
-        val mockRecordWriter = processSnapshotAt(
+        val fakeFixture = CompletionFixture(
             forge,
-            nowNs = fakeNowNs,
-            deadlineNs = fakeDeadlineNs,
-            applicationId = fakeApplicationId,
-            sessionId = fakeSessionId
+            fakeApplicationId,
+            fakeSessionId,
+            nowNs = fakeDeadlineNs + fakeOverrunNs,
+            deadlineNs = fakeDeadlineNs
         )
 
+        // When
+        fakeFixture.testedProcessor.process(fakeFixture.fakeCapture)
+
         // Then
-        verify(mockRecordWriter, never()).write(any(), any())
+        verifyNoInteractions(fakeFixture.mockRecordWriter)
     }
 
     @Test
@@ -371,7 +391,7 @@ internal class SnapshotCompletionQueueTest {
         val mockRecordWriter = mock<RecordWriter>()
         val mockWireMapper = mock<CapturedTreeWireMapper>()
         val testedProcessor = DefaultSnapshotCompletionProcessor(
-            rumContextProvider = stubRumContextProvider(fakeApplicationId, fakeSessionId, fakeOtherViewId),
+            rumContextProvider = mockRumContextProvider(fakeApplicationId, fakeSessionId, fakeOtherViewId),
             recordWriter = mockRecordWriter,
             internalLogger = mock(),
             wireMapper = mockWireMapper
@@ -383,8 +403,7 @@ internal class SnapshotCompletionQueueTest {
         )
 
         // Then
-        verify(mockWireMapper, never()).mapFullSnapshot(any())
-        verify(mockRecordWriter, never()).write(any(), any())
+        verifyNoInteractions(mockWireMapper, mockRecordWriter)
     }
 
     @Test
@@ -403,16 +422,16 @@ internal class SnapshotCompletionQueueTest {
                 detail = anAlphabeticalString()
             )
         }
-        val stubWireMapper = mock<CapturedTreeWireMapper>()
-        whenever(stubWireMapper.mapFullSnapshot(fakeTree.snapshot))
+        val mockWireMapper = mock<CapturedTreeWireMapper>()
+        whenever(mockWireMapper.mapFullSnapshot(fakeTree.snapshot))
             .thenReturn(CaptureWireMappingResult.Invalid(fakeFailures))
         val mockRecordWriter = mock<RecordWriter>()
         val mockInternalLogger = mock<InternalLogger>()
         val testedProcessor = DefaultSnapshotCompletionProcessor(
-            rumContextProvider = stubRumContextProvider(fakeApplicationId, fakeSessionId, fakeTree.scope.value),
+            rumContextProvider = mockRumContextProvider(fakeApplicationId, fakeSessionId, fakeTree.scope.value),
             recordWriter = mockRecordWriter,
             internalLogger = mockInternalLogger,
-            wireMapper = stubWireMapper
+            wireMapper = mockWireMapper
         )
         val fakeGeneration = generation(FakeClock(), deadlineNs = fakeDeadlineNs)
 
@@ -420,7 +439,7 @@ internal class SnapshotCompletionQueueTest {
         testedProcessor.process(CompletedSnapshotCapture(fakeGeneration, fakeTree.snapshot))
 
         // Then
-        verify(mockRecordWriter, never()).write(any(), any())
+        verifyNoInteractions(mockRecordWriter)
         assertThat(fakeGeneration.isActive()).isFalse()
         val expectedCodes = fakeFailures.asSequence().map { it.code }.distinct().sorted().map(Enum<*>::name).toList()
         mockInternalLogger.verifyLog(
@@ -434,35 +453,30 @@ internal class SnapshotCompletionQueueTest {
         )
     }
 
-    private fun processSnapshotAt(
+    private inner class CompletionFixture(
         forge: Forge,
-        nowNs: Long,
-        deadlineNs: Long,
         applicationId: String,
-        sessionId: String
-    ): RecordWriter {
+        sessionId: String,
+        nowNs: Long,
+        deadlineNs: Long
+    ) {
         val fakeTree = forge.aCompositionTestTree()
-        val mockRecord = mock<MobileSegment.MobileRecord.MobileFullSnapshotRecord>()
-        val stubWireMapper = mock<CapturedTreeWireMapper>()
-        whenever(stubWireMapper.mapFullSnapshot(fakeTree.snapshot))
-            .thenReturn(CaptureWireMappingResult.Success(mockRecord))
-        val mockRecordWriter = mock<RecordWriter>()
+        val mockRecord: MobileSegment.MobileRecord.MobileFullSnapshotRecord = mock()
+        val mockRecordWriter: RecordWriter = mock()
+        private val mockWireMapper: CapturedTreeWireMapper = mock {
+            on { mapFullSnapshot(fakeTree.snapshot) } doReturn CaptureWireMappingResult.Success(mockRecord)
+        }
+        private val fakeClock = FakeClock().apply { this.nowNs = nowNs }
+        val fakeCapture = CompletedSnapshotCapture(generation(fakeClock, deadlineNs = deadlineNs), fakeTree.snapshot)
         val testedProcessor = DefaultSnapshotCompletionProcessor(
-            rumContextProvider = stubRumContextProvider(applicationId, sessionId, fakeTree.scope.value),
+            rumContextProvider = mockRumContextProvider(applicationId, sessionId, fakeTree.scope.value),
             recordWriter = mockRecordWriter,
             internalLogger = mock(),
-            wireMapper = stubWireMapper
+            wireMapper = mockWireMapper
         )
-        val fakeClock = FakeClock().apply { this.nowNs = nowNs }
-
-        testedProcessor.process(
-            CompletedSnapshotCapture(generation(fakeClock, deadlineNs = deadlineNs), fakeTree.snapshot)
-        )
-
-        return mockRecordWriter
     }
 
-    private fun stubRumContextProvider(
+    private fun mockRumContextProvider(
         applicationId: String,
         sessionId: String,
         viewId: String

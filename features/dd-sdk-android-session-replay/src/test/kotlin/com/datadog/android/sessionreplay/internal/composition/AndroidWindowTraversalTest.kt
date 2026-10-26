@@ -33,6 +33,7 @@ import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -50,13 +51,17 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.KStubbing
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.atomic.AtomicLong
@@ -106,35 +111,51 @@ internal class AndroidWindowTraversalTest {
         )
     }
 
-    private fun mockView(bounds: GlobalBounds): View {
-        val view: View = mock()
-        stubDefaults(view, bounds)
-        return view
+    private fun mockView(bounds: GlobalBounds): View = mockViewWithDefaults(bounds)
+
+    private fun mockViewGroup(bounds: GlobalBounds): ViewGroup = mockViewWithDefaults(bounds) {
+        on { clipChildren } doReturn true
     }
 
-    private fun mockViewGroup(bounds: GlobalBounds): ViewGroup {
-        val view: ViewGroup = mock()
-        whenever(view.clipChildren).thenReturn(true)
-        stubDefaults(view, bounds)
-        return view
+    private inline fun <reified T : View> mockViewWithDefaults(
+        fakeBounds: GlobalBounds,
+        crossinline customize: KStubbing<T>.() -> Unit = {}
+    ): T {
+        val fakeMetrics = DisplayMetrics().apply { density = fakeDensity }
+        val mockResources: Resources = mock { on { displayMetrics } doReturn fakeMetrics }
+        val mockView: T = mock {
+            on { isShown } doReturn true
+            on { scaleX } doReturn 1f
+            on { scaleY } doReturn 1f
+            on { left } doReturn fakeBounds.x.toInt()
+            on { top } doReturn fakeBounds.y.toInt()
+            on { width } doReturn fakeBounds.width.toInt().coerceAtLeast(1)
+            on { height } doReturn fakeBounds.height.toInt().coerceAtLeast(1)
+            on { getTag(any()) } doReturn null
+            on { resources } doReturn mockResources
+            customize()
+        }
+        whenever(mockViewIdentifierResolver.resolveViewId(mockView)).thenReturn(nextViewId.getAndIncrement())
+        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockView, fakeDensity)).thenReturn(fakeBounds)
+        return mockView
     }
 
-    private fun stubDefaults(view: View, bounds: GlobalBounds) {
-        whenever(view.isShown).thenReturn(true)
-        whenever(view.scaleX).thenReturn(1f)
-        whenever(view.scaleY).thenReturn(1f)
-        whenever(view.left).thenReturn(bounds.x.toInt())
-        whenever(view.top).thenReturn(bounds.y.toInt())
-        whenever(view.width).thenReturn(bounds.width.toInt().coerceAtLeast(1))
-        whenever(view.height).thenReturn(bounds.height.toInt().coerceAtLeast(1))
-        whenever(view.getTag(any())).thenReturn(null)
-        whenever(mockViewIdentifierResolver.resolveViewId(view)).thenReturn(nextViewId.getAndIncrement())
-        whenever(mockViewBoundsResolver.resolveViewGlobalBounds(view, fakeDensity)).thenReturn(bounds)
-        val mockResources: Resources = mock()
-        val metrics = DisplayMetrics().apply { density = fakeDensity }
-        whenever(mockResources.displayMetrics).thenReturn(metrics)
-        whenever(view.resources).thenReturn(mockResources)
+    private fun ViewGroup.withChildren(vararg children: View) {
+        stub {
+            on { childCount } doReturn children.size
+            children.forEachIndexed { index, child -> on { getChildAt(index) } doReturn child }
+        }
     }
+
+    private fun webViewTraversal(fallback: CapturedViewMapper<View> = noOpFallback) = traversal(
+        fallback = fallback,
+        typedMappers = listOf(
+            CapturedMapperTypeWrapper(
+                WebView::class.java,
+                CapturedWebViewMapper(mockViewIdentifierResolver, mockViewBoundsResolver)
+            )
+        )
+    )
 
     private fun traversal(
         fallback: CapturedViewMapper<View> = noOpFallback,
@@ -156,28 +177,25 @@ internal class AndroidWindowTraversalTest {
     /** A view whose bounds fully cover whatever it's stacked on top of, painted with opaque black. */
     @Suppress("DEPRECATION")
     private fun mockOpaqueCoveringView(bounds: GlobalBounds): View {
-        val view = mockView(bounds)
-        val drawable: ColorDrawable = mock()
-        whenever(drawable.opacity).thenReturn(PixelFormat.OPAQUE)
-        whenever(view.alpha).thenReturn(1f)
-        whenever(view.scaleX).thenReturn(1f)
-        whenever(view.scaleY).thenReturn(1f)
-        whenever(view.background).thenReturn(drawable)
-        whenever(mockDrawableToColorMapper.mapDrawableToColor(eq(drawable), any())).thenReturn(Color.BLACK)
-        return view
+        val mockDrawable: ColorDrawable = mock { on { opacity } doReturn PixelFormat.OPAQUE }
+        whenever(mockDrawableToColorMapper.mapDrawableToColor(eq(mockDrawable), any())).thenReturn(Color.BLACK)
+        return mockViewWithDefaults(bounds) {
+            on { alpha } doReturn 1f
+            on { background } doReturn mockDrawable
+        }
     }
 
     @Test
     fun `M retain exact pixel geometry W traverseWindow { coordinates exceed float precision }`() {
         // Given
         val fakePixels = GlobalBounds(-2_000_000_123L, 0, 2_000_000_456L, 100)
-        val root = mockView(fakePixels)
+        val mockRoot = mockView(fakePixels)
         doAnswer { invocation ->
-            val location = invocation.getArgument<IntArray>(0)
-            location[0] = fakePixels.x.toInt()
-            location[1] = fakePixels.y.toInt()
+            val fakeLocation = invocation.getArgument<IntArray>(0)
+            fakeLocation[0] = fakePixels.x.toInt()
+            fakeLocation[1] = fakePixels.y.toInt()
             null
-        }.whenever(root).getLocationOnScreen(any())
+        }.whenever(mockRoot).getLocationOnScreen(any())
         val testedTraversal = AndroidWindowTraversal(
             mapperRegistry = CapturedViewMapperRegistry(emptyList(), noOpFallback, mock()),
             internalLogger = mock(),
@@ -188,7 +206,7 @@ internal class AndroidWindowTraversalTest {
 
         // When
         val result = testedTraversal.traverseWindow(
-            root,
+            mockRoot,
             identityFactory.window("window"),
             identityFactory,
             fakeContext
@@ -197,7 +215,7 @@ internal class AndroidWindowTraversalTest {
         // Then
         val copiedView = (result as WindowCopyResult.Present).window.views.single()
         assertThat(copiedView.pixelBounds).isEqualTo(fakePixels)
-        val normalized = DefaultViewBoundsResolver.resolveViewGlobalBounds(root, fakeDensity)
+        val normalized = DefaultViewBoundsResolver.resolveViewGlobalBounds(mockRoot, fakeDensity)
         assertThat(copiedView.bounds).isEqualTo(
             CapturedBounds(normalized.x, normalized.y, normalized.width, normalized.height)
         )
@@ -207,74 +225,75 @@ internal class AndroidWindowTraversalTest {
     fun `M skip reparented child W traverseWindow { distinct parents compare equal }`(
         @Forgery fakeBounds: GlobalBounds
     ) {
-        // Given: both children are queued before mapping the first child changes the second's parent.
-        val root = mockViewGroup(fakeBounds)
-        val firstChild = mockView(fakeBounds)
-        val movedChild = mockView(fakeBounds)
+        // Given
+        val mockRoot = mockViewGroup(fakeBounds)
+        val mockFirstChild = mockView(fakeBounds)
+        val mockMovedChild = mockView(fakeBounds)
         val fakeOriginalParent = EqualParent()
         val fakeReplacementParent = EqualParent()
-        assertThat(fakeReplacementParent).isEqualTo(fakeOriginalParent).isNotSameAs(fakeOriginalParent)
-        whenever(movedChild.parent).thenReturn(fakeOriginalParent)
-        whenever(root.childCount).thenReturn(2)
-        whenever(root.getChildAt(0)).thenReturn(firstChild)
-        whenever(root.getChildAt(1)).thenReturn(movedChild)
-        val reparentingMapper = CapturedViewMapper<View> { view, _ ->
-            if (view === firstChild) {
-                whenever(movedChild.parent).thenReturn(fakeReplacementParent)
+        whenever(mockMovedChild.parent).thenReturn(fakeOriginalParent)
+        mockRoot.stub {
+            on { childCount } doReturn 2
+            on { getChildAt(0) } doReturn mockFirstChild
+            on { getChildAt(1) } doReturn mockMovedChild
+        }
+        val fakeReparentingMapper = CapturedViewMapper<View> { view, _ ->
+            if (view === mockFirstChild) {
+                whenever(mockMovedChild.parent).thenReturn(fakeReplacementParent)
             }
             CapturedViewMapperResult.None
         }
 
         // When
-        val result = traversal(fallback = reparentingMapper).traverseWindow(
-            root,
+        val result = traversal(fallback = fakeReparentingMapper).traverseWindow(
+            mockRoot,
             identityFactory.window("window"),
             identityFactory,
             fakeContext
         )
 
-        // Then: retain the root and first child, but reject the moved child's stale work item.
+        // Then
+        assertThat(fakeReplacementParent).isEqualTo(fakeOriginalParent).isNotSameAs(fakeOriginalParent)
         assertThat((result as WindowCopyResult.Present).window.views).hasSize(2)
-        verify(mockViewIdentifierResolver, never()).resolveViewId(movedChild)
+        verify(mockViewIdentifierResolver, never()).resolveViewId(mockMovedChild)
     }
 
     @Test
-    fun `M drop the child W visit { not visible }`(
+    fun `M drop the child W traverseWindow() { not visible }`(
         @Forgery fakeRootBounds: GlobalBounds,
         @Forgery fakeChildBounds: GlobalBounds
     ) {
         // Given
-        val root = mockViewGroup(fakeRootBounds)
-        val hiddenChild = mockView(fakeChildBounds).apply { whenever(isShown).thenReturn(false) }
-        whenever(root.childCount).thenReturn(1)
-        whenever(root.getChildAt(0)).thenReturn(hiddenChild)
-        val windowIdentity = identityFactory.window("window")
+        val mockRoot = mockViewGroup(fakeRootBounds)
+        val mockHiddenChild = mockView(fakeChildBounds).apply { whenever(isShown).thenReturn(false) }
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockHiddenChild)
+        val fakeWindowIdentity = identityFactory.window("window")
 
         // When
-        val result = traversal().traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+        val result = traversal().traverseWindow(mockRoot, fakeWindowIdentity, identityFactory, fakeContext)
 
         // Then
         val present = result.doneValue() as WindowWalkResult.Present
         assertThat(present.rootLayer.children).isEmpty()
-        assertThat(present.layers).hasSize(1) // only the window root itself
+        assertThat(present.layers).hasSize(1)
         assertThat((result.doneValue() as WindowWalkResult.Present).touchOverrideAreas).isEmpty()
     }
 
     @Test
-    fun `M drop the child W visit { system noise }`(
+    fun `M drop the child W traverseWindow() { system noise }`(
         @Forgery fakeRootBounds: GlobalBounds,
         @Forgery fakeChildBounds: GlobalBounds
     ) {
         // Given
-        val root = mockViewGroup(fakeRootBounds)
-        val viewStubChild: ViewStub = mock()
-        stubDefaults(viewStubChild, fakeChildBounds)
-        whenever(root.childCount).thenReturn(1)
-        whenever(root.getChildAt(0)).thenReturn(viewStubChild)
-        val windowIdentity = identityFactory.window("window")
+        val mockRoot = mockViewGroup(fakeRootBounds)
+        val mockViewStubChild: ViewStub = mockViewWithDefaults(fakeChildBounds)
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockViewStubChild)
+        val fakeWindowIdentity = identityFactory.window("window")
 
         // When
-        val result = traversal().traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+        val result = traversal().traverseWindow(mockRoot, fakeWindowIdentity, identityFactory, fakeContext)
 
         // Then
         val present = result.doneValue() as WindowWalkResult.Present
@@ -282,24 +301,25 @@ internal class AndroidWindowTraversalTest {
     }
 
     @Test
-    fun `M emit a placeholder and not recurse W visit { hidden tag }`(
+    fun `M emit a placeholder and not recurse W traverseWindow() { hidden tag }`(
         @Forgery fakeRootBounds: GlobalBounds,
         @Forgery fakeHiddenBounds: GlobalBounds,
         @Forgery fakeGrandChildBounds: GlobalBounds
     ) {
         // Given
-        val root = mockViewGroup(fakeRootBounds)
-        val hiddenGroup = mockViewGroup(fakeHiddenBounds)
-        whenever(hiddenGroup.getTag(any())).thenReturn(true)
-        val grandChild = mockView(fakeGrandChildBounds)
-        whenever(hiddenGroup.childCount).thenReturn(1)
-        whenever(hiddenGroup.getChildAt(0)).thenReturn(grandChild)
-        whenever(root.childCount).thenReturn(1)
-        whenever(root.getChildAt(0)).thenReturn(hiddenGroup)
-        val windowIdentity = identityFactory.window("window")
+        val mockRoot = mockViewGroup(fakeRootBounds)
+        val mockHiddenGroup = mockViewGroup(fakeHiddenBounds)
+        val mockGrandChild = mockView(fakeGrandChildBounds)
+        mockHiddenGroup.stub {
+            on { getTag(any()) } doReturn true
+            on { childCount } doReturn 1
+            on { getChildAt(0) } doReturn mockGrandChild
+        }
+        mockRoot.withChildren(mockHiddenGroup)
+        val fakeWindowIdentity = identityFactory.window("window")
 
         // When
-        val result = traversal().traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+        val result = traversal().traverseWindow(mockRoot, fakeWindowIdentity, identityFactory, fakeContext)
 
         // Then
         val present = result.doneValue() as WindowWalkResult.Present
@@ -307,89 +327,64 @@ internal class AndroidWindowTraversalTest {
         assertThat(hiddenLayer.children).hasSize(1)
         val placeholder = present.wireframes.single() as CapturedWireframe.PrivacyPlaceholder
         assertThat(placeholder.label).isEqualTo("Hidden")
-        // No layer was created for grandChild since the hidden view's children are never visited.
-        assertThat(present.layers).hasSize(2) // root + hiddenGroup only
+        assertThat(present.layers).hasSize(2)
     }
 
     @Test
-    fun `M stop at WebView slot and continue siblings W visit { WebView has native descendants }`(
+    fun `M stop at WebView slot and continue siblings W traverseWindow() { WebView has native descendants }`(
         @Forgery fakeBounds: GlobalBounds
     ) {
         // Given
-        val root = mockViewGroup(fakeBounds)
-        val mockWebView: WebView = mock()
-        stubDefaults(mockWebView, fakeBounds)
-        val implementationChild = mockViewGroup(fakeBounds)
-        val implementationGrandchild = mockView(fakeBounds)
-        whenever(mockWebView.childCount).thenReturn(1)
-        whenever(mockWebView.getChildAt(0)).thenReturn(implementationChild)
-        whenever(implementationChild.childCount).thenReturn(1)
-        whenever(implementationChild.getChildAt(0)).thenReturn(implementationGrandchild)
-        val sibling = mockViewGroup(fakeBounds)
-        val siblingChild = mockView(fakeBounds)
-        whenever(sibling.childCount).thenReturn(1)
-        whenever(sibling.getChildAt(0)).thenReturn(siblingChild)
-        whenever(root.childCount).thenReturn(2)
-        whenever(root.getChildAt(0)).thenReturn(mockWebView)
-        whenever(root.getChildAt(1)).thenReturn(sibling)
-        val slotId = mockViewIdentifierResolver.resolveViewId(mockWebView)
-        val testedTraversal = traversal(
-            fallback = markerMapper,
-            typedMappers = listOf(
-                CapturedMapperTypeWrapper(
-                    WebView::class.java,
-                    CapturedWebViewMapper(mockViewIdentifierResolver, mockViewBoundsResolver)
-                )
-            )
-        )
+        val mockRoot = mockViewGroup(fakeBounds)
+        val mockWebView: WebView = mockViewWithDefaults(fakeBounds)
+        val mockImplementationChild = mockViewGroup(fakeBounds)
+        val mockImplementationGrandchild = mockView(fakeBounds)
+        mockWebView.withChildren(mockImplementationChild)
+        mockImplementationChild.withChildren(mockImplementationGrandchild)
+        val mockSibling = mockViewGroup(fakeBounds)
+        val mockSiblingChild = mockView(fakeBounds)
+        mockSibling.withChildren(mockSiblingChild)
+        mockRoot.withChildren(mockWebView, mockSibling)
+        val mockSlotId = mockViewIdentifierResolver.resolveViewId(mockWebView)
+        val testedTraversal = webViewTraversal(fallback = markerMapper)
 
         // When
         val present = testedTraversal.traverseWindow(
-            root,
+            mockRoot,
             identityFactory.window("window"),
             identityFactory,
             fakeContext
         ).doneValue() as WindowWalkResult.Present
 
-        // Then: root, the WebView slot, and the ordinary sibling subtree only.
+        // Then
         val slot = present.wireframes.filterIsInstance<CapturedWireframe.WebView>().single()
-        assertThat(slot.identity.wireId).isEqualTo(slotId)
+        assertThat(slot.identity.wireId).isEqualTo(mockSlotId)
         assertThat(present.layers).hasSize(4)
         assertThat(present.wireframes).hasSize(4)
-        val webViewLayer = present.layers.single { it.identity.localId == slotId.toString() }
+        val webViewLayer = present.layers.single { it.identity.localId == mockSlotId.toString() }
         assertThat(webViewLayer.children).containsExactly(CapturedChild.Wireframe(slot.identity))
         verify(mockWebView, never()).getChildAt(any())
-        verify(mockViewIdentifierResolver, never()).resolveViewId(implementationChild)
-        verify(mockViewIdentifierResolver, never()).resolveViewId(implementationGrandchild)
-        verify(mockViewIdentifierResolver).resolveViewId(siblingChild)
+        verify(mockViewIdentifierResolver, never()).resolveViewId(mockImplementationChild)
+        verify(mockViewIdentifierResolver, never()).resolveViewId(mockImplementationGrandchild)
+        verify(mockViewIdentifierResolver).resolveViewId(mockSiblingChild)
     }
 
     @Test
-    fun `M hide WebView before mapping slot W visit { WebView has hidden tag and native child }`(
+    fun `M hide WebView before mapping slot W traverseWindow() { WebView has hidden tag and native child }`(
         @Forgery fakeBounds: GlobalBounds
     ) {
         // Given
-        val root = mockViewGroup(fakeBounds)
-        val mockWebView: WebView = mock()
-        stubDefaults(mockWebView, fakeBounds)
+        val mockRoot = mockViewGroup(fakeBounds)
+        val mockWebView: WebView = mockViewWithDefaults(fakeBounds)
         whenever(mockWebView.getTag(R.id.datadog_hidden)).thenReturn(true)
-        val implementationChild = mockView(fakeBounds)
-        whenever(mockWebView.childCount).thenReturn(1)
-        whenever(mockWebView.getChildAt(0)).thenReturn(implementationChild)
-        whenever(root.childCount).thenReturn(1)
-        whenever(root.getChildAt(0)).thenReturn(mockWebView)
-        val testedTraversal = traversal(
-            typedMappers = listOf(
-                CapturedMapperTypeWrapper(
-                    WebView::class.java,
-                    CapturedWebViewMapper(mockViewIdentifierResolver, mockViewBoundsResolver)
-                )
-            )
-        )
+        val mockImplementationChild = mockView(fakeBounds)
+        mockWebView.withChildren(mockImplementationChild)
+        mockRoot.withChildren(mockWebView)
+        val testedTraversal = webViewTraversal()
 
         // When
         val present = testedTraversal.traverseWindow(
-            root,
+            mockRoot,
             identityFactory.window("window"),
             identityFactory,
             fakeContext
@@ -399,21 +394,19 @@ internal class AndroidWindowTraversalTest {
         assertThat(present.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
         assertThat(present.layers).hasSize(2)
         verify(mockWebView, never()).getChildAt(any())
-        verify(mockViewIdentifierResolver, never()).resolveViewId(implementationChild)
+        verify(mockViewIdentifierResolver, never()).resolveViewId(mockImplementationChild)
     }
 
     @Test
-    fun `M traverse mapped container children W visit { dedicated mapper only describes own view }`(
+    fun `M traverse mapped container children W traverseWindow() { dedicated mapper only describes own view }`(
         @Forgery fakeBounds: GlobalBounds
     ) {
         // Given
-        val root = mockViewGroup(fakeBounds)
-        val child = mockViewGroup(fakeBounds)
-        val grandchild = mockView(fakeBounds)
-        whenever(root.childCount).thenReturn(1)
-        whenever(root.getChildAt(0)).thenReturn(child)
-        whenever(child.childCount).thenReturn(1)
-        whenever(child.getChildAt(0)).thenReturn(grandchild)
+        val mockRoot = mockViewGroup(fakeBounds)
+        val mockChild = mockViewGroup(fakeBounds)
+        val mockGrandchild = mockView(fakeBounds)
+        mockRoot.withChildren(mockChild)
+        mockChild.withChildren(mockGrandchild)
         val testedTraversal = traversal(
             fallback = markerMapper,
             typedMappers = listOf(
@@ -426,7 +419,7 @@ internal class AndroidWindowTraversalTest {
 
         // When
         val present = testedTraversal.traverseWindow(
-            root,
+            mockRoot,
             identityFactory.window("window"),
             identityFactory,
             fakeContext
@@ -435,25 +428,25 @@ internal class AndroidWindowTraversalTest {
         // Then
         assertThat(present.layers).hasSize(3)
         assertThat(present.wireframes).hasSize(3)
-        verify(mockViewIdentifierResolver).resolveViewId(grandchild)
+        verify(mockViewIdentifierResolver).resolveViewId(mockGrandchild)
     }
 
     @Test
-    fun `M preserve child order W visit { multiple children }`(forge: Forge) {
+    fun `M preserve child order W traverseWindow() { multiple children }`(forge: Forge) {
         // Given
-        val root = mockViewGroup(forge.getForgery<GlobalBounds>())
-        val children = List(3) { mockView(forge.getForgery<GlobalBounds>()) }
-        whenever(root.childCount).thenReturn(children.size)
-        children.forEachIndexed { index, child -> whenever(root.getChildAt(index)).thenReturn(child) }
-        val windowIdentity = identityFactory.window("window")
+        val mockRoot = mockViewGroup(forge.getForgery<GlobalBounds>())
+        val fakeChildren = List(3) { mockView(forge.getForgery<GlobalBounds>()) }
+        whenever(mockRoot.childCount).thenReturn(fakeChildren.size)
+        fakeChildren.forEachIndexed { index, child -> whenever(mockRoot.getChildAt(index)).thenReturn(child) }
+        val fakeWindowIdentity = identityFactory.window("window")
 
         // When
-        val result = traversal().traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+        val result = traversal().traverseWindow(mockRoot, fakeWindowIdentity, identityFactory, fakeContext)
 
         // Then
         val present = result.doneValue() as WindowWalkResult.Present
         val childIdentities = present.rootLayer.children.map { it.identity }
-        val expectedOrder = children.map { child ->
+        val expectedOrder = fakeChildren.map { child ->
             present.layers.first { layer ->
                 layer.identity.localId == mockViewIdentifierResolver.resolveViewId(child).toString()
             }.identity
@@ -462,34 +455,34 @@ internal class AndroidWindowTraversalTest {
     }
 
     @Test
-    fun `M compute clip against ancestor bounds W child overflows parent`(
+    fun `M compute clip against ancestor bounds W traverseWindow() { child overflows parent }`(
         @Forgery fakeRootBounds: GlobalBounds,
         @LongForgery(min = 1L, max = 500L) fakeRightOverflow: Long,
         @LongForgery(min = 1L, max = 500L) fakeBottomOverflow: Long
     ) {
         // Given
-        val root = mockViewGroup(fakeRootBounds)
-        val childBounds = GlobalBounds(
+        val mockRoot = mockViewGroup(fakeRootBounds)
+        val fakeChildBounds = GlobalBounds(
             x = fakeRootBounds.x,
             y = fakeRootBounds.y,
             width = fakeRootBounds.width + fakeRightOverflow,
             height = fakeRootBounds.height + fakeBottomOverflow
         )
-        val child = mockView(childBounds)
-        whenever(root.childCount).thenReturn(1)
-        whenever(root.getChildAt(0)).thenReturn(child)
-        val windowIdentity = identityFactory.window("window")
+        val mockChild = mockView(fakeChildBounds)
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockChild)
+        val fakeWindowIdentity = identityFactory.window("window")
 
         // When
         val result = traversal(
             fallback = markerMapper
-        ).traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+        ).traverseWindow(mockRoot, fakeWindowIdentity, identityFactory, fakeContext)
 
         // Then
         val present = result.doneValue() as WindowWalkResult.Present
         val childWireframe = present.wireframes.first {
-            it.bounds.x == childBounds.x &&
-                it.bounds.width == childBounds.width
+            it.bounds.x == fakeChildBounds.x &&
+                it.bounds.width == fakeChildBounds.width
         }
         assertThat(childWireframe.clip).isEqualTo(
             CapturedClip(top = null, bottom = fakeBottomOverflow, left = null, right = fakeRightOverflow)
@@ -497,26 +490,24 @@ internal class AndroidWindowTraversalTest {
     }
 
     @Test
-    fun `M abort the whole capture W deadline expires mid walk`(
+    fun `M abort the whole capture W traverseWindow() { deadline expires mid walk }`(
         @Forgery fakeRootBounds: GlobalBounds,
         @LongForgery(min = 1L, max = 1000L) fakeDeadlineNs: Long
     ) {
         // Given
-        val root = mockViewGroup(fakeRootBounds)
-        val children = List(5) { mockView(fakeRootBounds) }
-        whenever(root.childCount).thenReturn(children.size)
-        children.forEachIndexed { index, child -> whenever(root.getChildAt(index)).thenReturn(child) }
-        val windowIdentity = identityFactory.window("window")
-        var calls = 0
-        val expiringContext = CaptureGenerationContext(
+        val mockRoot = mockViewGroup(fakeRootBounds)
+        val fakeChildren = List(5) { mockView(fakeRootBounds) }
+        whenever(mockRoot.childCount).thenReturn(fakeChildren.size)
+        fakeChildren.forEachIndexed { index, child -> whenever(mockRoot.getChildAt(index)).thenReturn(child) }
+        val fakeWindowIdentity = identityFactory.window("window")
+        var fakeCalls = 0
+        val fakeExpiringContext = CaptureGenerationContext(
             id = 1L,
             startedAtNs = 0L,
             deadlineNs = fakeDeadlineNs,
             timeProvider = CaptureTimeProvider {
-                calls++
-                // Not expired for the root's own pre-pop checks (checked every item now, not just
-                // periodically), expired from the first child's pre-pop check onward.
-                if (calls <= 2) 0L else fakeDeadlineNs * 2
+                fakeCalls++
+                if (fakeCalls <= 2) 0L else fakeDeadlineNs * 2
             }
         )
         val testedTraversal = AndroidWindowTraversal(
@@ -528,7 +519,7 @@ internal class AndroidWindowTraversalTest {
         )
 
         // When
-        val result = testedTraversal.traverseWindow(root, windowIdentity, identityFactory, expiringContext)
+        val result = testedTraversal.traverseWindow(mockRoot, fakeWindowIdentity, identityFactory, fakeExpiringContext)
 
         // Then
         assertThat(result.doneValue()).isEqualTo(WindowWalkResult.Aborted)
@@ -540,9 +531,8 @@ internal class AndroidWindowTraversalTest {
         fakeReturnsWireframes: Boolean,
         @Forgery fakeRootBounds: GlobalBounds
     ) {
-        // Given: the integration recognizes the real Compose type and owns the host's whole subtree.
-        val mockComposeHost: ComposeView = mock()
-        stubDefaults(mockComposeHost, fakeRootBounds)
+        // Given
+        val mockComposeHost: ComposeView = mockViewWithDefaults(fakeRootBounds)
         val mockComposeChild = mockView(fakeRootBounds)
         whenever(mockComposeHost.childCount).thenReturn(1)
         whenever(mockComposeHost.getChildAt(0)).thenReturn(mockComposeChild)
@@ -565,8 +555,8 @@ internal class AndroidWindowTraversalTest {
             fakeContext
         )
 
-        // Then: None is a handled host, not a request to fall back to native child traversal.
-        verify(mockComposeMapper).map(eq(mockComposeHost), any())
+        // Then
+        verify(mockComposeMapper).map(eq(mockComposeHost), isA())
         verify(mockComposeHost, never()).getChildAt(any())
         assertThat((result as WindowCopyResult.Present).window.views).hasSize(1)
     }
@@ -575,18 +565,18 @@ internal class AndroidWindowTraversalTest {
     fun `M hand off non-Compose host W traverseWindow { integration recognizes view }`(
         @Forgery fakeBounds: GlobalBounds
     ) {
-        // Given: a framework integration can recognize a host without a Compose class-name gate.
-        val root = mockViewGroup(fakeBounds)
-        val child = mockView(fakeBounds)
-        whenever(root.childCount).thenReturn(1)
-        whenever(root.getChildAt(0)).thenReturn(child)
+        // Given
+        val mockRoot = mockViewGroup(fakeBounds)
+        val mockChild = mockView(fakeBounds)
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockChild)
         val fakeInteropCallback = CapturedInteropViewCallback { view, _ ->
-            if (view === root) CapturedViewMapperResult.None else null
+            if (view === mockRoot) CapturedViewMapperResult.None else null
         }
 
         // When
         val result = traversal(interopViewCallback = fakeInteropCallback).traverseWindow(
-            root,
+            mockRoot,
             identityFactory.window("window"),
             identityFactory,
             fakeContext
@@ -594,8 +584,8 @@ internal class AndroidWindowTraversalTest {
 
         // Then
         assertThat((result as WindowCopyResult.Present).window.views).hasSize(1)
-        verify(root, never()).getChildAt(any())
-        verify(mockViewIdentifierResolver, never()).resolveViewId(child)
+        verify(mockRoot, never()).getChildAt(any())
+        verify(mockViewIdentifierResolver, never()).resolveViewId(mockChild)
     }
 
     @Test
@@ -603,24 +593,24 @@ internal class AndroidWindowTraversalTest {
         @Forgery fakeBounds: GlobalBounds
     ) {
         // Given
-        val root = mockViewGroup(fakeBounds)
-        val child = mockView(fakeBounds)
-        whenever(root.childCount).thenReturn(1)
-        whenever(root.getChildAt(0)).thenReturn(child)
+        val mockRoot = mockViewGroup(fakeBounds)
+        val mockChild = mockView(fakeBounds)
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockChild)
         val mockInteropCallback: CapturedInteropViewCallback = mock()
         val testedTraversal = traversal(fallback = markerMapper, interopViewCallback = mockInteropCallback)
 
         // When
         val result = testedTraversal.traverseWindow(
-            root,
+            mockRoot,
             identityFactory.window("window"),
             identityFactory,
             fakeContext
         ).doneValue() as WindowWalkResult.Present
 
-        // Then: a null result preserves normal native mapping and recursion.
-        verify(mockInteropCallback).tryMap(eq(root), any())
-        verify(mockInteropCallback).tryMap(eq(child), any())
+        // Then
+        verify(mockInteropCallback).tryMap(eq(mockRoot), isA())
+        verify(mockInteropCallback).tryMap(eq(mockChild), isA())
         assertThat(result.layers).hasSize(2)
         assertThat(result.wireframes).hasSize(2)
     }
@@ -630,8 +620,7 @@ internal class AndroidWindowTraversalTest {
         @Forgery fakeBounds: GlobalBounds
     ) {
         // Given
-        val mockComposeHost: ComposeView = mock()
-        stubDefaults(mockComposeHost, fakeBounds)
+        val mockComposeHost: ComposeView = mockViewWithDefaults(fakeBounds)
         whenever(mockComposeHost.getTag(R.id.datadog_hidden)).thenReturn(true)
         val mockInteropCallback: CapturedInteropViewCallback = mock()
 
@@ -643,30 +632,27 @@ internal class AndroidWindowTraversalTest {
             fakeContext
         ).doneValue() as WindowWalkResult.Present
 
-        // Then: hidden hosts never reach the framework integration.
-        verify(mockInteropCallback, never()).tryMap(any(), any())
+        // Then
+        verifyNoInteractions(mockInteropCallback)
         assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
     }
 
     @Test
-    fun `M abort W deadline expires during compose host handoff {before next checkpoint tick}`(
+    fun `M abort W traverseWindow() { deadline expires during compose host handoff, before next checkpoint tick }`(
         @Forgery fakeRootBounds: GlobalBounds,
         @LongForgery(min = 1L, max = 1000L) fakeDeadlineNs: Long
     ) {
         // Given
-        val composeHost: ComposeView = mock()
-        stubDefaults(composeHost, fakeRootBounds)
-        val windowIdentity = identityFactory.window("window")
-        var calls = 0
-        val expiringContext = CaptureGenerationContext(
+        val mockComposeHost: ComposeView = mockViewWithDefaults(fakeRootBounds)
+        val fakeWindowIdentity = identityFactory.window("window")
+        var fakeCalls = 0
+        val fakeExpiringContext = CaptureGenerationContext(
             id = 1L,
             startedAtNs = 0L,
             deadlineNs = fakeDeadlineNs,
             timeProvider = CaptureTimeProvider {
-                calls++
-                // Not expired for the root's own two pre-pop checks; expired by the time the
-                // compose host handoff's own re-poll runs, immediately after it returns.
-                if (calls <= 2) 0L else fakeDeadlineNs * 2
+                fakeCalls++
+                if (fakeCalls <= 2) 0L else fakeDeadlineNs * 2
             }
         )
         val testedTraversal = AndroidWindowTraversal(
@@ -680,7 +666,12 @@ internal class AndroidWindowTraversalTest {
         )
 
         // When
-        val result = testedTraversal.traverseWindow(composeHost, windowIdentity, identityFactory, expiringContext)
+        val result = testedTraversal.traverseWindow(
+            mockComposeHost,
+            fakeWindowIdentity,
+            identityFactory,
+            fakeExpiringContext
+        )
 
         // Then
         assertThat(result.doneValue()).isEqualTo(WindowWalkResult.Aborted)
@@ -688,7 +679,8 @@ internal class AndroidWindowTraversalTest {
 
     @Test
     fun `M retain local mapper clip W traverseWindow { ancestor clip does not restrict drawing }`() {
-        val fakeRoot = mockViewGroup(GlobalBounds(0, 0, 100, 100))
+        // Given
+        val mockRoot = mockViewGroup(GlobalBounds(0, 0, 100, 100))
         val fakeMapper = CapturedViewMapper<View> { _, context ->
             CapturedViewMapperResult.Wireframes(
                 CapturedWireframe.Shape(
@@ -698,19 +690,23 @@ internal class AndroidWindowTraversalTest {
                 )
             )
         }
+
+        // When
         val result = traversal(fallback = fakeMapper).traverseWindow(
-            fakeRoot,
+            mockRoot,
             identityFactory.window("window"),
             identityFactory,
             fakeContext
         ).doneValue() as WindowWalkResult.Present
+
+        // Then
         assertThat(result.wireframes.single().clip).isEqualTo(CapturedClip(left = 20))
     }
 
     @Test
     fun `M intersect local mapper clip with ancestor clip W traverseWindow`() {
         // Given
-        val fakeRoot = mockViewGroup(GlobalBounds(0, 0, 100, 100))
+        val mockRoot = mockViewGroup(GlobalBounds(0, 0, 100, 100))
         val fakeMapper = CapturedViewMapper<View> { _, context ->
             CapturedViewMapperResult.Wireframes(
                 CapturedWireframe.Shape(
@@ -723,7 +719,7 @@ internal class AndroidWindowTraversalTest {
 
         // When
         val result = traversal(fallback = fakeMapper).traverseWindow(
-            fakeRoot,
+            mockRoot,
             identityFactory.window("window"),
             identityFactory,
             fakeContext
@@ -735,75 +731,73 @@ internal class AndroidWindowTraversalTest {
         ).isEqualTo(CapturedClip(top = 20, bottom = 40, left = 25, right = 20))
     }
 
-    // region touch privacy tests
-
     @Test
-    fun `M add a touch override area W visit { view tagged with touch privacy }`(
+    fun `M add a touch override area W traverseWindow() { view tagged with touch privacy }`(
         @Forgery fakeRootBounds: GlobalBounds,
         @Forgery fakeChildBounds: GlobalBounds,
         @IntForgery(min = 0, max = 1000) fakeLocationX: Int,
         @IntForgery(min = 0, max = 1000) fakeLocationY: Int
     ) {
         // Given
-        val root = mockViewGroup(fakeRootBounds)
-        val child = mockView(fakeChildBounds)
-        whenever(child.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.name)
-        whenever(child.getLocationOnScreen(any())).thenAnswer {
-            val location = it.getArgument<IntArray>(0)
-            location[0] = fakeLocationX
-            location[1] = fakeLocationY
+        val mockRoot = mockViewGroup(fakeRootBounds)
+        val mockChild = mockView(fakeChildBounds)
+        whenever(mockChild.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.name)
+        whenever(mockChild.getLocationOnScreen(any())).thenAnswer {
+            val fakeLocation = it.getArgument<IntArray>(0)
+            fakeLocation[0] = fakeLocationX
+            fakeLocation[1] = fakeLocationY
             null
         }
-        whenever(root.childCount).thenReturn(1)
-        whenever(root.getChildAt(0)).thenReturn(child)
-        val windowIdentity = identityFactory.window("window")
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockChild)
+        val fakeWindowIdentity = identityFactory.window("window")
 
         // When
-        val result = traversal().traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+        val result = traversal().traverseWindow(mockRoot, fakeWindowIdentity, identityFactory, fakeContext)
 
         // Then
         val expectedArea = Rect(
             fakeLocationX,
             fakeLocationY,
-            fakeLocationX + child.width,
-            fakeLocationY + child.height
+            fakeLocationX + mockChild.width,
+            fakeLocationY + mockChild.height
         )
         assertThat((result.doneValue() as WindowWalkResult.Present).touchOverrideAreas)
             .containsEntry(expectedArea, TouchPrivacy.HIDE)
     }
 
     @Test
-    fun `M not add a touch override area W visit { view has no touch privacy tag }`(
+    fun `M not add a touch override area W traverseWindow() { view has no touch privacy tag }`(
         @Forgery fakeRootBounds: GlobalBounds,
         @Forgery fakeChildBounds: GlobalBounds
     ) {
         // Given
-        val root = mockViewGroup(fakeRootBounds)
-        val child = mockView(fakeChildBounds)
-        whenever(root.childCount).thenReturn(1)
-        whenever(root.getChildAt(0)).thenReturn(child)
-        val windowIdentity = identityFactory.window("window")
+        val mockRoot = mockViewGroup(fakeRootBounds)
+        val mockChild = mockView(fakeChildBounds)
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockChild)
+        val fakeWindowIdentity = identityFactory.window("window")
 
         // When
-        val result = traversal().traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+        val result = traversal().traverseWindow(mockRoot, fakeWindowIdentity, identityFactory, fakeContext)
 
         // Then
         assertThat((result.doneValue() as WindowWalkResult.Present).touchOverrideAreas).isEmpty()
     }
 
     @Test
-    fun `M log an error and not add an area W visit { invalid touch privacy tag }`(
+    fun `M log an error and not add an area W traverseWindow() { invalid touch privacy tag }`(
         @Forgery fakeRootBounds: GlobalBounds,
         @Forgery fakeChildBounds: GlobalBounds,
         @StringForgery fakeInvalidValue: String
     ) {
         // Given
-        val root = mockViewGroup(fakeRootBounds)
-        val child = mockView(fakeChildBounds)
-        whenever(child.getTag(R.id.datadog_touch_privacy)).thenReturn(fakeInvalidValue)
-        whenever(root.childCount).thenReturn(1)
-        whenever(root.getChildAt(0)).thenReturn(child)
-        val windowIdentity = identityFactory.window("window")
+        val mockRoot = mockViewGroup(fakeRootBounds)
+        val mockChild = mockView(fakeChildBounds)
+        whenever(mockChild.getTag(R.id.datadog_touch_privacy)).thenReturn(fakeInvalidValue)
+        whenever(mockRoot.childCount).thenReturn(1)
+        whenever(mockRoot.getChildAt(0)).thenReturn(mockChild)
+        val fakeWindowIdentity = identityFactory.window("window")
         val mockInternalLogger: InternalLogger = mock()
         val testedTraversal = AndroidWindowTraversal(
             mapperRegistry = CapturedViewMapperRegistry(emptyList(), noOpFallback, mock()),
@@ -814,119 +808,112 @@ internal class AndroidWindowTraversalTest {
         )
 
         // When
-        val result = testedTraversal.traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+        val result = testedTraversal.traverseWindow(mockRoot, fakeWindowIdentity, identityFactory, fakeContext)
 
         // Then
         assertThat((result.doneValue() as WindowWalkResult.Present).touchOverrideAreas).isEmpty()
-        verify(mockInternalLogger).log(
-            level = eq(InternalLogger.Level.ERROR),
-            targets = eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
-            messageBuilder = any(),
-            throwable = any(),
-            onlyOnce = eq(false),
-            additionalProperties = isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            "Invalid privacy level",
+            throwableClass = IllegalArgumentException::class.java
         )
     }
 
-    // endregion
-
-    // region occlusion culling tests
-
     @Test
-    fun `M skip mapping but still register touch override area W visit { fully covered by later opaque sibling }`(
+    fun `M retain occluded touch overrides W traverseWindow() { opaque sibling covers view }`(
         @Forgery fakeRootBounds: GlobalBounds,
         @Forgery fakeChildBounds: GlobalBounds,
         @IntForgery(min = 0, max = 1000) fakeLocationX: Int,
         @IntForgery(min = 0, max = 1000) fakeLocationY: Int
     ) {
         // Given
-        val root = mockViewGroup(fakeRootBounds)
-        val victim = mockView(fakeChildBounds)
-        whenever(victim.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.name)
-        whenever(victim.getLocationOnScreen(any())).thenAnswer {
-            val location = it.getArgument<IntArray>(0)
-            location[0] = fakeLocationX
-            location[1] = fakeLocationY
+        val mockRoot = mockViewGroup(fakeRootBounds)
+        val mockVictim = mockView(fakeChildBounds)
+        whenever(mockVictim.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.name)
+        whenever(mockVictim.getLocationOnScreen(any())).thenAnswer {
+            val fakeLocation = it.getArgument<IntArray>(0)
+            fakeLocation[0] = fakeLocationX
+            fakeLocation[1] = fakeLocationY
             null
         }
-        // Drawn after (on top of) victim, with identical bounds - fully covers it.
-        val coveringView = mockOpaqueCoveringView(fakeChildBounds)
-        whenever(root.childCount).thenReturn(2)
-        whenever(root.getChildAt(0)).thenReturn(victim)
-        whenever(root.getChildAt(1)).thenReturn(coveringView)
-        val windowIdentity = identityFactory.window("window")
+        val mockCoveringView = mockOpaqueCoveringView(fakeChildBounds)
+        mockRoot.stub {
+            on { childCount } doReturn 2
+            on { getChildAt(0) } doReturn mockVictim
+            on { getChildAt(1) } doReturn mockCoveringView
+        }
+        val fakeWindowIdentity = identityFactory.window("window")
 
         // When
         val result = traversal(fallback = markerMapper)
-            .traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+            .traverseWindow(mockRoot, fakeWindowIdentity, identityFactory, fakeContext)
 
         // Then
         val present = result.doneValue() as WindowWalkResult.Present
-        // Only the window root and the covering sibling were mapped - the occluded victim
-        // contributed no wireframe of its own.
         assertThat(present.wireframes).hasSize(2)
         val expectedArea = Rect(
             fakeLocationX,
             fakeLocationY,
-            fakeLocationX + victim.width,
-            fakeLocationY + victim.height
+            fakeLocationX + mockVictim.width,
+            fakeLocationY + mockVictim.height
         )
         assertThat((result.doneValue() as WindowWalkResult.Present).touchOverrideAreas)
             .containsEntry(expectedArea, TouchPrivacy.HIDE)
     }
 
     @Test
-    fun `M still map both children W visit { later sibling only partially overlaps }`(
+    fun `M still map both children W traverseWindow() { later sibling only partially overlaps }`(
         @Forgery fakeRootBounds: GlobalBounds
     ) {
         // Given
-        val root = mockViewGroup(fakeRootBounds)
-        val victimBounds = GlobalBounds(x = 0L, y = 0L, width = 100L, height = 100L)
-        val partialCoverBounds = GlobalBounds(x = 0L, y = 0L, width = 50L, height = 50L)
-        val victim = mockView(victimBounds)
-        val partialCover = mockOpaqueCoveringView(partialCoverBounds)
-        whenever(root.childCount).thenReturn(2)
-        whenever(root.getChildAt(0)).thenReturn(victim)
-        whenever(root.getChildAt(1)).thenReturn(partialCover)
-        val windowIdentity = identityFactory.window("window")
+        val mockRoot = mockViewGroup(fakeRootBounds)
+        val fakeVictimBounds = GlobalBounds(x = 0L, y = 0L, width = 100L, height = 100L)
+        val fakePartialCoverBounds = GlobalBounds(x = 0L, y = 0L, width = 50L, height = 50L)
+        val mockVictim = mockView(fakeVictimBounds)
+        val mockPartialCover = mockOpaqueCoveringView(fakePartialCoverBounds)
+        mockRoot.stub {
+            on { childCount } doReturn 2
+            on { getChildAt(0) } doReturn mockVictim
+            on { getChildAt(1) } doReturn mockPartialCover
+        }
+        val fakeWindowIdentity = identityFactory.window("window")
 
         // When
         val result = traversal(fallback = markerMapper)
-            .traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+            .traverseWindow(mockRoot, fakeWindowIdentity, identityFactory, fakeContext)
 
         // Then
         val present = result.doneValue() as WindowWalkResult.Present
-        // Root + both children - the partial cover doesn't fully contain the victim, so nothing is culled.
         assertThat(present.wireframes).hasSize(3)
     }
 
     @Test
-    fun `M still map both children W visit { later sibling fully overlaps but is translucent }`(
+    fun `M still map both children W traverseWindow() { later sibling fully overlaps but is translucent }`(
         @Forgery fakeRootBounds: GlobalBounds,
         @Forgery fakeChildBounds: GlobalBounds
     ) {
         // Given
-        val root = mockViewGroup(fakeRootBounds)
-        val victim = mockView(fakeChildBounds)
-        val translucentCover = mockOpaqueCoveringView(fakeChildBounds).apply {
+        val mockRoot = mockViewGroup(fakeRootBounds)
+        val mockVictim = mockView(fakeChildBounds)
+        val mockTranslucentCover = mockOpaqueCoveringView(fakeChildBounds).apply {
             whenever(alpha).thenReturn(0.5f)
         }
-        whenever(root.childCount).thenReturn(2)
-        whenever(root.getChildAt(0)).thenReturn(victim)
-        whenever(root.getChildAt(1)).thenReturn(translucentCover)
-        val windowIdentity = identityFactory.window("window")
+        mockRoot.stub {
+            on { childCount } doReturn 2
+            on { getChildAt(0) } doReturn mockVictim
+            on { getChildAt(1) } doReturn mockTranslucentCover
+        }
+        val fakeWindowIdentity = identityFactory.window("window")
 
         // When
         val result = traversal(fallback = markerMapper)
-            .traverseWindow(root, windowIdentity, identityFactory, fakeContext)
+            .traverseWindow(mockRoot, fakeWindowIdentity, identityFactory, fakeContext)
 
         // Then
         val present = result.doneValue() as WindowWalkResult.Present
-        // Root + both children - a translucent cover never counts as fully opaque, so nothing is culled.
         assertThat(present.wireframes).hasSize(3)
     }
-
-    // endregion
 
     private class EqualParent : ViewParent by mock<ViewParent>() {
         override fun equals(other: Any?): Boolean = other is EqualParent

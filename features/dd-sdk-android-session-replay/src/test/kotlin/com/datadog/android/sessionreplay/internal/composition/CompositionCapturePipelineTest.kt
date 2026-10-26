@@ -15,6 +15,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -49,15 +50,37 @@ internal class CompositionCapturePipelineTest {
     @Mock
     lateinit var mockConstructionExecutor: ExecutorService
 
+    @Mock
+    lateinit var mockOrchestrator: SnapshotCaptureOrchestrator
+
+    @Mock
+    lateinit var mockLifecycle: CompositionCaptureLifecycle
+
+    @Mock
+    lateinit var mockCompletionQueue: SnapshotCompletionQueue
+
+    private lateinit var testedPipeline: CompositionCapturePipeline
+
+    @BeforeEach
+    fun setUp() {
+        testedPipeline = CompositionCapturePipeline(
+            mockOrchestrator,
+            mockLifecycle,
+            mockCompletionQueue,
+            mockConstructionExecutor,
+            mockInternalLogger
+        )
+    }
+
     @Test
     fun `M select only legacy pipeline W create { flag disabled }`() {
         // Given
-        var compositionConstructions = 0
+        var fakeCompositionConstructions = 0
         val testedSelector = CapturePipelineSelector(
             compositionEnabled = false,
             legacyFactory = { mockLegacyRecorder },
             compositionFactory = {
-                compositionConstructions++
+                fakeCompositionConstructions++
                 mockCompositionRecorder
             }
         )
@@ -67,18 +90,18 @@ internal class CompositionCapturePipelineTest {
 
         // Then
         assertThat(result).isSameAs(mockLegacyRecorder)
-        assertThat(compositionConstructions).isZero()
+        assertThat(fakeCompositionConstructions).isZero()
         verifyNoInteractions(mockCompositionRecorder)
     }
 
     @Test
     fun `M select only composition pipeline W create { flag enabled }`() {
         // Given
-        var legacyConstructions = 0
+        var fakeLegacyConstructions = 0
         val testedSelector = CapturePipelineSelector(
             compositionEnabled = true,
             legacyFactory = {
-                legacyConstructions++
+                fakeLegacyConstructions++
                 mockLegacyRecorder
             },
             compositionFactory = { mockCompositionRecorder }
@@ -89,21 +112,21 @@ internal class CompositionCapturePipelineTest {
 
         // Then
         assertThat(result).isSameAs(mockCompositionRecorder)
-        assertThat(legacyConstructions).isZero()
+        assertThat(fakeLegacyConstructions).isZero()
         verifyNoInteractions(mockLegacyRecorder)
     }
 
     @Test
-    fun `M keep recording cycle on selected pipeline W invoke recorder lifecycle`(
+    fun `M retain selected pipeline W registerCallbacks() { repeated recording cycles }`(
         @IntForgery(min = 1, max = 5) fakeRecordingCycles: Int
     ) {
         // Given
-        var compositionConstructions = 0
+        var fakeCompositionConstructions = 0
         val testedRecorder = CapturePipelineSelector(
             compositionEnabled = false,
             legacyFactory = { mockLegacyRecorder },
             compositionFactory = {
-                compositionConstructions++
+                fakeCompositionConstructions++
                 mockCompositionRecorder
             }
         ).create()
@@ -123,11 +146,11 @@ internal class CompositionCapturePipelineTest {
         verify(mockLegacyRecorder, times(fakeRecordingCycles)).resumeRecorders()
         verify(mockLegacyRecorder, times(fakeRecordingCycles)).stopRecorders()
         verify(mockLegacyRecorder, times(fakeRecordingCycles)).unregisterCallbacks()
-        assertThat(compositionConstructions).isZero()
+        assertThat(fakeCompositionConstructions).isZero()
     }
 
     @Test
-    fun `M keep composition state isolated W create multiple pipelines`(
+    fun `M keep composition state isolated W registerCallbacks() { create multiple pipelines }`(
         @IntForgery(min = 2, max = 5) fakePipelineCount: Int
     ) {
         // Given
@@ -136,67 +159,75 @@ internal class CompositionCapturePipelineTest {
             legacyFactory = { mock() },
             compositionFactory = { StatefulRecorder() }
         )
-        val recorders = List(fakePipelineCount) { testedSelector.create() as StatefulRecorder }
+        val fakeRecorders = List(fakePipelineCount) { testedSelector.create() as StatefulRecorder }
 
         // When
-        recorders.first().registerCallbacks()
+        fakeRecorders.first().registerCallbacks()
 
         // Then
-        assertThat(recorders.first().callbacksRegistered).isTrue()
-        assertThat(recorders.drop(1)).allMatch { !it.callbacksRegistered }
+        assertThat(fakeRecorders.first().callbacksRegistered).isTrue()
+        assertThat(fakeRecorders.drop(1)).allMatch { !it.callbacksRegistered }
     }
 
     @Test
-    fun `M delegate recording lifecycle W composition pipeline is orchestrated`() {
-        // Given
-        val mockOrchestrator = mock<SnapshotCaptureOrchestrator>()
-        val mockLifecycle = mock<CompositionCaptureLifecycle>()
-        val mockCompletionQueue = mock<SnapshotCompletionQueue>()
-        val testedPipeline = CompositionCapturePipeline(
-            mockOrchestrator,
-            mockLifecycle,
-            mockCompletionQueue,
-            mockConstructionExecutor,
-            mockInternalLogger
-        )
-
+    fun `M register lifecycle callbacks W registerCallbacks()`() {
         // When
         testedPipeline.registerCallbacks()
-        testedPipeline.resumeRecorders()
-        testedPipeline.stopRecorders()
-        testedPipeline.stopProcessingRecords()
-        testedPipeline.unregisterCallbacks()
 
         // Then
-        inOrder(mockOrchestrator, mockLifecycle, mockConstructionExecutor, mockCompletionQueue) {
-            verify(mockLifecycle).registerCallbacks()
+        verify(mockLifecycle).registerCallbacks()
+    }
+
+    @Test
+    fun `M start orchestration before capture lifecycle W resumeRecorders()`() {
+        // When
+        testedPipeline.resumeRecorders()
+
+        // Then
+        inOrder(mockOrchestrator, mockLifecycle) {
             verify(mockOrchestrator).start()
             verify(mockLifecycle).start()
+        }
+    }
+
+    @Test
+    fun `M stop capture lifecycle before orchestration W stopRecorders()`() {
+        // When
+        testedPipeline.stopRecorders()
+
+        // Then
+        inOrder(mockLifecycle, mockOrchestrator) {
             verify(mockLifecycle).stop()
             verify(mockOrchestrator).stop()
+        }
+    }
+
+    @Test
+    fun `M shut down orchestration and processing in order W stopProcessingRecords()`() {
+        // When
+        testedPipeline.stopProcessingRecords()
+
+        // Then
+        inOrder(mockOrchestrator, mockConstructionExecutor, mockCompletionQueue) {
             verify(mockOrchestrator).shutdown()
             verify(mockConstructionExecutor).shutdownNow()
             verify(mockCompletionQueue).stop()
-            verify(mockLifecycle).unregisterCallbacks()
         }
+    }
+
+    @Test
+    fun `M unregister lifecycle callbacks W unregisterCallbacks()`() {
+        // When
+        testedPipeline.unregisterCallbacks()
+
+        // Then
+        verify(mockLifecycle).unregisterCallbacks()
     }
 
     @Test
     fun `M warn the user W requestCapture { embedded content slots requested }`(
         @StringForgery fakeSlotIds: Set<String>
     ) {
-        // Given
-        val mockOrchestrator = mock<SnapshotCaptureOrchestrator>()
-        val mockLifecycle = mock<CompositionCaptureLifecycle>()
-        val mockCompletionQueue = mock<SnapshotCompletionQueue>()
-        val testedPipeline = CompositionCapturePipeline(
-            mockOrchestrator,
-            mockLifecycle,
-            mockCompletionQueue,
-            mockConstructionExecutor,
-            mockInternalLogger
-        )
-
         // When
         testedPipeline.requestCapture(fakeSlotIds)
 
@@ -215,15 +246,6 @@ internal class CompositionCapturePipelineTest {
         @StringForgery fakeSlotIds: Set<String>,
         @IntForgery(min = 2, max = 10) fakeRequestCount: Int
     ) {
-        // Given
-        val testedPipeline = CompositionCapturePipeline(
-            mock<SnapshotCaptureOrchestrator>(),
-            mock<CompositionCaptureLifecycle>(),
-            mock<SnapshotCompletionQueue>(),
-            mockConstructionExecutor,
-            mockInternalLogger
-        )
-
         // When
         repeat(fakeRequestCount) { testedPipeline.requestCapture(fakeSlotIds) }
 
@@ -239,15 +261,6 @@ internal class CompositionCapturePipelineTest {
 
     @Test
     fun `M not warn the user W requestCapture { no embedded content slots }`() {
-        // Given
-        val testedPipeline = CompositionCapturePipeline(
-            mock<SnapshotCaptureOrchestrator>(),
-            mock<CompositionCaptureLifecycle>(),
-            mock<SnapshotCompletionQueue>(),
-            mockConstructionExecutor,
-            mockInternalLogger
-        )
-
         // When
         testedPipeline.requestCapture(emptySet())
 

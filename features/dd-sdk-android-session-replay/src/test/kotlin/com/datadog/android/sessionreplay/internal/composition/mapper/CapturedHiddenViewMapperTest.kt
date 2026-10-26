@@ -47,13 +47,13 @@ internal class CapturedHiddenViewMapperTest {
     ) {
         // Given
         val mockView: View = mock()
-        val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
-        val owner = factory.view(factory.window("window"), "hidden-owner")
-        val mappingContext = CapturedMappingContext(factory, owner, screenDensity = fakeDensity)
+        val fakeFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
+        val fakeOwner = fakeFactory.view(fakeFactory.window("window"), "hidden-owner")
+        val fakeMappingContext = CapturedMappingContext(fakeFactory, fakeOwner, screenDensity = fakeDensity)
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockView, fakeDensity)).thenReturn(fakeBounds)
 
         // When
-        val result = testedMapper.map(mockView, mappingContext) as CapturedViewMapperResult.Wireframes
+        val result = testedMapper.map(mockView, fakeMappingContext) as CapturedViewMapperResult.Wireframes
 
         // Then
         val wireframe = result.wireframes.single() as CapturedWireframe.PrivacyPlaceholder

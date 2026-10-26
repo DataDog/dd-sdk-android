@@ -18,6 +18,7 @@ import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TouchPrivacy
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
@@ -30,392 +31,695 @@ import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito.mockConstruction
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
+import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 import java.util.concurrent.Executor
 import java.util.concurrent.FutureTask
 import java.util.concurrent.TimeUnit
 
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class CompositionTouchPrivacyTest {
+
+    @Forgery
+    lateinit var fakeRumContext: SessionReplayRumContext
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M suppress touches W startup or new window awaits complete privacy traversal`(fakeNewWindow: Boolean) {
-        // Given: global SHOW must not expose a HIDE area before a complete traversal.
-        val fixture = Fixture(TouchPrivacy.SHOW)
-        val fakeRoot = if (fakeNewWindow) {
-            fixture.onMap = {}
-            fixture.startCapture()
-            fixture.window(200).also { fixture.windowSource.update(listOf(fixture.root, it)) }
-        } else {
-            fixture.root
-        }
-        fixture.onMap = {}
-        whenever(fakeRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.name)
-        val mockWriter: RecordWriter = mock()
-        val mockDelegate: Window.Callback = mock()
-        val testedCallback = fixture.callback(fakeRoot, mockWriter, mockDelegate)
-        val fakeHiddenX = if (fakeNewWindow) 210f else 10f
-        val fakeDown = fixture.event(MotionEvent.ACTION_DOWN, fakeHiddenX)
-        val fakeUp = fixture.event(MotionEvent.ACTION_UP, fakeHiddenX)
-        fixture.orchestrator.start()
-        fixture.orchestrator.requestCapture()
-
-        // The Android mockable jar does not initialize Point's fields in its constructor.
-        mockConstruction(Point::class.java) { point, context ->
-            point.x = context.arguments()[0] as Int
-            point.y = context.arguments()[1] as Int
-        }.use {
-            // When: a gesture starts before the timer, continues during copying, and ends after completion.
-            fixture.onMap = { view ->
-                if (view === fakeRoot) {
-                    assertThat(fixture.windowSource.hasTouchPrivacy(fakeRoot, RumViewIdentityScope("view"))).isFalse()
-                    testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_MOVE, fakeHiddenX))
-                }
+    fun `M publish privacy atomically W capture() { startup or new window }`(fakeNewWindow: Boolean) {
+        // Given
+        val fakeFixture = StartupPrivacyFixture(fakeNewWindow)
+        var fakeReadyDuringCopy: Boolean? = null
+        fakeFixture.fakeScreen.onMap = { view ->
+            if (view === fakeFixture.mockRoot) {
+                fakeReadyDuringCopy = fakeFixture.fakeScreen.windowSource.hasTouchPrivacy(view, fakeFixture.fakeScope)
             }
-            testedCallback.dispatchTouchEvent(fakeDown)
-            fixture.captureScheduler.runNext()
-            fixture.mainThreadExecutor.runNext()
-            testedCallback.dispatchTouchEvent(fakeUp)
-            testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, fakeHiddenX))
-            testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, fakeHiddenX))
+        }
 
-            // Then: early gestures and subsequent gestures inside HIDE remain excluded.
-            assertThat(fixture.windowSource.hasTouchPrivacy(fakeRoot, RumViewIdentityScope("view"))).isTrue()
-            verify(mockWriter, never()).write(any(), any())
-            verify(mockDelegate).dispatchTouchEvent(fakeDown)
-            verify(mockDelegate).dispatchTouchEvent(fakeUp)
-            testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, 150f))
-            testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, 150f))
-            verify(mockWriter).write(any(), any())
+        // When
+        fakeFixture.fakeScreen.capture()
+
+        // Then
+        assertThat(fakeReadyDuringCopy).isFalse()
+        assertThat(
+            fakeFixture.fakeScreen.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, fakeFixture.fakeScope)
+        ).isTrue()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M suppress initial gesture W dispatchTouchEvent() { privacy unpublished at gesture start }`(
+        fakeNewWindow: Boolean
+    ) {
+        // Given
+        val fakeFixture = StartupPrivacyFixture(fakeNewWindow)
+        fakeFixture.fakeScreen.onMap = { view ->
+            if (view === fakeFixture.mockRoot) fakeFixture.dispatchMove()
+        }
+        fakeFixture.requestCapture()
+        mockPointCoordinates().use {
+            // When
+            fakeFixture.testedCallback.dispatchTouchEvent(fakeFixture.mockDownEvent)
+            fakeFixture.finishCopy()
+            fakeFixture.testedCallback.dispatchTouchEvent(fakeFixture.mockUpEvent)
+
+            // Then
+            verifyNoInteractions(fakeFixture.mockWriter)
+            verify(fakeFixture.mockDelegate).dispatchTouchEvent(fakeFixture.mockDownEvent)
+            verify(fakeFixture.mockDelegate).dispatchTouchEvent(fakeFixture.mockUpEvent)
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M suppress hidden gesture W dispatchTouchEvent() { privacy published after startup }`(
+        fakeNewWindow: Boolean
+    ) {
+        // Given
+        val fakeFixture = StartupPrivacyFixture(fakeNewWindow)
+        mockPointCoordinates().use {
+            fakeFixture.finishInitialGesture()
+
+            // When
+            fakeFixture.testedCallback.dispatchTouchEvent(fakeFixture.mockDownAtHiddenLocation())
+            fakeFixture.testedCallback.dispatchTouchEvent(fakeFixture.mockUpAtHiddenLocation())
+
+            // Then
+            verifyNoInteractions(fakeFixture.mockWriter)
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M record visible gesture W dispatchTouchEvent() { startup privacy published }`(
+        fakeNewWindow: Boolean
+    ) {
+        // Given
+        val fakeFixture = StartupPrivacyFixture(fakeNewWindow)
+        mockPointCoordinates().use {
+            fakeFixture.finishInitialGesture()
+            fakeFixture.testedCallback.dispatchTouchEvent(fakeFixture.mockDownAtHiddenLocation())
+            fakeFixture.testedCallback.dispatchTouchEvent(fakeFixture.mockUpAtHiddenLocation())
+
+            // When
+            fakeFixture.testedCallback.dispatchTouchEvent(
+                fakeFixture.fakeScreen.mockEvent(MotionEvent.ACTION_DOWN, 150f)
+            )
+            fakeFixture.testedCallback.dispatchTouchEvent(fakeFixture.fakeScreen.mockEvent(MotionEvent.ACTION_UP, 150f))
+
+            // Then
+            verify(fakeFixture.mockWriter).write(isA(), isA())
         }
     }
 
     @Test
-    fun `M require fresh privacy W root is re-added or RUM scope changes`() {
+    fun `M invalidate privacy W update() { root removed and re-added }`() {
         // Given
-        val fixture = Fixture(TouchPrivacy.SHOW)
-        fixture.onMap = {}
-        fixture.startCapture()
-        val fakeScope = RumViewIdentityScope("view")
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
+        val fakeFixture = recordedScreen(TouchPrivacy.SHOW)
 
         // When
-        fixture.windowSource.update(emptyList())
-        fixture.windowSource.update(listOf(fixture.root))
+        fakeFixture.windowSource.update(emptyList())
+        fakeFixture.windowSource.update(listOf(fakeFixture.mockRoot))
 
         // Then
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isFalse()
-        fixture.startCapture()
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
-        val fakeNextScope = RumViewIdentityScope("next-view")
-        fixture.rumViewScope = CapturedRumViewScope(fakeNextScope, 0L)
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeNextScope)).isFalse()
-        fixture.startCapture()
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeNextScope)).isTrue()
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isFalse()
     }
 
     @Test
-    fun `M keep touches disabled W traversal filters the root`() {
+    fun `M republish root privacy W capture() { root removed and re-added }`() {
         // Given
-        val fixture = Fixture(TouchPrivacy.SHOW)
-        whenever(fixture.root.isShown).thenReturn(false)
+        val fakeFixture = recordedScreen(TouchPrivacy.SHOW)
+        fakeFixture.windowSource.update(emptyList())
+        fakeFixture.windowSource.update(listOf(fakeFixture.mockRoot))
 
         // When
-        fixture.startCapture()
+        fakeFixture.capture()
 
         // Then
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isFalse()
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isTrue()
+    }
+
+    @Test
+    fun `M reject previous RUM privacy W hasTouchPrivacy() { RUM view changed }`() {
+        // Given
+        val fakeFixture = recordedScreen(TouchPrivacy.SHOW)
+        val fakeNextScope = RumViewIdentityScope(fakeRumContext.viewId + "-next-view")
+        fakeFixture.rumViewScope = CapturedRumViewScope(fakeNextScope, 0L)
+
+        // When
+        val result = fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, fakeNextScope)
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `M publish new RUM privacy W capture() { RUM view changed }`() {
+        // Given
+        val fakeFixture = recordedScreen(TouchPrivacy.SHOW)
+        val fakeNextScope = RumViewIdentityScope(fakeRumContext.viewId + "-next-view")
+        fakeFixture.rumViewScope = CapturedRumViewScope(fakeNextScope, 0L)
+
+        // When
+        fakeFixture.capture()
+
+        // Then
+        assertThat(fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, fakeNextScope)).isTrue()
+    }
+
+    @Test
+    fun `M keep touches disabled W capture() { traversal filters the root }`() {
+        // Given
+        val fakeFixture = Fixture(TouchPrivacy.SHOW)
+        whenever(fakeFixture.mockRoot.isShown).thenReturn(false)
+
+        // When
+        fakeFixture.capture()
+
+        // Then
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isFalse()
     }
 
     @ParameterizedTest
     @EnumSource(TouchPrivacy::class)
-    fun `M suppress touches W redraw makes the committed privacy map stale`(fakeGlobalPrivacy: TouchPrivacy) {
-        // Given: a committed SHOW region must stop allowing gestures as soon as the window redraws.
-        val fixture = Fixture(fakeGlobalPrivacy)
-        fixture.onMap = {}
-        fixture.startCapture()
+    fun `M suppress touches W onDraw() { redraw makes the committed privacy map stale }`(
+        fakeGlobalPrivacy: TouchPrivacy
+    ) {
+        // Given
+        val fakeFixture = recordedScreen(fakeGlobalPrivacy)
         val mockWriter: RecordWriter = mock()
         val mockDelegate: Window.Callback = mock()
-        val testedCallback = fixture.callback(fixture.root, mockWriter, mockDelegate)
-        val fakeDown = fixture.event(MotionEvent.ACTION_DOWN, 10f)
-        val fakeUp = fixture.event(MotionEvent.ACTION_UP, 10f)
-        whenever(fixture.root.getTag(R.id.datadog_touch_privacy)).thenReturn(
+        val testedCallback = fakeFixture.callback(fakeFixture.mockRoot, mockWriter, mockDelegate)
+        val mockDownEvent = fakeFixture.mockEvent(MotionEvent.ACTION_DOWN, 10f)
+        val mockUpEvent = fakeFixture.mockEvent(MotionEvent.ACTION_UP, 10f)
+        whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(
             if (fakeGlobalPrivacy == TouchPrivacy.SHOW) TouchPrivacy.HIDE.name else null
         )
 
-        // When: capture has only been requested; its delayed task has not run yet.
-        fixture.draw()
-        testedCallback.dispatchTouchEvent(fakeDown)
-        testedCallback.dispatchTouchEvent(fakeUp)
+        // When
+        fakeFixture.onDraw()
+        testedCallback.dispatchTouchEvent(mockDownEvent)
+        testedCallback.dispatchTouchEvent(mockUpEvent)
 
-        // Then: neither the old SHOW area nor the global SHOW fallback may bypass readiness.
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isTrue()
-        verify(mockWriter, never()).write(any(), any())
-        verify(mockDelegate).dispatchTouchEvent(fakeDown)
-        verify(mockDelegate).dispatchTouchEvent(fakeUp)
-
-        // Once the replacement map is committed, the now-hidden location stays excluded.
-        fixture.captureScheduler.runNext()
-        fixture.mainThreadExecutor.runNext()
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isTrue()
-        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, 10f))
-        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, 10f))
-        verify(mockWriter, never()).write(any(), any())
+        // Then
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isTrue()
+        verifyNoInteractions(mockWriter)
+        verify(mockDelegate).dispatchTouchEvent(mockDownEvent)
+        verify(mockDelegate).dispatchTouchEvent(mockUpEvent)
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = [false, true])
-    fun `M keep stale touch privacy disabled W replacement expires or is denied`(fakeDenied: Boolean) {
+    @EnumSource(TouchPrivacy::class)
+    fun `M suppress hidden gesture W dispatchTouchEvent() { replacement copy finished after redraw }`(
+        fakeGlobalPrivacy: TouchPrivacy
+    ) {
         // Given
-        val fixture = Fixture()
-        fixture.onMap = {}
-        fixture.startCapture()
+        val fakeFixture = recordedScreen(fakeGlobalPrivacy)
         val mockWriter: RecordWriter = mock()
-        val testedCallback = fixture.callback(fixture.root, mockWriter, mock())
-        whenever(fixture.root.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
-        fixture.draw()
-        fixture.captureAllowed = !fakeDenied
-        fixture.onMap = { fixture.nowNs = GENERATION_BUDGET_NS }
+        val mockDelegate: Window.Callback = mock()
+        val testedCallback = fakeFixture.callback(fakeFixture.mockRoot, mockWriter, mockDelegate)
+        val mockDownEvent = fakeFixture.mockEvent(MotionEvent.ACTION_DOWN, 10f)
+        val mockUpEvent = fakeFixture.mockEvent(MotionEvent.ACTION_UP, 10f)
+        whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(
+            if (fakeGlobalPrivacy == TouchPrivacy.SHOW) TouchPrivacy.HIDE.name else null
+        )
+
+        fakeFixture.onDraw()
+        testedCallback.dispatchTouchEvent(mockDownEvent)
+        testedCallback.dispatchTouchEvent(mockUpEvent)
+
+        fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+
+        fakeFixture.captureScheduler.runNext()
+        fakeFixture.mainThreadExecutor.runNext()
 
         // When
-        fixture.captureScheduler.runNext()
-        fixture.mainThreadExecutor.runNext()
-        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, 10f))
-        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, 10f))
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_DOWN, 10f))
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_UP, 10f))
 
-        // Then: a failed or deferred replacement cannot reactivate the old SHOW rectangle.
-        assertThat(fixture.consumed).hasSize(1)
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isTrue()
-        verify(mockWriter, never()).write(any(), any())
-        fixture.captureAllowed = true
-        fixture.onMap = {}
-        fixture.startCapture()
-        assertThat(fixture.consumed).hasSize(2)
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isTrue()
-        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
+        // Then
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isTrue()
+        verifyNoInteractions(mockWriter)
     }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M retain visual capture without stale privacy W redraw overtakes native copy`(fakeFinalView: Boolean) {
-        // Given: a redraw during either the root or final child copy overtakes the old SHOW area.
-        val fixture = Fixture()
-        fixture.onMap = {}
-        fixture.startCapture()
-        val fakePreviousAreas = fixture.touchPrivacyManager.getCurrentOverrideAreas()
-        fixture.onMap = { view ->
-            if (if (fakeFinalView) view !== fixture.root else view === fixture.root) {
-                whenever(fixture.root.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
-                fixture.draw()
+    fun `M keep stale touch privacy disabled W dispatchTouchEvent() { replacement expires or is denied }`(
+        fakeDenied: Boolean
+    ) {
+        // Given
+        val fakeFixture = recordedScreen()
+        val mockWriter: RecordWriter = mock()
+        val testedCallback = fakeFixture.callback(fakeFixture.mockRoot, mockWriter, mock())
+        whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
+        fakeFixture.onDraw()
+        fakeFixture.captureAllowed = !fakeDenied
+        fakeFixture.onMap = { fakeFixture.nowNs = GENERATION_BUDGET_NS }
+
+        // When
+        fakeFixture.captureScheduler.runNext()
+        fakeFixture.mainThreadExecutor.runNext()
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_DOWN, 10f))
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_UP, 10f))
+
+        // Then
+        assertThat(fakeFixture.consumed).hasSize(1)
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isTrue()
+        verifyNoInteractions(mockWriter)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M publish fresh privacy W capture() { previous replacement expired or was denied }`(
+        fakeDenied: Boolean
+    ) {
+        // Given
+        val fakeFixture = recordedScreen()
+        val mockWriter: RecordWriter = mock()
+        val testedCallback = fakeFixture.callback(fakeFixture.mockRoot, mockWriter, mock())
+        whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
+        fakeFixture.onDraw()
+        fakeFixture.captureAllowed = !fakeDenied
+        fakeFixture.onMap = { fakeFixture.nowNs = GENERATION_BUDGET_NS }
+
+        fakeFixture.captureScheduler.runNext()
+        fakeFixture.mainThreadExecutor.runNext()
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_DOWN, 10f))
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_UP, 10f))
+
+        fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+
+        fakeFixture.captureAllowed = true
+        fakeFixture.onMap = {}
+
+        // When
+        fakeFixture.capture()
+
+        // Then
+        assertThat(fakeFixture.consumed).hasSize(2)
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isTrue()
+        assertThat(fakeFixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M retain visual capture without stale privacy W capture() { redraw overtakes native copy }`(
+        fakeFinalView: Boolean
+    ) {
+        // Given
+        val fakeFixture = recordedScreen()
+        val fakePreviousAreas = fakeFixture.touchPrivacyManager.getCurrentOverrideAreas()
+        fakeFixture.onMap = { view ->
+            if (if (fakeFinalView) view !== fakeFixture.mockRoot else view === fakeFixture.mockRoot) {
+                whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
+                fakeFixture.onDraw()
             }
         }
 
         // When
-        fixture.startCapture()
+        fakeFixture.capture()
 
-        // Then: visual completion is allowed; live refresh, rather than the stale candidate, restores readiness.
-        assertThat(fixture.consumed).hasSize(2)
-        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).containsExactlyEntriesOf(fakePreviousAreas)
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isTrue()
-        fixture.onMap = {}
-        fixture.captureScheduler.runNext()
-        fixture.mainThreadExecutor.runNext()
-        assertThat(fixture.consumed).hasSize(3)
-        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isTrue()
-    }
-
-    @Test
-    fun `M refresh touch privacy W window redraws before worker construction finishes`() {
-        // Given: the UI copy finishes and publishes privacy while snapshot construction is queued.
-        val fixture = Fixture(deferProcessing = true)
-        fixture.onMap = {}
-        fixture.startCapture()
-        fixture.processNext()
-        fixture.startCapture()
-        val fakeScope = RumViewIdentityScope("view")
-        assertThat(fixture.consumed).hasSize(1)
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
-
-        // When: a redraw dirties the copied map before the worker completes the visual snapshot.
-        whenever(fixture.root.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
-        fixture.draw()
-        fixture.processNext()
-
-        // Then: a live privacy check restores readiness with the new policy, without the old SHOW area.
-        assertThat(fixture.consumed).hasSize(2)
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
-        assertThat(fixture.windowSource.currentTouchOverrideAreas(fixture.root, fakeScope)).isEmpty()
-        fixture.captureScheduler.runNext()
-        fixture.mainThreadExecutor.runNext()
-        fixture.processNext()
-        assertThat(fixture.consumed).hasSize(3)
-        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
+        // Then
+        assertThat(fakeFixture.consumed).hasSize(2)
+        assertThat(
+            fakeFixture.touchPrivacyManager.getCurrentOverrideAreas()
+        ).containsExactlyEntriesOf(fakePreviousAreas)
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isTrue()
     }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M discard a gesture across privacy revisions W redraw and recapture`(fakeEventWhileDirty: Boolean) {
+    fun `M replace stale privacy W runNext() { follow-up copy after redraw }`(
+        fakeFinalView: Boolean
+    ) {
         // Given
-        val fixture = Fixture()
-        fixture.onMap = {}
-        fixture.startCapture()
+        val fakeFixture = recordedScreen()
+        fakeFixture.onMap = { view ->
+            if (if (fakeFinalView) view !== fakeFixture.mockRoot else view === fakeFixture.mockRoot) {
+                whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
+                fakeFixture.onDraw()
+            }
+        }
+
+        fakeFixture.capture()
+
+        fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        fakeFixture.onMap = {}
+
+        // When
+        fakeFixture.captureScheduler.runNext()
+        fakeFixture.mainThreadExecutor.runNext()
+
+        // Then
+        assertThat(fakeFixture.consumed).hasSize(3)
+        assertThat(fakeFixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isTrue()
+    }
+
+    @Test
+    fun `M refresh touch privacy W onDraw() { window redraws before worker construction finishes }`() {
+        // Given
+        val fakeFixture = Fixture(deferProcessing = true)
+        fakeFixture.onMap = {}
+        fakeFixture.capture()
+        fakeFixture.processNext()
+        fakeFixture.capture()
+        val fakeScope = RumViewIdentityScope(fakeRumContext.viewId)
+
+        fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, fakeScope)
+
+        // When
+        whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
+        fakeFixture.onDraw()
+        fakeFixture.processNext()
+
+        // Then
+        assertThat(fakeFixture.consumed).hasSize(2)
+        assertThat(fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, fakeScope)).isTrue()
+        assertThat(fakeFixture.windowSource.currentTouchOverrideAreas(fakeFixture.mockRoot, fakeScope)).isEmpty()
+    }
+
+    @Test
+    fun `M retain refreshed privacy W processNext() { replacement finishes construction }`() {
+        // Given
+        val fakeFixture = Fixture(deferProcessing = true)
+        fakeFixture.onMap = {}
+        fakeFixture.capture()
+        fakeFixture.processNext()
+        fakeFixture.capture()
+        val fakeScope = RumViewIdentityScope(fakeRumContext.viewId)
+
+        fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, fakeScope)
+
+        whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
+        fakeFixture.onDraw()
+        fakeFixture.processNext()
+
+        fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, fakeScope)
+        fakeFixture.windowSource.currentTouchOverrideAreas(fakeFixture.mockRoot, fakeScope)
+        fakeFixture.captureScheduler.runNext()
+        fakeFixture.mainThreadExecutor.runNext()
+
+        // When
+        fakeFixture.processNext()
+
+        // Then
+        assertThat(fakeFixture.consumed).hasSize(3)
+        assertThat(fakeFixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
+        assertThat(fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, fakeScope)).isTrue()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M discard a gesture across privacy revisions W onDraw() { redraw and recapture }`(
+        fakeEventWhileDirty: Boolean
+    ) {
+        // Given
+        val fakeFixture = recordedScreen()
         val mockWriter: RecordWriter = mock()
-        val testedCallback = fixture.callback(fixture.root, mockWriter, mock())
-        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, 10f))
+        val testedCallback = fakeFixture.callback(fakeFixture.mockRoot, mockWriter, mock())
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_DOWN, 10f))
 
-        // When: invalidation may be followed by recapture before the next touch event arrives.
-        whenever(fixture.root.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
-        fixture.draw()
-        if (fakeEventWhileDirty) testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_MOVE, 10f))
-        fixture.captureScheduler.runNext()
-        fixture.mainThreadExecutor.runNext()
-        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, 10f))
+        // When
+        whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
+        fakeFixture.onDraw()
+        if (fakeEventWhileDirty) testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_MOVE, 10f))
+        fakeFixture.captureScheduler.runNext()
+        fakeFixture.mainThreadExecutor.runNext()
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_UP, 10f))
 
-        // Then: an old buffered down and its gesture tail are discarded even within the same RUM view.
-        verify(mockWriter, never()).write(any(), any())
-        whenever(fixture.root.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
-        fixture.draw()
-        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, 20f))
-        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, 20f))
+        // Then
+        verifyNoInteractions(mockWriter)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M record fresh gesture W dispatchTouchEvent() { previous privacy revision discarded }`(
+        fakeEventWhileDirty: Boolean
+    ) {
+        // Given
+        val fakeFixture = recordedScreen()
+        val mockWriter: RecordWriter = mock()
+        val testedCallback = fakeFixture.callback(fakeFixture.mockRoot, mockWriter, mock())
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_DOWN, 10f))
+
+        whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
+        fakeFixture.onDraw()
+        if (fakeEventWhileDirty) testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_MOVE, 10f))
+        fakeFixture.captureScheduler.runNext()
+        fakeFixture.mainThreadExecutor.runNext()
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_UP, 10f))
+
+        whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
+        fakeFixture.onDraw()
+
+        // When
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_DOWN, 20f))
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_UP, 20f))
         val records = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter).write(records.capture(), any())
+
+        // Then
+        verify(mockWriter).write(records.capture(), isA())
         assertThat(records.firstValue.records).hasSize(2)
     }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M retain unchanged window policies W either tracked window redraws`(fakeSecondWindow: Boolean) {
-        // Given: both windows use the same committed override map.
-        val fixture = Fixture()
-        val fakeOtherWindow = fixture.window(200)
-        fixture.windowSource.update(listOf(fixture.root, fakeOtherWindow))
-        fixture.onMap = {}
-        fixture.startCapture()
-        val fakeWindowSnapshot = fixture.windowSource.snapshot()
-        val fakeScope = RumViewIdentityScope("view")
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
-        assertThat(fixture.windowSource.hasTouchPrivacy(fakeOtherWindow, fakeScope)).isTrue()
+    fun `M retain unchanged window policies W onDraw() { either tracked window redraws }`(fakeSecondWindow: Boolean) {
+        // Given
+        val fakeFixture = Fixture()
+        val mockOtherWindowRoot = fakeFixture.mockWindowRoot(200)
+        fakeFixture.windowSource.update(listOf(fakeFixture.mockRoot, mockOtherWindowRoot))
+        fakeFixture.onMap = {}
+        fakeFixture.capture()
+        val fakeWindowSnapshot = fakeFixture.windowSource.snapshot()
+        val fakeScope = RumViewIdentityScope(fakeRumContext.viewId)
+        fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, fakeScope)
+        fakeFixture.windowSource.hasTouchPrivacy(mockOtherWindowRoot, fakeScope)
 
         // When
-        fixture.draw(if (fakeSecondWindow) fakeOtherWindow else fixture.root)
+        fakeFixture.onDraw(if (fakeSecondWindow) mockOtherWindowRoot else fakeFixture.mockRoot)
 
-        // Then: refresh the affected window without revoking either unchanged policy.
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
-        assertThat(fixture.windowSource.hasTouchPrivacy(fakeOtherWindow, fakeScope)).isTrue()
-        assertThat(fixture.windowSource.isCurrent(fakeWindowSnapshot)).isTrue()
-        fixture.captureScheduler.runNext()
-        fixture.mainThreadExecutor.runNext()
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
-        assertThat(fixture.windowSource.hasTouchPrivacy(fakeOtherWindow, fakeScope)).isTrue()
+        // Then
+        assertThat(fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, fakeScope)).isTrue()
+        assertThat(fakeFixture.windowSource.hasTouchPrivacy(mockOtherWindowRoot, fakeScope)).isTrue()
+        assertThat(fakeFixture.windowSource.isCurrent(fakeWindowSnapshot)).isTrue()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M retain window policies W runNext() { unchanged windows recaptured }`(fakeSecondWindow: Boolean) {
+        // Given
+        val fakeFixture = Fixture()
+        val mockOtherWindowRoot = fakeFixture.mockWindowRoot(200)
+        fakeFixture.windowSource.update(listOf(fakeFixture.mockRoot, mockOtherWindowRoot))
+        fakeFixture.onMap = {}
+        fakeFixture.capture()
+        val fakeWindowSnapshot = fakeFixture.windowSource.snapshot()
+        val fakeScope = RumViewIdentityScope(fakeRumContext.viewId)
+        fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, fakeScope)
+        fakeFixture.windowSource.hasTouchPrivacy(mockOtherWindowRoot, fakeScope)
+
+        fakeFixture.onDraw(if (fakeSecondWindow) mockOtherWindowRoot else fakeFixture.mockRoot)
+
+        fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, fakeScope)
+        fakeFixture.windowSource.hasTouchPrivacy(mockOtherWindowRoot, fakeScope)
+        fakeFixture.windowSource.isCurrent(fakeWindowSnapshot)
+
+        // When
+        fakeFixture.captureScheduler.runNext()
+        fakeFixture.mainThreadExecutor.runNext()
+
+        // Then
+        assertThat(fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, fakeScope)).isTrue()
+        assertThat(fakeFixture.windowSource.hasTouchPrivacy(mockOtherWindowRoot, fakeScope)).isTrue()
     }
 
     @Test
-    fun `M retain gestures W animation redraws and equivalent captures refresh privacy`() {
+    fun `M retain gestures W onDraw() { animation redraws and equivalent captures refresh privacy }`() {
         // Given
-        val fixture = Fixture(TouchPrivacy.SHOW)
-        fixture.onMap = {}
-        fixture.startCapture()
+        val fakeFixture = recordedScreen(TouchPrivacy.SHOW)
         val mockWriter: RecordWriter = mock()
-        val testedCallback = fixture.callback(fixture.root, mockWriter, mock())
-        val fakeScope = fixture.windowSource.currentTouchPrivacyScope(fixture.root, RumViewIdentityScope("view"))
-        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, 10f))
+        val testedCallback = fakeFixture.callback(fakeFixture.mockRoot, mockWriter, mock())
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_DOWN, 10f))
 
-        // When: frames and complete refreshes arrive between the beginning and end of a gesture.
+        // When
         repeat(10) {
-            fixture.draw()
-            fixture.captureScheduler.runNext()
-            fixture.mainThreadExecutor.runNext()
-            assertThat(fixture.windowSource.currentTouchPrivacyScope(fixture.root, RumViewIdentityScope("view")))
-                .isEqualTo(fakeScope)
+            fakeFixture.onDraw()
+            fakeFixture.captureScheduler.runNext()
+            fakeFixture.mainThreadExecutor.runNext()
+            fakeFixture.windowSource.currentTouchPrivacyScope(
+                fakeFixture.mockRoot,
+                RumViewIdentityScope(fakeRumContext.viewId)
+            )
         }
-        fixture.draw()
-        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, 10f))
+        fakeFixture.onDraw()
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_UP, 10f))
 
         // Then
         val records = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter).write(records.capture(), any())
+        verify(mockWriter).write(records.capture(), isA())
         assertThat(records.firstValue.records).hasSize(2)
     }
 
-    @Test
-    fun `M establish current privacy W redraw overtakes the initial native copy`() {
-        // Given: draws during native mapping dirty the candidate without invalidating the copy.
-        val fixture = Fixture(TouchPrivacy.SHOW)
-        fixture.onMap = { view ->
-            if (view === fixture.root) {
-                whenever(fixture.root.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.name)
-            }
-            fixture.draw()
-        }
+    @ParameterizedTest
+    @ValueSource(ints = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    fun `M retain privacy scope W onDraw() { repeated equivalent captures }`(fakeFrameCount: Int) {
+        // Given
+        val fakeFixture = recordedScreen(TouchPrivacy.SHOW)
+        val fakeScope = fakeFixture.windowSource.currentTouchPrivacyScope(
+            fakeFixture.mockRoot,
+            RumViewIdentityScope(fakeRumContext.viewId)
+        )
 
         // When
-        fixture.startCapture()
-        val mockWriter: RecordWriter = mock()
-        val testedCallback = fixture.callback(fixture.root, mockWriter, mock())
-        val fakeScope = RumViewIdentityScope("view")
-        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, 10f))
-        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, 10f))
+        repeat(fakeFrameCount) {
+            fakeFixture.onDraw()
+            fakeFixture.captureScheduler.runNext()
+            fakeFixture.mainThreadExecutor.runNext()
+        }
+        val result = fakeFixture.windowSource.currentTouchPrivacyScope(
+            fakeFixture.mockRoot,
+            RumViewIdentityScope(fakeRumContext.viewId)
+        )
 
-        // Then: live privacy converges without granting the copy's old SHOW permission.
-        assertThat(fixture.consumed).hasSize(1)
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
-        assertThat(fixture.windowSource.currentTouchOverrideAreas(fixture.root, fakeScope))
-            .containsValue(TouchPrivacy.HIDE).doesNotContainValue(TouchPrivacy.SHOW)
-        verify(mockWriter, never()).write(any(), any())
+        // Then
+        assertThat(result).isEqualTo(fakeScope)
     }
 
     @Test
-    fun `M deny dirty privacy W live refresh fails before visual recapture`() {
+    fun `M establish current privacy W capture() { redraw overtakes the initial native copy }`() {
         // Given
-        val fixture = Fixture(TouchPrivacy.SHOW)
-        fixture.onMap = {}
-        fixture.startCapture()
-        val mockWriter: RecordWriter = mock()
-        val testedCallback = fixture.callback(fixture.root, mockWriter, mock())
-        fixture.privacyReadAllowed = false
-        fixture.draw()
+        val fakeFixture = Fixture(TouchPrivacy.SHOW)
+        fakeFixture.onMap = { view ->
+            if (view === fakeFixture.mockRoot) {
+                whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.name)
+            }
+            fakeFixture.onDraw()
+        }
 
         // When
-        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, 10f))
-        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, 10f))
+        fakeFixture.capture()
+        val mockWriter: RecordWriter = mock()
+        val testedCallback = fakeFixture.callback(fakeFixture.mockRoot, mockWriter, mock())
+        val fakeScope = RumViewIdentityScope(fakeRumContext.viewId)
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_DOWN, 10f))
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_UP, 10f))
 
-        // Then: even global SHOW and previously granted overrides cannot bypass a failed refresh.
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isFalse()
-        verify(mockWriter, never()).write(any(), any())
-        fixture.privacyReadAllowed = true
-        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, 10f))
-        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, 10f))
-        verify(mockWriter).write(any(), any())
+        // Then
+        assertThat(fakeFixture.consumed).hasSize(1)
+        assertThat(fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, fakeScope)).isTrue()
+        assertThat(fakeFixture.windowSource.currentTouchOverrideAreas(fakeFixture.mockRoot, fakeScope))
+            .containsValue(TouchPrivacy.HIDE).doesNotContainValue(TouchPrivacy.SHOW)
+        verifyNoInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M deny dirty privacy W dispatchTouchEvent() { live refresh fails before visual recapture }`() {
+        // Given
+        val fakeFixture = recordedScreen(TouchPrivacy.SHOW)
+        val mockWriter: RecordWriter = mock()
+        val testedCallback = fakeFixture.callback(fakeFixture.mockRoot, mockWriter, mock())
+        fakeFixture.privacyReadAllowed = false
+        fakeFixture.onDraw()
+
+        // When
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_DOWN, 10f))
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_UP, 10f))
+
+        // Then
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isFalse()
+        verifyNoInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M record gesture W dispatchTouchEvent() { live privacy refresh recovers }`() {
+        // Given
+        val fakeFixture = recordedScreen(TouchPrivacy.SHOW)
+        val mockWriter: RecordWriter = mock()
+        val testedCallback = fakeFixture.callback(fakeFixture.mockRoot, mockWriter, mock())
+        fakeFixture.privacyReadAllowed = false
+        fakeFixture.onDraw()
+
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_DOWN, 10f))
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_UP, 10f))
+
+        fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+
+        fakeFixture.privacyReadAllowed = true
+
+        // When
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_DOWN, 10f))
+        testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_UP, 10f))
+
+        // Then
+        verify(mockWriter).write(isA(), isA())
     }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M reject privacy refresh W draw or cancellation overtakes live read`(fakeCancel: Boolean) {
+    fun `M reject privacy refresh W currentTouchOverrideAreas() { draw or cancellation overtakes live read }`(
+        fakeCancel: Boolean
+    ) {
         // Given
-        val fixture = Fixture(TouchPrivacy.SHOW)
-        fixture.onMap = {}
-        fixture.startCapture()
-        fixture.draw()
-        fixture.onPrivacyRead = {
-            if (fakeCancel) fixture.windowSource.clearTouchPrivacy() else fixture.draw()
+        val fakeFixture = recordedScreen(TouchPrivacy.SHOW)
+        fakeFixture.onDraw()
+        fakeFixture.onPrivacyRead = {
+            if (fakeCancel) fakeFixture.windowSource.clearTouchPrivacy() else fakeFixture.onDraw()
         }
 
         // When
-        val result = fixture.windowSource.currentTouchOverrideAreas(fixture.root, RumViewIdentityScope("view"))
+        val result = fakeFixture.windowSource.currentTouchOverrideAreas(
+            fakeFixture.mockRoot,
+            RumViewIdentityScope(fakeRumContext.viewId)
+        )
 
         // Then
         assertThat(result).isNull()
@@ -423,274 +727,380 @@ internal class CompositionTouchPrivacyTest {
 
     @ParameterizedTest
     @EnumSource(Cancellation::class)
-    fun `M discard partial touch overrides W copying is cancelled`(cancellation: Cancellation) {
-        // Given: copy one window, then cancel while visiting a SHOW area in the second.
-        val fixture = Fixture()
-        val firstWindow = fixture.window(200)
-        whenever(firstWindow.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
-        fixture.windowSource.update(listOf(firstWindow, fixture.root))
-        fixture.onMap = { view ->
-            if (view === fixture.root) {
-                when (cancellation) {
-                    Cancellation.EXPIRY -> {
-                        fixture.nowNs = GENERATION_BUDGET_NS
-                        runCancellation { fixture.expiryScheduler.runNext() }
+    fun `M discard partial touch overrides W capture() { copying is cancelled }`(cancellation: Cancellation) {
+        // Given
+        val fakeFixture = Fixture()
+        val mockFirstWindow = fakeFixture.mockWindowRoot(200)
+        whenever(mockFirstWindow.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
+        fakeFixture.windowSource.update(listOf(mockFirstWindow, fakeFixture.mockRoot))
+        fakeFixture.cancelOnRootCopy(cancellation)
+
+        // When
+        fakeFixture.capture()
+
+        // Then
+        assertThat(fakeFixture.consumed).isEmpty()
+        assertThat(fakeFixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(mockFirstWindow, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isFalse()
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isFalse()
+    }
+
+    @ParameterizedTest
+    @EnumSource(Cancellation::class)
+    fun `M publish only fresh overrides W capture() { previous copy cancelled }`(cancellation: Cancellation) {
+        // Given
+        val fakeFixture = Fixture()
+        val mockFirstWindow = fakeFixture.mockWindowRoot(200)
+        whenever(mockFirstWindow.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
+        fakeFixture.windowSource.update(listOf(mockFirstWindow, fakeFixture.mockRoot))
+        fakeFixture.cancelOnRootCopy(cancellation)
+
+        fakeFixture.capture()
+
+        fakeFixture.windowSource.hasTouchPrivacy(mockFirstWindow, RumViewIdentityScope(fakeRumContext.viewId))
+        fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
+        fakeFixture.windowSource.update(listOf(fakeFixture.mockRoot))
+        fakeFixture.onMap = {}
+
+        // When
+        fakeFixture.capture()
+
+        // Then
+        assertThat(fakeFixture.consumed).hasSize(1)
+        assertThat(fakeFixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
+        assertThat(fakeFixture.touchPrivacyManager.getNextOverrideAreas()).isEmpty()
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isTrue()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M preserve committed overrides W capture() { copying aborts or throws }`(throws: Boolean) {
+        // Given
+        val fakeFixture = Fixture()
+        val fakePreviousArea = Rect(200, 200, 300, 300)
+        fakeFixture.touchPrivacyManager.replaceCurrentTouchOverrideAreas(mapOf(fakePreviousArea to TouchPrivacy.SHOW))
+        fakeFixture.onMap = { view ->
+            if (view !== fakeFixture.mockRoot) {
+                if (throws) error("Traversal failed") else fakeFixture.nowNs = GENERATION_BUDGET_NS
+            }
+        }
+
+        // When
+        fakeFixture.capture()
+
+        // Then
+        assertThat(fakeFixture.consumed).isEmpty()
+        assertThat(fakeFixture.touchPrivacyManager.getCurrentOverrideAreas())
+            .containsExactlyEntriesOf(mapOf(fakePreviousArea to TouchPrivacy.SHOW))
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M replace previous overrides W capture() { earlier copy aborted or threw }`(throws: Boolean) {
+        // Given
+        val fakeFixture = Fixture()
+        val fakePreviousArea = Rect(200, 200, 300, 300)
+        fakeFixture.touchPrivacyManager.replaceCurrentTouchOverrideAreas(mapOf(fakePreviousArea to TouchPrivacy.SHOW))
+        fakeFixture.onMap = { view ->
+            if (view !== fakeFixture.mockRoot) {
+                if (throws) error("Traversal failed") else fakeFixture.nowNs = GENERATION_BUDGET_NS
+            }
+        }
+
+        fakeFixture.capture()
+
+        whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
+        fakeFixture.onMap = {}
+
+        // When
+        fakeFixture.capture()
+
+        // Then
+        assertThat(fakeFixture.consumed).hasSize(1)
+        assertThat(fakeFixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isFalse()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M discard stale overrides W capture() { RUM scope changes while copying }`(fakeMissingScope: Boolean) {
+        // Given
+        val fakeFixture = Fixture()
+        fakeFixture.onMap = { view ->
+            if (view !== fakeFixture.mockRoot) {
+                fakeFixture.rumViewScope =
+                    if (fakeMissingScope) {
+                        null
+                    } else {
+                        CapturedRumViewScope(
+                            RumViewIdentityScope(
+                                fakeRumContext.viewId + "-new"
+                            ),
+                            0L
+                        )
                     }
-                    Cancellation.STOP -> runCancellation { fixture.orchestrator.stop() }
-                    Cancellation.DEADLINE -> fixture.nowNs = GENERATION_BUDGET_NS
-                }
             }
         }
 
         // When
-        fixture.startCapture()
+        fakeFixture.capture()
 
         // Then
-        assertThat(fixture.consumed).isEmpty()
-        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
-        assertThat(fixture.windowSource.hasTouchPrivacy(firstWindow, RumViewIdentityScope("view"))).isFalse()
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isFalse()
-        whenever(fixture.root.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
-        fixture.windowSource.update(listOf(fixture.root))
-        fixture.onMap = {}
-        fixture.startCapture()
-        assertThat(fixture.consumed).hasSize(1)
-        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
-        assertThat(fixture.touchPrivacyManager.getNextOverrideAreas()).isEmpty()
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isTrue()
+        assertThat(fakeFixture.consumed).isEmpty()
+        assertThat(fakeFixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
+        assertThat(fakeFixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isFalse()
     }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M preserve committed overrides W copying aborts or throws`(throws: Boolean) {
+    fun `M stop before next window W capture() { RUM scope changes while copying }`(fakeMissingScope: Boolean) {
         // Given
-        val fixture = Fixture()
-        val previousArea = Rect(200, 200, 300, 300)
-        fixture.touchPrivacyManager.replaceCurrentTouchOverrideAreas(mapOf(previousArea to TouchPrivacy.SHOW))
-        fixture.onMap = { view ->
-            if (view !== fixture.root) {
-                if (throws) error("Traversal failed") else fixture.nowNs = GENERATION_BUDGET_NS
-            }
-        }
-
-        // When
-        fixture.startCapture()
-
-        // Then
-        assertThat(fixture.consumed).isEmpty()
-        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas())
-            .containsExactlyEntriesOf(mapOf(previousArea to TouchPrivacy.SHOW))
-        whenever(fixture.root.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
-        fixture.onMap = {}
-        fixture.startCapture()
-        assertThat(fixture.consumed).hasSize(1)
-        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isFalse()
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = [false, true])
-    fun `M discard stale overrides W RUM scope changes while copying`(fakeMissingScope: Boolean) {
-        // Given
-        val fixture = Fixture()
-        fixture.onMap = { view ->
-            if (view !== fixture.root) {
-                fixture.rumViewScope =
-                    if (fakeMissingScope) null else CapturedRumViewScope(RumViewIdentityScope("new"), 0L)
-            }
-        }
-
-        // When
-        fixture.startCapture()
-
-        // Then
-        assertThat(fixture.consumed).isEmpty()
-        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
-        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isFalse()
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = [false, true])
-    fun `M stop before next window W RUM scope changes while copying`(fakeMissingScope: Boolean) {
-        // Given: the first window changes scope before the next window is copied.
-        val fixture = Fixture()
-        val fakeFirstWindow = fixture.window(200)
-        fixture.windowSource.update(listOf(fakeFirstWindow, fixture.root))
+        val fakeFixture = Fixture()
+        val mockFirstWindowRoot = fakeFixture.mockWindowRoot(200)
+        fakeFixture.windowSource.update(listOf(mockFirstWindowRoot, fakeFixture.mockRoot))
         val fakePreviousAreas = mapOf(Rect(400, 0, 500, 100) to TouchPrivacy.SHOW)
-        fixture.touchPrivacyManager.replaceCurrentTouchOverrideAreas(fakePreviousAreas)
-        var copiedLaterViews = 0
-        fixture.onMap = { view ->
-            if (view === fakeFirstWindow) {
-                fixture.rumViewScope =
-                    if (fakeMissingScope) null else CapturedRumViewScope(RumViewIdentityScope("new"), 0L)
+        fakeFixture.touchPrivacyManager.replaceCurrentTouchOverrideAreas(fakePreviousAreas)
+        var fakeCopiedLaterViews = 0
+        fakeFixture.onMap = { view ->
+            if (view === mockFirstWindowRoot) {
+                fakeFixture.rumViewScope =
+                    if (fakeMissingScope) {
+                        null
+                    } else {
+                        CapturedRumViewScope(
+                            RumViewIdentityScope(
+                                fakeRumContext.viewId + "-new"
+                            ),
+                            0L
+                        )
+                    }
             } else {
-                copiedLaterViews++
+                fakeCopiedLaterViews++
             }
         }
 
         // When
-        fixture.startCapture()
+        fakeFixture.capture()
 
         // Then
-        assertThat(copiedLaterViews).isZero()
-        assertThat(fixture.consumed).isEmpty()
-        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).containsExactlyEntriesOf(fakePreviousAreas)
+        assertThat(fakeCopiedLaterViews).isZero()
+        assertThat(fakeFixture.consumed).isEmpty()
+        assertThat(
+            fakeFixture.touchPrivacyManager.getCurrentOverrideAreas()
+        ).containsExactlyEntriesOf(fakePreviousAreas)
     }
 
     @ParameterizedTest
     @EnumSource(WindowChange::class)
-    fun `M discard stale capture W window roots change before next window`(fakeChange: WindowChange) {
-        // Given: copying the first window changes the roots before the second window is visited.
-        val fixture = Fixture()
-        val fakeFirstWindow = fixture.window(200)
-        fixture.windowSource.update(listOf(fakeFirstWindow, fixture.root))
+    fun `M discard stale capture W capture() { window roots change before next window }`(fakeChange: WindowChange) {
+        // Given
+        val fakeFixture = Fixture()
+        val mockFirstWindowRoot = fakeFixture.mockWindowRoot(200)
+        fakeFixture.windowSource.update(listOf(mockFirstWindowRoot, fakeFixture.mockRoot))
         val fakePreviousAreas = mapOf(Rect(400, 0, 500, 100) to TouchPrivacy.SHOW)
-        fixture.touchPrivacyManager.replaceCurrentTouchOverrideAreas(fakePreviousAreas)
-        var copiedLaterViews = 0
-        fixture.onMap = { view ->
-            if (view === fakeFirstWindow) changeWindows(fixture, fakeFirstWindow, fakeChange) else copiedLaterViews++
+        fakeFixture.touchPrivacyManager.replaceCurrentTouchOverrideAreas(fakePreviousAreas)
+        var fakeCopiedLaterViews = 0
+        fakeFixture.onMap = { view ->
+            if (view ===
+                mockFirstWindowRoot
+            ) {
+                changeWindows(fakeFixture, mockFirstWindowRoot, fakeChange)
+            } else {
+                fakeCopiedLaterViews++
+            }
         }
 
         // When
-        fixture.startCapture()
+        fakeFixture.capture()
 
-        // Then: stale roots are not read, and their partial privacy map is never published.
-        assertThat(copiedLaterViews).isZero()
-        assertThat(fixture.consumed).isEmpty()
-        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).containsExactlyEntriesOf(fakePreviousAreas)
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isFalse()
-        assertThat(fixture.windowSource.hasTouchPrivacy(fakeFirstWindow, RumViewIdentityScope("view"))).isFalse()
-
-        // A fresh capture uses the new ordered roots and can complete normally.
-        fixture.onMap = {}
-        fixture.startCapture()
-        assertThat(fixture.consumed).hasSize(1)
-        assertThat(fixture.consumed.single().snapshot.root?.children)
-            .hasSize(fixture.windowSource.currentWindows().size)
+        // Then
+        assertThat(fakeCopiedLaterViews).isZero()
+        assertThat(fakeFixture.consumed).isEmpty()
+        assertThat(
+            fakeFixture.touchPrivacyManager.getCurrentOverrideAreas()
+        ).containsExactlyEntriesOf(fakePreviousAreas)
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isFalse()
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(mockFirstWindowRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isFalse()
     }
 
     @ParameterizedTest
     @EnumSource(WindowChange::class)
-    fun `M discard stale overrides W window roots change in final copied view`(fakeChange: WindowChange) {
-        // Given: the final child changes the source after an earlier window was already copied.
-        val fixture = Fixture()
-        val fakeFirstWindow = fixture.window(200)
-        fixture.windowSource.update(listOf(fakeFirstWindow, fixture.root))
+    fun `M capture current windows W capture() { previous copy abandoned }`(fakeChange: WindowChange) {
+        // Given
+        val fakeFixture = Fixture()
+        val mockFirstWindowRoot = fakeFixture.mockWindowRoot(200)
+        fakeFixture.windowSource.update(listOf(mockFirstWindowRoot, fakeFixture.mockRoot))
         val fakePreviousAreas = mapOf(Rect(400, 0, 500, 100) to TouchPrivacy.SHOW)
-        fixture.touchPrivacyManager.replaceCurrentTouchOverrideAreas(fakePreviousAreas)
-        fixture.onMap = { view ->
-            if (view !== fakeFirstWindow && view !== fixture.root) changeWindows(fixture, fakeFirstWindow, fakeChange)
+        fakeFixture.touchPrivacyManager.replaceCurrentTouchOverrideAreas(fakePreviousAreas)
+        var fakeCopiedLaterViews = 0
+        fakeFixture.onMap = { view ->
+            if (view ===
+                mockFirstWindowRoot
+            ) {
+                changeWindows(fakeFixture, mockFirstWindowRoot, fakeChange)
+            } else {
+                fakeCopiedLaterViews++
+            }
+        }
+
+        fakeFixture.capture()
+
+        fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        fakeFixture.windowSource.hasTouchPrivacy(mockFirstWindowRoot, RumViewIdentityScope(fakeRumContext.viewId))
+
+        fakeFixture.onMap = {}
+
+        // When
+        fakeFixture.capture()
+
+        // Then
+        assertThat(fakeFixture.consumed).hasSize(1)
+        val root = checkNotNull(fakeFixture.consumed.single().snapshot.root) { "Expected a captured screen root" }
+        assertThat(root.children)
+            .hasSize(fakeFixture.windowSource.currentWindows().size)
+    }
+
+    @ParameterizedTest
+    @EnumSource(WindowChange::class)
+    fun `M discard stale overrides W capture() { window roots change in final copied view }`(fakeChange: WindowChange) {
+        // Given
+        val fakeFixture = Fixture()
+        val mockFirstWindowRoot = fakeFixture.mockWindowRoot(200)
+        fakeFixture.windowSource.update(listOf(mockFirstWindowRoot, fakeFixture.mockRoot))
+        val fakePreviousAreas = mapOf(Rect(400, 0, 500, 100) to TouchPrivacy.SHOW)
+        fakeFixture.touchPrivacyManager.replaceCurrentTouchOverrideAreas(fakePreviousAreas)
+        fakeFixture.onMap = { view ->
+            if (view !== mockFirstWindowRoot &&
+                view !== fakeFixture.mockRoot
+            ) {
+                changeWindows(fakeFixture, mockFirstWindowRoot, fakeChange)
+            }
         }
 
         // When
-        fixture.startCapture()
+        fakeFixture.capture()
 
-        // Then: finishing the copy does not publish a snapshot or touch overrides from stale roots.
-        assertThat(fixture.consumed).isEmpty()
-        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).containsExactlyEntriesOf(fakePreviousAreas)
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isFalse()
-        assertThat(fixture.windowSource.hasTouchPrivacy(fakeFirstWindow, RumViewIdentityScope("view"))).isFalse()
+        // Then
+        assertThat(fakeFixture.consumed).isEmpty()
+        assertThat(
+            fakeFixture.touchPrivacyManager.getCurrentOverrideAreas()
+        ).containsExactlyEntriesOf(fakePreviousAreas)
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isFalse()
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(mockFirstWindowRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isFalse()
     }
 
     @Test
-    fun `M complete capture W window refresh keeps the same ordered roots`() {
+    fun `M complete capture W capture() { window refresh keeps the same ordered roots }`() {
         // Given
-        val fixture = Fixture()
-        fixture.onMap = { fixture.windowSource.update(listOf(fixture.root)) }
+        val fakeFixture = Fixture()
+        fakeFixture.onMap = { fakeFixture.windowSource.update(listOf(fakeFixture.mockRoot)) }
 
         // When
-        fixture.startCapture()
+        fakeFixture.capture()
 
-        // Then: polling the same roots does not invalidate a capture or its privacy map.
-        assertThat(fixture.consumed).hasSize(1)
-        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isTrue()
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isTrue()
+        // Then
+        assertThat(fakeFixture.consumed).hasSize(1)
+        assertThat(fakeFixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isTrue()
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isTrue()
     }
 
-    private fun changeWindows(fixture: Fixture, firstWindow: View, change: WindowChange) {
-        val source = fixture.windowSource
+    private fun changeWindows(fakeFixture: Fixture, firstWindow: View, change: WindowChange) {
+        val source = fakeFixture.windowSource
         when (change) {
-            WindowChange.ADD -> source.update(listOf(firstWindow, fixture.root, fixture.window(300)))
-            WindowChange.REMOVE_COMPLETED -> source.update(listOf(fixture.root))
+            WindowChange.ADD -> source.update(
+                listOf(firstWindow, fakeFixture.mockRoot, fakeFixture.mockWindowRoot(300))
+            )
+            WindowChange.REMOVE_COMPLETED -> source.update(listOf(fakeFixture.mockRoot))
             WindowChange.REMOVE_CURRENT -> source.update(listOf(firstWindow))
-            WindowChange.REORDER -> source.update(listOf(fixture.root, firstWindow))
+            WindowChange.REORDER -> source.update(listOf(fakeFixture.mockRoot, firstWindow))
             WindowChange.REMOVE_AND_READD -> {
                 source.update(listOf(firstWindow))
-                source.update(listOf(firstWindow, fixture.root))
+                source.update(listOf(firstWindow, fakeFixture.mockRoot))
             }
             WindowChange.CLEAR_AND_READD -> {
                 source.clear()
-                source.update(listOf(firstWindow, fixture.root))
+                source.update(listOf(firstWindow, fakeFixture.mockRoot))
             }
         }
     }
 
     @Test
-    fun `M complete capture W time offset changes within same RUM view`() {
+    fun `M complete capture W capture() { time offset changes within same RUM view }`() {
         // Given
-        val fixture = Fixture()
-        fixture.onMap = { fixture.rumViewScope = fixture.rumViewScope?.copy(viewTimeOffsetMs = 100L) }
+        val fakeFixture = Fixture()
+        fakeFixture.onMap = { fakeFixture.rumViewScope = fakeFixture.rumViewScope?.copy(viewTimeOffsetMs = 100L) }
 
         // When
-        fixture.startCapture()
+        fakeFixture.capture()
 
         // Then
-        assertThat(fixture.consumed).hasSize(1)
-        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isTrue()
+        assertThat(fakeFixture.consumed).hasSize(1)
+        assertThat(fakeFixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isTrue()
     }
 
     @Test
     fun `M publish overrides from every window W capture exceeds former slice budget`() {
         // Given
-        val fixture = Fixture()
-        val firstWindow = fixture.window(200)
-        whenever(firstWindow.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
-        fixture.windowSource.update(listOf(firstWindow, fixture.root))
-        fixture.onMap = { fixture.nowNs += SLICE_BUDGET_NS }
+        val fakeFixture = Fixture()
+        val mockFirstWindow = fakeFixture.mockWindowRoot(200)
+        whenever(mockFirstWindow.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
+        fakeFixture.windowSource.update(listOf(mockFirstWindow, fakeFixture.mockRoot))
+        fakeFixture.onMap = { fakeFixture.nowNs += SLICE_BUDGET_NS }
 
         // When
-        fixture.startCapture()
+        fakeFixture.capture()
 
-        // Then: the complete multi-window copy is published together without a continuation.
-        assertThat(fixture.consumed).hasSize(1)
-        assertThat(fixture.mainThreadExecutor.size).isEqualTo(1)
-        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isTrue()
-        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(210, 10))).isTrue()
-        assertThat(fixture.touchPrivacyManager.getNextOverrideAreas()).isEmpty()
+        // Then
+        assertThat(fakeFixture.consumed).hasSize(1)
+        assertThat(fakeFixture.mainThreadExecutor.size).isEqualTo(1)
+        assertThat(fakeFixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isTrue()
+        assertThat(fakeFixture.touchPrivacyManager.shouldRecordTouch(Point(210, 10))).isTrue()
+        assertThat(fakeFixture.touchPrivacyManager.getNextOverrideAreas()).isEmpty()
     }
 
     @Test
-    fun `M clear committed overrides W no windows remain`() {
+    fun `M clear committed overrides W capture() { no windows remain }`() {
         // Given
-        val fixture = Fixture()
-        fixture.onMap = {}
-        fixture.startCapture()
-        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isTrue()
+        val fakeFixture = recordedScreen()
 
         // When
-        fixture.windowSource.update(emptyList())
-        fixture.startCapture()
+        fakeFixture.windowSource.update(emptyList())
+        fakeFixture.capture()
 
         // Then
-        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
-        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isFalse()
+        assertThat(fakeFixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
+        assertThat(fakeFixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isFalse()
     }
 
     @Test
     fun `M clear previous screen overrides W capture has no RUM scope`() {
         // Given
-        val fixture = Fixture()
-        fixture.onMap = {}
-        fixture.startCapture()
-        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).isNotEmpty()
+        val fakeFixture = recordedScreen()
 
         // When
-        fixture.rumViewScope = null
-        fixture.startCapture()
+        fakeFixture.rumViewScope = null
+        fakeFixture.capture()
 
-        // Then: the previous screen's SHOW area no longer overrides global HIDE.
-        assertThat(fixture.consumed).hasSize(1)
-        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
-        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point())).isFalse()
+        // Then
+        assertThat(fakeFixture.consumed).hasSize(1)
+        assertThat(fakeFixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
+        assertThat(fakeFixture.touchPrivacyManager.shouldRecordTouch(Point())).isFalse()
     }
 
     @ParameterizedTest
@@ -708,57 +1118,60 @@ internal class CompositionTouchPrivacyTest {
         "200, 0, true",
         "299, 99, true"
     )
-    fun `M apply SHOW override to padded bounds W tagged view has padding`(
+    fun `M apply SHOW override to padded bounds W capture() { tagged view has padding }`(
         fakeX: Int,
         fakeY: Int,
         fakeExpectedRecord: Boolean
     ) {
         // Given: the view's [200, 0, 300, 100] bounds expand to [180, -30, 340, 150] for touch privacy.
-        val fixture = Fixture()
-        val fakeWindow = fixture.window(200)
-        whenever(fakeWindow.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
-        whenever(fakeWindow.paddingLeft).thenReturn(20)
-        whenever(fakeWindow.paddingTop).thenReturn(30)
-        whenever(fakeWindow.paddingRight).thenReturn(40)
-        whenever(fakeWindow.paddingBottom).thenReturn(50)
-        fixture.windowSource.update(listOf(fakeWindow))
-        fixture.onMap = {}
+        val fakeFixture = Fixture()
+        val mockWindowRoot = fakeFixture.mockWindowRoot(200)
+        mockWindowRoot.stub {
+            on { getTag(R.id.datadog_touch_privacy) } doReturn TouchPrivacy.SHOW.name
+            on { paddingLeft } doReturn 20
+            on { paddingTop } doReturn 30
+            on { paddingRight } doReturn 40
+            on { paddingBottom } doReturn 50
+        }
+        fakeFixture.windowSource.update(listOf(mockWindowRoot))
+        fakeFixture.onMap = {}
         val fakePoint = Point().apply { x = fakeX; y = fakeY }
 
         // When
-        fixture.startCapture()
+        fakeFixture.capture()
 
         // Then
-        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(fakePoint)).isEqualTo(fakeExpectedRecord)
+        assertThat(fakeFixture.touchPrivacyManager.shouldRecordTouch(fakePoint)).isEqualTo(fakeExpectedRecord)
     }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
     fun `M isolate window overrides W dispatchTouchEvent { overlapping windows }`(fakeGlobalShow: Boolean) {
-        // Given: the underlying window overrides the global policy; the overlay has no override.
-        val fixture = Fixture(if (fakeGlobalShow) TouchPrivacy.SHOW else TouchPrivacy.HIDE)
-        whenever(fixture.root.getTag(R.id.datadog_touch_privacy))
+        // Given
+        val fakeFixture = Fixture(if (fakeGlobalShow) TouchPrivacy.SHOW else TouchPrivacy.HIDE)
+        whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy))
             .thenReturn(if (fakeGlobalShow) TouchPrivacy.HIDE.name else TouchPrivacy.SHOW.name)
-        val fakeOverlay = fixture.window(0)
-        fixture.windowSource.update(listOf(fixture.root, fakeOverlay))
-        fixture.onMap = {}
-        fixture.startCapture()
-        assertThat(fixture.windowSource.hasTouchPrivacy(fakeOverlay, RumViewIdentityScope("view"))).isTrue()
+        val mockOverlay = fakeFixture.mockWindowRoot(0)
+        fakeFixture.windowSource.update(listOf(fakeFixture.mockRoot, mockOverlay))
+        fakeFixture.onMap = {}
+        fakeFixture.capture()
+        val fakeOverlayReady = fakeFixture.windowSource.hasTouchPrivacy(
+            mockOverlay,
+            RumViewIdentityScope(fakeRumContext.viewId)
+        )
         val mockWriter: RecordWriter = mock()
-        val testedCallback = fixture.callback(fakeOverlay, mockWriter, mock())
-        mockConstruction(Point::class.java) { point, context ->
-            point.x = context.arguments()[0] as Int
-            point.y = context.arguments()[1] as Int
-        }.use {
+        val testedCallback = fakeFixture.callback(mockOverlay, mockWriter, mock())
+        mockPointCoordinates().use {
             // When
-            testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, 10f))
-            testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, 10f))
+            testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_DOWN, 10f))
+            testedCallback.dispatchTouchEvent(fakeFixture.mockEvent(MotionEvent.ACTION_UP, 10f))
 
-            // Then: only the overlay's own overrides and the global policy apply to its touches.
+            // Then
+            assertThat(fakeOverlayReady).isTrue()
             if (fakeGlobalShow) {
-                verify(mockWriter).write(any(), any())
+                verify(mockWriter).write(isA(), isA())
             } else {
-                verify(mockWriter, never()).write(any(), any())
+                verifyNoInteractions(mockWriter)
             }
         }
     }
@@ -766,75 +1179,245 @@ internal class CompositionTouchPrivacyTest {
     @Test
     fun `M preserve HIDE W capture { nested overrides have identical rectangles }`() {
         // Given
-        val fixture = Fixture(TouchPrivacy.SHOW)
-        val fakeChild = fixture.window(0)
-        whenever(fixture.root.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.name)
-        whenever(fakeChild.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
-        whenever(fixture.root.getChildAt(0)).thenReturn(fakeChild)
-        fixture.onMap = {}
+        val fakeFixture = Fixture(TouchPrivacy.SHOW)
+        val mockChild = fakeFixture.mockWindowRoot(0)
+        whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.name)
+        whenever(mockChild.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
+        whenever(fakeFixture.mockRoot.getChildAt(0)).thenReturn(mockChild)
+        fakeFixture.onMap = {}
 
         // When
-        fixture.startCapture()
+        fakeFixture.capture()
 
         // Then
-        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point().apply { x = 10; y = 10 })).isFalse()
-        fixture.draw()
-        val fakeAreas = fixture.windowSource.currentTouchOverrideAreas(fixture.root, RumViewIdentityScope("view"))
+        assertThat(fakeFixture.touchPrivacyManager.shouldRecordTouch(Point().apply { x = 10; y = 10 })).isFalse()
+    }
+
+    @Test
+    fun `M preserve nested HIDE W onDraw() { live privacy refresh }`() {
+        // Given
+        val fakeFixture = Fixture(TouchPrivacy.SHOW)
+        val mockChild = fakeFixture.mockWindowRoot(0)
+        whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.name)
+        whenever(mockChild.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
+        whenever(fakeFixture.mockRoot.getChildAt(0)).thenReturn(mockChild)
+        fakeFixture.onMap = {}
+
+        fakeFixture.capture()
+
+        // When
+        fakeFixture.onDraw()
+        val fakeAreas = fakeFixture.windowSource.currentTouchOverrideAreas(
+            fakeFixture.mockRoot,
+            RumViewIdentityScope(fakeRumContext.viewId)
+        )
+
+        // Then
         assertThat(fakeAreas).containsValue(TouchPrivacy.HIDE).doesNotContainValue(TouchPrivacy.SHOW)
     }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M collect descendant touch overrides W capture { hidden container }`(fakeShowChild: Boolean) {
-        // Given: visual hiding suppresses layers, while nested touch tags override the global policy.
-        val fixture = Fixture(if (fakeShowChild) TouchPrivacy.HIDE else TouchPrivacy.SHOW)
-        val fakeChild = fixture.window(0)
-        val fakeGrandchild = fixture.window(0)
-        whenever(fixture.root.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
-        whenever(fixture.root.getTag(R.id.datadog_hidden)).thenReturn(true)
-        whenever(fakeGrandchild.getTag(R.id.datadog_touch_privacy))
-            .thenReturn(if (fakeShowChild) TouchPrivacy.SHOW.name else TouchPrivacy.HIDE.name)
-        whenever(fakeChild.childCount).thenReturn(1)
-        whenever(fakeChild.getChildAt(0)).thenReturn(fakeGrandchild)
-        whenever(fixture.root.getChildAt(0)).thenReturn(fakeChild)
-        fixture.onMap = {}
+    fun `M collect hidden descendant privacy W capture()`(fakeShowChild: Boolean) {
+        // Given
+        val fakeFixture = hiddenSubtree(showDescendant = fakeShowChild)
 
         // When
-        fixture.startCapture()
+        fakeFixture.capture()
 
         // Then
-        fixture.draw()
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isTrue()
-        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point().apply { x = 10; y = 10 }))
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isTrue()
+        assertThat(fakeFixture.touchPrivacyManager.shouldRecordTouch(Point().apply { x = 10; y = 10 }))
             .isEqualTo(fakeShowChild)
-        assertThat(fixture.consumed.single().snapshot.layers).hasSize(1)
-        assertThat(fixture.consumed.single().snapshot.wireframes.single())
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M replace hidden subtree with placeholder W capture()`(fakeShowChild: Boolean) {
+        // Given
+        val fakeFixture = hiddenSubtree(showDescendant = fakeShowChild)
+
+        // When
+        fakeFixture.capture()
+
+        // Then
+        assertThat(fakeFixture.consumed.single().snapshot.layers).hasSize(1)
+        assertThat(fakeFixture.consumed.single().snapshot.wireframes.single())
             .isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
     }
 
-    @Test
-    fun `M capture new RUM view W onRumViewChanged { native copy in progress }`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M refresh hidden descendant privacy W onDraw()`(fakeShowChild: Boolean) {
         // Given
-        val fixture = Fixture()
-        val testedPipeline = CompositionCapturePipeline(fixture.orchestrator, mock(), mock(), mock(), mock())
-        fixture.onMap = { view ->
-            if (view === fixture.root) {
-                fixture.rumViewScope = CapturedRumViewScope(RumViewIdentityScope("next-view"), 0L)
+        val fakeFixture = hiddenSubtree(showDescendant = fakeShowChild)
+
+        fakeFixture.capture()
+
+        // When
+        fakeFixture.onDraw()
+
+        // Then
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(fakeFixture.mockRoot, RumViewIdentityScope(fakeRumContext.viewId))
+        ).isTrue()
+        assertThat(fakeFixture.touchPrivacyManager.shouldRecordTouch(Point().apply { x = 10; y = 10 }))
+            .isEqualTo(fakeShowChild)
+    }
+
+    @Test
+    fun `M capture new RUM view W capture() { onRumViewChanged, native copy in progress }`() {
+        // Given
+        val fakeFixture = Fixture()
+        val testedPipeline = CompositionCapturePipeline(fakeFixture.orchestrator, mock(), mock(), mock(), mock())
+        fakeFixture.onMap = { view ->
+            if (view === fakeFixture.mockRoot) {
+                fakeFixture.rumViewScope =
+                    CapturedRumViewScope(RumViewIdentityScope(fakeRumContext.viewId + "-next-view"), 0L)
                 testedPipeline.onRumViewChanged()
             }
         }
 
         // When
-        fixture.startCapture()
+        fakeFixture.capture()
 
-        // Then: the old copy is discarded and the coalesced request captures the new scope.
-        assertThat(fixture.consumed).isEmpty()
-        assertThat(fixture.captureScheduler.pendingCount()).isGreaterThan(0)
-        fixture.onMap = {}
-        fixture.captureScheduler.runNext()
-        fixture.mainThreadExecutor.runNext()
-        assertThat(fixture.consumed.single().snapshot.scope).isEqualTo(RumViewIdentityScope("next-view"))
-        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("next-view"))).isTrue()
+        // Then
+        assertThat(fakeFixture.consumed).isEmpty()
+        assertThat(fakeFixture.captureScheduler.pendingCount()).isGreaterThan(0)
+    }
+
+    @Test
+    fun `M publish next RUM view W runNext() { previous native copy invalidated }`() {
+        // Given
+        val fakeFixture = Fixture()
+        val testedPipeline = CompositionCapturePipeline(fakeFixture.orchestrator, mock(), mock(), mock(), mock())
+        fakeFixture.onMap = { view ->
+            if (view === fakeFixture.mockRoot) {
+                fakeFixture.rumViewScope =
+                    CapturedRumViewScope(RumViewIdentityScope(fakeRumContext.viewId + "-next-view"), 0L)
+                testedPipeline.onRumViewChanged()
+            }
+        }
+
+        fakeFixture.capture()
+
+        fakeFixture.captureScheduler.pendingCount()
+        fakeFixture.onMap = {}
+
+        // When
+        fakeFixture.captureScheduler.runNext()
+        fakeFixture.mainThreadExecutor.runNext()
+
+        // Then
+        assertThat(fakeFixture.consumed.single().snapshot.scope).isEqualTo(
+            RumViewIdentityScope(
+                fakeRumContext.viewId + "-next-view"
+            )
+        )
+        assertThat(
+            fakeFixture.windowSource.hasTouchPrivacy(
+                fakeFixture.mockRoot,
+                RumViewIdentityScope(
+                    fakeRumContext.viewId + "-next-view"
+                )
+            )
+        ).isTrue()
+    }
+
+    private fun recordedScreen(globalPrivacy: TouchPrivacy = TouchPrivacy.HIDE): Fixture =
+        Fixture(globalPrivacy).apply {
+            onMap = {}
+            capture()
+        }
+
+    private fun hiddenSubtree(showDescendant: Boolean): Fixture {
+        val fakeFixture = Fixture(if (showDescendant) TouchPrivacy.HIDE else TouchPrivacy.SHOW)
+        val mockChild = fakeFixture.mockWindowRoot(0)
+        val mockGrandchild = fakeFixture.mockWindowRoot(0)
+        whenever(fakeFixture.mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
+        whenever(fakeFixture.mockRoot.getTag(R.id.datadog_hidden)).thenReturn(true)
+        whenever(mockGrandchild.getTag(R.id.datadog_touch_privacy))
+            .thenReturn(if (showDescendant) TouchPrivacy.SHOW.name else TouchPrivacy.HIDE.name)
+        whenever(mockChild.childCount).thenReturn(1)
+        whenever(mockChild.getChildAt(0)).thenReturn(mockGrandchild)
+        whenever(fakeFixture.mockRoot.getChildAt(0)).thenReturn(mockChild)
+        fakeFixture.onMap = {}
+        return fakeFixture
+    }
+
+    private fun mockPointCoordinates() = mockConstruction(Point::class.java) { mockPoint, construction ->
+        mockPoint.x = construction.arguments()[0] as Int
+        mockPoint.y = construction.arguments()[1] as Int
+    }
+
+    private inner class StartupPrivacyFixture(newWindow: Boolean) {
+        val fakeScreen = Fixture(TouchPrivacy.SHOW)
+        val mockRoot = if (newWindow) {
+            fakeScreen.onMap = {}
+            fakeScreen.capture()
+            fakeScreen.mockWindowRoot(200).also { fakeScreen.windowSource.update(listOf(fakeScreen.mockRoot, it)) }
+        } else {
+            fakeScreen.mockRoot
+        }
+        val fakeScope = RumViewIdentityScope(fakeRumContext.viewId)
+        private val fakeHiddenX = if (newWindow) 210f else 10f
+
+        init {
+            fakeScreen.onMap = {}
+            whenever(mockRoot.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.name)
+        }
+
+        val mockWriter: RecordWriter = mock()
+        val mockDelegate: Window.Callback = mock()
+        val testedCallback = fakeScreen.callback(mockRoot, mockWriter, mockDelegate)
+        val mockDownEvent = mockDownAtHiddenLocation()
+        val mockUpEvent = mockUpAtHiddenLocation()
+
+        fun mockDownAtHiddenLocation(): MotionEvent = fakeScreen.mockEvent(MotionEvent.ACTION_DOWN, fakeHiddenX)
+        fun mockUpAtHiddenLocation(): MotionEvent = fakeScreen.mockEvent(MotionEvent.ACTION_UP, fakeHiddenX)
+        fun dispatchMove() = testedCallback.dispatchTouchEvent(
+            fakeScreen.mockEvent(MotionEvent.ACTION_MOVE, fakeHiddenX)
+        )
+
+        fun requestCapture() {
+            fakeScreen.orchestrator.start()
+            fakeScreen.orchestrator.requestCapture()
+        }
+
+        fun finishCopy() {
+            fakeScreen.captureScheduler.runNext()
+            fakeScreen.mainThreadExecutor.runNext()
+        }
+
+        fun finishInitialGesture() {
+            fakeScreen.onMap = { view ->
+                if (view === mockRoot) {
+                    fakeScreen.windowSource.hasTouchPrivacy(mockRoot, fakeScope)
+                    dispatchMove()
+                }
+            }
+            requestCapture()
+            testedCallback.dispatchTouchEvent(mockDownEvent)
+            finishCopy()
+            testedCallback.dispatchTouchEvent(mockUpEvent)
+        }
+    }
+
+    private fun Fixture.cancelOnRootCopy(cancellation: Cancellation) {
+        onMap = { view ->
+            if (view === mockRoot) {
+                when (cancellation) {
+                    Cancellation.EXPIRY -> {
+                        nowNs = GENERATION_BUDGET_NS
+                        runCancellation { expiryScheduler.runNext() }
+                    }
+                    Cancellation.STOP -> runCancellation { orchestrator.stop() }
+                    Cancellation.DEADLINE -> nowNs = GENERATION_BUDGET_NS
+                }
+            }
+        }
     }
 
     private fun runCancellation(task: () -> Unit) {
@@ -850,13 +1433,13 @@ internal class CompositionTouchPrivacyTest {
         assertThat(fakeWorker.isAlive).isFalse()
     }
 
-    private class Fixture(
+    private inner class Fixture(
         globalTouchPrivacy: TouchPrivacy = TouchPrivacy.HIDE,
         deferProcessing: Boolean = false
     ) {
         var nowNs = 0L
         var captureAllowed = true
-        var rumViewScope: CapturedRumViewScope? = CapturedRumViewScope(RumViewIdentityScope("view"), 0L)
+        var rumViewScope: CapturedRumViewScope? = CapturedRumViewScope(RumViewIdentityScope(fakeRumContext.viewId), 0L)
         val touchPrivacyManager = TouchPrivacyManager(globalTouchPrivacy)
         private val mockEventUtils: MotionEventUtils = mock()
         val captureScheduler = TaskQueue()
@@ -864,12 +1447,12 @@ internal class CompositionTouchPrivacyTest {
         val mainThreadExecutor = TaskQueue()
         val consumed = mutableListOf<CompletedSnapshotCapture>()
         private val processingTasks = mutableListOf<Runnable>()
-        private val viewIdentifierResolver: ViewIdentifierResolver = mock()
-        private val viewBoundsResolver: ViewBoundsResolver = mock()
+        private val mockViewIdentifierResolver: ViewIdentifierResolver = mock()
+        private val mockViewBoundsResolver: ViewBoundsResolver = mock()
         private val drawListeners = mutableMapOf<View, ViewTreeObserver.OnDrawListener>()
         private var nextViewId = 1L
-        val root = window(0)
-        private val child = window(0)
+        val mockRoot = mockWindowRoot(0)
+        private val mockChild = mockWindowRoot(0)
         var onPrivacyRead: () -> Unit = {}
         var privacyReadAllowed = true
         private val privacyReader = WindowTouchPrivacyReader(
@@ -880,13 +1463,15 @@ internal class CompositionTouchPrivacyTest {
         val windowSource = ActiveWindowSource { view ->
             onPrivacyRead()
             if (privacyReadAllowed) privacyReader.read(view) else null
-        }.apply { update(listOf(root)) }
-        var onMap: (View) -> Unit = { view -> if (view === root) nowNs += SLICE_BUDGET_NS }
+        }.apply { update(listOf(mockRoot)) }
+        var onMap: (View) -> Unit = { view -> if (view === mockRoot) nowNs += SLICE_BUDGET_NS }
 
         init {
-            whenever(root.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
-            whenever(root.childCount).thenReturn(1)
-            whenever(root.getChildAt(0)).thenReturn(child)
+            mockRoot.stub {
+                on { getTag(R.id.datadog_touch_privacy) } doReturn TouchPrivacy.SHOW.name
+                on { childCount } doReturn 1
+                on { getChildAt(0) } doReturn mockChild
+            }
         }
 
         private val producer = AndroidCapturedSnapshotProducer(
@@ -903,11 +1488,11 @@ internal class CompositionTouchPrivacyTest {
                     mock()
                 ),
                 internalLogger = mock(),
-                viewIdentifierResolver = viewIdentifierResolver,
-                viewBoundsResolver = viewBoundsResolver
+                viewIdentifierResolver = mockViewIdentifierResolver,
+                viewBoundsResolver = mockViewBoundsResolver
             ),
             touchPrivacyManager = touchPrivacyManager,
-            viewIdentifierResolver = viewIdentifierResolver,
+            viewIdentifierResolver = mockViewIdentifierResolver,
             isMainThreadWindow = { true }
         )
         val orchestrator = SnapshotCaptureOrchestrator(
@@ -935,52 +1520,52 @@ internal class CompositionTouchPrivacyTest {
             mock()
         )
 
-        fun draw(view: View = root) {
+        fun onDraw(view: View = mockRoot) {
             drawInterceptor.intercept(windowSource.currentWindows())
             drawListeners.getValue(view).onDraw()
         }
 
         fun processNext() = processingTasks.removeAt(0).run()
 
-        fun startCapture() {
+        fun capture() {
             orchestrator.start()
             orchestrator.requestCapture()
             captureScheduler.runNext()
             mainThreadExecutor.runNext()
         }
 
-        fun window(x: Int): ViewGroup {
-            val view: ViewGroup = mock()
-            val resources: Resources = mock()
-            whenever(resources.displayMetrics).thenReturn(DisplayMetrics().apply { density = 1f })
-            whenever(view.resources).thenReturn(resources)
-            val stubObserver: ViewTreeObserver = mock()
-            whenever(stubObserver.isAlive).thenReturn(true)
-            whenever(view.viewTreeObserver).thenReturn(stubObserver)
-            whenever(stubObserver.addOnDrawListener(any())).thenAnswer {
-                drawListeners[view] = it.getArgument(0)
+        fun mockWindowRoot(x: Int): ViewGroup {
+            val fakeMetrics = DisplayMetrics().apply { density = 1f }
+            val mockResources: Resources = mock { on { displayMetrics } doReturn fakeMetrics }
+            val mockObserver: ViewTreeObserver = mock { on { isAlive } doReturn true }
+            val mockView: ViewGroup = mock {
+                on { resources } doReturn mockResources
+                on { viewTreeObserver } doReturn mockObserver
+                on { isShown } doReturn true
+                on { width } doReturn 100
+                on { height } doReturn 100
+                on { getLocationOnScreen(any()) } doAnswer { invocation ->
+                    invocation.getArgument<IntArray>(0)[0] = x
+                    null
+                }
+            }
+            whenever(mockObserver.addOnDrawListener(any())).thenAnswer {
+                drawListeners[mockView] = it.getArgument(0)
                 null
             }
-            whenever(view.isShown).thenReturn(true)
-            whenever(view.width).thenReturn(100)
-            whenever(view.height).thenReturn(100)
-            whenever(view.getLocationOnScreen(any())).thenAnswer {
-                it.getArgument<IntArray>(0)[0] = x
-                null
-            }
-            whenever(viewIdentifierResolver.resolveViewId(view)).thenReturn(nextViewId++)
-            whenever(viewBoundsResolver.resolveViewGlobalBounds(view, 1f))
+            whenever(mockViewIdentifierResolver.resolveViewId(mockView)).thenReturn(nextViewId++)
+            whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockView, 1f))
                 .thenReturn(GlobalBounds(x.toLong(), 0, 100, 100))
-            return view
+            return mockView
         }
 
-        fun callback(root: View, writer: RecordWriter, delegate: Window.Callback): CompositionWindowTouchCallback {
+        fun callback(mockRoot: View, writer: RecordWriter, delegate: Window.Callback): CompositionWindowTouchCallback {
             val mockContext: Context = mock()
-            val stubResources = root.resources
-            whenever(mockContext.resources).thenReturn(stubResources)
+            val mockResources = mockRoot.resources
+            whenever(mockContext.resources).thenReturn(mockResources)
             val mockRumProvider: RumContextProvider = mock()
             whenever(mockRumProvider.getRumContext()).thenAnswer {
-                SessionReplayRumContext("app", "session", rumViewScope?.scope?.value ?: "view")
+                fakeRumContext.copy(viewId = rumViewScope?.scope?.value ?: fakeRumContext.viewId, viewTimeOffsetMs = 0L)
             }
             return CompositionWindowTouchCallback(
                 appContext = mockContext,
@@ -990,9 +1575,11 @@ internal class CompositionTouchPrivacyTest {
                 rumContextProvider = mockRumProvider,
                 touchPrivacyManager = touchPrivacyManager,
                 internalLogger = mock(),
-                touchRecordingScope = { rumViewScope?.scope?.let { windowSource.currentTouchPrivacyScope(root, it) } },
+                touchRecordingScope = {
+                    rumViewScope?.scope?.let { windowSource.currentTouchPrivacyScope(mockRoot, it) }
+                },
                 shouldRecordTouch = { point ->
-                    val areas = rumViewScope?.scope?.let { windowSource.currentTouchOverrideAreas(root, it) }
+                    val areas = rumViewScope?.scope?.let { windowSource.currentTouchOverrideAreas(mockRoot, it) }
                     areas != null && touchPrivacyManager.shouldRecordTouch(point, areas)
                 },
                 copyEvent = { it },
@@ -1000,7 +1587,7 @@ internal class CompositionTouchPrivacyTest {
             )
         }
 
-        fun event(action: Int, x: Float): MotionEvent {
+        fun mockEvent(action: Int, x: Float): MotionEvent {
             val mockEvent: MotionEvent = mock()
             whenever(mockEvent.action).thenReturn(action)
             whenever(mockEvent.pointerCount).thenReturn(1)

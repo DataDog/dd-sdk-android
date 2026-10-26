@@ -14,6 +14,7 @@ import android.graphics.drawable.ColorDrawable
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewGroup
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
@@ -21,16 +22,36 @@ import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.stub
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class CompositionClippingTest {
+
+    @StringForgery
+    lateinit var fakeScopeValue: String
 
     @ParameterizedTest
     @CsvSource("false, false", "false, true", "true, false", "true, true")
@@ -38,13 +59,13 @@ internal class CompositionClippingTest {
         rootClipsChildren: Boolean,
         parentClipsChildren: Boolean
     ) {
-        // Given: root's flag controls whether parent's entire subtree is clipped to parent's bounds.
-        val fixture = Fixture()
-        whenever(fixture.root.clipChildren).thenReturn(rootClipsChildren)
-        whenever(fixture.parent.clipChildren).thenReturn(parentClipsChildren)
+        // Given
+        val fakeFixture = Fixture(fakeScopeValue)
+        whenever(fakeFixture.mockRoot.clipChildren).thenReturn(rootClipsChildren)
+        whenever(fakeFixture.mockParent.clipChildren).thenReturn(parentClipsChildren)
 
         // When
-        val wireframe = fixture.capture().wireframe(fixture.identities.getValue(fixture.child))
+        val wireframe = fakeFixture.traverseWindow().wireframe(fakeFixture.identities.getValue(fakeFixture.mockChild))
 
         // Then
         assertThat(wireframe.clip).isEqualTo(
@@ -59,48 +80,48 @@ internal class CompositionClippingTest {
         clipToPadding: Boolean
     ) {
         // Given
-        val fixture = Fixture()
-        whenever(fixture.parent.clipChildren).thenReturn(clipChildren)
-        whenever(fixture.parent.clipToPadding).thenReturn(clipToPadding)
-        fixture.padding(fixture.parent, 10, 20, 30, 40)
+        val fakeFixture = Fixture(fakeScopeValue)
+        whenever(fakeFixture.mockParent.clipChildren).thenReturn(clipChildren)
+        whenever(fakeFixture.mockParent.clipToPadding).thenReturn(clipToPadding)
+        fakeFixture.padding(fakeFixture.mockParent, 10, 20, 30, 40)
 
         // When
-        val result = fixture.capture()
+        val result = fakeFixture.traverseWindow()
 
-        // Then: padding clips descendants, but never the parent's own background.
-        assertThat(result.wireframe(fixture.identities.getValue(fixture.child)).clip).isEqualTo(
+        // Then
+        assertThat(result.wireframe(fakeFixture.identities.getValue(fakeFixture.mockChild)).clip).isEqualTo(
             if (clipToPadding) CapturedClip(top = 40, bottom = 100, left = 30, right = 90) else null
         )
-        assertThat(result.wireframe(fixture.identities.getValue(fixture.parent)).clip).isNull()
+        assertThat(result.wireframe(fakeFixture.identities.getValue(fakeFixture.mockParent)).clip).isNull()
     }
 
     @Test
     fun `M retain overflow W traverseWindow { clipToPadding enabled without padding }`() {
         // Given
-        val fixture = Fixture()
-        whenever(fixture.parent.clipToPadding).thenReturn(true)
+        val fakeFixture = Fixture(fakeScopeValue)
+        whenever(fakeFixture.mockParent.clipToPadding).thenReturn(true)
 
         // When
-        val result = fixture.capture()
+        val result = fakeFixture.traverseWindow()
 
         // Then
-        assertThat(result.wireframe(fixture.identities.getValue(fixture.child)).clip).isNull()
+        assertThat(result.wireframe(fakeFixture.identities.getValue(fakeFixture.mockChild)).clip).isNull()
     }
 
     @Test
     fun `M preserve ancestor clipping W traverseWindow { intervening group allows overflow }`() {
         // Given
-        val fixture = Fixture()
-        whenever(fixture.root.clipChildren).thenReturn(true)
-        val intermediate = fixture.group(GlobalBounds(100, 100, 20, 20))
-        fixture.children(fixture.parent, intermediate)
-        fixture.children(intermediate, fixture.child)
+        val fakeFixture = Fixture(fakeScopeValue)
+        whenever(fakeFixture.mockRoot.clipChildren).thenReturn(true)
+        val mockIntermediate = fakeFixture.mockGroup(GlobalBounds(100, 100, 20, 20))
+        fakeFixture.children(fakeFixture.mockParent, mockIntermediate)
+        fakeFixture.children(mockIntermediate, fakeFixture.mockChild)
 
         // When
-        val result = fixture.capture()
+        val result = fakeFixture.traverseWindow()
 
-        // Then: clip to parent, not the smaller non-clipping intermediate group.
-        assertThat(result.wireframe(fixture.identities.getValue(fixture.child)).clip).isEqualTo(
+        // Then
+        assertThat(result.wireframe(fakeFixture.identities.getValue(fakeFixture.mockChild)).clip).isEqualTo(
             CapturedClip(top = 20, bottom = 60, left = 20, right = 60)
         )
     }
@@ -108,17 +129,17 @@ internal class CompositionClippingTest {
     @Test
     fun `M intersect ancestor and padding clips W traverseWindow`() {
         // Given
-        val fixture = Fixture()
-        whenever(fixture.root.clipToPadding).thenReturn(true)
-        fixture.padding(fixture.root, 100, 100, 0, 0)
-        whenever(fixture.parent.clipToPadding).thenReturn(true)
-        fixture.padding(fixture.parent, 10, 10, 10, 10)
+        val fakeFixture = Fixture(fakeScopeValue)
+        whenever(fakeFixture.mockRoot.clipToPadding).thenReturn(true)
+        fakeFixture.padding(fakeFixture.mockRoot, 100, 100, 0, 0)
+        whenever(fakeFixture.mockParent.clipToPadding).thenReturn(true)
+        fakeFixture.padding(fakeFixture.mockParent, 10, 10, 10, 10)
 
         // When
-        val result = fixture.capture()
+        val result = fakeFixture.traverseWindow()
 
-        // Then: root constrains top/left, parent constrains bottom/right.
-        assertThat(result.wireframe(fixture.identities.getValue(fixture.child)).clip).isEqualTo(
+        // Then
+        assertThat(result.wireframe(fakeFixture.identities.getValue(fakeFixture.mockChild)).clip).isEqualTo(
             CapturedClip(top = 40, bottom = 70, left = 40, right = 70)
         )
     }
@@ -126,16 +147,16 @@ internal class CompositionClippingTest {
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
     fun `M clip a views own drawing only when requested by its parent W traverseWindow`(clipChildren: Boolean) {
-        // Given: a mapper can emit content outside its owner's bounds.
-        val fixture = Fixture()
-        whenever(fixture.parent.clipChildren).thenReturn(clipChildren)
-        fixture.wireframeBounds[fixture.child] = CapturedBounds(50, 50, 180, 180)
+        // Given
+        val fakeFixture = Fixture(fakeScopeValue)
+        whenever(fakeFixture.mockParent.clipChildren).thenReturn(clipChildren)
+        fakeFixture.wireframeBounds[fakeFixture.mockChild] = CapturedBounds(50, 50, 180, 180)
 
         // When
-        val result = fixture.capture()
+        val result = fakeFixture.traverseWindow()
 
         // Then
-        assertThat(result.wireframe(fixture.identities.getValue(fixture.child)).clip).isEqualTo(
+        assertThat(result.wireframe(fakeFixture.identities.getValue(fakeFixture.mockChild)).clip).isEqualTo(
             if (clipChildren) CapturedClip(top = 10, bottom = 10, left = 10, right = 10) else null
         )
     }
@@ -143,14 +164,14 @@ internal class CompositionClippingTest {
     @Test
     fun `M preserve window boundary W traverseWindow { all groups allow overflow }`() {
         // Given
-        val fixture = Fixture()
-        fixture.wireframeBounds[fixture.child] = CapturedBounds(-10, -20, 350, 360)
+        val fakeFixture = Fixture(fakeScopeValue)
+        fakeFixture.wireframeBounds[fakeFixture.mockChild] = CapturedBounds(-10, -20, 350, 360)
 
         // When
-        val result = fixture.capture()
+        val result = fakeFixture.traverseWindow()
 
         // Then
-        assertThat(result.wireframe(fixture.identities.getValue(fixture.child)).clip).isEqualTo(
+        assertThat(result.wireframe(fakeFixture.identities.getValue(fakeFixture.mockChild)).clip).isEqualTo(
             CapturedClip(top = 20, bottom = 40, left = 10, right = 40)
         )
     }
@@ -161,36 +182,36 @@ internal class CompositionClippingTest {
         clipChildren: Boolean
     ) {
         // Given
-        val fixture = Fixture()
-        whenever(fixture.root.clipChildren).thenReturn(clipChildren)
-        val cover = fixture.view(GlobalBounds(80, 80, 80, 80))
-        fixture.makeOpaque(cover)
-        fixture.children(fixture.root, fixture.parent, cover)
+        val fakeFixture = Fixture(fakeScopeValue)
+        whenever(fakeFixture.mockRoot.clipChildren).thenReturn(clipChildren)
+        val mockCover = fakeFixture.mockView(GlobalBounds(80, 80, 80, 80))
+        fakeFixture.makeOpaque(mockCover)
+        fakeFixture.children(fakeFixture.mockRoot, fakeFixture.mockParent, mockCover)
 
         // When
-        val result = fixture.capture()
+        val result = fakeFixture.traverseWindow()
 
-        // Then: covering parent's rectangle hides the whole subtree only if it cannot overflow.
-        assertThat(result.wireframes.any { it.identity == fixture.identities[fixture.child] })
+        // Then
+        assertThat(result.wireframes.any { it.identity == fakeFixture.identities[fakeFixture.mockChild] })
             .isEqualTo(!clipChildren)
     }
 
     @Test
-    fun `M preserve copied clipping constraints W build { live clipping changes }`() {
+    fun `M preserve copied clipping constraints W buildWindow() { live clipping changes }`() {
         // Given
-        val fixture = Fixture()
-        whenever(fixture.root.clipChildren).thenReturn(true)
-        fixture.onMapped = { if (it == fixture.parent) fixture.nowNs = 10 }
-        val step = fixture.start()
-        assertThat(step).isInstanceOf(WindowCopyResult.Present::class.java)
+        val fakeFixture = Fixture(fakeScopeValue)
+        whenever(fakeFixture.mockRoot.clipChildren).thenReturn(true)
+        fakeFixture.onMapped = { if (it == fakeFixture.mockParent) fakeFixture.nowNs = 10 }
+        val testedCopy = fakeFixture.start()
 
         // When
-        whenever(fixture.root.clipChildren).thenReturn(false)
-        val result = step.buildWindow(fixture.context) as WindowWalkResult.Present
+        whenever(fakeFixture.mockRoot.clipChildren).thenReturn(false)
+        val result = testedCopy.buildWindow(fakeFixture.context) as WindowWalkResult.Present
 
         // Then
+        assertThat(testedCopy).isInstanceOf(WindowCopyResult.Present::class.java)
         assertThat(
-            result.wireframe(fixture.identities.getValue(fixture.child)).clip
+            result.wireframe(fakeFixture.identities.getValue(fakeFixture.mockChild)).clip
         ).isEqualTo(
             CapturedClip(top = 20, bottom = 60, left = 20, right = 60)
         )
@@ -198,174 +219,184 @@ internal class CompositionClippingTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M keep sibling clipping independent W traversal leaves a padded subtree`(fakeAdvanceClock: Boolean) {
-        // Given: the first subtree clips to padding; the second allows overflow up to the window.
-        val fixture = Fixture()
-        whenever(fixture.parent.clipToPadding).thenReturn(true)
-        fixture.padding(fixture.parent, 10, 10, 10, 10)
-        val sibling = fixture.group(GlobalBounds(180, 180, 100, 100))
-        val siblingChild = fixture.view(GlobalBounds(160, 160, 140, 140))
-        fixture.children(sibling, siblingChild)
-        fixture.children(fixture.root, fixture.parent, sibling)
-        if (fakeAdvanceClock) fixture.onMapped = { fixture.nowNs += 10L }
+    fun `M keep sibling clipping independent W traverseWindow() { traversal leaves a padded subtree }`(
+        fakeAdvanceClock: Boolean
+    ) {
+        // Given
+        val fakeFixture = Fixture(fakeScopeValue)
+        whenever(fakeFixture.mockParent.clipToPadding).thenReturn(true)
+        fakeFixture.padding(fakeFixture.mockParent, 10, 10, 10, 10)
+        val mockSibling = fakeFixture.mockGroup(GlobalBounds(180, 180, 100, 100))
+        val mockSiblingChild = fakeFixture.mockView(GlobalBounds(160, 160, 140, 140))
+        fakeFixture.children(mockSibling, mockSiblingChild)
+        fakeFixture.children(fakeFixture.mockRoot, fakeFixture.mockParent, mockSibling)
+        if (fakeAdvanceClock) fakeFixture.onMapped = { fakeFixture.nowNs += 10L }
 
         // When
-        val result = fixture.capture()
+        val result = fakeFixture.traverseWindow()
 
         // Then
-        assertThat(result.wireframe(fixture.identities.getValue(fixture.child)).clip).isEqualTo(
+        assertThat(result.wireframe(fakeFixture.identities.getValue(fakeFixture.mockChild)).clip).isEqualTo(
             CapturedClip(top = 30, bottom = 70, left = 30, right = 70)
         )
-        assertThat(result.wireframe(fixture.identities.getValue(siblingChild)).clip).isNull()
+        assertThat(result.wireframe(fakeFixture.identities.getValue(mockSiblingChild)).clip).isNull()
     }
 
     @ParameterizedTest
     @CsvSource("160, 80", "200, 80", "80, 160", "80, 200")
-    fun `M preserve empty intersection W descendant bounds span disjoint clipping ancestors`(
+    fun `M preserve empty intersection W traverseWindow() { descendant bounds span disjoint clipping ancestors }`(
         fakeInnerX: Long,
         fakeInnerY: Long
     ) {
-        // Given: touching or disjoint clipping rectangles, followed by a descendant spanning both.
-        val fixture = Fixture()
-        whenever(fixture.root.clipChildren).thenReturn(true)
-        whenever(fixture.parent.clipChildren).thenReturn(true)
-        val inner = fixture.group(GlobalBounds(fakeInnerX, fakeInnerY, 80, 80))
-        whenever(inner.clipChildren).thenReturn(true)
-        val leaf = fixture.view(GlobalBounds(0, 0, 300, 300))
-        fixture.children(fixture.parent, inner)
-        fixture.children(inner, leaf)
-        fixture.onMapped = { fixture.nowNs += 10L }
+        // Given
+        val fakeFixture = Fixture(fakeScopeValue)
+        whenever(fakeFixture.mockRoot.clipChildren).thenReturn(true)
+        whenever(fakeFixture.mockParent.clipChildren).thenReturn(true)
+        val mockInner = fakeFixture.mockGroup(GlobalBounds(fakeInnerX, fakeInnerY, 80, 80))
+        whenever(mockInner.clipChildren).thenReturn(true)
+        val mockLeaf = fakeFixture.mockView(GlobalBounds(0, 0, 300, 300))
+        fakeFixture.children(fakeFixture.mockParent, mockInner)
+        fakeFixture.children(mockInner, mockLeaf)
+        fakeFixture.onMapped = { fakeFixture.nowNs += 10L }
 
         // When
-        val result = fixture.capture()
+        val result = fakeFixture.traverseWindow()
 
-        // Then: the inverted/zero-width intersection must not turn into an absent or expanded clip.
-        assertThat(result.wireframe(fixture.identities.getValue(leaf)).clip).isEqualTo(
+        // Then
+        assertThat(result.wireframe(fakeFixture.identities.getValue(mockLeaf)).clip).isEqualTo(
             CapturedClip(top = fakeInnerY, bottom = 140, left = fakeInnerX, right = 140)
         )
     }
 
     @ParameterizedTest
     @CsvSource("128, false", "128, true", "1024, false", "1024, true")
-    fun `M preserve tightest clipping edges W hierarchy is deeply nested`(fakeDepth: Int, fakeAdvanceClock: Boolean) {
-        // Given: ancestors constrain different edges, then widen again without undoing earlier clips.
-        val fixture = Fixture()
-        whenever(fixture.root.clipChildren).thenReturn(true)
-        var parent = fixture.root
+    fun `M preserve tightest clipping edges W traverseWindow() { hierarchy is deeply nested }`(
+        fakeDepth: Int,
+        fakeAdvanceClock: Boolean
+    ) {
+        // Given
+        val fakeFixture = Fixture(fakeScopeValue)
+        whenever(fakeFixture.mockRoot.clipChildren).thenReturn(true)
+        var mockParent = fakeFixture.mockRoot
         repeat(fakeDepth) { index ->
-            val x = (index % 100).toLong()
-            val y = (index % 80).toLong()
-            val group = fixture.group(GlobalBounds(x, y, 300 - 2 * x, 300 - 2 * y))
-            whenever(group.clipChildren).thenReturn(true)
-            fixture.children(parent, group)
-            parent = group
+            val fakeX = (index % 100).toLong()
+            val fakeY = (index % 80).toLong()
+            val mockGroup = fakeFixture.mockGroup(GlobalBounds(fakeX, fakeY, 300 - 2 * fakeX, 300 - 2 * fakeY))
+            whenever(mockGroup.clipChildren).thenReturn(true)
+            fakeFixture.children(mockParent, mockGroup)
+            mockParent = mockGroup
         }
-        val leaf = fixture.view(GlobalBounds(0, 0, 300, 300))
-        fixture.children(parent, leaf)
-        if (fakeAdvanceClock) fixture.onMapped = { fixture.nowNs++ }
+        val mockLeaf = fakeFixture.mockView(GlobalBounds(0, 0, 300, 300))
+        fakeFixture.children(mockParent, mockLeaf)
+        if (fakeAdvanceClock) fakeFixture.onMapped = { fakeFixture.nowNs++ }
 
         // When
-        val result = fixture.capture()
+        val result = fakeFixture.traverseWindow()
 
         // Then
         assertThat(result.layers).hasSize(fakeDepth + 2)
         assertThat(result.wireframes).hasSize(fakeDepth + 2)
-        assertThat(result.wireframe(fixture.identities.getValue(leaf)).clip).isEqualTo(
+        assertThat(result.wireframe(fakeFixture.identities.getValue(mockLeaf)).clip).isEqualTo(
             CapturedClip(top = 79, bottom = 79, left = 99, right = 99)
         )
     }
 
     @Test
-    fun `M apply local clip bounds W leaf has explicit clip`() {
-        // Given: clipBounds uses local physical pixels; output uses density-normalized screen coordinates.
-        val fixture = Fixture()
-        fixture.clip(fixture.child, 20, 40, 300, 280)
+    fun `M apply local clip bounds W traverseWindow() { leaf has explicit clip }`() {
+        // Given
+        val fakeFixture = Fixture(fakeScopeValue)
+        fakeFixture.clip(fakeFixture.mockChild, 20, 40, 300, 280)
 
         // When
-        val result = fixture.capture()
+        val result = fakeFixture.traverseWindow()
 
         // Then
-        assertThat(result.wireframe(fixture.identities.getValue(fixture.child)).clip)
+        assertThat(result.wireframe(fakeFixture.identities.getValue(fakeFixture.mockChild)).clip)
             .isEqualTo(CapturedClip(top = 20, bottom = 20, left = 10, right = 10))
     }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M propagate explicit clip to descendants W group has clip bounds`(fakeAdvanceClock: Boolean) {
-        // Given: neither group clips children or padding, but the explicit view clip still applies.
-        val fixture = Fixture()
-        fixture.clip(fixture.parent, 20, 40, 100, 120)
-        if (fakeAdvanceClock) fixture.onMapped = { fixture.nowNs += 10 }
+    fun `M propagate explicit clip to descendants W traverseWindow() { group has clip bounds }`(
+        fakeAdvanceClock: Boolean
+    ) {
+        // Given
+        val fakeFixture = Fixture(fakeScopeValue)
+        fakeFixture.clip(fakeFixture.mockParent, 20, 40, 100, 120)
+        if (fakeAdvanceClock) fakeFixture.onMapped = { fakeFixture.nowNs += 10 }
 
         // When
-        val result = fixture.capture()
+        val result = fakeFixture.traverseWindow()
 
         // Then
-        assertThat(result.wireframe(fixture.identities.getValue(fixture.parent)).clip)
+        assertThat(result.wireframe(fakeFixture.identities.getValue(fakeFixture.mockParent)).clip)
             .isEqualTo(CapturedClip(top = 20, bottom = 20, left = 10, right = 30))
-        assertThat(result.wireframe(fixture.identities.getValue(fixture.child)).clip)
+        assertThat(result.wireframe(fakeFixture.identities.getValue(fakeFixture.mockChild)).clip)
             .isEqualTo(CapturedClip(top = 40, bottom = 80, left = 30, right = 90))
     }
 
     @Test
-    fun `M preserve empty explicit clip W group has empty clip bounds`() {
+    fun `M preserve empty explicit clip W traverseWindow() { group has empty clip bounds }`() {
         // Given
-        val fixture = Fixture()
-        fixture.clip(fixture.parent, 0, 0, 0, 0)
+        val fakeFixture = Fixture(fakeScopeValue)
+        fakeFixture.clip(fakeFixture.mockParent, 0, 0, 0, 0)
 
         // When
-        val result = fixture.capture()
+        val result = fakeFixture.traverseWindow()
 
         // Then
-        assertThat(result.wireframe(fixture.identities.getValue(fixture.child)).clip)
+        assertThat(result.wireframe(fakeFixture.identities.getValue(fakeFixture.mockChild)).clip)
             .isEqualTo(CapturedClip(top = 20, bottom = 140, left = 20, right = 140))
     }
 
     @Test
-    fun `M intersect explicit and ancestor clips W local clip exceeds parent bounds`() {
+    fun `M intersect explicit and ancestor clips W traverseWindow() { local clip exceeds parent bounds }`() {
         // Given
-        val fixture = Fixture()
-        whenever(fixture.root.clipChildren).thenReturn(true)
-        fixture.clip(fixture.child, 80, 80, 400, 400)
+        val fakeFixture = Fixture(fakeScopeValue)
+        whenever(fakeFixture.mockRoot.clipChildren).thenReturn(true)
+        fakeFixture.clip(fakeFixture.mockChild, 80, 80, 400, 400)
 
         // When
-        val result = fixture.capture()
+        val result = fakeFixture.traverseWindow()
 
-        // Then: the local clip supplies top/left, while the clipping ancestor limits right/bottom.
-        assertThat(result.wireframe(fixture.identities.getValue(fixture.child)).clip)
+        // Then
+        assertThat(result.wireframe(fakeFixture.identities.getValue(fakeFixture.mockChild)).clip)
             .isEqualTo(CapturedClip(top = 40, bottom = 60, left = 40, right = 60))
     }
 
     @Test
-    fun `M keep explicit clips independent W siblings follow clipped subtree`() {
+    fun `M keep explicit clips independent W traverseWindow() { siblings follow clipped subtree }`() {
         // Given
-        val fixture = Fixture()
-        fixture.clip(fixture.parent, 0, 0, 40, 40)
-        val fakeSibling = fixture.view(GlobalBounds(180, 180, 80, 80))
-        fixture.children(fixture.root, fixture.parent, fakeSibling)
+        val fakeFixture = Fixture(fakeScopeValue)
+        fakeFixture.clip(fakeFixture.mockParent, 0, 0, 40, 40)
+        val mockSibling = fakeFixture.mockView(GlobalBounds(180, 180, 80, 80))
+        fakeFixture.children(fakeFixture.mockRoot, fakeFixture.mockParent, mockSibling)
 
         // When
-        val result = fixture.capture()
+        val result = fakeFixture.traverseWindow()
 
         // Then
-        assertThat(result.wireframe(fixture.identities.getValue(fakeSibling)).clip).isNull()
+        assertThat(result.wireframe(fakeFixture.identities.getValue(mockSibling)).clip).isNull()
     }
 
     @ParameterizedTest
     @CsvSource("0.0, false", "0.5, false", "0.5, true", "1.0, true")
-    fun `M capture subtree opacity once W view group has alpha`(fakeAlpha: Float, fakeAdvanceClock: Boolean) {
+    fun `M capture subtree opacity once W traverseWindow() { view group has alpha }`(
+        fakeAlpha: Float,
+        fakeAdvanceClock: Boolean
+    ) {
         // Given
-        val fixture = Fixture()
-        whenever(fixture.parent.alpha).thenReturn(fakeAlpha)
-        whenever(fixture.child.alpha).thenReturn(0.25f)
-        if (fakeAdvanceClock) fixture.onMapped = { fixture.nowNs += 10 }
+        val fakeFixture = Fixture(fakeScopeValue)
+        whenever(fakeFixture.mockParent.alpha).thenReturn(fakeAlpha)
+        whenever(fakeFixture.mockChild.alpha).thenReturn(0.25f)
+        if (fakeAdvanceClock) fakeFixture.onMapped = { fakeFixture.nowNs += 10 }
 
         // When
-        val result = fixture.capture()
+        val result = fakeFixture.traverseWindow()
         val parentLayer = result.layers.single { it.bounds == CapturedBounds(80, 80, 80, 80) }
         val childLayer = result.layers.single { it.bounds == CapturedBounds(60, 60, 160, 160) }
 
-        // Then: the nested layers each carry their own alpha; the renderer composes them once.
+        // Then
         assertThat(parentLayer.modifiers).isEqualTo(
             if (fakeAlpha == 1f) {
                 emptyList<CapturedModifier>()
@@ -376,7 +407,7 @@ internal class CompositionClippingTest {
         assertThat(childLayer.modifiers).containsExactly(CapturedModifier.Opacity(0.25))
     }
 
-    private class Fixture {
+    private class Fixture(private val fakeScopeValue: String) {
         private val mockBoundsResolver: ViewBoundsResolver = mock()
         private val mockIdentifierResolver: ViewIdentifierResolver = mock()
         private val mockDrawableToColorMapper: DrawableToColorMapper = mock()
@@ -384,9 +415,9 @@ internal class CompositionClippingTest {
         private val viewIds = mutableMapOf<View, Long>()
         val identities = mutableMapOf<View, CapturedIdentity>()
         val wireframeBounds = mutableMapOf<View, CapturedBounds>()
-        val root = group(GlobalBounds(0, 0, 300, 300))
-        val parent = group(GlobalBounds(80, 80, 80, 80))
-        val child = view(GlobalBounds(60, 60, 160, 160))
+        val mockRoot = mockGroup(GlobalBounds(0, 0, 300, 300))
+        val mockParent = mockGroup(GlobalBounds(80, 80, 80, 80))
+        val mockChild = mockView(GlobalBounds(60, 60, 160, 160))
         var nowNs = 0L
         var onMapped: (View) -> Unit = {}
         val context = CaptureGenerationContext(1, 0, Long.MAX_VALUE, CaptureTimeProvider { nowNs })
@@ -396,45 +427,50 @@ internal class CompositionClippingTest {
             whenever(mockIdentifierResolver.resolveViewId(any())).thenAnswer { viewIds.getValue(it.getArgument(0)) }
             whenever(mockBoundsResolver.resolveViewGlobalBounds(any(), any()))
                 .thenAnswer { bounds.getValue(it.getArgument(0)) }
-            children(root, parent)
-            children(parent, child)
+            children(mockRoot, mockParent)
+            children(mockParent, mockChild)
         }
 
-        fun group(bounds: GlobalBounds): ViewGroup = mock<ViewGroup>().also { configure(it, bounds) }
-        fun view(bounds: GlobalBounds): View = mock<View>().also { configure(it, bounds) }
+        fun mockGroup(bounds: GlobalBounds): ViewGroup = mockViewWithBounds(bounds)
+        fun mockView(bounds: GlobalBounds): View = mockViewWithBounds(bounds)
 
-        private fun configure(view: View, fakeBounds: GlobalBounds) {
-            bounds[view] = fakeBounds
-            viewIds[view] = bounds.size.toLong()
-            whenever(view.isShown).thenReturn(true)
-            whenever(view.scaleX).thenReturn(1f)
-            whenever(view.scaleY).thenReturn(1f)
-            whenever(view.alpha).thenReturn(1f)
-            whenever(view.getLocationOnScreen(any())).thenAnswer {
-                val coordinates = it.getArgument<IntArray>(0)
-                coordinates[0] = (fakeBounds.x * DENSITY).toInt()
-                coordinates[1] = (fakeBounds.y * DENSITY).toInt()
-                null
+        private inline fun <reified T : View> mockViewWithBounds(fakeBounds: GlobalBounds): T {
+            val fakeMetrics = DisplayMetrics().apply { density = DENSITY }
+            val mockResources: Resources = mock { on { displayMetrics } doReturn fakeMetrics }
+            val mockView: T = mock {
+                on { isShown } doReturn true
+                on { scaleX } doReturn 1f
+                on { scaleY } doReturn 1f
+                on { alpha } doReturn 1f
+                on { getLocationOnScreen(any()) } doAnswer { invocation ->
+                    val fakeCoordinates = invocation.getArgument<IntArray>(0)
+                    fakeCoordinates[0] = (fakeBounds.x * DENSITY).toInt()
+                    fakeCoordinates[1] = (fakeBounds.y * DENSITY).toInt()
+                    null
+                }
+                on { left } doReturn (fakeBounds.x * DENSITY).toInt()
+                on { top } doReturn (fakeBounds.y * DENSITY).toInt()
+                on { width } doReturn (fakeBounds.width * DENSITY).toInt()
+                on { height } doReturn (fakeBounds.height * DENSITY).toInt()
+                on { resources } doReturn mockResources
             }
-            whenever(view.left).thenReturn((fakeBounds.x * DENSITY).toInt())
-            whenever(view.top).thenReturn((fakeBounds.y * DENSITY).toInt())
-            whenever(view.width).thenReturn((fakeBounds.width * DENSITY).toInt())
-            whenever(view.height).thenReturn((fakeBounds.height * DENSITY).toInt())
-            val resources: Resources = mock()
-            whenever(resources.displayMetrics).thenReturn(DisplayMetrics().apply { density = DENSITY })
-            whenever(view.resources).thenReturn(resources)
+            bounds[mockView] = fakeBounds
+            viewIds[mockView] = bounds.size.toLong()
+            return mockView
         }
 
-        fun children(parent: ViewGroup, vararg children: View) {
-            whenever(parent.childCount).thenReturn(children.size)
-            children.forEachIndexed { index, child -> whenever(parent.getChildAt(index)).thenReturn(child) }
+        fun children(mockParent: ViewGroup, vararg children: View) {
+            whenever(mockParent.childCount).thenReturn(children.size)
+            children.forEachIndexed { index, mockChild -> whenever(mockParent.getChildAt(index)).thenReturn(mockChild) }
         }
 
         fun padding(view: ViewGroup, left: Int, top: Int, right: Int, bottom: Int) {
-            whenever(view.paddingLeft).thenReturn((left * DENSITY).toInt())
-            whenever(view.paddingTop).thenReturn((top * DENSITY).toInt())
-            whenever(view.paddingRight).thenReturn((right * DENSITY).toInt())
-            whenever(view.paddingBottom).thenReturn((bottom * DENSITY).toInt())
+            view.stub {
+                on { paddingLeft } doReturn (left * DENSITY).toInt()
+                on { paddingTop } doReturn (top * DENSITY).toInt()
+                on { paddingRight } doReturn (right * DENSITY).toInt()
+                on { paddingBottom } doReturn (bottom * DENSITY).toInt()
+            }
             val area = bounds.getValue(view)
             whenever(mockBoundsResolver.resolveViewPaddedBounds(view, DENSITY)).thenReturn(
                 GlobalBounds(area.x + left, area.y + top, area.width - left - right, area.height - top - bottom)
@@ -452,13 +488,15 @@ internal class CompositionClippingTest {
         }
 
         fun makeOpaque(view: View) {
-            val stubBackground: ColorDrawable = mock()
+            val mockBackground: ColorDrawable = mock()
             @Suppress("DEPRECATION") // Stub the same opacity check as the production occluder.
-            whenever(stubBackground.opacity).thenReturn(PixelFormat.OPAQUE)
-            whenever(view.background).thenReturn(stubBackground)
-            whenever(view.alpha).thenReturn(1f)
-            whenever(view.scaleX).thenReturn(1f)
-            whenever(view.scaleY).thenReturn(1f)
+            whenever(mockBackground.opacity).thenReturn(PixelFormat.OPAQUE)
+            view.stub {
+                on { background } doReturn mockBackground
+                on { alpha } doReturn 1f
+                on { scaleX } doReturn 1f
+                on { scaleY } doReturn 1f
+            }
             whenever(mockDrawableToColorMapper.mapDrawableToColor(any(), any())).thenReturn(Color.BLACK)
         }
 
@@ -478,11 +516,11 @@ internal class CompositionClippingTest {
                 viewIdentifierResolver = mockIdentifierResolver,
                 drawableToColorMapper = mockDrawableToColorMapper
             )
-            val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope("view"))
-            return testedTraversal.traverseWindow(root, factory.window("window"), factory, context)
+            val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScopeValue))
+            return testedTraversal.traverseWindow(mockRoot, factory.window("window"), factory, context)
         }
 
-        fun capture(): WindowWalkResult.Present = start().buildWindow(context) as WindowWalkResult.Present
+        fun traverseWindow(): WindowWalkResult.Present = start().buildWindow(context) as WindowWalkResult.Present
 
         companion object {
             const val DENSITY = 2f

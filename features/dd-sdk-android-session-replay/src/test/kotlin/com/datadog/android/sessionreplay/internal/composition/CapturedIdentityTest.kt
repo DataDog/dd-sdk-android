@@ -21,10 +21,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
-import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -35,38 +31,47 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class CapturedIdentityTest {
 
+    @StringForgery
+    lateinit var fakeScopeValue: String
+
+    @StringForgery
+    lateinit var fakeWindowName: String
+
+    @StringForgery
+    lateinit var fakeLocalId: String
+
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @Test
-    fun `M return stable identity W create identity { identical inputs }`(
+    fun `M return stable identity W view() + window() { identical inputs }`(
         @StringForgery fakeWindowId: String,
         @StringForgery fakeViewId: String
     ) {
         // Given
-        val factory = factory()
+        val testedFactory = factory()
 
         // When
-        val first = factory.view(factory.window(fakeWindowId), fakeViewId)
-        val repeated = factory.view(factory.window(fakeWindowId), fakeViewId)
+        val first = testedFactory.view(testedFactory.window(fakeWindowId), fakeViewId)
+        val repeated = testedFactory.view(testedFactory.window(fakeWindowId), fakeViewId)
 
         // Then
         assertThat(repeated).isSameAs(first)
     }
 
     @Test
-    fun `M allocate new identity W create identity { separate factories }`(
+    fun `M allocate new identity W window() { separate factories }`(
         @StringForgery fakeWindowId: String
     ) {
         // Given
-        val generator = AutoIncrementingCapturedReplayIdGenerator()
-        val scope = RumViewIdentityScope("view")
-        val firstFactory = DefaultCapturedIdentityFactory(scope, generator)
-        val secondFactory = DefaultCapturedIdentityFactory(scope, generator)
+        val fakeGenerator = AutoIncrementingCapturedReplayIdGenerator()
+        val fakeScope = RumViewIdentityScope(fakeScopeValue)
+        val testedFirstFactory = DefaultCapturedIdentityFactory(fakeScope, fakeGenerator)
+        val testedSecondFactory = DefaultCapturedIdentityFactory(fakeScope, fakeGenerator)
 
         // When
-        val first = firstFactory.window(fakeWindowId)
-        val second = secondFactory.window(fakeWindowId)
+        val first = testedFirstFactory.window(fakeWindowId)
+        val second = testedSecondFactory.window(fakeWindowId)
 
         // Then
         assertThat(second).isNotEqualTo(first)
@@ -76,11 +81,11 @@ internal class CapturedIdentityTest {
     @Test
     fun `M namespace view identity W view { identical local IDs in different windows }`() {
         // Given
-        val factory = factory()
+        val testedFactory = factory()
 
         // When
-        val first = factory.view(factory.window("first-window"), "shared-id")
-        val second = factory.view(factory.window("second-window"), "shared-id")
+        val first = testedFactory.view(testedFactory.window(fakeWindowName), fakeLocalId)
+        val second = testedFactory.view(testedFactory.window(fakeWindowName + "-other"), fakeLocalId)
 
         // Then
         assertThat(first).isNotEqualTo(second)
@@ -90,12 +95,15 @@ internal class CapturedIdentityTest {
     @Test
     fun `M namespace compose identity W composeNode { identical local IDs in different hosts }`() {
         // Given
-        val factory = factory()
-        val window = factory.window("window")
+        val testedFactory = factory()
+        val fakeWindow = testedFactory.window(fakeWindowName)
 
         // When
-        val first = factory.composeNode(factory.composeHost(window, "first-host"), "shared-id")
-        val second = factory.composeNode(factory.composeHost(window, "second-host"), "shared-id")
+        val first = testedFactory.composeNode(testedFactory.composeHost(fakeWindow, fakeLocalId), fakeLocalId)
+        val second = testedFactory.composeNode(
+            testedFactory.composeHost(fakeWindow, fakeLocalId + "-other"),
+            fakeLocalId
+        )
 
         // Then
         assertThat(first).isNotEqualTo(second)
@@ -103,31 +111,32 @@ internal class CapturedIdentityTest {
     }
 
     @Test
-    fun `M allocate distinct identity W create identity { identical numeric IDs }`() {
+    fun `M separate identity kinds W view() + composeHost() + layer() + shapeWireframe()`() {
         // Given
-        val factory = factory()
-        val window = factory.window("42")
+        val testedFactory = factory()
+        val fakeWindow = testedFactory.window(fakeLocalId)
 
         // When
-        val view = factory.view(window, "42")
-        val host = factory.composeHost(window, "42")
-        val layer = factory.layer(window, "42")
-        val wireframe = factory.shapeWireframe(window)
+        val view = testedFactory.view(fakeWindow, fakeLocalId)
+        val host = testedFactory.composeHost(fakeWindow, fakeLocalId)
+        val layer = testedFactory.layer(fakeWindow, fakeLocalId)
+        val wireframe = testedFactory.shapeWireframe(fakeWindow)
 
         // Then
         assertThat(listOf(view, host, layer, wireframe).map { it.wireId }.toSet()).hasSize(4)
     }
 
     @Test
-    fun `M isolate identity W create identity { different RUM view scopes }`() {
+    fun `M isolate identity W window() { different RUM view scopes }`() {
         // Given
-        val generator = AutoIncrementingCapturedReplayIdGenerator()
-        val firstFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope("first-view"), generator)
-        val secondFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope("second-view"), generator)
+        val fakeGenerator = AutoIncrementingCapturedReplayIdGenerator()
+        val testedFirstFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScopeValue), fakeGenerator)
+        val testedSecondFactory =
+            DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScopeValue + "-other"), fakeGenerator)
 
         // When
-        val first = firstFactory.window("window")
-        val second = secondFactory.window("window")
+        val first = testedFirstFactory.window(fakeWindowName)
+        val second = testedSecondFactory.window(fakeWindowName)
 
         // Then
         assertThat(first).isNotEqualTo(second)
@@ -135,34 +144,31 @@ internal class CapturedIdentityTest {
     }
 
     @Test
-    fun `M log warning and still create identity W create identity { owner belongs to another scope }`() {
+    fun `M log warning and still create identity W view() + window() { owner belongs to another scope }`() {
         // Given
-        val firstFactory = factory("first-view")
-        val secondFactory = factory("second-view")
+        val testedFirstFactory = factory(fakeScopeValue)
+        val testedSecondFactory = factory(fakeScopeValue + "-other")
 
         // When
-        val view = secondFactory.view(firstFactory.window("window"), "view")
+        val view = testedSecondFactory.view(testedFirstFactory.window(fakeWindowName), fakeLocalId)
 
         // Then
         assertThat(view).isNotNull()
-        verify(mockInternalLogger).log(
-            level = eq(InternalLogger.Level.WARN),
-            target = eq(InternalLogger.Target.MAINTAINER),
-            messageBuilder = any(),
-            throwable = isNull(),
-            onlyOnce = eq(false),
-            additionalProperties = isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            "Identity owner belongs to a different RUM view scope."
         )
     }
 
     @Test
-    fun `M log warning and still create identity W create identity { owner kind mismatch }`() {
+    fun `M log warning and still create identity W view() { owner kind mismatch }`() {
         // Given
-        val factory = factory()
-        val nonWindowOwner = factory.layer(factory.window("window"), "layer")
+        val testedFactory = factory()
+        val fakeNonWindowOwner = testedFactory.layer(testedFactory.window(fakeWindowName), fakeLocalId)
 
         // When
-        val view = factory.view(nonWindowOwner, "view")
+        val view = testedFactory.view(fakeNonWindowOwner, fakeLocalId)
 
         // Then
         assertThat(view).isNotNull()
@@ -174,13 +180,13 @@ internal class CapturedIdentityTest {
     }
 
     @Test
-    fun `M log warning and still create identity W create identity { wireframe used as layer owner }`() {
+    fun `M log warning and still create identity W layer() { wireframe used as layer owner }`() {
         // Given
-        val factory = factory()
-        val wireframeOwner = factory.shapeWireframe(factory.window("window"))
+        val testedFactory = factory()
+        val fakeWireframeOwner = testedFactory.shapeWireframe(testedFactory.window(fakeWindowName))
 
         // When
-        val layer = factory.layer(wireframeOwner, "layer")
+        val layer = testedFactory.layer(fakeWireframeOwner, fakeLocalId)
 
         // Then
         assertThat(layer).isNotNull()
@@ -192,39 +198,39 @@ internal class CapturedIdentityTest {
     }
 
     @Test
-    fun `M create namespaced IDs W create wireframe identities`(
+    fun `M create namespaced IDs W shapeWireframe() + textWireframe() + imageWireframe() + placeholderWireframe() `(
         @LongForgery(min = 0, max = Int.MAX_VALUE.toLong()) fakeInitialId: Long
     ) {
         // Given
-        val factory = DefaultCapturedIdentityFactory(
-            scope = RumViewIdentityScope("view"),
+        val testedFactory = DefaultCapturedIdentityFactory(
+            scope = RumViewIdentityScope(fakeScopeValue),
             replayIdGenerator = AutoIncrementingCapturedReplayIdGenerator(initialId = fakeInitialId)
         )
-        val layer = factory.layer(factory.window("window"), "layer")
+        val fakeLayer = testedFactory.layer(testedFactory.window(fakeWindowName), fakeLocalId)
 
         // When
-        val shape = factory.shapeWireframe(layer)
-        val text = factory.textWireframe(layer)
-        val image = factory.imageWireframe(layer)
-        val placeholder = factory.placeholderWireframe(layer)
+        val shape = testedFactory.shapeWireframe(fakeLayer)
+        val text = testedFactory.textWireframe(fakeLayer)
+        val image = testedFactory.imageWireframe(fakeLayer)
+        val placeholder = testedFactory.placeholderWireframe(fakeLayer)
 
         // Then
-        assertThat(shape.wireId).isEqualTo((1L shl NAMESPACE_SHIFT) or layer.wireId)
-        assertThat(text.wireId).isEqualTo((2L shl NAMESPACE_SHIFT) or layer.wireId)
-        assertThat(image.wireId).isEqualTo((3L shl NAMESPACE_SHIFT) or layer.wireId)
-        assertThat(placeholder.wireId).isEqualTo((4L shl NAMESPACE_SHIFT) or layer.wireId)
+        assertThat(shape.wireId).isEqualTo((1L shl NAMESPACE_SHIFT) or fakeLayer.wireId)
+        assertThat(text.wireId).isEqualTo((2L shl NAMESPACE_SHIFT) or fakeLayer.wireId)
+        assertThat(image.wireId).isEqualTo((3L shl NAMESPACE_SHIFT) or fakeLayer.wireId)
+        assertThat(placeholder.wireId).isEqualTo((4L shl NAMESPACE_SHIFT) or fakeLayer.wireId)
     }
 
     @Test
-    fun `M preserve raw slot ID W create webViewWireframe`(
+    fun `M preserve raw slot ID W webViewWireframe()`(
         @IntForgery fakeSlotId: Int
     ) {
         // Given
-        val factory = factory()
-        val layer = factory.layer(factory.window("window"), "layer")
+        val testedFactory = factory()
+        val fakeLayer = testedFactory.layer(testedFactory.window(fakeWindowName), fakeLocalId)
 
         // When
-        val wireframe = factory.webViewWireframe(layer, slotId = fakeSlotId.toLong())
+        val wireframe = testedFactory.webViewWireframe(fakeLayer, slotId = fakeSlotId.toLong())
 
         // Then
         assertThat(wireframe.wireId).isEqualTo(fakeSlotId.toLong())
@@ -232,40 +238,37 @@ internal class CapturedIdentityTest {
     }
 
     @Test
-    fun `M keep layer IDs outside slot ID range W create identity { any Int slotId }`() {
+    fun `M keep layer IDs outside slot ID range W window() { any Int slotId }`() {
         // Given
-        val factory = DefaultCapturedIdentityFactory(
-            scope = RumViewIdentityScope("view"),
+        val testedFactory = DefaultCapturedIdentityFactory(
+            scope = RumViewIdentityScope(fakeScopeValue),
             replayIdGenerator = AutoIncrementingCapturedReplayIdGenerator(initialId = Int.MAX_VALUE - 1L)
         )
 
         // When
         val layerIds = listOf(
-            factory.window("before-max").wireId,
-            factory.window("max").wireId,
-            factory.window("wrapped").wireId,
-            factory.window("min").wireId
+            testedFactory.window(fakeWindowName + "-before-max").wireId,
+            testedFactory.window(fakeWindowName + "-max").wireId,
+            testedFactory.window(fakeWindowName + "-wrapped").wireId,
+            testedFactory.window(fakeWindowName + "-min").wireId
         )
 
         // Then
-        // A web-view slotId is caller-supplied and preserved verbatim as its wire id (see
-        // `M preserve raw slot ID`), so it may be anywhere in the Int range. Layer ids must never
-        // land in that range, or a colliding slotId could be mistaken for an unrelated layer.
         assertThat(layerIds).allMatch { it < Int.MIN_VALUE || it > Int.MAX_VALUE.toLong() }
     }
 
     @Test
-    fun `M wrap replay IDs W create identity { maximum ID reached }`() {
+    fun `M wrap replay IDs W window() { maximum ID reached }`() {
         // Given
-        val factory = DefaultCapturedIdentityFactory(
-            scope = RumViewIdentityScope("view"),
+        val testedFactory = DefaultCapturedIdentityFactory(
+            scope = RumViewIdentityScope(fakeScopeValue),
             replayIdGenerator = AutoIncrementingCapturedReplayIdGenerator(initialId = Int.MAX_VALUE - 1L)
         )
 
         // When
-        val beforeMax = factory.window("before-max")
-        val max = factory.window("max")
-        val wrapped = factory.window("wrapped")
+        val beforeMax = testedFactory.window(fakeWindowName + "-before-max")
+        val max = testedFactory.window(fakeWindowName + "-max")
+        val wrapped = testedFactory.window(fakeWindowName + "-wrapped")
 
         // Then
         assertThat(beforeMax.wireId).isEqualTo(LAYER_ID_OFFSET + (Int.MAX_VALUE - 1L))
@@ -274,14 +277,14 @@ internal class CapturedIdentityTest {
     }
 
     @Test
-    fun `M create player-safe IDs W create identities`() {
+    fun `M create player-safe IDs W view() + placeholderWireframe() `() {
         // Given
-        val factory = factory()
-        val window = factory.window("window")
+        val testedFactory = factory()
+        val fakeWindow = testedFactory.window(fakeWindowName)
 
         // When
-        val identities = List(1_000) { factory.view(window, "view-$it") } +
-            factory.placeholderWireframe(window)
+        val identities = List(1_000) { testedFactory.view(fakeWindow, "$fakeLocalId-$it") } +
+            testedFactory.placeholderWireframe(fakeWindow)
 
         // Then
         assertThat(identities.map { it.wireId })
@@ -289,7 +292,7 @@ internal class CapturedIdentityTest {
             .doesNotHaveDuplicates()
     }
 
-    private fun factory(scope: String = "view") = DefaultCapturedIdentityFactory(
+    private fun factory(scope: String = fakeScopeValue) = DefaultCapturedIdentityFactory(
         scope = RumViewIdentityScope(scope),
         replayIdGenerator = AutoIncrementingCapturedReplayIdGenerator(),
         internalLogger = mockInternalLogger

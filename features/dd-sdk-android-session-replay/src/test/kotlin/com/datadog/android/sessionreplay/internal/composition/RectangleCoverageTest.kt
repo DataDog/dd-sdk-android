@@ -12,18 +12,18 @@ import org.junit.jupiter.api.Test
 internal class RectangleCoverageTest {
     @Test
     fun `M reuse capacity after replacing multiple contained rectangles W add`() {
-        // Given: fill all three slots, leaving gaps between the retained rectangles.
+        // Given
         val testedCoverage = RectangleCoverage(maxBounds = 3, maxFragments = 3)
         testedCoverage.add(CoverageRectangle(0, 0, 1, 1))
         testedCoverage.add(CoverageRectangle(2, 0, 3, 1))
         testedCoverage.add(CoverageRectangle(4, 0, 5, 1))
 
-        // When: consolidate all three rectangles and reuse both freed slots for new coverage.
+        // When
         testedCoverage.add(CoverageRectangle(0, 0, 5, 1))
         testedCoverage.add(CoverageRectangle(5, 0, 6, 1))
         testedCoverage.add(CoverageRectangle(6, 0, 7, 1))
 
-        // Then: the replacement fills the old gaps and both new rectangles contribute to the union.
+        // Then
         assertThat(testedCoverage.covers(CoverageRectangle(0, 0, 7, 1))).isTrue()
         assertThat(testedCoverage.covers(CoverageRectangle(0, 0, 8, 1))).isFalse()
     }

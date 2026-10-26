@@ -6,46 +6,59 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 
+@ExtendWith(ForgeExtension::class)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class CapturedTreeWireMapperTest {
+
+    @Forgery
+    lateinit var fakeTree: CompositionTestTree
+
+    @StringForgery(regex = "[0-9a-f]{32}")
+    lateinit var fakeResourceId: String
 
     private val testedMapper = DefaultCapturedTreeWireMapper()
 
     @Test
     fun `M preserve wireframes and tree W mapFullSnapshot`() {
-        // Given
-        val tree = compositionTestTree()
-
         // When
-        val result = testedMapper.mapFullSnapshot(tree.snapshot)
+        val result = testedMapper.mapFullSnapshot(fakeTree.snapshot)
 
         // Then
         val record = (result as CaptureWireMappingResult.Success).value
-        assertThat(record.timestamp).isEqualTo(tree.snapshot.timestamp)
-        val bounds = (tree.wireframe as CapturedWireframe.Shape).bounds
+        assertThat(record.timestamp).isEqualTo(fakeTree.snapshot.timestamp)
+        val fakeBounds = (fakeTree.wireframe as CapturedWireframe.Shape).bounds
         assertThat(record.data.wireframes.single()).isEqualTo(
             MobileSegment.Wireframe.ShapeWireframe(
-                id = tree.wireframeIdentity.wireId,
-                x = bounds.x,
-                y = bounds.y,
-                width = bounds.width,
-                height = bounds.height
+                id = fakeTree.wireframeIdentity.wireId,
+                x = fakeBounds.x,
+                y = fakeBounds.y,
+                width = fakeBounds.width,
+                height = fakeBounds.height
             )
         )
-        assertThat(record.data.compositionTree?.root?.id).isEqualTo(tree.root.identity.wireId)
-        assertThat(record.data.compositionTree?.layers?.map { it.id })
-            .containsExactly(tree.layer.identity.wireId)
+        val tree = checkNotNull(record.data.compositionTree) { "Expected a mapped composition tree" }
+        val root = checkNotNull(tree.root) { "Expected the mapped tree root" }
+        val layers = checkNotNull(tree.layers) { "Expected mapped tree layers" }
+        assertThat(root.id).isEqualTo(fakeTree.root.identity.wireId)
+        assertThat(layers.map { it.id })
+            .containsExactly(fakeTree.layer.identity.wireId)
         assertThat(record.toJson().asJsonObject.getAsJsonObject("data").has("compositionTree")).isTrue
     }
 
     @Test
     fun `M preserve modifier ordering W mapFullSnapshot`() {
         // Given
-        val tree = compositionTestTree()
-        val modifiers = listOf(
+        val fakeModifiers = listOf(
             CapturedModifier.Clip("M0 0", CapturedFillRule.EVEN_ODD),
             CapturedModifier.Opacity(0.5),
             CapturedModifier.ColorMatrix(List(20) { it.toDouble() }),
@@ -53,20 +66,22 @@ internal class CapturedTreeWireMapperTest {
             CapturedModifier.Shadow("#AABBCC", 1.0, 2.0, 3.0),
             CapturedModifier.BrightnessBias(0.25),
             CapturedModifier.Saturate(1.5),
-            CapturedModifier.MaskImage("resource")
+            CapturedModifier.MaskImage(fakeResourceId)
         )
-        val layer = tree.layer.copy(
-            modifiers = modifiers,
+        val fakeLayer = fakeTree.layer.copy(
+            modifiers = fakeModifiers,
             compositeOperation = CapturedCompositeOperation.DESTINATION_IN
         )
 
         // When
-        val result = testedMapper.mapFullSnapshot(tree.snapshot.copy(layers = listOf(layer)))
+        val result = testedMapper.mapFullSnapshot(fakeTree.snapshot.copy(layers = listOf(fakeLayer)))
 
         // Then
         val record = (result as CaptureWireMappingResult.Success).value
-        val wireLayer = record.data.compositionTree?.layers?.single()
-        assertThat(wireLayer?.modifiers).containsExactly(
+        val wireLayer = checkNotNull(record.data.compositionTree?.layers?.single()) {
+            "Expected one mapped composition layer"
+        }
+        assertThat(wireLayer.modifiers).containsExactly(
             MobileSegment.CompositionLayerModifier.CompositionLayerClipModifier(
                 path = "M0 0",
                 fillRule = MobileSegment.FillRule.EVENODD
@@ -84,60 +99,45 @@ internal class CapturedTreeWireMapperTest {
             ),
             MobileSegment.CompositionLayerModifier.CompositionLayerBrightnessBiasModifier(0.25),
             MobileSegment.CompositionLayerModifier.CompositionLayerSaturateModifier(1.5),
-            MobileSegment.CompositionLayerModifier.CompositionLayerMaskImageModifier("resource")
+            MobileSegment.CompositionLayerModifier.CompositionLayerMaskImageModifier(fakeResourceId)
         )
-        assertThat(wireLayer?.compositeOperation).isEqualTo(MobileSegment.CompositeOperation.DESTINATIONIN)
+        assertThat(wireLayer.compositeOperation).isEqualTo(MobileSegment.CompositeOperation.DESTINATIONIN)
     }
 
     @Test
     fun `M preserve ordered children W mapMutation`() {
         // Given
-        val tree = compositionTestTree()
-        val secondIdentity = tree.factory.placeholderWireframe(tree.layer.identity)
-        val secondWireframe = CapturedWireframe.PrivacyPlaceholder(
-            identity = secondIdentity,
+        val fakeSecondIdentity = fakeTree.factory.placeholderWireframe(fakeTree.layer.identity)
+        val fakeSecondWireframe = CapturedWireframe.PrivacyPlaceholder(
+            identity = fakeSecondIdentity,
             bounds = CapturedBounds(5, 6, 7, 8)
         )
-        val baseLayer = tree.layer.copy(
-            children = listOf(
-                CapturedChild.Wireframe(tree.wireframeIdentity),
-                CapturedChild.Wireframe(secondIdentity)
-            )
+        val fakeBase = fakeTree.snapshotWithWireframes(fakeTree.wireframe, fakeSecondWireframe)
+        val fakeUpdate = CapturedLayerUpdate(
+            identity = fakeTree.layer.identity,
+            children = CapturedChange.Set(
+                listOf(CapturedChild.Wireframe(fakeSecondIdentity), CapturedChild.Wireframe(fakeTree.wireframeIdentity))
+            ),
+            modifiers = CapturedChange.Set(emptyList())
         )
-        val base = tree.snapshot.copy(
-            layers = listOf(baseLayer),
-            wireframes = listOf(tree.wireframe, secondWireframe)
-        )
-        val mutation = CapturedMutationSet(
-            timestamp = 456,
-            scope = tree.scope,
-            updates = CapturedChange.Set(
-                listOf(
-                    CapturedLayerUpdate(
-                        identity = tree.layer.identity,
-                        children = CapturedChange.Set(
-                            listOf(
-                                CapturedChild.Wireframe(secondIdentity),
-                                CapturedChild.Wireframe(tree.wireframeIdentity)
-                            )
-                        ),
-                        modifiers = CapturedChange.Set(emptyList())
-                    )
-                )
-            )
+        val fakeMutation = CapturedMutationSet(
+            timestamp = fakeTree.snapshot.timestamp + 1L,
+            scope = fakeTree.scope,
+            updates = CapturedChange.Set(listOf(fakeUpdate))
         )
 
         // When
-        val result = testedMapper.mapMutation(mutation, base)
+        val result = testedMapper.mapMutation(fakeMutation, fakeBase)
 
         // Then
         val record = (result as CaptureWireMappingResult.Success).value
         val data = record.data as MobileSegment.MobileIncrementalData.CompositionTreeMutationData
-        val update = data.updates?.single()
-        assertThat(update?.children?.map { it.id })
-            .containsExactly(secondIdentity.wireId, tree.wireframeIdentity.wireId)
-        assertThat(update?.modifiers).isEmpty()
-        assertThat(update?.x).isNull()
+        val mappedUpdate = checkNotNull(data.updates) { "Expected mapped layer updates" }.single()
+        val children = checkNotNull(mappedUpdate.children) { "Expected an explicit children update" }
+        assertThat(children.map { it.id })
+            .containsExactly(fakeSecondIdentity.wireId, fakeTree.wireframeIdentity.wireId)
+        assertThat(mappedUpdate.modifiers).isEmpty()
+        assertThat(mappedUpdate.x).isNull()
         assertThat(data.adds).isNull()
         assertThat(data.removes).isNull()
     }
@@ -145,16 +145,15 @@ internal class CapturedTreeWireMapperTest {
     @Test
     fun `M preserve absent and explicit empty fields W mapMutation`() {
         // Given
-        val tree = compositionTestTree()
-        val mutation = CapturedMutationSet(
-            timestamp = 456,
-            scope = tree.scope,
+        val fakeMutation = CapturedMutationSet(
+            timestamp = fakeTree.snapshot.timestamp + 1L,
+            scope = fakeTree.scope,
             adds = CapturedChange.Set(emptyList()),
             removes = CapturedChange.Set(emptyList())
         )
 
         // When
-        val result = testedMapper.mapMutation(mutation, tree.snapshot)
+        val result = testedMapper.mapMutation(fakeMutation, fakeTree.snapshot)
 
         // Then
         val record = (result as CaptureWireMappingResult.Success).value
@@ -168,54 +167,43 @@ internal class CapturedTreeWireMapperTest {
     @Test
     fun `M map resolved pixels and privacy placeholders W mapFullSnapshot`() {
         // Given
-        val tree = compositionTestTree()
-        val pixelIdentity = tree.factory.imageWireframe(tree.layer.identity)
-        val placeholderIdentity = tree.factory.placeholderWireframe(tree.layer.identity)
-        val layer = tree.layer.copy(
-            children = listOf(
-                CapturedChild.Wireframe(pixelIdentity),
-                CapturedChild.Wireframe(placeholderIdentity)
-            )
+        val fakePixelIdentity = fakeTree.factory.imageWireframe(fakeTree.layer.identity)
+        val fakePlaceholderIdentity = fakeTree.factory.placeholderWireframe(fakeTree.layer.identity)
+        val fakePixelBounds = CapturedBounds(1, 2, 3, 4)
+        val fakePlaceholderBounds = CapturedBounds(5, 6, 7, 8)
+        val fakePixel = CapturedWireframe.Pixel(
+            identity = fakePixelIdentity,
+            bounds = fakePixelBounds,
+            resource = PixelResource.Resolved(fakeResourceId, "image/webp")
         )
-        val pixelBounds = CapturedBounds(1, 2, 3, 4)
-        val placeholderBounds = CapturedBounds(5, 6, 7, 8)
-        val snapshot = tree.snapshot.copy(
-            layers = listOf(layer),
-            wireframes = listOf(
-                CapturedWireframe.Pixel(
-                    identity = pixelIdentity,
-                    bounds = pixelBounds,
-                    resource = PixelResource.Resolved("resource", "image/webp")
-                ),
-                CapturedWireframe.PrivacyPlaceholder(
-                    identity = placeholderIdentity,
-                    bounds = placeholderBounds,
-                    label = "Image"
-                )
-            )
+        val fakePlaceholder = CapturedWireframe.PrivacyPlaceholder(
+            identity = fakePlaceholderIdentity,
+            bounds = fakePlaceholderBounds,
+            label = "Image"
         )
+        val fakeSnapshot = fakeTree.snapshotWithWireframes(fakePixel, fakePlaceholder)
 
         // When
-        val result = testedMapper.mapFullSnapshot(snapshot)
+        val result = testedMapper.mapFullSnapshot(fakeSnapshot)
 
         // Then
         val wireframes = (result as CaptureWireMappingResult.Success).value.data.wireframes
         assertThat(wireframes).containsExactly(
             MobileSegment.Wireframe.ImageWireframe(
-                id = pixelIdentity.wireId,
-                x = pixelBounds.x,
-                y = pixelBounds.y,
-                width = pixelBounds.width,
-                height = pixelBounds.height,
-                resourceId = "resource",
+                id = fakePixelIdentity.wireId,
+                x = fakePixelBounds.x,
+                y = fakePixelBounds.y,
+                width = fakePixelBounds.width,
+                height = fakePixelBounds.height,
+                resourceId = fakeResourceId,
                 mimeType = "image/webp"
             ),
             MobileSegment.Wireframe.PlaceholderWireframe(
-                id = placeholderIdentity.wireId,
-                x = placeholderBounds.x,
-                y = placeholderBounds.y,
-                width = placeholderBounds.width,
-                height = placeholderBounds.height,
+                id = fakePlaceholderIdentity.wireId,
+                x = fakePlaceholderBounds.x,
+                y = fakePlaceholderBounds.y,
+                width = fakePlaceholderBounds.width,
+                height = fakePlaceholderBounds.height,
                 label = "Image"
             )
         )
@@ -224,19 +212,18 @@ internal class CapturedTreeWireMapperTest {
     @Test
     fun `M map cleared composite operation to source over W mapMutation`() {
         // Given
-        val tree = compositionTestTree()
-        val base = tree.snapshot.copy(
+        val fakeBase = fakeTree.snapshot.copy(
             layers = listOf(
-                tree.layer.copy(compositeOperation = CapturedCompositeOperation.DESTINATION_IN)
+                fakeTree.layer.copy(compositeOperation = CapturedCompositeOperation.DESTINATION_IN)
             )
         )
-        val mutation = CapturedMutationSet(
-            timestamp = 456,
-            scope = tree.scope,
+        val fakeMutation = CapturedMutationSet(
+            timestamp = fakeTree.snapshot.timestamp + 1L,
+            scope = fakeTree.scope,
             updates = CapturedChange.Set(
                 listOf(
                     CapturedLayerUpdate(
-                        identity = tree.layer.identity,
+                        identity = fakeTree.layer.identity,
                         compositeOperation = CapturedChange.Set(null)
                     )
                 )
@@ -244,36 +231,36 @@ internal class CapturedTreeWireMapperTest {
         )
 
         // When
-        val result = testedMapper.mapMutation(mutation, base)
+        val result = testedMapper.mapMutation(fakeMutation, fakeBase)
 
         // Then
         val record = (result as CaptureWireMappingResult.Success).value
         val data = record.data as MobileSegment.MobileIncrementalData.CompositionTreeMutationData
-        assertThat(data.updates?.single()?.compositeOperation)
+        val update = checkNotNull(data.updates) { "Expected a mapped layer update" }.single()
+        assertThat(update.compositeOperation)
             .isEqualTo(MobileSegment.CompositeOperation.SOURCEOVER)
     }
 
     @Test
     fun `M map complete added layers W mapMutation`() {
         // Given
-        val tree = compositionTestTree()
-        val addedIdentity = tree.factory.layer(tree.window, "added")
-        val addedLayer = tree.layer.copy(identity = addedIdentity)
-        val replacementRoot = tree.root.copy(
+        val fakeAddedIdentity = fakeTree.factory.layer(fakeTree.window, fakeTree.layer.identity.localId + "-added")
+        val fakeAddedLayer = fakeTree.layer.copy(identity = fakeAddedIdentity)
+        val fakeReplacementRoot = fakeTree.root.copy(
             children = listOf(
-                CapturedChild.Layer(tree.layer.identity),
-                CapturedChild.Layer(addedIdentity)
+                CapturedChild.Layer(fakeTree.layer.identity),
+                CapturedChild.Layer(fakeAddedIdentity)
             )
         )
-        val mutation = CapturedMutationSet(
-            timestamp = 456,
-            scope = tree.scope,
-            root = CapturedChange.Set(replacementRoot),
-            adds = CapturedChange.Set(listOf(addedLayer)),
+        val fakeMutation = CapturedMutationSet(
+            timestamp = fakeTree.snapshot.timestamp + 1L,
+            scope = fakeTree.scope,
+            root = CapturedChange.Set(fakeReplacementRoot),
+            adds = CapturedChange.Set(listOf(fakeAddedLayer)),
             updates = CapturedChange.Set(
                 listOf(
                     CapturedLayerUpdate(
-                        identity = tree.layer.identity,
+                        identity = fakeTree.layer.identity,
                         children = CapturedChange.Set(emptyList())
                     )
                 )
@@ -281,87 +268,86 @@ internal class CapturedTreeWireMapperTest {
         )
 
         // When
-        val result = testedMapper.mapMutation(mutation, tree.snapshot)
+        val result = testedMapper.mapMutation(fakeMutation, fakeTree.snapshot)
 
         // Then
         val record = (result as CaptureWireMappingResult.Success).value
         val data = record.data as MobileSegment.MobileIncrementalData.CompositionTreeMutationData
-        assertThat(data.adds?.single()?.id).isEqualTo(addedIdentity.wireId)
-        assertThat(data.adds?.single()?.children?.single()?.id)
-            .isEqualTo(tree.wireframeIdentity.wireId)
+        val addedLayer = checkNotNull(data.adds) { "Expected a mapped added layer" }.single()
+        val children = checkNotNull(addedLayer.children) { "Expected the added layer's children" }
+        assertThat(addedLayer.id).isEqualTo(fakeAddedIdentity.wireId)
+        assertThat(children.single().id)
+            .isEqualTo(fakeTree.wireframeIdentity.wireId)
     }
 
     @Test
     fun `M map removed layer identities W mapMutation`() {
         // Given
-        val tree = compositionTestTree()
-        val removedIdentity = tree.factory.layer(tree.window, "removed")
-        val removedLayer = tree.layer.copy(identity = removedIdentity, children = emptyList())
-        val base = tree.snapshot.copy(
-            root = tree.root.copy(
+        val fakeRemovedIdentity = fakeTree.factory.layer(fakeTree.window, fakeTree.layer.identity.localId + "-removed")
+        val fakeRemovedLayer = fakeTree.layer.copy(identity = fakeRemovedIdentity, children = emptyList())
+        val fakeBase = fakeTree.snapshot.copy(
+            root = fakeTree.root.copy(
                 children = listOf(
-                    CapturedChild.Layer(tree.layer.identity),
-                    CapturedChild.Layer(removedIdentity)
+                    CapturedChild.Layer(fakeTree.layer.identity),
+                    CapturedChild.Layer(fakeRemovedIdentity)
                 )
             ),
-            layers = listOf(tree.layer, removedLayer)
+            layers = listOf(fakeTree.layer, fakeRemovedLayer)
         )
-        val mutation = CapturedMutationSet(
-            timestamp = 456,
-            scope = tree.scope,
-            root = CapturedChange.Set(tree.root),
-            removes = CapturedChange.Set(listOf(removedIdentity))
+        val fakeMutation = CapturedMutationSet(
+            timestamp = fakeTree.snapshot.timestamp + 1L,
+            scope = fakeTree.scope,
+            root = CapturedChange.Set(fakeTree.root),
+            removes = CapturedChange.Set(listOf(fakeRemovedIdentity))
         )
 
         // When
-        val result = testedMapper.mapMutation(mutation, base)
+        val result = testedMapper.mapMutation(fakeMutation, fakeBase)
 
         // Then
         val record = (result as CaptureWireMappingResult.Success).value
         val data = record.data as MobileSegment.MobileIncrementalData.CompositionTreeMutationData
-        assertThat(data.removes).containsExactly(removedIdentity.wireId)
+        assertThat(data.removes).containsExactly(fakeRemovedIdentity.wireId)
     }
 
     @Test
     fun `M map webview wireframe with slotId equal to wire id W mapFullSnapshot`() {
         // Given
-        val tree = compositionTestTree()
-        val webViewIdentity = tree.factory.webViewWireframe(tree.layer.identity, slotId = 42L)
-        val layer = tree.layer.copy(children = listOf(CapturedChild.Wireframe(webViewIdentity)))
-        val bounds = CapturedBounds(1, 2, 3, 4)
-        val webViewWireframe = CapturedWireframe.WebView(
-            identity = webViewIdentity,
-            bounds = bounds,
+        val fakeWebViewIdentity = fakeTree.factory.webViewWireframe(fakeTree.layer.identity, slotId = 42L)
+        val fakeLayer = fakeTree.layer.copy(children = listOf(CapturedChild.Wireframe(fakeWebViewIdentity)))
+        val fakeBounds = CapturedBounds(1, 2, 3, 4)
+        val fakeWebViewWireframe = CapturedWireframe.WebView(
+            identity = fakeWebViewIdentity,
+            bounds = fakeBounds,
             isVisible = true
         )
-        val snapshot = tree.snapshot.copy(layers = listOf(layer), wireframes = listOf(webViewWireframe))
+        val fakeSnapshot = fakeTree.snapshot.copy(layers = listOf(fakeLayer), wireframes = listOf(fakeWebViewWireframe))
 
         // When
-        val result = testedMapper.mapFullSnapshot(snapshot)
+        val result = testedMapper.mapFullSnapshot(fakeSnapshot)
 
         // Then
         val wireframe = (result as CaptureWireMappingResult.Success).value.data.wireframes.single()
             as MobileSegment.Wireframe.WebviewWireframe
-        assertThat(wireframe.id).isEqualTo(webViewIdentity.wireId)
-        assertThat(wireframe.slotId).isEqualTo(webViewIdentity.wireId.toString())
+        assertThat(wireframe.id).isEqualTo(fakeWebViewIdentity.wireId)
+        assertThat(wireframe.slotId).isEqualTo(fakeWebViewIdentity.wireId.toString())
         assertThat(wireframe.isVisible).isTrue()
-        assertThat(wireframe.width).isEqualTo(bounds.width)
-        assertThat(wireframe.height).isEqualTo(bounds.height)
+        assertThat(wireframe.width).isEqualTo(fakeBounds.width)
+        assertThat(wireframe.height).isEqualTo(fakeBounds.height)
     }
 
     @Test
     fun `M return structured failures W mapMutation { invalid mutation }`() {
         // Given
-        val tree = compositionTestTree()
-        val unknownIdentity = tree.factory.layer(tree.window, "unknown")
-        val mutation = CapturedMutationSet(
-            timestamp = 456,
-            scope = tree.scope,
-            removes = CapturedChange.Set(listOf(unknownIdentity))
+        val fakeUnknownIdentity = fakeTree.factory.layer(fakeTree.window, fakeTree.layer.identity.localId + "-unknown")
+        val fakeMutation = CapturedMutationSet(
+            timestamp = fakeTree.snapshot.timestamp + 1L,
+            scope = fakeTree.scope,
+            removes = CapturedChange.Set(listOf(fakeUnknownIdentity))
         )
 
         // When
-        val result = testedMapper.mapMutation(mutation, tree.snapshot)
+        val result = testedMapper.mapMutation(fakeMutation, fakeTree.snapshot)
 
         // Then
         assertThat(result).isInstanceOf(CaptureWireMappingResult.Invalid::class.java)
@@ -372,10 +358,10 @@ internal class CapturedTreeWireMapperTest {
     @Test
     fun `M return structured failures W mapFullSnapshot { invalid snapshot }`() {
         // Given
-        val snapshot = compositionTestTree().snapshot.copy(root = null)
+        val fakeSnapshot = fakeTree.snapshot.copy(root = null)
 
         // When
-        val result = testedMapper.mapFullSnapshot(snapshot)
+        val result = testedMapper.mapFullSnapshot(fakeSnapshot)
 
         // Then
         assertThat(result).isInstanceOf(CaptureWireMappingResult.Invalid::class.java)
@@ -386,13 +372,12 @@ internal class CapturedTreeWireMapperTest {
     @Test
     fun `M return structured failure W mapFullSnapshot { validator accepts unresolved pixel }`() {
         // Given
-        val tree = compositionTestTree()
-        val unresolvedPixel = CapturedWireframe.Pixel(
-            identity = tree.wireframeIdentity,
+        val fakeUnresolvedPixel = CapturedWireframe.Pixel(
+            identity = fakeTree.wireframeIdentity,
             bounds = CapturedBounds(1, 2, 3, 4),
             resource = PixelResource.Unresolved
         )
-        val mapper = DefaultCapturedTreeWireMapper(
+        val testedMapper = DefaultCapturedTreeWireMapper(
             validator = object : CapturedTreeValidator {
                 override fun validate(snapshot: CapturedFullSnapshot) = CaptureValidationResult.Valid
 
@@ -404,7 +389,7 @@ internal class CapturedTreeWireMapperTest {
         )
 
         // When
-        val result = mapper.mapFullSnapshot(tree.snapshot.copy(wireframes = listOf(unresolvedPixel)))
+        val result = testedMapper.mapFullSnapshot(fakeTree.snapshot.copy(wireframes = listOf(fakeUnresolvedPixel)))
 
         // Then
         assertThat(result).isEqualTo(
@@ -412,10 +397,15 @@ internal class CapturedTreeWireMapperTest {
                 listOf(
                     CaptureValidationFailure(
                         CaptureValidationErrorCode.UNRESOLVED_PIXEL_RESOURCE,
-                        tree.wireframeIdentity
+                        fakeTree.wireframeIdentity
                     )
                 )
             )
         )
     }
+    private fun CompositionTestTree.snapshotWithWireframes(vararg children: CapturedWireframe): CapturedFullSnapshot =
+        snapshot.copy(
+            layers = listOf(layer.copy(children = children.map { CapturedChild.Wireframe(it.identity) })),
+            wireframes = children.toList()
+        )
 }

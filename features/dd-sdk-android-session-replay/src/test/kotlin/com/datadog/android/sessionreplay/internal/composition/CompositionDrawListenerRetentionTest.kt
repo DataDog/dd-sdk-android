@@ -13,21 +13,28 @@ import android.view.ViewTreeObserver
 import android.view.Window
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 
+@ExtendWith(MockitoExtension::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class CompositionDrawListenerRetentionTest {
 
     @Test
@@ -70,74 +77,136 @@ internal class CompositionDrawListenerRetentionTest {
         "STOP, TRANSFERRED",
         "STOP, REMOVAL_THROWS"
     )
-    fun `M forget observer registration W cleanup`(fakeCleanup: Cleanup, fakeState: ObserverState) {
+    fun `M forget observer registration W intercept() + stop() { cleanup }`(
+        fakeCleanup: Cleanup,
+        fakeState: ObserverState
+    ) {
         // Given
-        val mockObserver: ViewTreeObserver = mock()
-        whenever(mockObserver.isAlive).thenReturn(true)
-        val mockRoot: View = mock()
-        whenever(mockRoot.viewTreeObserver).thenReturn(mockObserver)
-        val fakeSource = ActiveWindowSource()
-        val testedInterceptor = CompositionViewOnDrawInterceptor(fakeSource, {}, mock())
-        testedInterceptor.intercept(listOf(mockRoot))
-        val fakeListener = argumentCaptor<ViewTreeObserver.OnDrawListener>()
-        verify(mockObserver).addOnDrawListener(fakeListener.capture())
-        whenever(mockRoot.viewTreeObserver).thenThrow(AssertionError("Must use the live original observer"))
-        val mockTransferredObserver: ViewTreeObserver = mock()
-        whenever(mockTransferredObserver.isAlive).thenReturn(fakeState == ObserverState.TRANSFERRED)
-        when (fakeState) {
-            ObserverState.ALIVE -> Unit
-            ObserverState.DEAD, ObserverState.TRANSFERRED -> {
-                whenever(mockObserver.isAlive).thenReturn(false)
-                doReturn(mockTransferredObserver).whenever(mockRoot).viewTreeObserver
-            }
-            ObserverState.REMOVAL_THROWS -> whenever(mockObserver.removeOnDrawListener(any()))
-                .doThrow(IllegalStateException("Observer died during removal"))
-        }
+        val fakeFixture = ObserverFixture(fakeState)
 
         // When
         when (fakeCleanup) {
-            Cleanup.REFRESH -> testedInterceptor.intercept(emptyList())
-            Cleanup.STOP -> testedInterceptor.stop()
+            Cleanup.REFRESH -> fakeFixture.testedInterceptor.intercept(emptyList())
+            Cleanup.STOP -> fakeFixture.testedInterceptor.stop()
         }
 
         // Then
-        assertThat(fakeSource.currentWindows()).isEmpty()
+        assertThat(fakeFixture.source.currentWindows()).isEmpty()
         if (fakeState == ObserverState.DEAD || fakeState == ObserverState.TRANSFERRED) {
-            verify(mockObserver, never()).removeOnDrawListener(any())
+            verify(fakeFixture.mockObserver, never()).removeOnDrawListener(any())
         } else {
-            verify(mockObserver).removeOnDrawListener(fakeListener.firstValue)
+            verify(fakeFixture.mockObserver).removeOnDrawListener(fakeFixture.listener)
         }
         if (fakeState == ObserverState.TRANSFERRED) {
-            verify(mockTransferredObserver).removeOnDrawListener(fakeListener.firstValue)
+            verify(fakeFixture.mockTransferredObserver).removeOnDrawListener(fakeFixture.listener)
         } else {
-            verify(mockTransferredObserver, never()).removeOnDrawListener(any())
+            verify(fakeFixture.mockTransferredObserver, never()).removeOnDrawListener(any())
         }
-        // A fresh registration proves cleanup forgot both the listener and its original observer,
-        // including failure paths; no access to the interceptor's private map is needed.
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "REFRESH, ALIVE",
+        "REFRESH, DEAD",
+        "REFRESH, TRANSFERRED",
+        "REFRESH, REMOVAL_THROWS",
+        "STOP, ALIVE",
+        "STOP, DEAD",
+        "STOP, TRANSFERRED",
+        "STOP, REMOVAL_THROWS"
+    )
+    fun `M register a fresh observer W intercept() { previous registration cleaned up }`(
+        fakeCleanup: Cleanup,
+        fakeState: ObserverState
+    ) {
+        // Given
+        val fakeFixture = ObserverFixture(fakeState)
+        fakeFixture.cleanUp(fakeCleanup)
         val mockNewObserver: ViewTreeObserver = mock()
         whenever(mockNewObserver.isAlive).thenReturn(true)
-        doReturn(mockNewObserver).whenever(mockRoot).viewTreeObserver
-        testedInterceptor.intercept(listOf(mockRoot))
-        verify(mockNewObserver).addOnDrawListener(any())
-        assertThat(fakeSource.currentWindows()).containsExactly(mockRoot)
+        doReturn(mockNewObserver).whenever(fakeFixture.mockRoot).viewTreeObserver
+
+        // When
+        fakeFixture.testedInterceptor.intercept(listOf(fakeFixture.mockRoot))
+
+        // Then
+        verify(mockNewObserver).addOnDrawListener(isA())
+        assertThat(fakeFixture.source.currentWindows()).containsExactly(fakeFixture.mockRoot)
     }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
     fun `M preserve live window exclusion W start { window removed while stopped }`(fakePreviouslyRecording: Boolean) {
         // Given
-        val fakeSource = ActiveWindowSource()
-        val mockRoot: View = mock()
-        val mockWindow: Window = mock()
-        whenever(mockWindow.peekDecorView()).thenReturn(mockRoot)
-        val mockObserver: ViewTreeObserver = mock()
-        whenever(mockObserver.isAlive).thenReturn(true)
-        whenever(mockRoot.viewTreeObserver).thenReturn(mockObserver)
-        val mockHandler: Handler = mock()
-        doAnswer { it.getArgument<Runnable>(0).run(); true }.whenever(mockHandler).post(any())
+        val fakeFixture = ExcludedWindowFixture(fakePreviouslyRecording)
+
+        // When
+        fakeFixture.testedLifecycle.start()
+
+        // Then
+        assertThat(fakeFixture.source.currentWindows()).isEmpty()
+        verify(fakeFixture.mockObserver, times(if (fakePreviouslyRecording) 1 else 0)).addOnDrawListener(isA())
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M re-include an excluded window W onWindowsAdded() { recording restarted }`(fakePreviouslyRecording: Boolean) {
+        // Given
+        val fakeFixture = ExcludedWindowFixture(fakePreviouslyRecording)
+        fakeFixture.testedLifecycle.start()
+
+        // When
+        fakeFixture.testedLifecycle.onWindowsAdded(listOf(fakeFixture.mockWindow))
+
+        // Then
+        assertThat(fakeFixture.source.currentWindows()).containsExactly(fakeFixture.mockRoot)
+    }
+
+    private class ObserverFixture(state: ObserverState) {
+        val mockObserver: ViewTreeObserver = mock { on { isAlive } doReturn true }
+        val mockRoot: View = mock { on { viewTreeObserver } doReturn mockObserver }
+        val source = ActiveWindowSource()
+        val testedInterceptor = CompositionViewOnDrawInterceptor(source, {}, mock())
+        private val registeredListener = argumentCaptor<ViewTreeObserver.OnDrawListener>()
+        val listener: ViewTreeObserver.OnDrawListener get() = registeredListener.firstValue
+        val mockTransferredObserver: ViewTreeObserver = mock {
+            on { isAlive } doReturn (state == ObserverState.TRANSFERRED)
+        }
+
+        init {
+            testedInterceptor.intercept(listOf(mockRoot))
+            verify(mockObserver).addOnDrawListener(registeredListener.capture())
+            whenever(mockRoot.viewTreeObserver).thenThrow(AssertionError("Must use the live original observer"))
+            when (state) {
+                ObserverState.ALIVE -> Unit
+                ObserverState.DEAD, ObserverState.TRANSFERRED -> {
+                    whenever(mockObserver.isAlive).thenReturn(false)
+                    doReturn(mockTransferredObserver).whenever(mockRoot).viewTreeObserver
+                }
+                ObserverState.REMOVAL_THROWS -> whenever(mockObserver.removeOnDrawListener(any()))
+                    .doThrow(IllegalStateException("Observer died during removal"))
+            }
+        }
+
+        fun cleanUp(cleanup: Cleanup) {
+            when (cleanup) {
+                Cleanup.REFRESH -> testedInterceptor.intercept(emptyList())
+                Cleanup.STOP -> testedInterceptor.stop()
+            }
+        }
+    }
+
+    private class ExcludedWindowFixture(previouslyRecording: Boolean) {
+        val source = ActiveWindowSource()
+        val mockObserver: ViewTreeObserver = mock { on { isAlive } doReturn true }
+        val mockRoot: View = mock { on { viewTreeObserver } doReturn mockObserver }
+        val mockWindow: Window = mock { on { peekDecorView() } doReturn mockRoot }
+        private val mockHandler: Handler = mock {
+            on { post(any()) } doAnswer { invocation -> invocation.getArgument<Runnable>(0).run(); true }
+        }
         val testedLifecycle = AndroidSnapshotCaptureLifecycle(
             application = mock<Application>(),
-            interceptor = CompositionViewOnDrawInterceptor(fakeSource, {}, mock()),
+            interceptor = CompositionViewOnDrawInterceptor(source, {}, mock()),
             touchInterceptor = mock(),
             internalLogger = mock(),
             uiHandler = mockHandler,
@@ -145,21 +214,14 @@ internal class CompositionDrawListenerRetentionTest {
             windowFromDecorView = { mockWindow },
             isMainThreadWindow = { true }
         )
-        if (fakePreviouslyRecording) {
-            testedLifecycle.start()
-            testedLifecycle.stop()
+
+        init {
+            if (previouslyRecording) {
+                testedLifecycle.start()
+                testedLifecycle.stop()
+            }
+            testedLifecycle.onWindowsRemoved(listOf(mockWindow))
         }
-        testedLifecycle.onWindowsRemoved(listOf(mockWindow))
-
-        // When
-        testedLifecycle.start()
-
-        // Then
-        assertThat(fakeSource.currentWindows()).isEmpty()
-        verify(mockObserver, times(if (fakePreviouslyRecording) 1 else 0)).addOnDrawListener(any())
-        // Tracking the same window again clears the exclusion without waiting for polling or GC.
-        testedLifecycle.onWindowsAdded(listOf(mockWindow))
-        assertThat(fakeSource.currentWindows()).containsExactly(mockRoot)
     }
 
     enum class Cleanup { REFRESH, STOP }

@@ -17,26 +17,37 @@ import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.utils.verifyLog
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.stub
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 
+@ExtendWith(MockitoExtension::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class WindowTouchPrivacyReaderTest {
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `M discard partial permissions W live privacy pass exhausts budget`(fakeOverrunInChild: Boolean) {
+    fun `M discard partial permissions W read() { live privacy pass exhausts budget }`(fakeOverrunInChild: Boolean) {
         // Given
         val mockRoot: ViewGroup = mock()
         val mockChild: View = mock()
         for (view in listOf(mockRoot, mockChild)) {
-            whenever(view.isShown).thenReturn(true)
-            whenever(view.width).thenReturn(100)
-            whenever(view.height).thenReturn(100)
+            view.stub {
+                on { isShown } doReturn true
+                on { width } doReturn 100
+                on { height } doReturn 100
+            }
         }
         whenever(mockRoot.childCount).thenReturn(1)
         whenever(mockRoot.getChildAt(0)).thenReturn(mockChild)
@@ -55,20 +66,21 @@ internal class WindowTouchPrivacyReaderTest {
         // When
         val result = testedReader.read(mockRoot)
 
-        // Then: neither child enumeration nor the final node may overrun and publish a partial SHOW map.
+        // Then
         assertThat(result).isNull()
     }
 
     @Test
-    fun `M deny privacy W custom view repeatedly throws during refresh`() {
+    fun `M deny privacy W read() { custom view repeatedly throws during refresh }`() {
         // Given
-        val mockRoot: View = mock()
         val mockInternalLogger: InternalLogger = mock()
         val fakeFailure = IllegalStateException("custom view")
-        whenever(mockRoot.isShown).thenReturn(true)
-        whenever(mockRoot.width).thenReturn(100)
-        whenever(mockRoot.height).thenReturn(100)
-        whenever(mockRoot.getTag(R.id.datadog_touch_privacy)).thenThrow(fakeFailure)
+        val mockRoot: View = mock {
+            on { isShown } doReturn true
+            on { width } doReturn 100
+            on { height } doReturn 100
+            on { getTag(R.id.datadog_touch_privacy) } doThrow fakeFailure
+        }
         val testedReader = WindowTouchPrivacyReader(
             timeProvider = CaptureTimeProvider { 0L },
             internalLogger = mockInternalLogger,
@@ -94,7 +106,7 @@ internal class WindowTouchPrivacyReaderTest {
 
     @ParameterizedTest
     @EnumSource(TouchPrivacy::class)
-    fun `M apply touch overrides to padded bounds W view has padding`(fakeTouchPrivacy: TouchPrivacy) {
+    fun `M apply touch overrides to padded bounds W read() { view has padding }`(fakeTouchPrivacy: TouchPrivacy) {
         // Given
         val mockRoot: View = mock()
         whenever(mockRoot.isShown).thenReturn(true)

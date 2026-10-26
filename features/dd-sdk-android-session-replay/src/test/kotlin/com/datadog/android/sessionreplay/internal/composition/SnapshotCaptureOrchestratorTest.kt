@@ -27,16 +27,16 @@ import java.util.concurrent.TimeUnit
 internal class SnapshotCaptureOrchestratorTest {
 
     @Test
-    fun `M use 90 ms deadline W generation budget is not overridden`(
+    fun `M use 90 ms deadline W requestCapture() { generation budget is not overridden }`(
         @LongForgery(min = 0L, max = 1_000_000L) fakeStartNs: Long
     ) {
         // Given
         val fakeClock = FakeClock().apply { nowNs = fakeStartNs }
         val fakeCaptureScheduler = FakeScheduler()
-        val capturedGenerations = mutableListOf<CaptureGenerationContext>()
+        val fakeCapturedGenerations = mutableListOf<CaptureGenerationContext>()
         val testedOrchestrator = SnapshotCaptureOrchestrator(
             producer = CapturedSnapshotProducer { context ->
-                capturedGenerations += context
+                fakeCapturedGenerations += context
                 null
             },
             processor = FakeProcessor(),
@@ -54,13 +54,13 @@ internal class SnapshotCaptureOrchestratorTest {
         fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // Then
-        val generation = capturedGenerations.single()
+        val generation = fakeCapturedGenerations.single()
         assertThat(generation.startedAtNs).isEqualTo(fakeStartNs)
         assertThat(generation.deadlineNs - generation.startedAtNs).isEqualTo(DEFAULT_GENERATION_BUDGET_NS)
     }
 
     @Test
-    fun `M keep recording allowance independent W generation deadline is reached`(
+    fun `M keep recording allowance independent W updateAndCheck() + consume() { generation deadline is reached }`(
         @LongForgery(min = 10L, max = 500L) fakeAllowanceMs: Long,
         @LongForgery(min = 1L, max = 1_000_000L) fakeAllowanceOvershootNs: Long,
         forge: Forge
@@ -80,361 +80,447 @@ internal class SnapshotCaptureOrchestratorTest {
     }
 
     @Test
-    fun `M discover roots on main thread W generation starts`(forge: Forge) {
+    fun `M defer root discovery W requestCapture() { main-thread task queued }`(forge: Forge) {
         // Given
         val fakeMainThreadExecutor = FakeMainThreadExecutor(autoRun = false)
-        val fixture = Fixture(forge, mainThreadExecutor = fakeMainThreadExecutor)
-        fixture.testedOrchestrator.start()
+        val fakeFixture = Fixture(forge, mainThreadExecutor = fakeMainThreadExecutor)
+        fakeFixture.testedOrchestrator.start()
 
         // When
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // Then
-        assertThat(fixture.producerCaptures).isZero()
+        assertThat(fakeFixture.producerCaptures).isZero()
+    }
+
+    @Test
+    fun `M discover roots W runNext() { posted main-thread task executes }`(forge: Forge) {
+        // Given
+        val fakeMainThreadExecutor = FakeMainThreadExecutor(autoRun = false)
+        val fakeFixture = Fixture(forge, mainThreadExecutor = fakeMainThreadExecutor)
+        fakeFixture.testedOrchestrator.start()
+
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // When
         fakeMainThreadExecutor.runNext()
 
         // Then
-        assertThat(fixture.producerCaptures).isEqualTo(1)
+        assertThat(fakeFixture.producerCaptures).isEqualTo(1)
     }
 
     @Test
-    fun `M execute synchronous capture adapter on main thread W capture starts`(forge: Forge) {
+    fun `M execute synchronous capture adapter on main thread W requestCapture() { capture starts }`(forge: Forge) {
         // Given
         val fakeMainThreadExecutor = FakeMainThreadExecutor()
-        var producerRanOnMainThread = false
-        val fixture = Fixture(
+        var fakeProducerRanOnMainThread = false
+        val fakeFixture = Fixture(
             forge,
             mainThreadExecutor = fakeMainThreadExecutor,
-            onProducerCapture = { producerRanOnMainThread = fakeMainThreadExecutor.isExecuting }
+            onProducerCapture = { fakeProducerRanOnMainThread = fakeMainThreadExecutor.isExecuting }
         )
 
         // When
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // Then
-        assertThat(producerRanOnMainThread).isTrue()
+        assertThat(fakeProducerRanOnMainThread).isTrue()
     }
 
     @Test
-    fun `M release main thread W generation waits for asynchronous processing`(forge: Forge) {
+    fun `M release main thread W requestCapture() { generation waits for asynchronous processing }`(forge: Forge) {
         // Given
         val fakeMainThreadExecutor = FakeMainThreadExecutor()
-        val fixture = Fixture(forge, mainThreadExecutor = fakeMainThreadExecutor)
-        fixture.testedOrchestrator.start()
+        val fakeFixture = Fixture(forge, mainThreadExecutor = fakeMainThreadExecutor)
+        fakeFixture.testedOrchestrator.start()
 
         // When
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // Then
-        assertThat(fixture.fakeProcessor.pending).hasSize(1)
+        assertThat(fakeFixture.fakeProcessor.pending).hasSize(1)
         assertThat(fakeMainThreadExecutor.isExecuting).isFalse()
-        assertThat(fixture.consumedCaptures).isEmpty()
+        assertThat(fakeFixture.consumedCaptures).isEmpty()
     }
 
     @Test
-    fun `M hand off completed snapshot W processing completes in generation`(forge: Forge) {
+    fun `M hand off completed snapshot W complete() { active generation }`(forge: Forge) {
         // Given
-        val fixture = Fixture(forge)
+        val fakeFixture = Fixture(forge)
 
         // When
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-        val processing = fixture.fakeProcessor.pending.single()
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        val processing = fakeFixture.fakeProcessor.pending.single()
         processing.complete()
 
         // Then
-        assertThat(fixture.producerCaptures).isEqualTo(1)
-        assertThat(fixture.consumedCaptures).hasSize(1)
-        assertThat(fixture.consumedCaptures.single().generation).isEqualTo(processing.request.generation)
-        assertThat(fixture.consumedCaptures.single().snapshot).isSameAs(fixture.fakeSnapshot)
-        assertThat(fixture.expiryTask().cancelled).isFalse()
+        assertThat(fakeFixture.producerCaptures).isEqualTo(1)
+        assertThat(fakeFixture.consumedCaptures).hasSize(1)
+        assertThat(fakeFixture.consumedCaptures.single().generation).isEqualTo(processing.request.generation)
+        assertThat(fakeFixture.consumedCaptures.single().snapshot).isSameAs(fakeFixture.fakeSnapshot)
+        assertThat(fakeFixture.expiryTask().cancelled).isFalse()
     }
 
     @Test
-    fun `M coalesce a follow-up capture W draw signals arrive during processing`(forge: Forge) {
+    fun `M coalesce a follow-up capture W requestCapture() { draw signals arrive during processing }`(forge: Forge) {
         // Given
-        val fixture = Fixture(forge)
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        val fakeFixture = Fixture(forge)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // When
-        fixture.testedOrchestrator.requestCapture()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeProcessor.pending.single().complete()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeProcessor.pending.single().complete()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // Then
-        assertThat(fixture.producerCaptures).isEqualTo(2)
-        assertThat(fixture.fakeProcessor.pending).hasSize(2)
-        assertThat(fixture.fakeProcessor.pending.map { it.request.generation.id }).containsExactly(1L, 2L)
+        assertThat(fakeFixture.producerCaptures).isEqualTo(2)
+        assertThat(fakeFixture.fakeProcessor.pending).hasSize(2)
+        assertThat(fakeFixture.fakeProcessor.pending.map { it.request.generation.id }).containsExactly(1L, 2L)
     }
 
     @Test
-    fun `M cancel generation and ignore callback W processing expires`(forge: Forge) {
+    fun `M cancel expired processing W runNext() { generation timeout }`(forge: Forge) {
         // Given
-        val fixture = Fixture(forge)
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-        val expiredProcessing = fixture.fakeProcessor.pending.single()
-        fixture.testedOrchestrator.requestCapture()
+        val fakeFixture = Fixture(forge)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        val fakeExpiredProcessing = fakeFixture.fakeProcessor.pending.single()
+        fakeFixture.testedOrchestrator.requestCapture()
 
         // When
-        fixture.fakeExpiryScheduler.runNext(fixture.fakeGenerationBudgetNs)
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-        expiredProcessing.complete()
+        fakeFixture.fakeExpiryScheduler.runNext(fakeFixture.fakeGenerationBudgetNs)
 
         // Then
-        assertThat(expiredProcessing.cancelled).isTrue()
-        assertThat(fixture.consumedCaptures).isEmpty()
-        assertThat(fixture.fakeProcessor.pending.map { it.request.generation.id }).containsExactly(1L, 2L)
+        assertThat(fakeExpiredProcessing.cancelled).isTrue()
     }
 
     @Test
-    fun `M expire generation W completion arrives at deadline before timeout task`(forge: Forge) {
+    fun `M ignore expired completion W complete() { newer generation processing }`(forge: Forge) {
         // Given
-        val fixture = Fixture(forge)
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-        val processing = fixture.fakeProcessor.pending.single()
+        val fakeFixture = Fixture(forge)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        val fakeExpiredProcessing = fakeFixture.fakeProcessor.pending.single()
+        fakeFixture.testedOrchestrator.requestCapture()
+
+        fakeFixture.fakeExpiryScheduler.runNext(fakeFixture.fakeGenerationBudgetNs)
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // When
-        fixture.fakeClock.nowNs = processing.request.generation.deadlineNs
-        processing.complete()
+        fakeExpiredProcessing.complete()
 
         // Then
-        assertThat(processing.cancelled).isTrue()
-        assertThat(fixture.consumedCaptures).isEmpty()
+        assertThat(fakeFixture.consumedCaptures).isEmpty()
     }
 
     @Test
-    fun `M hand off generation W completion arrives immediately before deadline`(forge: Forge) {
+    fun `M admit pending capture W runNext() { preceding generation expired }`(forge: Forge) {
         // Given
-        val fixture = Fixture(forge)
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-        val processing = fixture.fakeProcessor.pending.single()
+        val fakeFixture = Fixture(forge)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeFixture.testedOrchestrator.requestCapture()
 
         // When
-        fixture.fakeClock.nowNs = processing.request.generation.deadlineNs - 1L
-        processing.complete()
+        fakeFixture.fakeExpiryScheduler.runNext(fakeFixture.fakeGenerationBudgetNs)
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // Then
-        assertThat(fixture.consumedCaptures).hasSize(1)
+        assertThat(fakeFixture.fakeProcessor.pending.map { it.request.generation.id }).containsExactly(1L, 2L)
     }
 
     @Test
-    fun `M expire generation W completion arrives after deadline`(
+    fun `M expire generation W complete() { completion arrives at deadline before timeout task }`(forge: Forge) {
+        // Given
+        val fakeFixture = Fixture(forge)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        val fakeProcessing = fakeFixture.fakeProcessor.pending.single()
+
+        // When
+        fakeFixture.fakeClock.nowNs = fakeProcessing.request.generation.deadlineNs
+        fakeProcessing.complete()
+
+        // Then
+        assertThat(fakeProcessing.cancelled).isTrue()
+        assertThat(fakeFixture.consumedCaptures).isEmpty()
+    }
+
+    @Test
+    fun `M hand off generation W complete() { completion arrives immediately before deadline }`(forge: Forge) {
+        // Given
+        val fakeFixture = Fixture(forge)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        val fakeProcessing = fakeFixture.fakeProcessor.pending.single()
+
+        // When
+        fakeFixture.fakeClock.nowNs = fakeProcessing.request.generation.deadlineNs - 1L
+        fakeProcessing.complete()
+
+        // Then
+        assertThat(fakeFixture.consumedCaptures).hasSize(1)
+    }
+
+    @Test
+    fun `M expire generation W complete() { completion arrives after deadline }`(
         @LongForgery(min = 1L, max = 10_000L) fakeOverrunNs: Long,
         forge: Forge
     ) {
         // Given
-        val fixture = Fixture(forge)
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-        val processing = fixture.fakeProcessor.pending.single()
+        val fakeFixture = Fixture(forge)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        val fakeProcessing = fakeFixture.fakeProcessor.pending.single()
 
         // When
-        fixture.fakeClock.nowNs = processing.request.generation.deadlineNs + fakeOverrunNs
-        processing.complete()
+        fakeFixture.fakeClock.nowNs = fakeProcessing.request.generation.deadlineNs + fakeOverrunNs
+        fakeProcessing.complete()
 
         // Then
-        assertThat(processing.cancelled).isTrue()
-        assertThat(fixture.consumedCaptures).isEmpty()
+        assertThat(fakeProcessing.cancelled).isTrue()
+        assertThat(fakeFixture.consumedCaptures).isEmpty()
     }
 
     @Test
-    fun `M expose one absolute budget W producer and processor query generation`(forge: Forge) {
+    fun `M expose one absolute budget W requestCapture() { producer and processor query generation }`(forge: Forge) {
         // Given
-        val fixture = Fixture(forge)
-        val fakeElapsedNs = forge.aLong(min = 1L, max = fixture.fakeGenerationBudgetNs)
-        fixture.testedOrchestrator.start()
+        val fakeFixture = Fixture(forge)
+        val fakeElapsedNs = forge.aLong(min = 1L, max = fakeFixture.fakeGenerationBudgetNs)
+        fakeFixture.testedOrchestrator.start()
 
         // When
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-        val generation = fixture.producerGenerations.single()
-        fixture.fakeClock.nowNs = fixture.fakeStartNs + fakeElapsedNs
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        val generation = fakeFixture.producerGenerations.single()
+        fakeFixture.fakeClock.nowNs = fakeFixture.fakeStartNs + fakeElapsedNs
 
         // Then
-        assertThat(generation.startedAtNs).isEqualTo(fixture.fakeStartNs)
-        assertThat(generation.deadlineNs).isEqualTo(fixture.fakeStartNs + fixture.fakeGenerationBudgetNs)
-        assertThat(generation.remainingBudgetNs()).isEqualTo(fixture.fakeGenerationBudgetNs - fakeElapsedNs)
-        assertThat(fixture.fakeProcessor.pending.single().request.generation).isSameAs(generation)
+        assertThat(generation.startedAtNs).isEqualTo(fakeFixture.fakeStartNs)
+        assertThat(generation.deadlineNs).isEqualTo(fakeFixture.fakeStartNs + fakeFixture.fakeGenerationBudgetNs)
+        assertThat(generation.remainingBudgetNs()).isEqualTo(fakeFixture.fakeGenerationBudgetNs - fakeElapsedNs)
+        assertThat(fakeFixture.fakeProcessor.pending.single().request.generation).isSameAs(generation)
     }
 
     @Test
-    fun `M invalidate outstanding work token W generation reaches deadline`(forge: Forge) {
+    fun `M invalidate outstanding work token W isValid() + complete() { generation deadline reached }`(forge: Forge) {
         // Given
-        val fixture = Fixture(forge)
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-        val generation = fixture.producerGenerations.single()
-        val token = generation.createWorkToken()
+        val fakeFixture = Fixture(forge)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        val fakeGeneration = fakeFixture.producerGenerations.single()
+        val testedToken = fakeGeneration.createWorkToken()
+        fakeFixture.fakeClock.nowNs = fakeGeneration.deadlineNs
 
         // When
-        fixture.fakeClock.nowNs = generation.deadlineNs
+        val valid = testedToken?.isValid()
+        val completed = testedToken?.complete()
+        val remainingBudgetNs = fakeGeneration.remainingBudgetNs()
 
         // Then
-        assertThat(token).isNotNull
-        assertThat(token?.isValid()).isFalse()
-        assertThat(token?.complete()).isFalse()
-        assertThat(generation.remainingBudgetNs()).isZero()
+        checkNotNull(testedToken) { "Expected an outstanding token created before the deadline" }
+        assertThat(valid).isFalse()
+        assertThat(completed).isFalse()
+        assertThat(remainingBudgetNs).isZero()
     }
 
     @Test
-    fun `M ignore callback W result carries a different generation identity`(
+    fun `M ignore callback W complete() { result carries a different generation identity }`(
         @LongForgery(min = 1L, max = 100L) fakeIdOffset: Long,
         forge: Forge
     ) {
         // Given
-        val fixture = Fixture(forge)
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-        val processing = fixture.fakeProcessor.pending.single()
+        val fakeFixture = Fixture(forge)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        val fakeProcessing = fakeFixture.fakeProcessor.pending.single()
 
         // When
-        processing.complete(generationId = processing.request.generation.id + fakeIdOffset)
+        fakeProcessing.complete(generationId = fakeProcessing.request.generation.id + fakeIdOffset)
 
         // Then
-        assertThat(fixture.consumedCaptures).isEmpty()
-
-        // When
-        processing.complete()
-
-        // Then
-        assertThat(fixture.consumedCaptures).hasSize(1)
+        assertThat(fakeFixture.consumedCaptures).isEmpty()
     }
 
     @Test
-    fun `M ignore stale scheduled capture W pipeline restarts`(forge: Forge) {
+    fun `M accept matching completion W complete() { mismatched completion ignored earlier }`(
+        @LongForgery(min = 1L, max = 100L) fakeIdOffset: Long,
+        forge: Forge
+    ) {
         // Given
-        val fixture = Fixture(forge)
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
+        val fakeFixture = Fixture(forge)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        val fakeProcessing = fakeFixture.fakeProcessor.pending.single()
+
+        fakeProcessing.complete(generationId = fakeProcessing.request.generation.id + fakeIdOffset)
 
         // When
-        fixture.testedOrchestrator.stop()
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeProcessing.complete()
 
         // Then
-        assertThat(fixture.producerCaptures).isEqualTo(1)
-        assertThat(fixture.fakeProcessor.pending.single().request.generation.id).isEqualTo(1L)
+        assertThat(fakeFixture.consumedCaptures).hasSize(1)
     }
 
     @Test
-    fun `M cancel generation scoped work W orchestration stops`(forge: Forge) {
+    fun `M ignore stale scheduled capture W stop() + start() + requestCapture() { pipeline restarts }`(forge: Forge) {
         // Given
-        val fixture = Fixture(forge)
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-        val processing = fixture.fakeProcessor.pending.single()
+        val fakeFixture = Fixture(forge)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
 
         // When
-        fixture.testedOrchestrator.stop()
-        processing.complete()
+        fakeFixture.testedOrchestrator.stop()
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // Then
-        assertThat(processing.cancelled).isTrue()
-        assertThat(fixture.expiryTask().cancelled).isTrue()
-        assertThat(fixture.consumedCaptures).isEmpty()
+        assertThat(fakeFixture.producerCaptures).isEqualTo(1)
+        assertThat(fakeFixture.fakeProcessor.pending.single().request.generation.id).isEqualTo(1L)
     }
 
     @Test
-    fun `M shutdown capture and expiry schedulers W orchestration shuts down`(forge: Forge) {
+    fun `M cancel generation scoped work W stop() { orchestration stops }`(forge: Forge) {
         // Given
-        val fixture = Fixture(forge)
+        val fakeFixture = Fixture(forge)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        val fakeProcessing = fakeFixture.fakeProcessor.pending.single()
 
         // When
-        fixture.testedOrchestrator.shutdown()
+        fakeFixture.testedOrchestrator.stop()
 
         // Then
-        assertThat(fixture.fakeCaptureScheduler.shutdowns).isEqualTo(1)
-        assertThat(fixture.fakeExpiryScheduler.shutdowns).isEqualTo(1)
+        assertThat(fakeProcessing.cancelled).isTrue()
+        assertThat(fakeFixture.expiryTask().cancelled).isTrue()
     }
 
     @Test
-    fun `M skip processing and continue W traversal produces no snapshot`(forge: Forge) {
+    fun `M ignore stopped generation completion W complete()`(forge: Forge) {
         // Given
-        val fixture = Fixture(forge, snapshotToProduce = null)
-        fixture.testedOrchestrator.start()
+        val fakeFixture = Fixture(forge)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        val fakeProcessing = fakeFixture.fakeProcessor.pending.single()
+
+        fakeFixture.testedOrchestrator.stop()
 
         // When
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeProcessing.complete()
 
         // Then
-        assertThat(fixture.producerCaptures).isEqualTo(1)
-        assertThat(fixture.fakeProcessor.pending).isEmpty()
-        assertThat(fixture.consumedCaptures).isEmpty()
-        assertThat(fixture.expiryTask().cancelled).isTrue()
+        assertThat(fakeFixture.consumedCaptures).isEmpty()
     }
 
     @Test
-    fun `M skip traversal W capture time budget is exhausted`(forge: Forge) {
+    fun `M shutdown capture and expiry schedulers W shutdown() { orchestration shuts down }`(forge: Forge) {
+        // Given
+        val fakeFixture = Fixture(forge)
+
+        // When
+        fakeFixture.testedOrchestrator.shutdown()
+
+        // Then
+        assertThat(fakeFixture.fakeCaptureScheduler.shutdowns).isEqualTo(1)
+        assertThat(fakeFixture.fakeExpiryScheduler.shutdowns).isEqualTo(1)
+    }
+
+    @Test
+    fun `M discard empty capture W requestCapture() { traversal produces no snapshot }`(forge: Forge) {
+        // Given
+        val fakeFixture = Fixture(forge, snapshotToProduce = null)
+        fakeFixture.testedOrchestrator.start()
+
+        // When
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
+        // Then
+        assertThat(fakeFixture.producerCaptures).isEqualTo(1)
+        assertThat(fakeFixture.fakeProcessor.pending).isEmpty()
+        assertThat(fakeFixture.consumedCaptures).isEmpty()
+        assertThat(fakeFixture.expiryTask().cancelled).isTrue()
+    }
+
+    @Test
+    fun `M skip traversal W requestCapture() { capture time budget is exhausted }`(forge: Forge) {
         // Given
         val fakeTimeBudget = FakeTimeBudget(canStart = false)
-        val fixture = Fixture(forge, timeBudget = fakeTimeBudget)
-        fixture.testedOrchestrator.start()
+        val fakeFixture = Fixture(forge, timeBudget = fakeTimeBudget)
+        fakeFixture.testedOrchestrator.start()
 
         // When
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // Then
-        assertThat(fixture.producerCaptures).isZero()
-        assertThat(fixture.producerGenerations).isEmpty()
-        assertThat(fixture.consumedCaptures).isEmpty()
-        assertThat(fakeTimeBudget.startChecks).containsExactly(fixture.fakeStartNs)
+        assertThat(fakeFixture.producerCaptures).isZero()
+        assertThat(fakeFixture.producerGenerations).isEmpty()
+        assertThat(fakeFixture.consumedCaptures).isEmpty()
+        assertThat(fakeTimeBudget.startChecks).containsExactly(fakeFixture.fakeStartNs)
+    }
 
-        // When
+    @Test
+    fun `M admit a fresh request W requestCapture() { budget recovered after denial }`(forge: Forge) {
+        // Given
+        val fakeTimeBudget = FakeTimeBudget(canStart = false)
+        val fakeFixture = Fixture(forge, timeBudget = fakeTimeBudget)
+        fakeFixture.testedOrchestrator.start()
+
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
         fakeTimeBudget.canStart = true
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
+        // When
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // Then
-        assertThat(fixture.producerCaptures).isEqualTo(1)
-        assertThat(fixture.producerGenerations.single().id).isEqualTo(1L)
+        assertThat(fakeFixture.producerCaptures).isEqualTo(1)
+        assertThat(fakeFixture.producerGenerations.single().id).isEqualTo(1L)
         assertThat(fakeTimeBudget.consumedDurations).containsExactly(0L)
     }
 
     @Test
-    fun `M retry without a new request W time budget denies then allows admission`(forge: Forge) {
+    fun `M retry without a new request W runNext() { time budget recovers }`(forge: Forge) {
         // Given
         val fakeTimeBudget = FakeTimeBudget(canStart = false)
-        val fixture = Fixture(forge, timeBudget = fakeTimeBudget)
-        fixture.testedOrchestrator.start()
+        val fakeFixture = Fixture(forge, timeBudget = fakeTimeBudget)
+        fakeFixture.testedOrchestrator.start()
+
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // When
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-
-        // Then
-        assertThat(fixture.producerCaptures).isZero()
-
-        // When - no further requestCapture() call: only the time budget recovering
         fakeTimeBudget.canStart = true
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // Then
-        assertThat(fixture.producerCaptures).isEqualTo(1)
+        assertThat(fakeFixture.producerCaptures).isEqualTo(1)
     }
 
     @Test
@@ -443,12 +529,12 @@ internal class SnapshotCaptureOrchestratorTest {
         @BoolForgery fakeAdmitted: Boolean
     ) {
         // Given
-        val stubTimeBank = object : TimeBank {
+        val mockTimeBank = object : TimeBank {
             override fun consume(executionTime: Long) = Unit
             override fun updateAndCheck(timestamp: Long): Boolean = fakeAdmitted
             override fun timeUntilAvailableInNs(): Long = 0L
         }
-        val testedTimeBudget = TimeBankCaptureTimeBudget(stubTimeBank)
+        val testedTimeBudget = TimeBankCaptureTimeBudget(mockTimeBank)
 
         // When
         val admitted = testedTimeBudget.canStart(fakeTimestampNs)
@@ -458,185 +544,187 @@ internal class SnapshotCaptureOrchestratorTest {
     }
 
     @Test
-    fun `M notify skipped frame W time budget denies admission`(forge: Forge) {
+    fun `M notify skipped frame W requestCapture() { time budget denies admission }`(forge: Forge) {
         // Given
         val fakeTimeBudget = FakeTimeBudget(canStart = false)
-        var skippedFrames = 0
-        val fixture = Fixture(forge, timeBudget = fakeTimeBudget, onFrameSkipped = { skippedFrames++ })
-        fixture.testedOrchestrator.start()
+        var fakeSkippedFrames = 0
+        val fakeFixture = Fixture(forge, timeBudget = fakeTimeBudget, onFrameSkipped = { fakeSkippedFrames++ })
+        fakeFixture.testedOrchestrator.start()
 
         // When
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // Then
-        assertThat(skippedFrames).isEqualTo(1)
+        assertThat(fakeSkippedFrames).isEqualTo(1)
     }
 
     @Test
-    fun `M notify skipped frame only once W same denied request retries without a new draw signal`(forge: Forge) {
-        // Given
-        val fakeTimeBudget = FakeTimeBudget(canStart = false)
-        var skippedFrames = 0
-        val fixture = Fixture(forge, timeBudget = fakeTimeBudget, onFrameSkipped = { skippedFrames++ })
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-
-        // When - no further requestCapture() call: only the same denial retrying on its own
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-
-        // Then
-        assertThat(skippedFrames).isEqualTo(1)
-    }
-
-    @Test
-    fun `M notify skipped frame for each new draw signal W further draws arrive while a denial is retrying`(
+    fun `M notify skipped frame only once W runNext() { same denied request retries without a new draw signal }`(
         forge: Forge
     ) {
         // Given
         val fakeTimeBudget = FakeTimeBudget(canStart = false)
-        var skippedFrames = 0
-        val fixture = Fixture(forge, timeBudget = fakeTimeBudget, onFrameSkipped = { skippedFrames++ })
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-        assertThat(skippedFrames).isEqualTo(1)
+        var fakeSkippedFrames = 0
+        val fakeFixture = Fixture(forge, timeBudget = fakeTimeBudget, onFrameSkipped = { fakeSkippedFrames++ })
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
-        // When - a further real draw signal arrives before the automatic retry is admitted, and
-        // that retry still denies
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-
-        // Then - counted separately from the first denial, since it's a distinct missed draw
-        assertThat(skippedFrames).isEqualTo(2)
-    }
-
-    @Test
-    fun `M notify skipped frame again W a fresh request follows a resolved denial`(forge: Forge) {
-        // Given
-        val fakeTimeBudget = FakeTimeBudget(canStart = false)
-        var skippedFrames = 0
-        val fixture = Fixture(forge, timeBudget = fakeTimeBudget, onFrameSkipped = { skippedFrames++ })
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-        assertThat(skippedFrames).isEqualTo(1)
-
-        // When - the pending request is admitted and fully processed, clearing the episode
-        fakeTimeBudget.canStart = true
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
-        fixture.fakeProcessor.pending.single().complete()
-
-        // And then a genuinely new request arrives and is denied again
-        fakeTimeBudget.canStart = false
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        // When
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // Then
-        assertThat(skippedFrames).isEqualTo(2)
+        assertThat(fakeSkippedFrames).isEqualTo(1)
     }
 
     @Test
-    fun `M charge active main thread work W capture adapter completes`(
+    fun `M notify each denied draw W requestCapture() { retry pending }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeTimeBudget = FakeTimeBudget(canStart = false)
+        var fakeSkippedFrames = 0
+        val fakeFixture = Fixture(forge, timeBudget = fakeTimeBudget, onFrameSkipped = { fakeSkippedFrames++ })
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
+        // When
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
+        // Then
+        assertThat(fakeSkippedFrames).isEqualTo(2)
+    }
+
+    @Test
+    fun `M notify skipped frame again W requestCapture() { a fresh request follows a resolved denial }`(forge: Forge) {
+        // Given
+        val fakeTimeBudget = FakeTimeBudget(canStart = false)
+        var fakeSkippedFrames = 0
+        val fakeFixture = Fixture(forge, timeBudget = fakeTimeBudget, onFrameSkipped = { fakeSkippedFrames++ })
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
+        fakeTimeBudget.canStart = true
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeFixture.fakeProcessor.pending.single().complete()
+
+        // When
+        fakeTimeBudget.canStart = false
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
+        // Then
+        assertThat(fakeSkippedFrames).isEqualTo(2)
+    }
+
+    @Test
+    fun `M charge active main thread work W requestCapture() { synchronous capture }`(
         @LongForgery(min = 1L, max = 1_000L) fakeProducerExecutionNs: Long,
         forge: Forge
     ) {
         // Given
         val fakeTimeBudget = FakeTimeBudget(canStart = true)
-        val fixture = Fixture(
+        val fakeFixture = Fixture(
             forge,
             timeBudget = fakeTimeBudget,
             producerExecutionNs = fakeProducerExecutionNs
         )
 
         // When
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // Then
         assertThat(fakeTimeBudget.consumedDurations).containsExactly(fakeProducerExecutionNs)
     }
 
     @Test
-    fun `M exclude asynchronous waiting W charge recording time bank`(
+    fun `M exclude asynchronous waiting W complete() { charge recording time bank }`(
         @LongForgery(min = 1L, max = 1_000L) fakeProducerExecutionNs: Long,
         @LongForgery(min = 1L, max = 1_000L) fakeAsynchronousWaitNs: Long,
         forge: Forge
     ) {
         // Given
         val fakeTimeBudget = FakeTimeBudget(canStart = true)
-        val fixture = Fixture(
+        val fakeFixture = Fixture(
             forge,
             timeBudget = fakeTimeBudget,
             producerExecutionNs = fakeProducerExecutionNs
         )
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // When
-        fixture.fakeClock.nowNs += fakeAsynchronousWaitNs
-        fixture.fakeProcessor.pending.single().complete()
+        fakeFixture.fakeClock.nowNs += fakeAsynchronousWaitNs
+        fakeFixture.fakeProcessor.pending.single().complete()
 
         // Then
         assertThat(fakeTimeBudget.consumedDurations).containsExactly(fakeProducerExecutionNs)
     }
 
     @Test
-    fun `M observe cancellation between synchronous capture units W generation expires`(forge: Forge) {
+    fun `M observe cancellation between synchronous capture units W expire() { generation expires }`(forge: Forge) {
         // Given
         val testedGeneration = forge.aGenerationContext()
-        var executedUnits = 0
+        var fakeExecutedUnits = 0
 
         // When
-        val first = testedGeneration.runMainThreadCaptureUnit { executedUnits++ }
+        val first = testedGeneration.runMainThreadCaptureUnit { fakeExecutedUnits++ }
         testedGeneration.expire()
-        val second = testedGeneration.runMainThreadCaptureUnit { executedUnits++ }
+        val second = testedGeneration.runMainThreadCaptureUnit { fakeExecutedUnits++ }
 
         // Then
         assertThat(first).isInstanceOf(MainThreadCaptureResult.Completed::class.java)
         assertThat(second).isEqualTo(MainThreadCaptureResult.Interrupted)
-        assertThat(executedUnits).isEqualTo(1)
+        assertThat(fakeExecutedUnits).isEqualTo(1)
     }
 
     @Test
-    fun `M stop further synchronous work W time bank denies continuation`(forge: Forge) {
+    fun `M stop further synchronous work W runMainThreadCaptureUnit() { time bank denies continuation }`(forge: Forge) {
         // Given
         val fakeTimeBudget = FakeTimeBudget(canStart = true)
         val testedGeneration = forge.aGenerationContext(mainThreadTimeBudget = fakeTimeBudget)
-        var executedUnits = 0
-        testedGeneration.runMainThreadCaptureUnit(admissionAlreadyGranted = true) { executedUnits++ }
+        var fakeExecutedUnits = 0
+        testedGeneration.runMainThreadCaptureUnit(admissionAlreadyGranted = true) { fakeExecutedUnits++ }
         fakeTimeBudget.canStart = false
 
         // When
-        val result = testedGeneration.runMainThreadCaptureUnit { executedUnits++ }
+        val result = testedGeneration.runMainThreadCaptureUnit { fakeExecutedUnits++ }
 
         // Then
         assertThat(result).isEqualTo(MainThreadCaptureResult.Interrupted)
-        assertThat(executedUnits).isEqualTo(1)
+        assertThat(fakeExecutedUnits).isEqualTo(1)
     }
 
     @Test
-    fun `M check deadline before synchronous adapter W deadline already reached`(forge: Forge) {
+    fun `M check deadline before synchronous adapter W runMainThreadCaptureUnit() { deadline already reached }`(
+        forge: Forge
+    ) {
         // Given
         val fakeClock = FakeClock()
         val testedGeneration = forge.aGenerationContext(clock = fakeClock)
         fakeClock.nowNs = testedGeneration.deadlineNs
-        var adapterCalled = false
+        var fakeAdapterCalled = false
 
         // When
-        val result = testedGeneration.runMainThreadCaptureUnit { adapterCalled = true }
+        val result = testedGeneration.runMainThreadCaptureUnit { fakeAdapterCalled = true }
 
         // Then
         assertThat(result).isEqualTo(MainThreadCaptureResult.Interrupted)
-        assertThat(adapterCalled).isFalse()
+        assertThat(fakeAdapterCalled).isFalse()
     }
 
     @Test
-    fun `M check deadline after synchronous adapter W deadline reached during call`(forge: Forge) {
+    fun `M check deadline after synchronous adapter W runMainThreadCaptureUnit() { deadline reached during call }`(
+        forge: Forge
+    ) {
         // Given
         val fakeClock = FakeClock()
         val testedGeneration = forge.aGenerationContext(clock = fakeClock)
@@ -652,24 +740,24 @@ internal class SnapshotCaptureOrchestratorTest {
     }
 
     @Test
-    fun `M cooperatively drop capture W blocking adapter outlives deadline`(forge: Forge) {
+    fun `M cooperatively drop capture W requestCapture() { blocking adapter outlives deadline }`(forge: Forge) {
         // Given
         val fakeGenerationBudgetNs = forge.aGenerationBudgetNs()
-        val fixture = Fixture(
+        val fakeFixture = Fixture(
             forge,
             fakeGenerationBudgetNs = fakeGenerationBudgetNs,
             producerExecutionNs = fakeGenerationBudgetNs
         )
 
         // When
-        fixture.testedOrchestrator.start()
-        fixture.testedOrchestrator.requestCapture()
-        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fakeFixture.testedOrchestrator.start()
+        fakeFixture.testedOrchestrator.requestCapture()
+        fakeFixture.fakeCaptureScheduler.runNext(IMMEDIATE)
 
         // Then
-        assertThat(fixture.fakeExpiryScheduler.tasks.single().executed).isFalse()
-        assertThat(fixture.fakeProcessor.pending).isEmpty()
-        assertThat(fixture.consumedCaptures).isEmpty()
+        assertThat(fakeFixture.fakeExpiryScheduler.tasks.single().executed).isFalse()
+        assertThat(fakeFixture.fakeProcessor.pending).isEmpty()
+        assertThat(fakeFixture.consumedCaptures).isEmpty()
     }
 
     private class Fixture(
