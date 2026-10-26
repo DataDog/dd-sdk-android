@@ -26,6 +26,8 @@ STATUS_ASSUMPTION_FAILURE = -4
 
 STATUS_PATTERN = re.compile(r"^INSTRUMENTATION_STATUS: ([^=]+)=(.*)$")
 STATUS_CODE_PATTERN = re.compile(r"^INSTRUMENTATION_STATUS_CODE: (-?\d+)$")
+RESULT_PATTERN = re.compile(r"^INSTRUMENTATION_RESULT: ([^=]+)=(.*)$")
+FATAL_EXCEPTION_PREFIX = "Fatal exception when running tests"
 FINAL_CODE_PATTERN = re.compile(r"^INSTRUMENTATION_CODE: (-?\d+)$")
 INVALID_XML_CHARACTERS = re.compile(
     "[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x84\x86-\x9f]"
@@ -67,9 +69,19 @@ class InstrumentationParser:
             self.last_status_key = None
             return
 
+        result_match = RESULT_PATTERN.match(line.rstrip("\r\n"))
+        if result_match:
+            key, value = result_match.groups()
+            result_key = f"result:{key}"
+            self.status[result_key] = value
+            self.last_status_key = result_key
+            return
+
         final_code_match = FINAL_CODE_PATTERN.match(line.rstrip("\r\n"))
         if final_code_match:
             self.final_code = int(final_code_match.group(1))
+            self._check_result()
+            self.last_status_key = None
             return
 
         if line.startswith("INSTRUMENTATION_FAILED:"):
@@ -94,10 +106,21 @@ class InstrumentationParser:
                 f"Instrumentation finished with result code {self.final_code}."
             )
 
+        if not self.tests:
+            self.runner_failures.append("Instrumentation did not run any tests.")
+
     def has_failures(self) -> bool:
         return bool(self.runner_failures) or any(
             test.outcome in {"failure", "error"} for test in self.tests
         )
+
+    def _check_result(self) -> None:
+        short_msg = self.status.get("result:shortMsg")
+        stream = self.status.get("result:stream", "").strip()
+        if short_msg:
+            self.runner_failures.append(short_msg)
+        elif stream.startswith(FATAL_EXCEPTION_PREFIX):
+            self.runner_failures.append(stream)
 
     def _complete_status(self, code: int) -> None:
         class_name = self.status.get("class", "unknown")
