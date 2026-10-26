@@ -10,8 +10,10 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.internal.getFlagsEndpoint
+import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.internal.rum.rumContext
 import okhttp3.Headers
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -68,6 +70,14 @@ internal class PrecomputedAssignmentsRequestFactory(
             headersBuilder
                 .add(HEADER_CLIENT_TOKEN, datadogContext.clientToken)
                 .add(HEADER_CONTENT_TYPE, CONTENT_TYPE_VND_JSON)
+
+            // Bridge SDKs that consume raw snapshots cannot resolve encoded keys yet.
+            if (datadogContext.source == "android") {
+                headersBuilder.add(
+                    "X-DD-FEATURE-FLAGS-CAPABILITIES",
+                    listOf(FlagKeyObfuscation.CAPABILITY).sorted().joinToString(",")
+                )
+            }
 
             datadogContext.rumApplicationId?.let {
                 headersBuilder.add(HEADER_APPLICATION_ID, it)
@@ -145,8 +155,7 @@ internal class PrecomputedAssignmentsRequestFactory(
             .put("key_patterns", JSONArray(selection.keyPatterns))
 
     private val DatadogContext.rumApplicationId: String?
-        get() = featuresContext.get(Feature.RUM_FEATURE_NAME)
-            ?.get("application_id") as? String
+        get() = featuresContext[Feature.RUM_FEATURE_NAME]?.rumContext()?.applicationId
 
     companion object {
         private const val HEADER_APPLICATION_ID = "dd-application-id"

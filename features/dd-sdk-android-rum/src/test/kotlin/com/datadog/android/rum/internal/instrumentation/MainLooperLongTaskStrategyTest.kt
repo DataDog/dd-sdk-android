@@ -428,7 +428,7 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
         const val TEST_THRESHOLD_NS = TEST_THRESHOLD_MS * 1_000_000L
         const val LONG_TASK_DURATION_NS = TEST_THRESHOLD_NS + 1L
         val DEVICE_UPTIME_NS = TimeUnit.HOURS.toNanos(2)
-        val NEGATIVE_CLOCK_ORIGIN_NS = Long.MIN_VALUE / 2
+        const val NEGATIVE_CLOCK_ORIGIN_NS = Long.MIN_VALUE / 2
         val SHORT_TASK_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(1)
         const val RACE_ITERATIONS = 2000
 

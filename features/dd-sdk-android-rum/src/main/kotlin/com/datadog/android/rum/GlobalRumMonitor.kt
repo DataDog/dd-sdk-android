@@ -10,7 +10,6 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.rum.GlobalRumMonitor.get
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import java.util.Locale
 

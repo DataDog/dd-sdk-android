@@ -393,24 +393,23 @@ class ClassGenerator(
         value: Any?,
         type: Any?
     ): String {
-        return when {
-            value is JsonPrimitiveType -> {
+        return when (value) {
+            is JsonPrimitiveType -> {
                 error(
                     "Unable to get Kotlin Value from $value with type $type"
                 )
             }
 
-            value is String -> "\"$value\""
-            value is Double &&
-                (type == JsonType.INTEGER || type == JsonPrimitiveType.INTEGER) -> {
+            is String -> "\"$value\""
+            is Double if (type == JsonType.INTEGER || type == JsonPrimitiveType.INTEGER) -> {
                 "${value.toLong()}L"
             }
 
-            value is Double -> {
+            is Double -> {
                 "$value"
             }
 
-            value is Boolean -> {
+            is Boolean -> {
                 "$value"
             }
 

@@ -22,11 +22,11 @@ import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.profiling.quota.QuotaReason
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.VitalAppLaunchEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.VitalAppLaunchPropertiesAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo

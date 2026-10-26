@@ -44,7 +44,6 @@ internal class IdGenerationStrategyTest {
 
             traceIds.forEach { traceId ->
                 assertThat(traceId).isNotNull
-                assertThat(traceId).isNotEqualTo("foo")
                 assertThat(traceId).isNotEqualTo(DDTraceId.ZERO)
                 assertThat(traceId).isEqualTo(traceId)
                 val hashCode =

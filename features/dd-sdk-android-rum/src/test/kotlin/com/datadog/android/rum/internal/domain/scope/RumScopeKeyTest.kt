@@ -179,7 +179,7 @@ internal class RumScopeKeyTest {
         @IntForgery fakeId: Int
     ) {
         // Given
-        val input = org.mockito.kotlin.mock<FragmentNavigator.Destination>().apply {
+        val input = mock<FragmentNavigator.Destination>().apply {
             whenever(className) doReturn fakeClassName
             whenever(id) doReturn fakeId
         }
@@ -202,7 +202,7 @@ internal class RumScopeKeyTest {
         @IntForgery fakeId: Int
     ) {
         // Given
-        val input = org.mockito.kotlin.mock<DialogFragmentNavigator.Destination>().apply {
+        val input = mock<DialogFragmentNavigator.Destination>().apply {
             whenever(className) doReturn fakeClassName
             whenever(id) doReturn fakeId
         }
@@ -222,7 +222,7 @@ internal class RumScopeKeyTest {
     @Test
     fun `M create a key W from() {ActivityNavigator Destination}`() {
         // Given
-        val input = org.mockito.kotlin.mock<ActivityNavigator.Destination>().apply {
+        val input = mock<ActivityNavigator.Destination>().apply {
             whenever(component) doReturn mockComponentName
         }
         val expectedId = fakeClassName + "@" + System.identityHashCode(input)

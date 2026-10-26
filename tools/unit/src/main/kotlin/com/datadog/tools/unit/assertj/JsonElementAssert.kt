@@ -11,7 +11,6 @@ import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import java.math.BigDecimal
 import java.math.BigInteger
-import java.util.Date
 
 /**
  * Assertion methods for [JsonElement].
@@ -25,14 +24,13 @@ class JsonElementAssert(actual: JsonElement) :
      */
     fun isJsonValueOf(expected: Any?): JsonElementAssert {
         when (expected) {
-            null -> assertThat(actual.isJsonNull()).isTrue()
+            null -> assertThat(actual.isJsonNull).isTrue()
             is Boolean -> assertThat(actual.asBoolean).isEqualTo(expected)
             is Int -> assertThat(actual.asInt).isEqualTo(expected)
             is Long -> assertThat(actual.asLong).isEqualTo(expected)
             is Float -> assertThat(actual.asFloat).isEqualTo(expected)
             is Double -> assertThat(actual.asDouble).isEqualTo(expected)
             is String -> assertThat(actual.asString).isEqualTo(expected)
-            is Date -> assertThat(actual.asString).isEqualTo(expected)
             is BigInteger -> assertThat(actual.asBigInteger).isEqualTo(expected)
             is BigDecimal -> assertThat(actual.asBigDecimal).isEqualTo(expected)
             is List<*> -> JsonArrayAssert(actual.asJsonArray).isJsonArrayOf(expected)

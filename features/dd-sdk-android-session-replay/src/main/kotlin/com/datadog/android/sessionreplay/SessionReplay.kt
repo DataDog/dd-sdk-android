@@ -124,7 +124,7 @@ object SessionReplay {
     internal fun registeredFeature(): SessionReplayFeature? {
         return (currentRegisteredCore?.get() as? FeatureSdkCore)
             ?.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)
-            ?.unwrap<SessionReplayFeature>()
+            ?.unwrap()
     }
 
     private fun isAlreadyRegistered() =

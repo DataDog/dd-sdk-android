@@ -20,7 +20,7 @@ import java.lang.reflect.Method
 
 /**
  * A JUnit Jupiter extension that can ensure a test configuration state is properly handled with
- * self contained independent configurations.
+ * self-contained independent configurations.
  */
 class TestConfigurationExtension :
     BeforeAllCallback,

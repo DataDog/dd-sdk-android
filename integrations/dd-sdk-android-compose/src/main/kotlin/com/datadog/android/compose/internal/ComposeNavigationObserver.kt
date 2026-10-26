@@ -53,7 +53,7 @@ internal class ComposeNavigationObserver(
     }
 
     internal fun onDispose() {
-        // just a safe-guard if ON_PAUSE wasn't called
+        // just a safeguard if ON_PAUSE wasn't called
         navController.removeOnDestinationChangedListener(this)
     }
 

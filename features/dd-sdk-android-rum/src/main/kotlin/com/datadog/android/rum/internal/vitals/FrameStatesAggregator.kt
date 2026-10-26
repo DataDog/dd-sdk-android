@@ -215,7 +215,7 @@ internal class FrameStatesAggregator(
         }
     }
 
-    // There is a bug in AndroidFramework that could throw NPE, so we subscribing to the FrameMetrics only since S
+    // There is a bug in AndroidFramework that could throw NPE, so we are subscribing to the FrameMetrics only since S
     // https://github.com/DataDog/dd-sdk-android/issues/2556
     @RequiresApi(Build.VERSION_CODES.S)
     private fun registerMetricListener(window: Window) {
@@ -264,7 +264,7 @@ internal class FrameStatesAggregator(
         }
     }
 
-    // There is a bug in AndroidFramework that could throw NPE, so we subscribing to the FrameMetrics only since S
+    // There is a bug in AndroidFramework that could throw NPE, so we are subscribing to the FrameMetrics only since S
     // https://github.com/DataDog/dd-sdk-android/issues/2556
     @RequiresApi(Build.VERSION_CODES.S)
     private fun unregisterMetricListener(window: Window) {

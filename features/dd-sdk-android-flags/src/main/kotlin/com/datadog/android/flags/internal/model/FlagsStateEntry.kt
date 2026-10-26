@@ -13,5 +13,6 @@ internal data class FlagsStateEntry(
     val evaluationContext: EvaluationContext,
     val flags: Map<String, PrecomputedFlag>,
     val lastUpdateTimestamp: Long,
-    val flagSelection: CanonicalFlagSelection?
+    val obfuscation: FlagKeyObfuscation? = null,
+    val flagSelection: CanonicalFlagSelection? = null
 )

@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.timeseries.collector
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.Forgery

@@ -22,6 +22,9 @@ import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionState
+import com.datadog.android.internal.rum.RumViewType
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -34,7 +37,6 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
@@ -369,15 +371,17 @@ internal open class RumViewScope(
         eventAttributes: Map<String, Any?>,
         rumContext: RumContext
     ): VitalOperationStepEvent {
+        val syntheticsTestId = rumContext.syntheticsTestId
+        val syntheticsResultId = rumContext.syntheticsResultId
         val syntheticsAttribute = if (
-            rumContext.syntheticsTestId.isNullOrBlank() ||
-            rumContext.syntheticsResultId.isNullOrBlank()
+            syntheticsTestId.isNullOrBlank() ||
+            syntheticsResultId.isNullOrBlank()
         ) {
             null
         } else {
             VitalOperationStepEvent.Synthetics(
-                testId = rumContext.syntheticsTestId,
-                resultId = rumContext.syntheticsResultId
+                testId = syntheticsTestId,
+                resultId = syntheticsResultId
             )
         }
         val hasReplay = featuresContextResolver.resolveViewHasReplay(
@@ -798,15 +802,17 @@ internal open class RumViewScope(
 
         sdkCore.newRumEventWriteOperation(writeScope, writer, eventType) {
             val user = datadogContext.userInfo
+            val syntheticsTestId = rumContext.syntheticsTestId
+            val syntheticsResultId = rumContext.syntheticsResultId
             val syntheticsAttribute = if (
-                rumContext.syntheticsTestId.isNullOrBlank() ||
-                rumContext.syntheticsResultId.isNullOrBlank()
+                syntheticsTestId.isNullOrBlank() ||
+                syntheticsResultId.isNullOrBlank()
             ) {
                 null
             } else {
                 ErrorEvent.Synthetics(
-                    testId = rumContext.syntheticsTestId,
-                    resultId = rumContext.syntheticsResultId
+                    testId = syntheticsTestId,
+                    resultId = syntheticsResultId
                 )
             }
 
@@ -1307,7 +1313,7 @@ internal open class RumViewScope(
         val slowFramesRate = if (viewComplete) uiSlownessReport?.slowFramesRate(stoppedNanos) else null
         insightsCollector.onSlowFrameRate(uiSlownessReport?.slowFramesRate(stoppedNanos))
 
-        if (viewComplete && rumContext.sessionState != RumSessionScope.State.NOT_TRACKED) {
+        if (viewComplete && rumContext.sessionState != RumSessionState.NOT_TRACKED) {
             viewEndedMetricDispatcher.sendViewEnded(
                 interactionToNextViewMetricResolver.getState(viewId),
                 networkSettledMetricResolver.getState()
@@ -1349,15 +1355,17 @@ internal open class RumViewScope(
 
         val user = datadogContext.userInfo
         val replayStats = ViewEvent.ReplayStats(recordsCount = sessionReplayRecordsCount)
+        val syntheticsTestId = rumContext.syntheticsTestId
+        val syntheticsResultId = rumContext.syntheticsResultId
         val syntheticsAttribute = if (
-            rumContext.syntheticsTestId.isNullOrBlank() ||
-            rumContext.syntheticsResultId.isNullOrBlank()
+            syntheticsTestId.isNullOrBlank() ||
+            syntheticsResultId.isNullOrBlank()
         ) {
             null
         } else {
             ViewEvent.Synthetics(
-                testId = rumContext.syntheticsTestId,
-                resultId = rumContext.syntheticsResultId
+                testId = syntheticsTestId,
+                resultId = syntheticsResultId
             )
         }
 
@@ -1579,15 +1587,17 @@ internal open class RumViewScope(
         val longTaskId = UUID.randomUUID().toString()
         sdkCore.newRumEventWriteOperation(writeScope, writer) {
             val user = datadogContext.userInfo
+            val syntheticsTestId = rumContext.syntheticsTestId
+            val syntheticsResultId = rumContext.syntheticsResultId
             val syntheticsAttribute = if (
-                rumContext.syntheticsTestId.isNullOrBlank() ||
-                rumContext.syntheticsResultId.isNullOrBlank()
+                syntheticsTestId.isNullOrBlank() ||
+                syntheticsResultId.isNullOrBlank()
             ) {
                 null
             } else {
                 LongTaskEvent.Synthetics(
-                    testId = rumContext.syntheticsTestId,
-                    resultId = rumContext.syntheticsResultId
+                    testId = syntheticsTestId,
+                    resultId = syntheticsResultId
                 )
             }
 

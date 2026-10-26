@@ -9,6 +9,7 @@ package com.datadog.gradle.plugin.jsonschema.generator
 import com.datadog.gradle.plugin.jsonschema.TypeDefinition
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.TypeSpec
 import org.gradle.api.logging.Logger
 import java.io.File
@@ -17,6 +18,7 @@ class FileGenerator(
     private val outputDir: File,
     private val packageName: String,
     private val logger: Logger,
+    private val internalModels: Boolean = false,
     generateConstructorDefaults: Boolean = true
 ) {
 
@@ -76,6 +78,9 @@ class FileGenerator(
             ).apply { written = true }
         )
         val topLevelTypeBuilder = generateTypeSpec(definition, rootTypeName)
+        if (internalModels) {
+            topLevelTypeBuilder.addModifiers(KModifier.INTERNAL)
+        }
 
         while (knownTypes.any(isUnwrittenClass)) {
             val nestedClasses = knownTypes.filter(isUnwrittenClass).toSet()

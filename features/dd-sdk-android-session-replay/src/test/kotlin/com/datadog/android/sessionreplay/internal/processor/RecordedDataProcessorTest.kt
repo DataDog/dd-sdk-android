@@ -154,7 +154,7 @@ internal class RecordedDataProcessorTest {
             .thenReturn(forge.aList { forge.getForgery() })
         whenever(mockMutationResolver.resolveMutations(any(), any()))
             .thenReturn(forge.getForgery())
-        // By default writes are persisted, so the success callback runs.
+        // By default, writes are persisted, so the success callback runs.
         whenever(mockWriter.write(any(), any())).thenAnswer { invocation ->
             invocation.getArgument<() -> Unit>(1).invoke()
             null
@@ -321,7 +321,7 @@ internal class RecordedDataProcessorTest {
             fakeElapsedTimeAfterIntervalNs
         )
 
-        fakeSnapshot1.map {
+        fakeSnapshot1.forEach {
             val fakeFlattenedSnapshot = forge.aList {
                 getForgery(MobileSegment.Wireframe::class.java)
             }
@@ -761,7 +761,7 @@ internal class RecordedDataProcessorTest {
 
         // Then
         // We should only send the FullSnapshotRecord. The IncrementalSnapshotRecord will not be
-        // send as there was no mutation data detected.
+        // sent as there was no mutation data detected.
         val captor = argumentCaptor<EnrichedRecord>()
         verify(mockWriter, times(1)).write(captor.capture(), any())
         assertThat(captor.firstValue.records.size).isEqualTo(3)

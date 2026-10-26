@@ -12,6 +12,7 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.internal.model.FlagsStateEntry
+import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
@@ -128,6 +129,18 @@ internal class DefaultFlagsRepositoryTest {
                 reason = "TARGETING_MATCH"
             )
         )
+    }
+
+    @Test
+    fun `M store generated assignments W setFlagsAndContext() { forged assignments }`(forge: Forge) {
+        // Given
+        val assignments = forge.getForgery<PrecomputedAssignments>()
+
+        // When
+        testedRepository.setFlagsAndContext(testContext, assignments.flags, assignments.obfuscation)
+
+        // Then
+        assertThat(testedRepository.getFlagsSnapshot()).isEqualTo(assignments.flags)
     }
 
     @Test
@@ -464,7 +477,7 @@ internal class DefaultFlagsRepositoryTest {
         callback.onSuccess(
             DataStoreContent(
                 forge.anInt(),
-                FlagsStateEntry(forge.getForgery(), flags, forge.aLong(), persistedSelection)
+                FlagsStateEntry(forge.getForgery(), flags, forge.aLong(), flagSelection = persistedSelection)
             )
         )
 
@@ -488,7 +501,7 @@ internal class DefaultFlagsRepositoryTest {
                     context,
                     mapOf(flagKey to forge.getForgery<PrecomputedFlag>()),
                     forge.aLong(),
-                    CanonicalFlagSelection(listOf("mobile"), listOf("checkout-*"))
+                    flagSelection = CanonicalFlagSelection(listOf("mobile"), listOf("checkout-*"))
                 )
             )
         )

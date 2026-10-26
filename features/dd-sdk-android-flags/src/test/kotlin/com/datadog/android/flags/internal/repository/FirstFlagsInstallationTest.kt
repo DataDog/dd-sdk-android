@@ -155,7 +155,7 @@ internal class FirstFlagsInstallationTest {
         val installed = CountDownLatch(1)
         val finish = CountDownLatch(1)
         val delivered = CountDownLatch(1)
-        val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
+        val executor = Executors.newSingleThreadExecutor()
         try {
             // When
             val installation = executor.submit {
@@ -200,7 +200,7 @@ internal class FirstFlagsInstallationTest {
         // Given
         listOf(true, false).forEach { missing ->
             val tested = repository(TimeUnit.MINUTES.toMillis(1))
-            val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
+            val executor = Executors.newSingleThreadExecutor()
             try {
                 // When
                 val reads = executor.submit {

@@ -139,7 +139,7 @@ data class RumConfiguration internal constructor(
 
         /**
          * Enable long operations on the main thread to be tracked automatically.
-         * Any long running operation on the main thread will appear as Long Tasks in Datadog
+         * Any long-running operation on the main thread will appear as Long Tasks in Datadog
          * RUM Explorer
          * @param longTaskThresholdMs the threshold in milliseconds above which a task running on
          * the Main thread [Looper] is considered as a long task (default 100ms). Setting a
@@ -278,7 +278,7 @@ data class RumConfiguration internal constructor(
         /**
          * Enables/Disables tracking of frustration signals.
          *
-         * By default frustration signals are tracked. Currently the SDK supports detecting
+         * By default, frustration signals are tracked. Currently, the SDK supports detecting
          * error taps which occur when an error follows a user action tap.
          *
          * @param enabled whether frustration signals should be tracked in RUM.
@@ -429,7 +429,7 @@ data class RumConfiguration internal constructor(
         /**
          * Sets the write strategy for RUM view events (see [ViewEventWriteConfig]).
          *
-         * By default the SDK uses [ViewEventWriteConfig.FullViewOnlyAtStart]: a full
+         * By default, the SDK uses [ViewEventWriteConfig.FullViewOnlyAtStart]: a full
          * `ViewEvent` is sent for the first update of a view, and subsequent updates send
          * only the diff, reducing payload size (a.k.a. Partial View Updates).
          *

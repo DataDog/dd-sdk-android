@@ -1451,7 +1451,6 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
     companion object {
 
-        @Suppress("unused")
         @JvmStatic
         fun twoDirections(): Stream<Arguments> {
             val directions = listOf(

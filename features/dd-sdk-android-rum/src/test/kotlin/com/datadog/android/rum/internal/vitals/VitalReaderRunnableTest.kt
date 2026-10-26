@@ -9,8 +9,9 @@ package com.datadog.android.rum.internal.vitals
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.scope.RumViewType
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumViewType
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -89,7 +90,10 @@ internal class VitalReaderRunnableTest {
             mockExecutor,
             TEST_PERIOD_MS
         )
-        testedRunnable.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeRumContext.toMap())
+        testedRunnable.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(FeatureContextKeys.RUM_CONTEXT to fakeRumContext)
+        )
     }
 
     @Test
@@ -134,7 +138,10 @@ internal class VitalReaderRunnableTest {
         // Given
         fakeRumContext = fakeRumContext
             .copy(viewType = viewType)
-        testedRunnable.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeRumContext.toMap())
+        testedRunnable.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(FeatureContextKeys.RUM_CONTEXT to fakeRumContext)
+        )
 
         // When
         testedRunnable.run()

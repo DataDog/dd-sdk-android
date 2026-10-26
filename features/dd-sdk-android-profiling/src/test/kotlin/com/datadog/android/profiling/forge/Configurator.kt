@@ -12,6 +12,7 @@ import com.datadog.android.internal.tests.elmyr.ProfilerEventRumVitalEventFactor
 import com.datadog.android.internal.tests.elmyr.ProfilingAnrDetectedEventForgeryFactory
 import com.datadog.android.internal.tests.elmyr.ProfilingRumContextFactory
 import com.datadog.android.internal.tests.elmyr.ProfilingThreadDumpForgeryFactory
+import com.datadog.android.internal.tests.elmyr.RumContextForgeryFactory
 import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
@@ -23,6 +24,7 @@ class Configurator : BaseConfigurator() {
     override fun configure(forge: Forge) {
         super.configure(forge)
         forge.useCoreFactories()
+        forge.addFactory(RumContextForgeryFactory())
         forge.addFactory(ProfilingConfigurationForgeryFactory())
         forge.addFactory(PerfettoResultFactory())
         forge.addFactory(ProfilerEventRumVitalEventFactory())

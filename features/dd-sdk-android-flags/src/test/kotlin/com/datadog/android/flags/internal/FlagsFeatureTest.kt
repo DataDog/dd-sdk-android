@@ -16,7 +16,6 @@ import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.utils.verifyLog
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -58,9 +57,6 @@ internal class FlagsFeatureTest {
 
     @Mock
     lateinit var mockContext: Context
-
-    @StringForgery
-    lateinit var fakeApplicationId: String
 
     private lateinit var testedFeature: FlagsFeature
 

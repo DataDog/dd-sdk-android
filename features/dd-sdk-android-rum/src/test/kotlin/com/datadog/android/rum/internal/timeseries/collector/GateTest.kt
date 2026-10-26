@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.internal.timeseries.collector
 
-import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.scope.RumViewType
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumViewType
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

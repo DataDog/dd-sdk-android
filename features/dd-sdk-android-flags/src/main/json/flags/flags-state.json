@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "FlagsState",
+  "type": "object",
+  "properties": {
+    "evaluationContext": {
+      "type": "object",
+      "properties": {
+        "targetingKey": { "type": "string" },
+        "attributes": { "type": "object", "additionalProperties": true }
+      },
+      "required": ["targetingKey"]
+    },
+    "flags": { "type": "object", "additionalProperties": true },
+    "encodedFlags": { "type": "object", "additionalProperties": true },
+    "lastUpdateTimestamp": { "type": "integer" },
+    "obfuscated": { "type": "boolean" },
+    "obfuscation": {
+      "type": "object",
+      "properties": {
+        "scheme": { "type": "string" },
+        "salt": { "type": "string" }
+      },
+      "required": ["scheme", "salt"]
+    },
+    "flagSelection": {
+      "type": "object",
+      "properties": {
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "keyPatterns": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["tags", "keyPatterns"]
+    }
+  },
+  "required": ["evaluationContext", "lastUpdateTimestamp"]
+}

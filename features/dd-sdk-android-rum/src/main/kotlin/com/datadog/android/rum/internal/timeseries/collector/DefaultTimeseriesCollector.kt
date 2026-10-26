@@ -12,8 +12,8 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.timeseries.CollectedTimeseriesSessionRegistry
 import com.datadog.android.rum.internal.timeseries.Pipeline
 import com.datadog.android.rum.internal.timeseries.PipelineFactory
@@ -71,7 +71,7 @@ import java.util.concurrent.atomic.AtomicInteger
  *                  └────────────╯
  * ```
  *
- * - **C** - [com.datadog.android.rum.internal.domain.RumContext] updates ([onRumContextUpdate]).
+ * - **C** - [com.datadog.android.internal.rum.RumContext] updates ([onRumContextUpdate]).
  * - **S** - session activity ([onSessionStart]/[onSessionStop]).
  * - **F** - app visibility ([onUiVisible]/[onUiHidden]), where [onUiHidden] debounces the update by claiming a
  *   [Gate] ticket ([Gate.startBackgroundTransition]) and applying it after a delay ([Gate.setForeground]),

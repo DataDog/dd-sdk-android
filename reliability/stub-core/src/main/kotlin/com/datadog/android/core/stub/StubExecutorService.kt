@@ -24,10 +24,10 @@ class StubExecutorService(executorContext: String) : ExecutorService {
     private var isShutdown = false
     private var isTerminated = false
 
-    override fun execute(command: Runnable?) {
+    override fun execute(command: Runnable) {
         check(!isShutdown)
         check(!isTerminated)
-        command?.run()
+        command.run()
     }
 
     override fun shutdown() {
@@ -49,45 +49,45 @@ class StubExecutorService(executorContext: String) : ExecutorService {
         return isTerminated
     }
 
-    override fun awaitTermination(timeout: Long, unit: TimeUnit?): Boolean {
+    override fun awaitTermination(timeout: Long, unit: TimeUnit): Boolean {
         return false
     }
 
-    override fun <T : Any?> submit(task: Callable<T>?): Future<T> {
+    override fun <T> submit(task: Callable<T>): Future<T> {
         val futureTask = FutureTask(task)
         futureTask.run()
         return futureTask
     }
 
-    override fun <T : Any?> submit(task: Runnable?, result: T): Future<T> {
+    override fun <T> submit(task: Runnable, result: T): Future<T> {
         val futureTask = FutureTask(task, result)
         futureTask.run()
         return futureTask
     }
 
-    override fun submit(task: Runnable?): Future<*> {
+    override fun submit(task: Runnable): Future<*> {
         val futureTask = FutureTask(task, null)
         futureTask.run()
         return futureTask
     }
 
-    override fun <T : Any?> invokeAll(tasks: MutableCollection<out Callable<T>>?): MutableList<Future<T>> {
+    override fun <T> invokeAll(tasks: MutableCollection<out Callable<T>>): MutableList<Future<T>> {
         TODO()
     }
 
-    override fun <T : Any?> invokeAll(
-        tasks: MutableCollection<out Callable<T>>?,
+    override fun <T> invokeAll(
+        tasks: MutableCollection<out Callable<T>>,
         timeout: Long,
-        unit: TimeUnit?
+        unit: TimeUnit
     ): MutableList<Future<T>> {
         TODO()
     }
 
-    override fun <T : Any?> invokeAny(tasks: MutableCollection<out Callable<T>>?): T {
+    override fun <T> invokeAny(tasks: MutableCollection<out Callable<T>>): T {
         TODO()
     }
 
-    override fun <T : Any?> invokeAny(tasks: MutableCollection<out Callable<T>>?, timeout: Long, unit: TimeUnit?): T {
+    override fun <T> invokeAny(tasks: MutableCollection<out Callable<T>>, timeout: Long, unit: TimeUnit): T {
         TODO()
     }
 }

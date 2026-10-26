@@ -57,7 +57,7 @@ data class Version(
     }
 
     /**
-     * @return a human readable Semantic Version name based on the information, with an optional suffix
+     * @return a human-readable Semantic Version name based on the information, with an optional suffix
      * (eg: 1.0.0, 2.3.0-rc1, 0.0.4-alpha1, etc...).
      * ** See also ** [Semantic Versioning](https://semver.org/)
      */

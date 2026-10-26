@@ -82,14 +82,12 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
             anInt(),
             aFloat(),
             aDouble()
-        ).map { anAlphabeticalString() to it as Number }
-            .toMap(mutableMapOf())
+        ).associateTo(mutableMapOf()) { anAlphabeticalString() to it as Number }
     }
 
     private fun Forge.exhaustiveMeta(): MutableMap<String, String> {
         return listOf(
             aString()
-        ).map { anAlphabeticalString() to it }
-            .toMap(mutableMapOf())
+        ).associateByTo(mutableMapOf()) { anAlphabeticalString() }
     }
 }

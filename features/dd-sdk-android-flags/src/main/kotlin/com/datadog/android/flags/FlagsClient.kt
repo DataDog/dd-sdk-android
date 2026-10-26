@@ -67,6 +67,7 @@ interface FlagsClient {
     /**
      * Invokes [listener] once with the keys from the first installed cached or downloaded flags,
      * including an empty configuration. Missing or invalid cache does not trigger this callback.
+     * Obfuscated configurations return an empty key list because the original keys are not available.
      * Each registration receives a separate event with a copy of the retained first keys,
      * even after subsequent flag updates.
      * Replaying an available result reads retained memory and does not perform I/O.
