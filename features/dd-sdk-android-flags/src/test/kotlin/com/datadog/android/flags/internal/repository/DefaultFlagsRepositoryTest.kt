@@ -487,6 +487,24 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
+    fun `M ignore persisted state W initial disk read completes { state saved without a flag selection }`(
+        forge: Forge
+    ) {
+        // Given
+        val flags = mapOf(forge.anAlphabeticalString() to forge.getForgery<PrecomputedFlag>())
+        val callback = preparePersistenceLoad(forge, CanonicalFlagSelection(listOf("mobile"), emptyList()))
+
+        // When
+        callback.onSuccess(
+            DataStoreContent(forge.anInt(), FlagsStateEntry(forge.getForgery(), flags, forge.aLong()))
+        )
+
+        // Then
+        assertThat(testedRepository.getEvaluationContext()).isNull()
+        assertThat(testedRepository.hasFlags()).isFalse()
+    }
+
+    @Test
     fun `M install persisted state W initial disk read completes { same flag selection }`(forge: Forge) {
         // Given
         val context = forge.getForgery<EvaluationContext>()

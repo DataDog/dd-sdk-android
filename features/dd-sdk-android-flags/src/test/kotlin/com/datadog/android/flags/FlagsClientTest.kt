@@ -11,13 +11,22 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.NoOpFlagsClient
+import com.datadog.android.flags.internal.model.FlagsStateEntry
+import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import okhttp3.Call
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONObject
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -26,12 +35,16 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.ExecutorService
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -117,6 +130,70 @@ internal class FlagsClientTest {
             ?.unwrap<FlagsFeature>()
         flagsFeature?.clearClients()
     }
+
+    // region Flag Selection Wiring
+
+    @Test
+    fun `M key persisted flags by the configured selection W createInternal() { flag selection }`(
+        @StringForgery fakeFlagKey: String,
+        @StringForgery fakeClientName: String
+    ) {
+        // Given
+        val mockCore = mock<FeatureSdkCore>()
+        val mockDataStore = mock<DataStoreHandler>()
+        val mockFeatureScope = mock<FeatureScope>()
+        whenever(mockCore.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockCore.createSingleThreadExecutorService(any())).thenReturn(mock<ExecutorService>())
+        whenever(mockCore.createOkHttpCallFactory(any())).thenReturn(mock<Call.Factory>())
+        whenever(mockFeatureScope.dataStore).thenReturn(mockDataStore)
+        whenever(mockCore.getFeature(FLAGS_FEATURE_NAME)).thenReturn(mockFeatureScope)
+        lateinit var readCallback: DataStoreReadCallback<FlagsStateEntry>
+        doAnswer {
+            readCallback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        val configuration = FlagsConfiguration.Builder()
+            .trackEvaluations(false)
+            .flagSelection(tags = listOf("mobile"), keyPatterns = null)
+            .build()
+        val client = FlagsClient.createInternal(
+            configuration = configuration,
+            featureSdkCore = mockCore,
+            flagsFeature = FlagsFeature(mockCore, configuration),
+            evaluationsFeature = null,
+            name = fakeClientName,
+            evaluationTelemetryOptOutParameterEnabled = false
+        ) as DatadogFlagsClient
+
+        // When
+        readCallback.onSuccess(
+            DataStoreContent(
+                1,
+                FlagsStateEntry(
+                    evaluationContext = EvaluationContext("user"),
+                    flags = mapOf(
+                        fakeFlagKey to
+                            PrecomputedFlag(
+                                "boolean",
+                                "true",
+                                false,
+                                "allocation",
+                                "on",
+                                JSONObject(),
+                                "TARGETING_MATCH"
+                            )
+                    ),
+                    lastUpdateTimestamp = 0L,
+                    flagSelection = CanonicalFlagSelection(tags = listOf("mobile"), keyPatterns = emptyList())
+                )
+            )
+        )
+
+        // Then
+        assertThat(client.getFlagAssignmentsSnapshot()).containsOnlyKeys(fakeFlagKey)
+    }
+
+    // endregion
 
     // region Static Flag Resolution Methods
 
