@@ -153,7 +153,9 @@ internal class MainLooperLongTaskStrategy(internal val thresholdMs: Long) : Prin
         fun removePrinter(printer: Printer) = synchronized(this) {
             printers = printers.filter { it !== printer }.toTypedArray()
             if (printers.isEmpty()) {
-                Looper.getMainLooper().setMessageLogging(null)
+                // null-aware call is needed for tests - MainLooperTestConfiguration can tear down before
+                // we stop RUM feature
+                Looper.getMainLooper()?.setMessageLogging(null)
             }
         }
 

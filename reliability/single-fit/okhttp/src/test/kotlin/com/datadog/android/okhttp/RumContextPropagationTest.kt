@@ -12,7 +12,6 @@ import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.sampling.DeterministicSampler.Companion.MAX_ID
 import com.datadog.android.core.sampling.DeterministicSampler.Companion.SAMPLER_HASHER
 import com.datadog.android.core.stub.StubSDKCore
@@ -32,7 +31,6 @@ import com.datadog.android.trace.api.replace
 import com.datadog.android.trace.api.setTestIdGenerationStrategy
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.android.utils.aDatadogContextWithRumContext
-import com.datadog.tools.unit.completedFutureMock
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.getStaticValue
@@ -258,10 +256,7 @@ class RumContextPropagationTest {
                 .getFieldValue<MutableMap<String, SdkCore>, Any>("instances")
                 .also { instances -> instances += sdkCoreStub.name to sdkCoreStub }
 
-            sdkCoreStub.stubFeatureScope(
-                StubRumFeature,
-                SdkFeatureMock.create(completedFutureMock(datadogContext))
-            )
+            sdkCoreStub.registerFeature(StubRumFeature)
 
             return sdkCoreStub
         }
