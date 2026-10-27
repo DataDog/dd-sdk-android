@@ -91,13 +91,20 @@ internal object FlagSelectionCanonicalizer {
         }
     }
 
-    private fun canonicalizeList(values: List<String>): List<String> = values
-        .asSequence()
-        .map { value -> value.trim { it in WHITE_SPACE } }
-        .filter { it.isNotEmpty() }
-        .sortedBy { it.utf8SortKey() }
-        .toList()
-        .distinct()
+    private fun canonicalizeList(values: List<String>): List<String> {
+        val distinct = values
+            .asSequence()
+            .map { value -> value.trim { it in WHITE_SPACE } }
+            .filter { it.isNotEmpty() }
+            .toList()
+            .distinct()
+        // An over-limit list is dropped as too_many_values, so its order does not matter.
+        if (distinct.size > MAX_VALUES) return distinct
+        return distinct
+            .map { it to it.utf8SortKey() }
+            .sortedBy { it.second }
+            .map { it.first }
+    }
 
     // Latin-1 maps each byte to one char, so comparing these strings compares unsigned UTF-8 bytes.
     private fun String.utf8SortKey(): String = String(toByteArray(Charsets.UTF_8), Charsets.ISO_8859_1)

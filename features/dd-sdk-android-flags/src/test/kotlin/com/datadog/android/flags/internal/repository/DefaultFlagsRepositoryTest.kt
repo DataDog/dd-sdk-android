@@ -342,7 +342,7 @@ internal class DefaultFlagsRepositoryTest {
         }.toMap()
         val callback = preparePersistenceLoad(forge)
 
-        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong(), null)))
+        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong())))
 
         val snapshot = testedRepository.getFlagsSnapshot()
         flags.forEach { (key, originalFlag) ->
@@ -369,7 +369,7 @@ internal class DefaultFlagsRepositoryTest {
             anAlphabeticalString() to getForgery<PrecomputedFlag>()
         }.toMap()
         val callback = preparePersistenceLoad(forge)
-        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong(), null)))
+        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong())))
         val cachedSnapshot = testedRepository.getFlagsSnapshot()
 
         testedRepository.setFlagsAndContext(context, flags)
@@ -398,7 +398,7 @@ internal class DefaultFlagsRepositoryTest {
         val networkFlags = mapOf(forge.anAlphabeticalString() to forge.getForgery<PrecomputedFlag>())
         testedRepository.setFlagsAndContext(networkContext, networkFlags)
 
-        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong(), null)))
+        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong())))
 
         assertThat(testedRepository.getFlagsSnapshot()).isSameAs(networkFlags)
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(networkContext)
@@ -411,7 +411,7 @@ internal class DefaultFlagsRepositoryTest {
         val callback = preparePersistenceLoad(forge)
 
         // When
-        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, emptyMap(), forge.aLong(), null)))
+        callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, emptyMap(), forge.aLong())))
 
         // Then
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(context)
@@ -434,7 +434,7 @@ internal class DefaultFlagsRepositoryTest {
         val networkContext = diskContext.copy(targetingKey = diskContext.targetingKey + "-network")
         val diskFlags = mapOf(forge.anAlphabeticalString() to forge.getForgery<PrecomputedFlag>())
         val callback = preparePersistenceLoad(forge)
-        val diskContent = DataStoreContent(forge.anInt(), FlagsStateEntry(diskContext, diskFlags, forge.aLong(), null))
+        val diskContent = DataStoreContent(forge.anInt(), FlagsStateEntry(diskContext, diskFlags, forge.aLong()))
 
         // When
         if (diskFirst) {

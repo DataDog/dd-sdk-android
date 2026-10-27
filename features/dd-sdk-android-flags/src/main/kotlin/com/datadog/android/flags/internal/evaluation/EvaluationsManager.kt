@@ -150,7 +150,7 @@ internal class EvaluationsManager(
                     hadFlags && flagsRepository.getEvaluationContext() == context
                 )
                 val response = datadogContext?.let { assignmentsReader.readPrecomputedFlags(context, it) }
-                val assignments = response?.let { mapResponse(it) }
+                val assignments = response?.let(::mapResponse)
                     ?.takeIf { it.obfuscation == null || supportsObfuscation }
                 if (assignments != null) {
                     installFlags(context, assignments, initializationCompletion, callback)

@@ -104,7 +104,7 @@ internal class FlagsStateSerializerTest {
             )
         )
 
-        val flagsState = FlagsStateEntry(evaluationContext, flags, fakeTimestamp, null)
+        val flagsState = FlagsStateEntry(evaluationContext, flags, fakeTimestamp)
 
         // When
         val serialized = testedSerializer.serialize(flagsState)
@@ -145,7 +145,7 @@ internal class FlagsStateSerializerTest {
                 serialId = null
             )
         )
-        val flagsState = FlagsStateEntry(evaluationContext, flags, fakeTimestamp, null)
+        val flagsState = FlagsStateEntry(evaluationContext, flags, fakeTimestamp)
 
         // When
         val serialized = testedSerializer.serialize(flagsState)
@@ -161,7 +161,7 @@ internal class FlagsStateSerializerTest {
         // Given
         val targetingKey = forge.anAlphabeticalString()
         val evaluationContext = EvaluationContext(targetingKey, emptyMap())
-        val flagsState = FlagsStateEntry(evaluationContext, emptyMap(), fakeTimestamp, null)
+        val flagsState = FlagsStateEntry(evaluationContext, emptyMap(), fakeTimestamp)
 
         // When
         val serialized = testedSerializer.serialize(flagsState)
@@ -178,7 +178,7 @@ internal class FlagsStateSerializerTest {
         // Given
         // Create a state that could potentially cause serialization issues
         val evaluationContext = EvaluationContext("key", emptyMap())
-        val flagsState = FlagsStateEntry(evaluationContext, emptyMap(), fakeTimestamp, null)
+        val flagsState = FlagsStateEntry(evaluationContext, emptyMap(), fakeTimestamp)
 
         // When
         val serialized = testedSerializer.serialize(flagsState)

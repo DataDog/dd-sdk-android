@@ -252,7 +252,7 @@ internal class FirstFlagsInstallationTest {
         try {
             // When
             val loading = executor.submit {
-                disk.onSuccess(DataStoreContent(1, FlagsStateEntry(context, flags, 0, null)))
+                disk.onSuccess(DataStoreContent(1, FlagsStateEntry(context, flags, 0)))
             }
 
             // Then
@@ -372,6 +372,6 @@ internal class FirstFlagsInstallationTest {
 
     private fun restored(keys: List<String>): DataStoreContent<FlagsStateEntry> = DataStoreContent(
         1,
-        FlagsStateEntry(context, keys.associateWith { mock<PrecomputedFlag>() }, 0, null)
+        FlagsStateEntry(context, keys.associateWith { mock<PrecomputedFlag>() }, 0)
     )
 }
