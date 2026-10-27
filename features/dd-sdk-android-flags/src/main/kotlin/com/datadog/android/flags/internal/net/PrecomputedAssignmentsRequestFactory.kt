@@ -49,7 +49,7 @@ internal class PrecomputedAssignmentsRequestFactory(
 
         val headers = buildHeaders(datadogContext) ?: return null
 
-        val body = buildRequestBody(context, datadogContext)
+        val body = buildRequestBody(context, datadogContext) ?: return null
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Safe: inputs validated, caller handles null
         return Request.Builder()
@@ -91,16 +91,35 @@ internal class PrecomputedAssignmentsRequestFactory(
         return headersBuilder.build()
     }
 
-    private fun buildRequestBody(context: EvaluationContext, datadogContext: DatadogContext): RequestBody {
+    private fun buildRequestBody(context: EvaluationContext, datadogContext: DatadogContext): RequestBody? {
+        // Java callers can supply null entries despite the Kotlin map type.
+        val inputAttributes: Map<out String?, String?> = context.attributes
+        val targetingAttributes = mutableMapOf<String, String>()
+        for ((key, value) in inputAttributes) {
+            if (key == null) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    { "Failed to create request body: attribute key is null" }
+                )
+                return null
+            }
+            if (value != null) {
+                targetingAttributes[key] = value
+            }
+        }
         val body = PrecomputedAssignmentsRequest(
             data = PrecomputedAssignmentsRequest.Data(
                 attributes = PrecomputedAssignmentsRequest.Attributes(
                     env = PrecomputedAssignmentsRequest.Env(ddEnv = datadogContext.env),
-                    source = PrecomputedAssignmentsRequest.Source(sdkVersion = datadogContext.sdkVersion),
+                    source = PrecomputedAssignmentsRequest.Source(
+                        sdkName = if (datadogContext.source == "android") "dd-sdk-android" else datadogContext.source,
+                        sdkVersion = datadogContext.sdkVersion
+                    ),
                     subject = PrecomputedAssignmentsRequest.Subject(
                         targetingKey = context.targetingKey,
                         targetingAttributes = PrecomputedAssignmentsRequest.TargetingAttributes(
-                            additionalProperties = context.attributes.toMutableMap()
+                            additionalProperties = targetingAttributes
                         )
                     )
                 )

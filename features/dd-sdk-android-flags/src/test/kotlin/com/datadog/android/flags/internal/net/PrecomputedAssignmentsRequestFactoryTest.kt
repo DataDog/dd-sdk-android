@@ -10,10 +10,13 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.utils.verifyLog
 import com.datadog.android.utils.withRumContext
+import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -80,6 +83,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         assertThat(request.header("X-DD-FEATURE-FLAGS-CAPABILITIES"))
             .isEqualTo("assignment-encoding-flag-key-256-v1")
         assertThat(attributes.has("supported_capabilities")).isFalse()
+        assertThat(attributes.getJSONObject("source").getString("sdk_name")).isEqualTo("dd-sdk-android")
         assertThat(attributes.getJSONObject("source").getString("sdk_version")).isEqualTo(context.sdkVersion)
     }
 
@@ -100,6 +104,8 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             // Then
             assertThat(attributes.has("supported_capabilities")).isFalse()
             assertThat(request.header("X-DD-FEATURE-FLAGS-CAPABILITIES")).isNull()
+            assertThat(attributes.getJSONObject("source").getString("sdk_name")).isEqualTo(source)
+            assertThat(attributes.getJSONObject("source").getString("sdk_version")).isEqualTo(context.sdkVersion)
         }
     }
 
@@ -192,22 +198,16 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
 
         // Then
         checkNotNull(request)
-        val bodyJson = JSONObject(extractRequestBodyAsString(request))
-        val data = bodyJson.getJSONObject("data")
-        assertThat(bodyJson.length()).isEqualTo(1)
-        assertThat(data.getString("type")).isEqualTo("precompute-assignments-request")
-        val attributes = data.getJSONObject("attributes")
-        val subject = attributes.getJSONObject("subject")
-        assertThat(subject.getString("targeting_key")).isEqualTo(fakeContext.targetingKey)
-        val targetingAttributes = subject.getJSONObject("targeting_attributes")
-        assertThat(targetingAttributes.length()).isEqualTo(fakeAttributes.size)
-        fakeAttributes.forEach { (key, value) ->
-            assertThat(targetingAttributes.getString(key)).isEqualTo(value)
-        }
-        assertThat(attributes.getJSONObject("env").getString("dd_env")).isEqualTo(fakeDatadogContext.env)
-        val source = attributes.getJSONObject("source")
-        assertThat(source.getString("sdk_name")).isEqualTo("dd-sdk-android")
-        assertThat(source.getString("sdk_version")).isEqualTo(fakeDatadogContext.sdkVersion)
+        val bodyJson = JsonParser.parseString(extractRequestBodyAsString(request)).asJsonObject
+        assertThat(bodyJson.keySet()).containsExactly("data")
+        assertThat(bodyJson.getAsJsonObject("data").get("type").asString)
+            .isEqualTo("precompute-assignments-request")
+        val attributes = PrecomputedAssignmentsRequest.fromJsonObject(bodyJson).data.attributes
+        assertThat(attributes.subject.targetingKey).isEqualTo(fakeContext.targetingKey)
+        assertThat(attributes.subject.targetingAttributes.additionalProperties).isEqualTo(fakeAttributes)
+        assertThat(attributes.env.ddEnv).isEqualTo(fakeDatadogContext.env)
+        assertThat(attributes.source.sdkName).isEqualTo(fakeDatadogContext.source)
+        assertThat(attributes.source.sdkVersion).isEqualTo(fakeDatadogContext.sdkVersion)
     }
 
     @Test
@@ -240,6 +240,50 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     // endregion
 
     // region create() - Error cases
+
+    @Test
+    fun `M return null W create() { null attribute key from Java }`(
+        @StringForgery fakeTargetingKey: String,
+        @StringForgery fakeValue: String
+    ) {
+        // Given
+        @Suppress("UNCHECKED_CAST")
+        val fakeAttributes = mapOf(null to fakeValue) as Map<String, String>
+        val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
+
+        // When
+        val request = testedFactory.create(fakeContext, fakeDatadogContext)
+
+        // Then
+        assertThat(request).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            "Failed to create request body: attribute key is null"
+        )
+    }
+
+    @Test
+    fun `M omit null attribute values W create() { null attribute value from Java }`(
+        @StringForgery fakeTargetingKey: String,
+        @StringForgery fakeKey: String,
+        @StringForgery fakeValue: String
+    ) {
+        // Given
+        @Suppress("UNCHECKED_CAST")
+        val fakeAttributes = mapOf(fakeKey to null, "$fakeKey-valid" to fakeValue) as Map<String, String>
+        val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
+
+        // When
+        val request = testedFactory.create(fakeContext, fakeDatadogContext)
+
+        // Then
+        val json = JSONObject(extractRequestBodyAsString(checkNotNull(request)))
+            .getJSONObject("data").getJSONObject("attributes")
+            .getJSONObject("subject").getJSONObject("targeting_attributes")
+        assertThat(json.has(fakeKey)).isFalse()
+        assertThat(json.getString("$fakeKey-valid")).isEqualTo(fakeValue)
+    }
 
     @ParameterizedTest
     @EnumSource(DatadogSite::class, names = ["US1_FED", "US2_FED"])

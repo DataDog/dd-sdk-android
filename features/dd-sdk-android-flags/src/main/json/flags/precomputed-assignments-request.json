@@ -25,11 +25,11 @@
               ]
             },
             "source": {
+              "description": "SDK identity for the precomputed assignments request, containing the SDK name and version. Distinct from the scalar SDK source tag used by RUM and other SDK features.",
               "type": "object",
               "properties": {
                 "sdk_name": {
-                  "type": "string",
-                  "const": "dd-sdk-android"
+                  "type": "string"
                 },
                 "sdk_version": {
                   "type": "string"
