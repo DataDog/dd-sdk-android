@@ -86,7 +86,7 @@ datadogPlugin = "1.31.0"
 kotlinPoet = "2.2.0"
 jsonSchemaValidator = "1.14.6"
 binaryCompatibility = "0.18.1"
-dependencyLicense = "0.8.0"
+dependencyLicense = "0.8.1"
 kotlinXmlBuilder = "1.9.3"
 
 # Integrations
