@@ -14,7 +14,6 @@ import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.rum.RumContext
-import com.datadog.android.utils.verifyLog
 import com.datadog.android.utils.withRumContext
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
@@ -242,25 +241,24 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     // region create() - Error cases
 
     @Test
-    fun `M return null W create() { null attribute key from Java }`(
+    fun `M omit null attribute keys W create() { null attribute key from Java }`(
         @StringForgery fakeTargetingKey: String,
         @StringForgery fakeValue: String
     ) {
         // Given
         @Suppress("UNCHECKED_CAST")
-        val fakeAttributes = mapOf(null to fakeValue) as Map<String, String>
+        val fakeAttributes = mapOf(null to fakeValue, fakeTargetingKey to fakeValue) as Map<String, String>
         val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
         // When
         val request = testedFactory.create(fakeContext, fakeDatadogContext)
 
         // Then
-        assertThat(request).isNull()
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            "Failed to create request body: attribute key is null"
-        )
+        val json = JSONObject(extractRequestBodyAsString(checkNotNull(request)))
+            .getJSONObject("data").getJSONObject("attributes")
+            .getJSONObject("subject").getJSONObject("targeting_attributes")
+        assertThat(json.length()).isEqualTo(1)
+        assertThat(json.getString(fakeTargetingKey)).isEqualTo(fakeValue)
     }
 
     @Test
