@@ -290,7 +290,12 @@ class TraceCrossProductSamplingTest {
     private fun stubRumSessionContext(sessionIdToken: Long, sessionSampleRate: Float) {
         val sessionId = sessionIdToFakeUuid(sessionIdToken)
         val datadogContext = stubSdkCore.getDatadogContext().withRumContext(
-            fakeRumContext.copy(sessionId = sessionId, sessionSampleRate = sessionSampleRate)
+            fakeRumContext.copy(
+                session = checkNotNull(fakeRumContext.session).copy(
+                    id = sessionId,
+                    sampleRate = sessionSampleRate
+                )
+            )
         )
         val rumFeature = mock<Feature> {
             on { name } doReturn Feature.RUM_FEATURE_NAME

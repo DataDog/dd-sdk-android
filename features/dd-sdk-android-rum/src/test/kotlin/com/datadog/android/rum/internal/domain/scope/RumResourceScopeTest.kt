@@ -63,6 +63,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -78,6 +79,7 @@ import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -300,9 +302,9 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
-                    hasSessionTimeseries(fakeParentContext.hasTimeseries)
+                    hasSessionTimeseries(fakeParentContext.session?.hasTimeseries)
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
@@ -311,7 +313,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
@@ -377,7 +379,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
@@ -385,7 +387,7 @@ internal class RumResourceScopeTest {
                     hasRulePsr(null)
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(@Suppress("DEPRECATION") URL(fakeUrl).host)
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -470,7 +472,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
@@ -478,7 +480,7 @@ internal class RumResourceScopeTest {
                     hasRulePsr(null)
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(brokenUrl)
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -552,7 +554,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(fakeTraceId)
                     hasSpanId(fakeSpanId)
@@ -561,7 +563,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
@@ -628,7 +630,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
@@ -637,7 +639,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
@@ -725,7 +727,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
@@ -736,7 +738,7 @@ internal class RumResourceScopeTest {
                         fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.SYNTHETICS
                     )
                     hasSyntheticsTest(fakeTestId, fakeResultId)
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
@@ -794,7 +796,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
@@ -803,7 +805,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     containsExactlyContextAttributes(fakeResourceAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
@@ -856,9 +858,9 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasReplay(fakeHasReplay)
@@ -987,7 +989,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
@@ -996,7 +998,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
@@ -1064,7 +1066,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
@@ -1073,7 +1075,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
@@ -1142,7 +1144,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
@@ -1151,7 +1153,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
@@ -1221,7 +1223,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
@@ -1230,7 +1232,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
@@ -1303,9 +1305,9 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
-                    hasSessionTimeseries(fakeParentContext.hasTimeseries)
+                    hasSessionTimeseries(fakeParentContext.session?.hasTimeseries)
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
@@ -1313,7 +1315,7 @@ internal class RumResourceScopeTest {
                     hasTimeSinceAppStart(null)
                     hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
@@ -1392,14 +1394,14 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasErrorFingerprint(fakeFingerprint)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
@@ -1474,7 +1476,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
@@ -1482,7 +1484,7 @@ internal class RumResourceScopeTest {
                     hasTimeSinceAppStart(null)
                     hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasDeviceInfo(
@@ -1577,7 +1579,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
@@ -1585,7 +1587,7 @@ internal class RumResourceScopeTest {
                     hasTimeSinceAppStart(null)
                     hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.SYNTHETICS)
                     hasSyntheticsTest(fakeTestId, fakeResultId)
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
@@ -1683,7 +1685,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
@@ -1691,7 +1693,7 @@ internal class RumResourceScopeTest {
                     hasTimeSinceAppStart(null)
                     hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.SYNTHETICS)
                     hasSyntheticsTest(fakeTestId, fakeResultId)
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasDeviceInfo(
@@ -1782,7 +1784,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasProviderDomain(brokenUrl)
                     hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
@@ -1792,7 +1794,7 @@ internal class RumResourceScopeTest {
                     hasTimeSinceAppStart(null)
                     hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
@@ -1886,7 +1888,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasProviderDomain(brokenUrl)
                     hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
@@ -1896,7 +1898,7 @@ internal class RumResourceScopeTest {
                     hasTimeSinceAppStart(null)
                     hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasDeviceInfo(
@@ -1971,7 +1973,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasProviderDomain(@Suppress("DEPRECATION") URL(fakeUrl).host)
                     hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
@@ -1981,7 +1983,7 @@ internal class RumResourceScopeTest {
                     hasTimeSinceAppStart(null)
                     hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
@@ -2058,7 +2060,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasProviderDomain(@Suppress("DEPRECATION") URL(fakeUrl).host)
                     hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
@@ -2068,7 +2070,7 @@ internal class RumResourceScopeTest {
                     hasTimeSinceAppStart(null)
                     hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasDeviceInfo(
@@ -2143,7 +2145,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
@@ -2152,7 +2154,7 @@ internal class RumResourceScopeTest {
                     hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
                     doesNotHaveAResourceProvider()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
@@ -2230,7 +2232,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
@@ -2239,7 +2241,7 @@ internal class RumResourceScopeTest {
                     hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
                     doesNotHaveAResourceProvider()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasDeviceInfo(
@@ -2319,7 +2321,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
@@ -2328,7 +2330,7 @@ internal class RumResourceScopeTest {
                     hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
                     doesNotHaveAResourceProvider()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
@@ -2411,7 +2413,7 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
@@ -2420,7 +2422,7 @@ internal class RumResourceScopeTest {
                     hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
                     doesNotHaveAResourceProvider()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasDeviceInfo(
@@ -2600,12 +2602,12 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
@@ -2674,12 +2676,12 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
@@ -2749,12 +2751,12 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
@@ -2880,12 +2882,12 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
@@ -2953,12 +2955,12 @@ internal class RumResourceScopeTest {
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
+                    hasSessionId(fakeParentContext.session?.id)
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
                     hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
-                    hasStartReason(fakeParentContext.sessionStartReason)
+                    hasStartReason(fakeParentContext.session?.startReason)
                     hasReplay(fakeHasReplay)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
@@ -3717,6 +3719,80 @@ internal class RumResourceScopeTest {
             )
     }
 
+    @ParameterizedTest
+    @EnumSource(SessionlessResourceCompletion::class)
+    fun `M notify about dropped event W handleEvent() {no session}`(
+        completion: SessionlessResourceCompletion,
+        forge: Forge
+    ) {
+        // Given
+        fakeParentContext = fakeParentContext.copy(session = null)
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
+        testedScope = RumResourceScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = fakeUrl,
+            method = fakeMethod,
+            key = fakeKey,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
+        )
+        val fakeStopTime = timeWithOffset(RESOURCE_DURATION_MS)
+        val fakeStopEvent = when (completion) {
+            SessionlessResourceCompletion.SUCCESS -> RumRawEvent.StopResource(
+                fakeKey,
+                forge.aLong(min = 200, max = 300),
+                forge.aLong(min = 0, max = 1024),
+                forge.aValueFrom(RumResourceKind::class.java),
+                emptyMap(),
+                fakeStopTime
+            )
+            SessionlessResourceCompletion.ERROR -> RumRawEvent.StopResourceWithError(
+                fakeKey,
+                forge.aLong(min = 400, max = 600),
+                forge.aString(),
+                forge.aValueFrom(RumErrorSource::class.java),
+                forge.anException(),
+                emptyMap(),
+                fakeStopTime
+            )
+            SessionlessResourceCompletion.STACK_TRACE -> RumRawEvent.StopResourceWithStackTrace(
+                fakeKey,
+                forge.aLong(min = 400, max = 600),
+                forge.aString(),
+                forge.aValueFrom(RumErrorSource::class.java),
+                forge.aString(),
+                forge.aString(),
+                emptyMap(),
+                fakeStopTime
+            )
+        }
+        val expectedStorageEvent = when (completion) {
+            SessionlessResourceCompletion.SUCCESS -> StorageEvent.Resource(
+                testedScope.resourceId,
+                fakeStopTime.nanoTime
+            )
+            else -> StorageEvent.Error(testedScope.resourceId, fakeStopTime.nanoTime)
+        }
+
+        // When
+        val result = testedScope.handleEvent(fakeStopEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        assertThat(result).isNull()
+        verifyNoInteractions(mockWriter)
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor)
+            .eventDropped(fakeParentContext.viewId.orEmpty(), expectedStorageEvent)
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
+    }
+
     @Test
     fun `M notify about error W handleEvent() { resource write failed }`(
         @Forgery kind: RumResourceKind,
@@ -3875,9 +3951,11 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long
     ) {
         // Given
-        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext.copy(hasTimeseries = false)
+        whenever(mockParentScope.getRumContext()) doReturn
+            fakeParentContext.copy(session = checkNotNull(fakeParentContext.session).copy(hasTimeseries = false))
         testedScope = createTestedScope()
-        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext.copy(hasTimeseries = true)
+        whenever(mockParentScope.getRumContext()) doReturn
+            fakeParentContext.copy(session = checkNotNull(fakeParentContext.session).copy(hasTimeseries = true))
 
         // When
         mockEvent = RumRawEvent.StopResource(
@@ -3894,7 +3972,7 @@ internal class RumResourceScopeTest {
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
-                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionId(fakeParentContext.session?.id)
                 .hasSessionTimeseries(true)
         }
     }
@@ -3906,9 +3984,11 @@ internal class RumResourceScopeTest {
         @Forgery throwable: Throwable
     ) {
         // Given
-        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext.copy(hasTimeseries = false)
+        whenever(mockParentScope.getRumContext()) doReturn
+            fakeParentContext.copy(session = checkNotNull(fakeParentContext.session).copy(hasTimeseries = false))
         testedScope = createTestedScope()
-        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext.copy(hasTimeseries = true)
+        whenever(mockParentScope.getRumContext()) doReturn
+            fakeParentContext.copy(session = checkNotNull(fakeParentContext.session).copy(hasTimeseries = true))
 
         // When
         mockEvent = RumRawEvent.StopResourceWithError(
@@ -3926,7 +4006,7 @@ internal class RumResourceScopeTest {
         argumentCaptor<ErrorEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
-                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionId(fakeParentContext.session?.id)
                 .hasSessionTimeseries(true)
         }
     }
@@ -3939,12 +4019,16 @@ internal class RumResourceScopeTest {
         @Forgery fakeNewSessionId: UUID
     ) {
         // Given
-        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext.copy(hasTimeseries = false)
+        whenever(mockParentScope.getRumContext()) doReturn
+            fakeParentContext.copy(session = checkNotNull(fakeParentContext.session).copy(hasTimeseries = false))
         testedScope = createTestedScope()
-        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext.copy(
-            sessionId = fakeNewSessionId.toString(),
-            hasTimeseries = true
-        )
+        whenever(mockParentScope.getRumContext()) doReturn
+            fakeParentContext.copy(
+                session = checkNotNull(fakeParentContext.session).copy(
+                    id = fakeNewSessionId.toString(),
+                    hasTimeseries = true
+                )
+            )
 
         // When
         mockEvent =
@@ -3955,7 +4039,7 @@ internal class RumResourceScopeTest {
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
-                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionId(fakeParentContext.session?.id)
                 .hasSessionTimeseries(false)
         }
     }
@@ -3967,9 +4051,11 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long
     ) {
         // Given
-        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext.copy(hasTimeseries = true)
+        whenever(mockParentScope.getRumContext()) doReturn
+            fakeParentContext.copy(session = checkNotNull(fakeParentContext.session).copy(hasTimeseries = true))
         testedScope = createTestedScope()
-        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext.copy(hasTimeseries = false)
+        whenever(mockParentScope.getRumContext()) doReturn
+            fakeParentContext.copy(session = checkNotNull(fakeParentContext.session).copy(hasTimeseries = false))
 
         // When
         mockEvent =
@@ -3980,7 +4066,7 @@ internal class RumResourceScopeTest {
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue)
-                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionId(fakeParentContext.session?.id)
                 .hasSessionTimeseries(true)
         }
     }
@@ -4187,6 +4273,12 @@ internal class RumResourceScopeTest {
     }
 
     // endregion
+
+    internal enum class SessionlessResourceCompletion {
+        SUCCESS,
+        ERROR,
+        STACK_TRACE
+    }
 
     companion object {
         private const val RESOURCE_DURATION_MS = 50L

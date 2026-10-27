@@ -7,6 +7,7 @@
 package com.datadog.android.okhttp.tests.elmyr
 
 import com.datadog.android.internal.tests.elmyr.RumContextForgeryFactory
+import com.datadog.android.internal.tests.elmyr.RumSessionContextForgeryFactory
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -18,5 +19,6 @@ class OkHttpConfigurator : BaseConfigurator() {
         forge.useJvmFactories()
         forge.useCoreFactories()
         forge.addFactory(RumContextForgeryFactory())
+        forge.addFactory(RumSessionContextForgeryFactory())
     }
 }

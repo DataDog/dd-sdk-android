@@ -163,7 +163,7 @@ internal class WebViewReplayEventMapperTest {
         assertThat(result.get(WebViewReplayEventMapper.ENRICHED_RECORD_APPLICATION_ID_KEY).asString)
             .isEqualTo(fakeRumContext.applicationId)
         assertThat(result.get(WebViewReplayEventMapper.ENRICHED_RECORD_SESSION_ID_KEY).asString)
-            .isEqualTo(fakeRumContext.sessionId)
+            .isEqualTo(fakeRumContext.session?.id)
         assertThat(result.get(WebViewReplayEventMapper.ENRICHED_RECORD_VIEW_ID_KEY).asString)
             .isEqualTo(fakeBrowserRumViewId)
     }

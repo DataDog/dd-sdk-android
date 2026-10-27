@@ -295,12 +295,19 @@ internal class RumApplicationScopeTest {
     }
 
     @Test
-    fun `delegates all events to child scope`() {
+    fun `M delegate event W handleEvent()`() {
+        // Given
+        whenever(mockEvent.eventTime) doReturn fakeEventTime
+        whenever(
+            mockChildScope.handleEvent(any(), eq(fakeDatadogContext), eq(mockEventWriteScope), eq(mockWriter))
+        ) doReturn mockChildScope
         testedScope.childScopes.clear()
         testedScope.childScopes.add(mockChildScope)
 
+        // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
+        // Then
         verify(mockChildScope).handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         verifyNoInteractions(mockWriter)
     }

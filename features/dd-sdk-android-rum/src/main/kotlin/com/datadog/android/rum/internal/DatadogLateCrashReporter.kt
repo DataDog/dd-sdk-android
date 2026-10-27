@@ -378,7 +378,7 @@ internal class DatadogLateCrashReporter(
     }
 
     private val DatadogContext.rumSessionId: String?
-        get() = featuresContext[Feature.RUM_FEATURE_NAME]?.rumContext()?.sessionId
+        get() = featuresContext[Feature.RUM_FEATURE_NAME]?.rumContext()?.session?.id
 
     // endregion
 

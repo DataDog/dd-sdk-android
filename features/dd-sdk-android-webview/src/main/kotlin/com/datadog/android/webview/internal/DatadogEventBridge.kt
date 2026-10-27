@@ -98,21 +98,20 @@ internal class DatadogEventBridge(
         val rumContext = webViewRumFeature?.cachedRumContext
         val tracingContext = webViewRumFeature?.cachedTracingContext.orEmpty()
 
-        val sessionId = rumContext?.takeIf { it.sessionState == RumSessionState.TRACKED }?.sessionId
-        val sessionSampleRate = rumContext?.sessionSampleRate
+        val session = rumContext?.session?.takeIf { it.state == RumSessionState.TRACKED }
         val traceSampleRate = (tracingContext[TRACE_SAMPLE_RATE_KEY] as? Number)?.toFloat()
 
-        if (sessionId == null || sessionSampleRate == null || traceSampleRate == null) {
+        if (session == null || traceSampleRate == null) {
             return NULL_STRING
         }
 
-        val combinedRate = DeterministicSampling.combinedSampleRate(sessionSampleRate, traceSampleRate)
+        val combinedRate = DeterministicSampling.combinedSampleRate(session.sampleRate, traceSampleRate)
         val sampler = DeterministicSampler(
             SessionSamplingIdProvider::provideId,
             combinedRate
         )
 
-        return if (sampler.sample(sessionId)) TRUE_STRING else FALSE_STRING
+        return if (sampler.sample(session.id)) TRUE_STRING else FALSE_STRING
     }
 
     // endregion

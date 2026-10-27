@@ -156,7 +156,20 @@ internal class PipelineTest {
 
         // Then
         assertThat(buffer.drain()).containsExactly(fakePoint)
-        verify(mockCollectedSessionsRegistry).setTimeseriesCollected(fakeRumContext.sessionId)
+        verify(mockCollectedSessionsRegistry).setTimeseriesCollected(checkNotNull(fakeRumContext.session?.id))
+    }
+
+    @Test
+    fun `M skip sampling W execute() {no session}`() {
+        // Given
+        val fakeApplicationContext = fakeRumContext.copy(session = null)
+
+        // When
+        testedPipeline.execute(fakeApplicationContext)
+
+        // Then
+        assertThat(buffer.drain()).isEmpty()
+        verifyNoInteractions(mockReader, mockCollectedSessionsRegistry, mockEventFactory, mockDataWriter)
     }
 
     @Test

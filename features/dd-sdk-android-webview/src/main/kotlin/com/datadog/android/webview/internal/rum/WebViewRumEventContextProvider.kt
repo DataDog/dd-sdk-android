@@ -14,28 +14,18 @@ import com.datadog.android.internal.rum.rumContext
 
 internal class WebViewRumEventContextProvider(private val internalLogger: InternalLogger) {
 
-    private var rumFeatureDisabled = false
-
     fun getRumContext(datadogContext: DatadogContext): RumContext? {
-        if (rumFeatureDisabled) {
-            return null
-        }
-
         val rumContext = datadogContext.featuresContext[Feature.RUM_FEATURE_NAME]?.rumContext()
-        return if (rumContext == null ||
-            rumContext.applicationId == RumContext.NULL_UUID ||
-            rumContext.sessionId == RumContext.NULL_UUID
-        ) {
-            rumFeatureDisabled = true
+        if (rumContext == null || rumContext.applicationId == RumContext.NULL_UUID) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                { RUM_NOT_INITIALIZED_WARNING_MESSAGE }
+                { RUM_NOT_INITIALIZED_WARNING_MESSAGE },
+                onlyOnce = true
             )
-            null
-        } else {
-            rumContext
+            return null
         }
+        return rumContext
     }
 
     companion object {

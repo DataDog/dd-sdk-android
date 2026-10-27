@@ -303,7 +303,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
-    fun hasSessionId(expected: String): ErrorEventAssert {
+    fun hasSessionId(expected: String?): ErrorEventAssert {
         assertThat(actual.session.id)
             .overridingErrorMessage(
                 "Expected event to have session.id $expected but was ${actual.session.id}"
@@ -474,13 +474,13 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
-    fun hasStartReason(reason: RumSessionStartReason): ErrorEventAssert {
+    fun hasStartReason(reason: RumSessionStartReason?): ErrorEventAssert {
         assertThat(actual.dd.session?.sessionPrecondition)
             .overridingErrorMessage(
-                "Expected event to have a session sessionPrecondition of ${reason.name} " +
+                "Expected event to have a session sessionPrecondition of ${reason?.name} " +
                     "but was ${actual.dd.session?.sessionPrecondition}"
             )
-            .isEqualTo(reason.toErrorSessionPrecondition())
+            .isEqualTo(reason?.toErrorSessionPrecondition())
         return this
     }
 

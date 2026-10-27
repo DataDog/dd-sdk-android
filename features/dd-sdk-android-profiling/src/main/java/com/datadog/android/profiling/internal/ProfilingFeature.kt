@@ -287,15 +287,16 @@ internal class ProfilingFeature(
     override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName != Feature.RUM_FEATURE_NAME) return
         val rumContext = context.rumContext()
-        val sessionId = rumContext?.sessionId
-        if (sessionId == null ||
-            sessionId == RumSessionConstants.EMPTY_RUM_SESSION_ID ||
-            sessionId == lastSeenRumSessionId
+        val session = rumContext?.session
+        if (session == null ||
+            session.id == RumSessionConstants.EMPTY_RUM_SESSION_ID ||
+            session.id == lastSeenRumSessionId
         ) {
             return
         }
-        val sampleRate = rumContext.sessionSampleRate
-        val isTracked = rumContext.sessionState == RumSessionState.TRACKED
+        val sessionId = session.id
+        val sampleRate = session.sampleRate
+        val isTracked = session.state == RumSessionState.TRACKED
         // Publish the new session and retire the previous session's quota check and queued trigger
         // profiles atomically: a trigger profile of the new session can't be queued, nor its quota
         // check started, until the previous session's state is gone.

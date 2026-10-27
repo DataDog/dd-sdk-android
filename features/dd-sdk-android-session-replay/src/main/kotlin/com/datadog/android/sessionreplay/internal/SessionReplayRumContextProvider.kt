@@ -25,7 +25,7 @@ internal class SessionReplayRumContextProvider(
         return rumContext.let {
             SessionReplayRumContext(
                 applicationId = it?.applicationId ?: NULL_UUID,
-                sessionId = it?.sessionId ?: NULL_UUID,
+                sessionId = it?.session?.id ?: NULL_UUID,
                 viewId = it?.viewId ?: NULL_UUID,
                 viewTimeOffsetMs = it?.viewTimestampOffset ?: 0L,
                 viewUrl = it?.viewUrl

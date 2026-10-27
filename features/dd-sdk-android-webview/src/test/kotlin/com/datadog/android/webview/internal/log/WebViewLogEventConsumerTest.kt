@@ -15,6 +15,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.utils.forge.Configurator
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -49,7 +51,9 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.UUID
 import java.util.stream.Stream
+import com.datadog.android.internal.rum.RumContext as SdkRumContext
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -211,9 +215,16 @@ internal class WebViewLogEventConsumerTest {
 
     @Test
     fun `M write a mapped event W consume { user event type, rum context }`(
-        @Forgery fakeRumContext: RumContext
+        @Forgery fakeRumContext: RumContext,
+        forge: Forge
     ) {
         // Given
+        val fakeBrowserViewId = forge.getForgery<UUID>().toString()
+        val fakeBrowserActionId = forge.getForgery<UUID>().toString()
+        fakeWebLogEvent.add("view", JsonObject().apply { addProperty("id", fakeBrowserViewId) })
+        fakeWebLogEvent.add("user_action", JsonObject().apply { addProperty("id", fakeBrowserActionId) })
+        fakeWebLogEvent.addProperty(LogAttributes.RUM_APPLICATION_ID, forge.getForgery<UUID>().toString())
+        fakeWebLogEvent.addProperty(LogAttributes.RUM_SESSION_ID, forge.getForgery<UUID>().toString())
         whenever(mockRumContextProvider.getRumContext(fakeDatadogContext)) doReturn fakeRumContext
         val expectedDate = fakeTimeOffset +
             fakeWebLogEvent.get(WebViewLogEventConsumer.DATE_KEY_NAME).asLong
@@ -227,6 +238,8 @@ internal class WebViewLogEventConsumerTest {
         // Then
         argumentCaptor<JsonObject> {
             verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.getAsJsonObject("view")).hasField("id", fakeBrowserViewId)
+            assertThat(firstValue.getAsJsonObject("user_action")).hasField("id", fakeBrowserActionId)
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
             assertThat(firstValue.ddTags).containsExactlyInAnyOrderElementsOf(expectedTags)
             assertThat(firstValue).hasField(
@@ -235,8 +248,108 @@ internal class WebViewLogEventConsumerTest {
             )
             assertThat(firstValue).hasField(
                 LogAttributes.RUM_SESSION_ID,
-                fakeRumContext.sessionId
+                checkNotNull(fakeRumContext.session?.id)
             )
+        }
+    }
+
+    @Test
+    fun `M retain application attribution W consume() {no native session}`(
+        @Forgery fakeRumContext: RumContext,
+        forge: Forge
+    ) {
+        // Given
+        fakeWebLogEvent.addProperty(LogAttributes.RUM_APPLICATION_ID, forge.getForgery<UUID>().toString())
+        fakeWebLogEvent.addProperty(LogAttributes.RUM_SESSION_ID, forge.getForgery<UUID>().toString())
+        val fakeBrowserViewUrl = forge.aString()
+        fakeWebLogEvent.addProperty(LogAttributes.RUM_VIEW_ID, forge.getForgery<UUID>().toString())
+        fakeWebLogEvent.addProperty(LogAttributes.RUM_ACTION_ID, forge.getForgery<UUID>().toString())
+        fakeWebLogEvent.add(
+            "view",
+            JsonObject().apply {
+                addProperty("id", forge.getForgery<UUID>().toString())
+                addProperty("url", fakeBrowserViewUrl)
+            }
+        )
+        fakeWebLogEvent.add(
+            "user_action",
+            JsonObject().apply {
+                addProperty("id", forge.getForgery<UUID>().toString())
+            }
+        )
+        val fakeFeatureContext = mapOf(
+            FeatureContextKeys.RUM_CONTEXT to SdkRumContext(applicationId = fakeRumContext.applicationId)
+        )
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = mapOf(Feature.RUM_FEATURE_NAME to fakeFeatureContext)
+        )
+        testedConsumer = WebViewLogEventConsumer(
+            mockSdkCore,
+            mockUserLogsWriter,
+            WebViewRumEventContextProvider(mockInternalLogger),
+            sampleRate = 100f
+        )
+
+        // When
+        testedConsumer.consume(fakeWebLogEvent to WebViewLogEventConsumer.USER_LOG_EVENT_TYPE)
+
+        // Then
+        argumentCaptor<JsonObject> {
+            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue)
+                .hasField(LogAttributes.RUM_APPLICATION_ID, fakeRumContext.applicationId)
+                .doesNotHaveField(LogAttributes.RUM_SESSION_ID)
+                .doesNotHaveField(LogAttributes.RUM_VIEW_ID)
+                .doesNotHaveField(LogAttributes.RUM_ACTION_ID)
+            assertThat(firstValue.getAsJsonObject("view"))
+                .doesNotHaveField("id")
+                .hasField("url", fakeBrowserViewUrl)
+            assertThat(firstValue.getAsJsonObject("user_action")).doesNotHaveField("id")
+        }
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M preserve browser correlation W consume() {no valid native application}`(
+        hasZeroApplicationId: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val fakeBrowserViewId = forge.getForgery<UUID>().toString()
+        val fakeBrowserActionId = forge.getForgery<UUID>().toString()
+        fakeWebLogEvent.add("view", JsonObject().apply { addProperty("id", fakeBrowserViewId) })
+        fakeWebLogEvent.add("user_action", JsonObject().apply { addProperty("id", fakeBrowserActionId) })
+        val fakeBrowserApplicationId = forge.getForgery<UUID>().toString()
+        val fakeBrowserSessionId = forge.getForgery<UUID>().toString()
+        fakeWebLogEvent.addProperty(LogAttributes.RUM_APPLICATION_ID, fakeBrowserApplicationId)
+        fakeWebLogEvent.addProperty(LogAttributes.RUM_SESSION_ID, fakeBrowserSessionId)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = mapOf(
+                Feature.RUM_FEATURE_NAME to mapOf(
+                    FeatureContextKeys.RUM_CONTEXT to
+                        SdkRumContext(RumContext.NULL_UUID).takeIf { hasZeroApplicationId }
+                )
+            )
+        )
+        testedConsumer = WebViewLogEventConsumer(
+            mockSdkCore,
+            mockUserLogsWriter,
+            WebViewRumEventContextProvider(mockInternalLogger),
+            sampleRate = 100f
+        )
+
+        // When
+        testedConsumer.consume(fakeWebLogEvent to WebViewLogEventConsumer.USER_LOG_EVENT_TYPE)
+
+        // Then
+        argumentCaptor<JsonObject> {
+            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue.getAsJsonObject("view")).hasField("id", fakeBrowserViewId)
+            assertThat(firstValue.getAsJsonObject("user_action")).hasField("id", fakeBrowserActionId)
+            assertThat(firstValue)
+                .hasField(LogAttributes.RUM_APPLICATION_ID, fakeBrowserApplicationId)
+                .hasField(LogAttributes.RUM_SESSION_ID, fakeBrowserSessionId)
         }
     }
 

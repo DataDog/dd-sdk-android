@@ -21,6 +21,7 @@ import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.ErrorEventAssert
@@ -73,6 +74,9 @@ import java.io.IOException
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class DatadogLateCrashReporterTest {
+
+    @StringForgery
+    private lateinit var fakeApplicationId: String
 
     private lateinit var testedHandler: LateCrashReporter
 
@@ -1224,7 +1228,13 @@ internal class DatadogLateCrashReporterTest {
             ),
             featuresContext = mapOf(
                 Feature.RUM_FEATURE_NAME to
-                    mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(sessionId = viewEvent.session.id))
+                    mapOf(
+                        FeatureContextKeys.RUM_CONTEXT to
+                            RumContext(
+                                session = forge.getForgery<RumSessionContext>().copy(id = viewEvent.session.id),
+                                applicationId = fakeApplicationId
+                            )
+                    )
             )
         )
 

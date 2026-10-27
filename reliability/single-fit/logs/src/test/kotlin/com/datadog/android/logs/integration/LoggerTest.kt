@@ -16,6 +16,7 @@ import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.event.EventMapper
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionContext
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
@@ -619,7 +620,7 @@ class LoggerTest {
     @RepeatedTest(16)
     fun `M send log with rum context W Logger#Builder#setBundleWithRumEnabled(true) + Logger#log()`(
         @StringForgery fakeRumApplicationId: String,
-        @StringForgery fakeRumSessionId: String,
+        @Forgery fakeRumSession: RumSessionContext,
         @StringForgery fakeRumViewId: String,
         @StringForgery fakeRumActionId: String,
         @StringForgery fakeMessage: String,
@@ -629,8 +630,8 @@ class LoggerTest {
         val testedLogger = Logger.Builder(stubSdkCore).setBundleWithRumEnabled(true).build()
         stubSdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
             it[FeatureContextKeys.RUM_CONTEXT] = RumContext(
+                session = fakeRumSession,
                 applicationId = fakeRumApplicationId,
-                sessionId = fakeRumSessionId,
                 viewId = fakeRumViewId,
                 actionId = fakeRumActionId
             )
@@ -651,7 +652,7 @@ class LoggerTest {
         assertThat(event0.getString("message")).isEqualTo(fakeMessage)
         assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
         assertThat(event0.getString("application_id")).isEqualTo(fakeRumApplicationId)
-        assertThat(event0.getString("session_id")).isEqualTo(fakeRumSessionId)
+        assertThat(event0.getString("session_id")).isEqualTo(fakeRumSession.id)
         assertThat(event0.getString("view.id")).isEqualTo(fakeRumViewId)
         assertThat(event0.getString("user_action.id")).isEqualTo(fakeRumActionId)
     }

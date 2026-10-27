@@ -1084,7 +1084,7 @@ internal class OtelTracerProviderTest {
                 hasResource(fakeOperationName)
                 hasDurationBetween(OP_DURATION_NS, fullDuration)
                 hasApplicationId(fakeRumContext.applicationId)
-                hasSessionId(fakeRumContext.sessionId)
+                hasSessionId(fakeRumContext.session?.id)
                 hasViewId(fakeRumViewId.toString())
             }
     }

@@ -698,9 +698,9 @@ internal class WebViewTrackingTest {
             add(
                 "session",
                 JsonObject().apply {
-                    addProperty("id", fakeRumContext.sessionId)
+                    addProperty("id", fakeRumContext.session?.id)
                     addProperty("is_main_process", fakeProcessInfo.isMainProcess)
-                    addProperty("has_timeseries", fakeRumContext.hasTimeseries)
+                    addProperty("has_timeseries", fakeRumContext.session?.hasTimeseries)
                 }
             )
             add("usr", JsonObject().apply { addProperty("anonymous_id", fakeAnonymousId) })
@@ -724,7 +724,10 @@ internal class WebViewTrackingTest {
         }
         val fakeFeaturesContext = mapOf(
             Feature.RUM_FEATURE_NAME to mapOf(
-                FeatureContextKeys.RUM_CONTEXT to fakeRumContext.copy(sessionState = RumSessionState.TRACKED)
+                FeatureContextKeys.RUM_CONTEXT to
+                    fakeRumContext.copy(
+                        session = checkNotNull(fakeRumContext.session).copy(state = RumSessionState.TRACKED)
+                    )
             )
         )
         whenever(mockDatadogContext.featuresContext) doReturn fakeFeaturesContext
