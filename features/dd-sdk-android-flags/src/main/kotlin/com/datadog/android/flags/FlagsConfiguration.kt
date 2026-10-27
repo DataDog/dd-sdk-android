@@ -6,6 +6,8 @@
 
 package com.datadog.android.flags
 
+import com.datadog.android.flags.internal.signing.ResponseSigningConfiguration
+
 private const val DEFAULT_INITIALIZATION_TIMEOUT_MS = 5_000L
 
 /**
@@ -21,7 +23,8 @@ data class FlagsConfiguration internal constructor(
     internal val evaluationFlushIntervalMs: Long,
     internal val rumIntegrationEnabled: Boolean,
     internal val gracefulModeEnabled: Boolean,
-    internal val initializationTimeoutMs: Long?
+    internal val initializationTimeoutMs: Long?,
+    internal val responseSigning: ResponseSigningConfiguration = ResponseSigningConfiguration()
 ) {
     /**
      * Copies this configuration and preserves the initialization timeout.
@@ -46,7 +49,8 @@ data class FlagsConfiguration internal constructor(
         evaluationFlushIntervalMs = evaluationFlushIntervalMs,
         rumIntegrationEnabled = rumIntegrationEnabled,
         gracefulModeEnabled = gracefulModeEnabled,
-        initializationTimeoutMs = initializationTimeoutMs
+        initializationTimeoutMs = initializationTimeoutMs,
+        responseSigning = responseSigning
     )
 
     /**
@@ -62,6 +66,20 @@ data class FlagsConfiguration internal constructor(
         private var rumIntegrationEnabled: Boolean = true
         private var gracefulModeEnabled: Boolean = true
         private var initializationTimeoutMs: Long? = DEFAULT_INITIALIZATION_TIMEOUT_MS
+        private var responseSigning = ResponseSigningConfiguration()
+
+        /**
+         * Opts into assignment response verification. No production trust anchor is bundled.
+         *
+         * @param mode OFF by default; OBSERVE accepts unverified data, REQUIRED uses verified memory only.
+         * @param trustedRootCertificates Explicit trusted public root certificates as padded base64 DER.
+         * Empty or invalid roots leave responses unverified; REQUIRED then returns evaluation defaults.
+         * @return this builder.
+         */
+        fun responseSigning(mode: ResponseSigningMode, trustedRootCertificates: List<String>): Builder {
+            responseSigning = ResponseSigningConfiguration(mode, trustedRootCertificates.toList())
+            return this
+        }
 
         /**
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint.
@@ -215,7 +233,8 @@ data class FlagsConfiguration internal constructor(
             evaluationFlushIntervalMs = evaluationFlushIntervalMs,
             rumIntegrationEnabled = rumIntegrationEnabled,
             gracefulModeEnabled = gracefulModeEnabled,
-            initializationTimeoutMs = initializationTimeoutMs
+            initializationTimeoutMs = initializationTimeoutMs,
+            responseSigning = responseSigning
         )
 
         internal companion object {

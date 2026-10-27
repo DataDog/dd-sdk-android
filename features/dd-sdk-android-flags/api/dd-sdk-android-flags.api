@@ -68,6 +68,7 @@ public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public final fun evaluationFlushInterval (J)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun gracefulModeEnabled (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun initializationTimeout (J)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
+	public final fun responseSigning (Lcom/datadog/android/flags/ResponseSigningMode;Ljava/util/List;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun rumIntegrationEnabled (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun trackEvaluations (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun trackExposures (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
@@ -85,6 +86,15 @@ public abstract interface class com/datadog/android/flags/FlagsStateListener {
 
 public abstract interface class com/datadog/android/flags/FlagsSubscription {
 	public abstract fun unsubscribe ()V
+}
+
+public final class com/datadog/android/flags/ResponseSigningMode : java/lang/Enum {
+	public static final field OBSERVE Lcom/datadog/android/flags/ResponseSigningMode;
+	public static final field OFF Lcom/datadog/android/flags/ResponseSigningMode;
+	public static final field REQUIRED Lcom/datadog/android/flags/ResponseSigningMode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/flags/ResponseSigningMode;
+	public static fun values ()[Lcom/datadog/android/flags/ResponseSigningMode;
 }
 
 public abstract interface class com/datadog/android/flags/StateObservable {

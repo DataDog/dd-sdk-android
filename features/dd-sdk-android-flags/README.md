@@ -60,6 +60,47 @@ Flags.enable(flagsConfig)
 
 The `FlagsConfiguration.Builder` supports the following options:
 
+#### Response signing (experimental draft)
+
+Response signing is disabled by default. During a browser-first pilot, Android can
+observe the same v3 response proofs with an explicitly provisioned public trust anchor:
+
+```kotlin
+val flagsConfig = FlagsConfiguration.Builder()
+    .responseSigning(ResponseSigningMode.OBSERVE, listOf(publicRootCertificateBase64Der))
+    .build()
+```
+
+No production root or test root is bundled. The list contains locally trusted public
+root certificates encoded as padded base64 DER. Never put a private key in SDK configuration.
+The root stays fixed while each response carries a leaf and one intermediate certificate,
+so intermediate rotation does not require an SDK update or a prior successful fetch.
+The configured root's validity still limits how long an unchanged SDK can verify responses.
+
+- `OFF` preserves existing transport and persistence and performs no signing work.
+- `OBSERVE` reports bounded verified/unverified telemetry and accepts otherwise-valid
+  responses when optional verification fails. Authentication, transport, redirect, and
+  JSON errors remain failures. Signed and unsigned requests are never retried as a downgrade.
+- `REQUIRED` accepts only valid proofs. Empty or invalid roots yield evaluation defaults;
+  an empty root list fails locally before a request. Verified assignments are held only
+  in memory and are checked against their original expiry on every evaluation. Restart,
+  expiry, a changed request scope, or a clock earlier than admission causes defaults.
+  A live RUM application-ID change or stopping the Flags feature immediately invalidates
+  prior proofs and prevents in-flight responses from restoring them.
+
+Observe mode keeps unverified persistence in a new namespace scoped to the emitted token,
+endpoint and query, environment, application ID, evaluation context, and semantic headers.
+It reads that namespace only after forming the request, so the first opt-in is a cold start.
+Old client-name-only cache entries are not imported. A valid proof also creates a separate
+verified memory fallback, which unsigned observations cannot overwrite or extend.
+Persisted entries are never treated as verified.
+
+The draft verifies complete buffered JSON assignment responses over HTTPS, before parsing
+or installing them. It does not introduce a streaming protocol. The shared conformance
+corpus and native host-JVM tests are development evidence; Android device/provider tests,
+iOS API review, production anchor provisioning, and operational rollout approval remain
+release prerequisites.
+
 #### Disable RUM integration
 
 By default, flag evaluations are automatically sent to RUM (Real User Monitoring) and attached to the current view if RUM is enabled. You can disable this integration:
