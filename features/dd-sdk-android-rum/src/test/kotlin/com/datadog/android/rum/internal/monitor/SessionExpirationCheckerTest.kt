@@ -7,9 +7,9 @@
 package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
-import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -61,7 +61,7 @@ internal class SessionExpirationCheckerTest {
     @Test
     fun `M replace pending check W onEventHandled() {tracked session}`() {
         // When
-        testedChecker.onEventHandled(RumSessionScope.State.TRACKED)
+        testedChecker.onEventHandled(RumSessionState.TRACKED)
 
         // Then
         val fakeCallback = scheduledCallback()
@@ -72,9 +72,9 @@ internal class SessionExpirationCheckerTest {
     }
 
     @ParameterizedTest
-    @EnumSource(RumSessionScope.State::class, names = ["TRACKED"], mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(RumSessionState::class, names = ["TRACKED"], mode = EnumSource.Mode.EXCLUDE)
     fun `M only cancel pending check W onEventHandled() {session not tracked}`(
-        fakeState: RumSessionScope.State
+        fakeState: RumSessionState
     ) {
         // When
         testedChecker.onEventHandled(fakeState)
@@ -97,13 +97,13 @@ internal class SessionExpirationCheckerTest {
     @Test
     fun `M schedule check again W onEventHandled() {session renewed after expiry}`() {
         // Given
-        testedChecker.onEventHandled(RumSessionScope.State.TRACKED)
+        testedChecker.onEventHandled(RumSessionState.TRACKED)
         val fakeCallback = scheduledCallback()
-        testedChecker.onEventHandled(RumSessionScope.State.EXPIRED)
+        testedChecker.onEventHandled(RumSessionState.EXPIRED)
         clearInvocations(mockHandler)
 
         // When
-        testedChecker.onEventHandled(RumSessionScope.State.TRACKED)
+        testedChecker.onEventHandled(RumSessionState.TRACKED)
 
         // Then
         verify(mockHandler).postDelayed(same(fakeCallback), eq(fakeIntervalMs))
@@ -112,7 +112,7 @@ internal class SessionExpirationCheckerTest {
     @Test
     fun `M send expiry event without rescheduling W run()`() {
         // Given
-        testedChecker.onEventHandled(RumSessionScope.State.TRACKED)
+        testedChecker.onEventHandled(RumSessionState.TRACKED)
         val fakeCallback = scheduledCallback()
         clearInvocations(mockHandler)
 
@@ -127,7 +127,7 @@ internal class SessionExpirationCheckerTest {
     @Test
     fun `M cancel pending check W onSdkStopped()`() {
         // Given
-        testedChecker.onEventHandled(RumSessionScope.State.TRACKED)
+        testedChecker.onEventHandled(RumSessionState.TRACKED)
         val fakeCallback = scheduledCallback()
         clearInvocations(mockHandler)
 
@@ -142,7 +142,7 @@ internal class SessionExpirationCheckerTest {
     fun `M not schedule check W onSdkStopped() + onEventHandled() {tracked session}`() {
         // When
         testedChecker.onSdkStopped()
-        testedChecker.onEventHandled(RumSessionScope.State.TRACKED)
+        testedChecker.onEventHandled(RumSessionState.TRACKED)
 
         // Then
         verify(mockHandler, never()).postDelayed(any(), any())
@@ -151,7 +151,7 @@ internal class SessionExpirationCheckerTest {
     @Test
     fun `M not send expiry event W onSdkStopped() + run()`() {
         // Given
-        testedChecker.onEventHandled(RumSessionScope.State.TRACKED)
+        testedChecker.onEventHandled(RumSessionState.TRACKED)
         val fakeCallback = scheduledCallback()
 
         // When
@@ -190,7 +190,7 @@ internal class SessionExpirationCheckerTest {
         testedChecker.checkIntervalMs = fakeInterval
 
         // When
-        testedChecker.onEventHandled(RumSessionScope.State.TRACKED)
+        testedChecker.onEventHandled(RumSessionState.TRACKED)
 
         // Then
         assertThat(testedChecker.checkIntervalMs).isEqualTo(fakeInterval)

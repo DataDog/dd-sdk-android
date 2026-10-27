@@ -205,12 +205,12 @@ internal class ProfilingDataWriterTest {
                     ).toSet()
             )
             .hasVitalIds(fakeVitals.map { it.id })
-            .hasVitalNames(fakeVitals.mapNotNull { it.name })
+            .hasVitalNames(fakeVitals.mapNotNull { it.name }.toSet())
             .hasErrorIds(fakeAnrs.map { it.id })
             .hasLongTaskIds(fakeLongTasks.map { it.id })
 
         val actualMetadata = ProfilingBatchMetadata
-            .fromBytesOrNull(argumentCaptor.firstValue.metadata, mock<InternalLogger>())
+            .fromBytesOrNull(argumentCaptor.firstValue.metadata, mock())
         checkNotNull(actualMetadata)
         assertThat(actualMetadata.perfettoBytes).isEqualTo(fakePerfettoBytes)
 
@@ -455,12 +455,12 @@ internal class ProfilingDataWriterTest {
             .hasApplicationId(rumContext.applicationId)
             .hasSessionId(rumContext.sessionId)
             .hasVitalIds(alignedVitals.map { it.id })
-            .hasVitalNames(alignedVitals.mapNotNull { it.name })
+            .hasVitalNames(alignedVitals.mapNotNull { it.name }.toSet())
             .hasLongTaskIds(emptyList())
             .hasErrorIds(emptyList())
 
         val actualMetadata = ProfilingBatchMetadata
-            .fromBytesOrNull(argumentCaptor.firstValue.metadata, mock<InternalLogger>())
+            .fromBytesOrNull(argumentCaptor.firstValue.metadata, mock())
         checkNotNull(actualMetadata)
         assertThat(actualMetadata.perfettoBytes).isEqualTo(fakePerfettoBytes)
         val actualMetadataEvents = JsonParser.parseString(String(actualMetadata.rumMobileEventsBytes))

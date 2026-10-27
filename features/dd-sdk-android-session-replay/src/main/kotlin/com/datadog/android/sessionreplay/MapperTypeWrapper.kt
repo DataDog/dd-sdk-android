@@ -10,7 +10,7 @@ import android.view.View
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 
 /**
- * A wrapper holding a a [WireframeMapper] and the type it's associated with.
+ * A wrapper holding a [WireframeMapper] and the type it's associated with.
  *
  * @param T the type of [View] the mapper can handle
  * @param type the [Class] representing the view type
@@ -32,7 +32,7 @@ data class MapperTypeWrapper<T : View>(
     }
 
     /**
-     * Returns the mapper unsafely casted to [WireframeMapper<View>].
+     * Returns the mapper unsafely cast to [WireframeMapper<View>].
      */
     @Suppress("UNCHECKED_CAST")
     fun getUnsafeMapper(): WireframeMapper<View> {

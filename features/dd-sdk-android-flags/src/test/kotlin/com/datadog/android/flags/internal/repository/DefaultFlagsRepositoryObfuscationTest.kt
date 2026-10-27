@@ -142,7 +142,7 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         assertThat(testedRepository.getFlagsSnapshot().isEmpty()).isEqualTo(encoded)
         assertThat(firstFlags).hasSize(if (readable) 1 else 0)
         if (readable) {
-            assertThat(firstFlags.single()).isEqualTo(if (encoded) emptyList<String>() else listOf(fakeFlagKey))
+            assertThat(firstFlags.single()).isEqualTo(if (encoded) emptyList() else listOf(fakeFlagKey))
         }
         verify(mockSdkCore, never()).getFeature(Feature.FLAGS_FEATURE_NAME)
     }
@@ -158,7 +158,7 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         install(encoded = true)
 
         // Then
-        assertThat(firstFlags).containsExactly(emptyList<String>())
+        assertThat(firstFlags).containsExactly(emptyList())
         assertThat(testedRepository.getPrecomputedFlag(fakeFlagKey) != null).isTrue()
     }
 

@@ -18,7 +18,6 @@ import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.utils.verifyLog
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -66,9 +65,6 @@ internal class FlagsFeatureTest {
     @Mock
     lateinit var mockContext: Context
 
-    @StringForgery
-    lateinit var fakeApplicationId: String
-
     private lateinit var testedFeature: FlagsFeature
 
     @BeforeEach
@@ -93,6 +89,7 @@ internal class FlagsFeatureTest {
         requestedMode: ExperimentationOptOutMode
     ) {
         // Given
+        val fakeClientName = "concurrent-registration"
         val mockWinner = mock<DatadogFlagsClient>()
         whenever(mockWinner.experimentationOptOut) doReturn ExperimentationOptOut(ExperimentationOptOutMode.DISABLED)
         val factoryEntered = CountDownLatch(1)
@@ -111,7 +108,7 @@ internal class FlagsFeatureTest {
 
         try {
             val winner = executor.submit<FlagsClient> {
-                testedFeature.getOrRegisterNewClient(fakeApplicationId, ExperimentationOptOutMode.DISABLED) {
+                testedFeature.getOrRegisterNewClient(fakeClientName, ExperimentationOptOutMode.DISABLED) {
                     factoryEntered.countDown()
                     check(releaseFactory.await(5, TimeUnit.SECONDS))
                     mockWinner
@@ -122,7 +119,7 @@ internal class FlagsFeatureTest {
             // When
             val contender = executor.submit<FlagsClient> {
                 contenderStarted.countDown()
-                testedFeature.getOrRegisterNewClient(fakeApplicationId, requestedMode) {
+                testedFeature.getOrRegisterNewClient(fakeClientName, requestedMode) {
                     error("The losing registration must not create a client")
                 }
             }
@@ -132,7 +129,7 @@ internal class FlagsFeatureTest {
             // Then
             assertThat(warningEntered.await(2, TimeUnit.SECONDS)).isTrue()
             assertThat(
-                executor.submit<FlagsClient?> { testedFeature.getClient(fakeApplicationId) }
+                executor.submit<FlagsClient?> { testedFeature.getClient(fakeClientName) }
                     .get(2, TimeUnit.SECONDS)
             ).isSameAs(mockWinner)
             releaseWarning.countDown()
@@ -141,7 +138,7 @@ internal class FlagsFeatureTest {
             mockInternalLogger.verifyLog(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                "[Datadog Flags] Attempted to create a FlagsClient named '$fakeApplicationId' " +
+                "[Datadog Flags] Attempted to create a FlagsClient named '$fakeClientName' " +
                     "with experimentation opt-out mode $requestedMode, but one already exists with mode DISABLED. " +
                     "The existing client will be used. Use a separate client name for each mode."
             )

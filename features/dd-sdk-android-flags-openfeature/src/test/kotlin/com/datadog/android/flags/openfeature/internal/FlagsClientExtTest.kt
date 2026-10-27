@@ -105,7 +105,6 @@ internal class FlagsClientExtTest {
         doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
             callback.onSuccess()
-            Unit
         }.whenever(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
 
         // When
@@ -128,7 +127,6 @@ internal class FlagsClientExtTest {
         whenever(stubState.getCurrentState()).thenReturn(FlagsClientState.Ready)
         doAnswer { invocation ->
             invocation.getArgument<EvaluationContextCallback>(1).onFailure(stubTimeoutError)
-            Unit
         }.whenever(mockFlagsClient).setEvaluationContext(eq(context), any())
 
         // When
@@ -151,7 +149,6 @@ internal class FlagsClientExtTest {
         doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
             callback.onFailure(error)
-            Unit
         }.whenever(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
 
         // When / Then
@@ -179,7 +176,6 @@ internal class FlagsClientExtTest {
         doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
             callback.onFailure(error)
-            Unit
         }.whenever(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
 
         // When / Then
@@ -207,7 +203,6 @@ internal class FlagsClientExtTest {
         doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
             callback.onFailure(error)
-            Unit
         }.whenever(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
 
         // When / Then
@@ -236,7 +231,6 @@ internal class FlagsClientExtTest {
         doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
             callback.onFailure(error)
-            Unit
         }.whenever(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
 
         // When / Then
@@ -274,7 +268,6 @@ internal class FlagsClientExtTest {
         doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
             callback.onSuccess()
-            Unit
         }.whenever(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
 
         // When

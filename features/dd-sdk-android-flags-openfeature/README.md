@@ -160,7 +160,7 @@ OpenFeatureAPI.setProviderAndWait(provider)
 val enabled = OpenFeatureAPI.getClient().getBooleanValue("new-feature", false)
 ```
 
-In either enabled mode, the attribute must be an RFC3339 string.
+In either enabled mode, the attribute must be a timestamp string in the format described in the Flags README.
 Omit it for subjects who can participate. Boolean, numeric, null, and malformed timestamp values are invalid.
 The provider returns defaults with `INVALID_CONTEXT` for invalid input. It does not convert non-string values into timestamps.
 See the [native client behavior](../dd-sdk-android-flags/README.md#exclude-a-subject-from-experimentation) for delivery and cache behavior.

@@ -117,7 +117,7 @@ class NavigationViewTrackingStrategy(
      * Starts tracking on current activity.
      *
      * This is automatically called when activity starts. If using static navigation setup, with
-     * navigation container in XML layout, there's no need to call it manually. However if using
+     * navigation container in XML layout, there's no need to call it manually. However, if using
      * dynamic navigation setup where navigation controller is created programmatically, then this
      * function must be called after navigation controller is injected into view hierarchy.
      * Regardless of the usage, the function always relies on view ID provided with the constructor.

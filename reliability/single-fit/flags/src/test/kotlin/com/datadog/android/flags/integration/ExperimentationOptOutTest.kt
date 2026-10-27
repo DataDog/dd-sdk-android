@@ -89,7 +89,8 @@ internal class ExperimentationOptOutTest {
         assertThat(result.value).isFalse()
         assertThat(result.errorCode).isEqualTo(ErrorCode.INVALID_CONTEXT)
         assertThat(result.errorMessage).isEqualTo(
-            "Flag 'flag': dd_experimentation_opt_out_at must be an RFC3339 timestamp string."
+            "Flag 'flag': Set dd_experimentation_opt_out_at to YYYY-MM-DDTHH:mm:ss[.fraction] with Z or +/-HH:mm, " +
+                "or omit the attribute."
         )
         assertThat(stubSdkCore.eventsWritten(Feature.FLAGS_FEATURE_NAME)).isEmpty()
     }

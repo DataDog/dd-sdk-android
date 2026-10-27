@@ -75,7 +75,7 @@ class ApiSurfacePlugin : Plugin<Project> {
             if (name == "compileDebugKotlin") {
                 finalizedBy(generateCompilerMetaTask)
             }
-            // Java API generation task does a clean-up of all files in the output
+            // Java API generation task does a cleanup of all files in the output
             // folder, so let it run first
             if (target.plugins.hasPlugin(GEN_JAVA_API_LAYOUT_PLUGIN)) {
                 val isCi = target.providers.environmentVariable("CI")

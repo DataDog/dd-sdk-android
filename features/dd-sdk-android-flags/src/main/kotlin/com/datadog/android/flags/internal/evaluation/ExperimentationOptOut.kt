@@ -68,7 +68,8 @@ internal class ExperimentationOptOut(val mode: ExperimentationOptOutMode = Exper
 
     companion object {
         const val ATTRIBUTE = "dd_experimentation_opt_out_at"
-        const val INVALID_CONTEXT_MESSAGE = "dd_experimentation_opt_out_at must be an RFC3339 timestamp string."
+        const val INVALID_CONTEXT_MESSAGE =
+            "Set dd_experimentation_opt_out_at to YYYY-MM-DDTHH:mm:ss[.fraction] with Z or +/-HH:mm, or omit the attribute."
         private val TIMESTAMP =
             Regex("^([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2})(?:\\.([0-9]+))?(Z|[+-][0-9]{2}:[0-9]{2})$")
 

@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInitializationTimeoutException
+import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.ErrorCode
@@ -50,6 +51,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -109,6 +111,34 @@ internal class DatadogFlagsProviderTest {
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `M report InvalidContextError W client enters Error state {invalid opt-out timestamp}`() = runTest {
+        // Given
+        val cause = mock<FlagsInvalidContextException> { on { message } doReturn "Invalid opt-out timestamp" }
+
+        try {
+            OpenFeatureAPI.setProviderAndWait(
+                provider = provider,
+                initialContext = ImmutableContext(targetingKey = "user-123"),
+                dispatcher = UnconfinedTestDispatcher(testScheduler)
+            )
+
+            // When
+            checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Error(cause))
+            testScheduler.runCurrent()
+
+            // Then
+            val errorStatus = OpenFeatureAPI.getStatus()
+            assertThat(errorStatus).isInstanceOf(OpenFeatureStatus.Error::class.java)
+            assertThat((errorStatus as OpenFeatureStatus.Error).error)
+                .isInstanceOf(OpenFeatureError.InvalidContextError::class.java)
+                .hasMessage("Invalid opt-out timestamp")
+        } finally {
+            OpenFeatureAPI.shutdown()
+        }
+    }
+
     @Mock
     lateinit var mockFlagsClient: FlagsClient
 
@@ -134,7 +164,6 @@ internal class DatadogFlagsProviderTest {
 
         lenient().whenever(mockStateObservable.addListener(any())).doAnswer {
             capturedStateListener = it.getArgument(0)
-            Unit
         }
 
         lenient().apply { doNothing().whenever(mockStateObservable).removeListener(any()) }
@@ -430,7 +459,6 @@ internal class DatadogFlagsProviderTest {
         whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
             callback.onFailure(stubTimeoutError)
-            Unit
         }
 
         try {
@@ -460,7 +488,6 @@ internal class DatadogFlagsProviderTest {
         whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
             callback.onFailure(fakeTimeoutError)
-            Unit
         }
 
         // When

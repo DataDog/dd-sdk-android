@@ -16,7 +16,7 @@ private const val ATTRIBUTE_TYPE_COMPOSE_VALUE = "compose"
 /**
  * A wrap function of [withinComposeBenchmarkSpan] dedicated to session replay span recording.
  */
-internal inline fun <T : Any?> withinComposeBenchmarkSpan(
+internal inline fun <T> withinComposeBenchmarkSpan(
     spanName: String,
     isContainer: Boolean = false,
     block: BenchmarkSpan.() -> T

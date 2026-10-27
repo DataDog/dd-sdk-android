@@ -37,11 +37,11 @@ internal class NoOpScheduledExecutorService : ScheduledExecutorService {
         return false
     }
 
-    override fun <T : Any?> submit(task: Callable<T>?): Future<T>? {
+    override fun <T> submit(task: Callable<T>?): Future<T>? {
         return null
     }
 
-    override fun <T : Any?> submit(task: Runnable?, result: T): Future<T>? {
+    override fun <T> submit(task: Runnable?, result: T): Future<T>? {
         return null
     }
 
@@ -49,11 +49,11 @@ internal class NoOpScheduledExecutorService : ScheduledExecutorService {
         return null
     }
 
-    override fun <T : Any?> invokeAll(tasks: MutableCollection<out Callable<T>>?): MutableList<Future<T>>? {
+    override fun <T> invokeAll(tasks: MutableCollection<out Callable<T>>?): MutableList<Future<T>>? {
         return null
     }
 
-    override fun <T : Any?> invokeAll(
+    override fun <T> invokeAll(
         tasks: MutableCollection<out Callable<T>>?,
         timeout: Long,
         unit: TimeUnit?
@@ -61,11 +61,11 @@ internal class NoOpScheduledExecutorService : ScheduledExecutorService {
         return null
     }
 
-    override fun <T : Any?> invokeAny(tasks: MutableCollection<out Callable<T>>?): T? {
+    override fun <T> invokeAny(tasks: MutableCollection<out Callable<T>>?): T? {
         return null
     }
 
-    override fun <T : Any?> invokeAny(
+    override fun <T> invokeAny(
         tasks: MutableCollection<out Callable<T>>?,
         timeout: Long,
         unit: TimeUnit?
@@ -77,7 +77,7 @@ internal class NoOpScheduledExecutorService : ScheduledExecutorService {
         return null
     }
 
-    override fun <V : Any?> schedule(
+    override fun <V> schedule(
         callable: Callable<V>?,
         delay: Long,
         unit: TimeUnit?

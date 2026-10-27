@@ -143,7 +143,7 @@ Callbacks run on a background thread. Dispatch UI changes to the main thread.
 | `IMMEDIATE` | Exclude all experiment allocations, including experiments already in progress. |
 | `FUTURE_EXPERIMENTS_ONLY` | Continue experiments activated before the timestamp. Exclude newer experiments and those with unknown activation times. |
 
-Provide the customer's stored RFC3339 opt-out timestamp. Do not replace it with the current time on each launch.
+Provide the customer's stored opt-out timestamp in the format below. Do not replace it with the current time on each launch.
 In `IMMEDIATE` mode, any valid timestamp, including a future timestamp, excludes the subject from experiments now.
 In `FUTURE_EXPERIMENTS_ONLY` mode, a future timestamp keeps experiments activated before that timestamp eligible.
 Omit the attribute to permit experimentation.

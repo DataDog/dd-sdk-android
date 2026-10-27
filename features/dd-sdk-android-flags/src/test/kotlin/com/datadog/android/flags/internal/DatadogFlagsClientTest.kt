@@ -13,6 +13,7 @@ import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.model.PrecomputedFlag
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
@@ -53,6 +55,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
@@ -67,6 +70,47 @@ import java.util.concurrent.TimeUnit
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class DatadogFlagsClientTest {
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class, names = ["IMMEDIATE", "FUTURE_EXPERIMENTS_ONLY"])
+    fun `M not track W trackFlagSnapshotEvaluation and granular tracking {context superseded by an opt-out}`(
+        mode: ExperimentationOptOutMode,
+        forge: Forge
+    ) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakePreviousContext = EvaluationContext(forge.anAlphabeticalString())
+        val fakeOptedOutContext = EvaluationContext(
+            fakePreviousContext.targetingKey,
+            mapOf(ExperimentationOptOut.ATTRIBUTE to "2026-10-19T12:00:00Z")
+        )
+        val policy = ExperimentationOptOut(mode)
+        policy.prepare(fakeOptedOutContext)
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(doLog = true)
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+        testedClient = DatadogFlagsClient(
+            featureSdkCore = mockFeatureSdkCore,
+            evaluationsManager = mockEvaluationsManager,
+            flagsRepository = mockFlagsRepository,
+            flagsConfiguration = FlagsConfiguration.Builder().trackEvaluations(true)
+                .trackExposures(true).rumIntegrationEnabled(true).build(),
+            rumEvaluationLogger = mockRumEvaluationLogger,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = mockEvaluationsFeature,
+            flagStateManager = mockFlagsStateManager,
+            experimentationOptOut = policy,
+            evaluationTelemetryOptOutParameterEnabled = false
+        )
+
+        // When
+        testedClient.trackFlagSnapshotEvaluation(fakeKey, fakeFlag, fakePreviousContext)
+        testedClient.trackFlagExposure(fakeKey, fakeFlag, fakePreviousContext)
+        testedClient.trackFlagEvaluationEvent(fakeKey, fakeFlag, fakePreviousContext, null)
+        testedClient.trackFlagRumEvaluation(fakeKey, fakeFlag.variationKey, fakePreviousContext)
+
+        // Then
+        verifyNoInteractions(mockProcessor, mockEvaluationsFeature, mockRumEvaluationLogger)
+    }
 
     @Mock
     lateinit var mockFeatureSdkCore: FeatureSdkCore
@@ -382,6 +426,111 @@ internal class DatadogFlagsClientTest {
                 null
             )
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "false, false, false",
+        "false, false, true",
+        "false, true, false",
+        "false, true, true",
+        "true, false, false",
+        "true, false, true",
+        "true, true, false",
+        "true, true, true"
+    )
+    fun `M respect opt-out W trackFlagExposure() + trackFlagEvaluationEvent() + trackFlagRumEvaluation()`(
+        enabled: Boolean,
+        telemetryOptedOut: Boolean,
+        perSubject: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeContext = forge.getForgery<EvaluationContext>()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(doLog = true)
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
+            FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
+            mockEvaluationsFeature, mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = enabled
+        )
+        val testedProxy = _FlagsInternalProxy(testedClient)
+        if (perSubject) {
+            testedProxy.setEvaluationContext(fakeContext, null, telemetryOptedOut)
+        } else {
+            testedClient.setEvaluationTelemetryOptOut(telemetryOptedOut)
+        }
+
+        // When
+        testedProxy.trackFlagExposure(fakeKey, fakeFlag, fakeContext)
+        testedProxy.trackFlagEvaluationEvent(fakeKey, fakeFlag, fakeContext, null)
+        testedProxy.trackFlagEvaluationEvent(fakeKey, null, fakeContext, null)
+        testedProxy.trackFlagEvaluationEvent(fakeKey, null, fakeContext, "FLAG_NOT_FOUND")
+        testedProxy.trackFlagRumEvaluation(fakeKey, fakeFlag.variationKey, fakeContext)
+
+        // Then
+        verify(mockProcessor).processEvent(fakeKey, fakeContext, fakeFlag)
+        if (enabled && telemetryOptedOut) {
+            verifyNoInteractions(mockEvaluationsFeature, mockRumEvaluationLogger)
+        } else {
+            verify(mockRumEvaluationLogger).logEvaluation(fakeKey, fakeFlag.variationKey)
+            verify(mockEvaluationsFeature).processEvaluation(
+                fakeKey,
+                fakeContext,
+                fakeFlag.variationKey,
+                fakeFlag.allocationKey,
+                null,
+                null
+            )
+            verify(mockEvaluationsFeature).processEvaluation(fakeKey, fakeContext, null, null, null, null)
+            verify(mockEvaluationsFeature).processEvaluation(
+                fakeKey,
+                fakeContext,
+                null,
+                null,
+                "FLAG_NOT_FOUND",
+                "FLAG_NOT_FOUND"
+            )
+        }
+        verifyNoMoreInteractions(mockProcessor, mockEvaluationsFeature, mockRumEvaluationLogger)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M opt out W trackFlagSnapshotEvaluation() + trackFlagEvaluationEvent() + trackFlagRumEvaluation()`(
+        requestedSubjectOptedOut: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeContext = forge.getForgery<EvaluationContext>()
+        val fakeNextContext = forge.getForgery<EvaluationContext>().copy(
+            targetingKey = "${fakeContext.targetingKey}-next"
+        )
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(doLog = true)
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
+            FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
+            mockEvaluationsFeature, mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = true
+        )
+        val testedProxy = _FlagsInternalProxy(testedClient)
+        testedProxy.setEvaluationContext(fakeContext, null, !requestedSubjectOptedOut)
+        testedProxy.setEvaluationContext(fakeNextContext, null, requestedSubjectOptedOut)
+
+        // When
+        testedProxy.trackFlagSnapshotEvaluation(fakeKey, fakeFlag, fakeContext)
+        testedProxy.trackFlagRumEvaluation(fakeKey, fakeFlag.variationKey, fakeContext)
+        testedProxy.trackFlagEvaluationEvent(fakeKey, fakeFlag, fakeContext, null)
+        testedProxy.trackFlagEvaluationEvent(fakeKey, null, fakeContext, "FLAG_NOT_FOUND")
+
+        // Then
+        verify(mockProcessor).processEvent(fakeKey, fakeContext, fakeFlag)
+        verifyNoInteractions(mockEvaluationsFeature, mockRumEvaluationLogger)
+        verifyNoMoreInteractions(mockProcessor)
     }
 
     @Test

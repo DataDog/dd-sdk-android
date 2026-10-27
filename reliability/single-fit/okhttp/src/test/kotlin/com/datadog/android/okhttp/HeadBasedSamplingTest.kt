@@ -189,7 +189,7 @@ class HeadBasedSamplingTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         eventsWritten.forEach {
-            val spanPayload = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+            val spanPayload = JsonParser.parseString(it.eventData) as JsonObject
             SpansPayloadAssert.assertThat(spanPayload)
                 .hasEnv(stubSdkCore.getDatadogContext().env)
                 .hasSpanAtIndexWith(0) {
@@ -739,7 +739,7 @@ class HeadBasedSamplingTest {
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         eventsWritten.forEach {
-            val spanPayload = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+            val spanPayload = JsonParser.parseString(it.eventData) as JsonObject
             SpansPayloadAssert.assertThat(spanPayload)
                 .hasEnv(stubSdkCore.getDatadogContext().env)
                 .hasSpanAtIndexWith(0) {

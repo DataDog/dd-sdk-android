@@ -50,6 +50,9 @@ internal class EvaluationCallbackDispatcher(
             onSubmissionFailed(exception)
         } catch (exception: SecurityException) {
             onSubmissionFailed(exception)
+        } catch (error: OutOfMemoryError) {
+            // Thread.start() reports a thread-limit failure this way; it may be transient.
+            onSubmissionFailed(error)
         } finally {
             try {
                 worker.shutdown()
@@ -59,7 +62,7 @@ internal class EvaluationCallbackDispatcher(
         }
     }
 
-    private fun onSubmissionFailed(exception: RuntimeException) {
+    private fun onSubmissionFailed(exception: Throwable) {
         logWorkerFailure(exception)
         // The main looper retries worker startup only. Customer callbacks stay on the worker.
         if (!scheduleRetry(Runnable(::startWorker), RETRY_DELAY_MS)) {
@@ -73,7 +76,7 @@ internal class EvaluationCallbackDispatcher(
         }
     }
 
-    private fun logWorkerFailure(exception: RuntimeException) {
+    private fun logWorkerFailure(exception: Throwable) {
         synchronized(lock) {
             if (failureReported) return
             failureReported = true

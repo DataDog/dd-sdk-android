@@ -38,7 +38,7 @@ internal suspend fun FlagsClient.setEvaluationContextSuspend(
     // Subsequent invocation of any resume function will produce
     // an IllegalStateException, but we are safe here
     @Suppress("UnsafeThirdPartyFunctionCall")
-    suspendCoroutine<Unit> { continuation ->
+    suspendCoroutine { continuation ->
         val callback = object : EvaluationContextCallback {
             override fun onSuccess() {
                 continuation.resume(Unit)

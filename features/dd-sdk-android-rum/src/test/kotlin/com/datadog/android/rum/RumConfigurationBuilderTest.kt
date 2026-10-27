@@ -641,7 +641,6 @@ internal class RumConfigurationBuilderTest {
             .isSameAs(customLastInteractionIdentifier)
     }
 
-    @OptIn(ExperimentalRumApi::class)
     @Test
     fun `M changes default trackAnonymousUser W trackAnonymousUser()`(
         @BoolForgery trackAnonymousUser: Boolean
@@ -656,7 +655,6 @@ internal class RumConfigurationBuilderTest {
             .isEqualTo(trackAnonymousUser)
     }
 
-    @OptIn(ExperimentalRumApi::class)
     @Test
     fun `M use a custom slowFramesConfiguration W setSlowFramesConfiguration()`() {
         // Given

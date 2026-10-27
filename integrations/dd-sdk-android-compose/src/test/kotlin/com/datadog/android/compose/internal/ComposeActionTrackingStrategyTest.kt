@@ -6,14 +6,13 @@
 
 @file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 
-package com.datadog.android.compose
+package com.datadog.android.compose.internal
 
 import android.view.View
 import androidx.compose.runtime.collection.mutableVectorOf
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.node.LayoutNode
 import androidx.compose.ui.platform.AndroidComposeView
-import com.datadog.android.compose.internal.ComposeActionTrackingStrategy
 import com.datadog.android.compose.internal.utils.LayoutNodeUtils
 import com.datadog.android.rum.tracking.Node
 import com.datadog.android.rum.tracking.ViewTarget

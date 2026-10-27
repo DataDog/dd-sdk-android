@@ -17,7 +17,7 @@ dependencies {
 
 1. Setup RUM monitoring, see the dedicated [Datadog Android RUM Collection documentation][2] to learn how.
 2. Setup Trace monitoring, see the dedicated [Datadog Android Trace Collection documentation][3] to learn how.
-3. Following Glide's [Generated API documentation][4], you then need to create your own `GlideAppModule` with Datadog integrations by extending the `DatadogGlideModule`, as follow.
+3. Following Glide's [Generated API documentation][4], you then need to create your own `GlideAppModule` with Datadog integrations by extending the `DatadogGlideModule`, as follows.
 
 Doing so will automatically track Glide's network requests (creating both APM Traces and RUM Resource events), and will also listen for disk cache and image transformation errors (creating RUM Error events).
 

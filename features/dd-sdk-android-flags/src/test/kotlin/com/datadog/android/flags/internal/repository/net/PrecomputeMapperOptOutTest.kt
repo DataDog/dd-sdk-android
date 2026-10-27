@@ -60,6 +60,20 @@ internal class PrecomputeMapperOptOutTest {
         assertThat(result).isNull()
     }
 
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M reject immediate filtered response W map() {no effective opt-out}`(mode: ExperimentationOptOutMode) {
+        // Given
+        val request = ExperimentationOptOut(mode).prepare(EvaluationContext("subject"))
+        val options = JSONObject().put("experimentation_opt_out_mode", "immediate")
+
+        // When
+        val result = testedMapper.map(response(options), request.takeIf { it.optedOut })
+
+        // Then
+        assertThat(result).isNull()
+    }
+
     private fun response(options: JSONObject?): String {
         val flag = JSONObject()
             .put("variationType", "boolean")

@@ -123,6 +123,26 @@ internal class EvaluationCallbackDispatcherTest {
     }
 
     @Test
+    fun `M deliver later callbacks W execute() {thread start fails with OutOfMemoryError}`() {
+        // Given
+        val fakeError = OutOfMemoryError("pthread_create (1040KB stack) failed: Try again")
+        doThrow(fakeError).whenever(mockWorker).execute(any())
+        var delivered = 0
+
+        // When
+        org.junit.jupiter.api.assertDoesNotThrow {
+            testedDispatcher.execute { delivered++ }
+        }
+        doAnswer { pending.addLast(it.getArgument(0)); null }.whenever(mockWorker).execute(any())
+        testedDispatcher.execute { delivered++ }
+        while (retries.isNotEmpty()) retries.removeFirst().run()
+        while (pending.isNotEmpty()) pending.removeFirst().run()
+
+        // Then
+        assertThat(delivered).isEqualTo(2)
+    }
+
+    @Test
     fun `M retry sole callback W execute() {worker creation denied}`() {
         // Given
         var attempts = 0

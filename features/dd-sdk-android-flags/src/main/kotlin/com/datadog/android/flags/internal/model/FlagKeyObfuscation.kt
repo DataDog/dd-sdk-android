@@ -21,7 +21,7 @@ internal data class FlagKeyObfuscation private constructor(val salt: String) {
     fun encode(key: String): String? {
         // Reject unpaired surrogates instead of silently replacing their UTF-8 encoding.
         if (!isWellFormedUnicode(key)) return null
-        val cachedKey = lookupKeys.get(key)
+        val cachedKey = lookupKeys[key]
         return cachedKey ?: run {
             @Suppress("UnsafeThirdPartyFunctionCall") // SHA-256 is mandatory on Android.
             val digest = MessageDigest.getInstance("SHA-256")

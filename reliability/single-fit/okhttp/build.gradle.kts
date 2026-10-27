@@ -47,6 +47,7 @@ dependencies {
     }
     testImplementation(project(":dd-sdk-android-internal"))
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     testImplementation(project(":reliability:stub-core"))
     testImplementation(project(":integrations:dd-sdk-android-apollo"))

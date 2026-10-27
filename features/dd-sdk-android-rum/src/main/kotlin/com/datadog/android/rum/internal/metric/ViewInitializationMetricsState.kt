@@ -42,7 +42,7 @@ internal sealed interface NoValueReason {
     }
 
     enum class InteractionToNextView : NoValueReason {
-        // Interaction to next view is disabled, usually by a cross platform framework that wants
+        // Interaction to next view is disabled, usually by a cross-platform framework that wants
         // to handle this metric itself.
         DISABLED,
 
