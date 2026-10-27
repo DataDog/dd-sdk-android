@@ -184,13 +184,13 @@ data class FlagsConfiguration internal constructor(
          * value, empty values are dropped, and duplicates are removed. A null list is treated as absent.
          *
          * Each list accepts at most 31 values after duplicates are removed, and each tag and key pattern is at most
-         * 200 UTF-8 bytes. A selection over a limit, or one that contains a null value, is not sent, and the full
-         * flag configuration is loaded. The server may also ignore a very large selection (`too_many_values`), in
-         * which case the full flag configuration is loaded. Servers that do not support flag selection, or have it
-         * disabled, return the full flag configuration without a warning.
+         * 200 UTF-8 bytes after trimming. A selection over a limit, or one that contains a null value or an unpaired
+         * UTF-16 surrogate, is not sent, and the full flag configuration is loaded. The server may also ignore a very
+         * large selection (`too_many_values`), in which case the full flag configuration is loaded. Servers that do
+         * not support flag selection, or have it disabled, return the full flag configuration without a warning.
          *
-         * Flags outside the selection are not loaded, so evaluating them returns the default value with
-         * [ErrorCode.FLAG_NOT_FOUND].
+         * When the server applies the selection, flags outside it are not loaded, so evaluating them returns the
+         * default value with [ErrorCode.FLAG_NOT_FOUND].
          *
          * The selection is fixed when the Flags feature is enabled. Calling this method again replaces the
          * previous selection.

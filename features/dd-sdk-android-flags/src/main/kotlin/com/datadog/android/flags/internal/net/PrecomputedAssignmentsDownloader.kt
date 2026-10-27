@@ -57,7 +57,7 @@ internal class PrecomputedAssignmentsDownloader(
             PrecomputedAssignmentsResponse(
                 body = body,
                 flagSelectionIgnoredReason = if (requestFactory.sendsFlagSelection) {
-                    response.header(HEADER_FLAG_SELECTION_IGNORED)
+                    response.header(HEADER_FLAG_SELECTION_IGNORED)?.takeIf { it.isNotEmpty() }
                 } else {
                     null
                 }

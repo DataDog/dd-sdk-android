@@ -132,6 +132,22 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
+    fun `M return no ignored reason W readPrecomputedFlags() { selection sent, empty ignored header }`(
+        @StringForgery fakeResponseBody: String,
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        stubSuccessfulCall(fakeResponseBody, fakeUrl, ignoredReason = "")
+        whenever(mockRequestFactory.sendsFlagSelection) doReturn true
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+
+        // Then
+        assertThat(result).isEqualTo(PrecomputedAssignmentsResponse(fakeResponseBody, null))
+    }
+
+    @Test
     fun `M return no ignored reason W readPrecomputedFlags() { no selection sent, ignored header }`(
         @StringForgery fakeResponseBody: String,
         @StringForgery(regex = "[a-z_]+") fakeIgnoredReason: String,
