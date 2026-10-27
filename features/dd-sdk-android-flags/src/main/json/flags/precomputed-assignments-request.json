@@ -70,9 +70,49 @@
         "type",
         "attributes"
       ]
+    },
+    "diagnostics": {
+      "type": "object",
+      "properties": {
+        "sdk": {
+          "type": "object",
+          "properties": {
+            "instance_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "instance_id"
+          ]
+        },
+        "fetch": {
+          "type": "object",
+          "properties": {
+            "sequence": {
+              "type": "integer"
+            },
+            "trigger": {
+              "type": "string",
+              "enum": [
+                "initialization",
+                "context_change"
+              ]
+            }
+          },
+          "required": [
+            "sequence",
+            "trigger"
+          ]
+        }
+      },
+      "required": [
+        "sdk",
+        "fetch"
+      ]
     }
   },
   "required": [
-    "data"
+    "data",
+    "diagnostics"
   ]
 }

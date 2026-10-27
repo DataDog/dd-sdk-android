@@ -38,18 +38,23 @@ internal class PrecomputedAssignmentsRequestFactory(
      * @param context The evaluation context containing targeting key and custom attributes
      *                for flag evaluation
      * @param datadogContext The [DatadogContext] holding common information about SDK
+     * @param diagnostics Snapshot for the logical fetch that created this request.
      * @return A fully-formed OkHttp Request ready for execution, or null if the request
      *         cannot be constructed (e.g., invalid endpoint or headers)
      */
     @Suppress("ReturnCount")
-    fun create(context: EvaluationContext, datadogContext: DatadogContext): Request? {
+    fun create(
+        context: EvaluationContext,
+        datadogContext: DatadogContext,
+        diagnostics: PrecomputedAssignmentsRequest.Diagnostics
+    ): Request? {
         val url = customFlagEndpoint
             ?: datadogContext.site.getFlagsEndpoint(PREVIEW_CUSTOMER_DOMAIN)
             ?: return null
 
         val headers = buildHeaders(datadogContext) ?: return null
 
-        val body = buildRequestBody(context, datadogContext)
+        val body = buildRequestBody(context, datadogContext, diagnostics)
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Safe: inputs validated, caller handles null
         return Request.Builder()
@@ -91,7 +96,11 @@ internal class PrecomputedAssignmentsRequestFactory(
         return headersBuilder.build()
     }
 
-    private fun buildRequestBody(context: EvaluationContext, datadogContext: DatadogContext): RequestBody {
+    private fun buildRequestBody(
+        context: EvaluationContext,
+        datadogContext: DatadogContext,
+        diagnostics: PrecomputedAssignmentsRequest.Diagnostics
+    ): RequestBody {
         // Java callers can supply null entries despite the Kotlin map type.
         val inputAttributes: Map<out String?, String?> = context.attributes
         val targetingAttributes = mutableMapOf<String, String>()
@@ -101,6 +110,7 @@ internal class PrecomputedAssignmentsRequestFactory(
             }
         }
         val body = PrecomputedAssignmentsRequest(
+            diagnostics = diagnostics,
             data = PrecomputedAssignmentsRequest.Data(
                 attributes = PrecomputedAssignmentsRequest.Attributes(
                     env = PrecomputedAssignmentsRequest.Env(ddEnv = datadogContext.env),
