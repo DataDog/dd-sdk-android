@@ -178,53 +178,33 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
 
     @Test
     fun `M create correct JSON body W create() { with attributes }`(
-        @StringForgery fakeTargetingKey: String
+        @StringForgery fakeTargetingKey: String,
+        forge: Forge
     ) {
         // Given
-        val context = EvaluationContext(
-            targetingKey = fakeTargetingKey,
-            attributes = mapOf(
-                "userId" to "user123",
-                "plan" to "premium",
-                "age" to "25"
-            )
-        )
+        val fakeAttributes = forge.aMap(size = forge.anInt(min = 1, max = 5)) {
+            anAlphabeticalString() to anAlphabeticalString()
+        }
+        val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
         // When
-        val request = testedFactory.create(context, fakeDatadogContext)
+        val request = testedFactory.create(fakeContext, fakeDatadogContext)
 
         // Then
         checkNotNull(request)
-        val bodyString = extractRequestBodyAsString(request)
-        val bodyJson = JSONObject(bodyString)
-
-        // Validate top-level structure
-        assertThat(bodyJson.has("data")).isTrue()
+        val bodyJson = JSONObject(extractRequestBodyAsString(request))
         val data = bodyJson.getJSONObject("data")
+        assertThat(bodyJson.length()).isEqualTo(1)
         assertThat(data.getString("type")).isEqualTo("precompute-assignments-request")
-
-        // Validate attributes structure
         val attributes = data.getJSONObject("attributes")
-        assertThat(attributes.has("env")).isTrue()
-        assertThat(attributes.has("source")).isTrue()
-        assertThat(attributes.has("subject")).isTrue()
-
-        // Validate subject
         val subject = attributes.getJSONObject("subject")
-        assertThat(subject.getString("targeting_key")).isEqualTo(fakeTargetingKey)
-        assertThat(subject.has("targeting_attributes")).isTrue()
-
-        // Validate targeting attributes
+        assertThat(subject.getString("targeting_key")).isEqualTo(fakeContext.targetingKey)
         val targetingAttributes = subject.getJSONObject("targeting_attributes")
-        assertThat(targetingAttributes.getString("userId")).isEqualTo("user123")
-        assertThat(targetingAttributes.getString("plan")).isEqualTo("premium")
-        assertThat(targetingAttributes.getString("age")).isEqualTo("25")
-
-        // Validate env
-        val env = attributes.getJSONObject("env")
-        assertThat(env.getString("dd_env")).isEqualTo(fakeDatadogContext.env)
-
-        // Validate source
+        assertThat(targetingAttributes.length()).isEqualTo(fakeAttributes.size)
+        fakeAttributes.forEach { (key, value) ->
+            assertThat(targetingAttributes.getString(key)).isEqualTo(value)
+        }
+        assertThat(attributes.getJSONObject("env").getString("dd_env")).isEqualTo(fakeDatadogContext.env)
         val source = attributes.getJSONObject("source")
         assertThat(source.getString("sdk_name")).isEqualTo("dd-sdk-android")
         assertThat(source.getString("sdk_version")).isEqualTo(fakeDatadogContext.sdkVersion)
@@ -255,41 +235,6 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
 
         val targetingAttributes = subject.getJSONObject("targeting_attributes")
         assertThat(targetingAttributes.length()).isEqualTo(0)
-    }
-
-    @Test
-    fun `M handle various attributes W create() { multiple string attributes }`(
-        @StringForgery fakeTargetingKey: String
-    ) {
-        // Given
-        val context = EvaluationContext(
-            targetingKey = fakeTargetingKey,
-            attributes = mapOf(
-                "attr1" to "value1",
-                "attr2" to "value2",
-                "attr3" to "value3",
-                "attr4" to "value4"
-            )
-        )
-
-        // When
-        val request = testedFactory.create(context, fakeDatadogContext)
-
-        // Then
-        checkNotNull(request)
-        val bodyString = extractRequestBodyAsString(request)
-        val bodyJson = JSONObject(bodyString)
-
-        val targetingAttributes = bodyJson
-            .getJSONObject("data")
-            .getJSONObject("attributes")
-            .getJSONObject("subject")
-            .getJSONObject("targeting_attributes")
-
-        assertThat(targetingAttributes.getString("attr1")).isEqualTo("value1")
-        assertThat(targetingAttributes.getString("attr2")).isEqualTo("value2")
-        assertThat(targetingAttributes.getString("attr3")).isEqualTo("value3")
-        assertThat(targetingAttributes.getString("attr4")).isEqualTo("value4")
     }
 
     // endregion
