@@ -20,8 +20,7 @@ import com.google.gson.JsonObject
 
 @Suppress("TooManyFunctions")
 internal class CoreTracerSpanToSpanEventMapper(
-    internal val networkInfoEnabled: Boolean,
-    internal val clientSideStatsEnabled: Boolean
+    internal val networkInfoEnabled: Boolean
 ) : BaseSpanEventMapper<DDSpan>() {
 
     // region Mapper
@@ -101,14 +100,6 @@ internal class CoreTracerSpanToSpanEventMapper(
         meta.putAll(tags)
         meta[TRACE_ID_META_KEY] = mostSignificantTraceId
         meta[APPLICATION_VARIANT_KEY] = datadogContext.variant
-
-        if (clientSideStatsEnabled) {
-            meta[COMPUTE_STATS_META_KEY] = "0"
-        } else {
-            // Prevent a user from altering the logic by providing the tag manually
-            meta.remove(COMPUTE_STATS_META_KEY)
-        }
-
         resolveSpanLinks(event)?.let { meta[SPAN_LINKS_KEY] = it }
         return SpanEvent.Meta(
             version = datadogContext.version,
