@@ -59,7 +59,7 @@ internal class DatadogFlagsClient(
     private val evaluationsFeature: EvaluationsFeature?,
     private val flagStateManager: FlagsStateManager,
     internal val evaluationTelemetryOptOutParameterEnabled: Boolean,
-    internal val experimentationOptOut: ExperimentationOptOut = ExperimentationOptOut()
+    internal val experimentationOptOut: ExperimentationOptOut
 ) : FlagsClient {
 
     @Volatile
@@ -376,7 +376,11 @@ internal class DatadogFlagsClient(
         val message = when (error) {
             ErrorCode.INVALID_CONTEXT -> ExperimentationOptOut.INVALID_CONTEXT_MESSAGE
             ErrorCode.FLAG_NOT_FOUND -> "Flag not found"
-            else -> "Assignments for the current evaluation context are not available."
+            else -> if (experimentationOptOut.enabled) {
+                "Assignments for the current evaluation context are not available."
+            } else {
+                "Provider not ready - call setEvaluationContext() before resolving flags"
+            }
         }
         return InternalResolution.Error(
             flagKey,
@@ -619,6 +623,24 @@ internal class DatadogFlagsClient(
     // region Internal APIs exposed through _FlagsInternalProxy
 
     /**
+     * Retrieves the installed flag assignments only when they belong to [context].
+     *
+     * Completion callbacks run after later requests can install, so a caller that reads assignments
+     * for a specific request uses this variant.
+     *
+     * @return A map of flag key to an unparsed flag if the installed assignments were fetched for [context] and,
+     * with an enabled opt-out mode, [context] is still the current request; null otherwise.
+     */
+    internal fun getFlagAssignmentsSnapshot(context: EvaluationContext): Map<String, UnparsedFlag>? {
+        flagsRepository.waitForPersistenceLoad()
+        return synchronized(telemetryLock) {
+            flagsRepository.getAssignmentsSnapshot()
+                ?.takeIf { it.context == context && experimentationOptOut.resolutionError(it.context) == null }
+                ?.flags
+        }
+    }
+
+    /**
      * Retrieves a snapshot of all flag assignments.
      *
      * Explicitly for use by the Datadog React Native SDK to get flags state snapshot for a given evaluation context.
@@ -663,7 +685,9 @@ internal class DatadogFlagsClient(
         context: EvaluationContext,
         errorCode: String?
     ) {
-        if (!isCurrentResolutionContext(context)) return
+        val policy = experimentationOptOut.resolutionContext(context)
+        val requestedError = flag == null && errorCode != null && policy.context == context
+        if (policy.errorCode != null && !requestedError) return
         if (!flagsConfiguration.trackEvaluations || isEvaluationTelemetryOptedOut(context)) {
             return
         }
@@ -696,7 +720,8 @@ internal class DatadogFlagsClient(
     // endregion
 
     private fun isCurrentResolutionContext(context: EvaluationContext): Boolean =
-        synchronized(telemetryLock) { experimentationOptOut.resolutionError(context) == null }
+        !experimentationOptOut.enabled ||
+            synchronized(telemetryLock) { experimentationOptOut.resolutionError(context) == null }
 
     private companion object {
         val ALLOWED_EVALUATION_ERROR_CODES = setOf(

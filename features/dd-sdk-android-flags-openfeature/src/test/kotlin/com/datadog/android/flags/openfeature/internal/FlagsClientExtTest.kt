@@ -8,6 +8,7 @@ package com.datadog.android.flags.openfeature.internal
 
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.StateObservable
@@ -36,6 +37,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CancellationException
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -276,5 +278,23 @@ internal class FlagsClientExtTest {
         // Then - verify the correct context and attributes were passed
         verify(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
         assertThat(contextCaptor.firstValue).isEqualTo(context)
+    }
+
+    @Test
+    fun `M throw CancellationException W setEvaluationContextSuspend() {callback onFailure superseded}`(
+        @StringForgery targetingKey: String
+    ) {
+        // Given
+        val context = EvaluationContext(targetingKey = targetingKey)
+        val stubError = mock<FlagsContextSupersededException>()
+        doAnswer { invocation ->
+            invocation.getArgument<EvaluationContextCallback>(1).onFailure(stubError)
+            Unit
+        }.whenever(mockFlagsClient).setEvaluationContext(eq(context), any())
+
+        // When / Then
+        assertThatThrownBy {
+            runBlocking { mockFlagsClient.setEvaluationContextSuspend(context) }
+        }.isInstanceOf(CancellationException::class.java)
     }
 }

@@ -6,7 +6,12 @@
 
 package com.datadog.android.flags
 
-/** Controls whether the client honors the subject's `dd_experimentation_opt_out_at` attribute. */
+/**
+ * Controls whether the client honors the subject's `dd_experimentation_opt_out_at` attribute.
+ * In enabled modes, assignments are unavailable until they match the requested evaluation context.
+ * This also applies at startup and to subjects without the timestamp attribute.
+ * Resolutions return application defaults with PROVIDER_NOT_READY while matching assignments are unavailable.
+ */
 enum class ExperimentationOptOutMode {
     /** Ignores the opt-out attribute. This is the default. */
     DISABLED,

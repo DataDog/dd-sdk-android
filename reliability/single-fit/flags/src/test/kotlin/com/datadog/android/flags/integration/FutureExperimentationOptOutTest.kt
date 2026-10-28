@@ -186,13 +186,14 @@ internal class FutureExperimentationOptOutTest {
         val stubSdkCore = FlagsClientTest.createStubSdkCore(forge)
         val dataStore = StubDataStoreHandler()
         val initialClient = buildClient(stubSdkCore, initialMode, dataStore)
-        val options = if (initialMode == ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY) {
-            acknowledgement()
-        } else {
-            "{\"experimentation_opt_out\":true}"
+        val options = when (initialMode) {
+            ExperimentationOptOutMode.DISABLED -> null
+            ExperimentationOptOutMode.IMMEDIATE -> "{\"experimentation_opt_out\":true}"
+            ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY -> acknowledgement()
         }
         stubSdkCore.stubNetworkResponses { httpResponse(it, body = response(options)) }
         initialClient.setEvaluationContext(context())
+        assertThat(initialClient.resolve("flag", false).value).isTrue()
         val restartedSdkCore = FlagsClientTest.createStubSdkCore(forge)
         val testedClient = buildClient(restartedSdkCore, dataStore = dataStore)
 
@@ -292,6 +293,40 @@ internal class FutureExperimentationOptOutTest {
         assertThat(result.value).isFalse()
         assertThat(result.errorCode).isNull()
         assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M report cached keys before readability W onFirstFlags() {restart}`(
+        mode: ExperimentationOptOutMode,
+        forge: Forge
+    ) {
+        // Given
+        val stubSdkCore = FlagsClientTest.createStubSdkCore(forge)
+        val dataStore = StubDataStoreHandler()
+        val initialClient = buildClient(stubSdkCore, mode, dataStore)
+        val options = when (mode) {
+            ExperimentationOptOutMode.DISABLED -> null
+            ExperimentationOptOutMode.IMMEDIATE -> "{\"experimentation_opt_out\":true}"
+            ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY -> acknowledgement()
+        }
+        stubSdkCore.stubNetworkResponses { httpResponse(it, body = response(options)) }
+        initialClient.setEvaluationContext(context())
+        assertThat(initialClient.resolve("flag", false).value).isTrue()
+        val restartedSdkCore = FlagsClientTest.createStubSdkCore(forge)
+        val testedClient = buildClient(restartedSdkCore, mode, dataStore)
+        val notifications = mutableListOf<Set<String>>()
+
+        // When
+        testedClient.onFirstFlags { notifications.add(checkNotNull(it.flagsChanged).toSet()) }
+        val beforeContext = testedClient.resolve("flag", false)
+        testedClient.setEvaluationContext(context())
+        val afterContext = testedClient.resolve("flag", false)
+
+        // Then
+        assertThat(notifications).containsExactly(setOf("flag"))
+        assertThat(beforeContext.value).isEqualTo(mode == ExperimentationOptOutMode.DISABLED)
+        assertThat(afterContext.value).isTrue()
     }
 
     private fun buildClient(

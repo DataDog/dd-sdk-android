@@ -136,6 +136,10 @@ client.setEvaluationContext(
 
 `setEvaluationContext` is asynchronous. Resolve the flag after its success callback.
 Callbacks run on a background thread. Dispatch UI changes to the main thread.
+A newer context can replace the assignments before a callback runs. In enabled modes, a usable response
+that is discarded after supersession fails with `FlagsContextSupersededException`, unless its timeout already completed it.
+Treat this exception as cancellation. OpenFeature maps it to coroutine cancellation instead of a provider error.
+Failed fetches still report their network or response error, including when a newer request exists.
 
 | Mode | Behavior when the subject timestamp is present |
 | --- | --- |
@@ -165,8 +169,15 @@ At startup, call `setEvaluationContext` with the matching context before the cli
 Until matching assignments are available, evaluation returns the application default with `PROVIDER_NOT_READY`.
 A malformed timestamp returns `INVALID_CONTEXT` instead. With `DISABLED`, persisted and previous assignments remain available.
 Previously accepted assignments can be reused only for the same context, cutoff, and mode.
+Each mode retains a separate disk cache. Changing modes does not delete another mode's cache.
+Switching back can reuse that mode's older snapshot. In `DISABLED`, it can be served before a new context fetch completes.
+Call `setEvaluationContext` for the active subject; mode changes do not provide cache eviction.
+`onFirstFlags` can report cached keys before an enabled-mode client has a matching requested context.
+Those keys do not indicate readable values, and setting the context does not emit a second first-flags notification.
 Evaluation telemetry is independent of experimentation opt-out.
 Enable this option only after acknowledgement, ordinary fallback, and activation metadata are available on the customer's site.
+If you use `useCustomFlagEndpoint`, the endpoint must preserve `data.attributes.evaluation_options` in both
+requests and responses. Missing acknowledgement causes defaults for opted-out subjects without matching cached assignments.
 Without acknowledgement or matching cached assignments, evaluation returns defaults with `PROVIDER_NOT_READY`.
 A later successful `setEvaluationContext` call recovers the client. The SDK does not retry this operation automatically.
 
@@ -340,7 +351,7 @@ val analyticsClient = FlagsClient.get("analytics")
 `client.onFirstFlags` notifies each registration once, when the client installs its first flags from disk
 cache or the network. This is one notification per registration, containing all keys in that first
 accepted configuration (possibly empty), not one callback per flag or an inventory of all server-side flags.
-For an Activity that owns a `client` (`render` is your own UI code):
+For an Activity that owns a `client`:
 
 ```kotlin
 import com.datadog.android.flags.FlagsSubscription
@@ -352,8 +363,6 @@ override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     firstFlagsSubscription = client.onFirstFlags { event ->
         Timber.i("First installed flag keys: %s", event.flagsChanged)
-        val enabled = client.resolveBooleanValue("my-flag-key", false)
-        runOnUiThread { render(enabled) }
     }
 }
 
@@ -373,7 +382,8 @@ override fun onDestroy() {
   empty configuration does trigger it with an empty key list.
 - Unsubscription is thread-safe and idempotent and releases pending captures. A callback already
   claimed for delivery may still run; cancellation does not interrupt it or undo synchronous replay.
-- This is not a readiness signal. Use `client.state` to track readiness.
+- This is not a readiness signal. In enabled opt-out modes, cached keys can arrive before any flags are readable.
+  Call `setEvaluationContext` and use `client.state` to track readiness. No second first-flags event follows context registration.
 - Ordinary callback exceptions are logged and isolated.
 
 Use `client.onFirstFlags { event -> ... }` from Kotlin or

@@ -191,7 +191,8 @@ internal class DatadogFlagsClientTest {
             exposureProcessor = mockProcessor,
             evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager,
-            evaluationTelemetryOptOutParameterEnabled = false
+            evaluationTelemetryOptOutParameterEnabled = false,
+            experimentationOptOut = ExperimentationOptOut()
         )
     }
 
@@ -218,7 +219,8 @@ internal class DatadogFlagsClientTest {
             exposureProcessor = mockProcessor,
             evaluationsFeature = mockEvaluationsFeature,
             flagStateManager = mockFlagsStateManager,
-            evaluationTelemetryOptOutParameterEnabled = false
+            evaluationTelemetryOptOutParameterEnabled = false,
+            experimentationOptOut = ExperimentationOptOut()
         )
 
         // When
@@ -325,7 +327,8 @@ internal class DatadogFlagsClientTest {
             mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
             FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
             null, mockFlagsStateManager,
-            evaluationTelemetryOptOutParameterEnabled = true
+            evaluationTelemetryOptOutParameterEnabled = true,
+            experimentationOptOut = ExperimentationOptOut()
         )
 
         // When
@@ -360,7 +363,8 @@ internal class DatadogFlagsClientTest {
             mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
             FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
             null, mockFlagsStateManager,
-            evaluationTelemetryOptOutParameterEnabled = enabled
+            evaluationTelemetryOptOutParameterEnabled = enabled,
+            experimentationOptOut = ExperimentationOptOut()
         )
         val executor = Executors.newFixedThreadPool(3)
 
@@ -402,7 +406,8 @@ internal class DatadogFlagsClientTest {
             mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
             FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
             mockEvaluationsFeature, mockFlagsStateManager,
-            evaluationTelemetryOptOutParameterEnabled = enabled
+            evaluationTelemetryOptOutParameterEnabled = enabled,
+            experimentationOptOut = ExperimentationOptOut()
         )
 
         testedClient.setEvaluationTelemetryOptOut(true)
@@ -454,7 +459,8 @@ internal class DatadogFlagsClientTest {
             mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
             FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
             mockEvaluationsFeature, mockFlagsStateManager,
-            evaluationTelemetryOptOutParameterEnabled = enabled
+            evaluationTelemetryOptOutParameterEnabled = enabled,
+            experimentationOptOut = ExperimentationOptOut()
         )
         val testedProxy = _FlagsInternalProxy(testedClient)
         if (perSubject) {
@@ -515,7 +521,8 @@ internal class DatadogFlagsClientTest {
             mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
             FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
             mockEvaluationsFeature, mockFlagsStateManager,
-            evaluationTelemetryOptOutParameterEnabled = true
+            evaluationTelemetryOptOutParameterEnabled = true,
+            experimentationOptOut = ExperimentationOptOut()
         )
         val testedProxy = _FlagsInternalProxy(testedClient)
         testedProxy.setEvaluationContext(fakeContext, null, !requestedSubjectOptedOut)
@@ -994,7 +1001,8 @@ internal class DatadogFlagsClientTest {
             exposureProcessor = mockProcessor,
             evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager,
-            evaluationTelemetryOptOutParameterEnabled = false
+            evaluationTelemetryOptOutParameterEnabled = false,
+            experimentationOptOut = ExperimentationOptOut()
         )
 
         // When
@@ -1217,7 +1225,8 @@ internal class DatadogFlagsClientTest {
             exposureProcessor = mockProcessor,
             evaluationsFeature = mockEvaluationsFeature,
             flagStateManager = mockFlagsStateManager,
-            evaluationTelemetryOptOutParameterEnabled = false
+            evaluationTelemetryOptOutParameterEnabled = false,
+            experimentationOptOut = ExperimentationOptOut()
         )
 
         // When
@@ -1711,7 +1720,6 @@ internal class DatadogFlagsClientTest {
         verify(mockFlagsRepository).waitForPersistenceLoad()
         verify(mockFlagsRepository).getAssignmentsSnapshot()
         verify(mockFlagsRepository, never()).getEvaluationContext()
-        verify(mockFlagsRepository, never()).getFlagsSnapshot()
     }
 
     @Test
@@ -1938,7 +1946,8 @@ internal class DatadogFlagsClientTest {
             exposureProcessor = mockProcessor,
             evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager,
-            evaluationTelemetryOptOutParameterEnabled = false
+            evaluationTelemetryOptOutParameterEnabled = false,
+            experimentationOptOut = ExperimentationOptOut()
         )
 
         // When
@@ -1979,7 +1988,8 @@ internal class DatadogFlagsClientTest {
             exposureProcessor = mockProcessor,
             evaluationsFeature = null,
             flagStateManager = mockFlagsStateManager,
-            evaluationTelemetryOptOutParameterEnabled = false
+            evaluationTelemetryOptOutParameterEnabled = false,
+            experimentationOptOut = ExperimentationOptOut()
         )
 
         // When
@@ -1995,4 +2005,193 @@ internal class DatadogFlagsClientTest {
     }
 
     // endregion
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class, names = ["IMMEDIATE", "FUTURE_EXPERIMENTS_ONLY"])
+    fun `M track invalid context error W trackFlagEvaluationEvent() {requested context invalid}`(
+        mode: ExperimentationOptOutMode,
+        forge: Forge
+    ) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeRequested = EvaluationContext(
+            forge.anAlphabeticalString(),
+            mapOf(ExperimentationOptOut.ATTRIBUTE to "invalid")
+        )
+        val policy = ExperimentationOptOut(mode)
+        policy.prepare(fakeRequested)
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+        testedClient = DatadogFlagsClient(
+            featureSdkCore = mockFeatureSdkCore,
+            evaluationsManager = mockEvaluationsManager,
+            flagsRepository = mockFlagsRepository,
+            flagsConfiguration = FlagsConfiguration.Builder().trackEvaluations(true).build(),
+            rumEvaluationLogger = mockRumEvaluationLogger,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = mockEvaluationsFeature,
+            flagStateManager = mockFlagsStateManager,
+            evaluationTelemetryOptOutParameterEnabled = false,
+            experimentationOptOut = policy
+        )
+
+        // When
+        testedClient.trackFlagEvaluationEvent(fakeKey, null, fakeRequested, "INVALID_CONTEXT")
+
+        // Then
+        verify(mockEvaluationsFeature).processEvaluation(
+            eq(fakeKey),
+            eq(fakeRequested),
+            isNull(),
+            isNull(),
+            eq("INVALID_CONTEXT"),
+            eq("INVALID_CONTEXT")
+        )
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class, names = ["IMMEDIATE", "FUTURE_EXPERIMENTS_ONLY"])
+    fun `M serve and track W bridge read and track paths {enabled mode, current context installed}`(
+        mode: ExperimentationOptOutMode,
+        forge: Forge
+    ) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val fakeContext = EvaluationContext(forge.anAlphabeticalString())
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(doLog = true)
+        val policy = ExperimentationOptOut(mode)
+        policy.prepare(fakeContext)
+        whenever(mockFlagsRepository.getAssignmentsSnapshot()) doReturn
+            FlagsAssignmentsSnapshot(mapOf(fakeKey to fakeFlag), fakeContext)
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+        testedClient = DatadogFlagsClient(
+            featureSdkCore = mockFeatureSdkCore,
+            evaluationsManager = mockEvaluationsManager,
+            flagsRepository = mockFlagsRepository,
+            flagsConfiguration = FlagsConfiguration.Builder().trackEvaluations(true)
+                .trackExposures(true).rumIntegrationEnabled(true).build(),
+            rumEvaluationLogger = mockRumEvaluationLogger,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = mockEvaluationsFeature,
+            flagStateManager = mockFlagsStateManager,
+            experimentationOptOut = policy,
+            evaluationTelemetryOptOutParameterEnabled = false
+        )
+
+        // When
+        val snapshot = testedClient.getFlagAssignmentsSnapshot()
+        testedClient.trackFlagExposure(fakeKey, fakeFlag, fakeContext)
+        testedClient.trackFlagEvaluationEvent(fakeKey, fakeFlag, fakeContext, null)
+        testedClient.trackFlagRumEvaluation(fakeKey, fakeFlag.variationKey, fakeContext)
+
+        // Then
+        assertThat(snapshot).containsEntry(fakeKey, fakeFlag)
+        verify(mockProcessor).processEvent(fakeKey, fakeContext, fakeFlag)
+        verify(mockEvaluationsFeature).processEvaluation(
+            eq(fakeKey),
+            eq(fakeContext),
+            eq(fakeFlag.variationKey),
+            eq(fakeFlag.allocationKey),
+            isNull(),
+            isNull()
+        )
+        verify(mockRumEvaluationLogger).logEvaluation(fakeKey, fakeFlag.variationKey)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M return assignments only for their context W getFlagAssignmentsSnapshot(context)`(
+        mode: ExperimentationOptOutMode,
+        forge: Forge
+    ) {
+        // Given
+        val fakeRequestedContext = EvaluationContext("requested-" + forge.anAlphabeticalString())
+        val fakeNewerContext = EvaluationContext("newer-" + forge.anAlphabeticalString())
+        val fakeFlags = mapOf(forge.anAlphabeticalString() to forge.getForgery<PrecomputedFlag>())
+        val policy = ExperimentationOptOut(mode)
+        policy.prepare(fakeNewerContext)
+        whenever(mockFlagsRepository.getAssignmentsSnapshot()) doReturn
+            FlagsAssignmentsSnapshot(fakeFlags, fakeNewerContext)
+        testedClient = DatadogFlagsClient(
+            featureSdkCore = mockFeatureSdkCore,
+            evaluationsManager = mockEvaluationsManager,
+            flagsRepository = mockFlagsRepository,
+            flagsConfiguration = FlagsConfiguration.Builder().build(),
+            rumEvaluationLogger = mockRumEvaluationLogger,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = null,
+            flagStateManager = mockFlagsStateManager,
+            experimentationOptOut = policy,
+            evaluationTelemetryOptOutParameterEnabled = false
+        )
+
+        // When
+        val replacedResult = testedClient.getFlagAssignmentsSnapshot(fakeRequestedContext)
+        val currentResult = testedClient.getFlagAssignmentsSnapshot(fakeNewerContext)
+
+        // Then
+        assertThat(replacedResult).isNull()
+        assertThat(currentResult).isEqualTo(fakeFlags)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M return assignments only while their request is current W getFlagAssignmentsSnapshot(context)`(
+        mode: ExperimentationOptOutMode,
+        forge: Forge
+    ) {
+        // Given
+        val fakeRequestedContext = EvaluationContext("requested-" + forge.anAlphabeticalString())
+        val fakeNewerContext = EvaluationContext("newer-" + forge.anAlphabeticalString())
+        val fakeFlags = mapOf(forge.anAlphabeticalString() to forge.getForgery<PrecomputedFlag>())
+        val policy = ExperimentationOptOut(mode)
+        policy.prepare(fakeRequestedContext)
+        whenever(mockFlagsRepository.getAssignmentsSnapshot()) doReturn
+            FlagsAssignmentsSnapshot(fakeFlags, fakeRequestedContext)
+        testedClient = DatadogFlagsClient(
+            featureSdkCore = mockFeatureSdkCore,
+            evaluationsManager = mockEvaluationsManager,
+            flagsRepository = mockFlagsRepository,
+            flagsConfiguration = FlagsConfiguration.Builder().build(),
+            rumEvaluationLogger = mockRumEvaluationLogger,
+            exposureProcessor = mockProcessor,
+            evaluationsFeature = null,
+            flagStateManager = mockFlagsStateManager,
+            experimentationOptOut = policy,
+            evaluationTelemetryOptOutParameterEnabled = false
+        )
+        policy.prepare(fakeNewerContext)
+
+        // When
+        val result = testedClient.getFlagAssignmentsSnapshot(fakeRequestedContext)
+
+        // Then
+        if (mode == ExperimentationOptOutMode.DISABLED) {
+            assertThat(result).isEqualTo(fakeFlags)
+        } else {
+            assertThat(result).isNull()
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M preserve not ready message W resolve() {mode varies}`(mode: ExperimentationOptOutMode) {
+        // Given
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeJsonKey)) doReturn null
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore, mockEvaluationsManager, mockFlagsRepository,
+            FlagsConfiguration.Builder().build(), mockRumEvaluationLogger, mockProcessor,
+            null, mockFlagsStateManager, false, ExperimentationOptOut(mode)
+        )
+
+        // When
+        val result = testedClient.resolve(fakeJsonKey, false)
+
+        // Then
+        val expectedMessage = if (mode == ExperimentationOptOutMode.DISABLED) {
+            "Provider not ready - call setEvaluationContext() before resolving flags"
+        } else {
+            "Assignments for the current evaluation context are not available."
+        }
+        assertThat(result.errorCode).isEqualTo(ErrorCode.PROVIDER_NOT_READY)
+        assertThat(result.errorMessage).isEqualTo("Flag '$fakeJsonKey': $expectedMessage")
+    }
 }

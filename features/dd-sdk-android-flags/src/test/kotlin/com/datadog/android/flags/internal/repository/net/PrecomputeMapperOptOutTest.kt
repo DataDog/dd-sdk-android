@@ -10,14 +10,18 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.utils.verifyLog
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito.mock
 
 internal class PrecomputeMapperOptOutTest {
-    private val testedMapper = PrecomputeMapper(mock(InternalLogger::class.java))
+    private val mockInternalLogger = mock(InternalLogger::class.java)
+    private val testedMapper = PrecomputeMapper(mockInternalLogger)
 
     @ParameterizedTest
     @EnumSource(ExperimentationOptOutMode::class)
@@ -72,6 +76,68 @@ internal class PrecomputeMapperOptOutTest {
 
         // Then
         assertThat(result).isNull()
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "true,,true",
+        "true,immediate,true",
+        "true,future_experiments_only,false",
+        "true,some_new_mode,false",
+        ",immediate,false",
+        "false,immediate,false"
+    )
+    fun `M apply immediate admission rule W map() {opted out}`(legacy: Boolean?, mode: String?, admitted: Boolean) {
+        // Given
+        val request = ExperimentationOptOut(ExperimentationOptOutMode.IMMEDIATE)
+            .prepare(EvaluationContext("subject", mapOf(ExperimentationOptOut.ATTRIBUTE to "2026-10-21T10:00:00Z")))
+        val options = JSONObject()
+        if (legacy != null) options.put("experimentation_opt_out", legacy)
+        if (mode != null) options.put("experimentation_opt_out_mode", mode)
+
+        // When
+        val result = testedMapper.map(response(options), request)
+
+        // Then
+        assertThat(result != null).isEqualTo(admitted)
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            "{\"experimentation_opt_out_mode\":\"disabled\"}",
+            "{\"experimentation_opt_out_mode\":\"some_new_mode\"}",
+            "{\"experimentation_opt_out_mode\":1}",
+            "{\"experimentation_opt_out\":false}"
+        ]
+    )
+    fun `M admit unrecognized acknowledgement W map() {no effective opt-out}`(options: String) {
+        // When
+        val result = testedMapper.map(response(JSONObject(options)), null)
+
+        // Then
+        assertThat(result?.flags?.get("flag")?.variationValue).isEqualTo("true")
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class, names = ["IMMEDIATE", "FUTURE_EXPERIMENTS_ONLY"])
+    fun `M report rejected policy W map() {acknowledgement absent}`(mode: ExperimentationOptOutMode) {
+        // Given
+        val request = ExperimentationOptOut(mode)
+            .prepare(EvaluationContext("subject", mapOf(ExperimentationOptOut.ATTRIBUTE to "2026-10-21T10:00:00Z")))
+
+        // When
+        val result = testedMapper.map(response(null), request)
+
+        // Then
+        assertThat(result).isNull()
+        val expectedMode = if (mode == ExperimentationOptOutMode.IMMEDIATE) "immediate" else "future_experiments_only"
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.TELEMETRY,
+            "Rejected experimentation opt-out acknowledgement: requested=$expectedMode",
+            onlyOnce = true
+        )
     }
 
     private fun response(options: JSONObject?): String {

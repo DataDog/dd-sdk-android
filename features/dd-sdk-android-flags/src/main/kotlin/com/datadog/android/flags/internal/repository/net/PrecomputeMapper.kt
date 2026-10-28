@@ -47,6 +47,15 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
                 InternalLogger.Target.USER,
                 { "The response does not match the requested experimentation opt-out policy." }
             )
+            internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                target = InternalLogger.Target.TELEMETRY,
+                messageBuilder = {
+                    "Rejected experimentation opt-out acknowledgement: requested=" +
+                        (experimentationOptOut?.mode?.wireValue ?: "none")
+                },
+                onlyOnce = true
+            )
             null
         }
     } catch (e: JsonParseException) {

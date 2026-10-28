@@ -16,6 +16,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.ExperimentationOptOutMode
+import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.FlagsStateListener
@@ -51,6 +52,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
@@ -280,7 +282,8 @@ internal class EvaluationsManagerTest {
             precomputeMapper = mockPrecomputeMapper,
             flagStateManager = mockFlagsStateManager,
             initializationTimeoutMs = null,
-            initializationTimeoutScheduler = { _, _ -> {} }
+            initializationTimeoutScheduler = { _, _ -> {} },
+            experimentationOptOut = ExperimentationOptOut()
         )
 
         whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)) doReturn mockFlagsFeatureScope
@@ -591,7 +594,8 @@ internal class EvaluationsManagerTest {
             precomputeMapper = mockPrecomputeMapper,
             flagStateManager = mockFlagsStateManager,
             initializationTimeoutMs = null,
-            initializationTimeoutScheduler = { _, _ -> {} }
+            initializationTimeoutScheduler = { _, _ -> {} },
+            experimentationOptOut = ExperimentationOptOut()
         )
         whenever(
             mockAssignmentsDownloader.readPrecomputedFlags(
@@ -610,7 +614,7 @@ internal class EvaluationsManagerTest {
         verify(callback).onSuccess()
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
         assertThat(notified).isFalse()
-        assertThat(repository.getFlagsSnapshot()).isEmpty()
+        assertThat(repository.getAssignmentsSnapshot()?.flags.orEmpty()).isEmpty()
         assertThat(repository.getEvaluationContext()).isNull()
     }
 
@@ -1575,7 +1579,8 @@ internal class EvaluationsManagerTest {
             precomputeMapper = mockPrecomputeMapper,
             flagStateManager = realStateManager,
             initializationTimeoutMs = null,
-            initializationTimeoutScheduler = { _, _ -> {} }
+            initializationTimeoutScheduler = { _, _ -> {} },
+            experimentationOptOut = ExperimentationOptOut()
         )
 
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
@@ -1638,7 +1643,8 @@ internal class EvaluationsManagerTest {
             initializationTimeoutScheduler = { _, action ->
                 timeout = action;
                 {}
-            }
+            },
+            experimentationOptOut = ExperimentationOptOut()
         )
         val context = EvaluationContext(fakeTargetingKey)
         val callback = mock<EvaluationContextCallback>()
@@ -1670,7 +1676,7 @@ internal class EvaluationsManagerTest {
 
         // Then
         assertThat(firstKeys).containsExactly(listOf("enabled"))
-        assertThat(repository.getFlagsSnapshot()).containsOnlyKeys("enabled")
+        assertThat(repository.getAssignmentsSnapshot()?.flags.orEmpty()).containsOnlyKeys("enabled")
         assertThat(state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
         verifyNoMoreInteractions(callback)
     }
@@ -1707,7 +1713,8 @@ internal class EvaluationsManagerTest {
             initializationTimeoutScheduler = { _, action ->
                 timeout = action;
                 { cancelled = true }
-            }
+            },
+            experimentationOptOut = ExperimentationOptOut()
         )
         val context = EvaluationContext(fakeTargetingKey)
         val callback = mock<EvaluationContextCallback>()
@@ -1834,7 +1841,7 @@ internal class EvaluationsManagerTest {
         verify(mockCallback).onFailure(failure.capture())
         assertThat(failure.firstValue.message).isEqualTo("Unable to read the feature flags response.")
         assertThat(testedRepository.hasFlags()).isFalse()
-        assertThat(testedRepository.getFlagsSnapshot()).isEmpty()
+        assertThat(testedRepository.getAssignmentsSnapshot()?.flags.orEmpty()).isEmpty()
     }
 
     @Test
@@ -1892,7 +1899,8 @@ internal class EvaluationsManagerTest {
             precomputeMapper = mockPrecomputeMapper,
             flagStateManager = mockFlagsStateManager,
             initializationTimeoutMs = null,
-            initializationTimeoutScheduler = { _, _ -> {} }
+            initializationTimeoutScheduler = { _, _ -> {} },
+            experimentationOptOut = ExperimentationOptOut()
         )
 
         // When
@@ -1926,7 +1934,8 @@ internal class EvaluationsManagerTest {
         precomputeMapper = PrecomputeMapper(mockInternalLogger),
         flagStateManager = mockFlagsStateManager,
         initializationTimeoutMs = null,
-        initializationTimeoutScheduler = { _, _ -> {} }
+        initializationTimeoutScheduler = { _, _ -> {} },
+        experimentationOptOut = ExperimentationOptOut()
     )
 
     private fun createManager(
@@ -1942,7 +1951,8 @@ internal class EvaluationsManagerTest {
         precomputeMapper = mockPrecomputeMapper,
         flagStateManager = flagStateManager,
         initializationTimeoutMs = initializationTimeoutMs,
-        initializationTimeoutScheduler = scheduler
+        initializationTimeoutScheduler = scheduler,
+        experimentationOptOut = ExperimentationOptOut()
     )
 
     companion object {
@@ -1958,5 +1968,81 @@ internal class EvaluationsManagerTest {
             }}}
         """.trimIndent()
         private const val EMPTY_FLAGS_RESPONSE_JSON = "{\"data\": {\"attributes\": {\"flags\": {}}}}"
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class, names = ["IMMEDIATE", "FUTURE_EXPERIMENTS_ONLY"])
+    fun `M fail superseded callback W updateEvaluationsForContext() {newer request installs}`(
+        mode: ExperimentationOptOutMode
+    ) {
+        // Given
+        val first = EvaluationContext("first-subject")
+        val newer = EvaluationContext("newer-subject")
+        val firstCallback = mock<EvaluationContextCallback>()
+        val newerCallback = mock<EvaluationContextCallback>()
+        lateinit var testedManager: EvaluationsManager
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(eq(first), any(), any())).thenAnswer {
+            testedManager.updateEvaluationsForContext(newer, newerCallback)
+            "first-response"
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(eq(newer), any(), any())) doReturn "newer-response"
+        whenever(mockPrecomputeMapper.map(any(), anyOrNull())) doReturn PrecomputedAssignments(emptyMap(), null)
+        testedManager = EvaluationsManager(
+            mockSdkCore, mockExecutorService, mockInternalLogger, mockFlagsRepository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
+            null, { _, _ -> {} }, ExperimentationOptOut(mode)
+        )
+
+        // When
+        testedManager.updateEvaluationsForContext(first, firstCallback)
+
+        // Then
+        verify(newerCallback).onSuccess()
+        verify(firstCallback).onFailure(isA<FlagsContextSupersededException>())
+        verify(firstCallback, never()).onSuccess()
+        verify(mockFlagsRepository, never()).installFlagsAndContext(eq(first), any(), anyOrNull())
+    }
+
+    @ParameterizedTest
+    @CsvSource("IMMEDIATE,false", "IMMEDIATE,true", "FUTURE_EXPERIMENTS_ONLY,false", "FUTURE_EXPERIMENTS_ONLY,true")
+    fun `M time out newer request W updateEvaluationsForContext() {first request superseded}`(
+        mode: ExperimentationOptOutMode,
+        cached: Boolean
+    ) {
+        // Given
+        doAnswer { null }.whenever(mockExecutorService).execute(any())
+        val fakeNewer = EvaluationContext("newer-subject")
+        whenever(mockFlagsRepository.hasLoadedFlagsForContext(fakeNewer)) doReturn cached
+        lateinit var timeout: () -> Unit
+        val manager = EvaluationsManager(
+            mockSdkCore,
+            mockExecutorService,
+            mockInternalLogger,
+            mockFlagsRepository,
+            mockAssignmentsDownloader,
+            mockPrecomputeMapper,
+            mockFlagsStateManager,
+            1000,
+            initializationTimeoutScheduler = { _, action ->
+                timeout = action;
+                {}
+            },
+            experimentationOptOut = ExperimentationOptOut(mode)
+        )
+        val firstCallback = mock<EvaluationContextCallback>()
+        manager.updateEvaluationsForContext(EvaluationContext("first-subject"), firstCallback)
+        manager.updateEvaluationsForContext(fakeNewer)
+
+        // When
+        timeout()
+
+        // Then
+        verify(firstCallback).onFailure(isA<FlagsInitializationTimeoutException>())
+        if (cached) {
+            verify(mockFlagsStateManager).updateState(FlagsClientState.Stale)
+        } else {
+            verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
+        }
+        verify(mockFlagsRepository).hasLoadedFlagsForContext(fakeNewer)
     }
 }

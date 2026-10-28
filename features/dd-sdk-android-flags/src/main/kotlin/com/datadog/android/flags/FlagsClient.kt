@@ -81,7 +81,9 @@ interface FlagsClient {
      * Unsubscription is thread-safe and idempotent. A callback already claimed
      * for delivery may still run; cancellation does not interrupt or wait for it.
      * Immediate replay may occur before this method returns; cancellation cannot undo delivery.
-     * This notification does not imply readiness. Dispatch UI work to the appropriate thread.
+     * This notification does not imply readiness. In enabled experimentation opt-out modes, cached keys can
+     * arrive before a matching evaluation context is set. Resolution then returns application defaults.
+     * Setting the context does not trigger a second first-flags notification. Dispatch UI work appropriately.
      */
     fun onFirstFlags(listener: FlagsClientEventListener): FlagsSubscription
 
@@ -95,6 +97,12 @@ interface FlagsClient {
      * fetching happen asynchronously on a background thread.
      * For the first context, the configured initialization timeout bounds the callback wait.
      * The operation continues after a timeout and can make the client ready later.
+     *
+     * In enabled experimentation opt-out modes, assignments are unavailable until they match this context,
+     * including when the timestamp attribute is absent. Resolutions return defaults with PROVIDER_NOT_READY.
+     * An invalid timestamp prevents the assignment request and fails with [FlagsInvalidContextException].
+     * If a newer context replaces this request before its usable response installs, the callback fails with
+     * [FlagsContextSupersededException], unless its initialization timeout already completed it.
      *
      * @param context The [EvaluationContext] containing targeting key and attributes.
      * @param callback Optional callback to notify when the operation completes or fails.

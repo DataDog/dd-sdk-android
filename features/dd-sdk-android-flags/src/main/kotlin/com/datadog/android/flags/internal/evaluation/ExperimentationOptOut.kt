@@ -20,15 +20,21 @@ import java.util.concurrent.TimeUnit
 /** Keeps the requested context separate from the last accepted assignments. */
 internal class ExperimentationOptOut(val mode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED) {
     val enabled: Boolean = mode != ExperimentationOptOutMode.DISABLED
+
+    // Shared by DatadogFlagsClient and EvaluationsManager to coordinate requests, installs, and resolution.
     val stateLock = Any()
     private var currentRequest: Request? = null
 
-    fun prepare(context: EvaluationContext): Request = synchronized(stateLock) {
+    fun prepare(context: EvaluationContext): Request {
         val snapshot = context.copy(attributes = context.attributes.toMap())
         val supplied = enabled && snapshot.attributes.containsKey(ATTRIBUTE)
         val invalid = supplied && !isValidTimestamp(snapshot.attributes[ATTRIBUTE])
-        Request(snapshot, supplied && !invalid, invalid, mode).also { currentRequest = it }
+        val request = Request(snapshot, supplied && !invalid, invalid, mode)
+        synchronized(stateLock) { currentRequest = request }
+        return request
     }
+
+    fun currentValidRequest(): Request? = synchronized(stateLock) { currentRequest?.takeUnless { it.invalid } }
 
     fun ifCurrent(request: Request, action: () -> Unit): Boolean = synchronized(stateLock) {
         if (enabled && currentRequest !== request) {
@@ -87,7 +93,6 @@ internal class ExperimentationOptOut(val mode: ExperimentationOptOutMode = Exper
             val dateTime = match.groupValues[1]
 
             // Calendar numbers years within an era: astronomical year zero is 1 BC.
-            @Suppress("UnsafeThirdPartyFunctionCall") // Fixed non-empty replacement on a non-null string.
             val normalized = if (dateTime.startsWith("0000")) {
                 "BC ${dateTime.replaceFirst("0000", "0001")}"
             } else {

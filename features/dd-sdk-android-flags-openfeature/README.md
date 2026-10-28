@@ -161,7 +161,8 @@ val enabled = OpenFeatureAPI.getClient().getBooleanValue("new-feature", false)
 ```
 
 In either enabled mode, the attribute must be a timestamp string in the format described in the Flags README.
-Omit it for subjects who can participate. Boolean, numeric, null, and malformed timestamp values are invalid.
+Omit it for subjects who can participate. Boolean, numeric, `Value.Instant`, structure, list, null, and malformed
+values are invalid. For a `kotlin.time.Instant` within the supported year range, use `Value.String(instant.toString())`.
 The provider returns defaults with `INVALID_CONTEXT` for invalid input. It does not convert non-string values into timestamps.
 See the [native client behavior](../dd-sdk-android-flags/README.md#exclude-a-subject-from-experimentation) for delivery and cache behavior.
 

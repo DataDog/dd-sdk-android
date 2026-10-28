@@ -22,6 +22,7 @@ internal class NoOpFlagsRepository : FlagsRepository {
         obfuscation: FlagKeyObfuscation?
     ) = FlagsInstallation { onInstalled -> onInstalled() }
 
+    @Deprecated("Use installFlagsAndContext instead")
     override fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
@@ -43,5 +44,6 @@ internal class NoOpFlagsRepository : FlagsRepository {
 
     override fun getAssignmentsSnapshot(): FlagsAssignmentsSnapshot? = null
 
+    @Deprecated("Use getAssignmentsSnapshot instead")
     override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> = emptyMap()
 }

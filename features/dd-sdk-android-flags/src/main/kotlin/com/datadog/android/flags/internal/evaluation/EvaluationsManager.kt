@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.internal.FlagsStateManager
@@ -104,7 +105,7 @@ internal class EvaluationsManager(
     private val flagStateManager: FlagsStateManager,
     private val initializationTimeoutMs: Long?,
     private val initializationTimeoutScheduler: InitializationTimeoutScheduler,
-    private val experimentationOptOut: ExperimentationOptOut = ExperimentationOptOut(),
+    private val experimentationOptOut: ExperimentationOptOut,
     private val callbackExecutor: Executor = InlineExecutor
 ) {
     private val instanceId = UUIDv7Generator.generate(sdkCore.timeProvider.getDeviceTimestampMillis()).toString()
@@ -118,7 +119,7 @@ internal class EvaluationsManager(
      * Processes a new evaluation context by fetching flags and storing atomically.
      *
      * This method asynchronously fetches precomputed flag evaluations for the given context
-     * and atomically updates both the context and flag data in the repository. A failed or unreadable
+     * and atomically updates the context, flag data, and encoding descriptor in the repository. A failed or unreadable
      * response keeps the last known good flags and their context.
      *
      * The operation is performed on the configured executor service and will not block the
@@ -190,6 +191,7 @@ internal class EvaluationsManager(
                 } else {
                     null
                 }
+                // The React Native bridge requires original flag names, which encoded data omits.
                 val supportsObfuscation = datadogContext?.source == "android"
                 internalLogger.log(
                     InternalLogger.Level.DEBUG,
@@ -216,11 +218,14 @@ internal class EvaluationsManager(
                     )
                 }
             } finally {
+                // Timeouts complete the public callback but do not stop this fetch.
                 onFetchFinished()
             }
         }
     }
 
+    // Executor construction does not run the task. Rejection is rethrown only
+    // to executeSafe, which logs it without exposing it to the caller.
     @Suppress("UnsafeThirdPartyFunctionCall", "ThrowingInternalException")
     private fun completionAwareExecutor(onFetchFinished: () -> Unit): Executor = Executor { task ->
         try {
@@ -245,6 +250,7 @@ internal class EvaluationsManager(
         synchronized(initializationTerminalLock) {
             val result = takeCompletion(initializationCompletion, callback)
             experimentationOptOut.ifCurrent(request) {
+                // Lifecycle is Stale only when retained flags match the requested context.
                 if (matchingCachedAssignments) {
                     enqueueState(FlagsClientState.Stale)
                 } else {
@@ -282,7 +288,7 @@ internal class EvaluationsManager(
             if (!installed) {
                 enqueueCompletion(
                     takeCompletion(initializationCompletion, callback),
-                    IllegalStateException("A newer evaluation context replaced this request.")
+                    FlagsContextSupersededException("A newer evaluation context replaced this request.")
                 )
             }
         }
@@ -310,10 +316,16 @@ internal class EvaluationsManager(
                 synchronized(initializationTerminalLock) {
                     val claimedResult = completion.take(shouldCancelTimeout = false)
                         ?: return@synchronized null
-                    experimentationOptOut.ifCurrent(request) {
+                    val target = if (experimentationOptOut.enabled) {
+                        experimentationOptOut.currentValidRequest()
+                    } else {
+                        request
+                    }
+                    if (target != null) {
                         if (currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale) {
-                            val hasMatchingCachedAssignments = matchingCachedAssignments.get() ||
-                                flagsRepository.hasLoadedFlagsForContext(request.context)
+                            val hasMatchingCachedAssignments =
+                                (target === request && matchingCachedAssignments.get()) ||
+                                    flagsRepository.hasLoadedFlagsForContext(target.context)
                             val timeoutState = if (hasMatchingCachedAssignments) {
                                 FlagsClientState.Stale
                             } else {

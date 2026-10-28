@@ -275,7 +275,6 @@ datadog:
       - "org.json.JSONObject.getJSONObject(kotlin.String?):org.json.JSONException"
       - "org.json.JSONObject.getString(kotlin.String?):org.json.JSONException"
       - "org.json.JSONObject.put(kotlin.String?, kotlin.Any?):org.json.JSONException"
-      - "org.json.JSONObject.put(kotlin.String?, kotlin.Boolean):org.json.JSONException"
       - "org.json.JSONObject.put(kotlin.String?, kotlin.Long):org.json.JSONException"
       # endregion
       # region Gson

@@ -71,6 +71,7 @@ internal class DefaultFlagsRepository(
         }
     }
 
+    @Deprecated("Use installFlagsAndContext instead")
     override fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
@@ -159,6 +160,7 @@ internal class DefaultFlagsRepository(
         return null
     }
 
+    @Deprecated("Use getAssignmentsSnapshot instead")
     override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> {
         waitForPersistenceLoad()
         val state = readableState

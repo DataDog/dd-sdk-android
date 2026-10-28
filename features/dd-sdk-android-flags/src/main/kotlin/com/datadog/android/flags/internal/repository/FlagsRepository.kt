@@ -25,6 +25,7 @@ internal interface FlagsRepository {
      * Runs [onInstalled] after attempting storage submission, including when submission fails.
      * For the first installation, it runs before publishing the first-flags result to listeners.
      */
+    @Deprecated("Use installFlagsAndContext instead")
     fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
@@ -40,6 +41,8 @@ internal interface FlagsRepository {
     val firstFlags: FirstFlagsLatch
     fun hasFlags(): Boolean
     fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean
+
+    @Deprecated("Use getAssignmentsSnapshot instead")
     fun getFlagsSnapshot(): Map<String, PrecomputedFlag>
     fun getAssignmentsSnapshot(): FlagsAssignmentsSnapshot?
 }
