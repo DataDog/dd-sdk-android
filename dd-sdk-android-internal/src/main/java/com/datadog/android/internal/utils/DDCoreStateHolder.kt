@@ -62,6 +62,12 @@ interface DDCoreStateHolder<S : Any, L : Any> {
     fun updateState(newState: S)
 
     /**
+     * Queues [newState], applying it only if [expectedState] is still current when delivery reaches it.
+     * Earlier queued transitions are applied before this comparison. A skipped update notifies no listeners.
+     */
+    fun updateStateIfCurrent(expectedState: S, newState: S)
+
+    /**
      * Registers a listener, immediately notifying it with the current state.
      *
      * That initial notification is part of registering, not part of a broadcast, and it is not
@@ -141,8 +147,17 @@ private class DDCoreStateHolderImpl<S : Any, L : Any>(
         get() = stateLock.read { state }
 
     override fun updateState(newState: S) {
+        enqueueUpdate(newState, null)
+    }
+
+    override fun updateStateIfCurrent(expectedState: S, newState: S) {
+        enqueueUpdate(newState, expectedState)
+    }
+
+    private fun enqueueUpdate(newState: S, expectedState: S?) {
         val update = PendingUpdate(
             state = newState,
+            expectedState = expectedState,
             // A re-entrant call returns before its state is delivered, so it is in no position to
             // hand a listener failure back to its caller. The draining thread reports that one.
             isReportedBySubmitter = !stateLock.isWriteLockedByCurrentThread
@@ -188,11 +203,13 @@ private class DDCoreStateHolderImpl<S : Any, L : Any>(
         try {
             while (true) {
                 val next = pendingStates.poll() ?: break
-                state = next.state
-                val failure = notifyListenersCatching(next.state)
-                next.failure = failure
-                if (failure != null && !next.isReportedBySubmitter) {
-                    orphanFailure = combineFailures(orphanFailure, failure)
+                if (next.expectedState == null || next.expectedState == state) {
+                    state = next.state
+                    val failure = notifyListenersCatching(next.state)
+                    next.failure = failure
+                    if (failure != null && !next.isReportedBySubmitter) {
+                        orphanFailure = combineFailures(orphanFailure, failure)
+                    }
                 }
             }
         } finally {
@@ -257,11 +274,13 @@ private class DDCoreStateHolderImpl<S : Any, L : Any>(
  *
  * @param S the type of the state being held.
  * @property state the requested state.
+ * @property expectedState the required state at delivery, or null for an unconditional update.
  * @property isReportedBySubmitter whether the thread that requested this update will observe
  * [failure] itself, which a re-entrant caller cannot do since it returns before the delivery.
  */
 private class PendingUpdate<S : Any>(
     val state: S,
+    val expectedState: S?,
     val isReportedBySubmitter: Boolean
 ) {
     /**

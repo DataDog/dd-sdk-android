@@ -47,6 +47,10 @@ internal class FlagsStateManager(
         stateHolder.updateState(newState)
     }
 
+    internal fun recoverFromError(error: FlagsClientState.Error) {
+        stateHolder.updateStateIfCurrent(error, FlagsClientState.Stale)
+    }
+
     override fun addListener(listener: FlagsStateListener) {
         stateHolder.addListener(listener)
     }

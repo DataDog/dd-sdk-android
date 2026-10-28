@@ -876,6 +876,7 @@ public abstract interface class com/datadog/android/internal/utils/DDCoreStateHo
 	public abstract fun getCurrentState ()Ljava/lang/Object;
 	public abstract fun removeListener (Ljava/lang/Object;)V
 	public abstract fun updateState (Ljava/lang/Object;)V
+	public abstract fun updateStateIfCurrent (Ljava/lang/Object;Ljava/lang/Object;)V
 }
 
 public final class com/datadog/android/internal/utils/DDCoreStateHolder$Companion {

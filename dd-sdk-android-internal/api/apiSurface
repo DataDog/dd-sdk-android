@@ -367,6 +367,7 @@ fun <T> android.content.Context.getSystemServiceAs(String): T?
 interface com.datadog.android.internal.utils.DDCoreStateHolder<S: Any, L: Any>
   val currentState: S
   fun updateState(S)
+  fun updateStateIfCurrent(S, S)
   fun addListener(L)
   fun removeListener(L)
   companion object 

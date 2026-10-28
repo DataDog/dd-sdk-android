@@ -151,6 +151,7 @@ client.setEvaluationContext(context)
 ```
 
 If the fetch fails or its response is invalid, assignments from another context become unavailable. Matching assignments remain available.
+If matching cached assignments finish loading after a failure or initialization timeout, the client recovers to `Stale`.
 
 **Notes**
 - The targeting key must be consistent for the same user or entity to ensure consistent flag evaluation across requests. Common targeting keys include user ID, device ID, or session ID.

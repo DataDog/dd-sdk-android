@@ -104,6 +104,23 @@ internal class EvaluationsManager(
     private val fetchSequence = AtomicLong(0)
     private val didStartInitialization = AtomicBoolean(false)
     private val initializationTerminalLock = Any()
+    private var cacheRecovery: Pair<Long, EvaluationContext>? = null
+
+    init {
+        flagsRepository.firstFlags.whenComplete {
+            synchronized(initializationTerminalLock) {
+                val recovery = cacheRecovery ?: return@synchronized
+                val error = flagStateManager.getCurrentState() as? FlagsClientState.Error
+                // A delayed cache read can finish after a failed fetch or initialization timeout.
+                if (recovery.first == fetchSequence.get() && error != null &&
+                    flagsRepository.hasLoadedFlagsForContext(recovery.second)
+                ) {
+                    cacheRecovery = null
+                    flagStateManager.recoverFromError(error)
+                }
+            }
+        }
+    }
 
     /**
      * Processes a new evaluation context by fetching flags and storing atomically.
@@ -139,9 +156,10 @@ internal class EvaluationsManager(
             )
         )
         val matchingCachedAssignments = AtomicBoolean(false)
-        val initializationCompletion = startInitializationTimeout(context, callback, matchingCachedAssignments) {
-            flagStateManager.updateState(FlagsClientState.Reconciling)
-        }
+        val initializationCompletion =
+            startInitializationTimeout(context, sequence, callback, matchingCachedAssignments) {
+                flagStateManager.updateState(FlagsClientState.Reconciling)
+            }
         if (initializationCompletion == null) flagStateManager.updateState(FlagsClientState.Reconciling)
 
         completionAwareExecutor(onFetchFinished).executeSafe(
@@ -186,9 +204,10 @@ internal class EvaluationsManager(
                     val completionCallback = synchronized(initializationTerminalLock) {
                         val result = initializationCompletion?.take()?.callback
                             ?: if (initializationCompletion == null) callback else null
-                        if (matchingCachedAssignments.get()) {
+                        if (matchingCachedAssignments.get() || flagsRepository.hasLoadedFlagsForContext(context)) {
                             flagStateManager.updateState(FlagsClientState.Stale)
                         } else {
+                            rememberFailedRequest(sequence, context)
                             flagStateManager.updateState(FlagsClientState.Error(throwable))
                         }
                         result
@@ -215,6 +234,10 @@ internal class EvaluationsManager(
         }
     }
 
+    private fun rememberFailedRequest(sequence: Long, context: EvaluationContext) {
+        if (sequence == fetchSequence.get()) cacheRecovery = sequence to context
+    }
+
     private fun installFlags(
         context: EvaluationContext,
         assignments: PrecomputedAssignments,
@@ -239,6 +262,7 @@ internal class EvaluationsManager(
 
     private fun startInitializationTimeout(
         context: EvaluationContext,
+        sequence: Long,
         callback: EvaluationContextCallback?,
         matchingCachedAssignments: AtomicBoolean,
         beforeScheduling: () -> Unit
@@ -260,6 +284,7 @@ internal class EvaluationsManager(
                         val timeoutState = if (hasMatchingCachedAssignments) {
                             FlagsClientState.Stale
                         } else {
+                            rememberFailedRequest(sequence, context)
                             FlagsClientState.Error(error)
                         }
                         flagStateManager.updateState(timeoutState)

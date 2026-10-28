@@ -28,6 +28,7 @@ import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
+import com.datadog.android.flags.internal.repository.FirstFlagsLatch
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
@@ -133,6 +134,7 @@ internal class EvaluationsManagerTest {
     @BeforeEach
     fun setUp() {
         whenever(mockSdkCore.timeProvider).thenReturn(mock())
+        whenever(mockFlagsRepository.firstFlags).thenReturn(FirstFlagsLatch())
         evaluationsManager = EvaluationsManager(
             sdkCore = mockSdkCore,
             executorService = mockExecutorService,
@@ -1470,6 +1472,154 @@ internal class EvaluationsManagerTest {
         verify(callback).onSuccess()
         verifyNoMoreInteractions(callback)
     }
+
+    @Test
+    fun `M recheck cache W updateEvaluationsForContext() {cache loads during invalidation}`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey)
+        whenever(mockFlagsRepository.clearFlagsIfContextChanged(context)).thenAnswer {
+            whenever(mockFlagsRepository.hasLoadedFlagsForContext(context)).thenReturn(true)
+            null
+        }
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(context)
+
+        // Then
+        verify(mockFlagsStateManager).updateState(FlagsClientState.Stale)
+        verify(mockFlagsStateManager, never()).updateState(isA<FlagsClientState.Error>())
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M preserve newer reconciliation W updateEvaluationsForContext() {cache delivery delayed}`(
+        sameContext: Boolean
+    ) {
+        // Given
+        val state = createStateManager()
+        val manager = createManager(state, scheduler = { _, _ -> {} })
+        val context = EvaluationContext(fakeTargetingKey)
+        manager.updateEvaluationsForContext(context)
+        whenever(mockFlagsRepository.hasLoadedFlagsForContext(context)).thenReturn(true)
+        var delivery: Runnable? = null
+        mockFlagsRepository.firstFlags.complete(listOf(fakeAttributeKey)) { delivery = it }
+        whenever(mockExecutorService.execute(any())).thenAnswer { null }
+        val nextContext = if (sameContext) context else context.copy(targetingKey = fakeAttributeKey)
+
+        // When
+        manager.updateEvaluationsForContext(nextContext)
+        checkNotNull(delivery).run()
+
+        // Then
+        assertThat(state.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+    }
+
+    @Test
+    fun `M preserve newer reconciliation W updateEvaluationsForContext() {reentrant cache delivery}`() {
+        // Given
+        val state = createStateManager()
+        val manager = createManager(state, scheduler = { _, _ -> {} })
+        val context = EvaluationContext(fakeTargetingKey)
+        val pendingWork = mutableListOf<Runnable>()
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            pendingWork.add(it.getArgument(0))
+            null
+        }
+        state.addListener(object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                if (newState is FlagsClientState.Error) {
+                    manager.updateEvaluationsForContext(context)
+                    whenever(mockFlagsRepository.hasLoadedFlagsForContext(context)).thenReturn(true)
+                    mockFlagsRepository.firstFlags.complete(listOf(fakeAttributeKey))
+                }
+            }
+        })
+
+        // When
+        manager.updateEvaluationsForContext(context)
+        pendingWork.removeAt(0).run()
+
+        // Then
+        assertThat(state.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+        assertThat(pendingWork).hasSize(1)
+    }
+
+    @Test
+    fun `M preserve ready state W updateEvaluationsForContext() {cache delivery follows network success}`() {
+        // Given
+        val state = createStateManager()
+        val manager = createManager(state, scheduler = { _, _ -> {} })
+        val context = EvaluationContext(fakeTargetingKey)
+        manager.updateEvaluationsForContext(context)
+        whenever(mockFlagsRepository.hasLoadedFlagsForContext(context)).thenReturn(true)
+        var delivery: Runnable? = null
+        mockFlagsRepository.firstFlags.complete(listOf(fakeAttributeKey)) { delivery = it }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(eq(context), eq(fakeDatadogContext), any()))
+            .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
+        whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
+
+        // When
+        manager.updateEvaluationsForContext(context)
+        checkNotNull(delivery).run()
+
+        // Then
+        assertThat(state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M recover only usable cache W complete() {initialization timed out}`(usableCache: Boolean) {
+        // Given
+        val state = createStateManager()
+        var timeout: (() -> Unit)? = null
+        val manager = createManager(state, 1_000) { _, action ->
+            timeout = action
+            {}
+        }
+        val context = EvaluationContext(fakeTargetingKey)
+        val callback = mock<EvaluationContextCallback>()
+        whenever(mockExecutorService.execute(any())).thenAnswer { null }
+        manager.updateEvaluationsForContext(context, callback)
+        checkNotNull(timeout).invoke()
+        val timedOutState = state.getCurrentState()
+        whenever(mockFlagsRepository.hasLoadedFlagsForContext(context)).thenReturn(usableCache)
+
+        // When
+        mockFlagsRepository.firstFlags.complete(if (usableCache) listOf(fakeAttributeKey) else emptyList())
+
+        // Then
+        assertThat(timedOutState).isInstanceOf(FlagsClientState.Error::class.java)
+        assertThat(state.getCurrentState()).isEqualTo(if (usableCache) FlagsClientState.Stale else timedOutState)
+        verify(callback).onFailure(isA<FlagsInitializationTimeoutException>())
+        verifyNoMoreInteractions(callback)
+    }
+
+    @Test
+    fun `M preserve newer reconciliation W complete() {request starts during cache recovery check}`() {
+        // Given
+        val state = createStateManager()
+        val manager = createManager(state, scheduler = { _, _ -> {} })
+        val context = EvaluationContext(fakeTargetingKey)
+        manager.updateEvaluationsForContext(context)
+        whenever(mockExecutorService.execute(any())).thenAnswer { null }
+        whenever(mockFlagsRepository.hasLoadedFlagsForContext(context)).thenAnswer {
+            manager.updateEvaluationsForContext(context)
+            true
+        }
+
+        // When
+        mockFlagsRepository.firstFlags.complete(listOf(fakeAttributeKey))
+
+        // Then
+        assertThat(state.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
+    }
+
+    private fun createStateManager(): FlagsStateManager = FlagsStateManager(
+        DDCoreStateHolder.create(
+            initialState = FlagsClientState.NotReady,
+            onStateChanged = FlagsStateListener::onStateChanged
+        )
+    )
 
     // region Cold-start integration
 

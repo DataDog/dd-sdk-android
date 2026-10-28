@@ -8,6 +8,7 @@ package com.datadog.android.flags.integration
 
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
@@ -21,11 +22,19 @@ import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionReason
+import com.datadog.android.flags.openfeature.asOpenFeatureProvider
+import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -171,20 +180,46 @@ internal class FlagsContextTest {
         assertThat(firstFlags).isEmpty()
     }
 
-    @Test
-    fun `M accept matching cached flags W completeReads() {same context failed}`(forge: Forge) {
+    @ParameterizedTest
+    @EnumSource(CacheArrival::class)
+    fun `M expose stale cached flags W setEvaluationContext() + completeReads() {same context fails}`(
+        arrival: CacheArrival,
+        forge: Forge
+    ) = runBlocking<Unit> {
         // Given
         restartWithPendingCache(forge)
-        stubFailure(FetchFailure.NETWORK)
-        testedClient.setEvaluationContext(fakeContext)
+        val provider = testedClient.asOpenFeatureProvider()
+        val events = async(Dispatchers.Unconfined) {
+            provider.observe().take(if (arrival.beforeFailure) 1 else 2).toList()
+        }
+        var failures = 0
+        var successes = 0
+        val callback = object : EvaluationContextCallback {
+            override fun onSuccess() { successes++ }
+            override fun onFailure(error: Throwable) { failures++ }
+        }
+        stubSdkCore.stubNetworkResponses {
+            if (arrival.beforeFailure) fakeDataStore.completeReads()
+            if (arrival.malformed) httpResponse(it, body = "{ invalid json }") else null
+        }
 
         // When
+        testedClient.setEvaluationContext(fakeContext, callback)
         fakeDataStore.completeReads()
 
         // Then
         assertThat(testedClient.resolve(fakeFlagKey, !fakeValue).reason).isEqualTo(ResolutionReason.CACHED)
         assertThat(testedClient.resolveBooleanValue(fakeFlagKey, !fakeValue)).isEqualTo(fakeValue)
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
         assertThat(firstFlags).containsExactly(listOf(fakeFlagKey))
+        assertThat(failures).isEqualTo(1)
+        assertThat(successes).isZero()
+        val observedEvents = withTimeout(5_000) { events.await() }
+        assertThat(observedEvents.last()).isInstanceOf(OpenFeatureProviderEvents.ProviderStale::class.java)
+        if (!arrival.beforeFailure) {
+            assertThat(observedEvents.first()).isInstanceOf(OpenFeatureProviderEvents.ProviderError::class.java)
+        }
+        assertThat(provider.getBooleanEvaluation(fakeFlagKey, !fakeValue, null).value).isEqualTo(fakeValue)
     }
 
     @ParameterizedTest
@@ -281,4 +316,11 @@ internal class FlagsContextTest {
     }
 
     internal enum class FetchFailure { NETWORK, MALFORMED_RESPONSE }
+
+    internal enum class CacheArrival(val beforeFailure: Boolean, val malformed: Boolean) {
+        BEFORE_NETWORK_FAILURE(true, false),
+        AFTER_NETWORK_FAILURE(false, false),
+        BEFORE_INVALID_RESPONSE(true, true),
+        AFTER_INVALID_RESPONSE(false, true)
+    }
 }
