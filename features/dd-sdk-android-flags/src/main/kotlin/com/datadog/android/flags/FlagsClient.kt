@@ -72,7 +72,7 @@ interface FlagsClient {
      * even after subsequent flag updates.
      * Replaying an available result reads retained memory and does not perform I/O.
      * If the first result is available, delivery is immediate on the calling thread; otherwise it runs
-     * on a dedicated background thread. Callback failures, including errors, are logged and isolated.
+     * on a dedicated background thread. Exceptions from callbacks are logged and isolated; Errors are not caught.
      * Pending callbacks are retained until delivery or cancellation. Unsubscribe the returned subscription
      * when the owner is destroyed to release captured references if flags never become available.
      * Unsubscription is thread-safe and idempotent. A callback already claimed
@@ -92,6 +92,8 @@ interface FlagsClient {
      * fetching happen asynchronously on a background thread.
      * For the first context, the configured initialization timeout bounds the callback wait.
      * The operation continues after a timeout and can make the client ready later.
+     * If the fetch fails or its response is invalid, assignments from another context become unavailable.
+     * Matching assignments remain available.
      *
      * @param context The [EvaluationContext] containing targeting key and attributes.
      * @param callback Optional callback to notify when the operation completes or fails.

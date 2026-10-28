@@ -79,6 +79,7 @@ internal class FlagsClientCreationTest {
             }
         }
         val mockSdkCore = mock<FeatureSdkCore> {
+            on { timeProvider } doReturn mock()
             on { internalLogger } doReturn mockInternalLogger
             on { getFeature(Feature.FLAGS_FEATURE_NAME) } doReturn mockFeatureScope
             on { createOkHttpCallFactory(any()) } doReturn mock()

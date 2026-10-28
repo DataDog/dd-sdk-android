@@ -150,6 +150,8 @@ val context = EvaluationContext(
 client.setEvaluationContext(context)
 ```
 
+If the fetch fails or its response is invalid, assignments from another context become unavailable. Matching assignments remain available.
+
 **Notes**
 - The targeting key must be consistent for the same user or entity to ensure consistent flag evaluation across requests. Common targeting keys include user ID, device ID, or session ID.
 - For anonymous or unauthenticated users, use a **persistent UUID** as the targeting key:
@@ -306,7 +308,7 @@ override fun onDestroy() {
 - Unsubscription is thread-safe and idempotent and releases pending captures. A callback already
   claimed for delivery may still run; cancellation does not interrupt it or undo synchronous replay.
 - This is not a readiness signal. Use `client.state` to track readiness.
-- Callback failures, including errors, are logged and isolated.
+- Ordinary callback exceptions are logged and isolated.
 
 Use `client.onFirstFlags { event -> ... }` from Kotlin or
 `client.onFirstFlags(event -> { ... })` from Java. The client retains the first installed keys

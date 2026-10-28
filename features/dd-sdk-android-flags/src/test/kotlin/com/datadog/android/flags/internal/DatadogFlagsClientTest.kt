@@ -32,6 +32,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
@@ -182,13 +183,13 @@ internal class DatadogFlagsClientTest {
     // region resolveBooleanValue()
 
     @ParameterizedTest
-    @CsvSource("false, false", "false, true", "true, false", "true, true")
-    fun `M isolate listener failures W onFirstFlags()`(completeBeforeRegistration: Boolean, throwsError: Boolean) {
+    @ValueSource(booleans = [false, true])
+    fun `M isolate listener exceptions W onFirstFlags()`(completeBeforeRegistration: Boolean) {
         // Given
         val latch = FirstFlagsLatch()
         whenever(mockFlagsRepository.firstFlags) doReturn latch
         val fakeKeys = listOf(fakeDefaultValue)
-        val failure = if (throwsError) AssertionError(fakeJsonKey) else IllegalStateException(fakeJsonKey)
+        val failure = IllegalStateException(fakeJsonKey)
         val events = mutableListOf<FlagsClientEvent>()
         if (completeBeforeRegistration) latch.complete(fakeKeys)
 
@@ -207,6 +208,27 @@ internal class DatadogFlagsClientTest {
             "First flags callback failed",
             throwable = failure
         )
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M propagate listener errors W onFirstFlags() + complete()`(completeBeforeRegistration: Boolean) {
+        // Given
+        val latch = FirstFlagsLatch()
+        whenever(mockFlagsRepository.firstFlags) doReturn latch
+        val fakeKeys = listOf(fakeDefaultValue)
+        val fakeError = AssertionError(fakeJsonKey)
+        if (completeBeforeRegistration) latch.complete(fakeKeys)
+
+        // When
+        val thrown = assertThrows<AssertionError> {
+            testedClient.onFirstFlags { throw fakeError }
+            if (!completeBeforeRegistration) latch.complete(fakeKeys)
+        }
+
+        // Then
+        assertThat(thrown).isSameAs(fakeError)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @ParameterizedTest

@@ -1536,7 +1536,8 @@ internal class EvaluationsManagerTest {
         val states = argumentCaptor<FlagsClientState>()
         verify(mockFlagsStateManager, times(6)).updateState(states.capture())
         assertThat(states.lastValue).isInstanceOf(FlagsClientState.Error::class.java)
-        assertThat(testedRepository.getEvaluationContext()).isEqualTo(context)
+        assertThat(testedRepository.getEvaluationContext()).isEqualTo(otherContext)
+        assertThat(testedRepository.getPrecomputedFlag("flag")).isNull()
     }
 
     @Test
