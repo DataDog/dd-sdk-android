@@ -1680,6 +1680,40 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
+    fun `M log the ignored reason and not install W updateEvaluationsForContext() { ignored reason, invalid body }`(
+        @StringForgery fakeInvalidBody: String
+    ) {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        ).thenReturn(PrecomputedAssignmentsResponse(fakeInvalidBody, "too_many_values"))
+        whenever(mockPrecomputeMapper.map(fakeInvalidBody)).thenReturn(null)
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(context)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            "flagSelection was ignored by the server (too_many_values). Loaded the full flag configuration."
+        )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.DEBUG,
+            InternalLogger.Target.TELEMETRY,
+            "Flag selection ignored",
+            additionalProperties = mapOf("reason" to "too_many_values")
+        )
+        verify(mockFlagsRepository, never()).setFlagsAndContext(any(), any(), anyOrNull(), any())
+        verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
+    }
+
+    @Test
     fun `M not log a flag selection message W updateEvaluationsForContext() { no ignored reason }`() {
         // Given
         val context = EvaluationContext(fakeTargetingKey, emptyMap())
