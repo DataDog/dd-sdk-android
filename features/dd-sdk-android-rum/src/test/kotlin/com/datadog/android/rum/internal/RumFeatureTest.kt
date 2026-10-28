@@ -2009,7 +2009,9 @@ internal class RumFeatureTest {
 
         // Then
         verify(mockDetector).destroy()
-        verifyNoInteractions(mockHandler)
+        // Only the held OOM error timeout is cancelled.
+        verify(mockHandler).removeCallbacks(any())
+        verifyNoMoreInteractions(mockHandler)
     }
 
     @Test

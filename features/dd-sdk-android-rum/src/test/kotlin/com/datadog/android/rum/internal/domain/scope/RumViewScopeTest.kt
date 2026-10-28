@@ -46,6 +46,7 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.PendingOomErrorStore
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
@@ -119,6 +120,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -4444,11 +4446,19 @@ internal class RumViewScopeTest {
             eventTime = fakeEventTime
         )
         val expectedTimestamp = resolveExpectedTimestamp(fakeEvent.eventTime.timestamp)
+        val mockStore = stubPendingOomErrorStore()
+        val datadogContext = fakeDatadogContext.withOomTriggerActive()
 
         // When
-        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
 
-        // Then — best-effort signal sent immediately (fatal crash has no onSuccess callback)
+        // Then
+        val heldCaptor = argumentCaptor<ErrorEvent>()
+        verify(mockStore).hold(heldCaptor.capture(), anyOrNull(), eq(mockEventBatchWriter))
+        assertThat(heldCaptor.firstValue.dd.profiling).isNull()
+        assertThat(heldCaptor.firstValue.error.isCrash).isTrue
+        verify(mockWriter, never()).write(eq(mockEventBatchWriter), isA<ErrorEvent>(), any())
+        verify(mockWriter).write(eq(mockEventBatchWriter), isA<ViewEvent>(), eq(EventType.CRASH))
         argumentCaptor<ProfilerEvent.RumOomErrorEvent> {
             verify(mockProfilingFeatureScope).sendEvent(capture())
             assertThat(firstValue.id).isNotEmpty()
@@ -6725,6 +6735,7 @@ internal class RumViewScopeTest {
             assertThat(errorEvent.dd.profiling?.status).isEqualTo(ErrorEvent.ProfilingStatus.STOPPED)
             assertThat(errorEvent.dd.profiling?.quotaReason).isEqualTo(fakeQuotaReason)
         }
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumOomErrorEvent>())
     }
 
     @Test
@@ -6769,6 +6780,7 @@ internal class RumViewScopeTest {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
             assertThat(firstValue as ErrorEvent).hasNoProfiling()
         }
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumOomErrorEvent>())
     }
 
     @Test
@@ -11389,6 +11401,22 @@ internal class RumViewScopeTest {
     )
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)
+
+    private fun stubPendingOomErrorStore(): PendingOomErrorStore {
+        val mockStore = mock<PendingOomErrorStore>()
+        val mockRumFeature = mock<RumFeature>()
+        whenever(mockRumFeature.pendingOomErrorStore) doReturn mockStore
+        val mockRumScope = mock<FeatureScope>()
+        whenever(mockRumScope.unwrap<RumFeature>()) doReturn mockRumFeature
+        whenever(rumMonitorConfiguration.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
+        return mockStore
+    }
+
+    private fun DatadogContext.withOomTriggerActive(): DatadogContext = copy(
+        featuresContext = featuresContext.toMutableMap().apply {
+            put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILING_OOM_TRIGGER_ACTIVE to true))
+        }
+    )
 
     companion object {
         private const val MAX_DURATION_VALUE_NS = 10_000_000_000L
