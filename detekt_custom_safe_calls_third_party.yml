@@ -334,6 +334,7 @@ datadog:
       - "java.lang.IllegalArgumentException.constructor(kotlin.String)"
       - "java.lang.IllegalStateException.constructor(kotlin.String)"
       - "java.lang.IllegalStateException.constructor(kotlin.String?)"
+      - "java.lang.Long.toHexString(kotlin.Long)"
       - "java.lang.Object.constructor()"
       - "java.lang.Runtime.availableProcessors()"
       - "java.lang.Runtime.getRuntime()"
