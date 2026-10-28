@@ -68,7 +68,8 @@ internal class ProfilingDataWriter(
     override fun writeTriggerProfile(
         perfettoResult: PerfettoResult,
         rumErrorId: String,
-        rumContext: ProfilingRumContext
+        rumContext: ProfilingRumContext,
+        onWritten: (Boolean) -> Unit
     ) {
         val resultFilePath = perfettoResult.resultFilePath
         val operation = perfettoResult.startReason.value
@@ -76,6 +77,7 @@ internal class ProfilingDataWriter(
         val feature = sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
         if (feature == null) {
             fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
+            onWritten(false)
             return
         }
         feature.withWriteContext { context, writeScope ->
@@ -90,6 +92,7 @@ internal class ProfilingDataWriter(
                             hasRumErrorId = rumErrorId.isNotEmpty()
                         )
                         fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
+                        onWritten(false)
                         return@synchronized
                     }
                     val profileEvent = ProfileEvent(
@@ -118,11 +121,13 @@ internal class ProfilingDataWriter(
                         startReason = operation,
                         hasRumErrorId = rumErrorId.isNotEmpty()
                     )
-                    writer.write(
+                    val isWritten = writer.write(
                         event = RawBatchEvent(data = serialized, metadata = metadata),
                         batchMetadata = null,
                         eventType = EventType.DEFAULT
                     )
+                    // Before the trace file is deleted: a death in between leaves the trace behind.
+                    onWritten(isWritten)
                     fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
                 }
             }

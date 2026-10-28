@@ -8,6 +8,7 @@ package com.datadog.android.profiling.internal
 
 import android.content.Context
 import com.datadog.android.internal.data.SharedPreferencesStorage
+import com.datadog.android.profiling.internal.trigger.OomProfileOutcomeMarker
 import com.datadog.android.profiling.internal.trigger.PendingOomGatingEvent
 import com.datadog.android.profiling.internal.trigger.PendingOomProfile
 
@@ -18,6 +19,7 @@ internal object ProfilingStorage {
     internal const val KEY_PROFILING_SAMPLE_RATE = "dd_profiling_sample_rate"
     internal const val KEY_PENDING_OOM_PROFILE = "dd_profiling_pending_oom"
     internal const val KEY_PENDING_OOM_GATING_EVENT = "dd_profiling_pending_oom_gating_event"
+    internal const val KEY_OOM_PROFILE_OUTCOME = "dd_profiling_oom_profile_outcome"
 
     @Volatile
     internal var sharedPreferencesStorage: SharedPreferencesStorage? = null
@@ -67,6 +69,23 @@ internal object ProfilingStorage {
 
     internal fun removePendingOomGatingEvent(appContext: Context) {
         getStorage(appContext).remove(KEY_PENDING_OOM_GATING_EVENT, sync = true)
+    }
+
+    /**
+     * Records the outcome of the OOM profile of a held RUM error. The write is synchronous: it must
+     * be on disk before the next step of the attach handshake starts.
+     */
+    internal fun setOomProfileOutcome(appContext: Context, marker: OomProfileOutcomeMarker) {
+        getStorage(appContext).putString(KEY_OOM_PROFILE_OUTCOME, marker.toJson(), sync = true)
+    }
+
+    internal fun getOomProfileOutcome(appContext: Context): OomProfileOutcomeMarker? {
+        val serialized = getStorage(appContext).getString(KEY_OOM_PROFILE_OUTCOME) ?: return null
+        return OomProfileOutcomeMarker.fromJson(serialized)
+    }
+
+    internal fun removeOomProfileOutcome(appContext: Context) {
+        getStorage(appContext).remove(KEY_OOM_PROFILE_OUTCOME, sync = true)
     }
 
     @JvmStatic
