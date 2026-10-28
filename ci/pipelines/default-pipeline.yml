@@ -55,8 +55,6 @@ stages:
 
       printf -v configured_gradle_options ' %q' "${gradle_options[@]}"
       export GRADLE_OPTS="${GRADLE_OPTS:-}$configured_gradle_options"
-      echo "--- GRADLE_OPTS ---"
-      echo "$GRADLE_OPTS"
 
   setup-macos-instrumented-runner:
     - !reference [ .snippets, source-secrets-macos ]
@@ -130,6 +128,8 @@ create_key:
 # LINTERS AND TESTS
 
 .verification-gradle-job:
+  before_script:
+    - !reference [ .snippets, setup-gradle ]
   extends:
     - .base-gradle-cache-job
     - .cpu-memory-intensive-job
@@ -139,8 +139,6 @@ create_key:
   timeout: 1h
   cache:
     policy: pull
-  before_script:
-    - !reference [ .snippets, setup-gradle ]
 
 analysis:generated-files-check:
   extends: .verification-gradle-job
