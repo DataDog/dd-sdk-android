@@ -12,7 +12,6 @@ import android.graphics.Rect
 import android.view.View
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.DrawModifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorMatrix
@@ -1344,6 +1343,97 @@ internal class GranularComposeDecomposerTest {
     // region pixel capture
 
     @Test
+    fun `M capture cached drawing separately W decompose() { protected image child }`() {
+        // Given
+        val child = mockLeafNode()
+        val parent = mockDrawingEffectNode()
+        whenever(parent.children).thenReturn(listOf(child))
+        whenever(mockSemanticsUtils.isImage(child)).thenReturn(true)
+        val root = mockRoot(listOf(parent))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        val targetModifier = parent.layoutInfo.getModifierInfo().single().modifier
+        val rectangle = ComposeDrawingRect(
+            androidx.compose.ui.geometry.Offset.Zero,
+            androidx.compose.ui.geometry.Size(30f, 20f),
+            com.datadog.android.internal.sessionreplay.composition.CapturedShapeStyle(backgroundColor = "#ff0000ff")
+        )
+        val captures = mutableListOf<PendingPixelCapture>()
+        val rasterizer = object : ComposeDrawingResolver {
+            override fun canResolve(modifier: Modifier) = modifier === targetModifier
+            override fun resolve(
+                node: SemanticsNode,
+                modifier: ModifierInfo
+            ) = ResolvedComposeDrawing(listOf(rectangle), emptyList())
+        }
+        val hostRasterizer = FakeComposeHostCaptureRasterizer()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = hostRasterizer,
+            drawingResolver = rasterizer
+        )
+
+        // When
+        val result = testedDecomposer.decompose(
+            mockView,
+            realRequest(pendingPixelCaptureSink = PendingPixelCaptureSink(captures::add))
+        )!!
+
+        // Then - the background is captured without ever drawing the protected image or the host.
+        assertThat(hostRasterizer.callCount).isZero()
+        assertThat(captures).isEmpty()
+        assertThat(result.wireframes.first()).isInstanceOf(CapturedWireframe.Shape::class.java)
+        assertThat(result.wireframes.filterIsInstance<CapturedWireframe.PrivacyPlaceholder>())
+            .allMatch { it.label == "Image" }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M scan uniform pixels only for unsupported drawing W decompose() { text decoration }`(supported: Boolean) {
+        // Given
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any(), any()))
+            .thenReturn(TextLayoutInfo("visible", Color.Black.value, 16, FontFamily.SansSerif))
+        val target: Modifier = mock()
+        val info: ModifierInfo = mock()
+        whenever(info.modifier).thenReturn(target)
+        whenever(node.layoutInfo.getModifierInfo()).thenReturn(listOf(info))
+        whenever(mockReflectionUtils.isDrawBehindElementClass(target)).thenReturn(true)
+        val rectangle = ComposeDrawingRect(
+            androidx.compose.ui.geometry.Offset.Zero,
+            androidx.compose.ui.geometry.Size(30f, 20f),
+            com.datadog.android.internal.sessionreplay.composition.CapturedShapeStyle(backgroundColor = "#ff0000ff")
+        )
+        var pixelScans = 0
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            textRasterizer = ComposeTextRasterizer { _, _, _, _ -> null },
+            drawBehindColorResolver = ComposeDrawBehindColorResolver { _, _ ->
+                pixelScans++
+                Color.Red
+            },
+            drawingResolver = object : ComposeDrawingResolver {
+                override fun canResolve(modifier: Modifier) = modifier === target
+                override fun resolve(node: SemanticsNode, modifier: ModifierInfo) =
+                    ResolvedComposeDrawing(listOf(rectangle), emptyList()).takeIf { supported }
+            }
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())!!
+
+        // Then - both routes preserve the fill, but supported drawing never reads bitmap pixels.
+        assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Shape>()).hasSize(1)
+        assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Text>()).hasSize(1)
+        assertThat(pixelScans).isEqualTo(if (supported) 0 else 1)
+    }
+
+    @Test
     fun `M retain editable decoration and measured text W decompose() { decorated input }`() {
         // Given
         val parent = mockLeafNode()
@@ -1380,6 +1470,108 @@ internal class GranularComposeDecomposerTest {
         assertThat(captured.textPosition!!.padding!!.left).isZero()
         assertThat(result.wireframes.filterIsInstance<CapturedWireframe.PrivacyPlaceholder>()).hasSize(1)
         assertThat(rasterizer.callCount).isZero()
+    }
+
+    @Test
+    fun `M omit masked custom control drawing W decompose() { input privacy inherited by children }`() {
+        // Given
+        val parent = mockLeafNode()
+        val node = mockDrawingEffectNode()
+        whenever(parent.children).thenReturn(listOf(node))
+        whenever(mockSemanticsUtils.hasInputState(parent)).thenReturn(true)
+        val root = mockRoot(listOf(parent))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        val target = node.layoutInfo.getModifierInfo().single().modifier
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = FakeComposeHostCaptureRasterizer(),
+            drawingResolver = object : ComposeDrawingResolver {
+                override fun canResolve(modifier: Modifier) = modifier === target
+                override fun resolve(node: SemanticsNode, modifier: ModifierInfo) = ResolvedComposeDrawing(
+                    listOf(
+                        ComposeDrawingRect(
+                            androidx.compose.ui.geometry.Offset.Zero,
+                            androidx.compose.ui.geometry.Size(20f, 20f),
+                            com.datadog.android.internal.sessionreplay.composition.CapturedShapeStyle(
+                                backgroundColor = "#ff0000ff",
+                                cornerRadius = 10.0
+                            )
+                        )
+                    ),
+                    emptyList()
+                )
+            }
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest(textPrivacy = TextAndInputPrivacy.MASK_ALL))!!
+
+        // Then - selected control pixels cannot escape through the structural drawing path.
+        assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Shape>())
+            .noneMatch { it.style?.backgroundColor == "#ff0000ff" }
+    }
+
+    @Test
+    fun `M retain raster fallback W decompose() { drawing callback cannot be recorded structurally }`() {
+        // Given
+        val node = mockDrawingEffectNode()
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        val target = node.layoutInfo.getModifierInfo().single().modifier
+        val rasterizer = FakeComposeHostCaptureRasterizer()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = rasterizer,
+            drawingResolver = object : ComposeDrawingResolver {
+                override fun canResolve(modifier: Modifier) = modifier === target
+                override fun resolve(node: SemanticsNode, modifier: ModifierInfo): ResolvedComposeDrawing? = null
+            }
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())!!
+
+        // Then - unsupported drawing still uses the existing privacy-checked bitmap path.
+        assertThat(rasterizer.callCount).isEqualTo(1)
+        assertThat(result.wireframes.single()).isInstanceOf(CapturedWireframe.Pixel::class.java)
+    }
+
+    @Test
+    fun `M omit empty drawing W decompose() { inactive indication overlaps a protected icon }`() {
+        // Given
+        val node = mockDrawingEffectNode()
+        whenever(node.children).thenReturn(emptyList())
+        val icon = mockLeafNode()
+        whenever(mockSemanticsUtils.isImage(icon)).thenReturn(true)
+        val root = mockRoot(listOf(node, icon))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        val targetModifier = node.layoutInfo.getModifierInfo().single().modifier
+        val hostRasterizer = FakeComposeHostCaptureRasterizer()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = hostRasterizer,
+            drawingResolver = object : ComposeDrawingResolver {
+                override fun canResolve(modifier: Modifier) = modifier === targetModifier
+                override fun resolve(
+                    node: SemanticsNode,
+                    modifier: ModifierInfo
+                ) = ResolvedComposeDrawing(emptyList(), emptyList())
+            }
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())!!
+
+        // Then - a no-op decoration cannot become a Content placeholder on top of the icon.
+        assertThat(hostRasterizer.callCount).isZero()
+        assertThat(result.wireframes.filterIsInstance<CapturedWireframe.PrivacyPlaceholder>())
+            .noneMatch { it.label == "Content" }
     }
 
     @Test
@@ -1447,7 +1639,7 @@ internal class GranularComposeDecomposerTest {
         }
     }
 
-    /** A real drawBehind element; the node created by it is not the ModifierInfo element. */
+    /** Unrecognized custom drawing still exercises the whole-host fallback. */
     private fun mockDrawingEffectNode(): SemanticsNode {
         val node = mockLeafNode()
         // A node with its own drawing effect commonly has children too (e.g. a Card wrapping
@@ -1457,7 +1649,7 @@ internal class GranularComposeDecomposerTest {
         // argument corrupts Mockito's stubbing recorder (see the block-7 fix for this same mistake
         // earlier in this file).
         val childNode = mockLeafNode()
-        val drawModifier = Modifier.drawBehind {}
+        val drawModifier: Modifier = mock()
         whenever(mockReflectionUtils.isDrawModifierElement(drawModifier)).thenReturn(true)
         val modifierInfo: ModifierInfo = mock()
         whenever(modifierInfo.modifier).thenReturn(drawModifier)

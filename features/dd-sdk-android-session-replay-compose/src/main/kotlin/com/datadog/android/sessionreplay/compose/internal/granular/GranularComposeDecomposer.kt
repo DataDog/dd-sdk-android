@@ -121,6 +121,7 @@ internal class GranularComposeDecomposer(
     private val sourceImageClipper: ComposeSourceImageClipper = DefaultComposeSourceImageClipper(),
     private val drawBehindColorResolver: ComposeDrawBehindColorResolver =
         DefaultComposeDrawBehindColorResolver(reflectionUtils),
+    private val drawingResolver: ComposeDrawingResolver = DefaultComposeDrawingResolver(),
     private val editableCoordinatesResolver: (List<ModifierInfo>) -> LayoutCoordinates? = ::editableTextCoordinates
 ) : CompositionHostDecomposer {
     private val visualChildrenResolver = ComposeVisualChildrenResolver()
@@ -413,6 +414,9 @@ internal class GranularComposeDecomposer(
         private var aborted = false
         private val pendingCaptures = mutableListOf<PendingCapture>()
         private var textPixelCaptures = 0
+        private var isolatedDrawing = false
+        private val resolvedDrawings = IdentityHashMap<ModifierInfo, ResolvedComposeDrawing?>()
+        private val maskedDrawingNodes = mutableSetOf<CapturedIdentity>()
         private val editableLayouts = IdentityHashMap<LayoutCoordinates, EditableContent>()
         private val nativeSubtrees = mutableListOf<CompositionNativeSubtree>()
         private val protectedRasterBounds = mutableListOf<CapturedBounds>()
@@ -484,7 +488,28 @@ internal class GranularComposeDecomposer(
             // already does: no partial tree, the caller's own post-call re-check discards the window.
             if (pendingCaptures.isNotEmpty() && !request.shouldContinue()) return null
             if (!resolvePendingCaptures()) return null
-            return CompositionHostDecomposeResult(rootChildren, nodes, wireframes, nativeSubtrees)
+            return CompositionHostDecomposeResult(rootChildren, nodes, orderedWireframes(rootChildren), nativeSubtrees)
+        }
+
+        /** Keep flat players in the same paint order as the composition tree, including isolated draws. */
+        @Suppress("UnsafeThirdPartyFunctionCall") // Owned immutable identity maps and ordered children.
+        private fun orderedWireframes(roots: List<CapturedChild>): List<CapturedWireframe> {
+            if (!isolatedDrawing) return wireframes
+            val layersById = nodes.associateBy { it.identity }
+            val wiresById = wireframes.associateBy { it.identity }
+            val ordered = linkedSetOf<CapturedIdentity>()
+            fun visit(child: CapturedChild) {
+                when (child) {
+                    is CapturedChild.Wireframe -> ordered += child.identity
+                    is CapturedChild.Layer -> layersById[child.identity]?.children?.forEach(::visit)
+                }
+            }
+            roots.forEach(::visit)
+            return ordered.mapNotNull(wiresById::get) + wireframes.filter { it.identity !in ordered }
+        }
+
+        private fun rememberDrawingPrivacy(identity: CapturedIdentity, privacy: NodePrivacy) {
+            if (privacy.masksInputState || request.hasOptionSelectorParent) maskedDrawingNodes += identity
         }
 
         @Suppress("ReturnCount")
@@ -493,6 +518,7 @@ internal class GranularComposeDecomposer(
             val nodeIdentity = request.identityFactory.composeNode(request.hostIdentity, node.id.toString())
             val bounds = boundsOf(node)
             val privacy = privacyOf(node, inherited)
+            rememberDrawingPrivacy(nodeIdentity, privacy)
             if (requiresSemanticCapture(node, privacy)) protectedRasterBounds += protectedBoundsOf(node, bounds)
 
             if (semanticsUtils.isNodeHidden(node)) {
@@ -874,7 +900,7 @@ internal class GranularComposeDecomposer(
 
         private fun hasDrawingModifiers(modifiers: List<ModifierInfo>): Boolean = modifiers.any {
             reflectionUtils.isBackgroundElement(it.modifier) || isBorderModifier(it.modifier) ||
-                reflectionUtils.isDrawBehindElementClass(it.modifier)
+                reflectionUtils.isDrawBehindElementClass(it.modifier) || drawingResolver.canResolve(it.modifier)
         }
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Bounded Compose-owned inspector properties.
@@ -895,6 +921,7 @@ internal class GranularComposeDecomposer(
         ): CapturedChild {
             val backgrounds = linkedMapOf<CapturedIdentity, CapturedWireframe.Shape>()
             val borders = mutableListOf<CapturedWireframe.Shape>()
+            val drawings = mutableListOf<CapturedWireframe.Shape>()
             var children = content
             for (index in modifiers.indices.reversed()) {
                 val info = modifiers[index]
@@ -928,21 +955,83 @@ internal class GranularComposeDecomposer(
                     }
                 } else {
                     val background = resolveDrawingBackground(node, identity, index, info, modifierBounds, drawBehind)
-                    background?.let { shape ->
-                        backgrounds[shape.identity] = shape.copy(
+                    if (background != null) {
+                        backgrounds[background.identity] = background.copy(
                             clip = imageClip(
                                 globalBounds,
                                 semanticsUtils.resolveModifierVisibleBounds(node, info, windowOffset)
                                     ?: visibleBounds ?: semanticsUtils.resolveVisibleBounds(node, windowOffset)
                             )
                         )
-                        children = listOf(CapturedChild.Wireframe(shape.identity)) + children
+                        children = listOf(CapturedChild.Wireframe(background.identity)) + children
+                    } else {
+                        children = addDrawing(node, identity, index, info, modifierBounds, drawings, children)
                     }
                 }
             }
             wireframes.addAll(contentStart, backgrounds.values.reversed())
             wireframes += borders
+            wireframes += drawings
             return registerLayer(identity, bounds, children)
+        }
+
+        @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Owned shape lists; failed draws retain content.
+        private fun addDrawing(
+            node: SemanticsNode,
+            identity: CapturedIdentity,
+            index: Int,
+            info: ModifierInfo,
+            bounds: CapturedBounds,
+            drawings: MutableList<CapturedWireframe.Shape>,
+            children: List<CapturedChild>
+        ): List<CapturedChild> {
+            if (identity in maskedDrawingNodes) return children
+            val drawing = drawingOf(node, info) ?: return children
+            isolatedDrawing = true
+            fun shapes(rectangles: List<ComposeDrawingRect>, suffix: String): List<CapturedChild> =
+                rectangles.mapIndexed { order, rect ->
+                    val owner = request.identityFactory.composeNode(identity, "drawing:$index:$suffix:$order")
+                    val wireId = request.identityFactory.shapeWireframe(owner)
+                    val density = request.screenDensity
+                    drawings += CapturedWireframe.Shape(
+                        wireId,
+                        CapturedBounds(
+                            bounds.x + (rect.position.x / density).roundToLong(),
+                            bounds.y + (rect.position.y / density).roundToLong(),
+                            (rect.size.width / density).roundToLong(),
+                            (rect.size.height / density).roundToLong()
+                        ),
+                        style = rect.style.copy(cornerRadius = rect.style.cornerRadius?.toDouble()?.div(density)),
+                        border = rect.border?.let {
+                            it.copy(width = (it.width / density).roundToLong().coerceAtLeast(1))
+                        }
+                    )
+                    CapturedChild.Wireframe(wireId)
+                }
+            return shapes(drawing.before, "before") + children + shapes(drawing.after, "after")
+        }
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // Cache null results as well as resolved drawings for this capture.
+        private fun drawingOf(node: SemanticsNode, info: ModifierInfo): ResolvedComposeDrawing? {
+            if (!drawingResolver.canResolve(info.modifier) || !request.shouldContinue()) return null
+            if (!resolvedDrawings.containsKey(info)) {
+                resolvedDrawings[info] = drawingResolver.resolve(node, info)
+            }
+            return resolvedDrawings[info]
+        }
+
+        @Suppress("DEPRECATION") // Older runtimes expose drawing elements through DrawModifier.
+        private fun canRecordDrawings(
+            node: SemanticsNode,
+            inspection: NodeInspection,
+            privacy: NodePrivacy
+        ): Boolean {
+            if (privacy.masksInputState || request.hasOptionSelectorParent) return false
+            val drawingModifiers = inspection.modifiers.filter {
+                drawingResolver.canResolve(it.modifier) || reflectionUtils.isDrawModifierElement(it.modifier) ||
+                    (it.modifier is DrawModifier && !reflectionUtils.isInactiveOverscrollModifier(it.modifier))
+            }
+            return drawingModifiers.isNotEmpty() && drawingModifiers.all { drawingOf(node, it) != null }
         }
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Owned singleton modifier list.
@@ -955,13 +1044,18 @@ internal class GranularComposeDecomposer(
             drawBehind: Boolean
         ): CapturedWireframe.Shape? {
             val owner = request.identityFactory.composeNode(identity, "image-background:$index")
-            if (!drawBehind) return resolveShapeWireframe(node, owner, bounds, listOf(info))
-            return drawBehindColorResolver.resolve(node, info)?.let { color ->
-                CapturedWireframe.Shape(
-                    request.identityFactory.shapeWireframe(owner),
-                    bounds,
-                    style = CapturedShapeStyle(backgroundColor = resolveColor(color.value.toLong()))
-                )
+            // Supported commands are already cached structurally. Avoid rasterizing the entire
+            // modifier just to test for a uniform fill before emitting those same commands.
+            return when {
+                !drawBehind -> resolveShapeWireframe(node, owner, bounds, listOf(info))
+                identity !in maskedDrawingNodes && drawingOf(node, info) != null -> null
+                else -> drawBehindColorResolver.resolve(node, info)?.let { color ->
+                    CapturedWireframe.Shape(
+                        request.identityFactory.shapeWireframe(owner),
+                        bounds,
+                        style = CapturedShapeStyle(backgroundColor = resolveColor(color.value.toLong()))
+                    )
+                }
             }
         }
 
@@ -1080,6 +1174,8 @@ internal class GranularComposeDecomposer(
          * its children without losing that effect, so it's captured atomically instead, background
          * and all descendants (including any text) baked into the same image; that's also why a
          * queued node never recurses into its own children (see the call site in [walkNode]).
+         * Supported rectangle drawings are recorded separately and indication-only leaves are
+         * traversed without a shared-host crop, which would include protected sibling icons.
          * Returns the layer child standing in for the queued node, or null when [node] isn't
          * queued (it already has a shape wireframe, the per-host cap is reached, it isn't a capture
          * candidate, or its bounds can't be resolved) - [walkNode] then falls through to its normal
@@ -1094,7 +1190,11 @@ internal class GranularComposeDecomposer(
             inspection: NodeInspection,
             privacy: NodePrivacy
         ): CapturedChild? {
-            if (inspection.modifiers.any { isBorderModifier(it.modifier) }) return null
+            if (inspection.isIndicationOnly() || inspection.modifiers.any { isBorderModifier(it.modifier) } ||
+                canRecordDrawings(node, inspection, privacy)
+            ) {
+                return null
+            }
             if (shapeWireframe != null ||
                 pendingCaptures.size + textPixelCaptures >= MAX_PIXEL_CAPTURES_PER_HOST ||
                 !inspection.isPixelCaptureCandidate(reflectionUtils)
@@ -1546,9 +1646,21 @@ private class NodeInspection(
             reflectionUtils.isDrawModifierElement(it.modifier)
     }
 
+    // Modern Material uses a separate indication leaf layered over its semantic icon. Its
+    // modifier element carries interaction effects, not independent static content to crop.
+    fun isIndicationOnly(): Boolean = isIndicationOnlyModifierList(modifiers.map { it.modifier.javaClass.name })
+
     fun isPixelCaptureCandidate(reflectionUtils: ReflectionUtils): Boolean =
         hasDrawModifier(reflectionUtils) || children.isEmpty()
 }
+
+internal fun isIndicationOnlyModifierList(classNames: List<String>): Boolean =
+    "androidx.compose.foundation.IndicationModifierElement" in classNames && classNames.all {
+        it == "androidx.compose.foundation.IndicationModifierElement" ||
+            it == "androidx.compose.ui.layout.LayoutIdElement" ||
+            it == "androidx.compose.ui.graphics.GraphicsLayerElement" ||
+            it == "androidx.compose.ui.graphics.BlockGraphicsLayerElement"
+    }
 
 /**
  * [node]'s bounds in raw pixels relative to its Compose host's own origin - the same coordinate

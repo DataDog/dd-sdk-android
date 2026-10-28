@@ -19,8 +19,12 @@
      <fields>;
 }
 # Used to classify drawing modifiers for composition-tree pixel capture.
--keep class androidx.compose.ui.draw.DrawWithContentElement
--keep class androidx.compose.ui.draw.DrawWithCacheElement
+-keep class androidx.compose.ui.draw.DrawWithContentElement {
+    <fields>;
+}
+-keep class androidx.compose.ui.draw.DrawWithCacheElement {
+    <fields>;
+}
 # Optional recognition of the platform overscroll modifier when all eight edge effects are finished.
 -keep,allowoptimization class androidx.compose.foundation.DrawOverscrollModifier {
     <fields>;
@@ -124,6 +128,27 @@
     float getShadowElevation();
     long getSpotShadowColor*();
 }
+
+# Structural drawing callbacks use stable fields across Compose module-name changes.
+-keepclassmembers class androidx.compose.ui.draw.CacheDrawScope {
+    androidx.compose.ui.draw.BuildDrawCacheParams cacheParams;
+}
+-keepclassmembers class androidx.compose.ui.draw.DrawResult {
+    kotlin.jvm.functions.Function1 block;
+}
+
+# Recognize the legacy ripple draw modifier without relying on obfuscated class names.
+-keep,allowoptimization class androidx.compose.foundation.IndicationModifier
+
+# Preserve gradient parameters read by the structural drawing resolver.
+-keep,allowoptimization class androidx.compose.ui.graphics.LinearGradient {
+    <fields>;
+}
+
+# Recognize standalone modern indication leaves and their layout-only elements.
+-keepnames class androidx.compose.foundation.IndicationModifierElement
+-keepnames class androidx.compose.ui.layout.LayoutIdElement
+-keepnames class androidx.compose.ui.graphics.BlockGraphicsLayerElement
 
 # Resolve the measured paragraph inside decorated legacy TextFields without drawing the host.
 -keep class androidx.compose.foundation.text.input.internal.CoreTextFieldSemanticsModifier {
