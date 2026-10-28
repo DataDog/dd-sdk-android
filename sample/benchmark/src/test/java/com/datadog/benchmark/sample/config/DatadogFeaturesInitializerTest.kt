@@ -8,9 +8,7 @@ package com.datadog.benchmark.sample.config
 
 import com.datadog.android.api.SdkCore
 import com.datadog.android.log.Logs
-import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.Profiling
-import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum._RumInternalProxy
@@ -32,7 +30,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.quality.Strictness
 
-@OptIn(ExperimentalProfilingApi::class, ExperimentalRumApi::class)
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
@@ -287,7 +284,6 @@ class DatadogFeaturesInitializerTest {
     }
 }
 
-@OptIn(ExperimentalProfilingApi::class)
 private class MockedStatics(
     val sessionReplay: MockedStatic<SessionReplay>,
     val rum: MockedStatic<Rum>,
