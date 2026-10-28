@@ -115,6 +115,7 @@ internal class FlagsFeatureTest {
         // Then
         assertThat(feature.flagSelection)
             .isEqualTo(CanonicalFlagSelection(tags = listOf("mobile", "web"), keyPatterns = listOf("checkout-*")))
+        assertThat(feature.precomputedRequestFactory.sendsFlagSelection).isTrue()
     }
 
     @Test
@@ -132,6 +133,7 @@ internal class FlagsFeatureTest {
 
         // Then
         assertThat(feature.flagSelection).isNull()
+        assertThat(feature.precomputedRequestFactory.sendsFlagSelection).isFalse()
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
