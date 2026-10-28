@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit
  * processing, expiry, and handoff. A draw signal only calls [requestCapture]; it owns no capture
  * state. At most one generation is active, while additional signals coalesce into one follow-up.
  */
+@Suppress("TooManyFunctions") // Capture scheduling, completion and bounded expiry retries share one lifetime lock.
 internal class SnapshotCaptureOrchestrator(
     private val producer: CapturedSnapshotProducer,
     private val processor: CapturedSnapshotProcessor,
@@ -36,6 +37,7 @@ internal class SnapshotCaptureOrchestrator(
     private var captureScheduleId = 0L
     private var nextGenerationId = 1L
     private var activeGeneration: ActiveGeneration? = null
+    private var retriesRemaining = 0
 
     // Set on every requestCapture() - a genuinely new draw signal, not the automatic retry this
     // class schedules on its own - and consumed the next time createActiveGeneration() sees it,
@@ -69,6 +71,7 @@ internal class SnapshotCaptureOrchestrator(
         val shouldSchedule = synchronized(lock) {
             if (!isRunning) return
             hasUnreportedDrawSignal = true
+            retriesRemaining = MAX_EXPIRY_RETRIES
             captureRequested = true
             activeGeneration == null && !captureScheduled
         }
@@ -169,6 +172,17 @@ internal class SnapshotCaptureOrchestrator(
         ).also { activeGeneration = it }
     }
 
+    /** A completed capture can still expire in the completion queue or during wire mapping. */
+    fun onCompletionExpired(generation: CaptureGenerationContext) {
+        synchronized(lock) {
+            // Newer work already represents a later visual state. Never retry an obsolete handoff.
+            if (!isRunning || activeGeneration != null || nextGenerationId != generation.id + 1L) return
+            if (!generation.hasExpired) return
+            retryExpiredCapture(generation)
+        }
+        scheduleCaptureIfRequested()
+    }
+
     private fun onProcessed(result: SnapshotProcessingResult) {
         var expired: ActiveGeneration? = null
         val completed = synchronized(lock) {
@@ -176,6 +190,7 @@ internal class SnapshotCaptureOrchestrator(
             if (!isRunning || active?.generation?.id != result.generationId) return
             if (!active.generation.isActive()) {
                 activeGeneration = null
+                retryExpiredCapture(active.generation)
                 expired = active
                 return@synchronized null
             }
@@ -209,10 +224,19 @@ internal class SnapshotCaptureOrchestrator(
             if (active?.generation !== generation) return
             generation.expire()
             activeGeneration = null
+            retryExpiredCapture(generation)
             active
         }
         expired.cancel()
         scheduleCaptureIfRequested()
+    }
+
+    // Called under lock. A null/failed adapter before its deadline is not a retryable expiry.
+    private fun retryExpiredCapture(generation: CaptureGenerationContext) {
+        if (isRunning && generation.remainingBudgetNs() == 0L && retriesRemaining > 0) {
+            retriesRemaining--
+            captureRequested = true
+        }
     }
 
     private fun scheduleCaptureIfRequested() {
@@ -238,6 +262,7 @@ internal class SnapshotCaptureOrchestrator(
     }
 
     private companion object {
+        const val MAX_EXPIRY_RETRIES = 2
         val DEFAULT_CAPTURE_DELAY_NS: Long = TimeUnit.MILLISECONDS.toNanos(64)
         val DEFAULT_GENERATION_BUDGET_NS: Long = TimeUnit.MILLISECONDS.toNanos(90)
 

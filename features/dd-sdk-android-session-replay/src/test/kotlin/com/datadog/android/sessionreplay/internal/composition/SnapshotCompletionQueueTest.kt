@@ -90,6 +90,52 @@ internal class SnapshotCompletionQueueTest {
     }
 
     @Test
+    fun `M notify expiry W capture expires during completion mapping`(forge: Forge) {
+        val fixture = QueueFixture(forge)
+        val fakeCapture = fixture.aCapture()
+        val fakeExpiries = mutableListOf<CaptureGenerationContext>()
+        val testedQueue = SnapshotCompletionQueue(
+            fixture.mockExecutorService,
+            fixture.mockProcessor,
+            fixture.mockInternalLogger,
+            onExpiredCapture = fakeExpiries::add
+        )
+        doAnswer {
+            fixture.fakeClock.nowNs = fakeCapture.generation.deadlineNs
+            fakeCapture.generation.tryAccept()
+            null
+        }.whenever(fixture.mockProcessor).process(fakeCapture)
+
+        testedQueue.consume(fakeCapture)
+        fixture.runQueuedTask()
+
+        assertThat(fakeExpiries).containsExactly(fakeCapture.generation)
+    }
+
+    @Test
+    fun `M retain accepted frame W persistence outlives deadline`(forge: Forge) {
+        val fixture = QueueFixture(forge)
+        val fakeCapture = fixture.aCapture()
+        val fakeExpiries = mutableListOf<CaptureGenerationContext>()
+        val testedQueue = SnapshotCompletionQueue(
+            fixture.mockExecutorService,
+            fixture.mockProcessor,
+            fixture.mockInternalLogger,
+            onExpiredCapture = fakeExpiries::add
+        )
+        doAnswer {
+            fakeCapture.generation.tryAccept()
+            fixture.fakeClock.nowNs = fakeCapture.generation.deadlineNs
+            null
+        }.whenever(fixture.mockProcessor).process(fakeCapture)
+
+        testedQueue.consume(fakeCapture)
+        fixture.runQueuedTask()
+
+        assertThat(fakeExpiries).isEmpty()
+    }
+
+    @Test
     fun `M preserve capture order W multiple generations are handed off`(forge: Forge) {
         // Given
         val fixture = QueueFixture(forge)

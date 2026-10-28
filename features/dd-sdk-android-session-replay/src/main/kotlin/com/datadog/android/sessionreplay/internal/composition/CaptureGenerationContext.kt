@@ -34,6 +34,12 @@ internal class CaptureGenerationContext(
         return remaining
     }
 
+    internal val hasExpired: Boolean
+        get() {
+            isActive()
+            return state.get() == State.EXPIRED
+        }
+
     fun isActive(): Boolean {
         if (timeProvider.elapsedRealtimeNanos() >= deadlineNs) expire()
         return state.get() == State.ACTIVE

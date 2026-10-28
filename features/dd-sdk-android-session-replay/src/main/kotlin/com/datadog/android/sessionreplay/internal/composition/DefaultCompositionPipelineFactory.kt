@@ -113,6 +113,7 @@ internal class DefaultCompositionPipelineFactory(
             drawablesExecutorName = "sr-composition-drawables",
             eagerResourceDrain = true
         )
+        lateinit var orchestrator: SnapshotCaptureOrchestrator
         val completionQueue = SnapshotCompletionQueue(
             executorService = completionExecutor,
             processor = DefaultSnapshotCompletionProcessor(
@@ -123,14 +124,14 @@ internal class DefaultCompositionPipelineFactory(
                 resourceDataQueueHandler = resourceResolverBundle.dataQueueHandler,
                 embeddedContentSlotRegistry = embeddedContentSlotRegistry
             ),
-            internalLogger = internalLogger
+            internalLogger = internalLogger,
+            onExpiredCapture = { orchestrator.onCompletionExpired(it) }
         )
         val mainThreadExecutor = HandlerCaptureMainThreadExecutor()
         val sharedScheduler = ExecutorCaptureTaskScheduler(
             executorService = sdkCore.createScheduledExecutorService(EXPIRY_EXECUTOR_NAME),
             internalLogger = internalLogger
         )
-        lateinit var orchestrator: SnapshotCaptureOrchestrator
         orchestrator = SnapshotCaptureOrchestrator(
             producer = snapshotProducerFactory?.invoke(windowSource, rumContextProvider)
                 ?: defaultSnapshotProducer(

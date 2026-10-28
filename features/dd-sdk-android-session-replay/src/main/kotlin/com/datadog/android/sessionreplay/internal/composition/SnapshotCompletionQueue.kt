@@ -25,7 +25,8 @@ internal class SnapshotCompletionQueue(
     private val executorService: ExecutorService,
     private val processor: SnapshotCompletionProcessor,
     private val internalLogger: InternalLogger,
-    maxQueuedCaptures: Int = DEFAULT_MAX_QUEUED_CAPTURES
+    maxQueuedCaptures: Int = DEFAULT_MAX_QUEUED_CAPTURES,
+    private val onExpiredCapture: (CaptureGenerationContext) -> Unit = {}
 ) : CompletedSnapshotConsumer {
     private val maxQueuedCaptures = maxQueuedCaptures.coerceAtLeast(1)
     private val lifecycleLock = Any()
@@ -63,6 +64,7 @@ internal class SnapshotCompletionQueue(
             // This queue is the last stage of a generation, so a refused capture has to be expired
             // here or it would stay active - and keep its snapshot reachable - indefinitely.
             capture.generation.expire()
+            retryExpiredCapture(capture)
             return
         }
         scheduleDrain()
@@ -136,6 +138,15 @@ internal class SnapshotCompletionQueue(
             )
         } finally {
             clearProcessingCapture(capture)
+            retryExpiredCapture(capture)
+        }
+    }
+
+    private fun retryExpiredCapture(capture: CompletedSnapshotCapture) {
+        // Accepted snapshots remain accepted even if persistence finishes after their deadline.
+        // Invalid snapshots rejected before the deadline are not retryable timeouts either.
+        if (!stopped.get() && capture.generation.hasExpired && capture.generation.remainingBudgetNs() == 0L) {
+            onExpiredCapture(capture.generation)
         }
     }
 

@@ -27,6 +27,82 @@ import java.util.concurrent.TimeUnit
 internal class SnapshotCaptureOrchestratorTest {
 
     @Test
+    fun `M retry final draw with bounded attempts W generation expires without another draw`(forge: Forge) {
+        // Given
+        val fixture = Fixture(forge)
+        fixture.testedOrchestrator.start()
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
+        // When - two deadlines pass without any further UI invalidation.
+        repeat(2) {
+            val pending = fixture.fakeProcessor.pending.last()
+            fixture.fakeClock.nowNs = pending.request.generation.deadlineNs
+            pending.complete()
+            fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        }
+        val last = fixture.fakeProcessor.pending.last()
+        fixture.fakeClock.nowNs = last.request.generation.deadlineNs
+        last.complete()
+
+        // Then - cache warmup can recover the final screen, but a permanently failing screen cannot loop.
+        assertThat(fixture.producerCaptures).isEqualTo(3)
+        assertThat(fixture.fakeCaptureScheduler.tasks.count { !it.executed && !it.cancelled }).isZero()
+        assertThat(fixture.consumedCaptures).isEmpty()
+    }
+
+    @Test
+    fun `M retry last handoff W capture expires during completion`(forge: Forge) {
+        val fixture = Fixture(forge)
+        fixture.testedOrchestrator.start()
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fixture.fakeProcessor.pending.single().complete()
+        val fakeCapture = fixture.consumedCaptures.single()
+
+        fixture.fakeClock.nowNs = fakeCapture.generation.deadlineNs
+        fixture.testedOrchestrator.onCompletionExpired(fakeCapture.generation)
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fixture.fakeProcessor.pending.last().complete()
+
+        assertThat(fixture.producerCaptures).isEqualTo(2)
+        assertThat(fixture.consumedCaptures).hasSize(2)
+    }
+
+    @Test
+    fun `M ignore obsolete handoff W newer capture has started`(forge: Forge) {
+        val fixture = Fixture(forge)
+        fixture.testedOrchestrator.start()
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+        fixture.fakeProcessor.pending.single().complete()
+        val fakeCapture = fixture.consumedCaptures.single()
+        fixture.testedOrchestrator.requestCapture()
+        fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+
+        fixture.fakeClock.nowNs = fakeCapture.generation.deadlineNs
+        fixture.testedOrchestrator.onCompletionExpired(fakeCapture.generation)
+
+        assertThat(fixture.fakeCaptureScheduler.tasks.count { !it.executed && !it.cancelled }).isZero()
+    }
+
+    @Test
+    fun `M bound completion retries W every handoff expires`(forge: Forge) {
+        val fixture = Fixture(forge)
+        fixture.testedOrchestrator.start()
+        fixture.testedOrchestrator.requestCapture()
+        repeat(3) {
+            fixture.fakeCaptureScheduler.runNext(IMMEDIATE)
+            fixture.fakeProcessor.pending.last().complete()
+            val fakeCapture = fixture.consumedCaptures.last()
+            fixture.fakeClock.nowNs = fakeCapture.generation.deadlineNs
+            fixture.testedOrchestrator.onCompletionExpired(fakeCapture.generation)
+        }
+        assertThat(fixture.producerCaptures).isEqualTo(3)
+        assertThat(fixture.fakeCaptureScheduler.tasks.count { !it.executed && !it.cancelled }).isZero()
+    }
+
+    @Test
     fun `M use 90 ms deadline W generation budget is not overridden`(
         @LongForgery(min = 0L, max = 1_000_000L) fakeStartNs: Long
     ) {
