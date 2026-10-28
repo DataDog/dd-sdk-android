@@ -23,12 +23,17 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
@@ -116,6 +121,39 @@ internal class FlagsFeatureTest {
         assertThat(feature.flagSelection)
             .isEqualTo(CanonicalFlagSelection(tags = listOf("mobile", "web"), keyPatterns = listOf("checkout-*")))
         assertThat(feature.precomputedRequestFactory.sendsFlagSelection).isTrue()
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("selectionsWithoutValues")
+    fun `M send no selection and log nothing W onInitialize() { no values after canonicalization }`(
+        description: String,
+        tags: List<String>?,
+        keyPatterns: List<String>?
+    ) {
+        // Given
+        val feature = FlagsFeature(
+            sdkCore = mockSdkCore,
+            flagsConfiguration = FlagsConfiguration.Builder()
+                .flagSelection(tags = tags, keyPatterns = keyPatterns)
+                .build()
+        )
+
+        // When
+        feature.onInitialize(mockContext)
+
+        // Then
+        assertThat(feature.flagSelection).describedAs(description).isNull()
+        assertThat(feature.precomputedRequestFactory.sendsFlagSelection).describedAs(description).isFalse()
+        val messages = argumentCaptor<() -> String>()
+        verify(mockInternalLogger, atLeast(0)).log(
+            any<InternalLogger.Level>(),
+            any<InternalLogger.Target>(),
+            messages.capture(),
+            anyOrNull(),
+            any(),
+            anyOrNull()
+        )
+        assertThat(messages.allValues.map { it() }).noneMatch { "flagSelection" in it || "Flag selection" in it }
     }
 
     @Test
@@ -440,4 +478,13 @@ internal class FlagsFeatureTest {
     }
 
     // endregion
+
+    companion object {
+        @JvmStatic
+        fun selectionsWithoutValues() = listOf(
+            Arguments.of("empty lists", emptyList<String>(), emptyList<String>()),
+            Arguments.of("whitespace-only values", listOf(" ", "\u3000"), listOf("")),
+            Arguments.of("null lists", null, null)
+        )
+    }
 }
