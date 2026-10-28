@@ -45,6 +45,28 @@ internal enum class FlagSelectionError(val reason: String, val limit: String) {
     )
 }
 
+/**
+ * Sanitizes the `DD-Flag-Selection-Ignored` response header, so a raw header value never reaches logs or telemetry.
+ * A known reason is kept, and any other non-empty value becomes [UNKNOWN].
+ */
+internal object FlagSelectionIgnoredReason {
+
+    internal const val UNKNOWN = "unknown"
+
+    // The longest known reason has 19 characters. The limit bounds the work on an oversized header.
+    private const val MAX_LENGTH = 32
+
+    private val KNOWN_REASONS = setOf(
+        FlagSelectionError.MALFORMED_SELECTION.reason,
+        FlagSelectionError.TOO_MANY_VALUES.reason,
+        FlagSelectionError.INVALID_KEY_PATTERN.reason,
+        FlagSelectionError.INVALID_TAG.reason,
+        "tag_load_failed"
+    )
+
+    fun sanitize(value: String): String = if (value.length <= MAX_LENGTH && value in KNOWN_REASONS) value else UNKNOWN
+}
+
 internal sealed interface FlagSelectionResult {
     object None : FlagSelectionResult
     data class Selected(val selection: CanonicalFlagSelection) : FlagSelectionResult

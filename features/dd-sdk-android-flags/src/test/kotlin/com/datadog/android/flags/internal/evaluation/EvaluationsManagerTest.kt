@@ -1644,8 +1644,8 @@ internal class EvaluationsManagerTest {
     // endregion
 
     @ParameterizedTest
-    @ValueSource(strings = ["too_many_values", "tag_load_failed", "Some Future-Reason"])
-    fun `M log the reason verbatim and install W updateEvaluationsForContext() { flag selection ignored }`(
+    @ValueSource(strings = ["too_many_values", "tag_load_failed", "unknown"])
+    fun `M log the reason and install W updateEvaluationsForContext() { flag selection ignored }`(
         fakeIgnoredReason: String
     ) {
         // Given

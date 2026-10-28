@@ -23,7 +23,7 @@ internal interface PrecomputedAssignmentsReader {
 }
 
 /**
- * [flagSelectionIgnoredReason] is the `DD-Flag-Selection-Ignored` header value, or null when absent.
+ * [flagSelectionIgnoredReason] is the sanitized `DD-Flag-Selection-Ignored` reason, or null when the header is absent.
  */
 internal data class PrecomputedAssignmentsResponse(
     val body: String,

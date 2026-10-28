@@ -18,6 +18,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
+import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
 import okhttp3.Request
@@ -117,8 +118,10 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["too_many_values", "tag_load_failed", "Some Future-Reason"])
-    fun `M return the header value verbatim W readPrecomputedFlags() { selection sent, ignored header }`(
+    @ValueSource(
+        strings = ["malformed_selection", "too_many_values", "invalid_key_pattern", "invalid_tag", "tag_load_failed"]
+    )
+    fun `M return the known reason W readPrecomputedFlags() { selection sent, ignored header }`(
         fakeIgnoredReason: String,
         forge: Forge
     ) {
@@ -133,6 +136,32 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         assertThat(result).isEqualTo(PrecomputedAssignmentsResponse(fakeResponseBody, fakeIgnoredReason))
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["Some Future-Reason", "Too_Many_Values", "too_many_values\u0001", "too_many_values\u00E9"])
+    fun `M return the fallback reason W readPrecomputedFlags() { selection sent, unknown ignored header }`(
+        fakeIgnoredReason: String,
+        @StringForgery fakeResponseBody: String,
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        val fakeResponse = createSuccessfulResponse(fakeResponseBody, fakeUrl)
+            .newBuilder()
+            .headers(Headers.Builder().addUnsafeNonAscii("DD-Flag-Selection-Ignored", fakeIgnoredReason).build())
+            .build()
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
+            .doReturn(fakeRequest)
+        whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
+        whenever(mockCall.execute()).doReturn(fakeResponse)
+        whenever(mockRequestFactory.sendsFlagSelection) doReturn true
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
+
+        // Then
+        assertThat(result).isEqualTo(PrecomputedAssignmentsResponse(fakeResponseBody, "unknown"))
     }
 
     @Test

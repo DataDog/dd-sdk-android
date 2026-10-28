@@ -10,6 +10,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
+import com.datadog.android.flags.internal.selection.FlagSelectionIgnoredReason
 import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Call
 import okhttp3.Request
@@ -58,7 +59,9 @@ internal class PrecomputedAssignmentsDownloader(
             PrecomputedAssignmentsResponse(
                 body = body,
                 flagSelectionIgnoredReason = if (requestFactory.sendsFlagSelection) {
-                    response.header(HEADER_FLAG_SELECTION_IGNORED)?.takeIf { it.isNotEmpty() }
+                    response.header(HEADER_FLAG_SELECTION_IGNORED)
+                        ?.takeIf { it.isNotEmpty() }
+                        ?.let(FlagSelectionIgnoredReason::sanitize)
                 } else {
                     null
                 }
