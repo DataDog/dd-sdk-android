@@ -122,9 +122,9 @@ internal class GranularComposeDecomposer(
     private val drawBehindColorResolver: ComposeDrawBehindColorResolver =
         DefaultComposeDrawBehindColorResolver(reflectionUtils),
     private val drawingResolver: ComposeDrawingResolver = DefaultComposeDrawingResolver(),
-    private val editableCoordinatesResolver: (List<ModifierInfo>) -> LayoutCoordinates? = ::editableTextCoordinates
+    private val editableCoordinatesResolver: (List<ModifierInfo>) -> LayoutCoordinates? = ::editableTextCoordinates,
+    private val visualChildrenResolver: ComposeVisualChildrenResolver = ComposeVisualChildrenResolver()
 ) : CompositionHostDecomposer {
-    private val visualChildrenResolver = ComposeVisualChildrenResolver()
     private val placementClipResolver = ComposePlacementClipResolver()
     private val imageMapper = ImageSemanticsNodeMapper(colorStringFormatter, semanticsUtils)
 
@@ -407,6 +407,7 @@ internal class GranularComposeDecomposer(
     ) {
         private val windowOffset = hostView.resolveComposeWindowOffset(request.screenDensity)
         private val hostClip = request.hostBounds
+        private var semanticsByLayout: Map<LayoutInfo, SemanticsNode>? = null
         private val nodes = mutableListOf<CapturedLayer>()
         private val wireframes = mutableListOf<CapturedWireframe>()
         private var culledLeaf = false
@@ -466,6 +467,9 @@ internal class GranularComposeDecomposer(
         @Suppress("ReturnCount")
         fun run(): CompositionHostDecomposeResult? {
             val root = semanticsUtils.findRootSemanticsNode(hostView) ?: return null
+            if (visualChildrenResolver.canIndex(root)) {
+                semanticsByLayout = ComposeSemanticIndex.build(root, request.shouldContinue) ?: return null
+            }
             val rootChildren = mutableListOf<CapturedChild>()
             val privacy = privacyOf(root, NodePrivacy(request.imagePrivacy, request.textAndInputPrivacy)).copy(
                 contentColor = semanticsUtils.resolveBackgroundColor(root)?.let { resolveColor(it) }
@@ -512,12 +516,22 @@ internal class GranularComposeDecomposer(
             if (privacy.masksInputState || request.hasOptionSelectorParent) maskedDrawingNodes += identity
         }
 
+        private fun rememberVisualIdentity(node: SemanticsNode, identity: CapturedIdentity) {
+            if (node.layoutInfo in visualOnlyNodes) visualLayerIdentities += identity
+        }
+
+        private fun inheritedPrivacyOf(node: SemanticsNode, inherited: NodePrivacy): NodePrivacy =
+            if (node.layoutInfo in visualOnlyNodes) inherited else privacyOf(node, inherited)
+
         @Suppress("ReturnCount")
         private fun walkNode(node: SemanticsNode, allowCulling: Boolean, inherited: NodePrivacy): CapturedChild? {
             if (!shouldVisitNode()) return null
             val nodeIdentity = request.identityFactory.composeNode(request.hostIdentity, node.id.toString())
+            rememberVisualIdentity(node, nodeIdentity)
             val bounds = boundsOf(node)
-            val privacy = privacyOf(node, inherited)
+            // Synthetic layout wrappers have an empty configuration by construction. Their
+            // inherited privacy is authoritative; real semantics boundaries still resolve overrides.
+            val privacy = inheritedPrivacyOf(node, inherited)
             rememberDrawingPrivacy(nodeIdentity, privacy)
             if (requiresSemanticCapture(node, privacy)) protectedRasterBounds += protectedBoundsOf(node, bounds)
 
@@ -575,6 +589,15 @@ internal class GranularComposeDecomposer(
             privacy: NodePrivacy,
             modifiers: List<ModifierInfo>
         ): CapturedChild? {
+            if (node.layoutInfo in visualOnlyNodes) {
+                // Layout-only nodes can own a painter, but have no editable, text or progress
+                // semantics to resolve. Drawing, interop, clipping and descendants keep their paths.
+                return if (isPainterImage(node, modifiers)) {
+                    captureSourceImage(node, identity, privacy, modifiers)
+                } else {
+                    null
+                }
+            }
             return captureEditableLayout(node, identity, bounds, privacy, modifiers)
                 ?: captureSemanticNode(node, identity, bounds, privacy, modifiers)
         }
@@ -1291,6 +1314,12 @@ internal class GranularComposeDecomposer(
             children: List<CapturedChild>,
             modifiers: List<CapturedModifier> = emptyList()
         ): CapturedChild {
+            // Bounds do not clip children. A synthetic wrapper with one child and no modifiers
+            // contributes no paint or semantics, so keep its child directly instead of emitting
+            // another layer for validation, diffing and player traversal.
+            if (identity in visualLayerIdentities && modifiers.isEmpty() && children.size == 1) {
+                children.firstOrNull()?.let { return it }
+            }
             val layer = CapturedLayer(
                 identity = identity,
                 kind = CapturedLayerKind.COMPOSE_NODE,
@@ -1303,6 +1332,7 @@ internal class GranularComposeDecomposer(
         }
 
         private val visualOnlyNodes = mutableSetOf<LayoutInfo>()
+        private val visualLayerIdentities = mutableSetOf<CapturedIdentity>()
         private val modifierLists = IdentityHashMap<LayoutInfo, List<ModifierInfo>>()
         private val childLists = IdentityHashMap<LayoutInfo, List<SemanticsNode>>()
 
@@ -1321,7 +1351,12 @@ internal class GranularComposeDecomposer(
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Owned map, used only during this capture.
         private fun childrenOf(node: SemanticsNode): List<SemanticsNode> = childLists.getOrPut(node.layoutInfo) {
-            visualChildrenResolver.children(node) { visualOnlyNodes += it.layoutInfo } ?: node.children
+            visualChildrenResolver.children(
+                node,
+                semanticsByLayout
+            ) {
+                visualOnlyNodes += it.layoutInfo
+            } ?: node.children
         }
 
         private fun isPainterImage(node: SemanticsNode, modifiers: List<ModifierInfo>): Boolean {

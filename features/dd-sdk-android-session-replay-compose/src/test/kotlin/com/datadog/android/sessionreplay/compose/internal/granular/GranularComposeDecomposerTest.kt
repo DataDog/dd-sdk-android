@@ -1433,6 +1433,59 @@ internal class GranularComposeDecomposerTest {
         assertThat(pixelScans).isEqualTo(if (supported) 0 else 1)
     }
 
+    @ParameterizedTest
+    @CsvSource("true,false,1", "false,false,3", "true,true,2")
+    fun `M inherit privacy without semantic probes W decompose() { synthetic layout wrapper }`(
+        singleChild: Boolean,
+        decorated: Boolean,
+        expectedLayers: Int
+    ) {
+        // Given
+        val children = List(if (singleChild) 1 else 2) { mockLeafNode() }
+        val wrapper = mockLeafNode()
+        val root = mockRoot(listOf(wrapper))
+        whenever(wrapper.children).thenReturn(children)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        if (decorated) {
+            val modifier = mockGraphicsLayerModifier(mapOf("alpha" to 0.5f))
+            val info: ModifierInfo = mock()
+            whenever(info.modifier).thenReturn(modifier)
+            whenever(wrapper.layoutInfo.getModifierInfo()).thenReturn(listOf(info))
+        }
+        whenever(mockSemanticsUtils.getImagePrivacyOverride(root)).thenReturn(ImagePrivacy.MASK_ALL)
+        children.forEach { whenever(mockSemanticsUtils.isImage(it)).thenReturn(true) }
+        val resolver: ComposeVisualChildrenResolver = mock()
+        doAnswer { call ->
+            call.getArgument<(SemanticsNode) -> Unit>(2).invoke(wrapper)
+            listOf(wrapper)
+        }.whenever(resolver).children(eq(root), org.mockito.kotlin.anyOrNull(), any())
+        whenever(resolver.children(eq(wrapper), org.mockito.kotlin.anyOrNull(), any())).thenReturn(children)
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            visualChildrenResolver = resolver
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest(imagePrivacy = ImagePrivacy.MASK_NONE))!!
+
+        // Then - the real image boundary keeps inherited masking through the synthetic wrapper.
+        assertThat(result.wireframes.filterIsInstance<CapturedWireframe.PrivacyPlaceholder>())
+            .hasSize(children.size)
+            .allMatch { it.label == "Image" }
+        assertThat(result.nodes).hasSize(expectedLayers)
+        assertThat(
+            result.nodes.any { layer ->
+                layer.modifiers.any { it is CapturedModifier.Opacity && it.value == 0.5 }
+            }
+        ).isEqualTo(decorated)
+        verify(mockSemanticsUtils, never()).getImagePrivacyOverride(wrapper)
+        verify(mockSemanticsUtils, never()).getTextAndInputPrivacyOverride(wrapper)
+        verify(mockSemanticsUtils, never()).resolveTextLayoutInfo(eq(wrapper), any(), any())
+        children.forEach { verify(mockSemanticsUtils, never()).resolveCompositionPainter(eq(it), any()) }
+    }
+
     @Test
     fun `M retain editable decoration and measured text W decompose() { decorated input }`() {
         // Given

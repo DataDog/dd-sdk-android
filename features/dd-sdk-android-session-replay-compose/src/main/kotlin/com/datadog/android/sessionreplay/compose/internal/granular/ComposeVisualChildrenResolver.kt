@@ -31,14 +31,22 @@ internal class ComposeVisualChildrenResolver {
     }
 
     private val available = sortedChildren != null && configuration != null && constructor != null
+    private data class VectorAccessors(val content: Method, val size: Method)
+    private val vectorAccessors = mutableMapOf<Class<*>, VectorAccessors>()
+
+    fun canIndex(root: SemanticsNode): Boolean = available && layoutClass?.isInstance(root.layoutInfo) == true
 
     /** Null retains the original semantics traversal when these optional runtime details are unavailable. */
     @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Checked optional reflection; reads are on the UI thread.
-    fun children(node: SemanticsNode, onVisualNode: (SemanticsNode) -> Unit): List<SemanticsNode>? {
+    fun children(
+        node: SemanticsNode,
+        semanticsByLayout: Map<LayoutInfo, SemanticsNode>? = null,
+        onVisualNode: (SemanticsNode) -> Unit
+    ): List<SemanticsNode>? {
         if (!available || layoutClass?.isInstance(node.layoutInfo) != true) return null
         return try {
             val layouts = layoutChildren(node.layoutInfo) ?: return null
-            val semanticChildren = node.children.associateBy { it.layoutInfo }
+            val semanticChildren = semanticsByLayout ?: node.children.associateBy { it.layoutInfo }
             val result = ArrayList<SemanticsNode>(layouts.size)
             for (layout in layouts) {
                 if (!layout.isPlaced || !layout.coordinates.isAttached) continue
@@ -57,8 +65,11 @@ internal class ComposeVisualChildrenResolver {
     @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Checked array extent from Compose's own vector.
     private fun layoutChildren(layout: LayoutInfo): List<LayoutInfo>? {
         val vector = sortedChildren?.invoke(layout) ?: return null
-        val content = vector.javaClass.getMethod("getContent").invoke(vector) as? Array<*> ?: return null
-        val size = vector.javaClass.getMethod("getSize").invoke(vector) as? Int ?: return null
+        val accessors = vectorAccessors.getOrPut(vector.javaClass) {
+            VectorAccessors(vector.javaClass.getMethod("getContent"), vector.javaClass.getMethod("getSize"))
+        }
+        val content = accessors.content.invoke(vector) as? Array<*> ?: return null
+        val size = accessors.size.invoke(vector) as? Int ?: return null
         if (size !in 0..content.size) return null
         return content.take(size).map { it as? LayoutInfo ?: return null }
     }
