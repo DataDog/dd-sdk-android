@@ -288,3 +288,17 @@ datadog:
       - "com.squareup.sqldelight.transaction(kotlin.Boolean, kotlin.Function1):java.lang.IllegalStateException"
       - "com.squareup.sqldelight.transactionWithResult(kotlin.Boolean, kotlin.Function1):java.lang.IllegalStateException"
       # endregion
+      # region Response signing v3
+      - "java.security.SecureRandom.nextBytes(kotlin.ByteArray?):java.security.ProviderException"
+      - "java.security.Signature.getInstance(kotlin.String?):java.security.NoSuchAlgorithmException"
+      - "java.security.Signature.initVerify(java.security.PublicKey?):java.security.InvalidKeyException"
+      - "java.security.Signature.update(kotlin.ByteArray?):java.security.SignatureException"
+      - "java.security.Signature.verify(kotlin.ByteArray?):java.security.SignatureException"
+      - "java.security.cert.CertificateFactory.generateCertificate(java.io.InputStream?):java.security.cert.CertificateException"
+      - "java.security.cert.CertificateFactory.getInstance(kotlin.String?):java.security.cert.CertificateException"
+      - "java.security.cert.X509Certificate.verify(java.security.PublicKey?):java.security.GeneralSecurityException"
+      - "kotlin.ByteArray.toByteString(kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException,java.lang.IllegalArgumentException"
+      - "kotlin.String.decodeHex():java.lang.IllegalArgumentException"
+      - "okhttp3.ResponseBody.bytes():java.io.IOException"
+      - "okio.BufferedSource.request(kotlin.Long):java.io.IOException,java.lang.IllegalArgumentException"
+      # endregion

@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal.net
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.flags.internal.signing.SignedAssignmentsResponse
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -15,4 +16,14 @@ import com.datadog.tools.annotation.NoOpImplementation
 internal interface PrecomputedAssignmentsReader {
     @WorkerThread
     fun readPrecomputedFlags(context: EvaluationContext, datadogContext: DatadogContext): String?
+
+    @WorkerThread
+    fun readSignedPrecomputedFlags(
+        context: EvaluationContext,
+        datadogContext: DatadogContext,
+        generation: Long,
+        onPrepared: () -> Unit = {}
+    ): SignedAssignmentsResponse? = readPrecomputedFlags(context, datadogContext)?.let {
+        SignedAssignmentsResponse(it, null)
+    }
 }

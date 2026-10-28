@@ -19,6 +19,7 @@ import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
+import com.datadog.android.flags.internal.signing.ResponseSigningState
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import java.util.concurrent.Executor
@@ -81,6 +82,7 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
  * @param precomputeMapper transforms network responses into internal flag format
  * @param flagStateManager channel for notifying state change listeners
  * @param initializationTimeoutMs optional maximum duration of the first context operation
+ * @param signing optional verification and request generation state
  * @param initializationTimeoutScheduler schedules the first context timeout
  */
 internal class EvaluationsManager(
@@ -92,10 +94,11 @@ internal class EvaluationsManager(
     private val precomputeMapper: PrecomputeMapper,
     private val flagStateManager: FlagsStateManager,
     private val initializationTimeoutMs: Long?,
+    private val signing: ResponseSigningState? = null,
     private val initializationTimeoutScheduler: InitializationTimeoutScheduler
 ) {
     private val didStartInitialization = AtomicBoolean(false)
-    private val initializationTerminalLock = Any()
+    private val initializationTerminalLock = signing?.lock ?: Any()
 
     /**
      * Processes a new evaluation context by fetching flags and storing atomically.
@@ -112,11 +115,21 @@ internal class EvaluationsManager(
      * @param callback Optional callback invoked when the context is set and the flags have been fetched successfully or not.
      * @param onFetchFinished Releases request state when the fetch terminates, not when initialization times out.
      */
+    @Suppress("LongMethod") // Preserve the existing off-mode lifecycle; signed admission has its own boundary.
     fun updateEvaluationsForContext(
         context: EvaluationContext,
         callback: EvaluationContextCallback? = null,
         onFetchFinished: () -> Unit = {}
     ) {
+        if (signing != null) {
+            updateSignedEvaluationsForContext(
+                context.copy(attributes = context.attributes.toMap()),
+                callback,
+                onFetchFinished,
+                signing
+            )
+            return
+        }
         val matchingCachedAssignments = AtomicBoolean(false)
         val initializationCompletion = startInitializationTimeout(context, callback, matchingCachedAssignments) {
             flagStateManager.updateState(FlagsClientState.Reconciling)
@@ -182,6 +195,72 @@ internal class EvaluationsManager(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod") // Keep generation, shutdown and proof gates adjacent to installation.
+    private fun updateSignedEvaluationsForContext(
+        context: EvaluationContext,
+        callback: EvaluationContextCallback?,
+        onFetchFinished: () -> Unit,
+        signing: ResponseSigningState
+    ) {
+        val generation = signing.begin(context)
+        val cached = AtomicBoolean(false)
+        val completion = startInitializationTimeout(context, callback, cached, { signing.isCurrent(generation) }) {
+            flagStateManager.updateState(FlagsClientState.Reconciling)
+        }
+        if (completion == null) flagStateManager.updateState(FlagsClientState.Reconciling)
+        completionAwareExecutor(onFetchFinished).executeSafe(FETCH_AND_STORE_OPERATION_NAME, internalLogger) {
+            try {
+                val datadogContext = if (sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME) != null) {
+                    (sdkCore as? InternalSdkCore)?.getDatadogContext(setOf(Feature.RUM_FEATURE_NAME))
+                } else {
+                    null
+                }
+                val response = datadogContext?.let {
+                    assignmentsReader.readSignedPrecomputedFlags(context, it, generation) {
+                        flagsRepository.waitForPersistenceLoad()
+                    }
+                }
+                val assignments = response?.json?.let { precomputeMapper.map(it) }
+                    ?.takeIf { it.obfuscation == null || datadogContext.source == "android" }
+                var completedCallback: EvaluationContextCallback? = null
+                val error = NetworkRequestFailedException(
+                    if (response == null) NETWORK_REQUEST_FAILED_MESSAGE else INVALID_RESPONSE_MESSAGE
+                )
+                val eligible = assignments != null && sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME) != null
+                var installed = false
+                val admitted = signing.admit(generation) {
+                    synchronized(initializationTerminalLock) {
+                        completedCallback = completion?.take()?.callback ?: if (completion == null) callback else null
+                        if (eligible && !response.isCancelled()) {
+                            flagsRepository.setSignedFlagsAndContext(
+                                context,
+                                assignments.flags,
+                                assignments.obfuscation,
+                                response.proof
+                            ) {
+                                installed = true
+                                flagStateManager.updateState(FlagsClientState.Ready)
+                            }
+                        }
+                        if (!installed) {
+                            flagsRepository.restoreVerifiedFlags()
+                            cached.set(flagsRepository.hasLoadedFlagsForContext(context))
+                            flagStateManager.updateState(
+                                if (cached.get()) FlagsClientState.Stale else FlagsClientState.Error(error)
+                            )
+                        }
+                    }
+                }
+                if (!admitted) {
+                    completedCallback = completion?.take()?.callback ?: if (completion == null) callback else null
+                }
+                if (admitted && installed) completedCallback?.onSuccess() else completedCallback?.onFailure(error)
+            } finally {
+                onFetchFinished()
+            }
+        }
+    }
+
     // Executor construction does not run the task. Rejection is rethrown only
     // to executeSafe, which logs it without exposing it to the caller.
     @Suppress("UnsafeThirdPartyFunctionCall", "ThrowingInternalException")
@@ -221,6 +300,7 @@ internal class EvaluationsManager(
         context: EvaluationContext,
         callback: EvaluationContextCallback?,
         matchingCachedAssignments: AtomicBoolean,
+        isCurrent: () -> Boolean = { true },
         beforeScheduling: () -> Unit
     ): InitializationCompletion? {
         val timeoutMs = initializationTimeoutMs
@@ -234,7 +314,9 @@ internal class EvaluationsManager(
                     val claimedResult = completion.take(shouldCancelTimeout = false)
                         ?: return@synchronized null
                     val currentState = flagStateManager.getCurrentState()
-                    if (currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale) {
+                    if (isCurrent() && currentState != FlagsClientState.Ready &&
+                        currentState != FlagsClientState.Stale
+                    ) {
                         val hasMatchingCachedAssignments = matchingCachedAssignments.get() ||
                             flagsRepository.hasLoadedFlagsForContext(context)
                         val timeoutState = if (hasMatchingCachedAssignments) {

@@ -26,6 +26,7 @@ fun FlagsClient.setEvaluationTelemetryOptOut(Boolean)
 data class com.datadog.android.flags.FlagsConfiguration
   fun copy(Boolean = this.trackExposures, Boolean = this.trackEvaluations, String? = this.customExposureEndpoint, String? = this.customEvaluationEndpoint, String? = this.customFlagEndpoint, Long = this.evaluationFlushIntervalMs, Boolean = this.rumIntegrationEnabled, Boolean = this.gracefulModeEnabled): FlagsConfiguration
   class Builder
+    fun responseSigning(ResponseSigningMode, List<String>): Builder
     fun trackExposures(Boolean): Builder
     fun trackEvaluations(Boolean): Builder
     fun useCustomExposureEndpoint(String): Builder
@@ -41,6 +42,10 @@ interface com.datadog.android.flags.FlagsStateListener
   fun onStateChanged(com.datadog.android.flags.model.FlagsClientState)
 interface com.datadog.android.flags.FlagsSubscription
   fun unsubscribe()
+enum com.datadog.android.flags.ResponseSigningMode
+  - OFF
+  - OBSERVE
+  - REQUIRED
 interface com.datadog.android.flags.StateObservable
   fun getCurrentState(): com.datadog.android.flags.model.FlagsClientState
   fun addListener(FlagsStateListener)
