@@ -35,7 +35,8 @@ internal data class CapturedNativeWindow(
     val views: List<CapturedNativeView>,
     val isDrawingOrderReliable: Boolean = true,
     val pendingPixelCaptures: List<PendingPixelCapture> = emptyList(),
-    val pendingMappings: List<PendingViewMapping> = emptyList()
+    val pendingMappings: List<PendingViewMapping> = emptyList(),
+    val dimAmount: Double = 0.0
 )
 
 internal data class CapturedNativeView(

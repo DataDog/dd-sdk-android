@@ -17,6 +17,7 @@ import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewParent
+import android.view.WindowManager
 import android.webkit.WebView
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
@@ -167,7 +168,7 @@ internal class AndroidWindowTraversal(
                     state.isDrawingOrderReliable,
                     state.pendingPixelCaptures,
                     state.pendingMappings
-                ),
+                ).withWindowAttributes(windowRoot),
                 state.touchOverrideAreas,
                 state.requiresTouchPrivacyCapture
             )
@@ -816,6 +817,17 @@ internal fun isComposeHostByClassName(view: View): Boolean {
         type = type.superclass
     }
     return false
+}
+
+private fun CapturedNativeWindow.withWindowAttributes(root: View) = copy(dimAmount = root.resolveDimAmount())
+
+private fun View.resolveDimAmount(): Double {
+    val parameters = layoutParams as? WindowManager.LayoutParams ?: return 0.0
+    return if (parameters.flags and WindowManager.LayoutParams.FLAG_DIM_BEHIND != 0) {
+        parameters.dimAmount.toDouble().coerceIn(0.0, 1.0)
+    } else {
+        0.0
+    }
 }
 
 @UiThread

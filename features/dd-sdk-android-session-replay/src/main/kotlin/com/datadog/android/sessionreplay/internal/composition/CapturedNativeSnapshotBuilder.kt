@@ -12,17 +12,23 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedClip
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
+import com.datadog.android.internal.sessionreplay.composition.CapturedShapeStyle
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
+import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
+
+private const val MAX_COLOR_ALPHA = 255
 
 internal data class CapturedWindow(
     val rootLayer: CapturedLayer,
     val layers: List<CapturedLayer>,
-    val wireframes: List<CapturedWireframe>
+    val wireframes: List<CapturedWireframe>,
+    val dimAmount: Double = 0.0
 )
 
 /** Never reads Android UI state. Returns null when the shared generation expires. */
@@ -39,10 +45,12 @@ internal class CapturedNativeSnapshotBuilder(
         val identityFactory = snapshot.identityFactory ?: DefaultCapturedIdentityFactory(snapshot.scope)
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Owned window lists; transform returns non-null layers.
-        val layers = windows.flatMap { it.layers }
+        val screenBounds = windows.firstOrNull()?.rootLayer?.bounds ?: CapturedBounds(0, 0, 0, 0)
+        val paintedWindows = windows.map { withWindowDimming(it, identityFactory, screenBounds) }
+        val layers = paintedWindows.flatMap { it.layers }
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Owned window lists; transform returns non-null wireframes.
-        val wireframes = windows.flatMap { it.wireframes }
+        val wireframes = paintedWindows.flatMap { it.wireframes }
         return CapturedFullSnapshot(
             timestamp = snapshot.timestamp,
             scope = snapshot.scope,
@@ -50,10 +58,40 @@ internal class CapturedNativeSnapshotBuilder(
                 identityFactory.screenRoot(),
                 CapturedLayerKind.SYNTHETIC_SCREEN_ROOT,
                 windows.firstOrNull()?.rootLayer?.bounds ?: CapturedBounds(0, 0, 0, 0),
-                windows.map { CapturedChild.Layer(it.rootLayer.identity) }
+                paintedWindows.map { CapturedChild.Layer(it.rootLayer.identity) }
             ),
             layers = layers,
             wireframes = wireframes + snapshot.hiddenEmbeddedWireframes
+        )
+    }
+
+    private fun withWindowDimming(
+        window: CapturedWindow,
+        identities: CapturedIdentityFactory,
+        screenBounds: CapturedBounds
+    ): CapturedWindow {
+        if (window.dimAmount <= 0.0) return window
+        val owner = identities.layer(window.rootLayer.identity, "dim-behind")
+        val dim = CapturedWireframe.Shape(
+            identities.shapeWireframe(owner),
+            screenBounds,
+            style = CapturedShapeStyle(
+                backgroundColor = DefaultColorStringFormatter.formatColorAndAlphaAsHexString(
+                    android.graphics.Color.BLACK,
+                    (window.dimAmount * MAX_COLOR_ALPHA).roundToInt()
+                )
+            )
+        )
+        val wrapper = CapturedLayer(
+            owner,
+            CapturedLayerKind.COMPOSITION_LAYER,
+            screenBounds,
+            listOf(CapturedChild.Wireframe(dim.identity), CapturedChild.Layer(window.rootLayer.identity))
+        )
+        return window.copy(
+            rootLayer = wrapper,
+            layers = window.layers + wrapper,
+            wireframes = listOf(dim) + window.wireframes
         )
     }
 
@@ -107,7 +145,7 @@ internal class CapturedNativeSnapshotBuilder(
         }
         if (!generation.isActive()) return null
         @Suppress("UnsafeThirdPartyFunctionCall") // Non-empty input contributes at least its root layer.
-        return CapturedWindow(layers.last(), layers, wireframes)
+        return CapturedWindow(layers.last(), layers, wireframes, window.dimAmount)
     }
 
     @Suppress("LongParameterList", "UnsafeThirdPartyFunctionCall", "ReturnCount") // Expiry discards copied values.

@@ -12,6 +12,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
@@ -139,6 +141,32 @@ internal class AndroidCapturedSnapshotProducerTest {
             viewIdentifierResolver = mockViewIdentifierResolver,
             isMainThreadWindow = { true }
         )
+    }
+
+    @Test
+    fun `M paint dimming below dialog over the screen W buildSnapshot`(
+        @Forgery fakeSnapshot: CapturedNativeSnapshot
+    ) {
+        // Given
+        val main = fakeSnapshot.windows.first()
+        val factory = DefaultCapturedIdentityFactory(fakeSnapshot.scope)
+        val dialogRoot = main.views.first().copy(
+            identity = factory.window("dialog"),
+            parentIndex = -1,
+            bounds = CapturedBounds(40, 31, 280, 801)
+        )
+        val dialog = main.copy(views = listOf(dialogRoot), dimAmount = 0.6)
+
+        // When
+        val result = fakeSnapshot.copy(windows = listOf(main, dialog)).buildSnapshot(fakeContext)!!
+
+        // Then - dimming uses screen bounds, belongs below the dialog, and is not clipped to the dialog box.
+        val dim = result.wireframes.filterIsInstance<CapturedWireframe.Shape>()
+            .single { it.style?.backgroundColor == "#00000099" }
+        assertThat(dim.bounds).isEqualTo(main.views.first().bounds)
+        val wrapper = result.layers.single { it.children.firstOrNull() == CapturedChild.Wireframe(dim.identity) }
+        assertThat(wrapper.children.last()).isEqualTo(CapturedChild.Layer(dialogRoot.identity))
+        assertThat(result.root!!.children.last()).isEqualTo(CapturedChild.Layer(wrapper.identity))
     }
 
     @Test
