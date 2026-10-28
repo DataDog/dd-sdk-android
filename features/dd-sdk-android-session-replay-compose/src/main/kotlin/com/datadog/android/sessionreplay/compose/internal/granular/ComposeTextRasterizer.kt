@@ -22,7 +22,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.toSize
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
+import com.datadog.android.sessionreplay.compose.internal.utils.ComposeTextCaptureCache
 import com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOffset
+import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
@@ -41,6 +43,10 @@ internal fun interface ComposeTextRasterizer {
 internal class DefaultComposeTextRasterizer(
     private val semanticsUtils: SemanticsUtils = SemanticsUtils()
 ) : ComposeTextRasterizer {
+    private val measuredTextState = ComposeTextCaptureCache()
+    private val bitmapCache = ComposeTextBitmapCache()
+    private val reflectionUtils = ReflectionUtils()
+
     @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall")
     override fun rasterize(
         node: SemanticsNode,
@@ -49,17 +55,23 @@ internal class DefaultComposeTextRasterizer(
         windowOffset: ComposeWindowOffset
     ): RasterizedComposeText? {
         val action = node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action ?: return null
+        val sourceText = text.sourceText ?: text.text
+        val state = measuredTextState.state(node, action)
+        val bounds = semanticsUtils.resolveTextBounds(node, windowOffset) ?: return null
+        val modifier = modifiers.firstOrNull { reflectionUtils.isTextStringSimpleElement(it.modifier) }?.modifier
+        val paint = ComposeTextBitmapCache.Paint(modifier, text.color.toLong(), sourceText)
+        bitmapCache.get(node.id, state, paint)?.let { return RasterizedComposeText(it, bounds) }
         val results = mutableListOf<TextLayoutResult>()
         action.invoke(results)
         val layout = results.firstOrNull() ?: return null
         // The privacy decision was made for this exact text on the same main-thread traversal.
         val originalText = layout.layoutInput.text.text
-        if (originalText != (text.sourceText ?: text.text)) {
+        if (originalText != sourceText) {
             return null
         }
+        val paintStyle = layout.layoutInput.style
         val size = layout.size
         if (size.width <= 0 || size.height <= 0 || size.width.toLong() * size.height > MAX_TEXT_PIXELS) return null
-        val bounds = semanticsUtils.resolveTextBounds(node, windowOffset) ?: return null
         val density = node.layoutInfo.density
         val pixels = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888)
         var completed = false
@@ -73,6 +85,7 @@ internal class DefaultComposeTextRasterizer(
                 val color = if (layout.layoutInput.style.brush != null) Color.Unspecified else Color(text.color)
                 drawText(measuredLayout(layout), color = color)
             }
+            bitmapCache.put(node.id, state, paint, paintStyle, pixels)
             val captured = RasterizedComposeText(pixels, bounds)
             completed = true
             captured
