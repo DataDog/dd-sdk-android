@@ -89,7 +89,6 @@ data class com.datadog.android.api.context.LocaleInfo
 data class com.datadog.android.api.context.NetworkInfo
   constructor(Connectivity = Connectivity.NETWORK_NOT_CONNECTED, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null)
   enum Connectivity
-    constructor(kotlin.String)
     - NETWORK_NOT_CONNECTED
     - NETWORK_ETHERNET
     - NETWORK_WIFI
@@ -274,12 +273,10 @@ enum com.datadog.android.core.configuration.BackPressureMitigation
 data class com.datadog.android.core.configuration.BackPressureStrategy
   constructor(Int, () -> Unit, (Any) -> Unit, BackPressureMitigation)
 enum com.datadog.android.core.configuration.BatchProcessingLevel
-  constructor(Int)
   - LOW
   - MEDIUM
   - HIGH
 enum com.datadog.android.core.configuration.BatchSize
-  constructor(Long)
   - SMALL
   - MEDIUM
   - LARGE
@@ -311,7 +308,6 @@ class com.datadog.android.core.configuration.HostsSanitizer
   constructor(com.datadog.android.api.InternalLogger = unboundInternalLogger)
   fun sanitizeHosts(List<String>, String): List<String>
 enum com.datadog.android.core.configuration.UploadFrequency
-  constructor(Long)
   - FREQUENT
   - AVERAGE
   - RARE
@@ -383,7 +379,6 @@ object com.datadog.android.core.internal.utils.JsonSerializer
   fun toJsonElement(Any?): com.google.gson.JsonElement
   fun Map<String, Any?>.safeMapValuesToJson(com.datadog.android.api.InternalLogger): Map<String, com.google.gson.JsonElement>
 enum com.datadog.android.core.metrics.MethodCallSamplingRate
-  constructor(Float)
   - ALL
   - HIGH
   - MEDIUM
@@ -513,7 +508,6 @@ interface com.datadog.android.security.Encryption
   fun encrypt(ByteArray): ByteArray
   fun decrypt(ByteArray): ByteArray
 enum com.datadog.android.trace.TracingHeaderType
-  constructor(String)
   - DATADOG
   - B3
   - B3MULTI
@@ -562,7 +556,6 @@ data class com.datadog.android.core.internal.remote.model.RemoteConfiguration
       fun fromJson(kotlin.String): TracedHost
       fun fromJsonObject(com.google.gson.JsonObject): TracedHost
   enum VitalsUpdateFrequency
-    constructor(kotlin.String)
     - FREQUENT
     - AVERAGE
     - RARE
@@ -571,7 +564,6 @@ data class com.datadog.android.core.internal.remote.model.RemoteConfiguration
     companion object 
       fun fromJson(kotlin.String): VitalsUpdateFrequency
   enum TextAndInputPrivacy
-    constructor(kotlin.String)
     - MASK_SENSITIVE_INPUTS
     - MASK_ALL_INPUTS
     - MASK_ALL
@@ -579,14 +571,12 @@ data class com.datadog.android.core.internal.remote.model.RemoteConfiguration
     companion object 
       fun fromJson(kotlin.String): TextAndInputPrivacy
   enum TouchPrivacy
-    constructor(kotlin.String)
     - SHOW
     - HIDE
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): TouchPrivacy
   enum ImagePrivacy
-    constructor(kotlin.String)
     - MASK_NONE
     - MASK_LARGE_ONLY
     - MASK_ALL
@@ -594,14 +584,12 @@ data class com.datadog.android.core.internal.remote.model.RemoteConfiguration
     companion object 
       fun fromJson(kotlin.String): ImagePrivacy
   enum TraceContextInjection
-    constructor(kotlin.String)
     - ALL
     - SAMPLED
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): TraceContextInjection
   enum PropagatorType
-    constructor(kotlin.String)
     - DATADOG
     - B3
     - B3MULTI

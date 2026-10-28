@@ -16,7 +16,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
  * instance ID (because this value is used there) in case if enum values are renamed.
  * @param intakeHostName the host name for the given site.
  */
-enum class DatadogSite private constructor(internal val siteName: String, private val intakeHostName: String) {
+enum class DatadogSite(internal val siteName: String, intakeHostName: String) {
 
     /**
      *  The US1 site: [app.datadoghq.com](https://app.datadoghq.com).
@@ -73,7 +73,7 @@ enum class DatadogSite private constructor(internal val siteName: String, privat
      * @param siteName Explicit site name property introduced in order to have a consistent SDK
      * instance ID (because this value is used there) in case if enum values are renamed.
      */
-    private constructor(siteName: String) : this(
+    constructor(siteName: String) : this(
         siteName,
         "browser-intake-$siteName-datadoghq.com"
     )

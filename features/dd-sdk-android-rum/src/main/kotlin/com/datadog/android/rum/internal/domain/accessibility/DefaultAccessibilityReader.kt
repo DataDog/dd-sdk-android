@@ -38,7 +38,7 @@ internal class DefaultAccessibilityReader(
         applicationContext.getSystemServiceAs<AccessibilityManager>(Context.ACCESSIBILITY_SERVICE),
     private val secureWrapper: SecureWrapper = SecureWrapper(),
     private val globalWrapper: GlobalWrapper = GlobalWrapper(),
-    private val handler: Handler = Handler(Looper.getMainLooper())
+    handler: Handler = Handler(Looper.getMainLooper())
 ) : InfoProvider<AccessibilityInfo>, ComponentCallbacks {
 
     private val displayInversionListener = object : ContentObserver(handler) {

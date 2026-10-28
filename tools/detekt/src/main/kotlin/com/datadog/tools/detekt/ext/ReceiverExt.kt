@@ -7,7 +7,7 @@
 package com.datadog.tools.detekt.ext
 
 import org.jetbrains.kotlin.analysis.api.KaSession
-import org.jetbrains.kotlin.analysis.api.resolution.KaCallableMemberCall
+import org.jetbrains.kotlin.analysis.api.resolution.KaFunctionCall
 import org.jetbrains.kotlin.analysis.api.resolution.KaImplicitReceiverValue
 import org.jetbrains.kotlin.analysis.api.resolution.KaSmartCastedReceiverValue
 import org.jetbrains.kotlin.analysis.api.symbols.KaCallableSymbol
@@ -86,11 +86,11 @@ internal fun KaSession.explicitReceiver(
  */
 internal fun KaSession.receiverTypeName(
     expression: KtCallExpression,
-    call: KaCallableMemberCall<*, *>,
+    call: KaFunctionCall<*>,
     treatGenericAsSuper: Boolean,
     includeTypeArguments: Boolean
 ): String? {
-    val calleeSymbol = call.partiallyAppliedSymbol.signature.symbol
+    val calleeSymbol = call.signature.symbol
     val explicitReceiver = explicitReceiver(expression, calleeSymbol, treatGenericAsSuper, includeTypeArguments)
     if (explicitReceiver != null) {
         return explicitReceiver.typeName
@@ -101,11 +101,12 @@ internal fun KaSession.receiverTypeName(
         return calleeSymbol.callableId?.classId?.asSingleFqName()?.asString()
     }
 
-    val symbol = call.partiallyAppliedSymbol
-    val implicitReceiver = listOf(symbol.extensionReceiver, symbol.dispatchReceiver)
+    val implicitReceiver = listOf(call.extensionReceiver, call.dispatchReceiver)
         .map { if (it is KaSmartCastedReceiverValue) it.original else it }
         .firstOrNull { it is KaImplicitReceiverValue }
-    return implicitReceiver?.type?.fqClassName()
+    return implicitReceiver?.type?.let {
+        fqTypeName(it.lowerBoundIfFlexible().withNullability(false), treatGenericAsSuper, includeTypeArguments)
+    } ?: calleeSymbol.callableId?.classId?.asSingleFqName()?.asString()
 }
 
 /**

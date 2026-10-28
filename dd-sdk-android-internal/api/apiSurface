@@ -16,7 +16,6 @@ object com.datadog.android.internal.FeatureContextKeys
   const val PROFILING_QUOTA_SESSION_ID: String
 interface com.datadog.android.internal.attributes.LocalAttribute
   enum Key
-    constructor(String)
     - CREATION_SAMPLING_RATE
     - REPORTING_SAMPLING_RATE
     - VIEW_SCOPE_INSTRUMENTATION_TYPE
@@ -29,7 +28,6 @@ fun MutableMap<String, Any?>.enrichWithLocalAttribute(LocalAttribute.Key, Any?)
 sealed interface com.datadog.android.internal.attributes.ViewScopeInstrumentationType : LocalAttribute.Constant
   val value: String
   enum Native : ViewScopeInstrumentationType
-    constructor(String)
     - MANUAL
     - COMPOSE
     - ACTIVITY
@@ -104,7 +102,6 @@ class com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor : android.a
     fun onStopped()
     fun onPaused()
 enum com.datadog.android.internal.network.GraphQLHeaders
-  constructor(String)
   - DD_GRAPHQL_NAME_HEADER
   - DD_GRAPHQL_VARIABLES_HEADER
   - DD_GRAPHQL_TYPE_HEADER
@@ -205,7 +202,6 @@ data class com.datadog.android.internal.profiling.ProfilingRumContext
 data class com.datadog.android.internal.profiling.ProfilingThreadDump
   constructor(String, Thread.State, String)
 enum com.datadog.android.internal.profiling.quota.QuotaReason
-  constructor(String)
   - QUOTA_OK
   - QUOTA_EXCEEDED
   - ORG_DISABLED
@@ -223,7 +219,6 @@ object com.datadog.android.internal.rum.RumSessionConstants
   const val EMPTY_RUM_SESSION_ID: String
   const val TRACKED_SESSION_STATE: String
 enum com.datadog.android.internal.rum.RumSessionStartReason
-  constructor(String)
   - USER_APP_LAUNCH
   - INACTIVITY_TIMEOUT
   - MAX_DURATION
@@ -232,12 +227,10 @@ enum com.datadog.android.internal.rum.RumSessionStartReason
   - FROM_NON_INTERACTIVE_SESSION
   - EXPLICIT_STOP
 enum com.datadog.android.internal.rum.RumSessionState
-  constructor(String)
   - NOT_TRACKED
   - TRACKED
   - EXPIRED
 enum com.datadog.android.internal.rum.RumViewType
-  constructor(String)
   - NONE
   - FOREGROUND
   - BACKGROUND

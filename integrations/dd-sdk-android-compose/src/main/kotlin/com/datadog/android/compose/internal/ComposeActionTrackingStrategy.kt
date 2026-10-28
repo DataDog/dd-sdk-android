@@ -20,7 +20,6 @@ import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.Node
 import com.datadog.android.rum.tracking.ViewTarget
 import java.util.LinkedList
-import java.util.Queue
 
 /**
  * Implementation of [ActionTrackingStrategy] to track actions in Jetpack Compose.
@@ -58,7 +57,7 @@ internal class ComposeActionTrackingStrategy(
         y: Float,
         isScrollEvent: Boolean
     ): ViewTarget? {
-        val queue: Queue<LayoutNode> = LinkedList()
+        val queue = LinkedList<LayoutNode>()
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // Any exception will be caught.
             queue.add(owner.root)

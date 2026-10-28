@@ -195,13 +195,13 @@ internal class RecordedDataProcessorTest {
     @Test
     fun `M send FullSnapshot W process`(forge: Forge) {
         // Given
-        val fakeFlattenedSnapshots = fakeSnapshot1.map {
+        val fakeFlattenedSnapshots = fakeSnapshot1.flatMap {
             val fakeFlattenedSnapshot = forge.aList {
                 getForgery(MobileSegment.Wireframe::class.java)
             }
             whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
             fakeFlattenedSnapshot
-        }.flatten()
+        }
         currentRecordedQueuedItemContext = mockRumContextDataHandler.createRumContextData()
             ?: fail("RumContextData is null")
 
@@ -326,15 +326,14 @@ internal class RecordedDataProcessorTest {
                 getForgery(MobileSegment.Wireframe::class.java)
             }
             whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
-            fakeFlattenedSnapshot
         }
-        val fakeFlattenedSnapshot2 = fakeSnapshot2.map {
+        val fakeFlattenedSnapshot2 = fakeSnapshot2.flatMap {
             val fakeFlattenedSnapshot = forge.aList {
                 getForgery(MobileSegment.Wireframe::class.java)
             }
             whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
             fakeFlattenedSnapshot
-        }.flatten()
+        }
         currentRecordedQueuedItemContext = mockRumContextDataHandler.createRumContextData()
             ?: fail("RumContextData is null")
 
@@ -364,20 +363,20 @@ internal class RecordedDataProcessorTest {
         forge: Forge
     ) {
         // Given
-        val fakeFlattenedSnapshot1 = fakeSnapshot1.map {
+        val fakeFlattenedSnapshot1 = fakeSnapshot1.flatMap {
             val fakeFlattenedSnapshot = forge.aList {
                 getForgery(MobileSegment.Wireframe::class.java)
             }
             whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
             fakeFlattenedSnapshot
-        }.flatten()
-        val fakeFlattenedSnapshot2 = fakeSnapshot2.map {
+        }
+        val fakeFlattenedSnapshot2 = fakeSnapshot2.flatMap {
             val fakeFlattenedSnapshot = forge.aList {
                 getForgery(MobileSegment.Wireframe::class.java)
             }
             whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
             fakeFlattenedSnapshot
-        }.flatten()
+        }
         val fakeMutationData: MobileIncrementalData.MobileMutationData =
             forge.getForgery()
         whenever(
@@ -672,20 +671,20 @@ internal class RecordedDataProcessorTest {
         forge: Forge
     ) {
         // Given
-        val fakeFlattenedSnapshot1 = fakeSnapshot1.map {
+        val fakeFlattenedSnapshot1 = fakeSnapshot1.flatMap {
             val fakeFlattenedSnapshot = forge.aList {
                 getForgery(MobileSegment.Wireframe::class.java)
             }
             whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
             fakeFlattenedSnapshot
-        }.flatten()
-        val fakeFlattenedSnapshot2 = fakeSnapshot2.map {
+        }
+        val fakeFlattenedSnapshot2 = fakeSnapshot2.flatMap {
             val fakeFlattenedSnapshot = forge.aList {
                 getForgery(MobileSegment.Wireframe::class.java)
             }
             whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
             fakeFlattenedSnapshot
-        }.flatten()
+        }
         val fakeMutationData: MobileIncrementalData.MobileMutationData =
             forge.getForgery()
         whenever(
@@ -723,20 +722,20 @@ internal class RecordedDataProcessorTest {
     @Test
     fun `M do nothing W process { no mutation was detected }`(forge: Forge) {
         // Given
-        val fakeFlattenedSnapshot1 = fakeSnapshot1.map {
+        val fakeFlattenedSnapshot1 = fakeSnapshot1.flatMap {
             val fakeFlattenedSnapshot = forge.aList {
                 getForgery(MobileSegment.Wireframe::class.java)
             }
             whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
             fakeFlattenedSnapshot
-        }.flatten()
-        val fakeFlattenedSnapshot2 = fakeSnapshot2.map {
+        }
+        val fakeFlattenedSnapshot2 = fakeSnapshot2.flatMap {
             val fakeFlattenedSnapshot = forge.aList {
                 getForgery(MobileSegment.Wireframe::class.java)
             }
             whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
             fakeFlattenedSnapshot
-        }.flatten()
+        }
         whenever(
             mockMutationResolver.resolveMutations(
                 fakeFlattenedSnapshot1,

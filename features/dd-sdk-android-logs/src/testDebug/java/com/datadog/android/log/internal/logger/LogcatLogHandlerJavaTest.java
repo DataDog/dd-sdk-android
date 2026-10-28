@@ -29,7 +29,7 @@ public class LogcatLogHandlerJavaTest {
     void resolves_stack_trace_element_null_if_in_release_mode() {
         testedHandler = new LogcatLogHandler(fakeServiceName, true, false);
 
-        StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_logs_debug();
+        StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_logs();
 
         assertThat(element)
                 .isNull();
@@ -39,7 +39,7 @@ public class LogcatLogHandlerJavaTest {
     void resolves_stack_trace_element_null_if_useClassnameAsTag_is_false() {
         testedHandler = new LogcatLogHandler(fakeServiceName, false, true);
 
-        StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_logs_debug();
+        StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_logs();
 
         assertThat(element)
                 .isNull();
@@ -49,7 +49,7 @@ public class LogcatLogHandlerJavaTest {
     void resolves_stack_trace_element_from_caller() {
         testedHandler = new LogcatLogHandler(fakeServiceName, true, true);
 
-        StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_logs_debug();
+        StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_logs();
 
         assertThat(element).isNotNull();
         assertThat(element.getClassName())
@@ -58,20 +58,26 @@ public class LogcatLogHandlerJavaTest {
 
     @Test
     void resolves_nested_stack_trace_element_from_caller() {
+        // Given
         testedHandler = new LogcatLogHandler(fakeServiceName, true, true);
 
         AtomicReference<StackTraceElement> elementRef = new AtomicReference<>();
 
+        @SuppressWarnings("Convert2Lambda")
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                elementRef.set(testedHandler.getCallerStackElement$dd_sdk_android_logs_debug());
+                elementRef.set(testedHandler.getCallerStackElement$dd_sdk_android_logs());
             }
         };
+
+        // When
         runnable.run();
 
-        assertThat(elementRef).isNotNull();
-        assertThat(elementRef.get().getClassName())
+        // Then
+        StackTraceElement element = elementRef.get();
+        assertThat(element).isNotNull();
+        assertThat(element.getClassName())
                 .isEqualTo(getClass().getCanonicalName() + "$1");
     }
 }

@@ -71,6 +71,7 @@ This project hosts the following modules:
     - `tools/unit`: a utility library with code to help writing unit tests;
   - `sample/***`: a few sample applications showcasing how to use the library features in production code;
     - `sample/kotlin`: a sample mobile application;
+  - `sample/sqldelight`: the SQLDelight 1.x sample database, generated in a JVM module;
     - `sample/vendor-lib`: a sample Android library, to showcase vendors using Datadog in a host app also using Datadog;
     - `sample/wear`: a sample Wear OS application;
     - `sample/automotive`: a sample Automotive OS application;
@@ -78,6 +79,12 @@ This project hosts the following modules:
     - `sample/benchmark`: a sample application to collect SDK performance metrics;
 
 ### Building the SDK
+
+We use newer Kotlin build tooling while retaining Kotlin 2.0 language/API settings
+and a compatible standard library so customers using Kotlin 2.0 can consume the SDK.
+Keep the SDK's compatibility settings separate from build-tool upgrades. Android
+modules use AGP's built-in Kotlin support; do not apply `org.jetbrains.kotlin.android`
+to them.
 
 You can build the SDK using the following Gradle command:
 
