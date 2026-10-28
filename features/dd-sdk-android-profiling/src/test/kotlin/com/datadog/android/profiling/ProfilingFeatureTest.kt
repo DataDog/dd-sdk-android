@@ -1741,9 +1741,10 @@ internal class ProfilingFeatureTest {
 
         // Then
         verify(mockDataWriter).writeTriggerProfile(
-            perfettoResult = anrResult,
-            rumErrorId = fakeRumAnrEvent.id,
-            rumContext = fakeRumAnrEvent.rumContext
+            perfettoResult = eq(anrResult),
+            rumErrorId = eq(fakeRumAnrEvent.id),
+            rumContext = eq(fakeRumAnrEvent.rumContext),
+            onWritten = any()
         )
     }
 
@@ -1768,9 +1769,10 @@ internal class ProfilingFeatureTest {
 
         // Then
         verify(mockDataWriter).writeTriggerProfile(
-            perfettoResult = anrResult,
-            rumErrorId = fakeRumAnrEvent.id,
-            rumContext = fakeRumAnrEvent.rumContext
+            perfettoResult = eq(anrResult),
+            rumErrorId = eq(fakeRumAnrEvent.id),
+            rumContext = eq(fakeRumAnrEvent.rumContext),
+            onWritten = any()
         )
     }
 
@@ -1905,9 +1907,10 @@ internal class ProfilingFeatureTest {
 
         // Then
         verify(mockDataWriter).writeTriggerProfile(
-            perfettoResult = anrResult,
-            rumErrorId = fakeRumAnrEvent.id,
-            rumContext = fakeRumAnrEvent.rumContext
+            perfettoResult = eq(anrResult),
+            rumErrorId = eq(fakeRumAnrEvent.id),
+            rumContext = eq(fakeRumAnrEvent.rumContext),
+            onWritten = any()
         )
     }
 
@@ -2612,7 +2615,8 @@ internal class ProfilingFeatureTest {
         verify(mockDataWriter).writeTriggerProfile(
             resultCaptor.capture(),
             eq(fakeAnomalyEvent.id),
-            eq(fakeAnomalyEvent.rumContext)
+            eq(fakeAnomalyEvent.rumContext),
+            any()
         )
         assertThat(resultCaptor.firstValue.start).isEqualTo(fakeCaptureMs)
         assertThat(resultCaptor.firstValue.end).isEqualTo(fakeCaptureMs)
@@ -2647,7 +2651,7 @@ internal class ProfilingFeatureTest {
 
         // Then
         assertThat(traceFile.exists()).isFalse
-        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any(), any())
     }
 
     @Test
@@ -2689,7 +2693,7 @@ internal class ProfilingFeatureTest {
                 rumContext = fakeOomEvent.rumContext
             )
         )
-        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any(), any())
     }
 
     @Test
@@ -2803,13 +2807,8 @@ internal class ProfilingFeatureTest {
             eq(true)
         )
         assertThat(PendingOomProfile.fromJson(pendingProfileCaptor.firstValue)).isEqualTo(expectedPendingProfile)
-        val resultCaptor = argumentCaptor<PerfettoResult>()
-        verify(mockDataWriter).writeTriggerProfile(
-            resultCaptor.capture(),
-            eq(expectedPendingProfile.rumErrorId),
-            eq(expectedPendingProfile.rumContext)
-        )
-        assertUploadedProfile(resultCaptor.firstValue, expectedPendingProfile)
+        verify(mockRumFeatureScope).sendEvent(ProfilerEvent.OomProfileAttachRequest(expectedPendingProfile.rumErrorId))
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any(), any())
     }
 
     @Test
@@ -2843,11 +2842,11 @@ internal class ProfilingFeatureTest {
             any(),
             any()
         )
-        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any(), any())
     }
 
     @Test
-    fun `M clear then upload the persisted profile W onInitialize() {within max age}`(
+    fun `M ask RUM before writing the persisted profile W onInitialize() {within max age}`(
         @Forgery fakePendingOomProfile: PendingOomProfile,
         @LongForgery(min = 1_000L, max = 1_000_000L) fakeStartMs: Long,
         @LongForgery(min = 0L, max = 1_000L) fakeAgeMs: Long
@@ -2864,15 +2863,9 @@ internal class ProfilingFeatureTest {
         runScheduledReplay()
 
         // Then
-        val resultCaptor = argumentCaptor<PerfettoResult>()
-        val inOrder = inOrder(mockSharedPreferencesStorage, mockDataWriter)
-        inOrder.verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_PROFILE, true)
-        inOrder.verify(mockDataWriter).writeTriggerProfile(
-            resultCaptor.capture(),
-            eq(fakePendingProfile.rumErrorId),
-            eq(fakePendingProfile.rumContext)
-        )
-        assertUploadedProfile(resultCaptor.firstValue, fakePendingProfile)
+        verify(mockRumFeatureScope).sendEvent(ProfilerEvent.OomProfileAttachRequest(fakePendingProfile.rumErrorId))
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any(), any())
+        verify(mockSharedPreferencesStorage, never()).remove(ProfilingStorage.KEY_PENDING_OOM_PROFILE, true)
     }
 
     @Test
@@ -2901,7 +2894,7 @@ internal class ProfilingFeatureTest {
         runScheduledReplay()
 
         // Then
-        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any(), any())
         verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_PROFILE, true)
         assertThat(traceFile.exists()).isFalse
     }
@@ -2942,11 +2935,11 @@ internal class ProfilingFeatureTest {
             any()
         )
         assertThat(traceFile.exists()).isFalse
-        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any(), any())
     }
 
     @Test
-    fun `M upload the persisted profile W onInitialize() {current session quota denied}`(
+    fun `M ask RUM for the persisted profile W onInitialize() {current session quota denied}`(
         @Forgery fakePendingOomProfile: PendingOomProfile,
         @LongForgery(min = 1_000L, max = 1_000_000L) fakeStartMs: Long,
         @LongForgery(min = 0L, max = 1_000L) fakeAgeMs: Long
@@ -2965,13 +2958,7 @@ internal class ProfilingFeatureTest {
         runScheduledReplay()
 
         // Then
-        val resultCaptor = argumentCaptor<PerfettoResult>()
-        verify(mockDataWriter).writeTriggerProfile(
-            resultCaptor.capture(),
-            eq(fakePendingProfile.rumErrorId),
-            eq(fakePendingProfile.rumContext)
-        )
-        assertUploadedProfile(resultCaptor.firstValue, fakePendingProfile)
+        verify(mockRumFeatureScope).sendEvent(ProfilerEvent.OomProfileAttachRequest(fakePendingProfile.rumErrorId))
     }
 
     @Test
@@ -2986,7 +2973,7 @@ internal class ProfilingFeatureTest {
         runScheduledReplay()
 
         // Then
-        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any(), any())
     }
 
     @Test
@@ -3021,7 +3008,7 @@ internal class ProfilingFeatureTest {
 
         // Then
         assertThat(traceFile.exists()).isFalse
-        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
+        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any(), any())
     }
 
     @Test

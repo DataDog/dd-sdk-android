@@ -48,6 +48,7 @@ import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -645,6 +646,9 @@ internal class ProfilingDataWriterTest {
     ) {
         // Given
         val profileFile = File(tmp, fakeFileName).apply { writeBytes(forge.aString().toByteArray()) }
+        val fakeIsWritten = forge.aBool()
+        whenever(mockEventBatchWriter.write(any(), anyOrNull(), any())) doReturn fakeIsWritten
+        val writtenOutcomes = mutableListOf<Pair<Boolean, Boolean>>()
 
         // When
         testedDataWriterTest.writeTriggerProfile(
@@ -656,10 +660,12 @@ internal class ProfilingDataWriterTest {
                 profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
             ),
             rumErrorId = rumErrorId,
-            rumContext = rumContext
+            rumContext = rumContext,
+            onWritten = { writtenOutcomes.add(it to profileFile.exists()) }
         )
 
         // Then
+        assertThat(writtenOutcomes).containsExactly(fakeIsWritten to true)
         val argumentCaptor = argumentCaptor<RawBatchEvent>()
         verify(mockEventBatchWriter).write(
             event = argumentCaptor.capture(),
@@ -720,6 +726,7 @@ internal class ProfilingDataWriterTest {
     ) {
         // Given
         val profileFile = File(tmp, fakeFileName).apply { writeBytes(ByteArray(0)) }
+        val writtenOutcomes = mutableListOf<Boolean>()
 
         // When
         testedDataWriterTest.writeTriggerProfile(
@@ -729,10 +736,12 @@ internal class ProfilingDataWriterTest {
                 profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
             ),
             rumErrorId = rumErrorId,
-            rumContext = rumContext
+            rumContext = rumContext,
+            onWritten = { writtenOutcomes.add(it) }
         )
 
         // Then
+        assertThat(writtenOutcomes).containsExactly(false)
         verifyNoInteractions(mockEventBatchWriter)
         assertThat(profileFile.exists()).isFalse()
     }

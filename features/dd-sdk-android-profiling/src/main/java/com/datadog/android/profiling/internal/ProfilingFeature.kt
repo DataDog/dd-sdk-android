@@ -829,7 +829,8 @@ internal class ProfilingFeature(
             dataWriter.writeTriggerProfile(
                 perfettoResult = triggerProfile.result,
                 rumErrorId = triggerProfile.rumErrorId,
-                rumContext = triggerProfile.rumContext
+                rumContext = triggerProfile.rumContext,
+                onWritten = {}
             )
         }
     }
