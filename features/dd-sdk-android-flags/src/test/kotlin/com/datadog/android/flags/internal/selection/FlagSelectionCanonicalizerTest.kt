@@ -176,6 +176,10 @@ internal class FlagSelectionCanonicalizerTest {
 
         private fun values(count: Int) = List(count) { "value-$it" }
 
+        // Java callers can pass a raw list, so the elements are not checked to be strings.
+        @Suppress("UNCHECKED_CAST")
+        private fun uncheckedStrings(vararg values: Any?) = values.toList() as List<String?>
+
         private fun tags(vararg tags: String?) = FlagSelection(tags = tags.toList(), keyPatterns = emptyList())
 
         private fun keyPatterns(vararg keyPatterns: String?) =
@@ -423,6 +427,16 @@ internal class FlagSelectionCanonicalizerTest {
             ),
             Arguments.of("null tag", tags("mobile", null), FlagSelectionError.MALFORMED_SELECTION),
             Arguments.of("null key pattern", keyPatterns(null), FlagSelectionError.MALFORMED_SELECTION),
+            Arguments.of(
+                "non-string tag from an unchecked cast",
+                FlagSelection(tags = uncheckedStrings("mobile", 1), keyPatterns = emptyList()),
+                FlagSelectionError.MALFORMED_SELECTION
+            ),
+            Arguments.of(
+                "non-string key pattern from an unchecked cast",
+                FlagSelection(tags = emptyList(), keyPatterns = uncheckedStrings(true)),
+                FlagSelectionError.MALFORMED_SELECTION
+            ),
             Arguments.of(
                 "malformed before too many values",
                 FlagSelection(values(32) + null, emptyList()),

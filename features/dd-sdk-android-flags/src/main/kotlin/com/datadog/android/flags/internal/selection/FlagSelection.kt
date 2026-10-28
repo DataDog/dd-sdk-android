@@ -111,8 +111,9 @@ internal object FlagSelectionCanonicalizer {
 
     private fun String.utf8Size(): Int = toByteArray(Charsets.UTF_8).size
 
-    private fun List<String?>.wellFormedOrNull(): List<String>? =
-        if (all { it != null && !it.hasUnpairedSurrogate() }) filterIsInstance<String>() else null
+    // A Java caller can pass a raw list, so check each element's type instead of trusting the generic type.
+    private fun List<*>.wellFormedOrNull(): List<String>? =
+        if (all { it is String && !it.hasUnpairedSurrogate() }) filterIsInstance<String>() else null
 
     private fun String.hasUnpairedSurrogate(): Boolean {
         var index = 0
