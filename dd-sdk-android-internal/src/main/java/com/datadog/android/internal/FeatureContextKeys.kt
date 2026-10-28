@@ -35,6 +35,13 @@ object FeatureContextKeys {
     const val PROFILING_ANR_ENABLED: String = "profiling_anr_enabled"
 
     /**
+     * Whether an OOM-triggered profile can be captured: the OOM system trigger is currently
+     * registered. Written by the profiling feature and read by RUM to decide whether to hold a
+     * fatal OOM error until the outcome of its OOM profile is known.
+     */
+    const val PROFILING_OOM_TRIGGER_ACTIVE: String = "profiling_oom_trigger_active"
+
+    /**
      * Current RUM session identifier. Written by the RUM feature into its own feature
      * context on every session renewal; read by other features (e.g. profiling) that
      * subscribe via [com.datadog.android.api.feature.FeatureContextUpdateReceiver].

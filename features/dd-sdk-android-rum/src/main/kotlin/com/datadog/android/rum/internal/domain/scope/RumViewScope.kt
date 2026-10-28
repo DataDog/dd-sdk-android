@@ -51,6 +51,7 @@ import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetr
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.profiling.isProfilerRunning
+import com.datadog.android.rum.internal.profiling.isProfilingOomTriggerActive
 import com.datadog.android.rum.internal.profiling.resolveProfilingQuotaReason
 import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toLongTask
@@ -780,20 +781,18 @@ internal open class RumViewScope(
 
         val errorId = UUID.randomUUID().toString()
         // region profiling
-        var profilingStatus: ErrorEvent.Profiling? = null
-        // Fatal ANR comes from last session, in this case we don't attach it to Profiling Event.
-        // TODO RUM-15344: address non-fatal ANR over Android API 30
-        if (!isFatal) {
-            profilingStatus = if (isTriggeredByProfiling) {
-                resolveErrorProfilingStatus(datadogContext)
-                    ?: ErrorEvent.Profiling(
-                        status = ErrorEvent.ProfilingStatus.RUNNING
-                    )
-            } else if (event.throwable is ANRException) {
-                resolveErrorProfilingStatus(datadogContext)
-            } else {
-                null
-            }
+        val profilingStatus = when {
+            isFatal && event.throwable is OutOfMemoryError -> resolveOomErrorProfilingStatus(datadogContext)
+            // Fatal ANR comes from last session, in this case we don't attach it to Profiling Event.
+            // TODO RUM-15344: address non-fatal ANR over Android API 30
+            isFatal -> null
+            isTriggeredByProfiling -> resolveErrorProfilingStatus(datadogContext)
+                ?: ErrorEvent.Profiling(
+                    status = ErrorEvent.ProfilingStatus.RUNNING
+                )
+
+            event.throwable is ANRException -> resolveErrorProfilingStatus(datadogContext)
+            else -> null
         }
         // end region
 
@@ -1808,6 +1807,22 @@ internal open class RumViewScope(
                 status = ErrorEvent.ProfilingStatus.RUNNING
             )
 
+            quotaReason != null -> ErrorEvent.Profiling(
+                status = ErrorEvent.ProfilingStatus.STOPPED,
+                quotaReason = quotaReason
+            )
+
+            else -> null
+        }
+    }
+
+    /**
+     * The OOM profile is captured by the OS trigger, not by a running profiler, and the profiling
+     * feature drops it when the session's quota is denied.
+     */
+    private fun resolveOomErrorProfilingStatus(datadogContext: DatadogContext): ErrorEvent.Profiling? {
+        val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
+        return when {
             quotaReason != null -> ErrorEvent.Profiling(
                 status = ErrorEvent.ProfilingStatus.STOPPED,
                 quotaReason = quotaReason

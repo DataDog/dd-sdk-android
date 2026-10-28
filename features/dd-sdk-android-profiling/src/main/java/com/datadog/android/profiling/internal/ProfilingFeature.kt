@@ -93,6 +93,18 @@ internal class ProfilingFeature(
     private lateinit var appContext: Context
 
     @Volatile
+    private var triggersEnabled: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            profiler.setTriggersEnabled(appContext, value)
+            val isOomTriggerRegistered = profiler.isOomTriggerRegistered
+            sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+                context[FeatureContextKeys.PROFILING_OOM_TRIGGER_ACTIVE] = isOomTriggerRegistered
+            }
+        }
+
+    @Volatile
     internal var continuousProfilingScheduler: ContinuousProfilingScheduler? = null
 
     private var processLifecycleMonitor: ProcessLifecycleMonitor? = null
@@ -193,7 +205,7 @@ internal class ProfilingFeature(
         continuousProfilingScheduler?.stop()
         profiler.apply {
             stop()
-            setTriggersEnabled(appContext, false)
+            triggersEnabled = false
             unregisterProfilingCallback(appContext)
             unregisterProfilerStatusListener(this@ProfilingFeature)
         }
@@ -246,7 +258,7 @@ internal class ProfilingFeature(
             is ProfilerEvent.RumOomErrorEvent -> {
                 // No trigger result can arrive to match this event while the OOM trigger is
                 // inactive: persisting it would leave it stranded until it expires.
-                if (profiler.isOomTriggerActive) {
+                if (profiler.isOomTriggerRegistered) {
                     pendingTriggerProfiles.setRumGatingEvent(event)
                 }
             }
@@ -323,11 +335,11 @@ internal class ProfilingFeature(
         val sessionId = context[FeatureContextKeys.RUM_SESSION_ID] as? String
         when {
             sessionId == null || sessionId == RumSessionConstants.EMPTY_RUM_SESSION_ID -> {
-                profiler.setTriggersEnabled(appContext, false)
+                triggersEnabled = false
             }
 
             sessionId == lastSeenRumSessionId -> {
-                profiler.setTriggersEnabled(appContext, isRumSessionTracked(context))
+                triggersEnabled = isRumSessionTracked(context)
             }
 
             else -> {
@@ -359,7 +371,7 @@ internal class ProfilingFeature(
             }
             (launchSessionId == sessionId) to drainTriggerProfilesAwaitingQuota()
         }
-        profiler.setTriggersEnabled(appContext, isTracked)
+        triggersEnabled = isTracked
         continuousProfilingScheduler?.onRumSessionRenewed(
             sessionId = sessionId,
             rumSessionSampleRate = sampleRate
@@ -439,6 +451,7 @@ internal class ProfilingFeature(
                 } else {
                     null
                 }
+
                 launchSessionId != lastSeenRumSessionId -> LOG_LAUNCH_PROFILING_DROPPED_SESSION_ENDED
                 else -> return
             }

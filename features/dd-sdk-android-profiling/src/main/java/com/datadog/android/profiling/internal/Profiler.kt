@@ -21,10 +21,10 @@ internal interface Profiler {
     val scheduledExecutorService: ScheduledExecutorService
 
     /**
-     * Whether the OOM system trigger is available on this device. Persisting an OOM RUM error as
-     * a gating event while this is `false` would wait for a result that can never arrive.
+     * Whether the OOM system trigger is currently registered. Persisting an OOM RUM error as a
+     * gating event while this is `false` would wait for a result that can never arrive.
      */
-    val isOomTriggerActive: Boolean
+    val isOomTriggerRegistered: Boolean
 
     fun start(
         appContext: Context,

@@ -448,6 +448,18 @@ internal class PerfettoProfilerTest {
     }
 
     @Test
+    fun `M reflect the OOM trigger registration W isOomTriggerRegistered`(@BoolForgery fakeRegistered: Boolean) {
+        // Given
+        whenever(mockRegistrar.isOomTriggerRegistered) doReturn fakeRegistered
+
+        // When
+        val isOomTriggerRegistered = testedProfiler.isOomTriggerRegistered
+
+        // Then
+        assertThat(isOomTriggerRegistered).isEqualTo(fakeRegistered)
+    }
+
+    @Test
     fun `M notify current status W registerProfilerStatusListener`(@BoolForgery fakeRunning: Boolean) {
         // Given
         if (fakeRunning) {

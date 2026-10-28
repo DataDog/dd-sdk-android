@@ -105,10 +105,8 @@ internal class PerfettoProfiler(
     @Volatile
     private var profilingSamplingRateHz: Int = PROFILING_SAMPLING_RATE_APP_LAUNCH
 
-    // TODO RUM-18151: also gate on triggerRegistrar.isRegistered so this reflects whether the
-    // registration is currently active, not just whether the platform supports it.
-    override val isOomTriggerActive: Boolean
-        get() = buildSdkVersionProvider.isAtLeastCinnamonBun
+    override val isOomTriggerRegistered: Boolean
+        get() = triggerRegistrar.isOomTriggerRegistered
 
     @Volatile
     override var internalLogger: InternalLogger? = null
