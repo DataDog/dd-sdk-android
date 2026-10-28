@@ -124,3 +124,14 @@
     float getShadowElevation();
     long getSpotShadowColor*();
 }
+
+# Resolve the measured paragraph inside decorated legacy TextFields without drawing the host.
+-keep class androidx.compose.foundation.text.input.internal.CoreTextFieldSemanticsModifier {
+    *** state;
+}
+-keepclassmembers class androidx.compose.foundation.text.LegacyTextFieldState {
+    *** getLayoutCoordinates*();
+}
+-keepclassmembers class androidx.compose.foundation.text.TextFieldState {
+    *** getLayoutCoordinates*();
+}

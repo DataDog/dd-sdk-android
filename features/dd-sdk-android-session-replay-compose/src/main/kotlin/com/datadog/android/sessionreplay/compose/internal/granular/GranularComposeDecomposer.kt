@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asAndroidColorFilter
 import androidx.compose.ui.graphics.toAndroidRectF
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.layout.boundsInRoot
@@ -66,6 +67,7 @@ import com.datadog.android.sessionreplay.compose.internal.utils.ComposeTextCaptu
 import com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOffset
 import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
+import com.datadog.android.sessionreplay.compose.internal.utils.editableTextCoordinates
 import com.datadog.android.sessionreplay.compose.internal.utils.resolveComposeWindowOffset
 import com.datadog.android.sessionreplay.compose.internal.utils.transformCapturedText
 import com.datadog.android.sessionreplay.internal.composition.PendingPixelCapture
@@ -118,7 +120,8 @@ internal class GranularComposeDecomposer(
     private val textRasterizer: ComposeTextRasterizer = DefaultComposeTextRasterizer(semanticsUtils),
     private val sourceImageClipper: ComposeSourceImageClipper = DefaultComposeSourceImageClipper(),
     private val drawBehindColorResolver: ComposeDrawBehindColorResolver =
-        DefaultComposeDrawBehindColorResolver(reflectionUtils)
+        DefaultComposeDrawBehindColorResolver(reflectionUtils),
+    private val editableCoordinatesResolver: (List<ModifierInfo>) -> LayoutCoordinates? = ::editableTextCoordinates
 ) : CompositionHostDecomposer {
     private val visualChildrenResolver = ComposeVisualChildrenResolver()
     private val placementClipResolver = ComposePlacementClipResolver()
@@ -178,14 +181,22 @@ internal class GranularComposeDecomposer(
     private data class NodePrivacy(
         val image: ImagePrivacy,
         val text: TextAndInputPrivacy,
-        val contentColor: String? = null
+        val contentColor: String? = null,
+        val masksInputState: Boolean = false,
+        val inEditable: Boolean = false
     )
 
-    private fun privacyOf(node: SemanticsNode, parent: NodePrivacy) = NodePrivacy(
-        semanticsUtils.getImagePrivacyOverride(node) ?: parent.image,
-        semanticsUtils.getTextAndInputPrivacyOverride(node) ?: parent.text,
-        parent.contentColor
-    )
+    private fun privacyOf(node: SemanticsNode, parent: NodePrivacy): NodePrivacy {
+        val text = semanticsUtils.getTextAndInputPrivacyOverride(node) ?: parent.text
+        return NodePrivacy(
+            semanticsUtils.getImagePrivacyOverride(node) ?: parent.image,
+            text,
+            parent.contentColor,
+            parent.masksInputState || semanticsUtils.isPassword(node) ||
+                (semanticsUtils.hasInputState(node) && text != TextAndInputPrivacy.MASK_SENSITIVE_INPUTS),
+            parent.inEditable || semanticsUtils.isEditable(node)
+        )
+    }
 
     /**
      * Both [SemanticsUtils.resolveBackgroundColor] and the `color` carried by [TextLayoutInfo] are
@@ -382,6 +393,11 @@ internal class GranularComposeDecomposer(
         }
     }
 
+    private data class EditableContent(
+        val source: SemanticsNode,
+        val layout: TextLayoutInfo
+    )
+
     /** One [decompose] call's state - a fresh instance per call, so this class itself stays stateless. */
     @Suppress("TooManyFunctions", "LargeClass") // One capture session owns the phases and deadline.
     private inner class DecomposeSession(
@@ -397,6 +413,7 @@ internal class GranularComposeDecomposer(
         private var aborted = false
         private val pendingCaptures = mutableListOf<PendingCapture>()
         private var textPixelCaptures = 0
+        private val editableLayouts = IdentityHashMap<LayoutCoordinates, EditableContent>()
         private val nativeSubtrees = mutableListOf<CompositionNativeSubtree>()
         private val protectedRasterBounds = mutableListOf<CapturedBounds>()
 
@@ -501,7 +518,7 @@ internal class GranularComposeDecomposer(
             // ModifierInfo and children getters rebuild Compose-owned lists; read each once in this UI turn.
             val inspection = NodeInspection(node, resolvedChildren, ::childrenOf, modifiersOf(node))
             val modifiers = inspection.modifiers
-            captureSemanticNode(node, nodeIdentity, bounds, privacy, modifiers)?.let { return it }
+            captureNodeContent(node, nodeIdentity, bounds, privacy, modifiers)?.let { return it }
 
             val shapeWireframe = resolveShapeWireframe(node, nodeIdentity, bounds, modifiers)
             val drawingModifiers = hasDrawingModifiers(modifiers)
@@ -523,6 +540,17 @@ internal class GranularComposeDecomposer(
             if (aborted) return null
 
             return captureDecoratedLayer(node, nodeIdentity, bounds, modifiers, children, contentStart)
+        }
+
+        private fun captureNodeContent(
+            node: SemanticsNode,
+            identity: CapturedIdentity,
+            bounds: CapturedBounds,
+            privacy: NodePrivacy,
+            modifiers: List<ModifierInfo>
+        ): CapturedChild? {
+            return captureEditableLayout(node, identity, bounds, privacy, modifiers)
+                ?: captureSemanticNode(node, identity, bounds, privacy, modifiers)
         }
 
         private fun captureSemanticNode(
@@ -617,7 +645,8 @@ internal class GranularComposeDecomposer(
             modifiers: List<ModifierInfo>
         ): CapturedChild? {
             val layout = semanticsUtils.resolveTextLayoutInfo(node, internalLogger, modifiers)
-            if (layout == null && !semanticsUtils.isEditable(node)) return null
+            val editable = semanticsUtils.isEditable(node)
+            if (deferEditableText(node, layout, modifiers) || (layout == null && !editable)) return null
             val info = layout ?: TextLayoutInfo(
                 semanticsUtils.editableText(node).orEmpty(),
                 Color.Black.value,
@@ -639,6 +668,47 @@ internal class GranularComposeDecomposer(
             return captureDecoratedLayer(node, identity, bounds, modifiers, children, contentStart)
         }
 
+        @Suppress("ReturnCount") // Missing layout or coordinates retain the existing semantic fallback.
+        private fun deferEditableText(
+            node: SemanticsNode,
+            layout: TextLayoutInfo?,
+            modifiers: List<ModifierInfo>
+        ): Boolean {
+            if (!semanticsUtils.isEditable(node) || layout == null || childrenOf(node).isEmpty()) return false
+            val coordinates = editableCoordinatesResolver(modifiers) ?: return false
+            editableLayouts[coordinates] = EditableContent(node, layout)
+            return true
+        }
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // Owned map; input stays semantic.
+        private fun captureEditableLayout(
+            node: SemanticsNode,
+            identity: CapturedIdentity,
+            bounds: CapturedBounds,
+            privacy: NodePrivacy,
+            modifiers: List<ModifierInfo>
+        ): CapturedChild? {
+            val content = editableLayouts.remove(node.layoutInfo.coordinates) ?: return null
+            val start = wireframes.size
+            val text = toTextWireframe(
+                request.identityFactory.textWireframe(identity),
+                bounds,
+                content.layout,
+                content.source,
+                privacy,
+                editableBounds = bounds
+            )
+            wireframes += text
+            return captureDecoratedLayer(
+                node,
+                identity,
+                bounds,
+                modifiers,
+                listOf(CapturedChild.Wireframe(text.identity)),
+                start
+            )
+        }
+
         @Suppress("ReturnCount") // Privacy and the capture budget are checked before allocating glyph pixels.
         private fun captureTextPixels(
             node: SemanticsNode,
@@ -650,7 +720,8 @@ internal class GranularComposeDecomposer(
             val standardFont = info.fontFamily == null || info.fontFamily == FontFamily.Default ||
                 info.fontFamily is GenericFontFamily
             val textIsUnmasked = privacy.text != TextAndInputPrivacy.MASK_ALL &&
-                !semanticsUtils.isEditable(node) && !semanticsUtils.isPassword(node) && !request.hasOptionSelectorParent
+                !semanticsUtils.isEditable(node) && !privacy.inEditable && !semanticsUtils.isPassword(node) &&
+                !privacy.masksInputState && !request.hasOptionSelectorParent
             val hasBudget = textPixelCaptures + pendingCaptures.size < MAX_PIXEL_CAPTURES_PER_HOST &&
                 request.shouldContinue()
             val requiresPixels = !standardFont || info.requiresPixelCapture
@@ -1173,11 +1244,13 @@ internal class GranularComposeDecomposer(
             bounds: CapturedBounds,
             textLayoutInfo: TextLayoutInfo,
             node: SemanticsNode,
-            privacy: NodePrivacy
+            privacy: NodePrivacy,
+            editableBounds: CapturedBounds? = null
         ): CapturedWireframe.Text {
             val editable = semanticsUtils.isEditable(node)
             val contentBounds = if (editable) null else semanticsUtils.resolveTextBounds(node, windowOffset)
-            val textBounds = contentBounds?.let { CapturedBounds(it.x, it.y, it.width, it.height) } ?: bounds
+            val textBounds =
+                editableBounds ?: contentBounds?.let { CapturedBounds(it.x, it.y, it.width, it.height) } ?: bounds
             return CapturedWireframe.Text(
                 identity = identity,
                 bounds = textBounds,
@@ -1188,13 +1261,29 @@ internal class GranularComposeDecomposer(
                     transformCapturedText(
                         semanticsUtils.editableText(node) ?: textLayoutInfo.text,
                         privacy.text,
-                        editable || request.hasOptionSelectorParent
+                        editable || privacy.inEditable || request.hasOptionSelectorParent
                     )
                 },
-                textStyle = textStyleOf(textLayoutInfo, privacy.contentColor),
+                textStyle = textStyleOf(textLayoutInfo, privacy.contentColor).let {
+                    if (editableBounds == null) {
+                        it
+                    } else {
+                        it.copy(
+                            size = (it.size * node.layoutInfo.density.fontScale).roundToLong()
+                        )
+                    }
+                },
                 textPosition = if (editable) {
                     CapturedTextPosition(
-                        CapturedPadding(left = (EDIT_TEXT_START_PADDING * request.screenDensity).toLong()),
+                        CapturedPadding(
+                            left = if (editableBounds !=
+                                null
+                            ) {
+                                0L
+                            } else {
+                                (EDIT_TEXT_START_PADDING * request.screenDensity).toLong()
+                            }
+                        ),
                         CapturedAlignment(CapturedHorizontalAlignment.LEFT, CapturedVerticalAlignment.CENTER)
                     )
                 } else {
@@ -1262,7 +1351,7 @@ internal class GranularComposeDecomposer(
                 sourceImage
             val maskedState =
                 semanticsUtils.hasInputState(node) && privacy.text != TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
-            val restrictedInput = maskedState || semanticsUtils.isPassword(node)
+            val restrictedInput = privacy.masksInputState || maskedState || semanticsUtils.isPassword(node)
             return semanticContent || restrictedInput
         }
 

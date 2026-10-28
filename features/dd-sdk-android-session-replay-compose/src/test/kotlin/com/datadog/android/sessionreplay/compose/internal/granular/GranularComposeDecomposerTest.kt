@@ -1344,6 +1344,45 @@ internal class GranularComposeDecomposerTest {
     // region pixel capture
 
     @Test
+    fun `M retain editable decoration and measured text W decompose() { decorated input }`() {
+        // Given
+        val parent = mockLeafNode()
+        val text = mockLeafNode()
+        val icon = mockLeafNode()
+        val coordinates: androidx.compose.ui.layout.LayoutCoordinates = mock()
+        whenever(text.layoutInfo.coordinates).thenReturn(coordinates)
+        whenever(parent.children).thenReturn(listOf(icon, text))
+        whenever(mockSemanticsUtils.isEditable(parent)).thenReturn(true)
+        whenever(mockSemanticsUtils.hasInputState(parent)).thenReturn(true)
+        whenever(mockSemanticsUtils.isImage(icon)).thenReturn(true)
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(parent), any(), any()))
+            .thenReturn(TextLayoutInfo("compose", Color.Black.value, 16, FontFamily.SansSerif))
+        whenever(parent.layoutInfo.density).thenReturn(androidx.compose.ui.unit.Density(3f, 1.3f))
+        val root = mockRoot(listOf(parent))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        val rasterizer = FakeComposeHostCaptureRasterizer()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = rasterizer,
+            editableCoordinatesResolver = { coordinates },
+            textRasterizer = ComposeTextRasterizer { _, _, _, _ -> error("Inputs must remain semantic") }
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest())!!
+
+        // Then - keep the icon subtree and align semantic input text to its own measured layout.
+        val captured = result.wireframes.filterIsInstance<CapturedWireframe.Text>().single()
+        assertThat(captured.text).isEqualTo("compose")
+        assertThat(captured.textStyle.size).isEqualTo(21L)
+        assertThat(captured.textPosition!!.padding!!.left).isZero()
+        assertThat(result.wireframes.filterIsInstance<CapturedWireframe.PrivacyPlaceholder>()).hasSize(1)
+        assertThat(rasterizer.callCount).isZero()
+    }
+
+    @Test
     fun `M inspect overscroll state on every capture W decompose() { legacy drawing container }`() {
         // Given
         val stubContainer = mockLeafNode()
