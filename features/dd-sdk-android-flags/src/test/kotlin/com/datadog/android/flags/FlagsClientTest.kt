@@ -131,8 +131,6 @@ internal class FlagsClientTest {
         flagsFeature?.clearClients()
     }
 
-    // region Flag Selection Wiring
-
     @Test
     fun `M key persisted flags by the configured selection W createInternal() { flag selection }`(
         @StringForgery fakeFlagKey: String,
@@ -193,8 +191,6 @@ internal class FlagsClientTest {
         // Then
         assertThat(client.getFlagAssignmentsSnapshot()).containsOnlyKeys(fakeFlagKey)
     }
-
-    // endregion
 
     // region Static Flag Resolution Methods
 
