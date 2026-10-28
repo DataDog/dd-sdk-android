@@ -23,8 +23,9 @@ import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.rum.RumSessionConstants
+import com.datadog.android.internal.rum.RumSessionState
+import com.datadog.android.internal.rum.rumContext
 import com.datadog.android.internal.time.DefaultTimeProvider
-import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
@@ -41,7 +42,6 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-@OptIn(ExperimentalProfilingApi::class)
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @Suppress("TooManyFunctions")
 internal class ProfilingFeature(
@@ -284,17 +284,16 @@ internal class ProfilingFeature(
 
     override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName != Feature.RUM_FEATURE_NAME) return
-        val sessionId = context[FeatureContextKeys.RUM_SESSION_ID] as? String
+        val rumContext = context.rumContext()
+        val sessionId = rumContext?.sessionId
         if (sessionId == null ||
             sessionId == RumSessionConstants.EMPTY_RUM_SESSION_ID ||
             sessionId == lastSeenRumSessionId
         ) {
             return
         }
-        val sampleRate = (context[FeatureContextKeys.RUM_SESSION_SAMPLE_RATE] as? Number)?.toFloat()
-            ?: DEFAULT_RUM_SESSION_SAMPLE_RATE
-        val isTracked =
-            (context[FeatureContextKeys.RUM_SESSION_STATE] as? String) == RumSessionConstants.TRACKED_SESSION_STATE
+        val sampleRate = rumContext.sessionSampleRate
+        val isTracked = rumContext.sessionState == RumSessionState.TRACKED
         // Publish the new session and retire the previous session's quota check and queued trigger
         // profiles atomically: a trigger profile of the new session can't be queued, nor its quota
         // check started, until the previous session's state is gone.
@@ -554,7 +553,6 @@ internal class ProfilingFeature(
 
     companion object {
 
-        private const val DEFAULT_RUM_SESSION_SAMPLE_RATE = 0f
         private const val UNSUPPORTED_EVENT_TYPE =
             "Profiling feature received an event of unsupported type=%s."
         private const val LOG_LAUNCH_PROFILING_STOPPED_AT_TTID =

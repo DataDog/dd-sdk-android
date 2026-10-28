@@ -192,7 +192,7 @@ abstract class AbstractCallExpressionRule(
     // endregion
 
     /**
-     * The type of a vararg parameter is its element type, wrap it in the matching array type.
+     * The type of vararg parameter is its element type, wrap it in the matching array type.
      * Only parameters declared with a primitive type use a primitive array (e.g. `vararg Int` is an `IntArray`),
      * a generic parameter is always an `Array` (e.g. `vararg T` is an `Array<T>`, even when `T` is `Int`).
      */

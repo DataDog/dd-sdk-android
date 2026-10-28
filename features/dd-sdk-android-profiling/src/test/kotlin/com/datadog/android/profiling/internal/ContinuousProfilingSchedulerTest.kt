@@ -425,7 +425,7 @@ internal class ContinuousProfilingSchedulerTest {
         val fakeContinuousRate = forge.aFloat(min = 0.1f, max = 100f)
         val expectedEffectiveRate =
             (fakeSessionRate * fakeContinuousRate / 100f).coerceIn(0f, 100f)
-        val expectedDecision = DeterministicSampler<String>(
+        val expectedDecision = DeterministicSampler(
             SessionSamplingIdProvider::provideId,
             expectedEffectiveRate
         ).sample(fakeSessionId)

@@ -11,7 +11,6 @@ import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.internal.rum.RumSessionConstants
-import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.fixtures.ProfilingFeatureTestHandle
 import com.datadog.android.profiling.fixtures.ProfilingStorageFixture
@@ -38,7 +37,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
 
-@OptIn(ExperimentalProfilingApi::class)
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),

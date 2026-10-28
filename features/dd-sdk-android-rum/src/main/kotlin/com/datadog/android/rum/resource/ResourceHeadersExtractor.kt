@@ -9,7 +9,6 @@ package com.datadog.android.rum.resource
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.utils.truncateToUtf8ByteSize
-import com.datadog.android.rum.resource.ResourceHeadersExtractor.Companion.SECURITY_PATTERN
 import java.util.Locale
 
 /**

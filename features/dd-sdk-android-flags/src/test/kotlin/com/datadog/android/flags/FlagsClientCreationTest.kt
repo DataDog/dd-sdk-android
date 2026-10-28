@@ -96,7 +96,8 @@ internal class FlagsClientCreationTest {
             mockSdkCore,
             FlagsFeature(mockSdkCore, configuration),
             null,
-            forge.anAlphabeticalString()
+            forge.anAlphabeticalString(),
+            evaluationTelemetryOptOutParameterEnabled = false
         )
         testedClient.onFirstFlags { delivered = true }
     }

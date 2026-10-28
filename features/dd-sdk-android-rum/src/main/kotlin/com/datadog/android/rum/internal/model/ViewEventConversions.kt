@@ -88,13 +88,27 @@ internal fun ViewEvent.PerformanceCls.toViewUpdate() = ViewUpdateEvent.Performan
 internal fun ViewEvent.Inp.toViewUpdate() = ViewUpdateEvent.Inp(
     duration = duration,
     timestamp = timestamp,
-    targetSelector = targetSelector
+    targetSelector = targetSelector,
+    subParts = subParts?.let {
+        ViewUpdateEvent.InpSubParts(
+            inputDelay = it.inputDelay,
+            processingTime = it.processingTime,
+            presentationDelay = it.presentationDelay
+        )
+    }
 )
 
 internal fun ViewEvent.Lcp.toViewUpdate() = ViewUpdateEvent.Lcp(
     timestamp = timestamp,
     targetSelector = targetSelector,
-    resourceUrl = resourceUrl
+    resourceUrl = resourceUrl,
+    subParts = subParts?.let {
+        ViewUpdateEvent.LcpSubParts(
+            loadDelay = it.loadDelay,
+            loadTime = it.loadTime,
+            renderDelay = it.renderDelay
+        )
+    }
 )
 
 // endregion
@@ -113,6 +127,7 @@ internal fun ViewEvent.ViewEventSource.toViewUpdate() = when (this) {
     ViewEvent.ViewEventSource.ELECTRON -> ViewUpdateEvent.ViewUpdateEventSource.ELECTRON
     ViewEvent.ViewEventSource.CPP -> ViewUpdateEvent.ViewUpdateEventSource.CPP
     ViewEvent.ViewEventSource.MAUI -> ViewUpdateEvent.ViewUpdateEventSource.MAUI
+    ViewEvent.ViewEventSource.UNREAL -> ViewUpdateEvent.ViewUpdateEventSource.UNREAL
 }
 
 internal fun ViewEvent.ViewEventSessionType.toViewUpdate() = when (this) {

@@ -34,6 +34,7 @@ dependencies {
     implementation(libs.kotlinRuntime)
 
     // Testing
+    testImplementation(project(":dd-sdk-android-internal"))
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(

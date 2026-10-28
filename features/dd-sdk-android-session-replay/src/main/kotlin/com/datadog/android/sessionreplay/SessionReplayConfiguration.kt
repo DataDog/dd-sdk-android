@@ -71,7 +71,7 @@ data class SessionReplayConfiguration internal constructor(
         private var customEndpointUrl: String? = null
         private val privacy = SessionReplayPrivacy.MASK
 
-        // indicates whether fine grained masking levels have been explicitly set
+        // indicates whether fine-grained masking levels have been explicitly set
         private var fineGrainedMaskingSet = false
 
         private var imagePrivacy = ImagePrivacy.MASK_ALL
@@ -204,7 +204,7 @@ data class SessionReplayConfiguration internal constructor(
 
         /**
          * This option controls whether optimization is enabled or disabled for recording Session Replay data.
-         * By default the value is true, meaning the dynamic optimization is enabled.
+         * By default, the value is true, meaning the dynamic optimization is enabled.
          */
         fun setDynamicOptimizationEnabled(dynamicOptimizationEnabled: Boolean): Builder {
             this.dynamicOptimizationEnabled = dynamicOptimizationEnabled

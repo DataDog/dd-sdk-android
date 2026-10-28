@@ -1156,3 +1156,31 @@ val CrossFileOneOfPrimitiveB = TypeDefinition.Class(
     ),
     required = setOf("path")
 )
+
+private val ExplicitArgumentsAttributes = TypeDefinition.Class(
+    name = "Attributes",
+    properties = emptyList(),
+    required = emptySet(),
+    additionalProperties = TypeProperty("additionalProperties", TypeDefinition.Primitive(JsonPrimitiveType.STRING))
+)
+val ExplicitArguments = TypeDefinition.Class(
+    name = "ExplicitArguments",
+    required = emptySet(),
+    properties = listOf(
+        TypeProperty("optional", TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+        TypeProperty("bike", Bike),
+        TypeProperty("attributes", ExplicitArgumentsAttributes),
+        TypeProperty(
+            "mutableAttributes",
+            ExplicitArgumentsAttributes.copy(
+                name = "MutableAttributes",
+                additionalProperties = TypeProperty(
+                    "additionalProperties",
+                    TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+                    readOnly = false
+                )
+            )
+        ),
+        TypeProperty("type", TypeDefinition.Constant(JsonType.STRING, "explicit"))
+    )
+)

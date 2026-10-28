@@ -29,6 +29,7 @@ import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.util.LinkedList
 import java.util.Locale
+import kotlin.math.max
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -85,7 +86,7 @@ internal class MutationResolverTest {
         }
         val fakeAddedWireframes = forge.aList { forge.getForgery<MobileSegment.Wireframe>() }
         val middle = fakePrevSnapshot.size / 2
-        val remaining = Math.max(0, fakePrevSnapshot.size - middle)
+        val remaining = max(0, fakePrevSnapshot.size - middle)
         val fakeCurrentSnapshot = fakePrevSnapshot.take(middle) + fakeAddedWireframes +
             fakePrevSnapshot.takeLast(remaining)
         var lastPrevWireframe = if (middle > 0) fakePrevSnapshot[middle - 1] else null

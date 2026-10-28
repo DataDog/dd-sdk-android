@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.metric
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.internal.rum.RumSessionStartReason
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
@@ -45,7 +45,7 @@ class RumSessionEndedMetricTest {
     private lateinit var fakeSessionId: String
 
     @Forgery
-    private lateinit var fakeStartReason: RumSessionScope.StartReason
+    private lateinit var fakeStartReason: RumSessionStartReason
 
     @LongForgery
     private var fakeNtpOffsetAtStart: Long = 0L
@@ -580,7 +580,7 @@ class RumSessionEndedMetricTest {
 
     private fun stubSessionEndedMetric(
         sessionId: String = fakeSessionId,
-        startReason: RumSessionScope.StartReason = fakeStartReason,
+        startReason: RumSessionStartReason = fakeStartReason,
         ntpOffsetAtStartMs: Long = fakeNtpOffsetAtStart,
         hasTrackBackgroundEventsEnabled: Boolean = backgroundEventTracking
     ) = SessionEndedMetric(

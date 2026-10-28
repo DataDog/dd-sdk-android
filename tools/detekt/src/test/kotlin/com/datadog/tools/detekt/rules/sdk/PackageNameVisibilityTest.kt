@@ -12,8 +12,6 @@ import dev.detekt.test.lint
 import dev.detekt.test.utils.KotlinEnvironmentContainer
 import dev.detekt.test.utils.createEnvironment
 import fr.xgouchet.elmyr.annotation.BoolForgery
-import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -31,9 +29,6 @@ class PackageNameVisibilityTest {
 
     @BoolForgery
     var fakeWithBreakingChanges: Boolean = false
-
-    @StringForgery(StringForgeryType.ALPHABETICAL)
-    lateinit var fakeIgnoredAnnotation: String
 
     @BeforeEach
     fun setup() {

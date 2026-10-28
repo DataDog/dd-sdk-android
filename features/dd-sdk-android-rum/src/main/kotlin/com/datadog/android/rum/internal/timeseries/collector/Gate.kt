@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.internal.timeseries.collector
 
-import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.internal.rum.RumContext
 
 /**
  * Combines the states that control whether timeseries collection is allowed.

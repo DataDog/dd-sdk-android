@@ -27,9 +27,10 @@ internal fun Any?.toJsonElement(): JsonElement {
         is Double -> JsonPrimitive(this)
         is String -> JsonPrimitive(this)
         is Date -> JsonPrimitive(this.time)
+        is JsonArray -> this
+        // JsonArray implements Iterable<JsonElement>, so it needs to be above
         is Iterable<*> -> this.toJsonArray()
         is JsonObject -> this
-        is JsonArray -> this
         is JsonPrimitive -> this
         is Map<*, *> -> JsonObject().apply {
             forEach { (k, v) ->
@@ -73,12 +74,4 @@ internal fun JsonObject.asDeepMap(): Map<String, Any?> {
         map[it.key] = it.value.fromJsonElement()
     }
     return map
-}
-
-internal fun JsonElement?.asDeepMap(): Map<String, Any?> {
-    return if (this is JsonObject) {
-        this.asDeepMap()
-    } else {
-        emptyMap()
-    }
 }

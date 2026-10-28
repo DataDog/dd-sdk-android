@@ -10,6 +10,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
+import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.model.EvaluationContext
@@ -29,12 +31,21 @@ internal class DefaultFlagsRepository(
     private data class FlagsState(
         val context: EvaluationContext,
         val flags: Map<String, PrecomputedFlag>,
+        val obfuscation: FlagKeyObfuscation?,
         val hasAcceptedConfiguration: Boolean = true
-    )
+    ) {
+        operator fun get(key: String): PrecomputedFlag? =
+            if (obfuscation == null) flags[key] else obfuscation.encode(key)?.let { flags[it] }
+    }
     private val atomicState = AtomicReference<FlagsState?>(null)
+    private val obfuscationSupported = (featureSdkCore as? InternalSdkCore)?.source == "android"
+
+    private val readableState: FlagsState?
+        get() = atomicState.get()?.takeIf { it.obfuscation == null || obfuscationSupported }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // CountDownLatch rejects negative counts; 1 is valid.
     private val persistenceLoadedLatch = CountDownLatch(1)
+
     override val firstFlags = FirstFlagsLatch()
 
     private val persistenceManager = FlagsPersistenceManager(
@@ -42,29 +53,33 @@ internal class DefaultFlagsRepository(
         instanceName = instanceName,
         internalLogger = internalLogger
     ) { persistedState ->
-        val installed = try {
-            persistedState != null && installPersistedState(
+        val cachedState = try {
+            persistedState?.let {
                 FlagsState(
-                    persistedState.evaluationContext,
-                    persistedState.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) }
-                )
-            )
+                    it.evaluationContext,
+                    it.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) },
+                    it.obfuscation
+                ).takeIf { state -> installPersistedState(state) }
+            }
         } finally {
             persistenceLoadedLatch.countDown()
         }
-        if (installed && persistedState != null) {
-            firstFlags.complete(persistedState.flags.keys, deliverFirstFlags)
+        if (cachedState != null && persistedState != null) {
+            publishFirstFlags(cachedState, persistedState.flags.keys)
         }
     }
 
     override fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
+        obfuscation: FlagKeyObfuscation?,
         onInstalled: () -> Unit
     ) {
-        val newState = FlagsState(context, flags)
+        val newState = FlagsState(context, flags, obfuscation)
 
-        val firstInstallation = atomicState.getAndSet(newState)?.hasAcceptedConfiguration != true
+        val previousState = atomicState.getAndSet(newState)
+        val firstInstallation = previousState?.hasAcceptedConfiguration != true ||
+            (previousState.obfuscation != null && !obfuscationSupported)
         persistenceLoadedLatch.countDown()
 
         try {
@@ -72,7 +87,7 @@ internal class DefaultFlagsRepository(
                 context = context,
                 flags = flags,
                 currentTimestamp = featureSdkCore.timeProvider.getDeviceTimestampMillis(),
-                object : DataStoreWriteCallback {
+                callback = object : DataStoreWriteCallback {
                     override fun onSuccess() {
                     }
 
@@ -83,7 +98,8 @@ internal class DefaultFlagsRepository(
                             messageBuilder = { ERROR_SAVING_FLAGS_STATE }
                         )
                     }
-                }
+                },
+                obfuscation = obfuscation
             )
         } catch (
             // Storage submission failure must not abort an accepted installation.
@@ -102,7 +118,7 @@ internal class DefaultFlagsRepository(
             onInstalled()
         } finally {
             if (firstInstallation) {
-                firstFlags.complete(flags.keys, deliverFirstFlags)
+                publishFirstFlags(newState, flags.keys)
             }
         }
     }
@@ -111,16 +127,22 @@ internal class DefaultFlagsRepository(
         do {
             val currentState = atomicState.get()
             if (currentState?.context == context) return
-            // Reject late cache reads for other contexts without accepting an empty configuration.
-            val clearedState = FlagsState(context, emptyMap(), currentState?.hasAcceptedConfiguration == true)
+            // Reject late cache reads without accepting or persisting an empty configuration.
+            val clearedState = FlagsState(
+                context,
+                emptyMap(),
+                obfuscation = null,
+                hasAcceptedConfiguration = currentState?.hasAcceptedConfiguration == true &&
+                    (currentState.obfuscation == null || obfuscationSupported)
+            )
         } while (!atomicState.compareAndSet(currentState, clearedState))
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
         waitForPersistenceLoad()
-        val state = atomicState.get()
+        val state = readableState
         if (state != null) {
-            return state.flags[key]
+            return state[key]
         }
         internalLogger.log(
             InternalLogger.Level.WARN,
@@ -132,9 +154,10 @@ internal class DefaultFlagsRepository(
 
     override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> {
         waitForPersistenceLoad()
-        val state = atomicState.get()
+        val state = readableState
         if (state != null) {
-            return state.flags
+            // The React Native bridge consumes original keys and cannot decode this representation.
+            return if (state.obfuscation == null) state.flags else emptyMap()
         }
         internalLogger.log(
             InternalLogger.Level.WARN,
@@ -146,25 +169,32 @@ internal class DefaultFlagsRepository(
 
     override fun getEvaluationContext(): EvaluationContext? {
         waitForPersistenceLoad()
-        return atomicState.get()?.takeIf { it.hasAcceptedConfiguration }?.context
+        return readableState?.takeIf { it.hasAcceptedConfiguration }?.context
     }
 
     override fun hasFlags(): Boolean {
         waitForPersistenceLoad()
-        return atomicState.get()?.flags?.isNotEmpty() ?: false
+        return readableState?.flags?.isNotEmpty() ?: false
     }
 
     override fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean {
-        val state = atomicState.get()
+        val state = readableState
         return state?.context == context && state.flags.isNotEmpty()
     }
 
-    @Suppress("ReturnCount")
-    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? {
-        waitForPersistenceLoad()
-        val state = atomicState.get() ?: return null
-        val flag = state.flags[key] ?: return null
+    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>? {
+        val state = readableState?.takeIf { it.hasAcceptedConfiguration } ?: return null
+        val flag = state[key]
         return flag to state.context
+    }
+
+    override fun waitForPersistenceLoad() {
+        try {
+            persistenceLoadedLatch.await(persistenceLoadTimeoutMs, TimeUnit.MILLISECONDS)
+        } catch (e: InterruptedException) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // Safe: self-interruption is always permitted
+            Thread.currentThread().interrupt()
+        }
     }
 
     private fun installPersistedState(persistedState: FlagsState): Boolean {
@@ -179,12 +209,11 @@ internal class DefaultFlagsRepository(
         return true
     }
 
-    private fun waitForPersistenceLoad() {
-        try {
-            persistenceLoadedLatch.await(persistenceLoadTimeoutMs, TimeUnit.MILLISECONDS)
-        } catch (e: InterruptedException) {
-            @Suppress("UnsafeThirdPartyFunctionCall") // Safe: self-interruption is always permitted
-            Thread.currentThread().interrupt()
+    private fun publishFirstFlags(state: FlagsState, installedKeys: Collection<String>) {
+        if (state.obfuscation == null || obfuscationSupported) {
+            // Encoded responses cannot enumerate the original application keys.
+            val keys = if (state.obfuscation == null) installedKeys else emptySet()
+            firstFlags.complete(keys, deliverFirstFlags)
         }
     }
 

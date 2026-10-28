@@ -107,6 +107,32 @@ val client = FlagsClient.Builder().build()
 val analyticsClient = FlagsClient.Builder("analytics").build()
 ```
 
+### Control evaluation telemetry
+
+Enable the local telemetry control when creating a client:
+
+```kotlin
+import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.setEvaluationTelemetryOptOut
+
+val client = FlagsClient.Builder("app")
+    .enableEvaluationTelemetryOptOutParameter(true)
+    .build()
+
+// Your application owns this decision.
+client.setEvaluationTelemetryOptOut(customerOptedOut)
+```
+
+When `customerOptedOut` is `true`, the client suppresses new evaluation events, counts, and automatic RUM flag annotations. Flag values and exposure logging remain unchanged.
+
+The native targeting context contains strings. Use the typed setter above; a string `"true"` in the context does not activate opt-out. The [OpenFeature provider](../dd-sdk-android-flags-openfeature/README.md#control-evaluation-telemetry) accepts a boolean context attribute instead.
+
+The `dd_evaluation_telemetry_opt_out` context attribute remains available for targeting and exposure reporting. Changing it through `setEvaluationContext` uses the normal assignment refresh path. Targeting rules can change assignments, and normal exposure deduplication applies.
+
+The setter applies locally without fetching assignments or clearing cached values. Update the decision when the subject or your policy changes. Set it to `false` to resume evaluation telemetry. Activation defaults to disabled. Each named client retains its original configuration.
+
+Previously recorded events, existing RUM annotations, manual annotations, and unrelated telemetry remain unchanged. Exposure events can still contain subject data. This control does not replace SDK tracking consent.
+
 ### Set evaluation context
 
 Before evaluating flags, set the evaluation context with a targeting key and optional attributes:

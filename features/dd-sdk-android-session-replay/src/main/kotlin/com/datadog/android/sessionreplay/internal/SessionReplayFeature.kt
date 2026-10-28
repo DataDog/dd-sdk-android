@@ -138,7 +138,7 @@ internal class SessionReplayFeature(
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
     internal val initialized = AtomicBoolean(false)
 
-    private val rumContextProvider = SessionReplayRumContextProvider(adaptiveCaptureSchedulingEnabled) {
+    private val rumContextProvider = SessionReplayRumContextProvider {
         onRumViewChanged()
     }
     private var resourceProcessor: ResourceProcessor = NoOpResourceProcessor()
@@ -446,11 +446,10 @@ internal class SessionReplayFeature(
         val recordCallback = SessionReplayRecordCallback(sdkCore)
         return SessionReplayRecordWriter(
             sdkCore,
-            recordCallback,
-            { viewId, recordsCount ->
-                recordCallback.onEmbeddedRecordsForViewSent(viewId, recordsCount)
-            }
-        )
+            recordCallback
+        ) { viewId, recordsCount ->
+            recordCallback.onEmbeddedRecordsForViewSent(viewId, recordsCount)
+        }
     }
 
     /**

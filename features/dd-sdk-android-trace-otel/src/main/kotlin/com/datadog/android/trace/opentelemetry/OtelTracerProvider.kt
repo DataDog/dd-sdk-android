@@ -269,10 +269,6 @@ class OtelTracerProvider internal constructor(
 
         internal const val IS_OPENTELEMETRY_ENABLED_CONFIG_KEY = "is_opentelemetry_enabled"
         internal const val OPENTELEMETRY_API_VERSION_CONFIG_KEY = "opentelemetry_api_version"
-        internal const val RUM_APPLICATION_ID_KEY = "application_id"
-        internal const val RUM_SESSION_ID_KEY = "session_id"
-        internal const val RUM_VIEW_ID_KEY = "view_id"
-        internal const val RUM_ACTION_ID_KEY = "action_id"
         internal const val TRACER_ALREADY_EXISTS_WARNING_MESSAGE =
             "Tracer for %s already exists. Returning existing instance."
         internal const val DEFAULT_TRACER_NAME = "android"

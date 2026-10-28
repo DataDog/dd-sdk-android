@@ -109,7 +109,7 @@ class JsonSchemaReader(
 
         return if (ref.isBlank()) {
             val className = (schema.title ?: file.nameWithoutExtension).toCamelCase()
-            return JsonDefinitionReference(
+            JsonDefinitionReference(
                 className,
                 schema,
                 file

@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.internal.utils.DdTagsUtils
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -16,7 +17,6 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aRumEventAsJson
 import com.datadog.android.webview.internal.rum.domain.NativeRumViewsCache
-import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
@@ -640,6 +640,7 @@ internal class WebViewRumEventMapperTest {
                 WebViewRumEventMapper.SESSION_IS_MAIN_PROCESS_NAME,
                 fakeDatadogContext.processInfo.isMainProcess
             )
+            .hasField(WebViewRumEventMapper.SESSION_HAS_TIMESERIES_NAME, fakeRumContext.hasTimeseries)
         assertThat(mappedEvent).hasField(
             WebViewRumEventMapper.DATE_KEY_NAME,
             expectedDate

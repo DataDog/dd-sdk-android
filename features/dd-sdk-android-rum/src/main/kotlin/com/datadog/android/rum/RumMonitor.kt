@@ -82,7 +82,7 @@ interface RumMonitor {
 
     /**
      * Notifies that an action started.
-     * This is used to track long running actions (e.g.: scroll). Such an action must
+     * This is used to track long-running actions (e.g.: scroll). Such an action must
      * be stopped with [stopAction], and will be stopped automatically if it lasts more than
      * 10 seconds.
      * @param type the action type
@@ -100,7 +100,7 @@ interface RumMonitor {
 
     /**
      * Notifies that an action stopped, and update the action's type and name.
-     * This is used to stop tracking long running actions (e.g.: scroll), started
+     * This is used to stop tracking long-running actions (e.g.: scroll), started
      * with [startAction].
      * @param type the action type (overriding the last started action)
      * @param name the action identifier (overriding the last started action)
@@ -187,8 +187,7 @@ interface RumMonitor {
      * @param message a message explaining the error
      * @param source the source of the error
      * @param stackTrace the error stacktrace
-     * @param errorType the type of the error. Usually it should be the canonical name of the
-     * of the Exception class.
+     * @param errorType the type of the error. Usually it should be the canonical name of the Exception class.
      * @param attributes additional custom attributes to attach to the error. Attributes can be
      * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK. Users
      * that want to supply a custom fingerprint for this error can add a value under the key
@@ -227,7 +226,7 @@ interface RumMonitor {
     /**
      * Notifies that an error occurred in the active View.
      *
-     * This method is meant for non-native or cross platform frameworks (such as React Native or
+     * This method is meant for non-native or cross-platform frameworks (such as React Native or
      * Flutter) to send error information to Datadog. Although it can be used directly, it is
      * recommended to pass a Throwable instead.
      *
@@ -277,14 +276,14 @@ interface RumMonitor {
 
     /**
      * Adds a global attribute to all future RUM events.
-     * @param key the attribute key (non null)
+     * @param key the attribute key (non-null)
      * @param value the attribute value (or null)
      */
     fun addAttribute(key: String, value: Any?)
 
     /**
      * Removes a global attribute from all future RUM events.
-     * @param key the attribute key (non null)
+     * @param key the attribute key (non-null)
      */
     fun removeAttribute(key: String)
 

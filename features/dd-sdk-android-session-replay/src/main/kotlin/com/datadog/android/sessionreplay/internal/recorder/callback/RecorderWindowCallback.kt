@@ -110,7 +110,7 @@ internal class RecorderWindowCallback(
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         val rootViews = windowInspector.getGlobalWindowViews(internalLogger)
         if (rootViews.isNotEmpty()) {
-            // a new window was added or removed so we stop recording the previous root views
+            // a new window was added or removed so we stop recording the previous root views,
             // and we start recording the new ones.
             viewOnDrawInterceptor.stopIntercepting()
             viewOnDrawInterceptor.intercept(

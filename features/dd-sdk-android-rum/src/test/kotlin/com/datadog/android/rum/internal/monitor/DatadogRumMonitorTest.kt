@@ -22,6 +22,9 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
@@ -39,7 +42,6 @@ import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
@@ -642,7 +644,7 @@ internal class DatadogRumMonitorTest {
         // Given
         val fakeContextWithSession = fakeRumContext.copy(
             sessionId = UUID.randomUUID().toString(),
-            sessionState = RumSessionScope.State.TRACKED
+            sessionState = RumSessionState.TRACKED
         )
         val mockSessionScope = mock<RumSessionScope>()
         val mockViewScope = mock<RumViewScope>()
@@ -667,7 +669,7 @@ internal class DatadogRumMonitorTest {
         // Given
         val primeContext = fakeRumContext.copy(
             sessionId = UUID.randomUUID().toString(),
-            sessionState = RumSessionScope.State.TRACKED
+            sessionState = RumSessionState.TRACKED
         )
         val mockSessionScope = mock<RumSessionScope>()
         val mockViewScope = mock<RumViewScope>()
@@ -694,7 +696,7 @@ internal class DatadogRumMonitorTest {
         // Given
         val primeContext = fakeRumContext.copy(
             sessionId = UUID.randomUUID().toString(),
-            sessionState = RumSessionScope.State.TRACKED
+            sessionState = RumSessionState.TRACKED
         )
         val mockSessionScope = mock<RumSessionScope>()
         val mockViewScope = mock<RumViewScope>()
@@ -722,7 +724,7 @@ internal class DatadogRumMonitorTest {
         // Given
         val primeContext = fakeRumContext.copy(
             sessionId = UUID.randomUUID().toString(),
-            sessionState = RumSessionScope.State.TRACKED
+            sessionState = RumSessionState.TRACKED
         )
         val mockSessionScope = mock<RumSessionScope>()
         val mockViewScope = mock<RumViewScope>()
@@ -1966,6 +1968,7 @@ internal class DatadogRumMonitorTest {
             "ndk" to RumErrorSourceType.NDK,
             "ndk+il2cpp" to RumErrorSourceType.NDK_IL2CPP,
             "maui" to RumErrorSourceType.MAUI,
+            "unreal" to RumErrorSourceType.UNREAL,
             nonSupportedValue to RumErrorSourceType.ANDROID,
             null to RumErrorSourceType.ANDROID
         )
@@ -2762,9 +2765,9 @@ internal class DatadogRumMonitorTest {
     }
 
     @ParameterizedTest
-    @EnumSource(RumSessionScope.State::class)
+    @EnumSource(RumSessionState::class)
     fun `M notify expiration checker with session state W addAction()`(
-        fakeState: RumSessionScope.State,
+        fakeState: RumSessionState,
         @Forgery fakeRumContext: RumContext,
         @Forgery fakeType: RumActionType,
         @StringForgery fakeName: String
@@ -3135,7 +3138,7 @@ internal class DatadogRumMonitorTest {
             verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), any(), capture())
             val acc = mutableMapOf<String, Any?>()
             firstValue.invoke(acc)
-            assertThat(acc).isEqualTo(fakeRumContext.toMap())
+            assertThat(acc[FeatureContextKeys.RUM_CONTEXT]).isSameAs(fakeRumContext)
         }
     }
 
@@ -3160,7 +3163,7 @@ internal class DatadogRumMonitorTest {
             verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), any(), capture())
             val acc = mutableMapOf<String, Any?>()
             firstValue.invoke(acc)
-            assertThat(acc).isEqualTo(fakeRumContext.toMap())
+            assertThat(acc[FeatureContextKeys.RUM_CONTEXT]).isSameAs(fakeRumContext)
         }
     }
 

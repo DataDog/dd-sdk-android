@@ -7,7 +7,6 @@
 package com.datadog.tools.unit
 
 import java.lang.reflect.Field
-import java.lang.reflect.InvocationTargetException
 import java.util.LinkedList
 
 /**
@@ -148,41 +147,4 @@ fun <T : Any> createInstanceWithoutTypeCheck(clazz: Class<T>, vararg params: Any
     val constructor = clazz.declaredConstructors.first { it.parameterTypes.size == params.size }
     constructor.isAccessible = true
     return constructor.newInstance(*params) as T
-}
-
-/**
- * Invokes a static method on the specified class.
- * @param T the type of the class
- * @param R the type of the result
- * @param methodName the name of the method
- * @param params the parameters to provide the method
- * @return the result of the method
- */
-@Suppress("SpreadOperator")
-inline fun <reified T : Any, reified R> Class<T>.callStaticMethod(
-    methodName: String,
-    vararg params: Any?
-): R {
-    val declarationParams = Array<Class<*>?>(params.size) {
-        params[it]?.javaClass ?: Any::class.java
-    }
-
-    val method = this.getDeclaredMethod(methodName, *declarationParams)
-    val wasAccessible = method.isAccessible
-
-    val output: Any?
-    method.isAccessible = true
-    try {
-        output = if (params.isEmpty()) {
-            method.invoke(null)
-        } else {
-            method.invoke(null, *params)
-        }
-    } catch (e: InvocationTargetException) {
-        throw e.cause ?: e
-    } finally {
-        method.isAccessible = wasAccessible
-    }
-
-    return output as R
 }

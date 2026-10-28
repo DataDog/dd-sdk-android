@@ -69,6 +69,7 @@ fun Project.createJsonModelsGenerationTask(
 ) {
     val task = tasks.register<GenerateJsonSchemaTask>(taskName) {
         inputNameMapping.convention(emptyMap())
+        schemasWithoutConstructorDefaults.convention(emptyList())
         ignoredFiles.convention(emptyList())
         inputDirPath.convention("")
         targetPackageName.convention("")

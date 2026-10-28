@@ -62,7 +62,6 @@ internal class TracesRequestFactoryTest {
         val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, batchMetadata)
 
         // Then
-        requireNotNull(request)
         assertThat(request.url).isEqualTo("${fakeDatadogContext.site.intakeEndpoint}/api/v2/spans")
         assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
         assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
@@ -99,7 +98,6 @@ internal class TracesRequestFactoryTest {
         val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, batchMetadata)
 
         // Then
-        requireNotNull(request)
         assertThat(request.url).isEqualTo(fakeEndpoint)
         assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
         assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(

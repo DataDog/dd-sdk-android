@@ -8,9 +8,7 @@ package com.datadog.android.profiling.fixtures
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.internal.NoOpProfiler
 import com.datadog.android.profiling.internal.ProfilingFeature
@@ -21,13 +19,10 @@ import com.datadog.android.profiling.internal.ProfilingFeature
  * the surrounding cross-feature wiring (event receiver, context-update receiver,
  * scheduler bootstrap) runs exactly as in production.
  */
-@OptIn(ExperimentalProfilingApi::class)
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 class ProfilingFeatureTestHandle internal constructor(
     private val feature: ProfilingFeature
 ) {
-
-    val asFeature: Feature get() = feature
 
     val lastSeenRumSessionId: String? get() = feature.lastSeenRumSessionId
 

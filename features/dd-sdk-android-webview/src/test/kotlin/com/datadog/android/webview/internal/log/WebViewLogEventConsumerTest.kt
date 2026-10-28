@@ -15,12 +15,12 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
-import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -448,7 +448,6 @@ internal class WebViewLogEventConsumerTest {
         private const val USR_NAME_KEY = "name"
         private const val USR_EMAIL_KEY = "email"
 
-        @Suppress("unused")
         @JvmStatic
         fun brokenJsonTestData(): Stream<Arguments> {
             val fakeJsonObject1 = JsonObject().apply {

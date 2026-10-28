@@ -10,8 +10,14 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Trigger
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.utils.withRumContext
+import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -30,7 +36,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.util.UUID
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -44,7 +49,10 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     lateinit var fakeDatadogContext: DatadogContext
 
     @Forgery
-    lateinit var fakeRumApplicationId: UUID
+    lateinit var fakeRumContext: RumContext
+
+    @Forgery
+    lateinit var fakeDiagnostics: Diagnostics
 
     private lateinit var testedFactory: PrecomputedAssignmentsRequestFactory
 
@@ -54,15 +62,84 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             site = forge.aValueFrom(
                 DatadogSite::class.java,
                 exclude = listOf(DatadogSite.US1_FED, DatadogSite.US2_FED)
-            ),
-            featuresContext = fakeDatadogContext.featuresContext +
-                mapOf(Feature.RUM_FEATURE_NAME to mapOf("application_id" to fakeRumApplicationId.toString()))
-        )
+            )
+        ).withRumContext(fakeRumContext)
 
         testedFactory = PrecomputedAssignmentsRequestFactory(mockInternalLogger, null)
     }
 
+    @Test
+    fun `M include diagnostics in request body W create()`(
+        @Forgery fakeEvaluationContext: EvaluationContext
+    ) {
+        // Given
+        val diagnostics = fakeDiagnostics
+        val expectedTrigger = when (diagnostics.fetch.trigger) {
+            Trigger.INITIALIZATION -> "initialization"
+            Trigger.CONTEXT_CHANGE -> "context_change"
+        }
+        val expectedDiagnostics = JsonParser.parseString(
+            """
+            {
+              "sdk": {"instance_id": "${diagnostics.sdk.instanceId}"},
+              "fetch": {"sequence": ${diagnostics.fetch.sequence}, "trigger": "$expectedTrigger"}
+            }
+            """.trimIndent()
+        )
+
+        // When
+        val request = testedFactory.create(fakeEvaluationContext, fakeDatadogContext, diagnostics)
+
+        // Then
+        val actualRequest = checkNotNull(request) { "Expected request with diagnostics" }
+        val body = JsonParser.parseString(extractRequestBodyAsString(actualRequest)).asJsonObject
+        assertThat(body.remove("diagnostics")).isEqualTo(expectedDiagnostics)
+    }
+
     // region create() - Success cases
+
+    @Test
+    fun `M advertise encoding capability W create() { native source }`(
+        @Forgery fakeEvaluationContext: EvaluationContext
+    ) {
+        // Given
+        val context = fakeDatadogContext.copy(source = "android")
+
+        // When
+        val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context, fakeDiagnostics))
+        val buffer = Buffer()
+        checkNotNull(request.body).writeTo(buffer)
+        val attributes = JSONObject(buffer.readUtf8()).getJSONObject("data").getJSONObject("attributes")
+
+        // Then
+        assertThat(request.header("X-DD-FEATURE-FLAGS-CAPABILITIES"))
+            .isEqualTo("assignment-encoding-flag-key-256-v1")
+        assertThat(attributes.has("supported_capabilities")).isFalse()
+        assertThat(attributes.getJSONObject("source").getString("sdk_name")).isEqualTo("dd-sdk-android")
+        assertThat(attributes.getJSONObject("source").getString("sdk_version")).isEqualTo(context.sdkVersion)
+    }
+
+    @Test
+    fun `M omit encoding capability W create() { bridge sources }`(
+        @Forgery fakeEvaluationContext: EvaluationContext
+    ) {
+        for (source in listOf("react-native", "flutter", "unknown")) {
+            // Given
+            val context = fakeDatadogContext.copy(source = source)
+
+            // When
+            val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context, fakeDiagnostics))
+            val buffer = Buffer()
+            checkNotNull(request.body).writeTo(buffer)
+            val attributes = JSONObject(buffer.readUtf8()).getJSONObject("data").getJSONObject("attributes")
+
+            // Then
+            assertThat(attributes.has("supported_capabilities")).isFalse()
+            assertThat(request.header("X-DD-FEATURE-FLAGS-CAPABILITIES")).isNull()
+            assertThat(attributes.getJSONObject("source").getString("sdk_name")).isEqualTo(source)
+            assertThat(attributes.getJSONObject("source").getString("sdk_version")).isEqualTo(context.sdkVersion)
+        }
+    }
 
     @Test
     fun `M create valid request W create() { all fields present }`(
@@ -78,14 +155,14 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         )
 
         // When
-        val request = testedFactory.create(context, fakeDatadogContext)
+        val request = testedFactory.create(context, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         checkNotNull(request)
         assertThat(request.url.toString()).isEqualTo("https://preview.ff-cdn.datadoghq.com/precompute-assignments")
         assertThat(request.method).isEqualTo("POST")
         assertThat(request.header("dd-client-token")).isEqualTo(fakeDatadogContext.clientToken)
-        assertThat(request.header("dd-application-id")).isEqualTo(fakeRumApplicationId.toString())
+        assertThat(request.header("dd-application-id")).isEqualTo(fakeRumContext.applicationId)
         assertThat(request.header("Content-Type")).isEqualTo("application/vnd.api+json")
     }
 
@@ -105,7 +182,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         )
 
         // When
-        val request = testedFactory.create(context, fakeDatadogContext)
+        val request = testedFactory.create(context, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         checkNotNull(request)
@@ -127,7 +204,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         )
 
         // When
-        val request = testedFactory.create(context, fakeDatadogContext)
+        val request = testedFactory.create(context, fakeDatadogContext, fakeDiagnostics)
 
         checkNotNull(request)
         assertThat(request.url.toString()).isEqualTo(fakeCustomEndpoint)
@@ -139,56 +216,30 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
 
     @Test
     fun `M create correct JSON body W create() { with attributes }`(
-        @StringForgery fakeTargetingKey: String
+        @StringForgery fakeTargetingKey: String,
+        forge: Forge
     ) {
         // Given
-        val context = EvaluationContext(
-            targetingKey = fakeTargetingKey,
-            attributes = mapOf(
-                "userId" to "user123",
-                "plan" to "premium",
-                "age" to "25"
-            )
-        )
+        val fakeAttributes = forge.aMap(size = forge.anInt(min = 1, max = 5)) {
+            anAlphabeticalString() to anAlphabeticalString()
+        }
+        val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
         // When
-        val request = testedFactory.create(context, fakeDatadogContext)
+        val request = testedFactory.create(fakeContext, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         checkNotNull(request)
-        val bodyString = extractRequestBodyAsString(request)
-        val bodyJson = JSONObject(bodyString)
-
-        // Validate top-level structure
-        assertThat(bodyJson.has("data")).isTrue()
-        val data = bodyJson.getJSONObject("data")
-        assertThat(data.getString("type")).isEqualTo("precompute-assignments-request")
-
-        // Validate attributes structure
-        val attributes = data.getJSONObject("attributes")
-        assertThat(attributes.has("env")).isTrue()
-        assertThat(attributes.has("source")).isTrue()
-        assertThat(attributes.has("subject")).isTrue()
-
-        // Validate subject
-        val subject = attributes.getJSONObject("subject")
-        assertThat(subject.getString("targeting_key")).isEqualTo(fakeTargetingKey)
-        assertThat(subject.has("targeting_attributes")).isTrue()
-
-        // Validate targeting attributes
-        val targetingAttributes = subject.getJSONObject("targeting_attributes")
-        assertThat(targetingAttributes.getString("userId")).isEqualTo("user123")
-        assertThat(targetingAttributes.getString("plan")).isEqualTo("premium")
-        assertThat(targetingAttributes.getString("age")).isEqualTo("25")
-
-        // Validate env
-        val env = attributes.getJSONObject("env")
-        assertThat(env.getString("dd_env")).isEqualTo(fakeDatadogContext.env)
-
-        // Validate source
-        val source = attributes.getJSONObject("source")
-        assertThat(source.getString("sdk_name")).isEqualTo("dd-sdk-android")
-        assertThat(source.getString("sdk_version")).isEqualTo(fakeDatadogContext.sdkVersion)
+        val bodyJson = JsonParser.parseString(extractRequestBodyAsString(request)).asJsonObject
+        assertThat(bodyJson.keySet()).containsExactlyInAnyOrder("data", "diagnostics")
+        assertThat(bodyJson.getAsJsonObject("data").get("type").asString)
+            .isEqualTo("precompute-assignments-request")
+        val attributes = PrecomputedAssignmentsRequest.fromJsonObject(bodyJson).data.attributes
+        assertThat(attributes.subject.targetingKey).isEqualTo(fakeContext.targetingKey)
+        assertThat(attributes.subject.targetingAttributes.additionalProperties).isEqualTo(fakeAttributes)
+        assertThat(attributes.env.ddEnv).isEqualTo(fakeDatadogContext.env)
+        assertThat(attributes.source.sdkName).isEqualTo(fakeDatadogContext.source)
+        assertThat(attributes.source.sdkVersion).isEqualTo(fakeDatadogContext.sdkVersion)
     }
 
     @Test
@@ -202,7 +253,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         )
 
         // When
-        val request = testedFactory.create(context, fakeDatadogContext)
+        val request = testedFactory.create(context, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         checkNotNull(request)
@@ -218,44 +269,52 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         assertThat(targetingAttributes.length()).isEqualTo(0)
     }
 
-    @Test
-    fun `M handle various attributes W create() { multiple string attributes }`(
-        @StringForgery fakeTargetingKey: String
-    ) {
-        // Given
-        val context = EvaluationContext(
-            targetingKey = fakeTargetingKey,
-            attributes = mapOf(
-                "attr1" to "value1",
-                "attr2" to "value2",
-                "attr3" to "value3",
-                "attr4" to "value4"
-            )
-        )
-
-        // When
-        val request = testedFactory.create(context, fakeDatadogContext)
-
-        // Then
-        checkNotNull(request)
-        val bodyString = extractRequestBodyAsString(request)
-        val bodyJson = JSONObject(bodyString)
-
-        val targetingAttributes = bodyJson
-            .getJSONObject("data")
-            .getJSONObject("attributes")
-            .getJSONObject("subject")
-            .getJSONObject("targeting_attributes")
-
-        assertThat(targetingAttributes.getString("attr1")).isEqualTo("value1")
-        assertThat(targetingAttributes.getString("attr2")).isEqualTo("value2")
-        assertThat(targetingAttributes.getString("attr3")).isEqualTo("value3")
-        assertThat(targetingAttributes.getString("attr4")).isEqualTo("value4")
-    }
-
     // endregion
 
     // region create() - Error cases
+
+    @Test
+    fun `M omit null attribute keys W create() { null attribute key from Java }`(
+        @StringForgery fakeTargetingKey: String,
+        @StringForgery fakeValue: String
+    ) {
+        // Given
+        @Suppress("UNCHECKED_CAST")
+        val fakeAttributes = mapOf(null to fakeValue, fakeTargetingKey to fakeValue) as Map<String, String>
+        val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
+
+        // When
+        val request = testedFactory.create(fakeContext, fakeDatadogContext, fakeDiagnostics)
+
+        // Then
+        val json = JSONObject(extractRequestBodyAsString(checkNotNull(request)))
+            .getJSONObject("data").getJSONObject("attributes")
+            .getJSONObject("subject").getJSONObject("targeting_attributes")
+        assertThat(json.length()).isEqualTo(1)
+        assertThat(json.getString(fakeTargetingKey)).isEqualTo(fakeValue)
+    }
+
+    @Test
+    fun `M omit null attribute values W create() { null attribute value from Java }`(
+        @StringForgery fakeTargetingKey: String,
+        @StringForgery fakeKey: String,
+        @StringForgery fakeValue: String
+    ) {
+        // Given
+        @Suppress("UNCHECKED_CAST")
+        val fakeAttributes = mapOf(fakeKey to null, "$fakeKey-valid" to fakeValue) as Map<String, String>
+        val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
+
+        // When
+        val request = testedFactory.create(fakeContext, fakeDatadogContext, fakeDiagnostics)
+
+        // Then
+        val json = JSONObject(extractRequestBodyAsString(checkNotNull(request)))
+            .getJSONObject("data").getJSONObject("attributes")
+            .getJSONObject("subject").getJSONObject("targeting_attributes")
+        assertThat(json.has(fakeKey)).isFalse()
+        assertThat(json.getString("$fakeKey-valid")).isEqualTo(fakeValue)
+    }
 
     @ParameterizedTest
     @EnumSource(DatadogSite::class, names = ["US1_FED", "US2_FED"])
@@ -273,7 +332,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         )
 
         // When
-        val request = testedFactory.create(context, fakeDatadogContext)
+        val request = testedFactory.create(context, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         assertThat(request).isNull()

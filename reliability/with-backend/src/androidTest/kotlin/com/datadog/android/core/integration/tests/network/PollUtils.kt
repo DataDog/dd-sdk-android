@@ -8,10 +8,8 @@ package com.datadog.android.core.integration.tests.network
 
 import kotlinx.coroutines.delay
 import kotlin.time.Duration
-import kotlin.time.ExperimentalTime
 import kotlin.time.TimeSource
 
-@OptIn(ExperimentalTime::class)
 internal suspend fun <T : Any> poll(
     block: suspend () -> T,
     predicate: (T) -> Boolean,

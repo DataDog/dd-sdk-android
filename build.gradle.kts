@@ -55,7 +55,7 @@ allprojects {
     repositories.depotProxied(providers) {
         google()
         mavenCentral()
-        maven { setUrl(com.datadog.gradle.Dependencies.Repositories.Jitpack) }
+        maven { setUrl("https://jitpack.io") }
     }
 }
 

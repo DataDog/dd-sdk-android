@@ -6,6 +6,7 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.internal.tests.elmyr.RumContextForgeryFactory
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -20,6 +21,7 @@ internal class Configurator : BaseConfigurator() {
 
         forge.addFactory(LogEventForgeryFactory())
         forge.addFactory(LogsConfigurationForgeryFactory())
+        forge.addFactory(RumContextForgeryFactory())
 
         forge.useJvmFactories()
     }

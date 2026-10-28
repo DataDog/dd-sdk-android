@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.timeseries.factory
 
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.internal.timeseries.DataPoint
 
 internal interface EventFactory<T : Any, E : Any> {

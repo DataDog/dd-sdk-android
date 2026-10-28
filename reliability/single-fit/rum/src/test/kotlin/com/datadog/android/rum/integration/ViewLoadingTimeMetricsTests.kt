@@ -547,7 +547,7 @@ class ViewLoadingTimeMetricsTests {
     fun `M not provide the TTNS metric W initial resource dropped through mapper`() {
         // Given
         val fakeRumConfiguration = configurationBuilder()
-            .setResourceEventMapper({ null })
+            .setResourceEventMapper { null }
             .build()
         Rum.enable(fakeRumConfiguration, stubSdkCore)
         val monitor = GlobalRumMonitor.get(stubSdkCore)

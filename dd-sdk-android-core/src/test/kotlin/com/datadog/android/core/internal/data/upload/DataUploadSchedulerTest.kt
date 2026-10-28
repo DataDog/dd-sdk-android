@@ -163,7 +163,7 @@ internal class DataUploadSchedulerTest {
             whenever(
                 mockUploadSchedulerStrategy.getMsDelayUntilNextUpload(any(), any(), anyOrNull(), anyOrNull())
             ) doReturn RESCHEDULE_DELAY_MS
-            // The reschedule delay is short, so cycles fire in quick succession - a fixed-time
+            // The rescheduling delay is short, so cycles fire in quick succession - a fixed-time
             // window can't tell "exactly one ran" from "many ran". Count them instead.
             val firstCycle = CountDownLatch(1)
             val cycleCount = AtomicInteger(0)
