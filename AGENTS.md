@@ -1,6 +1,6 @@
 # Start here
 
-Read the [contributor guide](CONTRIBUTING.md) for setup and contribution procedures.
+Read and follow all guidance in [CONTRIBUTING.md](CONTRIBUTING.md).
 Use the [documentation map](docs/README.md) to select current SDK guidance and
 Foundation validation commands. Follow the module rules and validation tasks below.
 
@@ -272,6 +272,17 @@ To inspect the events the SDK emits from the sample app, use the `android-sdk-ev
 - Keep PRs focused. Don't include unrelated refactors, formatting churn, debug leftovers, stray files or "may be needed later" code (unused properties, schemas, files).
 - Don't edit `CHANGELOG.md` in feature PRs. It is updated only in release preparation PRs.
 - When preparing a release changelog: tags reflect customer impact, not change size. Internal-only changes are `[MAINTENANCE]`, not `[IMPROVEMENT]`. Follow the existing entry format: `* [TAG] Description. See [#N](link)`.
+
+## Handoff to human review
+
+Apply the existing `ready-for-human-review` label when all agentic review feedback
+has been addressed or explicitly dispositioned with evidence, each feedback item
+has a posted reply, and all associated review threads are resolved.
+
+- Re-fetch the current PR head, agentic feedback, and thread resolution state immediately before labelling. Draft replies, outdated threads, a clean bot summary, or local fixes alone do not satisfy this condition.
+- Do not apply the label while any agentic feedback remains pending, unanswered, or unresolved. Do not resolve feedback merely to satisfy the condition.
+- Applying the label once these conditions are met does not require separate confirmation. This instruction does not independently authorise posting replies, resolving threads, pushing, or merging; follow the applicable approval requirements for those actions.
+- Carry this rule into delegated PR work and PR automations.
 
 # Dogfooding Branch
 

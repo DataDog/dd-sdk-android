@@ -181,6 +181,21 @@ Make sure that your code is clean and readable, that your commits are small and
 atomic, with a proper commit message. We tend to use 
 [gitmoji](https://gitmoji.carloscuesta.me/), but this is not mandatory.
 
+### Handoff to human review
+
+Before applying the `ready-for-human-review` label, address all agentic review
+feedback or explain with evidence why a suggestion does not apply. Reply to each
+feedback item and resolve its associated review thread, including outdated threads.
+Check the latest PR revision, feedback, and thread status before applying the label;
+local fixes, draft replies, or a clean bot summary alone are not sufficient.
+
+Apply the existing label once these conditions are met so reviewers know it is
+their turn. If you do not have permission to label the PR, ask a maintainer to
+apply it. Do not resolve un-addressed feedback solely to qualify for the label.
+
+The label indicates that agentic feedback has been addressed. It does not replace
+human approval or required CI and merge checks.
+
 ## Coding Conventions
 
 Our repository uses Kotlin, as it is now the recommended language for Android.
