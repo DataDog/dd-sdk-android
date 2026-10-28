@@ -627,6 +627,7 @@ datadog:
       - "kotlin.collections.MutableList.add(kotlin.Int, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe)"
       - "kotlin.collections.MutableList.add(kotlin.Int, com.datadog.android.sessionreplay.model.MobileSegment.Wireframe.ShapeWireframe)"
       - "kotlin.collections.MutableList.add(kotlin.String)"
+      - "kotlin.collections.MutableList.add(kotlin.Function0)"
       - "kotlin.collections.MutableList.add(kotlin.Function1)"
       - "kotlin.collections.MutableList.addAll(kotlin.collections.Collection)"
       - "kotlin.collections.MutableList.any(kotlin.Function1)"

@@ -200,11 +200,7 @@ internal class ProfilingFeature(
             }
         }
 
-        onOomExecutor {
-            // A held RUM error announced before this feature was registered is announced again.
-            sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(ProfilerEvent.OomProfilingReady)
-            uploadPendingOomProfile()
-        }
+        startOomProfileHandshake()
     }
 
     override fun onStop() {
@@ -545,6 +541,14 @@ internal class ProfilingFeature(
     private fun isSessionQuotaDenied(sessionId: String): Boolean {
         return synchronized(quotaSessionLock) {
             sessionId == lastSeenRumSessionId && lastQuotaResult?.decision == QuotaResult.Decision.DENIED
+        }
+    }
+
+    private fun startOomProfileHandshake() {
+        onOomExecutor {
+            // A held RUM error announced before this feature was registered is announced again.
+            sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(ProfilerEvent.OomProfilingReady)
+            uploadPendingOomProfile()
         }
     }
 

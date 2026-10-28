@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit
  * Holds a single fatal OOM error on disk until the profiling feature reports whether its OOM
  * profile was written, so that the error's profiling status matches exactly.
  *
- * Every state change is decided under [lock] and enqueued to the data store in that same order;
+ * Every state change is decided under the store's lock and enqueued to the data store in that same order;
  * its visible effect (granting the attach, acknowledging the outcome, writing the error) only
  * happens once the store reports it persisted. A terminal state is persisted before the error is
  * written, so a reload never reopens the attachment of an error that may already be sent.
@@ -187,7 +187,7 @@ internal class PendingOomErrorStore(
     }
 
     /**
-     * Must be called under [lock]: the new state is published and enqueued to the store together,
+     * Must be called under the lock: the new state is published and enqueued to the store together,
      * so that store writes keep the order of the decisions. A terminal state is written once
      * persisted.
      */
@@ -283,6 +283,8 @@ internal class PendingOomErrorStore(
     }
 
     /**
+     * @param event the held error, as built at crash time.
+     * @param state where the attach handshake stands.
      * @param isPersisted whether [state] is known to be on disk; only meaningful in memory.
      */
     internal data class PendingOomError(
