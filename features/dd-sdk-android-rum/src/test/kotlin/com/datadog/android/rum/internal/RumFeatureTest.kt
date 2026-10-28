@@ -22,6 +22,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnomalyDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -1987,6 +1988,32 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.initialized).isFalse()
+    }
+
+    @Test
+    fun `M handle OOM profile messages off the sender's thread W onReceive()`(
+        @StringForgery fakeErrorId: String
+    ) {
+        // Given
+        val mockHandler: Handler = mock()
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter },
+            handler = mockHandler
+        )
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.onReceive(ProfilerEvent.OomProfileAttachRequest(fakeErrorId))
+        testedFeature.onReceive(
+            ProfilerEvent.OomProfileResolution(fakeErrorId, ProfilerEvent.OomProfileResolution.Outcome.ATTACHED)
+        )
+        testedFeature.onReceive(ProfilerEvent.OomProfilingReady)
+
+        // Then
+        verify(mockHandler, times(3)).post(any())
     }
 
     @Test
