@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
+import com.datadog.android.flags.internal.selection.FlagSelectionError
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.utils.verifyLog
@@ -31,11 +32,10 @@ import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -144,16 +144,21 @@ internal class FlagsFeatureTest {
         // Then
         assertThat(feature.flagSelection).describedAs(description).isNull()
         assertThat(feature.precomputedRequestFactory.sendsFlagSelection).describedAs(description).isFalse()
-        val messages = argumentCaptor<() -> String>()
-        verify(mockInternalLogger, atLeast(0)).log(
-            any<InternalLogger.Level>(),
-            any<InternalLogger.Target>(),
-            messages.capture(),
-            anyOrNull(),
-            any(),
-            anyOrNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            { "flagSelection" in it },
+            mode = never()
         )
-        assertThat(messages.allValues.map { it() }).noneMatch { "flagSelection" in it || "Flag selection" in it }
+        FlagSelectionError.entries.forEach {
+            mockInternalLogger.verifyLog(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.TELEMETRY,
+                "Flag selection dropped",
+                mode = never(),
+                additionalProperties = mapOf("reason" to it.reason)
+            )
+        }
     }
 
     @Test
