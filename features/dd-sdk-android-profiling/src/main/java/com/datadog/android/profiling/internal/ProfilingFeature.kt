@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 @OptIn(ExperimentalProfilingApi::class)
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 internal class ProfilingFeature(
     private val sdkCore: FeatureSdkCore,
     private val configuration: ProfilingConfiguration,
@@ -567,6 +567,7 @@ internal class ProfilingFeature(
      * needed to describe it were persisted, because the process that captured it had no memory to
      * spare. It is written only once RUM has granted it, so that the error's profiling status matches.
      */
+    @Suppress("ReturnCount")
     private fun uploadPendingOomProfile() {
         val pending = ProfilingStorage.getPendingOomProfile(appContext) ?: return
         if (currentOutcomeMarker()?.rumErrorId == pending.rumErrorId) {
@@ -720,6 +721,7 @@ internal class ProfilingFeature(
     /**
      * The outcome marker, or `null` once it is older than RUM keeps a reserved error waiting for it.
      */
+    @Suppress("ReturnCount")
     private fun currentOutcomeMarker(): OomProfileOutcomeMarker? {
         val marker = ProfilingStorage.getOomProfileOutcome(appContext) ?: return null
         val ageMs = sdkCore.timeProvider.getDeviceTimestampMillis() - marker.createdAtMs

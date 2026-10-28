@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain
 
 import android.os.Handler
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
@@ -82,8 +83,11 @@ internal class PendingOomErrorStore(
      * Holds [event] instead of writing it. Called from the crash write scope: an error held before
      * (crash loop) is written first through [batchWriter], as nothing can be attached to it any more.
      *
+     * @param event the fatal OOM error to hold.
      * @param attachedErrorId ID of the error whose OOM profile profiling reports as written.
+     * @param batchWriter the crash write scope's batch writer.
      */
+    @WorkerThread
     fun hold(event: ErrorEvent, attachedErrorId: String?, batchWriter: EventBatchWriter) {
         val newRecord = PendingOomError(event, State.PENDING, sdkCore.timeProvider.getDeviceTimestampMillis())
         val previous = synchronized(lock) {

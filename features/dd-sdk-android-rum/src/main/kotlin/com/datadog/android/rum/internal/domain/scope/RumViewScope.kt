@@ -922,12 +922,9 @@ internal open class RumViewScope(
         }
 
         // A fatal OOM is held until the outcome of its OOM profile is known, when one may follow.
-        val pendingOomErrorStore = if (
-            isFatal &&
-            event.throwable is OutOfMemoryError &&
-            datadogContext.isProfilingOomTriggerActive() &&
+        val mayGetOomProfile = datadogContext.isProfilingOomTriggerActive() &&
             datadogContext.resolveProfilingQuotaReason(sessionId) == null
-        ) {
+        val pendingOomErrorStore = if (isFatal && event.throwable is OutOfMemoryError && mayGetOomProfile) {
             sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.unwrap<RumFeature>()?.pendingOomErrorStore
         } else {
             null

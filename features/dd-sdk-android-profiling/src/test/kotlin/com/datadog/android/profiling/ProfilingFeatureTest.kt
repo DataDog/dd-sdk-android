@@ -3218,15 +3218,6 @@ internal class ProfilingFeatureTest {
         whenever(mockSharedPreferencesStorage.getString(eq(key), anyOrNull())) doReturn value
     }
 
-    private fun assertUploadedProfile(actual: PerfettoResult, expected: PendingOomProfile) {
-        assertThat(actual.start).isEqualTo(expected.startMs)
-        assertThat(actual.end).isEqualTo(expected.endMs)
-        assertThat(actual.startReason).isEqualTo(ProfilingStartReason.OUT_OF_MEMORY)
-        assertThat(actual.resultFilePath).isEqualTo(expected.resultFilePath)
-        assertThat(actual.profileTypes).containsExactly(ProfileType.HEAP_HISTOGRAM)
-        assertThat(actual.bootNtpOffsetNs).isEqualTo(expected.bootNtpOffsetNs)
-    }
-
     private fun runSchedulerExecutorInline() {
         doAnswer { it.getArgument<Runnable>(0).run() }
             .whenever(mockSchedulerExecutor).execute(any())

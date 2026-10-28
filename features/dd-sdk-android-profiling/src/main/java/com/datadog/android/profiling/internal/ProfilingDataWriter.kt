@@ -65,6 +65,7 @@ internal class ProfilingDataWriter(
         }
     }
 
+    @Suppress("LongMethod")
     override fun writeTriggerProfile(
         perfettoResult: PerfettoResult,
         rumErrorId: String,
