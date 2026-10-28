@@ -195,6 +195,38 @@ internal class PendingOomErrorStoreTest {
         assertThat(pendingStoreWrites).isEmpty()
     }
 
+    @Test
+    fun `M not ack duplicate W onResolution() twice {first outcome still being persisted}`() {
+        // Given
+        load(PendingOomError(fakeEvent, State.RESERVED))
+        testedStore.onResolution(errorId, Outcome.ATTACHED)
+
+        // When
+        testedStore.onResolution(errorId, Outcome.ATTACHED)
+
+        // Then
+        verify(mockProfilingScope, never()).sendEvent(isA<ProfilerEvent.RumOomProfileResolutionAck>())
+        completeStoreWrites(isSuccessful = true)
+        verify(mockProfilingScope).sendEvent(ProfilerEvent.RumOomProfileResolutionAck(errorId))
+    }
+
+    @Test
+    fun `M never ack and stay reserved W restart {duplicate outcome, first persistence fails}`() {
+        // Given
+        load(PendingOomError(fakeEvent, State.RESERVED))
+        testedStore.onResolution(errorId, Outcome.ATTACHED)
+        testedStore.onResolution(errorId, Outcome.ATTACHED)
+
+        // When
+        completeStoreWrites(isSuccessful = false)
+        restart()
+
+        // Then
+        verify(mockProfilingScope, never()).sendEvent(isA<ProfilerEvent.RumOomProfileResolutionAck>())
+        verify(mockProfilingScope).sendEvent(ProfilerEvent.RumHeldOomErrorEvent(errorId))
+        assertThat(storedValue?.state).isEqualTo(State.RESERVED)
+    }
+
     // endregion
 
     // region persistence failures

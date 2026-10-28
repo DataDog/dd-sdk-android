@@ -2683,7 +2683,7 @@ internal class ProfilingFeatureTest {
         // Then
         val pendingProfileCaptor = argumentCaptor<String>()
         verify(mockSharedPreferencesStorage).putString(
-            eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+            eq(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakeInstanceName)),
             pendingProfileCaptor.capture(),
             eq(true)
         )
@@ -2718,7 +2718,7 @@ internal class ProfilingFeatureTest {
         // Then
         val gatingEventCaptor = argumentCaptor<String>()
         verify(mockSharedPreferencesStorage).putString(
-            eq(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT),
+            eq(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, fakeInstanceName)),
             gatingEventCaptor.capture(),
             eq(true)
         )
@@ -2767,7 +2767,9 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, true)
+        verify(
+            mockSharedPreferencesStorage
+        ).remove(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, fakeInstanceName), true)
     }
 
     @Test
@@ -2789,8 +2791,14 @@ internal class ProfilingFeatureTest {
             rumErrorId = fakeDeferredGatingEvent.rumErrorId,
             rumContext = fakeDeferredGatingEvent.rumContext
         )
-        stubStoredString(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, fakeDeferredGatingEvent.toJson())
-        stubStoredString(ProfilingStorage.KEY_PENDING_OOM_PROFILE, expectedPendingProfile.toJson())
+        stubStoredString(
+            ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, fakeInstanceName),
+            fakeDeferredGatingEvent.toJson()
+        )
+        stubStoredString(
+            ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakeInstanceName),
+            expectedPendingProfile.toJson()
+        )
         whenever(mockTimeProvider.getServerTimestampMillis()) doReturn
             fakeGatingTimestampMs + PendingTriggerProfileStorage.PENDING_OOM_PROFILE_MAX_AGE_MS - fakeAgeMarginMs
         whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeCaptureMs
@@ -2803,10 +2811,12 @@ internal class ProfilingFeatureTest {
         testedFeature.onOutOfMemoryDetected(fakeOomResult)
 
         // Then
-        verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, true)
+        verify(
+            mockSharedPreferencesStorage
+        ).remove(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, fakeInstanceName), true)
         val pendingProfileCaptor = argumentCaptor<String>()
         verify(mockSharedPreferencesStorage).putString(
-            eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+            eq(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakeInstanceName)),
             pendingProfileCaptor.capture(),
             eq(true)
         )
@@ -2825,7 +2835,7 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         stubStoredString(
-            ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT,
+            ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, fakeInstanceName),
             fakeGatingEvent.copy(timestampMs = fakeGatingTimestampMs).toJson()
         )
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
@@ -2840,9 +2850,11 @@ internal class ProfilingFeatureTest {
         )
 
         // Then
-        verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, true)
+        verify(
+            mockSharedPreferencesStorage
+        ).remove(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, fakeInstanceName), true)
         verify(mockSharedPreferencesStorage, never()).putString(
-            eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+            eq(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakeInstanceName)),
             any(),
             any()
         )
@@ -2857,7 +2869,10 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         val fakePendingProfile = fakePendingOomProfile.copy(startMs = fakeStartMs)
-        stubStoredString(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakePendingProfile.toJson())
+        stubStoredString(
+            ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakeInstanceName),
+            fakePendingProfile.toJson()
+        )
         whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeStartMs + fakeAgeMs
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
 
@@ -2869,7 +2884,10 @@ internal class ProfilingFeatureTest {
         // Then
         verify(mockRumFeatureScope).sendEvent(ProfilerEvent.OomProfileAttachRequest(fakePendingProfile.rumErrorId))
         verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any(), any())
-        verify(mockSharedPreferencesStorage, never()).remove(ProfilingStorage.KEY_PENDING_OOM_PROFILE, true)
+        verify(
+            mockSharedPreferencesStorage,
+            never()
+        ).remove(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakeInstanceName), true)
     }
 
     @Test
@@ -2887,7 +2905,10 @@ internal class ProfilingFeatureTest {
             resultFilePath = traceFile.absolutePath,
             startMs = fakeStartMs
         )
-        stubStoredString(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakePendingProfile.toJson())
+        stubStoredString(
+            ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakeInstanceName),
+            fakePendingProfile.toJson()
+        )
         whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn
             fakeStartMs + PendingTriggerProfileStorage.PENDING_OOM_PROFILE_MAX_AGE_MS + fakeExtraAgeMs
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
@@ -2899,7 +2920,9 @@ internal class ProfilingFeatureTest {
 
         // Then
         verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any(), any())
-        verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_PROFILE, true)
+        verify(
+            mockSharedPreferencesStorage
+        ).remove(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakeInstanceName), true)
         assertThat(traceFile.exists()).isFalse
     }
 
@@ -2929,12 +2952,12 @@ internal class ProfilingFeatureTest {
 
         // Then
         verify(mockSharedPreferencesStorage, never()).putString(
-            eq(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT),
+            eq(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, fakeInstanceName)),
             any(),
             any()
         )
         verify(mockSharedPreferencesStorage, never()).putString(
-            eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+            eq(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakeInstanceName)),
             any(),
             any()
         )
@@ -2950,7 +2973,10 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         val fakePendingProfile = fakePendingOomProfile.copy(startMs = fakeStartMs)
-        stubStoredString(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakePendingProfile.toJson())
+        stubStoredString(
+            ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakeInstanceName),
+            fakePendingProfile.toJson()
+        )
         whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn fakeStartMs + fakeAgeMs
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
 
@@ -2968,7 +2994,7 @@ internal class ProfilingFeatureTest {
     @Test
     fun `M not upload anything W onInitialize() {no pending profile}`() {
         // Given
-        stubStoredString(ProfilingStorage.KEY_PENDING_OOM_PROFILE, null)
+        stubStoredString(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakeInstanceName), null)
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
 
         // When
@@ -3079,8 +3105,13 @@ internal class ProfilingFeatureTest {
 
         // Then
         verify(mockSharedPreferencesStorage).commitStrings(
-            eq(mapOf(ProfilingStorage.KEY_OOM_PROFILE_OUTCOME to inFlightMarker(pending).toJson())),
-            eq(setOf(ProfilingStorage.KEY_PENDING_OOM_PROFILE))
+            eq(
+                mapOf(
+                    ProfilingStorage.oomKey(ProfilingStorage.KEY_OOM_PROFILE_OUTCOME, fakeInstanceName) to
+                        inFlightMarker(pending).toJson()
+                )
+            ),
+            eq(setOf(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakeInstanceName)))
         )
         val onWritten = capturedOnWritten(pending)
         verify(mockRumFeatureScope, never()).sendEvent(isA<ProfilerEvent.OomProfileResolution>())
@@ -3108,7 +3139,9 @@ internal class ProfilingFeatureTest {
 
         // Then
         verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any(), any())
-        assertThat(prefs[ProfilingStorage.KEY_PENDING_OOM_PROFILE]).isNotNull()
+        assertThat(
+            prefs[ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakeInstanceName)]
+        ).isNotNull()
         verify(mockRumFeatureScope, never()).sendEvent(isA<ProfilerEvent.OomProfileResolution>())
     }
 
@@ -3122,7 +3155,7 @@ internal class ProfilingFeatureTest {
         initWithMockWriter()
         testedFeature.onReceive(ProfilerEvent.RumOomProfileAttachReply(pending.rumErrorId, granted = true))
         val onWritten = capturedOnWritten(pending)
-        whenever(mockSharedPreferencesStorage.commitStrings(any(), any())) doReturn false
+        isFakeCommitSuccessful = false
 
         // When
         onWritten(true)
@@ -3172,7 +3205,7 @@ internal class ProfilingFeatureTest {
 
         // Then
         verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any(), any())
-        assertThat(prefs[ProfilingStorage.KEY_PENDING_OOM_PROFILE]).isNull()
+        assertThat(prefs[ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakeInstanceName)]).isNull()
         assertThat(traceFile.exists()).isFalse
     }
 
@@ -3244,7 +3277,8 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         val prefs = useFakePreferences()
-        prefs[ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT] = fakeGatingEvent.toJson()
+        prefs[ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, fakeInstanceName)] =
+            fakeGatingEvent.toJson()
         whenever(mockTimeProvider.getServerTimestampMillis()) doReturn fakeGatingEvent.timestampMs
         initWithMockWriter()
 
@@ -3262,25 +3296,159 @@ internal class ProfilingFeatureTest {
     ) {
         // Given
         val prefs = useFakePreferences()
-        prefs[ProfilingStorage.KEY_OOM_PROFILE_OUTCOME] =
+        prefs[ProfilingStorage.oomKey(ProfilingStorage.KEY_OOM_PROFILE_OUTCOME, fakeInstanceName)] =
             OomProfileOutcomeMarker(fakeErrorId, OomProfileOutcomeMarker.State.ATTACHED, null).toJson()
         initWithMockWriter()
 
         // When
         testedFeature.onReceive(ProfilerEvent.RumOomProfileResolutionAck(fakeOtherErrorId))
-        val isKeptForOtherAck = prefs.containsKey(ProfilingStorage.KEY_OOM_PROFILE_OUTCOME)
+        val isKeptForOtherAck = prefs.containsKey(
+            ProfilingStorage.oomKey(ProfilingStorage.KEY_OOM_PROFILE_OUTCOME, fakeInstanceName)
+        )
         testedFeature.onReceive(ProfilerEvent.RumOomProfileResolutionAck(fakeErrorId))
 
         // Then
         assertThat(isKeptForOtherAck).isTrue
-        assertThat(prefs).doesNotContainKey(ProfilingStorage.KEY_OOM_PROFILE_OUTCOME)
+        assertThat(
+            prefs
+        ).doesNotContainKey(ProfilingStorage.oomKey(ProfilingStorage.KEY_OOM_PROFILE_OUTCOME, fakeInstanceName))
     }
+
+    @Test
+    fun `M answer ATTACHED and recommit W RumHeldOomErrorEvent {ATTACHED commit failed, disk says IN_FLIGHT}`(
+        @Forgery fakePendingOomProfile: PendingOomProfile
+    ) {
+        // Given
+        val prefs = useFakePreferences()
+        val pending = storePendingProfile(prefs, fakePendingOomProfile)
+        initWithMockWriter()
+        testedFeature.onReceive(ProfilerEvent.RumOomProfileAttachReply(pending.rumErrorId, granted = true))
+        isFakeCommitSuccessful = false
+        capturedOnWritten(pending).invoke(true)
+        assertThat(storedMarker(prefs)?.state).isEqualTo(OomProfileOutcomeMarker.State.IN_FLIGHT)
+        clearInvocations(mockRumFeatureScope)
+        isFakeCommitSuccessful = true
+
+        // When
+        testedFeature.onReceive(ProfilerEvent.RumHeldOomErrorEvent(pending.rumErrorId))
+
+        // Then
+        verify(mockRumFeatureScope).sendEvent(ProfilerEvent.OomProfileResolution(pending.rumErrorId, Outcome.ATTACHED))
+        assertThat(storedMarker(prefs)?.state).isEqualTo(OomProfileOutcomeMarker.State.ATTACHED)
+
+        // When
+        clearInvocations(mockRumFeatureScope)
+        initWithMockWriter()
+        testedFeature.onReceive(ProfilerEvent.RumHeldOomErrorEvent(pending.rumErrorId))
+
+        // Then
+        verify(mockRumFeatureScope).sendEvent(ProfilerEvent.OomProfileResolution(pending.rumErrorId, Outcome.ATTACHED))
+    }
+
+    @Test
+    fun `M resolve abandoned write and delete its trace W onInitialize() {IN_FLIGHT marker, no RUM}`(
+        @StringForgery fakeErrorId: String,
+        @StringForgery fakeFileName: String,
+        @TempDir fakeTempDir: File
+    ) {
+        // Given
+        val prefs = useFakePreferences()
+        val traceFile = File(fakeTempDir, fakeFileName).apply { writeText(fakeFileName) }
+        prefs[markerKey()] = OomProfileOutcomeMarker(
+            fakeErrorId,
+            OomProfileOutcomeMarker.State.IN_FLIGHT,
+            traceFile.absolutePath
+        ).toJson()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
+
+        // When
+        initWithMockWriter()
+
+        // Then
+        assertThat(traceFile.exists()).isFalse
+        assertThat(storedMarker(prefs)).isEqualTo(
+            OomProfileOutcomeMarker(fakeErrorId, OomProfileOutcomeMarker.State.NOT_ATTACHED, null)
+        )
+    }
+
+    @Test
+    fun `M delete leftover trace and keep outcome W onInitialize() {ATTACHED marker still pointing at trace}`(
+        @StringForgery fakeErrorId: String,
+        @StringForgery fakeFileName: String,
+        @TempDir fakeTempDir: File
+    ) {
+        // Given
+        val prefs = useFakePreferences()
+        val traceFile = File(fakeTempDir, fakeFileName).apply { writeText(fakeFileName) }
+        prefs[markerKey()] = OomProfileOutcomeMarker(
+            fakeErrorId,
+            OomProfileOutcomeMarker.State.ATTACHED,
+            traceFile.absolutePath
+        ).toJson()
+
+        // When
+        initWithMockWriter()
+
+        // Then
+        assertThat(traceFile.exists()).isFalse
+        assertThat(storedMarker(prefs)).isEqualTo(
+            OomProfileOutcomeMarker(fakeErrorId, OomProfileOutcomeMarker.State.ATTACHED, null)
+        )
+    }
+
+    @Test
+    fun `M keep trace path in ATTACHED marker W profile written {before the writer deletes the trace}`(
+        @Forgery fakePendingOomProfile: PendingOomProfile
+    ) {
+        // Given
+        val prefs = useFakePreferences()
+        val pending = storePendingProfile(prefs, fakePendingOomProfile)
+        initWithMockWriter()
+        testedFeature.onReceive(ProfilerEvent.RumOomProfileAttachReply(pending.rumErrorId, granted = true))
+
+        // When
+        capturedOnWritten(pending).invoke(true)
+
+        // Then
+        assertThat(storedMarker(prefs)?.resultFilePath).isEqualTo(pending.resultFilePath)
+    }
+
+    @Test
+    fun `M recover its own outcome W sequential SDK instances sharing preferences`(
+        @Forgery fakePendingOomProfile: PendingOomProfile,
+        @StringForgery fakeOtherInstanceName: String,
+        @StringForgery fakeOtherErrorId: String
+    ) {
+        // Given
+        val prefs = useFakePreferences()
+        val pending = storePendingProfile(prefs, fakePendingOomProfile)
+        initWithMockWriter()
+        testedFeature.onReceive(ProfilerEvent.RumOomProfileAttachReply(pending.rumErrorId, granted = true))
+        capturedOnWritten(pending).invoke(true)
+
+        // When
+        whenever(mockSdkCore.name) doReturn fakeOtherInstanceName
+        initWithMockWriter()
+        testedFeature.onReceive(ProfilerEvent.RumHeldOomErrorEvent(fakeOtherErrorId))
+        whenever(mockSdkCore.name) doReturn fakeInstanceName
+        clearInvocations(mockRumFeatureScope)
+        initWithMockWriter()
+        testedFeature.onReceive(ProfilerEvent.RumHeldOomErrorEvent(pending.rumErrorId))
+
+        // Then
+        verify(mockRumFeatureScope).sendEvent(ProfilerEvent.OomProfileResolution(pending.rumErrorId, Outcome.ATTACHED))
+    }
+
+    private fun markerKey() = ProfilingStorage.oomKey(ProfilingStorage.KEY_OOM_PROFILE_OUTCOME, fakeInstanceName)
 
     /**
      * Backs the preferences with a map, so that what is committed is what is read back, as across a
      * process restart. Executors run inline.
      */
+    private var isFakeCommitSuccessful = true
+
     private fun useFakePreferences(isCommitSuccessful: Boolean = true): MutableMap<String, String> {
+        isFakeCommitSuccessful = isCommitSuccessful
         val prefs = mutableMapOf<String, String>()
         whenever(mockSharedPreferencesStorage.getString(any(), anyOrNull())) doAnswer {
             prefs[it.getArgument(0)] ?: it.getArgument(1)
@@ -3294,11 +3462,11 @@ internal class ProfilingFeatureTest {
             Unit
         }
         whenever(mockSharedPreferencesStorage.commitStrings(any(), any())) doAnswer {
-            if (isCommitSuccessful) {
+            if (isFakeCommitSuccessful) {
                 prefs.putAll(it.getArgument<Map<String, String>>(0))
                 it.getArgument<Set<String>>(1).forEach { key -> prefs.remove(key) }
             }
-            isCommitSuccessful
+            isFakeCommitSuccessful
         }
         runSchedulerExecutorInline()
         return prefs
@@ -3309,7 +3477,7 @@ internal class ProfilingFeatureTest {
         profile: PendingOomProfile
     ): PendingOomProfile {
         whenever(mockTimeProvider.getDeviceTimestampMillis()) doReturn profile.startMs
-        prefs[ProfilingStorage.KEY_PENDING_OOM_PROFILE] = profile.toJson()
+        prefs[ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, fakeInstanceName)] = profile.toJson()
         return profile
     }
 
@@ -3331,7 +3499,9 @@ internal class ProfilingFeatureTest {
     }
 
     private fun storedMarker(prefs: Map<String, String>): OomProfileOutcomeMarker? {
-        return prefs[ProfilingStorage.KEY_OOM_PROFILE_OUTCOME]?.let { OomProfileOutcomeMarker.fromJson(it) }
+        return prefs[ProfilingStorage.oomKey(ProfilingStorage.KEY_OOM_PROFILE_OUTCOME, fakeInstanceName)]?.let {
+            OomProfileOutcomeMarker.fromJson(it)
+        }
     }
 
     private fun initWithMockWriter() {

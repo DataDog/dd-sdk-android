@@ -234,6 +234,7 @@ internal class PendingTriggerProfilesTest {
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
         val buffer = PendingTriggerProfileStorage(
             appContext = mockContext,
+            namespace = FAKE_NAMESPACE,
             executor = mockExecutor,
             timeProvider = fixedTimeProvider(),
             internalLogger = mockInternalLogger,
@@ -411,13 +412,14 @@ internal class PendingTriggerProfilesTest {
         )
         whenever(
             mockSharedPreferencesStorage.getString(
-                eq(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT),
+                eq(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, FAKE_NAMESPACE)),
                 anyOrNull()
             )
         ) doReturn deferredGatingEvent.toJson()
         var deferredReadyCount = 0
         val buffer = PendingTriggerProfileStorage(
             appContext = mockContext,
+            namespace = FAKE_NAMESPACE,
             executor = mockExecutor,
             timeProvider = fixedTimeProvider(fakeNowMs),
             internalLogger = mockInternalLogger,
@@ -432,7 +434,7 @@ internal class PendingTriggerProfilesTest {
         // Then
         val pendingProfileCaptor = argumentCaptor<String>()
         verify(mockSharedPreferencesStorage).putString(
-            eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+            eq(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, FAKE_NAMESPACE)),
             pendingProfileCaptor.capture(),
             eq(true)
         )
@@ -455,7 +457,7 @@ internal class PendingTriggerProfilesTest {
 
         // Then
         verify(mockSharedPreferencesStorage, never()).putString(
-            eq(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT),
+            eq(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, FAKE_NAMESPACE)),
             any(),
             any()
         )
@@ -481,12 +483,14 @@ internal class PendingTriggerProfilesTest {
 
         // Then
         verify(mockSharedPreferencesStorage, never()).putString(
-            eq(ProfilingStorage.KEY_PENDING_OOM_PROFILE),
+            eq(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_PROFILE, FAKE_NAMESPACE)),
             any(),
             any()
         )
         assertThat(traceFile.exists()).isFalse
-        verify(mockSharedPreferencesStorage).remove(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, true)
+        verify(
+            mockSharedPreferencesStorage
+        ).remove(ProfilingStorage.oomKey(ProfilingStorage.KEY_PENDING_OOM_GATING_EVENT, FAKE_NAMESPACE), true)
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.DEBUG,
             target = InternalLogger.Target.USER,
@@ -582,6 +586,7 @@ internal class PendingTriggerProfilesTest {
         onMatch: (PerfettoResult, ProfilerEvent) -> Unit = { _, _ -> }
     ): PendingTriggerProfileStorage = PendingTriggerProfileStorage(
         appContext = mockContext,
+        namespace = FAKE_NAMESPACE,
         executor = mockExecutor,
         timeProvider = fixedTimeProvider(),
         internalLogger = mockInternalLogger,
@@ -592,6 +597,7 @@ internal class PendingTriggerProfilesTest {
         onMatch: (PerfettoResult, ProfilerEvent) -> Unit = { _, _ -> }
     ): PendingTriggerProfileStorage = PendingTriggerProfileStorage(
         appContext = mockContext,
+        namespace = FAKE_NAMESPACE,
         executor = mockExecutor,
         timeProvider = fixedTimeProvider(),
         internalLogger = mockInternalLogger,
@@ -610,4 +616,8 @@ internal class PendingTriggerProfilesTest {
     }
 
     // endregion
+
+    companion object {
+        private const val FAKE_NAMESPACE = "test-core"
+    }
 }
