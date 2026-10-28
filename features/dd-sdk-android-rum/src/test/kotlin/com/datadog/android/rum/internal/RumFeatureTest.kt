@@ -15,7 +15,9 @@ import android.content.Context
 import android.content.res.Resources
 import android.os.Handler
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
+import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
@@ -1995,14 +1997,8 @@ internal class RumFeatureTest {
         @StringForgery fakeErrorId: String
     ) {
         // Given
-        val mockHandler: Handler = mock()
-        testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
-            lateCrashReporterFactory = { mockLateCrashReporter },
-            handler = mockHandler
-        )
+        val mockRumScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
         testedFeature.onInitialize(appContext.mockInstance)
 
         // When
@@ -2013,7 +2009,7 @@ internal class RumFeatureTest {
         testedFeature.onReceive(ProfilerEvent.OomProfilingReady)
 
         // Then
-        verify(mockHandler, times(3)).post(any())
+        verify(mockRumScope, times(3)).withContext(any(), any())
     }
 
     @Test

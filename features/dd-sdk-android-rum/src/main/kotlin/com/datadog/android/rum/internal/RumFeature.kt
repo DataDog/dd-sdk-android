@@ -522,15 +522,15 @@ internal class RumFeature(
             is ProfilingAnrDetectedEvent -> handleProfilingAnrDetectedEvent(event)
             is ProfilingAnomalyDetectedEvent -> handleProfilingAnomalyDetectedEvent(event)
             // Off the sender's thread: the profiling feature may send these from its own executors.
-            is ProfilerEvent.OomProfileAttachRequest -> handler.post {
+            is ProfilerEvent.OomProfileAttachRequest -> onContextThread {
                 pendingOomErrorStore.onAttachRequest(event.rumErrorId)
             }
 
-            is ProfilerEvent.OomProfileResolution -> handler.post {
+            is ProfilerEvent.OomProfileResolution -> onContextThread {
                 pendingOomErrorStore.onResolution(event.rumErrorId, event.outcome)
             }
 
-            is ProfilerEvent.OomProfilingReady -> handler.post { pendingOomErrorStore.onProfilingReady() }
+            is ProfilerEvent.OomProfilingReady -> onContextThread { pendingOomErrorStore.onProfilingReady() }
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -544,6 +544,10 @@ internal class RumFeature(
     // endregion
 
     // region Internal
+    private fun onContextThread(block: () -> Unit) {
+        sdkCore.getFeature(name)?.withContext { block() }
+    }
+
     private fun handleFlagEvaluationEvent(event: RumFlagEvaluationMessage) {
         (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addFeatureFlagEvaluation(
             name = event.flagKey,
