@@ -759,6 +759,7 @@ internal class ProfilingFeature(
      * IN_FLIGHT marker was abandoned by a dead process, and any trace a marker still points at is
      * no longer needed. The trace is deleted before its path is dropped from the marker.
      */
+    @Suppress("ReturnCount")
     private fun cleanUpOomProfileWrites() {
         val marker = ProfilingStorage.getOomProfileOutcome(appContext, sdkCore.name) ?: return
         // A write of this process is never abandoned: it reports its own outcome.
