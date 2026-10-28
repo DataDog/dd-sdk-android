@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.net
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
 import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Call
 import okhttp3.Request
@@ -30,10 +31,10 @@ internal class PrecomputedAssignmentsDownloader(
     @WorkerThread
     override fun readPrecomputedFlags(
         context: EvaluationContext,
-        datadogContext: DatadogContext
+        datadogContext: DatadogContext,
+        diagnostics: Diagnostics
     ): PrecomputedAssignmentsResponse? {
-        val request = requestFactory.create(context, datadogContext) ?: return null
-
+        val request = requestFactory.create(context, datadogContext, diagnostics) ?: return null
         return executeDownloadRequest(request)
     }
 

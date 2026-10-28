@@ -14,7 +14,12 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.internal.FlagsStateManager
+import com.datadog.android.flags.internal.diagnostics.UUIDv7Generator
 import com.datadog.android.flags.internal.model.PrecomputedAssignments
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Fetch
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Sdk
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Trigger
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsResponse
@@ -27,6 +32,7 @@ import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 
 internal fun interface InitializationTimeoutScheduler {
     fun schedule(timeoutMs: Long, action: () -> Unit): () -> Unit
@@ -96,6 +102,8 @@ internal class EvaluationsManager(
     private val initializationTimeoutMs: Long?,
     private val initializationTimeoutScheduler: InitializationTimeoutScheduler
 ) {
+    private val instanceId = UUIDv7Generator.generate(sdkCore.timeProvider.getDeviceTimestampMillis()).toString()
+    private val fetchSequence = AtomicLong(0)
     private val didStartInitialization = AtomicBoolean(false)
     private val initializationTerminalLock = Any()
 
@@ -114,11 +122,24 @@ internal class EvaluationsManager(
      * @param callback Optional callback invoked when the context is set and the flags have been fetched successfully or not.
      * @param onFetchFinished Releases request state when the fetch terminates, not when initialization times out.
      */
+    @Suppress("LongMethod") // Keep logical diagnostics acceptance with the existing fetch lifecycle.
     fun updateEvaluationsForContext(
         context: EvaluationContext,
         callback: EvaluationContextCallback? = null,
         onFetchFinished: () -> Unit = {}
     ) {
+        val sequence = fetchSequence.incrementAndGet()
+        val diagnostics = Diagnostics(
+            Sdk(instanceId),
+            Fetch(
+                sequence,
+                if (sequence == 1L) {
+                    Trigger.INITIALIZATION
+                } else {
+                    Trigger.CONTEXT_CHANGE
+                }
+            )
+        )
         val matchingCachedAssignments = AtomicBoolean(false)
         val initializationCompletion = startInitializationTimeout(context, callback, matchingCachedAssignments) {
             flagStateManager.updateState(FlagsClientState.Reconciling)
@@ -149,7 +170,7 @@ internal class EvaluationsManager(
                 matchingCachedAssignments.set(
                     hadFlags && flagsRepository.getEvaluationContext() == context
                 )
-                val response = datadogContext?.let { assignmentsReader.readPrecomputedFlags(context, it) }
+                val response = datadogContext?.let { assignmentsReader.readPrecomputedFlags(context, it, diagnostics) }
                 val assignments = response?.let(::mapResponse)
                     ?.takeIf { it.obfuscation == null || supportsObfuscation }
                 if (assignments != null) {

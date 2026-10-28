@@ -127,6 +127,7 @@ internal fun ViewEvent.ViewEventSource.toViewUpdate() = when (this) {
     ViewEvent.ViewEventSource.ELECTRON -> ViewUpdateEvent.ViewUpdateEventSource.ELECTRON
     ViewEvent.ViewEventSource.CPP -> ViewUpdateEvent.ViewUpdateEventSource.CPP
     ViewEvent.ViewEventSource.MAUI -> ViewUpdateEvent.ViewUpdateEventSource.MAUI
+    ViewEvent.ViewEventSource.UNREAL -> ViewUpdateEvent.ViewUpdateEventSource.UNREAL
 }
 
 internal fun ViewEvent.ViewEventSessionType.toViewUpdate() = when (this) {

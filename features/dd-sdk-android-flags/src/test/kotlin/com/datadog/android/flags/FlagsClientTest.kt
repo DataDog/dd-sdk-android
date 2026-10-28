@@ -143,6 +143,7 @@ internal class FlagsClientTest {
         val mockDataStore = mock<DataStoreHandler>()
         val mockFeatureScope = mock<FeatureScope>()
         whenever(mockCore.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockCore.timeProvider).thenReturn(mock())
         whenever(mockCore.createSingleThreadExecutorService(any())).thenReturn(mock<ExecutorService>())
         whenever(mockCore.createOkHttpCallFactory(any())).thenReturn(mock<Call.Factory>())
         whenever(mockFeatureScope.dataStore).thenReturn(mockDataStore)

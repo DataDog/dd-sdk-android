@@ -1,0 +1,140 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "PrecomputedAssignmentsRequest",
+  "type": "object",
+  "properties": {
+    "data": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "precompute-assignments-request"
+        },
+        "attributes": {
+          "type": "object",
+          "properties": {
+            "env": {
+              "type": "object",
+              "properties": {
+                "dd_env": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "dd_env"
+              ]
+            },
+            "source": {
+              "description": "SDK identity for the precomputed assignments request, containing the SDK name and version. Distinct from the scalar SDK source tag used by RUM and other SDK features.",
+              "type": "object",
+              "properties": {
+                "sdk_name": {
+                  "type": "string"
+                },
+                "sdk_version": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sdk_name",
+                "sdk_version"
+              ]
+            },
+            "subject": {
+              "type": "object",
+              "properties": {
+                "targeting_key": {
+                  "type": "string"
+                },
+                "targeting_attributes": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "targeting_key",
+                "targeting_attributes"
+              ]
+            },
+            "flag_selection": {
+              "description": "Canonical flag selection. Sent only when the application configures a valid selection.",
+              "type": "object",
+              "properties": {
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "key_patterns": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "tags",
+                "key_patterns"
+              ]
+            }
+          },
+          "required": [
+            "env",
+            "source",
+            "subject"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "attributes"
+      ]
+    },
+    "diagnostics": {
+      "type": "object",
+      "properties": {
+        "sdk": {
+          "type": "object",
+          "properties": {
+            "instance_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "instance_id"
+          ]
+        },
+        "fetch": {
+          "type": "object",
+          "properties": {
+            "sequence": {
+              "type": "integer"
+            },
+            "trigger": {
+              "type": "string",
+              "enum": [
+                "initialization",
+                "context_change"
+              ]
+            }
+          },
+          "required": [
+            "sequence",
+            "trigger"
+          ]
+        }
+      },
+      "required": [
+        "sdk",
+        "fetch"
+      ]
+    }
+  },
+  "required": [
+    "data",
+    "diagnostics"
+  ]
+}

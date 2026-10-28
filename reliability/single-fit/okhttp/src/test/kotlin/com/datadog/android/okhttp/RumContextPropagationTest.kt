@@ -89,9 +89,10 @@ class RumContextPropagationTest {
         forge: Forge
     ) {
         // Given
+        val rumContext = fakeRumContext.copy(sessionId = UUID(0, forge.anElementFrom(SAMPLED_IDS)).toString())
         val accountInfo = forge.getForgery<AccountInfo>()
         val userInfo = forge.getForgery<UserInfo>()
-        val datadogContext = forge.aDatadogContextWithRumContext(fakeRumContext, accountInfo, userInfo)
+        val datadogContext = forge.aDatadogContextWithRumContext(rumContext, accountInfo, userInfo)
         stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
         testedClient = prepareClient(stubSdkCore)
@@ -106,7 +107,7 @@ class RumContextPropagationTest {
                 listOfNotNull(
                     "account.id=${accountInfo.id}",
                     userInfo.id?.let { "user.id=$it" },
-                    "session.id=${fakeRumContext.sessionId}"
+                    "session.id=${rumContext.sessionId}"
                 )
             )
         }

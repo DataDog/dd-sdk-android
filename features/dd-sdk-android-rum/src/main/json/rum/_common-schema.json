@@ -103,7 +103,8 @@
         "kotlin-multiplatform",
         "electron",
         "cpp",
-        "maui"
+        "maui",
+        "unreal"
       ],
       "readOnly": true
     },
