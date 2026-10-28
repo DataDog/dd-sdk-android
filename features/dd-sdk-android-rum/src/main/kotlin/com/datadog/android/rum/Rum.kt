@@ -85,6 +85,7 @@ object Rum {
         sdkCore.registerFeature(rumFeature)
 
         sdkCore.getFeature(rumFeature.name)?.dataStore?.let {
+            rumFeature.pendingOomErrorStore.start(it)
             RumAnonymousIdentifierManager(it, sdkCore).manageAnonymousId(
                 effectiveConfiguration.featureConfiguration.trackAnonymousUser
             )

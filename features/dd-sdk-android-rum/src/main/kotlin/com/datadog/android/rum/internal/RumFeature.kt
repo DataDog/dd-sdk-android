@@ -39,6 +39,7 @@ import com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnomalyDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingThreadDump
@@ -61,6 +62,7 @@ import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.PendingOomErrorStore
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
@@ -166,6 +168,7 @@ internal class RumFeature(
 ) : StorageBackedFeature, FeatureEventReceiver, HeatmapIdentifierRegistryProvider {
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
+    internal val pendingOomErrorStore = PendingOomErrorStore(sdkCore, handler) { dataWriter }
     internal val initialized = AtomicBoolean(false)
 
     internal var sampleRate: Float = 0f
@@ -420,6 +423,7 @@ internal class RumFeature(
 
     override fun onStop() {
         sdkCore.removeEventReceiver(name)
+        pendingOomErrorStore.stop()
 
         rumContextUpdateReceivers.forEach {
             sdkCore.removeContextUpdateReceiver(it)
@@ -517,6 +521,8 @@ internal class RumFeature(
             is RumFlagEvaluationMessage -> handleFlagEvaluationEvent(event)
             is ProfilingAnrDetectedEvent -> handleProfilingAnrDetectedEvent(event)
             is ProfilingAnomalyDetectedEvent -> handleProfilingAnomalyDetectedEvent(event)
+            is ProfilerEvent.OomProfileAttachRequest -> pendingOomErrorStore.onAttachRequest(event.rumErrorId)
+            is ProfilerEvent.OomProfileResolution -> pendingOomErrorStore.onResolution(event.rumErrorId, event.outcome)
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
