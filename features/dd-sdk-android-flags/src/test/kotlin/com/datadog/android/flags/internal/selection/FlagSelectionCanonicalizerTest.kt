@@ -193,54 +193,115 @@ internal class FlagSelectionCanonicalizerTest {
             Arguments.of("200 bytes after trimming", keyPatterns("  ${"a".repeat(200)}\u3000"))
         )
 
-        // Cases with `sdk` expectations in DataDog/ffe-system-test-data@e8777633
-        // flag-selection/selection-vectors.json that the tests above do not already cover.
+        // Every case with an `sdk` expectation in DataDog/ffe-system-test-data@e8777633
+        // flag-selection/selection-vectors.json, in file order and under the same name. An empty
+        // expected selection is no selection on Android.
         @JvmStatic
         fun sharedVectorSelections() = listOf(
             Arguments.of(
-                "leading star",
-                keyPatterns("*-v2"),
-                selected(emptyList(), listOf("*-v2"))
+                "no parameters selects every flag",
+                FlagSelection(emptyList(), emptyList()),
+                FlagSelectionResult.None
+            ),
+            Arguments.of(
+                "tag selects flags having any of the tags",
+                FlagSelection(listOf("team:search", "mobile"), emptyList()),
+                selected(listOf("mobile", "team:search"), emptyList())
+            ),
+            Arguments.of(
+                "tags and key patterns are combined with OR",
+                FlagSelection(listOf("mobile"), listOf("checkout.*")),
+                selected(listOf("mobile"), listOf("checkout.*"))
+            ),
+            Arguments.of(
+                "key pattern must match the whole key",
+                FlagSelection(emptyList(), listOf("checkout")),
+                selected(emptyList(), listOf("checkout"))
+            ),
+            Arguments.of(
+                "key pattern without a star selects exactly that key",
+                FlagSelection(emptyList(), listOf("checkout.new-flow")),
+                selected(emptyList(), listOf("checkout.new-flow"))
             ),
             Arguments.of(
                 "star matches an empty run and multiple stars are allowed",
-                keyPatterns("*search*auto*complete*"),
+                FlagSelection(emptyList(), listOf("*search*auto*complete*")),
                 selected(emptyList(), listOf("*search*auto*complete*"))
             ),
             Arguments.of(
+                "leading star",
+                FlagSelection(emptyList(), listOf("*-v2")),
+                selected(emptyList(), listOf("*-v2"))
+            ),
+            Arguments.of(
                 "lone star matches every key",
-                keyPatterns("*"),
+                FlagSelection(emptyList(), listOf("*")),
                 selected(emptyList(), listOf("*"))
             ),
             Arguments.of(
                 "question mark and brackets are literal",
-                keyPatterns("search.ranking-v?", "[a]*", "{a,b}"),
+                FlagSelection(emptyList(), listOf("search.ranking-v?", "[a]*", "{a,b}")),
                 selected(emptyList(), listOf("[a]*", "search.ranking-v?", "{a,b}"))
             ),
             Arguments.of(
                 "braces are literal even when an alternative names a flag",
-                keyPatterns("{mobile.dark-mode,missing}"),
+                FlagSelection(emptyList(), listOf("{mobile.dark-mode,missing}")),
                 selected(emptyList(), listOf("{mobile.dark-mode,missing}"))
             ),
             Arguments.of(
                 "tags are never globs",
-                tags("team:*"),
+                FlagSelection(listOf("team:*"), emptyList()),
                 selected(listOf("team:*"), emptyList())
             ),
             Arguments.of(
                 "tags match case-sensitively",
-                tags("Team:Payments", "MOBILE"),
+                FlagSelection(listOf("Team:Payments", "MOBILE"), emptyList()),
                 selected(listOf("MOBILE", "Team:Payments"), emptyList())
             ),
             Arguments.of(
+                "key patterns match case-sensitively",
+                FlagSelection(emptyList(), listOf("CHECKOUT.*", "Mobile.Dark-Mode")),
+                selected(emptyList(), listOf("CHECKOUT.*", "Mobile.Dark-Mode"))
+            ),
+            Arguments.of(
+                "values are trimmed, empties dropped and duplicates removed",
+                FlagSelection(listOf(" mobile ", "mobile", "", "   "), emptyList()),
+                selected(listOf("mobile"), emptyList())
+            ),
+            Arguments.of(
+                "lists that are empty after normalization select every flag",
+                FlagSelection(listOf("", "   "), listOf(" ")),
+                FlagSelectionResult.None
+            ),
+            Arguments.of(
+                "values are trimmed of Unicode white space",
+                FlagSelection(listOf("\u00A0mobile\u3000", "\u0085ui\u2028", "\u0009 team:search \u000A"), emptyList()),
+                selected(listOf("mobile", "team:search", "ui"), emptyList())
+            ),
+            Arguments.of(
                 "characters outside Unicode White_Space are not trimmed",
-                tags("\uFEFFmobile", "mobile\u200B"),
+                FlagSelection(listOf("\uFEFFmobile", "mobile\u200B"), emptyList()),
                 selected(listOf("mobile\u200B", "\uFEFFmobile"), emptyList())
             ),
             Arguments.of(
                 "values sort by UTF-8 bytes",
-                tags(GRINNING_FACE, "\uFF5E", "a", "Z"),
+                FlagSelection(listOf(GRINNING_FACE, "\uFF5E", "a", "Z"), emptyList()),
                 selected(listOf("Z", "a", "\uFF5E", GRINNING_FACE), emptyList())
+            ),
+            Arguments.of(
+                "partial match serves only the matching flags",
+                FlagSelection(listOf("mobile", "missing"), listOf("nothing.*")),
+                selected(listOf("missing", "mobile"), listOf("nothing.*"))
+            ),
+            Arguments.of(
+                "31 values in one list are allowed",
+                FlagSelection(numbered("t", 31), emptyList()),
+                selected(numbered("t", 31), emptyList())
+            ),
+            Arguments.of(
+                "32 values in one list are rejected",
+                FlagSelection(emptyList(), numbered("k", 32)),
+                FlagSelectionResult.Dropped(FlagSelectionError.TOO_MANY_VALUES)
             ),
             Arguments.of(
                 "31 values in each list are allowed",
@@ -248,39 +309,84 @@ internal class FlagSelectionCanonicalizerTest {
                 selected(numbered("t", 31), numbered("p", 31))
             ),
             Arguments.of(
-                "duplicates do not count toward the limit",
-                FlagSelection(numbered("t", 31) + "t01" + " t02 ", emptyList()),
-                selected(numbered("t", 31), emptyList())
-            ),
-            Arguments.of(
-                "key pattern length counts UTF-8 bytes: 100 two-byte characters are allowed",
-                keyPatterns("\u00E9".repeat(100)),
-                selected(emptyList(), listOf("\u00E9".repeat(100)))
-            ),
-            Arguments.of(
-                "tag length is measured after trimming",
-                tags("  ${"a".repeat(200)}  "),
-                selected(listOf("a".repeat(200)), emptyList())
-            ),
-            Arguments.of(
                 "32 values in one list are rejected even when the other is within the limit",
                 FlagSelection(numbered("t", 31), numbered("p", 32)),
                 FlagSelectionResult.Dropped(FlagSelectionError.TOO_MANY_VALUES)
             ),
             Arguments.of(
-                "key pattern length counts UTF-8 bytes: 201 bytes are invalid",
-                keyPatterns("x" + "\u00E9".repeat(100)),
+                "duplicates do not count toward the limit",
+                FlagSelection(numbered("t", 31) + listOf("t01", " t02 "), emptyList()),
+                selected(numbered("t", 31), emptyList())
+            ),
+            Arguments.of(
+                "key pattern of 200 bytes is allowed",
+                FlagSelection(emptyList(), listOf("*" + "x".repeat(199))),
+                selected(emptyList(), listOf("*" + "x".repeat(199)))
+            ),
+            Arguments.of(
+                "key pattern of 201 bytes is invalid",
+                FlagSelection(emptyList(), listOf("*" + "x".repeat(200))),
                 FlagSelectionResult.Dropped(FlagSelectionError.INVALID_KEY_PATTERN)
             ),
             Arguments.of(
-                "a long tag invalidates the selection even when other tags match",
-                tags("mobile", "a".repeat(201)),
+                "key pattern length is measured after trimming",
+                FlagSelection(emptyList(), listOf("  *" + "x".repeat(199) + "  ")),
+                selected(emptyList(), listOf("*" + "x".repeat(199)))
+            ),
+            Arguments.of(
+                "key pattern length counts UTF-8 bytes: 100 two-byte characters are allowed",
+                FlagSelection(emptyList(), listOf("\u00E9".repeat(100))),
+                selected(emptyList(), listOf("\u00E9".repeat(100)))
+            ),
+            Arguments.of(
+                "key pattern length counts UTF-8 bytes: 201 bytes are invalid",
+                FlagSelection(emptyList(), listOf("x" + "\u00E9".repeat(100))),
+                FlagSelectionResult.Dropped(FlagSelectionError.INVALID_KEY_PATTERN)
+            ),
+            Arguments.of(
+                "tag of 200 bytes is allowed",
+                FlagSelection(listOf("a".repeat(200)), emptyList()),
+                selected(listOf("a".repeat(200)), emptyList())
+            ),
+            Arguments.of(
+                "tag of 201 bytes is invalid",
+                FlagSelection(listOf("a".repeat(201)), emptyList()),
                 FlagSelectionResult.Dropped(FlagSelectionError.INVALID_TAG)
+            ),
+            Arguments.of(
+                "tag length is measured after trimming",
+                FlagSelection(listOf("  " + "a".repeat(200) + "  "), emptyList()),
+                selected(listOf("a".repeat(200)), emptyList())
+            ),
+            Arguments.of(
+                "tag length counts UTF-8 bytes: 100 two-byte characters are allowed",
+                FlagSelection(listOf("\u00E9".repeat(100)), emptyList()),
+                selected(listOf("\u00E9".repeat(100)), emptyList())
+            ),
+            Arguments.of(
+                "tag length counts UTF-8 bytes: 201 bytes are invalid",
+                FlagSelection(listOf("x" + "\u00E9".repeat(100)), emptyList()),
+                FlagSelectionResult.Dropped(FlagSelectionError.INVALID_TAG)
+            ),
+            Arguments.of(
+                "a long tag invalidates the selection even when other tags match",
+                FlagSelection(listOf("mobile", "a".repeat(201)), emptyList()),
+                FlagSelectionResult.Dropped(FlagSelectionError.INVALID_TAG)
+            ),
+            Arguments.of(
+                "too_many_values takes precedence over invalid_key_pattern",
+                FlagSelection(numbered("t", 32), listOf("*" + "x".repeat(200))),
+                FlagSelectionResult.Dropped(FlagSelectionError.TOO_MANY_VALUES)
             ),
             Arguments.of(
                 "too_many_values takes precedence over invalid_tag",
                 FlagSelection(numbered("t", 31) + "a".repeat(201), emptyList()),
                 FlagSelectionResult.Dropped(FlagSelectionError.TOO_MANY_VALUES)
+            ),
+            Arguments.of(
+                "invalid_key_pattern takes precedence over invalid_tag",
+                FlagSelection(listOf("a".repeat(201)), listOf("a".repeat(201))),
+                FlagSelectionResult.Dropped(FlagSelectionError.INVALID_KEY_PATTERN)
             )
         )
 
