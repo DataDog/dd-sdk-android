@@ -15,6 +15,9 @@ import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
+import com.datadog.android.flags.internal.selection.FlagSelection
+import com.datadog.android.flags.internal.selection.FlagSelectionCanonicalizer
+import com.datadog.android.flags.internal.selection.FlagSelectionResult
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
@@ -530,6 +533,33 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
+    fun `M install persisted state W initial disk read completes { equivalent configured selection }`(forge: Forge) {
+        // Given
+        val context = forge.getForgery<EvaluationContext>()
+        val flagKey = forge.anAlphabeticalString()
+        val persistedSelection = canonical(FlagSelection(tags = listOf("checkout"), keyPatterns = null))
+        val configuredSelection = canonical(FlagSelection(tags = listOf(" checkout", "checkout"), keyPatterns = null))
+        val callback = preparePersistenceLoad(forge, configuredSelection)
+
+        // When
+        callback.onSuccess(
+            DataStoreContent(
+                forge.anInt(),
+                FlagsStateEntry(
+                    context,
+                    mapOf(flagKey to forge.getForgery<PrecomputedFlag>()),
+                    forge.aLong(),
+                    flagSelection = persistedSelection
+                )
+            )
+        )
+
+        // Then
+        assertThat(testedRepository.getEvaluationContext()).isEqualTo(context)
+        assertThat(testedRepository.getPrecomputedFlag(flagKey)).isNotNull()
+    }
+
+    @Test
     fun `M persist the configured flag selection W setFlagsAndContext()`(forge: Forge) {
         // Given
         val flagSelection = CanonicalFlagSelection(listOf("mobile"), listOf("checkout-*"))
@@ -548,6 +578,19 @@ internal class DefaultFlagsRepositoryTest {
             serializer = any()
         )
         assertThat(entry.firstValue.flagSelection).isEqualTo(flagSelection)
+    }
+
+    @Test
+    fun `M return no flag with the context W getPrecomputedFlagWithContext() { empty flags map }`(forge: Forge) {
+        // Given
+        val context = forge.getForgery<EvaluationContext>()
+        testedRepository.setFlagsAndContext(context, emptyMap())
+
+        // When
+        val result = testedRepository.getPrecomputedFlagWithContext(forge.anAlphabeticalString())
+
+        // Then
+        assertThat(result).isEqualTo(null to context)
     }
 
     @Test
@@ -571,6 +614,9 @@ internal class DefaultFlagsRepositoryTest {
             testedRepository.hasLoadedFlagsForContext(context.copy(targetingKey = context.targetingKey + "-other"))
         ).isFalse()
     }
+
+    private fun canonical(selection: FlagSelection): CanonicalFlagSelection =
+        checkNotNull(FlagSelectionCanonicalizer.canonicalize(selection) as? FlagSelectionResult.Selected).selection
 
     private fun preparePersistenceLoad(
         forge: Forge,
