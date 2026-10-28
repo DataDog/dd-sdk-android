@@ -120,7 +120,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -4447,6 +4446,7 @@ internal class RumViewScopeTest {
         )
         val expectedTimestamp = resolveExpectedTimestamp(fakeEvent.eventTime.timestamp)
         val mockStore = stubPendingOomErrorStore()
+        whenever(mockStore.tryHold(any())) doReturn true
         val datadogContext = fakeDatadogContext.withOomTriggerActive()
 
         // When
@@ -4454,7 +4454,7 @@ internal class RumViewScopeTest {
 
         // Then
         val heldCaptor = argumentCaptor<ErrorEvent>()
-        verify(mockStore).hold(heldCaptor.capture(), anyOrNull(), eq(mockEventBatchWriter))
+        verify(mockStore).tryHold(heldCaptor.capture())
         assertThat(heldCaptor.firstValue.dd.profiling).isNull()
         assertThat(heldCaptor.firstValue.error.isCrash).isTrue
         verify(mockWriter, never()).write(eq(mockEventBatchWriter), isA<ErrorEvent>(), any())
@@ -4472,6 +4472,38 @@ internal class RumViewScopeTest {
                 )
             )
         }
+    }
+
+    @Test
+    fun `M write right away without gating event W handleEvent(AddError) {fatal OOM, store can't hold}`(
+        @Forgery fakeSource: RumErrorSource,
+        @StringForgery fakeStacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.AddError(
+            "OutOfMemoryError",
+            fakeSource,
+            OutOfMemoryError(),
+            fakeStacktrace,
+            isFatal = true,
+            threads = emptyList(),
+            attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys),
+            eventTime = fakeEventTime
+        )
+        val mockStore = stubPendingOomErrorStore()
+        whenever(mockStore.tryHold(any())) doReturn false
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext.withOomTriggerActive(), mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
+            assertThat(firstValue as ErrorEvent).hasNoProfiling()
+        }
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumOomErrorEvent>())
     }
 
     @Test
