@@ -51,36 +51,44 @@ class TouchPrivacyManager(
      */
     @UiThread
     fun addTouchOverrideArea(bounds: Rect, touchPrivacy: TouchPrivacy) {
-        currentPass()[bounds] = touchPrivacy
+        currentPass().putTouchOverrideArea(bounds, touchPrivacy)
     }
 
     @UiThread
     internal fun updateCurrentTouchOverrideAreas() {
         val builtByThisPass = currentPass()
+        replaceCurrentTouchOverrideAreas(builtByThisPass)
+        builtByThisPass.clear()
+    }
+
+    /** Publishes a completed composition traversal without using the legacy thread-local staging map. */
+    @UiThread
+    internal fun replaceCurrentTouchOverrideAreas(areas: Map<Rect, TouchPrivacy>) {
         synchronized(lock) {
             currentOverrideAreas.clear()
             // NPE cannot happen here
             @Suppress("UnsafeThirdPartyFunctionCall")
-            currentOverrideAreas.putAll(builtByThisPass)
+            currentOverrideAreas.putAll(areas)
         }
-        builtByThisPass.clear()
     }
 
     @UiThread
     internal fun shouldRecordTouch(touchLocation: Point): Boolean {
+        return synchronized(lock) { shouldRecordTouch(touchLocation, currentOverrideAreas) }
+    }
+
+    /** Applies the global policy to overrides captured from the window receiving this touch. */
+    internal fun shouldRecordTouch(touchLocation: Point, overrideAreas: Map<Rect, TouchPrivacy>): Boolean {
         var isOverriddenToShowTouch = false
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        overrideAreas.forEach { entry ->
+            val area = entry.key
+            val overrideValue = entry.value
 
-        synchronized(lock) {
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            currentOverrideAreas.forEach { entry ->
-                val area = entry.key
-                val overrideValue = entry.value
-
-                if (area.contains(touchLocation.x, touchLocation.y)) {
-                    when (overrideValue) {
-                        TouchPrivacy.HIDE -> return false
-                        TouchPrivacy.SHOW -> isOverriddenToShowTouch = true
-                    }
+            if (area.contains(touchLocation.x, touchLocation.y)) {
+                when (overrideValue) {
+                    TouchPrivacy.HIDE -> return false
+                    TouchPrivacy.SHOW -> isOverriddenToShowTouch = true
                 }
             }
         }
@@ -103,4 +111,9 @@ class TouchPrivacyManager(
         @Suppress("UnsafeThirdPartyFunctionCall")
         return HashMap(currentPass())
     }
+}
+
+/** Equal rectangles must retain the same HIDE precedence as overlapping rectangles. */
+internal fun MutableMap<Rect, TouchPrivacy>.putTouchOverrideArea(bounds: Rect, privacy: TouchPrivacy) {
+    if (this[bounds] != TouchPrivacy.HIDE) this[bounds] = privacy
 }

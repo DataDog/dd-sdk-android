@@ -126,6 +126,21 @@ internal class TouchPrivacyManagerTest {
     }
 
     @Test
+    fun `M preserve HIDE W addTouchOverrideArea { identical rectangle later tagged SHOW }`() {
+        // Given
+        testedManager = TouchPrivacyManager(TouchPrivacy.SHOW)
+        val fakeBounds = Rect(0, 0, 100, 100)
+        testedManager.addTouchOverrideArea(fakeBounds, TouchPrivacy.HIDE)
+
+        // When
+        testedManager.addTouchOverrideArea(Rect(0, 0, 100, 100), TouchPrivacy.SHOW)
+        testedManager.updateCurrentTouchOverrideAreas()
+
+        // Then
+        assertThat(testedManager.shouldRecordTouch(Point())).isFalse()
+    }
+
+    @Test
     fun `M return false W shouldRecordTouch { matches both HIDE and SHOW }`(
         forge: Forge
     ) {

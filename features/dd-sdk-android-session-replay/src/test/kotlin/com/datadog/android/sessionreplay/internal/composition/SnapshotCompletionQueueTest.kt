@@ -324,7 +324,14 @@ internal class SnapshotCompletionQueueTest {
         @LongForgery(min = 1L, max = 1_000_000L) fakeDeadlineNs: Long,
         forge: Forge
     ) {
-        assertSnapshotDroppedAt(forge, fakeDeadlineNs, fakeDeadlineNs, fakeApplicationId, fakeSessionId)
+        // Given
+        val fakeNowNs = fakeDeadlineNs
+
+        // When
+        val mockRecordWriter = processSnapshotAt(forge, fakeNowNs, fakeDeadlineNs, fakeApplicationId, fakeSessionId)
+
+        // Then
+        verify(mockRecordWriter, never()).write(any(), any())
     }
 
     @Test
@@ -335,13 +342,20 @@ internal class SnapshotCompletionQueueTest {
         @LongForgery(min = 1L, max = 1_000L) fakeOverrunNs: Long,
         forge: Forge
     ) {
-        assertSnapshotDroppedAt(
+        // Given
+        val fakeNowNs = fakeDeadlineNs + fakeOverrunNs
+
+        // When
+        val mockRecordWriter = processSnapshotAt(
             forge,
-            nowNs = fakeDeadlineNs + fakeOverrunNs,
+            nowNs = fakeNowNs,
             deadlineNs = fakeDeadlineNs,
             applicationId = fakeApplicationId,
             sessionId = fakeSessionId
         )
+
+        // Then
+        verify(mockRecordWriter, never()).write(any(), any())
     }
 
     @Test
@@ -420,13 +434,13 @@ internal class SnapshotCompletionQueueTest {
         )
     }
 
-    private fun assertSnapshotDroppedAt(
+    private fun processSnapshotAt(
         forge: Forge,
         nowNs: Long,
         deadlineNs: Long,
         applicationId: String,
         sessionId: String
-    ) {
+    ): RecordWriter {
         val fakeTree = forge.aCompositionTestTree()
         val mockRecord = mock<MobileSegment.MobileRecord.MobileFullSnapshotRecord>()
         val stubWireMapper = mock<CapturedTreeWireMapper>()
@@ -445,7 +459,7 @@ internal class SnapshotCompletionQueueTest {
             CompletedSnapshotCapture(generation(fakeClock, deadlineNs = deadlineNs), fakeTree.snapshot)
         )
 
-        verify(mockRecordWriter, never()).write(any(), any())
+        return mockRecordWriter
     }
 
     private fun stubRumContextProvider(

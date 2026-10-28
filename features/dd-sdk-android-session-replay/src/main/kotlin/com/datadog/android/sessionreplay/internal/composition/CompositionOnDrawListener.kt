@@ -12,11 +12,13 @@ import androidx.annotation.MainThread
 
 /** Identifies the decor view it was registered on, since [ViewTreeObserver.OnDrawListener.onDraw] carries no source. */
 internal class CompositionOnDrawListener(
-    private val view: View,
+    view: View,
     private val onWindowsChanged: CompositionChangeListener
 ) : ViewTreeObserver.OnDrawListener {
-    // listOf throws only for a null element; `view` is a non-null Kotlin type.
+    // Reuse the same root list for every frame. Its non-null view makes listOf safe.
     @Suppress("UnsafeThirdPartyFunctionCall")
+    private val roots = listOf(view)
+
     @MainThread
-    override fun onDraw() = onWindowsChanged.onWindowsChanged(listOf(view))
+    override fun onDraw() = onWindowsChanged.onWindowsChanged(roots)
 }
