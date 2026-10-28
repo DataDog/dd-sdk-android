@@ -14,6 +14,7 @@ import android.os.ProfilingManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.metrics.MethodCallSamplingRate
@@ -3346,6 +3347,43 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
+    fun `M never report a live write as abandoned W grant delivered at receiver registration`(
+        @Forgery fakePendingOomProfile: PendingOomProfile,
+        @StringForgery fakeFileName: String,
+        @TempDir fakeTempDir: File
+    ) {
+        // Given
+        val prefs = useFakePreferences()
+        val traceFile = File(fakeTempDir, fakeFileName).apply { writeText(fakeFileName) }
+        val pending = storePendingProfile(prefs, fakePendingOomProfile.copy(resultFilePath = traceFile.absolutePath))
+        val queued = ArrayDeque<Runnable>()
+        doAnswer { queued.add(it.getArgument(0)) }.whenever(mockSchedulerExecutor).execute(any())
+        // RUM grants as soon as the receiver is registered, before onInitialize() returns.
+        whenever(mockSdkCore.setEventReceiver(any(), any())) doAnswer {
+            it.getArgument<FeatureEventReceiver>(1)
+                .onReceive(ProfilerEvent.RumOomProfileAttachReply(pending.rumErrorId, granted = true))
+        }
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        testedFeature.onInitialize(mockContext)
+        testedFeature.dataWriter = mockDataWriter
+        while (queued.isNotEmpty()) queued.removeFirst().run()
+        val onWritten = capturedOnWritten(pending)
+
+        // When
+        testedFeature.onReceive(ProfilerEvent.RumHeldOomErrorEvent(pending.rumErrorId))
+        while (queued.isNotEmpty()) queued.removeFirst().run()
+        onWritten(true)
+        while (queued.isNotEmpty()) queued.removeFirst().run()
+
+        // Then
+        verify(mockRumFeatureScope, never())
+            .sendEvent(ProfilerEvent.OomProfileResolution(pending.rumErrorId, Outcome.NOT_ATTACHED))
+        verify(mockRumFeatureScope).sendEvent(ProfilerEvent.OomProfileResolution(pending.rumErrorId, Outcome.ATTACHED))
+        assertThat(storedMarker(prefs)?.state).isEqualTo(OomProfileOutcomeMarker.State.ATTACHED)
+        assertThat(traceFile.exists()).isTrue
+    }
+
+    @Test
     fun `M resolve abandoned write and delete its trace W onInitialize() {IN_FLIGHT marker, no RUM}`(
         @StringForgery fakeErrorId: String,
         @StringForgery fakeFileName: String,
@@ -3523,7 +3561,7 @@ internal class ProfilingFeatureTest {
 
     private fun runScheduledReplay() {
         val runnableCaptor = argumentCaptor<Runnable>()
-        verify(mockSchedulerExecutor).execute(runnableCaptor.capture())
+        verify(mockSchedulerExecutor, atLeastOnce()).execute(runnableCaptor.capture())
         runnableCaptor.allValues.forEach { it.run() }
     }
 

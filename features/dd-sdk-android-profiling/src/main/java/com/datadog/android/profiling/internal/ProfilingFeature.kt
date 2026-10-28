@@ -165,6 +165,9 @@ internal class ProfilingFeature(
         // Set the profiling flag in SharedPreferences to profile for the next app launch
         ProfilingStorage.addProfilingFlag(appContext)
         isLaunchProfilingActive = profiler.isRunning()
+        // Queued before anything can deliver an attach reply: the OOM executor is single-threaded,
+        // so no profile write of this process starts before the abandoned ones are resolved.
+        onOomExecutor { cleanUpOomProfileWrites() }
         sdkCore.setEventReceiver(name, this)
         sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
             context[FeatureContextKeys.PROFILING_SAMPLE_RATE] = configuration.continuousSampleRate
@@ -552,7 +555,6 @@ internal class ProfilingFeature(
 
     private fun startOomProfileHandshake() {
         onOomExecutor {
-            cleanUpOomProfileWrites()
             // A held RUM error announced before this feature was registered is announced again.
             sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(ProfilerEvent.OomProfilingReady)
             uploadPendingOomProfile()
@@ -759,6 +761,8 @@ internal class ProfilingFeature(
      */
     private fun cleanUpOomProfileWrites() {
         val marker = ProfilingStorage.getOomProfileOutcome(appContext, sdkCore.name) ?: return
+        // A write of this process is never abandoned: it reports its own outcome.
+        if (oomProfileWriteInProgressErrorId == marker.rumErrorId) return
         val path = marker.resultFilePath
         if (marker.state != OomProfileOutcomeMarker.State.IN_FLIGHT && path == null) return
         path?.let { fileDeleteSafe(it, sdkCore.internalLogger) }
