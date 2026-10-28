@@ -72,11 +72,25 @@ internal object ProfilingStorage {
     }
 
     /**
-     * Records the outcome of the OOM profile of a held RUM error. The write is synchronous: it must
-     * be on disk before the next step of the attach handshake starts.
+     * Records the outcome of the OOM profile of a held RUM error, synchronously.
+     *
+     * @return whether it was persisted.
      */
-    internal fun setOomProfileOutcome(appContext: Context, marker: OomProfileOutcomeMarker) {
-        getStorage(appContext).putString(KEY_OOM_PROFILE_OUTCOME, marker.toJson(), sync = true)
+    internal fun setOomProfileOutcome(appContext: Context, marker: OomProfileOutcomeMarker): Boolean {
+        return getStorage(appContext).commitStrings(mapOf(KEY_OOM_PROFILE_OUTCOME to marker.toJson()))
+    }
+
+    /**
+     * Records an [OomProfileOutcomeMarker.State.IN_FLIGHT] marker and removes the pending OOM
+     * profile in a single synchronous commit, before the profile is written.
+     *
+     * @return whether it was persisted.
+     */
+    internal fun startOomProfileWrite(appContext: Context, marker: OomProfileOutcomeMarker): Boolean {
+        return getStorage(appContext).commitStrings(
+            values = mapOf(KEY_OOM_PROFILE_OUTCOME to marker.toJson()),
+            removals = setOf(KEY_PENDING_OOM_PROFILE)
+        )
     }
 
     internal fun getOomProfileOutcome(appContext: Context): OomProfileOutcomeMarker? {
@@ -84,8 +98,8 @@ internal object ProfilingStorage {
         return OomProfileOutcomeMarker.fromJson(serialized)
     }
 
-    internal fun removeOomProfileOutcome(appContext: Context) {
-        getStorage(appContext).remove(KEY_OOM_PROFILE_OUTCOME, sync = true)
+    internal fun removeOomProfileOutcome(appContext: Context): Boolean {
+        return getStorage(appContext).commitStrings(emptyMap(), setOf(KEY_OOM_PROFILE_OUTCOME))
     }
 
     @JvmStatic

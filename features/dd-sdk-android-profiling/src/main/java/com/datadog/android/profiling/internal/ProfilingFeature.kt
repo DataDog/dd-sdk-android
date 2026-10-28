@@ -200,7 +200,11 @@ internal class ProfilingFeature(
             }
         }
 
-        dispatchPendingOomProfileUpload()
+        onOomExecutor {
+            // A held RUM error announced before this feature was registered is announced again.
+            sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(ProfilerEvent.OomProfilingReady)
+            uploadPendingOomProfile()
+        }
     }
 
     override fun onStop() {
@@ -545,12 +549,7 @@ internal class ProfilingFeature(
     }
 
     private fun dispatchPendingOomProfileUpload() {
-        onOomExecutor {
-            currentOutcomeMarker()
-                ?.takeIf { it.state == OomProfileOutcomeMarker.State.ATTACHED }
-                ?.let { publishOomProfileAttachedErrorId(it.rumErrorId) }
-            uploadPendingOomProfile()
-        }
+        onOomExecutor { uploadPendingOomProfile() }
     }
 
     private fun onOomExecutor(block: () -> Unit) {
@@ -570,8 +569,8 @@ internal class ProfilingFeature(
     @Suppress("ReturnCount")
     private fun uploadPendingOomProfile() {
         val pending = ProfilingStorage.getPendingOomProfile(appContext) ?: return
-        if (currentOutcomeMarker()?.rumErrorId == pending.rumErrorId) {
-            // Left behind by a death between recording the marker and removing the pending profile.
+        if (ProfilingStorage.getOomProfileOutcome(appContext)?.rumErrorId == pending.rumErrorId) {
+            // Already handled: the marker owns the outcome, the profile must never be written again.
             ProfilingStorage.removePendingOomProfile(appContext)
             return
         }
@@ -598,7 +597,7 @@ internal class ProfilingFeature(
             }
             return
         }
-        val marker = currentOutcomeMarker()?.takeIf { it.rumErrorId == rumErrorId }
+        val marker = ProfilingStorage.getOomProfileOutcome(appContext)?.takeIf { it.rumErrorId == rumErrorId }
         when {
             // Repeated grant: never write twice.
             marker != null -> resolveFromMarker(marker)
@@ -608,18 +607,18 @@ internal class ProfilingFeature(
     }
 
     private fun writeGrantedOomProfile(pending: PendingOomProfile) {
-        // Recorded before the write: a death past this point resolves from the marker, never by
-        // writing the profile again.
-        ProfilingStorage.setOomProfileOutcome(
-            appContext,
-            OomProfileOutcomeMarker(
-                rumErrorId = pending.rumErrorId,
-                state = OomProfileOutcomeMarker.State.IN_FLIGHT,
-                createdAtMs = sdkCore.timeProvider.getDeviceTimestampMillis(),
-                resultFilePath = pending.resultFilePath
-            )
+        val inFlight = OomProfileOutcomeMarker(
+            rumErrorId = pending.rumErrorId,
+            state = OomProfileOutcomeMarker.State.IN_FLIGHT,
+            resultFilePath = pending.resultFilePath
         )
-        ProfilingStorage.removePendingOomProfile(appContext)
+        // Recorded before the write, together with removing the pending profile: a death past this
+        // point resolves from the marker, never by writing the profile again.
+        if (!ProfilingStorage.startOomProfileWrite(appContext, inFlight)) {
+            // Nothing written: RUM keeps the error reserved, and its next announcement retries.
+            logToUser(LOG_OOM_PROFILE_WRITE_NOT_STARTED)
+            return
+        }
         oomProfileWriteInProgressErrorId = pending.rumErrorId
         dataWriter.writeTriggerProfile(
             perfettoResult = PerfettoResult(
@@ -633,19 +632,25 @@ internal class ProfilingFeature(
             rumErrorId = pending.rumErrorId,
             rumContext = pending.rumContext
         ) { isWritten ->
+            // Synchronously on the writer thread, right after the batch write returned.
             val state = if (isWritten) {
                 OomProfileOutcomeMarker.State.ATTACHED
             } else {
                 OomProfileOutcomeMarker.State.NOT_ATTACHED
             }
-            resolveOomProfile(pending.rumErrorId, state)
+            val marker = inFlight.copy(state = state, resultFilePath = null)
+            if (!ProfilingStorage.setOomProfileOutcome(appContext, marker)) {
+                // Still reported from memory: RUM persists the outcome before acknowledging it.
+                logToUser(LOG_OOM_PROFILE_OUTCOME_NOT_PERSISTED)
+            }
             oomProfileWriteInProgressErrorId = null
+            onOomExecutor { sendOomProfileResolution(marker) }
         }
     }
 
     @Suppress("ReturnCount")
     private fun onHeldOomError(rumErrorId: String) {
-        currentOutcomeMarker()?.let { marker ->
+        ProfilingStorage.getOomProfileOutcome(appContext)?.let { marker ->
             if (marker.rumErrorId == rumErrorId) {
                 resolveFromMarker(marker)
                 return
@@ -686,60 +691,32 @@ internal class ProfilingFeature(
         }
     }
 
+    /**
+     * Only for outcomes where no profile was or will be written: a later profile for this error is
+     * turned down by RUM, so the outcome holds even if the marker can't be persisted.
+     */
     private fun resolveOomProfile(rumErrorId: String, state: OomProfileOutcomeMarker.State) {
-        val marker = OomProfileOutcomeMarker(
-            rumErrorId = rumErrorId,
-            state = state,
-            createdAtMs = sdkCore.timeProvider.getDeviceTimestampMillis(),
-            resultFilePath = null
-        )
-        ProfilingStorage.setOomProfileOutcome(appContext, marker)
+        val marker = OomProfileOutcomeMarker(rumErrorId = rumErrorId, state = state, resultFilePath = null)
+        if (!ProfilingStorage.setOomProfileOutcome(appContext, marker)) {
+            logToUser(LOG_OOM_PROFILE_OUTCOME_NOT_PERSISTED)
+        }
         sendOomProfileResolution(marker)
     }
 
     private fun sendOomProfileResolution(marker: OomProfileOutcomeMarker) {
-        val isAttached = marker.state == OomProfileOutcomeMarker.State.ATTACHED
-        publishOomProfileAttachedErrorId(marker.rumErrorId.takeIf { isAttached })
+        val outcome = if (marker.state == OomProfileOutcomeMarker.State.ATTACHED) {
+            ProfilerEvent.OomProfileResolution.Outcome.ATTACHED
+        } else {
+            ProfilerEvent.OomProfileResolution.Outcome.NOT_ATTACHED
+        }
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(
-            ProfilerEvent.OomProfileResolution(
-                rumErrorId = marker.rumErrorId,
-                outcome = if (isAttached) {
-                    ProfilerEvent.OomProfileResolution.Outcome.ATTACHED
-                } else {
-                    ProfilerEvent.OomProfileResolution.Outcome.NOT_ATTACHED
-                }
-            )
+            ProfilerEvent.OomProfileResolution(rumErrorId = marker.rumErrorId, outcome = outcome)
         )
     }
 
     private fun onOomProfileResolutionAck(rumErrorId: String) {
         if (ProfilingStorage.getOomProfileOutcome(appContext)?.rumErrorId != rumErrorId) return
         ProfilingStorage.removeOomProfileOutcome(appContext)
-        publishOomProfileAttachedErrorId(null)
-    }
-
-    /**
-     * The outcome marker, or `null` once it is older than RUM keeps a reserved error waiting for it.
-     */
-    @Suppress("ReturnCount")
-    private fun currentOutcomeMarker(): OomProfileOutcomeMarker? {
-        val marker = ProfilingStorage.getOomProfileOutcome(appContext) ?: return null
-        val ageMs = sdkCore.timeProvider.getDeviceTimestampMillis() - marker.createdAtMs
-        if (ageMs < PendingTriggerProfileStorage.PENDING_OOM_PROFILE_MAX_AGE_MS) return marker
-        ProfilingStorage.removeOomProfileOutcome(appContext)
-        marker.resultFilePath?.let { fileDeleteSafe(it, sdkCore.internalLogger) }
-        logToUser(LOG_OOM_PROFILE_OUTCOME_EXPIRED)
-        return null
-    }
-
-    private fun publishOomProfileAttachedErrorId(rumErrorId: String?) {
-        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
-            if (rumErrorId == null) {
-                context.remove(FeatureContextKeys.PROFILING_OOM_PROFILE_ATTACHED_ERROR_ID)
-            } else {
-                context[FeatureContextKeys.PROFILING_OOM_PROFILE_ATTACHED_ERROR_ID] = rumErrorId
-            }
-        }
     }
 
     internal fun propagateQuotaResult(sessionId: String, result: QuotaResult) {
@@ -879,8 +856,10 @@ internal class ProfilingFeature(
             "Out of memory profile from a previous run dropped: too old to upload."
         internal const val LOG_PENDING_OOM_PROFILE_NOT_ATTACHABLE =
             "Out of memory profile from a previous run dropped: its RUM error was already sent."
-        internal const val LOG_OOM_PROFILE_OUTCOME_EXPIRED =
-            "Out of memory profile outcome dropped: not acknowledged by RUM in time."
+        internal const val LOG_OOM_PROFILE_WRITE_NOT_STARTED =
+            "Out of memory profile not written yet: its outcome marker could not be persisted."
+        internal const val LOG_OOM_PROFILE_OUTCOME_NOT_PERSISTED =
+            "Out of memory profile outcome could not be persisted."
         private const val OPERATION_OOM_PROFILE_HANDSHAKE = "oom_profile_handshake"
     }
 }

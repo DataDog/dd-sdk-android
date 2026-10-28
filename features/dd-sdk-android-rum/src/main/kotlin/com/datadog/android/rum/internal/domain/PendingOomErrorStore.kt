@@ -9,11 +9,9 @@ package com.datadog.android.rum.internal.domain
 import android.os.Handler
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
-import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
@@ -22,6 +20,7 @@ import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.internal.profiling.ProfilerEvent.OomProfileResolution.Outcome
 import com.datadog.android.rum.model.ErrorEvent
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -29,12 +28,15 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Holds a single fatal OOM error on disk until the profiling feature reports whether its OOM
- * profile is attached, so that its profiling status matches exactly.
+ * profile was written, so that the error's profiling status matches exactly.
  *
- * The record moves PENDING → RESERVED (profiling was allowed to write the profile) → RESOLVED, each
- * step stored before the next one starts. Only a PENDING error is written without a profiling status
- * on timeout: once reserved, the outcome reported by profiling is waited for, up to
- * [RESERVED_MAX_AGE_MS].
+ * Every state change is decided under [lock] and enqueued to the data store in that same order;
+ * its visible effect (granting the attach, acknowledging the outcome, writing the error) only
+ * happens once the store reports it persisted. A terminal state is persisted before the error is
+ * written, so a reload never reopens the attachment of an error that may already be sent.
+ *
+ * A reserved error (profiling was allowed to write the profile) is never settled by RUM: it waits
+ * for profiling's outcome, on this or a later launch.
  */
 @Suppress("TooManyFunctions")
 internal class PendingOomErrorStore(
@@ -44,20 +46,17 @@ internal class PendingOomErrorStore(
 ) {
     private val lock = Any()
 
-    @Volatile
+    // All guarded by lock.
     private var dataStore: DataStoreHandler? = null
-
-    // Guarded by lock.
-    private var isLoading = false
+    private var isLoaded = false
     private var isTimedOut = false
     private var record: PendingOomError? = null
-    private val queuedRequests = mutableListOf<String>()
+    private val actionsAwaitingLoad = mutableListOf<() -> Unit>()
 
     private val timeoutRunnable = Runnable { onTimeout() }
 
     fun start(dataStore: DataStoreHandler) {
-        this.dataStore = dataStore
-        synchronized(lock) { isLoading = true }
+        synchronized(lock) { this.dataStore = dataStore }
         handler.postDelayed(timeoutRunnable, TIMEOUT_MS)
         dataStore.value(
             key = KEY,
@@ -80,245 +79,227 @@ internal class PendingOomErrorStore(
     }
 
     /**
-     * Holds [event] instead of writing it. Called from the crash write scope: an error held before
-     * (crash loop) is written first through [batchWriter], as nothing can be attached to it any more.
+     * Holds [event] instead of writing it, if the slot is free and loaded. Otherwise (a previous
+     * error is still held, or it is not loaded yet) the caller writes [event] right away and must
+     * not let a profile be attached to it.
      *
      * @param event the fatal OOM error to hold.
-     * @param attachedErrorId ID of the error whose OOM profile profiling reports as written.
-     * @param batchWriter the crash write scope's batch writer.
+     * @return whether [event] is held.
      */
     @WorkerThread
-    fun hold(event: ErrorEvent, attachedErrorId: String?, batchWriter: EventBatchWriter) {
-        val newRecord = PendingOomError(event, State.PENDING, sdkCore.timeProvider.getDeviceTimestampMillis())
-        val previous = synchronized(lock) {
-            record.also { record = newRecord }
+    fun tryHold(event: ErrorEvent): Boolean {
+        synchronized(lock) {
+            val store = dataStore
+            if (!isLoaded || record != null || store == null) return false
+            val held = PendingOomError(event, State.PENDING, isPersisted = false)
+            record = held
+            store.setValue(KEY, held, VERSION, persistedCallback(held), PendingOomErrorSerializer())
         }
-        if (previous != null) {
-            val outcome = when (previous.state) {
-                State.PENDING -> null
-                State.RESERVED -> previous.errorId == attachedErrorId
-                State.RESOLVED_ATTACHED -> true
-                State.RESOLVED_NOT_ATTACHED -> false
-            }
-            dataWriterProvider().write(batchWriter, previous.withProfiling(outcome), EventType.CRASH)
-            log(InternalLogger.Target.USER, LOG_FLUSHED_CRASH_LOOP)
-        }
-        dataStore?.setValue(KEY, newRecord, VERSION, null, PendingOomErrorSerializer())
-        log(InternalLogger.Target.USER, LOG_HELD)
+        log(LOG_HELD)
+        return true
     }
 
     fun onAttachRequest(rumErrorId: String) {
-        val current = synchronized(lock) {
-            if (isLoading) {
-                queuedRequests.add(rumErrorId)
+        val reply: Boolean? = synchronized(lock) {
+            if (!isLoaded) {
+                actionsAwaitingLoad.add { onAttachRequest(rumErrorId) }
                 return
             }
-            record
-        }
-        answerAttachRequest(rumErrorId, current)
-    }
-
-    fun onResolution(rumErrorId: String, outcome: ProfilerEvent.OomProfileResolution.Outcome) {
-        val current = synchronized(lock) { record }?.takeIf { it.errorId == rumErrorId }
-        if (current == null || current.state.isResolved) {
-            // Already resolved or flushed: only tell profiling to stop resending.
-            sendToProfiling(ProfilerEvent.RumOomProfileResolutionAck(rumErrorId))
-            return
-        }
-        val state = if (outcome == ProfilerEvent.OomProfileResolution.Outcome.ATTACHED) {
-            State.RESOLVED_ATTACHED
-        } else {
-            State.RESOLVED_NOT_ATTACHED
-        }
-        val resolved = current.copy(state = state)
-        persist(resolved) {
-            if (replaceRecord(current, resolved)) {
-                sendToProfiling(ProfilerEvent.RumOomProfileResolutionAck(rumErrorId))
-                flush(resolved, state == State.RESOLVED_ATTACHED)
+            val current = record?.takeIf { it.errorId == rumErrorId }
+            when {
+                current == null || current.state.isTerminal -> false
+                current.state == State.PENDING -> {
+                    transition(current, State.RESERVED) { isPersisted ->
+                        if (!isPersisted) revert(current)
+                        reply(rumErrorId, isPersisted)
+                    }
+                    null
+                }
+                // A reservation being persisted is granted by its own callback.
+                current.isPersisted -> true
+                else -> null
             }
         }
+        reply?.let { reply(rumErrorId, it) }
+    }
+
+    fun onResolution(rumErrorId: String, outcome: Outcome) {
+        val isHandled = synchronized(lock) {
+            if (!isLoaded) {
+                actionsAwaitingLoad.add { onResolution(rumErrorId, outcome) }
+                return
+            }
+            val current = record?.takeIf { it.errorId == rumErrorId && !it.state.isTerminal }
+            if (current != null) {
+                val state = if (outcome == Outcome.ATTACHED) State.RESOLVED_ATTACHED else State.RESOLVED_NOT_ATTACHED
+                transition(current, state) { isPersisted ->
+                    if (isPersisted) {
+                        sendToProfiling(ProfilerEvent.RumOomProfileResolutionAck(rumErrorId))
+                    } else {
+                        // Profiling sends the outcome again on the next announcement.
+                        revert(current)
+                    }
+                }
+            }
+            current != null
+        }
+        // Already settled, or not held by this store: only tell profiling to stop resending.
+        if (!isHandled) sendToProfiling(ProfilerEvent.RumOomProfileResolutionAck(rumErrorId))
+    }
+
+    fun onProfilingReady() {
+        val toAnnounce = synchronized(lock) {
+            if (!isLoaded) {
+                actionsAwaitingLoad.add { onProfilingReady() }
+                return
+            }
+            record?.takeIf { !it.state.isTerminal }
+        }
+        toAnnounce?.let { announce(it) }
     }
 
     private fun onLoaded(loaded: PendingOomError?) {
-        var stale: PendingOomError? = null
-        val (requests, timedOut) = synchronized(lock) {
-            isLoading = false
-            if (record == null) {
-                record = loaded
-            } else {
-                // An error was held while loading: the loaded one can't get a profile any more.
-                stale = loaded
-            }
-            queuedRequests.toList().also { queuedRequests.clear() } to isTimedOut
+        val actions = synchronized(lock) {
+            isLoaded = true
+            record = loaded?.copy(isPersisted = true)
+            actionsAwaitingLoad.toList().also { actionsAwaitingLoad.clear() }
         }
-        stale?.let { flush(it, it.resolvedOutcome()) }
-        val current = loaded?.takeIf { stale == null }
+        val current = synchronized(lock) { record }
         when (current?.state) {
             null -> Unit
-            State.RESOLVED_ATTACHED -> flush(current, true)
-            State.RESOLVED_NOT_ATTACHED -> flush(current, false)
-            State.RESERVED -> if (current.isExpired()) {
-                flush(current, false)
-            } else {
-                sendToProfiling(ProfilerEvent.RumHeldOomErrorEvent(current.errorId))
-            }
-
-            State.PENDING -> if (timedOut) {
-                log(InternalLogger.Target.USER, LOG_TIMED_OUT)
-                flush(current, null)
-            } else {
-                sendToProfiling(ProfilerEvent.RumHeldOomErrorEvent(current.errorId))
-            }
+            State.PENDING -> if (synchronized(lock) { isTimedOut }) onTimeout() else announce(current)
+            State.RESERVED -> announce(current)
+            else -> write(current)
         }
-        requests.forEach { answerAttachRequest(it, synchronized(lock) { record }) }
+        actions.forEach { it() }
     }
 
     private fun onTimeout() {
-        val current = synchronized(lock) {
+        synchronized(lock) {
             isTimedOut = true
-            if (isLoading) return
-            record
-        } ?: return
-        when {
-            current.state == State.PENDING -> {
-                log(InternalLogger.Target.USER, LOG_TIMED_OUT)
-                flush(current, null)
+            val current = record ?: return
+            if (!isLoaded || current.state != State.PENDING) return
+            log(LOG_TIMED_OUT)
+            transition(current, State.RESOLVED_NO_PROFILE) { isPersisted ->
+                if (!isPersisted) revert(current)
             }
-
-            current.state == State.RESERVED && current.isExpired() -> flush(current, false)
-
-            else -> Unit
         }
     }
 
-    private fun answerAttachRequest(rumErrorId: String, current: PendingOomError?) {
-        val matching = current?.takeIf { it.errorId == rumErrorId }
-        when (matching?.state) {
-            State.PENDING -> {
-                val reserved = matching.copy(state = State.RESERVED)
-                persist(reserved, onFailure = { reply(rumErrorId, false) }) {
-                    val isReserved = replaceRecord(matching, reserved)
-                    if (!isReserved) removeIfNothingHeld()
-                    reply(rumErrorId, isReserved)
+    /**
+     * Must be called under [lock]: the new state is published and enqueued to the store together,
+     * so that store writes keep the order of the decisions. A terminal state is written once
+     * persisted.
+     */
+    private fun transition(from: PendingOomError, to: State, onPersisted: (Boolean) -> Unit) {
+        val next = from.copy(state = to, isPersisted = false)
+        record = next
+        val store = dataStore
+        if (store == null) {
+            onPersisted(false)
+            return
+        }
+        store.setValue(
+            KEY,
+            next,
+            VERSION,
+            object : DataStoreWriteCallback {
+                override fun onSuccess() {
+                    markPersisted(next)
+                    onPersisted(true)
+                    if (to.isTerminal) write(next)
+                }
+
+                override fun onFailure() = onPersisted(false)
+            },
+            PendingOomErrorSerializer()
+        )
+    }
+
+    private fun persistedCallback(held: PendingOomError) = object : DataStoreWriteCallback {
+        override fun onSuccess() = markPersisted(held)
+
+        override fun onFailure() = Unit
+    }
+
+    private fun markPersisted(value: PendingOomError) {
+        synchronized(lock) {
+            if (record === value) record = value.copy(isPersisted = true)
+        }
+    }
+
+    private fun revert(previous: PendingOomError) {
+        synchronized(lock) {
+            if (record?.errorId == previous.errorId && record?.isPersisted == false) record = previous
+        }
+    }
+
+    /**
+     * Writes a terminal record, then removes it. A failed write keeps it on disk, to be written
+     * again on the next launch with the same status.
+     */
+    private fun write(held: PendingOomError) {
+        val feature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME) ?: return
+        feature.withWriteContext { _, writeScope ->
+            writeScope { batchWriter ->
+                val event = held.toEvent()
+                if (dataWriterProvider().write(batchWriter, event, EventType.CRASH)) {
+                    synchronized(lock) {
+                        if (record?.errorId == held.errorId) {
+                            record = null
+                            dataStore?.removeValue(KEY)
+                        }
+                    }
                 }
             }
-
-            State.RESERVED,
-            State.RESOLVED_ATTACHED,
-            State.RESOLVED_NOT_ATTACHED -> reply(rumErrorId, true)
-
-            null -> reply(rumErrorId, false)
         }
     }
 
-    private fun replaceRecord(expected: PendingOomError, replacement: PendingOomError): Boolean {
-        return synchronized(lock) {
-            if (record === expected) {
-                record = replacement
-                true
-            } else {
-                false
-            }
-        }
+    private fun announce(held: PendingOomError) {
+        sendToProfiling(ProfilerEvent.RumHeldOomErrorEvent(held.errorId))
     }
 
     private fun reply(rumErrorId: String, granted: Boolean) {
         sendToProfiling(ProfilerEvent.RumOomProfileAttachReply(rumErrorId, granted))
     }
 
-    private fun persist(
-        value: PendingOomError,
-        onFailure: () -> Unit = {},
-        onSuccess: () -> Unit
-    ) {
-        val store = dataStore
-        if (store == null) {
-            onFailure()
-            return
-        }
-        store.setValue(
-            KEY,
-            value,
-            VERSION,
-            object : DataStoreWriteCallback {
-                override fun onSuccess() = onSuccess()
-
-                override fun onFailure() = onFailure()
-            },
-            PendingOomErrorSerializer()
-        )
-    }
-
-    /**
-     * Writes the held error, then removes it from disk. It is first released in memory, so that no
-     * attach request can be granted for it any more. A failed write keeps it on disk: it is written
-     * again on the next launch, with the same status when it was resolved.
-     */
-    private fun flush(held: PendingOomError, attached: Boolean?) {
-        synchronized(lock) {
-            if (record?.errorId == held.errorId) record = null
-        }
-        val feature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME) ?: return
-        feature.withWriteContext { _, writeScope: EventWriteScope ->
-            writeScope { batchWriter ->
-                val event = held.withProfiling(attached)
-                if (dataWriterProvider().write(batchWriter, event, EventType.CRASH)) {
-                    removeIfNothingHeld()
-                }
-            }
-        }
-    }
-
-    private fun removeIfNothingHeld() {
-        if (synchronized(lock) { record == null }) {
-            dataStore?.removeValue(KEY)
-        }
-    }
-
     private fun sendToProfiling(event: ProfilerEvent) {
         sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(event)
     }
 
-    private fun log(target: InternalLogger.Target, message: String) {
-        sdkCore.internalLogger.log(InternalLogger.Level.DEBUG, target, { message })
-    }
-
-    private fun PendingOomError.isExpired(): Boolean {
-        return sdkCore.timeProvider.getDeviceTimestampMillis() - heldAtMs >= RESERVED_MAX_AGE_MS
+    private fun log(message: String) {
+        sdkCore.internalLogger.log(InternalLogger.Level.DEBUG, InternalLogger.Target.USER, { message })
     }
 
     internal enum class State {
         PENDING,
         RESERVED,
         RESOLVED_ATTACHED,
-        RESOLVED_NOT_ATTACHED;
+        RESOLVED_NOT_ATTACHED,
+        RESOLVED_NO_PROFILE;
 
-        val isResolved: Boolean
-            get() = this == RESOLVED_ATTACHED || this == RESOLVED_NOT_ATTACHED
+        val isTerminal: Boolean
+            get() = this != PENDING && this != RESERVED
     }
 
+    /**
+     * @param isPersisted whether [state] is known to be on disk; only meaningful in memory.
+     */
     internal data class PendingOomError(
         val event: ErrorEvent,
         val state: State,
-        val heldAtMs: Long
+        val isPersisted: Boolean = true
     ) {
         val errorId: String
             get() = event.error.id.orEmpty()
 
-        fun resolvedOutcome(): Boolean? = when (state) {
-            State.RESOLVED_ATTACHED -> true
-            State.RESOLVED_NOT_ATTACHED, State.RESERVED -> false
-            State.PENDING -> null
-        }
-
-        /** `true` → profile attached, `false` → not attached, `null` → no profiling status. */
-        fun withProfiling(attached: Boolean?): ErrorEvent {
-            val profiling = attached?.let {
-                ErrorEvent.Profiling(
-                    status = if (it) ErrorEvent.ProfilingStatus.RUNNING else ErrorEvent.ProfilingStatus.STOPPED
-                )
+        fun toEvent(): ErrorEvent {
+            val status = when (state) {
+                State.RESOLVED_ATTACHED -> ErrorEvent.ProfilingStatus.RUNNING
+                State.RESOLVED_NOT_ATTACHED -> ErrorEvent.ProfilingStatus.STOPPED
+                else -> null
             }
-            return event.copy(dd = event.dd.copy(profiling = profiling))
+            return event.copy(dd = event.dd.copy(profiling = status?.let { ErrorEvent.Profiling(status = it) }))
         }
     }
 
@@ -327,7 +308,6 @@ internal class PendingOomErrorStore(
             val json = JsonObject()
             json.add(KEY_EVENT, model.event.toJson())
             json.addProperty(KEY_STATE, model.state.name)
-            json.addProperty(KEY_HELD_AT, model.heldAtMs)
             return json.toString()
         }
     }
@@ -339,8 +319,7 @@ internal class PendingOomErrorStore(
                 val json = JsonParser.parseString(model).asJsonObject
                 PendingOomError(
                     event = ErrorEvent.fromJsonObject(json.getAsJsonObject(KEY_EVENT)),
-                    state = State.valueOf(json.get(KEY_STATE).asString),
-                    heldAtMs = json.get(KEY_HELD_AT).asLong
+                    state = State.valueOf(json.get(KEY_STATE).asString)
                 )
             } catch (e: Exception) {
                 // Left half-written by a process death, or by another SDK version.
@@ -351,16 +330,12 @@ internal class PendingOomErrorStore(
 
     internal companion object {
         internal const val KEY = "pending_oom_error"
-        internal const val VERSION = 1
+        internal const val VERSION = 2
         internal val TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1)
-
-        // Matches the max age of the profiling feature's outcome marker.
-        internal val RESERVED_MAX_AGE_MS = TimeUnit.HOURS.toMillis(24)
         private const val KEY_EVENT = "event"
         private const val KEY_STATE = "state"
-        private const val KEY_HELD_AT = "held_at"
         internal const val LOG_HELD = "Fatal OOM error held until the outcome of its OOM profile is known."
-        internal const val LOG_FLUSHED_CRASH_LOOP = "Previously held OOM error written: a new OOM error is held."
-        internal const val LOG_TIMED_OUT = "Held OOM error written without profiling status: no outcome received."
+        internal const val LOG_TIMED_OUT =
+            "Held OOM error written without profiling status: no OOM profile reserved in time."
     }
 }

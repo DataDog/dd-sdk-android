@@ -11,18 +11,17 @@ import com.google.gson.JsonParser
 
 /**
  * Durable record of what happened to the OOM profile of a held RUM error, kept until RUM
- * acknowledges the outcome. [State.ATTACHED] is only recorded once the profile batch write returned.
+ * acknowledges the outcome: it never expires, as RUM keeps a reserved error waiting for it.
+ * [State.ATTACHED] is only recorded once the profile batch write returned.
  *
  * @param rumErrorId id of the held RUM error.
  * @param state outcome of the OOM profile.
- * @param createdAtMs device time the marker was created at.
  * @param resultFilePath trace file of the profile, deleted when an [State.IN_FLIGHT] write is found
  * abandoned by a dead process.
  */
 internal data class OomProfileOutcomeMarker(
     val rumErrorId: String,
     val state: State,
-    val createdAtMs: Long,
     val resultFilePath: String?
 ) {
 
@@ -36,7 +35,6 @@ internal data class OomProfileOutcomeMarker(
         val json = JsonObject()
         json.addProperty(KEY_ERROR_ID, rumErrorId)
         json.addProperty(KEY_STATE, state.name)
-        json.addProperty(KEY_CREATED_AT, createdAtMs)
         resultFilePath?.let { json.addProperty(KEY_PATH, it) }
         @Suppress("UnsafeThirdPartyFunctionCall") // only primitives were added
         return json.toString()
@@ -45,7 +43,6 @@ internal data class OomProfileOutcomeMarker(
     companion object {
         private const val KEY_ERROR_ID = "error_id"
         private const val KEY_STATE = "state"
-        private const val KEY_CREATED_AT = "created_at"
         private const val KEY_PATH = "path"
 
         @Suppress("TooGenericExceptionCaught", "SwallowedException")
@@ -55,7 +52,6 @@ internal data class OomProfileOutcomeMarker(
                 OomProfileOutcomeMarker(
                     rumErrorId = json.get(KEY_ERROR_ID).asString,
                     state = State.valueOf(json.get(KEY_STATE).asString),
-                    createdAtMs = json.get(KEY_CREATED_AT).asLong,
                     resultFilePath = json.get(KEY_PATH)?.asString
                 )
             } catch (e: Exception) {

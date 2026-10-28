@@ -521,8 +521,16 @@ internal class RumFeature(
             is RumFlagEvaluationMessage -> handleFlagEvaluationEvent(event)
             is ProfilingAnrDetectedEvent -> handleProfilingAnrDetectedEvent(event)
             is ProfilingAnomalyDetectedEvent -> handleProfilingAnomalyDetectedEvent(event)
-            is ProfilerEvent.OomProfileAttachRequest -> pendingOomErrorStore.onAttachRequest(event.rumErrorId)
-            is ProfilerEvent.OomProfileResolution -> pendingOomErrorStore.onResolution(event.rumErrorId, event.outcome)
+            // Off the sender's thread: the profiling feature may send these from its own executors.
+            is ProfilerEvent.OomProfileAttachRequest -> handler.post {
+                pendingOomErrorStore.onAttachRequest(event.rumErrorId)
+            }
+
+            is ProfilerEvent.OomProfileResolution -> handler.post {
+                pendingOomErrorStore.onResolution(event.rumErrorId, event.outcome)
+            }
+
+            is ProfilerEvent.OomProfilingReady -> handler.post { pendingOomErrorStore.onProfilingReady() }
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,

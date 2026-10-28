@@ -17,7 +17,6 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.DdTagsUtils
-import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
@@ -931,9 +930,15 @@ internal open class RumViewScope(
         }
 
         if (pendingOomErrorStore != null) {
-            val attachedErrorId = datadogContext.featuresContext[Feature.PROFILING_FEATURE_NAME]
-                ?.get(FeatureContextKeys.PROFILING_OOM_PROFILE_ATTACHED_ERROR_ID) as? String
-            writeScope { pendingOomErrorStore.hold(buildErrorEvent(), attachedErrorId, it) }
+            writeScope { batchWriter ->
+                val errorEvent = buildErrorEvent()
+                if (pendingOomErrorStore.tryHold(errorEvent)) {
+                    sendRumOomErrorEvent(errorId, event, rumContext)
+                } else {
+                    // No gating event for an error written right away: no profile can be attached to it.
+                    writer.write(batchWriter, errorEvent, eventType)
+                }
+            }
         } else {
             sdkCore.newRumEventWriteOperation(writeScope, writer, eventType, buildErrorEvent)
                 .apply {
@@ -989,21 +994,6 @@ internal open class RumViewScope(
             errorCount++
             crashCount++
             sendViewUpdate(event, datadogContext, writeScope, writer, eventType)
-            // No gating event for an error written right away: no profile can ever be attached to it.
-            if (pendingOomErrorStore != null) {
-                sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-                    ProfilerEvent.RumOomErrorEvent(
-                        id = errorId,
-                        timestamp = event.eventTime.timestamp + serverTimeOffsetInMs,
-                        rumContext = ProfilingRumContext(
-                            applicationId = rumContext.applicationId,
-                            sessionId = rumContext.sessionId,
-                            viewId = rumContext.viewId,
-                            viewName = rumContext.viewName
-                        )
-                    )
-                )
-            }
         } else {
             pendingErrorCount++
         }
@@ -1831,6 +1821,21 @@ internal open class RumViewScope(
 
             else -> null
         }
+    }
+
+    private fun sendRumOomErrorEvent(errorId: String, event: RumRawEvent.AddError, rumContext: RumContext) {
+        sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+            ProfilerEvent.RumOomErrorEvent(
+                id = errorId,
+                timestamp = event.eventTime.timestamp + serverTimeOffsetInMs,
+                rumContext = ProfilingRumContext(
+                    applicationId = rumContext.applicationId,
+                    sessionId = rumContext.sessionId,
+                    viewId = rumContext.viewId,
+                    viewName = rumContext.viewName
+                )
+            )
+        )
     }
 
     /**

@@ -83,7 +83,7 @@ internal class ProfilingDataWriter(
         }
         feature.withWriteContext { context, writeScope ->
             writeScope { writer ->
-                synchronized(this) {
+                val isWritten = synchronized(this) {
                     val profileBytes = readProfilingData(resultFilePath)
                     if (profileBytes == null || profileBytes.isEmpty()) {
                         logWriteResultMetric(
@@ -92,9 +92,7 @@ internal class ProfilingDataWriter(
                             startReason = operation,
                             hasRumErrorId = rumErrorId.isNotEmpty()
                         )
-                        fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
-                        onWritten(false)
-                        return@synchronized
+                        return@synchronized false
                     }
                     val profileEvent = ProfileEvent(
                         start = formatIsoUtc(detectedAtMs),
@@ -122,15 +120,15 @@ internal class ProfilingDataWriter(
                         startReason = operation,
                         hasRumErrorId = rumErrorId.isNotEmpty()
                     )
-                    val isWritten = writer.write(
+                    writer.write(
                         event = RawBatchEvent(data = serialized, metadata = metadata),
                         batchMetadata = null,
                         eventType = EventType.DEFAULT
                     )
-                    // Before the trace file is deleted: a death in between leaves the trace behind.
-                    onWritten(isWritten)
-                    fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
                 }
+                // Outside the monitor, in the same task, before the trace file is deleted.
+                onWritten(isWritten)
+                fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
             }
         }
     }
