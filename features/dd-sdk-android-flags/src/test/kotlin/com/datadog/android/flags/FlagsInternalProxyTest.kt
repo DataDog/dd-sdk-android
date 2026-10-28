@@ -13,6 +13,7 @@ import com.datadog.android.flags.internal.EventsProcessor
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.RumEvaluationLogger
+import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKey
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.repository.FlagsRepository
@@ -22,6 +23,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -35,6 +37,10 @@ import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -118,7 +124,10 @@ internal class FlagsInternalProxyTest {
             fakeFlag.variationKey,
             fakeFlag.allocationKey,
             null,
-            null
+            null,
+            false,
+            fakeContext.targetingKey,
+            EvaluationTargetingKey.create(fakeContext.targetingKey, false)
         )
     }
 
@@ -151,7 +160,10 @@ internal class FlagsInternalProxyTest {
                 fakeFlag.variationKey,
                 fakeFlag.allocationKey,
                 null,
-                null
+                null,
+                false,
+                fakeContext.targetingKey,
+                EvaluationTargetingKey.create(fakeContext.targetingKey, false)
             )
             verify(mockEvaluationsFeature).processEvaluation(
                 fakeFlagKey,
@@ -159,7 +171,10 @@ internal class FlagsInternalProxyTest {
                 null,
                 null,
                 "FLAG_NOT_FOUND",
-                "FLAG_NOT_FOUND"
+                "FLAG_NOT_FOUND",
+                false,
+                fakeContext.targetingKey,
+                EvaluationTargetingKey.create(fakeContext.targetingKey, false)
             )
         } else {
             verifyNoInteractions(mockEvaluationsFeature)
@@ -207,7 +222,10 @@ internal class FlagsInternalProxyTest {
             fakeFlag.variationKey,
             fakeFlag.allocationKey,
             null,
-            null
+            null,
+            false,
+            fakeContext.targetingKey,
+            EvaluationTargetingKey.create(fakeContext.targetingKey, false)
         )
         verify(mockRumEvaluationLogger).logEvaluation(fakeFlagKey, fakeFlag.variationKey)
     }
@@ -225,7 +243,10 @@ internal class FlagsInternalProxyTest {
         testedProxy.trackFlagEvaluationEvent(fakeFlagKey, null, fakeContext, errorCode)
 
         // Then
-        verify(mockEvaluationsFeature).processEvaluation(fakeFlagKey, fakeContext, null, null, errorCode, errorCode)
+        verify(mockEvaluationsFeature).processEvaluation(
+            fakeFlagKey, fakeContext, null, null, errorCode, errorCode,
+            false, fakeContext.targetingKey, EvaluationTargetingKey.create(fakeContext.targetingKey, false)
+        )
     }
 
     @ParameterizedTest
@@ -235,7 +256,10 @@ internal class FlagsInternalProxyTest {
         testedProxy.trackFlagEvaluationEvent(fakeFlagKey, null, fakeContext, errorCode)
 
         // Then
-        verify(mockEvaluationsFeature).processEvaluation(fakeFlagKey, fakeContext, null, null, "GENERAL", "GENERAL")
+        verify(mockEvaluationsFeature).processEvaluation(
+            fakeFlagKey, fakeContext, null, null, "GENERAL", "GENERAL",
+            false, fakeContext.targetingKey, EvaluationTargetingKey.create(fakeContext.targetingKey, false)
+        )
     }
 
     @Test
@@ -250,8 +274,80 @@ internal class FlagsInternalProxyTest {
             null,
             null,
             "TYPE_MISMATCH",
-            "TYPE_MISMATCH"
+            "TYPE_MISMATCH",
+            false,
+            fakeContext.targetingKey,
+            EvaluationTargetingKey.create(fakeContext.targetingKey, false)
         )
+    }
+
+    @ParameterizedTest
+    @CsvSource("false, false", "false, true", "true, false", "true, true")
+    fun `M use captured consent and identity W trackFlagEvaluationEvent() {explicit bridge arguments}`(
+        fakeConsent: Boolean,
+        fakeMissingAssignment: Boolean
+    ) {
+        // Given
+        val fakeError = if (fakeMissingAssignment) "FLAG_NOT_FOUND" else null
+        val fakeAssignment = if (fakeMissingAssignment) {
+            null
+        } else {
+            fakeFlag.copy(
+                observeFullEvaluationData = !fakeConsent
+            )
+        }
+        val fakeKeys = listOf(null, "", "\uD800", "😀", "different-telemetry-subject")
+
+        // When
+        fakeKeys.forEach { key ->
+            testedProxy.trackFlagEvaluationEvent(fakeFlagKey, fakeAssignment, fakeContext, fakeError, fakeConsent, key)
+        }
+
+        // Then
+        fakeKeys.forEach { key ->
+            verify(mockEvaluationsFeature).processEvaluation(
+                fakeFlagKey, fakeContext, fakeAssignment?.variationKey, fakeAssignment?.allocationKey,
+                fakeError, fakeError, fakeConsent, key, EvaluationTargetingKey.create(key, fakeConsent)
+            )
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M retain flag consent W trackFlagEvaluationEvent() {legacy overload}`(fakeConsent: Boolean) {
+        // Given
+        val fakeAssignment = fakeFlag.copy(observeFullEvaluationData = fakeConsent)
+
+        // When
+        testedProxy.trackFlagEvaluationEvent(fakeFlagKey, fakeAssignment, fakeContext, null)
+
+        // Then
+        verify(mockEvaluationsFeature).processEvaluation(
+            fakeFlagKey, fakeContext, fakeAssignment.variationKey, fakeAssignment.allocationKey,
+            null, null, fakeConsent, fakeContext.targetingKey,
+            EvaluationTargetingKey.create(fakeContext.targetingKey, fakeConsent)
+        )
+    }
+
+    @Test
+    fun `M reuse identity within each client W trackFlagEvaluationEvent()`() {
+        // Given
+        val secondProxy = newProxy()
+
+        // When
+        repeat(2) { testedProxy.trackFlagEvaluationEvent(fakeFlagKey, null, fakeContext, null) }
+        repeat(2) { secondProxy.trackFlagEvaluationEvent(fakeFlagKey, null, fakeContext, null) }
+
+        // Then
+        val identityCaptor = argumentCaptor<EvaluationTargetingKey>()
+        verify(mockEvaluationsFeature, times(4)).processEvaluation(
+            eq(fakeFlagKey), eq(fakeContext), isNull(), isNull(), isNull(), isNull(),
+            eq(false), eq(fakeContext.targetingKey), identityCaptor.capture()
+        )
+        assertThat(identityCaptor.allValues[0]).isSameAs(identityCaptor.allValues[1])
+        assertThat(identityCaptor.allValues[2]).isSameAs(identityCaptor.allValues[3])
+        assertThat(identityCaptor.allValues[0]).isNotSameAs(identityCaptor.allValues[2])
+        assertThat(identityCaptor.allValues[0]).isEqualTo(identityCaptor.allValues[2])
     }
 
     @Test

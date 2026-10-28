@@ -14,6 +14,7 @@
     "flags": { "type": "object", "additionalProperties": true },
     "encodedFlags": { "type": "object", "additionalProperties": true },
     "lastUpdateTimestamp": { "type": "integer" },
+    "observeFullEvaluationData": { "type": "boolean" },
     "obfuscated": { "type": "boolean" },
     "obfuscation": {
       "type": "object",

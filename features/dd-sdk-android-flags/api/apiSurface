@@ -51,8 +51,10 @@ class com.datadog.android.flags._FlagsInternalProxy
   fun isEvaluationTelemetryOptOutParameterEnabled(): Boolean
   fun getFlagAssignmentsSnapshot(): Map<String, com.datadog.android.flags.model.UnparsedFlag>
   fun trackFlagSnapshotEvaluation(String, com.datadog.android.flags.model.UnparsedFlag, com.datadog.android.flags.model.EvaluationContext)
+  fun trackFlagSnapshotEvaluation(String, com.datadog.android.flags.model.UnparsedFlag, com.datadog.android.flags.model.EvaluationContext, String?)
   fun trackFlagExposure(String, com.datadog.android.flags.model.UnparsedFlag, com.datadog.android.flags.model.EvaluationContext)
   fun trackFlagEvaluationEvent(String, com.datadog.android.flags.model.UnparsedFlag?, com.datadog.android.flags.model.EvaluationContext, String?)
+  fun trackFlagEvaluationEvent(String, com.datadog.android.flags.model.UnparsedFlag?, com.datadog.android.flags.model.EvaluationContext, String?, Boolean, String?)
   fun trackFlagRumEvaluation(String, String, com.datadog.android.flags.model.EvaluationContext)
 enum com.datadog.android.flags.model.ErrorCode
   - PROVIDER_NOT_READY
@@ -95,3 +97,5 @@ interface com.datadog.android.flags.model.UnparsedFlag
   val extraLogging: org.json.JSONObject
   val reason: String
   val serialId: Long?
+interface com.datadog.android.flags.model.UnparsedFlagWithConsent : UnparsedFlag
+  val observeFullEvaluationData: Boolean

@@ -322,6 +322,24 @@ and `FlagsSubscription.unsubscribe`.
 The [Kotlin sample](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/SampleApplication.kt)
 registers an application-lifetime callback, logs keys, and evaluates `"my-flag-key"` with default `false`.
 
+## Evaluation telemetry privacy
+
+Evaluation telemetry protects targeting keys by default. Only a literal boolean `true` in the
+assignment response's `data.attributes.observeFullEvaluationData` enables raw targeting keys.
+Absent, false, null, or malformed consent values keep protection enabled without rejecting the
+assignments. Consent is cached with the assignments and changes on normal configuration refresh.
+Evaluations queued before a refresh retain the consent of the configuration they used.
+
+Protected nonempty targeting keys are SHA-256 hashes of the exact UTF-8 text, prefixed with
+`sha256_`. Empty keys remain empty; missing keys and malformed Unicode are omitted without losing
+the evaluation in both consent modes. Valid Unicode is preserved exactly, without normalization.
+Android continues to omit `context.evaluation` in both modes. The consent setting does
+not change evaluation inputs, assignment requests, exposure events, or RUM integration.
+
+Evaluation telemetry error messages contain stable error codes in both consent modes, with
+`GENERAL` for unknown failures. `trackEvaluations(false)` disables this track. Assignment `doLog`
+controls exposures independently.
+
 ## Integration with RUM
 
 When RUM is enabled in your application and RUM integration is enabled in the Flags configuration (default), flag evaluations are automatically:

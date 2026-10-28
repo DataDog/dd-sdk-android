@@ -11,6 +11,8 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKey
+import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
@@ -31,8 +33,11 @@ internal class DefaultFlagsRepository(
     private data class FlagsState(
         val context: EvaluationContext,
         val flags: Map<String, PrecomputedFlag>,
-        val obfuscation: FlagKeyObfuscation?
+        val obfuscation: FlagKeyObfuscation?,
+        val observeFullEvaluationData: Boolean
     ) {
+        val telemetryTargetingKey = EvaluationTargetingKey.create(context.targetingKey, observeFullEvaluationData)
+
         operator fun get(key: String): PrecomputedFlag? =
             if (obfuscation == null) flags[key] else obfuscation.encode(key)?.let { flags[it] }
     }
@@ -56,8 +61,14 @@ internal class DefaultFlagsRepository(
             persistedState?.let {
                 FlagsState(
                     it.evaluationContext,
-                    it.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) },
-                    it.obfuscation
+                    it.flags.mapValues { (_, flag) ->
+                        flag.copy(
+                            reason = ResolutionReason.CACHED.name,
+                            observeFullEvaluationData = it.observeFullEvaluationData
+                        )
+                    },
+                    it.obfuscation,
+                    it.observeFullEvaluationData
                 ).takeIf { state -> atomicState.compareAndSet(null, state) }
             }
         } finally {
@@ -72,9 +83,10 @@ internal class DefaultFlagsRepository(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
         obfuscation: FlagKeyObfuscation?,
+        observeFullEvaluationData: Boolean,
         onInstalled: () -> Unit
     ) {
-        val newState = FlagsState(context, flags, obfuscation)
+        val newState = FlagsState(context, flags, obfuscation, observeFullEvaluationData)
 
         val previousState = atomicState.getAndSet(newState)
         val firstInstallation = previousState == null ||
@@ -98,7 +110,8 @@ internal class DefaultFlagsRepository(
                         )
                     }
                 },
-                obfuscation = obfuscation
+                obfuscation = obfuscation,
+                observeFullEvaluationData = observeFullEvaluationData
             )
         } catch (
             // Storage submission failure must not abort an accepted installation.
@@ -166,10 +179,10 @@ internal class DefaultFlagsRepository(
         return state?.context == context && state.flags.isNotEmpty()
     }
 
-    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>? {
+    override fun getEvaluationSnapshot(key: String): FlagEvaluationSnapshot? {
         val state = readableState ?: return null
         val flag = state[key]
-        return flag to state.context
+        return FlagEvaluationSnapshot(flag, state.context, state.observeFullEvaluationData, state.telemetryTargetingKey)
     }
 
     override fun waitForPersistenceLoad() {

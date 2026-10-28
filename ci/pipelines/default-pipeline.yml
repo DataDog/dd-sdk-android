@@ -88,10 +88,15 @@ stages:
   run-core-it-instrumented:
     - set +e
     - exit_code=0
+    - ./gradlew :features:dd-sdk-android-flags:assembleRelease :features:dd-sdk-android-flags-openfeature:assembleRelease || exit $?
+    - mkdir -p build/flags-device-artifacts
+    - cp features/dd-sdk-android-flags/build/outputs/aar/dd-sdk-android-flags-release.aar build/flags-device-artifacts/
+    - cp features/dd-sdk-android-flags-openfeature/build/outputs/aar/dd-sdk-android-flags-openfeature-release.aar build/flags-device-artifacts/
+    - shasum -a 256 build/flags-device-artifacts/*.aar
     - !reference [ .snippets, start-emulator ]
-    - DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :reliability:core-it:connectedDebugAndroidTest $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
+    - DD_TAGS="test.configuration.android_api:$ANDROID_API" ./gradlew :reliability:core-it:connectedDebugAndroidTest :reliability:single-fit:flags:connectedReleaseAndroidTest -PflagsArtifactDirectory="$CI_PROJECT_DIR/build/flags-device-artifacts" $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
-    - datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname reliability/core-it/build/outputs/androidTest-results/connected/debug/
+    - datadog-ci junit upload --service dd-sdk-android --tags test.configuration.android_api:$ANDROID_API --xpath-tag test.suite=/testcase/@classname reliability/core-it/build/outputs/androidTest-results/connected/debug/ reliability/single-fit/flags/build/outputs/androidTest-results/connected/release/
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
   run-ndk-instrumented:

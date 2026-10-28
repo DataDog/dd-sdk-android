@@ -201,7 +201,12 @@ internal class EvaluationsManager(
         initializationCompletion: InitializationCompletion?,
         callback: EvaluationContextCallback?
     ) {
-        flagsRepository.setFlagsAndContext(context, assignments.flags, assignments.obfuscation) {
+        flagsRepository.setFlagsAndContext(
+            context,
+            assignments.flags,
+            assignments.obfuscation,
+            assignments.observeFullEvaluationData
+        ) {
             val completionCallback = synchronized(initializationTerminalLock) {
                 val result = initializationCompletion?.take()?.callback
                     ?: if (initializationCompletion == null) callback else null

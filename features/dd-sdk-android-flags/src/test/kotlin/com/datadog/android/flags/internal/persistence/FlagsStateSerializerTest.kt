@@ -19,6 +19,8 @@ import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 
@@ -36,6 +38,57 @@ internal class FlagsStateSerializerTest {
     @BeforeEach
     fun `set up`() {
         testedSerializer = FlagsStateSerializer(mockInternalLogger)
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["", "jane.doe@datadoghq.com", "é", "e\u0301", "😀", "\uFFFD", "\\uD800"])
+    fun `M preserve valid Unicode bytes W serialize()`(fakeKey: String) {
+        // Given
+        val fakeState = FlagsStateEntry(EvaluationContext(fakeKey), emptyMap(), fakeTimestamp)
+
+        // When
+        val serialized = testedSerializer.serialize(fakeState)
+
+        // Then
+        assertThat(serialized).contains(JSONObject.quote(fakeKey))
+        val restored = checkNotNull(FlagsStateDeserializer(mockInternalLogger).deserialize(serialized))
+        assertThat(restored.evaluationContext.targetingKey).isEqualTo(fakeKey)
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            "", "jane.doe@datadoghq.com", "é", "e\u0301", "😀", "\uFFFD", "\\uD800",
+            "\uD800", "\uDC00", "a\uD800b", "\uD800\uD800", "\uDC00\uD800", "😀\uD800"
+        ]
+    )
+    fun `M preserve context through UTF8 storage W serialize()`(fakeKey: String) {
+        // Given
+        val fakeContext = EvaluationContext(fakeKey, mapOf("value" to fakeKey))
+        val encoding = FlagKeyObfuscation.fromSalt("000102030405060708090a0b0c0d0e0f")
+        val fakeStates = listOf(null, encoding).map { obfuscation ->
+            FlagsStateEntry(
+                fakeContext,
+                emptyMap(),
+                fakeTimestamp,
+                observeFullEvaluationData = true,
+                obfuscation = obfuscation
+            )
+        }
+
+        // When
+        val restored = fakeStates.map { state ->
+            val persistedBytes = testedSerializer.serialize(state).toByteArray(Charsets.UTF_8)
+            checkNotNull(
+                FlagsStateDeserializer(mockInternalLogger).deserialize(persistedBytes.toString(Charsets.UTF_8))
+            )
+        }
+
+        // Then
+        assertThat(restored.map { it.evaluationContext }).containsOnly(fakeContext)
+        assertThat(restored.map { it.observeFullEvaluationData }).containsOnly(true)
+        assertThat(restored.map { it.flags }).allMatch { it.isEmpty() }
+        assertThat(restored.map { it.obfuscation }).containsExactly(null, encoding)
     }
 
     @Test
@@ -57,7 +110,7 @@ internal class FlagsStateSerializerTest {
             EvaluationContext(forge.anAlphabeticalString()),
             mapOf(encodedKey to flag),
             fakeTimestamp,
-            encoding
+            obfuscation = encoding
         )
 
         // When

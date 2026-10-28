@@ -42,6 +42,38 @@ internal class FlagsStateDeserializerTest {
         testedDeserializer = FlagsStateDeserializer(mockInternalLogger)
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M preserve strict consent W deserialize() {empty plain or encoded cache}`(encoded: Boolean, forge: Forge) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val consentValues = listOf(true, false, JSONObject.NULL, "true", 1, JSONObject(), null)
+        val json = JSONObject(buildStateJson(fakeKey, JSONObject()))
+        if (encoded) {
+            json.remove("flags")
+            json.put("encodedFlags", JSONObject())
+            json.put("obfuscated", true)
+            json.put(
+                "obfuscation",
+                JSONObject().put("scheme", "flag-key-sha256-v1")
+                    .put("salt", "000102030405060708090a0b0c0d0e0f")
+            )
+        }
+
+        // When
+        val restored = consentValues.map { consent ->
+            json.put("observeFullEvaluationData", consent)
+            checkNotNull(testedDeserializer.deserialize(json.toString()))
+        }
+
+        // Then
+        assertThat(restored.map { it.observeFullEvaluationData })
+            .containsExactly(true, false, false, false, false, false, false)
+        assertThat(restored.map { it.flags }).allMatch { it.isEmpty() }
+        assertThat(restored.map { it.evaluationContext.targetingKey }).containsOnly(fakeKey)
+        assertThat(restored.map { it.obfuscation != null }).containsOnly(encoded)
+    }
+
     @Test
     fun `M reject malformed encoded keys W deserialize() {valid descriptor}`(forge: Forge) {
         // Given
@@ -428,7 +460,10 @@ internal class FlagsStateDeserializerTest {
         val restored = checkNotNull(testedDeserializer.deserialize(rewritten))
 
         // Then
-        assertThat(JsonParser.parseString(rewritten)).isEqualTo(JsonParser.parseString(legacy))
+        val expected = JsonParser.parseString(legacy).asJsonObject.apply {
+            addProperty("observeFullEvaluationData", false)
+        }
+        assertThat(JsonParser.parseString(rewritten)).isEqualTo(expected)
         assertThat(restored.evaluationContext).isEqualTo(loaded.evaluationContext)
         variants.forEachIndexed { index, variant ->
             assertThat(restored.flags.getValue("flag-$index").variationValue).isEqualTo(variant)

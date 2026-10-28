@@ -48,7 +48,8 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
                 ),
                 flags = flags,
                 lastUpdateTimestamp = state.lastUpdateTimestamp,
-                obfuscation = obfuscation
+                obfuscation = obfuscation,
+                observeFullEvaluationData = state.observeFullEvaluationData == true
             )
         }
     } catch (e: JsonParseException) {
