@@ -59,7 +59,7 @@ dependencies {
     api(project(":features:dd-sdk-android-trace-api"))
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-trace-internal"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
     implementation(libs.bundles.traceCore)
@@ -68,6 +68,7 @@ dependencies {
     ksp(project(":tools:noopfactory"))
 
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(libs.okHttp)
     testImplementation(libs.systemStubsJupiter)
     testImplementation(libs.msgPackCore)
@@ -86,10 +87,11 @@ dependencies {
 
     // Test Fixtures
     testFixturesImplementation(libs.gson)
-    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.kotlinRuntime)
     testFixturesImplementation(libs.okHttp)
     testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.bundles.testTools)
+    testFixturesImplementation(project(":dd-sdk-android-internal"))
     testFixturesImplementation(project(":features:dd-sdk-android-trace-internal"))
 }
 

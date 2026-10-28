@@ -1,0 +1,424 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+package com.datadog.android.rum.assertj
+
+import com.datadog.android.api.context.AccountInfo
+import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.api.context.UserInfo
+import com.datadog.android.internal.profiling.quota.QuotaReason
+import com.datadog.android.internal.rum.RumSessionStartReason
+import com.datadog.android.rum.internal.domain.scope.isConnected
+import com.datadog.android.rum.internal.domain.scope.toVitalOperationStepQuotaReason
+import com.datadog.android.rum.internal.domain.scope.toVitalOperationStepSessionPrecondition
+import com.datadog.android.rum.model.VitalOperationStepEvent
+import com.datadog.android.rum.model.VitalOperationStepEvent.VitalOperationStepEventSessionType
+import org.assertj.core.api.AbstractObjectAssert
+import org.assertj.core.api.Assertions.assertThat
+
+internal class VitalOperationStepEventAssert(
+    actual: VitalOperationStepEvent
+) : AbstractObjectAssert<VitalOperationStepEventAssert, VitalOperationStepEvent>(
+    actual,
+    VitalOperationStepEventAssert::class.java
+) {
+
+    fun hasDate(expected: Long) = apply {
+        assertThat(actual.date)
+            .overridingErrorMessage(
+                "Expected event data to have date $expected but was ${actual.date}"
+            )
+            .isEqualTo(expected)
+    }
+
+    fun hasApplicationId(expected: String) = apply {
+        assertThat(actual.application.id)
+            .overridingErrorMessage(
+                "Expected event to have application.id $expected but was ${actual.application.id}"
+            )
+            .isEqualTo(expected)
+    }
+
+    fun containsExactlyContextAttributes(expected: Map<String, Any?>) = apply {
+        assertThat(actual.context?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event to have context " +
+                    "additional properties $expected " +
+                    "but was ${actual.context?.additionalProperties}"
+            )
+            .containsExactlyInAnyOrderEntriesOf(expected)
+    }
+
+    fun hasStartReason(reason: RumSessionStartReason) = apply {
+        assertThat(actual.dd.session?.sessionPrecondition)
+            .overridingErrorMessage(
+                "Expected event to have a session sessionPrecondition of ${reason.name} " +
+                    "but was ${actual.dd.session?.sessionPrecondition}"
+            )
+            .isEqualTo(reason.toVitalOperationStepSessionPrecondition())
+    }
+
+    fun hasSampleRate(sampleRate: Float?) = apply {
+        assertThat(actual.dd.configuration?.sessionSampleRate ?: 0)
+            .overridingErrorMessage(
+                "Expected event to have sample rate: $sampleRate" +
+                    " but instead was: ${actual.dd.configuration?.sessionSampleRate}"
+            )
+            .isEqualTo(sampleRate)
+    }
+
+    fun hasSessionId(expected: String) = apply {
+        assertThat(actual.session.id)
+            .overridingErrorMessage(
+                "Expected event to have session.id $expected but was ${actual.session.id}"
+            )
+            .isEqualTo(expected)
+    }
+
+    fun hasIsMainProcess(expected: Boolean?) = apply {
+        assertThat(actual.session.isMainProcess)
+            .overridingErrorMessage(
+                "Expected event to have session.is_main_process:$expected " +
+                    "but was ${actual.session.isMainProcess}"
+            )
+            .isEqualTo(expected)
+    }
+
+    fun hasSessionTimeseries(expected: Boolean?) = apply {
+        assertThat(actual.session.hasTimeseries)
+            .overridingErrorMessage(
+                "Expected event to have session.has_timeseries:$expected " +
+                    "but was ${actual.session.hasTimeseries}"
+            )
+            .isEqualTo(expected)
+    }
+
+    fun hasSessionType(expected: VitalOperationStepEventSessionType) = apply {
+        assertThat(actual.session.type)
+            .overridingErrorMessage(
+                "Expected event to have session.type:$expected but was ${actual.session.type}"
+            ).isEqualTo(expected)
+    }
+
+    fun hasNoSessionReplay() = apply {
+        assertThat(actual.session.hasReplay)
+            .overridingErrorMessage(
+                "Expected event data to have null hasReplay but it was ${actual.session.hasReplay}"
+            )
+            .isNull()
+    }
+
+    fun hasSessionReplay(hasReplay: Boolean) = apply {
+        assertThat(actual.session.hasReplay)
+            .overridingErrorMessage(
+                "Expected event data to have hasReplay $hasReplay but was ${actual.session.hasReplay}"
+            )
+            .isEqualTo(hasReplay)
+    }
+
+    fun hasViewId(expectedId: String) = apply {
+        assertThat(actual.view.id)
+            .overridingErrorMessage(
+                "Expected event data to have view.id $expectedId but was ${actual.view.id}"
+            )
+            .isEqualTo(expectedId)
+    }
+
+    fun hasName(expected: String) = apply {
+        assertThat(actual.view.name)
+            .overridingErrorMessage(
+                "Expected event data to have view.name $expected but was ${actual.view.name}"
+            )
+            .isEqualTo(expected)
+    }
+
+    fun hasUrl(expected: String) = apply {
+        assertThat(actual.view.url)
+            .overridingErrorMessage(
+                "Expected event data to have view.url $expected but was ${actual.view.url}"
+            )
+            .isEqualTo(expected)
+    }
+
+    fun hasNoSyntheticsTest() = apply {
+        assertThat(actual.synthetics?.testId)
+            .overridingErrorMessage(
+                "Expected event to have no synthetics.testId but was ${actual.synthetics?.testId}"
+            ).isNull()
+        assertThat(actual.synthetics?.resultId)
+            .overridingErrorMessage(
+                "Expected event to have no synthetics.resultId but was ${actual.synthetics?.resultId}"
+            ).isNull()
+    }
+
+    fun hasSyntheticsTest(testId: String, resultId: String) = apply {
+        assertThat(actual.synthetics?.testId)
+            .overridingErrorMessage(
+                "Expected event to have synthetics.testId $testId but was ${actual.synthetics?.testId}"
+            ).isEqualTo(testId)
+        assertThat(actual.synthetics?.resultId)
+            .overridingErrorMessage(
+                "Expected event to have synthetics.resultId $resultId but was ${actual.synthetics?.resultId}"
+            ).isEqualTo(resultId)
+    }
+
+    fun hasSource(source: VitalOperationStepEvent.VitalOperationStepEventSource?) = apply {
+        assertThat(actual.source)
+            .overridingErrorMessage(
+                "Expected event to have a source %s" +
+                    " instead it was %s",
+                actual.source ?: "null",
+                source ?: "null"
+            )
+            .isEqualTo(source)
+        return this
+    }
+
+    fun hasAccountInfo(expected: AccountInfo?) = apply {
+        assertThat(actual.account?.id)
+            .overridingErrorMessage(
+                "Expected RUM event to have account.id ${expected?.id} " +
+                    "but was ${actual.account?.id}"
+            )
+            .isEqualTo(expected?.id)
+        assertThat(actual.account?.name)
+            .overridingErrorMessage(
+                "Expected RUM event to have account.name ${expected?.name} " +
+                    "but was ${actual.account?.name}"
+            )
+            .isEqualTo(expected?.name)
+        assertThat(actual.account?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event to have account additional " +
+                    "properties ${expected?.extraInfo} " +
+                    "but was ${actual.account?.additionalProperties}"
+            )
+            .containsExactlyInAnyOrderEntriesOf(expected?.extraInfo)
+    }
+
+    fun hasUserInfo(expected: UserInfo?) = apply {
+        assertThat(actual.usr?.id)
+            .overridingErrorMessage(
+                "Expected event to have usr.id ${expected?.id} " +
+                    "but was ${actual.usr?.id}"
+            )
+            .isEqualTo(expected?.id)
+        assertThat(actual.usr?.anonymousId)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.anonymousId ${expected?.anonymousId} " +
+                    "but was ${actual.usr?.anonymousId}"
+            )
+            .isEqualTo(expected?.anonymousId)
+        assertThat(actual.usr?.name)
+            .overridingErrorMessage(
+                "Expected event to have usr.name ${expected?.name} " +
+                    "but was ${actual.usr?.name}"
+            )
+            .isEqualTo(expected?.name)
+        assertThat(actual.usr?.email)
+            .overridingErrorMessage(
+                "Expected event to have usr.email ${expected?.email} " +
+                    "but was ${actual.usr?.email}"
+            )
+            .isEqualTo(expected?.email)
+        assertThat(actual.usr?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event to have user additional" +
+                    " properties ${expected?.additionalProperties} " +
+                    "but was ${actual.usr?.additionalProperties}"
+            )
+            .containsExactlyInAnyOrderEntriesOf(expected?.additionalProperties)
+    }
+
+    fun hasDeviceInfo(
+        name: String,
+        model: String,
+        brand: String,
+        type: VitalOperationStepEvent.DeviceType,
+        architecture: String
+    ) = apply {
+        assertThat(actual.device?.name)
+            .overridingErrorMessage(
+                "Expected event data to have device.name $name but was ${actual.device?.name}"
+            )
+            .isEqualTo(name)
+        assertThat(actual.device?.model)
+            .overridingErrorMessage(
+                "Expected event data to have device.model $model but was ${actual.device?.model}"
+            )
+            .isEqualTo(model)
+        assertThat(actual.device?.brand)
+            .overridingErrorMessage(
+                "Expected event data to have device.brand $brand but was ${actual.device?.brand}"
+            )
+            .isEqualTo(brand)
+        assertThat(actual.device?.type)
+            .overridingErrorMessage(
+                "Expected event data to have device.type $type but was ${actual.device?.type}"
+            )
+            .isEqualTo(type)
+        assertThat(actual.device?.architecture)
+            .overridingErrorMessage(
+                "Expected event data to have device.architecture $architecture" +
+                    " but was ${actual.device?.architecture}"
+            )
+            .isEqualTo(architecture)
+    }
+
+    fun hasOsInfo(
+        name: String,
+        version: String,
+        versionMajor: String
+    ) = apply {
+        assertThat(actual.os?.name)
+            .overridingErrorMessage(
+                "Expected event data to have os.name $name but was ${actual.os?.name}"
+            )
+            .isEqualTo(name)
+        assertThat(actual.os?.version)
+            .overridingErrorMessage(
+                "Expected event data to have os.version $version but was ${actual.os?.version}"
+            )
+            .isEqualTo(version)
+        assertThat(actual.os?.versionMajor)
+            .overridingErrorMessage(
+                "Expected event data to have os.version_major $versionMajor" +
+                    " but was ${actual.os?.versionMajor}"
+            )
+            .isEqualTo(versionMajor)
+    }
+
+    fun hasConnectivityInfo(expected: NetworkInfo?) = apply {
+        val expectedStatus = if (expected?.isConnected() == true) {
+            VitalOperationStepEvent.ConnectivityStatus.CONNECTED
+        } else {
+            VitalOperationStepEvent.ConnectivityStatus.NOT_CONNECTED
+        }
+        val expectedInterfaces = when (expected?.connectivity) {
+            NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(VitalOperationStepEvent.Interface.ETHERNET)
+            NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(VitalOperationStepEvent.Interface.WIFI)
+            NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(VitalOperationStepEvent.Interface.WIMAX)
+            NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(VitalOperationStepEvent.Interface.BLUETOOTH)
+            NetworkInfo.Connectivity.NETWORK_2G,
+            NetworkInfo.Connectivity.NETWORK_3G,
+            NetworkInfo.Connectivity.NETWORK_4G,
+            NetworkInfo.Connectivity.NETWORK_5G,
+            NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
+            NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(VitalOperationStepEvent.Interface.CELLULAR)
+
+            NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(VitalOperationStepEvent.Interface.OTHER)
+            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
+            null -> null
+        }
+
+        assertThat(actual.connectivity?.status)
+            .overridingErrorMessage(
+                "Expected RUM event to have connectivity.status $expectedStatus " +
+                    "but was ${actual.connectivity?.status}"
+            )
+            .isEqualTo(expectedStatus)
+
+        assertThat(actual.connectivity?.cellular?.technology)
+            .overridingErrorMessage(
+                "Expected RUM event to connectivity usr.cellular.technology " +
+                    "${expected?.cellularTechnology} " +
+                    "but was ${actual.connectivity?.cellular?.technology}"
+            )
+            .isEqualTo(expected?.cellularTechnology)
+
+        assertThat(actual.connectivity?.cellular?.carrierName)
+            .overridingErrorMessage(
+                "Expected RUM event to connectivity usr.cellular.carrierName " +
+                    "${expected?.carrierName} " +
+                    "but was ${actual.connectivity?.cellular?.carrierName}"
+            )
+            .isEqualTo(expected?.carrierName)
+
+        assertThat(actual.connectivity?.interfaces)
+            .overridingErrorMessage(
+                "Expected RUM event to have connectivity.interfaces $expectedInterfaces " +
+                    "but was ${actual.connectivity?.interfaces}"
+            )
+            .isEqualTo(expectedInterfaces)
+    }
+
+    fun hasVersion(version: String?) = apply {
+        assertThat(actual.version)
+            .overridingErrorMessage(
+                "Expected RUM event to have version: $version" +
+                    " but instead was: ${actual.version}"
+            )
+            .isEqualTo(version)
+    }
+
+    fun hasBuildVersion(buildVersion: Int?) = apply {
+        assertThat(actual.buildVersion)
+            .overridingErrorMessage(
+                "Expected RUM event to have build version: $buildVersion" +
+                    " but instead was: ${actual.buildVersion}"
+            )
+            .isEqualTo(buildVersion.toString())
+    }
+
+    fun hasBuildId(buildId: String?) = apply {
+        assertThat(actual.buildId)
+            .overridingErrorMessage(
+                "Expected RUM event to have build id: $buildId" +
+                    " but instead was: ${actual.buildId}"
+            )
+            .isEqualTo(buildId)
+    }
+
+    fun hasServiceName(serviceName: String?) = apply {
+        assertThat(actual.service)
+            .overridingErrorMessage(
+                "Expected RUM event to have serviceName: $serviceName" +
+                    " but instead was: ${actual.service}"
+            )
+            .isEqualTo(serviceName)
+    }
+
+    fun hasProfilingQuotaReason(quotaReason: QuotaReason) = apply {
+        assertThat(actual.dd.profiling?.quotaReason)
+            .overridingErrorMessage(
+                "Expected RUM event to have profiling quota reason: $quotaReason" +
+                    " but instead was: ${actual.dd.profiling?.quotaReason}"
+            )
+            .isEqualTo(quotaReason.toVitalOperationStepQuotaReason())
+    }
+
+    fun hasProfilingStatus(profilingStatus: VitalOperationStepEvent.ProfilingStatus?) = apply {
+        assertThat(actual.dd.profiling?.status)
+            .overridingErrorMessage(
+                "Expected RUM event to have profiling status: $profilingStatus" +
+                    " but instead was: ${actual.dd.profiling?.status}"
+            )
+            .isEqualTo(profilingStatus)
+    }
+
+    fun hasNoProfiling() = apply {
+        assertThat(actual.dd.profiling)
+            .overridingErrorMessage(
+                "Expected RUM event to have no profiling" +
+                    " but instead was: ${actual.dd.profiling}"
+            )
+            .isNull()
+    }
+
+    fun hasDDTags(ddTags: String) = apply {
+        assertThat(actual.ddtags)
+            .overridingErrorMessage(
+                "Expected RUM event to have ddTags: $ddTags" +
+                    " but instead was: ${actual.ddtags}"
+            )
+            .isEqualTo(ddTags)
+    }
+
+    companion object {
+        internal fun assertThat(
+            actual: VitalOperationStepEvent
+        ): VitalOperationStepEventAssert = VitalOperationStepEventAssert(actual)
+    }
+}

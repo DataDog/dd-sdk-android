@@ -5,30 +5,35 @@
  */
 
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
-import io.gitlab.arturbosch.detekt.Detekt
-import org.gradle.api.artifacts.VersionCatalogsExtension
+import com.datadog.gradle.utils.toCamelCase
+import dev.detekt.gradle.Detekt
 import org.gradle.api.attributes.Usage
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.named
-import org.gradle.kotlin.dsl.the
 
-// Applying `io.gitlab.arturbosch.detekt` would also register its own detekt tasks and apply detekt.yml
-// - unwanted, since this plugin isn't linting, only using Detekt as an engine. All our own task actually needs
-// from the plugin is the engine classpath, so provide that directly via detached configurations instead of applying it.
-val detektVersion = the<VersionCatalogsExtension>().named("libs").findVersion("detekt").get().requiredVersion
-val detektEngineClasspath = configurations.detachedConfiguration(
-    dependencies.create("io.gitlab.arturbosch.detekt:detekt-cli:$detektVersion")
-)
-val detektPluginClasspath = configurations.detachedConfiguration(
-    dependencies.create(project(":tools:detekt"))
-)
+plugins {
+    // Provides the Detekt engine classpath and the defaults of the `Detekt` tasks
+    id("dev.detekt")
+}
 
-val apiSurfaceLogFile = layout.buildDirectory.file("reports/detekt-test-pyramid/apiSurface.log")
-val generatedConfigFile = layout.buildDirectory.file("tmp/detekt-test-pyramid/apiSurfaceTestPyramidConfig.yml")
+dependencies {
+    detektPlugins(project(":tools:detekt"))
+}
+
+@Suppress("UnstableApiUsage")
+val apiSurfaceReportElements = configurations.consumable("apiSurfaceReportElements") {
+    attributes {
+        attribute(Usage.USAGE_ATTRIBUTE, named("test-pyramid-api-surface"))
+    }
+}
 
 val androidComponents = extensions.getByType<LibraryAndroidComponentsExtension>()
 androidComponents.onVariants(androidComponents.selector().withBuildType("debug")) { variant ->
-    val checkApiSurfaceTask = tasks.register<Detekt>("checkTestPyramidApiSurface") {
+    val apiSurfaceLogFile = layout.buildDirectory.file("reports/detekt-test-pyramid/${variant.name}/apiSurface.log")
+    val generatedConfigFile = layout.buildDirectory.file(
+        "tmp/detekt-test-pyramid/${variant.name}/apiSurfaceTestPyramidConfig.yml"
+    )
+    val checkApiSurfaceTask = tasks.register<Detekt>("checkTestPyramidApiSurface${variant.name.toCamelCase()}") {
         group = "verification"
         description = "Datadog test pyramid: collects the public API surface for coverage reporting."
 
@@ -47,8 +52,6 @@ androidComponents.onVariants(androidComponents.selector().withBuildType("debug")
             )
         }
 
-        detektClasspath.setFrom(detektEngineClasspath)
-        pluginClasspath.setFrom(detektPluginClasspath)
         classpath.setFrom(variant.compileClasspath, androidComponents.sdkComponents.bootClasspath)
         jvmTarget = "17"
         buildUponDefaultConfig = false
@@ -58,9 +61,8 @@ androidComponents.onVariants(androidComponents.selector().withBuildType("debug")
         reports {
             sarif.required = false
             html.required = false
-            xml.required = false
-            txt.required = false
-            md.required = false
+            markdown.required = false
+            checkstyle.required = false
         }
 
         // Internal working state regenerated every run, not a published output - LocalState, not @OutputFile.
@@ -68,11 +70,8 @@ androidComponents.onVariants(androidComponents.selector().withBuildType("debug")
         config.setFrom(generatedConfigFile)
         outputs.file(apiSurfaceLogFile)
 
-        // captured to be configuration cache compatible
-        val configFile = generatedConfigFile
-        val logFileProvider = apiSurfaceLogFile
         doFirst {
-            val generatedConfig = configFile.get().asFile
+            val generatedConfig = generatedConfigFile.get().asFile
             generatedConfig.parentFile.mkdirs()
             generatedConfig.writeText(
                 """
@@ -82,7 +81,7 @@ androidComponents.onVariants(androidComponents.selector().withBuildType("debug")
                   active: true
                   ApiSurface:
                     active: true
-                    outputFileName: '${logFileProvider.get().asFile.absolutePath}'
+                    outputFileName: '${apiSurfaceLogFile.get().asFile.absolutePath}'
                     internalPackagePrefix: 'com.datadog'
                     ignoredAnnotations:
                       - 'com.datadog.android.lint.InternalApi'
@@ -94,20 +93,17 @@ androidComponents.onVariants(androidComponents.selector().withBuildType("debug")
 
             // ApiSurface appends per-file - a fresh rule instance is created per analyzed file,
             // so truncate the shared output file once here, before analysis starts.
-            val logFile = logFileProvider.get().asFile
+            val logFile = apiSurfaceLogFile.get().asFile
             logFile.parentFile.mkdirs()
             logFile.writeText("")
         }
     }
 
-    configurations.consumable("apiSurfaceReportElements") {
-        attributes {
-            attribute(Usage.USAGE_ATTRIBUTE, named("test-pyramid-api-surface"))
-        }
+    apiSurfaceReportElements.configure {
         outgoing.artifact(apiSurfaceLogFile) {
             builtBy(checkApiSurfaceTask)
         }
     }
-
-    rootProject.dependencies.add("testPyramidApiSurfaceAggregation", project(project.path))
 }
+
+rootProject.dependencies.add("testPyramidApiSurfaceAggregation", project(project.path))

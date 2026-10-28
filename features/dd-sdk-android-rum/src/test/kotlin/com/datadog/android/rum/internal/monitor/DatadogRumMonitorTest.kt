@@ -22,6 +22,9 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
@@ -39,7 +42,6 @@ import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
@@ -92,6 +94,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -112,6 +116,7 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -638,8 +643,8 @@ internal class DatadogRumMonitorTest {
     ) {
         // Given
         val fakeContextWithSession = fakeRumContext.copy(
-            sessionId = java.util.UUID.randomUUID().toString(),
-            sessionState = RumSessionScope.State.TRACKED
+            sessionId = UUID.randomUUID().toString(),
+            sessionState = RumSessionState.TRACKED
         )
         val mockSessionScope = mock<RumSessionScope>()
         val mockViewScope = mock<RumViewScope>()
@@ -663,8 +668,8 @@ internal class DatadogRumMonitorTest {
     ) {
         // Given
         val primeContext = fakeRumContext.copy(
-            sessionId = java.util.UUID.randomUUID().toString(),
-            sessionState = RumSessionScope.State.TRACKED
+            sessionId = UUID.randomUUID().toString(),
+            sessionState = RumSessionState.TRACKED
         )
         val mockSessionScope = mock<RumSessionScope>()
         val mockViewScope = mock<RumViewScope>()
@@ -690,8 +695,8 @@ internal class DatadogRumMonitorTest {
     ) {
         // Given
         val primeContext = fakeRumContext.copy(
-            sessionId = java.util.UUID.randomUUID().toString(),
-            sessionState = RumSessionScope.State.TRACKED
+            sessionId = UUID.randomUUID().toString(),
+            sessionState = RumSessionState.TRACKED
         )
         val mockSessionScope = mock<RumSessionScope>()
         val mockViewScope = mock<RumViewScope>()
@@ -718,8 +723,8 @@ internal class DatadogRumMonitorTest {
     ) {
         // Given
         val primeContext = fakeRumContext.copy(
-            sessionId = java.util.UUID.randomUUID().toString(),
-            sessionState = RumSessionScope.State.TRACKED
+            sessionId = UUID.randomUUID().toString(),
+            sessionState = RumSessionState.TRACKED
         )
         val mockSessionScope = mock<RumSessionScope>()
         val mockViewScope = mock<RumViewScope>()
@@ -1963,6 +1968,7 @@ internal class DatadogRumMonitorTest {
             "ndk" to RumErrorSourceType.NDK,
             "ndk+il2cpp" to RumErrorSourceType.NDK_IL2CPP,
             "maui" to RumErrorSourceType.MAUI,
+            "unreal" to RumErrorSourceType.UNREAL,
             nonSupportedValue to RumErrorSourceType.ANDROID,
             null to RumErrorSourceType.ANDROID
         )
@@ -2668,6 +2674,161 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M check session expiry immediately W checkSessionExpiry()`() {
+        // Given
+        val mockChecker = mock<SessionExpirationChecker>()
+        testedMonitor.sessionExpirationChecker = mockChecker
+
+        // When
+        testedMonitor.checkSessionExpiry()
+
+        // Then
+        verify(mockChecker).checkNow()
+    }
+
+    @Test
+    fun `M stop expiration checker W stop()`() {
+        // Given
+        val mockChecker = mock<SessionExpirationChecker>()
+        testedMonitor.sessionExpirationChecker = mockChecker
+
+        // When
+        testedMonitor.stop()
+
+        // Then
+        verify(mockChecker).onSdkStopped()
+    }
+
+    @Test
+    fun `M stop expiration checker under rootScope lock W stop()`() {
+        // Given
+        val mockChecker = mock<SessionExpirationChecker>()
+        testedMonitor.sessionExpirationChecker = mockChecker
+        var rootScopeHeld = false
+        whenever(mockChecker.onSdkStopped()) doAnswer {
+            rootScopeHeld = Thread.holdsLock(testedMonitor.rootScope)
+        }
+
+        // When
+        testedMonitor.stop()
+
+        // Then
+        assertThat(rootScopeHeld)
+            .withFailMessage(
+                "onSdkStopped() must run under the rootScope lock, like onEventHandled(), so that no" +
+                    " expiry check is posted after the SDK is stopped"
+            )
+            .isTrue()
+    }
+
+    @Test
+    fun `M stop the active session timeseries under rootScope lock W stop()`() {
+        // Given
+        val mockSessionScope = mock<RumSessionScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+        var rootScopeHeld = false
+        whenever(mockSessionScope.stopTimeseries()) doAnswer {
+            rootScopeHeld = Thread.holdsLock(testedMonitor.rootScope)
+        }
+
+        // When
+        testedMonitor.stop()
+
+        // Then
+        assertThat(rootScopeHeld).isTrue()
+    }
+
+    @Test
+    fun `M stop the active session timeseries W stop()`() {
+        // Given
+        val mockSessionScope = mock<RumSessionScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+
+        // When
+        testedMonitor.stop()
+
+        // Then
+        verify(mockSessionScope).stopTimeseries()
+    }
+
+    @Test
+    fun `M notify expiration checker W start() {no active session}`() {
+        // Given
+        val mockChecker = mock<SessionExpirationChecker>()
+        testedMonitor.sessionExpirationChecker = mockChecker
+
+        // When
+        testedMonitor.start()
+
+        // Then
+        verify(mockChecker).onEventHandled(null)
+    }
+
+    @ParameterizedTest
+    @EnumSource(RumSessionState::class)
+    fun `M notify expiration checker with session state W addAction()`(
+        fakeState: RumSessionState,
+        @Forgery fakeRumContext: RumContext,
+        @Forgery fakeType: RumActionType,
+        @StringForgery fakeName: String
+    ) {
+        // Given
+        val mockChecker = mock<SessionExpirationChecker>()
+        testedMonitor.sessionExpirationChecker = mockChecker
+        val mockSessionScope = mock<RumSessionScope>()
+        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
+        whenever(mockSessionScope.getRumContext()) doReturn fakeRumContext.copy(
+            sessionId = UUID.randomUUID().toString(),
+            sessionState = fakeState
+        )
+
+        // When
+        testedMonitor.addAction(fakeType, fakeName, fakeAttributes)
+
+        // Then
+        verify(mockChecker).onEventHandled(fakeState)
+    }
+
+    @Test
+    fun `M notify expiration checker W addAction() {no active session}`(
+        @Forgery fakeType: RumActionType,
+        @StringForgery fakeName: String
+    ) {
+        // Given
+        val mockChecker = mock<SessionExpirationChecker>()
+        testedMonitor.sessionExpirationChecker = mockChecker
+        whenever(mockApplicationScope.activeSession) doReturn null
+
+        // When
+        testedMonitor.addAction(fakeType, fakeName, fakeAttributes)
+
+        // Then
+        verify(mockChecker).onEventHandled(null)
+    }
+
+    @Test
+    fun `M not notify expiration checker W sendTelemetryEvent()`(
+        @Forgery fakeInternalTelemetryEvent: InternalTelemetryEvent
+    ) {
+        // Given
+        val mockChecker = mock<SessionExpirationChecker>()
+        testedMonitor.sessionExpirationChecker = mockChecker
+
+        // When
+        testedMonitor.sendTelemetryEvent(fakeInternalTelemetryEvent)
+
+        // Then
+        verifyNoInteractions(mockChecker)
+    }
+
+    @Test
+    fun `M check expiry every third of session inactivity W constructor()`() {
+        // When / Then
+        assertThat(testedMonitor.sessionExpirationChecker.checkIntervalMs)
+            .isEqualTo(TimeUnit.NANOSECONDS.toMillis(RumSessionScope.DEFAULT_SESSION_INACTIVITY_NS) / 3)
+    }
+
+    @Test
     fun `M handle performance metric update W updatePerformanceMetric()`(
         forge: Forge
     ) {
@@ -2977,7 +3138,7 @@ internal class DatadogRumMonitorTest {
             verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), any(), capture())
             val acc = mutableMapOf<String, Any?>()
             firstValue.invoke(acc)
-            assertThat(acc).isEqualTo(fakeRumContext.toMap())
+            assertThat(acc[FeatureContextKeys.RUM_CONTEXT]).isSameAs(fakeRumContext)
         }
     }
 
@@ -3002,7 +3163,7 @@ internal class DatadogRumMonitorTest {
             verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), any(), capture())
             val acc = mutableMapOf<String, Any?>()
             firstValue.invoke(acc)
-            assertThat(acc).isEqualTo(fakeRumContext.toMap())
+            assertThat(acc[FeatureContextKeys.RUM_CONTEXT]).isSameAs(fakeRumContext)
         }
     }
 
@@ -3065,23 +3226,6 @@ internal class DatadogRumMonitorTest {
             firstValue.invoke(acc)
             assertThat(acc).isEmpty()
         }
-    }
-
-    // endregion
-
-    // region timeseries
-
-    @Test
-    fun `M stop the active session timeseries W stopTimeseries()`() {
-        // Given
-        val mockSessionScope = mock<RumSessionScope>()
-        whenever(mockApplicationScope.activeSession) doReturn mockSessionScope
-
-        // When
-        testedMonitor.stopTimeseries()
-
-        // Then
-        verify(mockSessionScope).stopTimeseries()
     }
 
     // endregion

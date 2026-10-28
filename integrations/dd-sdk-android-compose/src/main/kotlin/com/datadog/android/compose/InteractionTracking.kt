@@ -4,12 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-@file:OptIn(ExperimentalMaterialApi::class)
-
 package com.datadog.android.compose
 
 import androidx.compose.foundation.interaction.InteractionSource
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember

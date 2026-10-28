@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay.utils
 /**
  * Defines the dimension and positions in Global coordinates for a geometry. By Global we mean that
  * the View position will not be relative to its parent but to the Device screen.
- * These dimensions are already normalized according with the current device screen density.
+ * These dimensions are already normalized according to the current device screen density.
  * Example: if a device has a DPI = 2, the value of the dimension or position is divided by 2 to get
  * a normalized value.
  * @param x as the position on X axis

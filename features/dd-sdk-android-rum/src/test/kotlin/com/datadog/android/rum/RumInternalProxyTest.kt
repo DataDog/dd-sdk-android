@@ -235,25 +235,6 @@ internal class RumInternalProxyTest {
     }
 
     @Test
-    fun `M return RumNetworkInstrumentation W createInstrumentation()`(
-        @StringForgery fakeInstrumentationName: String,
-        @Forgery fakeLibraryType: LibraryType
-    ) {
-        // Given
-        val builder = RumNetworkInstrumentationConfiguration()
-
-        // When
-        val result = with(_RumInternalProxy.Companion) {
-            builder.createInstrumentation(fakeInstrumentationName, fakeLibraryType)
-        }
-
-        // Then
-        assertThat(result).isNotNull()
-        assertThat(result.networkInstrumentationName).isEqualTo(fakeInstrumentationName)
-        assertThat(result.libraryType).isEqualTo(fakeLibraryType)
-    }
-
-    @Test
     fun `M return RumNetworkInstrumentation W createRumNetworkInstrumentation()`(
         @StringForgery fakeInstrumentationName: String,
         @Forgery fakeLibraryType: LibraryType

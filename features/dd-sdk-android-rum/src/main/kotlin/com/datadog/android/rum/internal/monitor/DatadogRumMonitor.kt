@@ -29,6 +29,8 @@ import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.heatmaps.CrossPlatformHeatmapActionData
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType
 import com.datadog.android.internal.thread.NamedCallable
@@ -51,7 +53,6 @@ import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
@@ -61,6 +62,7 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.rum.internal.domain.setRumContext
 import com.datadog.android.rum.internal.heatmaps.NativeHeatmapActionData
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
@@ -155,6 +157,13 @@ internal class DatadogRumMonitor(
 
     private val isDebugEnabled = AtomicBoolean(false)
 
+    internal var sessionExpirationChecker = SessionExpirationChecker(
+        monitor = this,
+        timeProvider = sdkCore.timeProvider,
+        checkIntervalMs = TimeUnit.NANOSECONDS.toMillis(RumSessionScope.DEFAULT_SESSION_INACTIVITY_NS) / 3,
+        handler = handler
+    )
+
     // region RumMonitor
 
     override fun getCurrentSessionId(callback: (String?) -> Unit) {
@@ -166,7 +175,7 @@ internal class DatadogRumMonitor(
                 ?.getRumContext()
                 ?.let {
                     val sessionId = it.sessionId
-                    if (it.sessionState == RumSessionScope.State.NOT_TRACKED ||
+                    if (it.sessionState == RumSessionState.NOT_TRACKED ||
                         sessionId == RumContext.NULL_UUID
                     ) {
                         null
@@ -573,6 +582,10 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun checkSessionExpiry() {
+        sessionExpirationChecker.checkNow()
+    }
+
     override fun waitForResourceTiming(key: Any) {
         handleEvent(
             RumRawEvent.WaitForResourceTiming(key, now())
@@ -926,24 +939,28 @@ internal class DatadogRumMonitor(
         }
     }
 
-    /**
-     * Stops the timeseries collector on the currently active session, if any.
-     *
-     * Must be called from [RumFeature.onStop] **before** [GlobalRumMonitor.unregister], so that
-     * the active session can stop sampling and flush buffered timeseries data while the monitor is
-     * still reachable. The shared RUM vitals executor is owned and shut down separately by
-     * [RumFeature.onStop].
-     *
-     * Must be called **before** [RumFeature.dataWriter] is replaced with a
-     * [com.datadog.android.rum.internal.storage.NoOpDataWriter]. [EventWriter.write] captures the
-     * writer eagerly at call time, so the final flush issued inside [stop] will reach the real
-     * writer only if this ordering is maintained. Note: the flush is best-effort — if the core SDK
-     * de-initializes and shuts down its context executor before the async write task fires, the
-     * write is silently skipped regardless.
-     */
-    internal fun stopTimeseries() {
+    override fun stop() {
         synchronized(rootScope) {
+            /**
+             * Stops the timeseries collector on the currently active session, if any.
+             *
+             * Must be called from [RumFeature.onStop] **before** [GlobalRumMonitor.unregister], so that
+             * the active session can stop sampling and flush buffered timeseries data while the monitor is
+             * still reachable. The shared RUM vitals executor is owned and shut down separately by
+             * [RumFeature.onStop].
+             *
+             * Must be called **before** [RumFeature.dataWriter] is replaced with a
+             * [com.datadog.android.rum.internal.storage.NoOpDataWriter]. [EventWriter.write] captures the
+             * writer eagerly at call time, so the final flush issued inside [stop] will reach the real
+             * writer only if this ordering is maintained. Note: the flush is best-effort — if the core SDK
+             * de-initializes and shuts down its context executor before the async write task fires, the
+             * write is silently skipped regardless.
+             */
+            // TODO RUM-18821 Stop the active RUM session when the SDK is stopped
             rootScope.activeSession?.stopTimeseries()
+
+            // Under the same lock as onEventHandled(), so no expiry check can be posted after this one.
+            sessionExpirationChecker.onSdkStopped()
         }
     }
 
@@ -958,8 +975,7 @@ internal class DatadogRumMonitor(
                         rootScope.handleEvent(event, datadogContext, eventWriteScope, writer)
                         val rumContext = currentRumContext()
                         sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
-                            it.clear()
-                            rumContext?.toMap()?.let(it::putAll)
+                            it.setRumContext(rumContext)
                         }
                     }
                 }
@@ -995,6 +1011,7 @@ internal class DatadogRumMonitor(
                                     notifyDebugListenerWithState()
                                     val context = currentRumContext()
                                     updateCachedViewUrl(context)
+                                    sessionExpirationChecker.onEventHandled(context?.sessionState)
                                     context
                                 }
                             }
@@ -1002,8 +1019,7 @@ internal class DatadogRumMonitor(
                         val rumContext = future?.getSafe("Rum get context", sdkCore.internalLogger)
                         // we are on the context thread already, so useContextThread=false
                         sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
-                            it.clear()
-                            rumContext?.toMap()?.let(it::putAll)
+                            it.setRumContext(rumContext)
                         }
                     }
                 }
@@ -1029,7 +1045,7 @@ internal class DatadogRumMonitor(
      * Wait for any pending events. This is mostly for integration tests to ensure that the
      * RUM context is in the correct state before proceeding.
      */
-    @Suppress("unused")
+    @Suppress("UnusedPrivateFunction", "unused")
     private fun waitForPendingEvents() {
         if (!executorService.isShutdown) {
             @Suppress("UnsafeThirdPartyFunctionCall") // 1 cannot be negative
@@ -1099,6 +1115,7 @@ internal class DatadogRumMonitor(
             "ndk" -> RumErrorSourceType.NDK
             "ndk+il2cpp" -> RumErrorSourceType.NDK_IL2CPP
             "maui" -> RumErrorSourceType.MAUI
+            "unreal" -> RumErrorSourceType.UNREAL
             else -> RumErrorSourceType.ANDROID
         }
     }

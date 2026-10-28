@@ -7,7 +7,7 @@
 package com.datadog.android.rum
 
 /**
- * Describe the type of a RUM Action.
+ * Describe the type of RUM Action.
  * @see [RumMonitor]
  */
 enum class RumActionType {

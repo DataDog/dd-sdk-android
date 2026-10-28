@@ -6,8 +6,8 @@
 
 package com.datadog.android.flags.internal.aggregation
 
+import com.datadog.android.flags.internal.model.FlagEvaluation
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.FlagEvaluation
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -50,7 +50,7 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
 
         val drained = mapLock.withLock {
             @Suppress("UnsafeThirdPartyFunctionCall") // Only throws if null is passed
-            val existing = aggregationMap.get(key) ?: EvaluationAggregationStats(
+            val existing = aggregationMap[key] ?: EvaluationAggregationStats(
                 aggregationKey = key,
                 count = 0,
                 firstEvaluation = timestamp,
@@ -60,14 +60,11 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
                 errorMessage = errorMessage
             )
             @Suppress("UnsafeThirdPartyFunctionCall") // safe - non-null key and value
-            aggregationMap.put(
-                key,
-                existing.copy(
-                    count = existing.count + 1,
-                    firstEvaluation = minOf(existing.firstEvaluation, timestamp),
-                    lastEvaluation = maxOf(existing.lastEvaluation, timestamp),
-                    errorMessage = errorMessage
-                )
+            aggregationMap[key] = existing.copy(
+                count = existing.count + 1,
+                firstEvaluation = minOf(existing.firstEvaluation, timestamp),
+                lastEvaluation = maxOf(existing.lastEvaluation, timestamp),
+                errorMessage = errorMessage
             )
 
             if (aggregationMap.size < maxAggregations) emptyMap() else drainAggregationStats()

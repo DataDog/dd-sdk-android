@@ -60,7 +60,6 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-@OptIn(ExperimentalRumApi::class)
 internal class RumTest {
 
     @Mock

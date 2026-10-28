@@ -67,6 +67,7 @@ internal class DefaultRecorderProvider(
     private val customOptionSelectorDetectors: List<OptionSelectorDetector>,
     private val customDrawableMappers: List<DrawableToColorMapper>,
     private val dynamicOptimizationEnabled: Boolean,
+    private val adaptiveCaptureSchedulingEnabled: Boolean,
     private val internalCallback: SessionReplayInternalCallback,
     private val heatmapsEnabled: Boolean
 ) : RecorderProvider {
@@ -94,6 +95,7 @@ internal class DefaultRecorderProvider(
             customDrawableMappers = customDrawableMappers,
             sdkCore = sdkCore,
             dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+            adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled,
             internalCallback = internalCallback,
             embeddedContentSlotRegistry = embeddedContentSlotRegistry,
             heatmapIdentifierRegistry = if (heatmapsEnabled) LazyHeatmapIdentifierRegistry(sdkCore) else null

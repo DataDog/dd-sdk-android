@@ -79,7 +79,7 @@ dependencies {
     implementation(project(":integrations:dd-sdk-android-timber"))
     implementation(project(":integrations:dd-sdk-android-tv"))
 
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     // Android dependencies
     implementation(libs.androidXCore)

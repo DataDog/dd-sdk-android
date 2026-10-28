@@ -10,6 +10,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.context.ProcessInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
@@ -21,6 +22,9 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -59,7 +63,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.net.URL
-import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -456,6 +459,7 @@ internal class WebViewTrackingTest {
         }
     }
 
+    @Test
     fun `M share the same TimestampOffsetProvider W enable()`(
         @Forgery fakeUrls: List<URL>
     ) {
@@ -676,22 +680,29 @@ internal class WebViewTrackingTest {
 
     @Test
     fun `M pass web view event to RumWebEventConsumer W consumeWebViewEvent()`(
+        @Forgery fakeRumContext: RumContext,
         forge: Forge
     ) {
         // Given
         val fakeBundledEvent = forge.getForgery<JsonObject>()
         val fakeRumEventType = forge.anElementFrom(WebViewRumEventConsumer.RUM_EVENT_TYPES)
         val fakeWebEvent = bundleWebEvent(fakeBundledEvent, fakeRumEventType)
-        val fakeApplicationId = forge.getForgery<UUID>().toString()
-        val fakeSessionId = forge.getForgery<UUID>().toString()
         val fakeAnonymousId = forge.anAlphabeticalString()
         val fakeUserInfo = UserInfo(anonymousId = fakeAnonymousId)
+        val fakeProcessInfo = ProcessInfo(isMainProcess = forge.aBool())
         val mockWebViewRumFeature = mock<FeatureScope>()
         val mockWebViewLogsFeature = mock<FeatureScope>()
         val expectedEvent = fakeBundledEvent.deepCopy().apply {
             add("container", JsonObject().apply { addProperty("source", "android") })
-            add("application", JsonObject().apply { addProperty("id", fakeApplicationId) })
-            add("session", JsonObject().apply { addProperty("id", fakeSessionId) })
+            add("application", JsonObject().apply { addProperty("id", fakeRumContext.applicationId) })
+            add(
+                "session",
+                JsonObject().apply {
+                    addProperty("id", fakeRumContext.sessionId)
+                    addProperty("is_main_process", fakeProcessInfo.isMainProcess)
+                    addProperty("has_timeseries", fakeRumContext.hasTimeseries)
+                }
+            )
             add("usr", JsonObject().apply { addProperty("anonymous_id", fakeAnonymousId) })
             addProperty(
                 "ddtags",
@@ -712,14 +723,13 @@ internal class WebViewTrackingTest {
             feature.onInitialize(mock())
         }
         val fakeFeaturesContext = mapOf(
-            "rum" to mapOf<String, Any?>(
-                "application_id" to fakeApplicationId,
-                "session_id" to fakeSessionId,
-                "session_state" to "TRACKED"
+            Feature.RUM_FEATURE_NAME to mapOf(
+                FeatureContextKeys.RUM_CONTEXT to fakeRumContext.copy(sessionState = RumSessionState.TRACKED)
             )
         )
         whenever(mockDatadogContext.featuresContext) doReturn fakeFeaturesContext
         whenever(mockDatadogContext.userInfo) doReturn fakeUserInfo
+        whenever(mockDatadogContext.processInfo) doReturn fakeProcessInfo
         val mockEventBatchWriter = mock<EventBatchWriter>()
         val mockEventWriteScope = mock<EventWriteScope>()
         whenever(mockEventWriteScope.invoke(any())) doAnswer {

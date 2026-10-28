@@ -135,45 +135,6 @@ internal class FlagsClientTest {
     }
 
     @Test
-    fun `M delegate to registered client W get() + resolveBooleanValue() {client registered for SDK core}`() {
-        // Given
-        whenever(mockFlagsClient.resolveBooleanValue("test-flag", false)).thenReturn(true)
-        registerClient(mockFlagsClient, mockSdkCore, "default")
-
-        // When
-        val client = FlagsClient.get(sdkCore = mockSdkCore)
-        val result = client.resolveBooleanValue("test-flag", false)
-
-        // Then
-        assertThat(client).isEqualTo(mockFlagsClient)
-        assertThat(result).isTrue()
-        verify(mockFlagsClient).resolveBooleanValue("test-flag", false)
-    }
-
-    @Test
-    fun `M delegate to correct client W resolveBooleanValue() {multiple clients registered for different SDK cores}`() {
-        // Given
-        whenever(mockFlagsClient.resolveBooleanValue("test-flag", false)).thenReturn(true)
-        whenever(mockSecondFlagsClient.resolveBooleanValue("test-flag", false)).thenReturn(false)
-        registerClient(mockFlagsClient, mockSdkCore, "default")
-        registerClient(mockSecondFlagsClient, mockSecondSdkCore, "default")
-
-        // When
-        val firstClient = FlagsClient.get(sdkCore = mockSdkCore)
-        val secondClient = FlagsClient.get(sdkCore = mockSecondSdkCore)
-        val firstResult = firstClient.resolveBooleanValue("test-flag", false)
-        val secondResult = secondClient.resolveBooleanValue("test-flag", false)
-
-        // Then
-        assertThat(firstClient).isEqualTo(mockFlagsClient)
-        assertThat(secondClient).isEqualTo(mockSecondFlagsClient)
-        assertThat(firstResult).isTrue()
-        assertThat(secondResult).isFalse()
-        verify(mockFlagsClient).resolveBooleanValue("test-flag", false)
-        verify(mockSecondFlagsClient).resolveBooleanValue("test-flag", false)
-    }
-
-    @Test
     fun `M delegate to registered client W setEvaluationContext() {client registered for SDK core}`() {
         // Given
         val fakeContext = EvaluationContext("user123", mapOf("plan" to "premium"))
@@ -276,32 +237,6 @@ internal class FlagsClientTest {
     // region Builder API Tests
 
     @Test
-    fun `M return existing client W Builder#build() {client already exists with default name}`() {
-        // Given
-        registerClient(mockFlagsClient, mockSdkCore, "default")
-
-        // When
-        val client = FlagsClient.Builder(sdkCore = mockSdkCore).build()
-
-        // Then
-        assertThat(client).isEqualTo(mockFlagsClient)
-    }
-
-    @Test
-    fun `M return existing client W Builder#build() {client already exists with custom name}`(
-        @StringForgery fakeClientName: String
-    ) {
-        // Given
-        registerClient(mockFlagsClient, mockSdkCore, fakeClientName)
-
-        // When - second build with same custom name
-        val client = FlagsClient.Builder(fakeClientName, mockSdkCore).build()
-
-        // Then - should return existing client, NOT NOPClient
-        assertThat(client).isEqualTo(mockFlagsClient)
-    }
-
-    @Test
     fun `M log warning W Builder#build() {client already exists}`() {
         // Given
         registerClient(mockFlagsClient, mockSdkCore, "default")
@@ -322,54 +257,6 @@ internal class FlagsClientTest {
             )
             assertThat(firstValue()).startsWith(
                 "[Datadog Flags] Attempted to create a FlagsClient named 'default', but one already exists."
-            )
-        }
-    }
-
-    @Test
-    fun `M create different clients W Builder#build() {different names}`(
-        @StringForgery fakeName1: String,
-        @StringForgery fakeName2: String
-    ) {
-        // Given
-        registerClient(mockFlagsClient, mockSdkCore, fakeName1)
-
-        // When - build with different names
-        val client1 = FlagsClient.get(name = fakeName1, sdkCore = mockSdkCore)
-        val client2 = FlagsClient.get(name = fakeName2, sdkCore = mockSdkCore)
-
-        // Then - first should be registered client, second should be NOPClient (custom name not found)
-        assertThat(client1).isEqualTo(mockFlagsClient)
-        assertThat(client2).isInstanceOf(NoOpFlagsClient::class.java)
-    }
-
-    @Test
-    fun `M return NoOpClient W Builder#build() {flags feature not enabled}`() {
-        // Given - create a mock SDK core with no feature enabled
-        val mockUninitializedCore = mock<FeatureSdkCore>()
-        val mockLogger = mock<InternalLogger>()
-        whenever(mockUninitializedCore.internalLogger).thenReturn(mockLogger)
-        whenever(mockUninitializedCore.getFeature(FLAGS_FEATURE_NAME)).thenReturn(null)
-
-        // When - build when feature is not enabled
-        val client = FlagsClient.Builder(sdkCore = mockUninitializedCore).build()
-
-        // Then - should return NoOpClient
-        assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
-        // Verify error was logged
-        argumentCaptor<() -> String> {
-            verify(mockLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                eq(null),
-                eq(false),
-                eq(null)
-            )
-            assertThat(firstValue()).isEqualTo(
-                "Failed to create FlagsClient named 'default': Flags feature must be " +
-                    "enabled first. Call Flags.enable() before creating clients. " +
-                    "Operating in no-op mode."
             )
         }
     }
@@ -408,15 +295,6 @@ internal class FlagsClientTest {
     }
 
     @Test
-    fun `M return NoOpClient W get() {default client doesn't exist}`() {
-        // When - get default client when it doesn't exist
-        val client = FlagsClient.get(sdkCore = mockSdkCore)
-
-        // Then - should return NoOpClient (no auto-creation)
-        assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
-    }
-
-    @Test
     fun `M log critical error W get() {client doesn't exist}`() {
         // When - get default client when it doesn't exist
         val client = FlagsClient.get(sdkCore = mockSdkCore)
@@ -436,18 +314,6 @@ internal class FlagsClientTest {
                 "[Datadog Flags] No FlagsClient with name 'default' exists for SDK instance 'test-sdk'."
             )
         }
-    }
-
-    @Test
-    fun `M return existing client W get() {default client exists}`() {
-        // Given
-        registerClient(mockFlagsClient, mockSdkCore, "default")
-
-        // When
-        val client = FlagsClient.get(sdkCore = mockSdkCore)
-
-        // Then
-        assertThat(client).isEqualTo(mockFlagsClient)
     }
 
     @Test

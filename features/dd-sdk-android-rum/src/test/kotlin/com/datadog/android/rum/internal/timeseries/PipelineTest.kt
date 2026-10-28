@@ -15,7 +15,9 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
-import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.timeseries.factory.EventFactory
 import com.datadog.android.rum.internal.timeseries.provider.DataPointsReader
@@ -34,6 +36,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -86,6 +90,9 @@ internal class PipelineTest {
     lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Mock
+    lateinit var mockCollectedSessionsRegistry: CollectedTimeseriesSessionRegistry
+
+    @Mock
     lateinit var mockInsightsCollector: InsightsCollector
 
     @Mock
@@ -113,6 +120,7 @@ internal class PipelineTest {
         }
         whenever(mockDataWriter.write(any(), any(), any())) doReturn true
         whenever(mockEventFactory.eventName) doReturn "view.cpu"
+        whenever(mockDatadogContext.featuresContext) doReturn rumFeatureContextOf(RumSessionState.TRACKED)
 
         buffer = Buffer(fakeBufferSize)
         testedPipeline = Pipeline(
@@ -121,7 +129,7 @@ internal class PipelineTest {
             buffer = buffer,
             eventFactory = mockEventFactory,
             dataWriter = mockDataWriter,
-            internalLogger = mockInternalLogger,
+            collectedSessionsRegistry = mockCollectedSessionsRegistry,
             insightsCollector = mockInsightsCollector
         )
     }
@@ -148,6 +156,7 @@ internal class PipelineTest {
 
         // Then
         assertThat(buffer.drain()).containsExactly(fakePoint)
+        verify(mockCollectedSessionsRegistry).setTimeseriesCollected(fakeRumContext.sessionId)
     }
 
     @Test
@@ -160,6 +169,7 @@ internal class PipelineTest {
 
         // Then
         assertThat(buffer.drain()).isEmpty()
+        verifyNoInteractions(mockCollectedSessionsRegistry)
     }
 
     @Test
@@ -352,6 +362,57 @@ internal class PipelineTest {
         verifyNoInteractions(mockInsightsCollector)
     }
 
+    @ParameterizedTest
+    @EnumSource(RumSessionState::class, names = ["TRACKED"], mode = EnumSource.Mode.EXCLUDE)
+    fun `M write buffered samples W flush() { RUM session no longer tracked before async write }`(
+        fakeSessionState: RumSessionState,
+        forge: Forge
+    ) {
+        // Given
+        lateinit var fakePendingWrite: (DatadogContext, EventWriteScope) -> Unit
+        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
+            fakePendingWrite = it.getArgument(it.arguments.lastIndex)
+        }
+        val fakeEvent = fakeTimeseriesJson("view.cpu")
+        whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
+        whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeEvent
+        testedPipeline.execute(fakeRumContext)
+
+        // When
+        testedPipeline.flush(fakeRumContext)
+        whenever(mockDatadogContext.featuresContext) doReturn rumFeatureContextOf(fakeSessionState)
+        fakePendingWrite(mockDatadogContext, mockEventWriteScope)
+
+        // Then
+        verify(mockEventFactory).create(eq(mockDatadogContext), eq(fakeRumContext), any())
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeEvent, EventType.DEFAULT)
+        verify(mockInsightsCollector).onTimeseries("view.cpu")
+        assertThat(buffer.drain()).isEmpty()
+    }
+
+    @Test
+    fun `M write buffered samples W flush() { RUM feature context cleared before async write }`(forge: Forge) {
+        // Given
+        lateinit var fakePendingWrite: (DatadogContext, EventWriteScope) -> Unit
+        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
+            fakePendingWrite = it.getArgument(it.arguments.lastIndex)
+        }
+        val fakeEvent = fakeTimeseriesJson("view.cpu")
+        whenever(mockReader.read()) doReturn forge.getForgery<DataPoint<Double>>()
+        whenever(mockEventFactory.create(any(), any(), any())) doReturn fakeEvent
+        testedPipeline.execute(fakeRumContext)
+
+        // When
+        testedPipeline.flush(fakeRumContext)
+        whenever(mockDatadogContext.featuresContext) doReturn emptyMap()
+        fakePendingWrite(mockDatadogContext, mockEventWriteScope)
+
+        // Then
+        verify(mockEventFactory).create(eq(mockDatadogContext), eq(fakeRumContext), any())
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeEvent, EventType.DEFAULT)
+        verify(mockInsightsCollector).onTimeseries("view.cpu")
+    }
+
     @Test
     fun `M log error W flush() { event factory throws }`(forge: Forge) {
         // Given
@@ -534,6 +595,9 @@ internal class PipelineTest {
     private fun fakeTimeseriesJson(name: String): JsonObject = JsonObject().apply {
         addProperty("name", name)
     }
+
+    private fun rumFeatureContextOf(sessionState: RumSessionState): Map<String, Map<String, Any?>> =
+        mapOf(Feature.RUM_FEATURE_NAME to mapOf(FeatureContextKeys.RUM_SESSION_STATE to sessionState.asString))
 
     private companion object {
         const val CONCURRENT_FLUSH_TIMEOUT_MS = 2000L

@@ -486,7 +486,7 @@ internal class DefaultAndroidInfoProviderTest {
         val fakeLocales = mutableListOf<Locale>()
         val mockLocaleList: LocaleList = mock()
 
-        for (i in 0 until collectionSize) {
+        repeat(collectionSize) {
             val fakeLanguage = forge.aStringMatching("[a-z][a-z]{1}")
             val fakeRegion = forge.aStringMatching("[a-z][a-z]{1}")
             fakeLocales.add(

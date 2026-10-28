@@ -10,10 +10,11 @@ import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.scheduleSafe
-import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.timeseries.CollectedTimeseriesSessionRegistry
 import com.datadog.android.rum.internal.timeseries.Pipeline
 import com.datadog.android.rum.internal.timeseries.PipelineFactory
 import com.datadog.android.rum.internal.timeseries.TimeseriesCollector
@@ -39,12 +40,12 @@ import java.util.concurrent.atomic.AtomicInteger
  *
  * Here foreground means that the process has at least one started, and therefore visible, Activity.
  * This includes a paused Activity that remains visible in multi-window mode. The collector listens for
- * [ProcessLifecycleMonitor.Callback.onStarted] and [ProcessLifecycleMonitor.Callback.onStopped] updates, which
+ * [onUiVisible] and [onUiHidden] updates, which
  * Android always delivers on the main thread.
  *
- * A stopped update is debounced because a configuration change can stop the old Activity shortly before
- * its replacement starts, without sending the app to the background. [onStopped] claims a [Gate] foreground
- * ticket before scheduling the delayed transition on [scheduledExecutorService]; [onStarted] applies its resume
+ * A hidden update is debounced because a configuration change can stop the old Activity shortly before
+ * its replacement starts, without sending the app to the background. [onUiHidden] claims a [Gate] foreground
+ * ticket before scheduling the delayed transition on [scheduledExecutorService]; [onUiVisible] applies its resume
  * immediately, which also claims a fresh ticket and thereby supersedes any pending debounced stop. Because the
  * ticket check and the state mutation happen atomically inside [Gate], a resume can never race a pending
  * debounced stop regardless of how many threads [scheduledExecutorService] uses.
@@ -70,9 +71,9 @@ import java.util.concurrent.atomic.AtomicInteger
  *                  └────────────╯
  * ```
  *
- * - **C** - [com.datadog.android.rum.internal.domain.RumContext] updates ([onRumContextUpdate]).
+ * - **C** - [com.datadog.android.internal.rum.RumContext] updates ([onRumContextUpdate]).
  * - **S** - session activity ([onSessionStart]/[onSessionStop]).
- * - **F** - app visibility ([onStarted]/[onStopped]), where [onStopped] debounces the update by claiming a
+ * - **F** - app visibility ([onUiVisible]/[onUiHidden]), where [onUiHidden] debounces the update by claiming a
  *   [Gate] ticket ([Gate.startBackgroundTransition]) and applying it after a delay ([Gate.setForeground]),
  *   so a short Activity recreation during a configuration change does not report the app as being in the
  *   background.
@@ -83,10 +84,12 @@ import java.util.concurrent.atomic.AtomicInteger
  *   [Gate] is still open for the generation in which the loop started.
  */
 internal class DefaultTimeseriesCollector(
-    private val internalLogger: InternalLogger,
+    private val sdkCore: FeatureSdkCore,
+    private val viewTransitionDelayMs: Long,
+    private val pipelinesFactory: PipelineFactory,
     private val scheduledExecutorService: ScheduledExecutorService,
-    private val pipelinesFactory: PipelineFactory
-) : TimeseriesCollector, ProcessLifecycleMonitor.Callback {
+    private val sessionRegistry: CollectedTimeseriesSessionRegistry
+) : TimeseriesCollector {
 
     private val stateGate = Gate()
     private var activeSessionId: String? = null
@@ -97,6 +100,8 @@ internal class DefaultTimeseriesCollector(
         scheduledExecutorService = scheduledExecutorService
     )
     private val looperGeneration = AtomicInteger(NO_GENERATION)
+
+    internal val internalLogger: InternalLogger get() = sdkCore.internalLogger
 
     // Volatile as it could be accessed from both main and worker threads
     @Volatile
@@ -128,12 +133,12 @@ internal class DefaultTimeseriesCollector(
     }
 
     @MainThread
-    override fun onStarted() {
+    override fun onUiVisible() {
         stateGate.setForeground(isForeground = true, onUpdated = ::tryStartCollection)
     }
 
     @MainThread
-    override fun onStopped() {
+    override fun onUiHidden() {
         val rumContext = stateGate.getRumContext()
 
         if (rumContext == null) {
@@ -150,12 +155,12 @@ internal class DefaultTimeseriesCollector(
         val pipelinesSnapshot = pipelines
 
         // If collection is in progress, delay the transition so an Activity recreated by a configuration
-        // change can reach onStarted without interrupting the sampling loop. The ticket is claimed now,
+        // change can reach onUiVisible without interrupting the sampling loop. The ticket is claimed now,
         // synchronously, so a resume in the meantime is guaranteed to supersede this stale transition.
         val transitionId = stateGate.startBackgroundTransition()
         scheduledExecutorService.scheduleSafe(
             OPERATION_NAME_BACKGROUND_TRANSITION,
-            BACKGROUND_TRANSITION_DELAY,
+            viewTransitionDelayMs,
             TimeUnit.MILLISECONDS,
             internalLogger
         ) {
@@ -167,15 +172,12 @@ internal class DefaultTimeseriesCollector(
         }
     }
 
-    @MainThread
-    override fun onPaused() = Unit
-
-    @MainThread
-    override fun onResumed() = Unit
+    @AnyThread
+    override fun isTimeseriesCollected(sessionId: String): Boolean = sessionRegistry.isTimeseriesCollected(sessionId)
 
     // @Suppress("unused") required here to avoid creating wrapping lambda in [onRumContextUpdate] method
     @AnyThread
-    private fun tryStartCollection(generation: Int, @Suppress("unused") rumContext: RumContext) {
+    private fun tryStartCollection(generation: Int, @Suppress("UnusedParameter", "unused") rumContext: RumContext) {
         if (looperGeneration.getAndSet(generation) != generation) {
             pipelines.forEach { pipeline ->
                 looper.start(
@@ -190,7 +192,7 @@ internal class DefaultTimeseriesCollector(
 
     // @Suppress("unused") required here to avoid creating wrapping lambdas at the call sites above
     @AnyThread
-    private fun flushPipelines(@Suppress("unused") generation: Int, rumContext: RumContext) {
+    private fun flushPipelines(@Suppress("UnusedParameter", "unused") generation: Int, rumContext: RumContext) {
         pipelines.forEach { pipeline -> pipeline.flush(rumContext) }
     }
 
@@ -204,10 +206,6 @@ internal class DefaultTimeseriesCollector(
     internal companion object {
         const val OPERATION_NAME_TIMESERIES_SAMPLING = "Timeseries sampling"
         const val OPERATION_NAME_BACKGROUND_TRANSITION = "Timeseries background transition"
-
-        // Matches ActivityViewTrackingStrategy.STOP_VIEW_DELAY_MS. Both delays keep the previous
-        // foreground state across short Activity recreation during configuration changes.
-        const val BACKGROUND_TRANSITION_DELAY = 200L
 
         // Should only being used for initialization
         const val NO_GENERATION = -1

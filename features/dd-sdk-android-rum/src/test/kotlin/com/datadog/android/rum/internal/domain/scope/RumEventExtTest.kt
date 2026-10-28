@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.api.context.DeviceType
 import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.internal.profiling.quota.QuotaReason
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -1125,6 +1126,71 @@ internal class RumEventExtTest {
 
         // Then
         assertThat(schemaDeviceType.name).isEqualTo(deviceType.name)
+    }
+
+    @ParameterizedTest
+    @EnumSource(QuotaReason::class)
+    fun `M return schema quota reason W toLongTaskQuotaReason()`(
+        quotaReason: QuotaReason
+    ) {
+        // When
+        val result = quotaReason.toLongTaskQuotaReason()
+
+        // Then
+        assertThat(result.name).isEqualTo(quotaReason.name)
+        assertThat(result.toJson().asString).isEqualTo(quotaReason.rawValue)
+    }
+
+    @ParameterizedTest
+    @EnumSource(QuotaReason::class)
+    fun `M return schema quota reason W toVitalOperationStepQuotaReason()`(
+        quotaReason: QuotaReason
+    ) {
+        // When
+        val result = quotaReason.toVitalOperationStepQuotaReason()
+
+        // Then
+        assertThat(result.name).isEqualTo(quotaReason.name)
+        assertThat(result.toJson().asString).isEqualTo(quotaReason.rawValue)
+    }
+
+    @ParameterizedTest
+    @EnumSource(QuotaReason::class)
+    fun `M return schema quota reason W toVitalAppLaunchQuotaReason()`(
+        quotaReason: QuotaReason
+    ) {
+        // When
+        val result = quotaReason.toVitalAppLaunchQuotaReason()
+
+        // Then
+        assertThat(result.name).isEqualTo(quotaReason.name)
+        assertThat(result.toJson().asString).isEqualTo(quotaReason.rawValue)
+    }
+
+    @ParameterizedTest
+    @EnumSource(QuotaReason::class)
+    fun `M return schema quota reason W toViewQuotaReason()`(
+        quotaReason: QuotaReason
+    ) {
+        // When
+        val result = quotaReason.toViewQuotaReason()
+
+        // Then
+        assertThat(result.name).isEqualTo(quotaReason.name)
+        assertThat(result.toJson().asString).isEqualTo(quotaReason.rawValue)
+    }
+
+    @ParameterizedTest
+    @EnumSource(QuotaReason::class)
+    fun `M return schema quota reason W toErrorQuotaReason()`(
+        quotaReason: QuotaReason
+    ) {
+        // When
+        val result = quotaReason.toErrorQuotaReason()
+
+        // Then
+        assertThat(result.name).isEqualTo(quotaReason.name)
+        assertThat(result.toJson().asString).isEqualTo(quotaReason.rawValue)
     }
 
     // endregion

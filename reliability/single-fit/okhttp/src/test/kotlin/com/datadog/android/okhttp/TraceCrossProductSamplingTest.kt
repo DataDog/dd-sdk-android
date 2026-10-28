@@ -8,10 +8,10 @@ package com.datadog.android.okhttp
 
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
-import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.sampling.DeterministicSampling
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
 import com.datadog.android.rum.ExperimentalRumApi
@@ -22,10 +22,12 @@ import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants.PrioritySampling
+import com.datadog.android.utils.withRumContext
 import com.datadog.tools.unit.completedFutureMock
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.getStaticValue
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.OkHttpClient
@@ -69,6 +71,9 @@ class TraceCrossProductSamplingTest {
 
     private lateinit var stubSdkCore: StubSDKCore
     private lateinit var mockServer: MockWebServer
+
+    @Forgery
+    private lateinit var fakeRumContext: RumContext
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -284,20 +289,9 @@ class TraceCrossProductSamplingTest {
      */
     private fun stubRumSessionContext(sessionIdToken: Long, sessionSampleRate: Float) {
         val sessionId = sessionIdToFakeUuid(sessionIdToken)
-        val rumContext = mapOf<String, Any?>(
-            "application_id" to FAKE_APPLICATION_ID,
-            "session_id" to sessionId,
-            "view_id" to FAKE_VIEW_ID,
-            "action_id" to null,
-            "session_sample_rate" to sessionSampleRate
+        val datadogContext = stubSdkCore.getDatadogContext().withRumContext(
+            fakeRumContext.copy(sessionId = sessionId, sessionSampleRate = sessionSampleRate)
         )
-        val datadogContext: DatadogContext = stubSdkCore.getDatadogContext().let { context ->
-            context.copy(
-                featuresContext = context.featuresContext.toMutableMap().apply {
-                    put(Feature.RUM_FEATURE_NAME, rumContext)
-                }
-            )
-        }
         val rumFeature = mock<Feature> {
             on { name } doReturn Feature.RUM_FEATURE_NAME
         }
@@ -453,9 +447,6 @@ class TraceCrossProductSamplingTest {
         private const val DATADOG_SAMPLING_PRIORITY_HEADER = "x-datadog-sampling-priority"
         private const val DATADOG_TRACE_ID_HEADER = "x-datadog-trace-id"
         private const val DATADOG_SPAN_ID_HEADER = "x-datadog-parent-id"
-
-        private const val FAKE_APPLICATION_ID = "00000000-0000-0000-0000-000000000001"
-        private const val FAKE_VIEW_ID = "00000000-0000-0000-0000-000000000002"
 
         /** Token whose Knuth hash sits at ~0.36% of the 64-bit space (sampled at any rate > ~0.5%). */
         private const val LOW_HASH_TOKEN: Long = 1129L

@@ -9,7 +9,7 @@ package com.datadog.android.okhttp
 import com.datadog.android.lint.InternalApi
 
 /**
- * Deprecated. Use com.datadog.android.trace.internal.net.TraceContext instead."
+ * Deprecated. Use [com.datadog.android.trace.internal.net.TraceContext] instead.
  * The context of a trace to be propagated through the OkHttp requests for Datadog tracing.
  */
 @InternalApi

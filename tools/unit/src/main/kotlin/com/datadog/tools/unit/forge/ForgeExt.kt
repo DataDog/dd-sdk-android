@@ -73,7 +73,6 @@ fun <K, V> Forge.aFilteredMap(
 }
 
 private fun assumeDifferenceIsNoMore(result: Int, base: Int, maxDifference: Float) {
-    @Suppress("CheckInternal")
     check(result <= base) {
         "Number of elements after filtering cannot exceed the number of original elements."
     }
@@ -105,9 +104,7 @@ private fun generateMapWithExhaustiveValues(forge: Forge): MutableMap<String, An
             aList { anAlphabeticalString() },
             aList { aDouble() },
             null
-        )
-            .map { anAlphaNumericalString() to it }
-            .toMap(mutableMapOf())
+        ).associateByTo(mutableMapOf()) { anAlphaNumericalString() }
     }
 }
 

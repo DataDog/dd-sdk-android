@@ -52,7 +52,7 @@ internal class WindowReflectionUtilsTest {
         // Given
         val fakeWindow = mock<Window>()
         val fakeDecorLike = object : View(mock()) {
-            @Suppress("unused")
+            @Suppress("UnusedPrivateProperty", "unused")
             private val mWindow: Window = fakeWindow
         }
 

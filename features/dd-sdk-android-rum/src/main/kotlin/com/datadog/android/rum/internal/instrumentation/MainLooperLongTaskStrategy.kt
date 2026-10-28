@@ -16,7 +16,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy.CompositePrinter.addPrinter
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy.CompositePrinter.printers
-import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy.CompositePrinter.println
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy.CompositePrinter.removePrinter
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.tracking.TrackingStrategy

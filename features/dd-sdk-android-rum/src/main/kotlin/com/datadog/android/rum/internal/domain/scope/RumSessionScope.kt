@@ -16,13 +16,14 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
-import com.datadog.android.internal.rum.RumSessionConstants
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionStartReason
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
@@ -73,9 +74,9 @@ internal class RumSessionScope(
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
-    internal var sessionState: State = State.NOT_TRACKED
+    internal var sessionState: RumSessionState = RumSessionState.NOT_TRACKED
     internal val sessionSampleRate: Float = sessionSampler.getSampleRate() ?: RumContext.SAMPLE_ALL_RATE
-    private var startReason: StartReason = StartReason.USER_APP_LAUNCH
+    private var startReason: RumSessionStartReason = RumSessionStartReason.USER_APP_LAUNCH
     internal var isActive: Boolean = true
     private val sessionStartNs = AtomicLong(sdkCore.timeProvider.getDeviceElapsedRealtimeNanos())
 
@@ -119,35 +120,6 @@ internal class RumSessionScope(
             null
         }
 
-    enum class State(val asString: String) {
-        NOT_TRACKED("NOT_TRACKED"),
-        TRACKED(RumSessionConstants.TRACKED_SESSION_STATE),
-        EXPIRED("EXPIRED");
-
-        companion object {
-            fun fromString(string: String?): State? {
-                return entries.firstOrNull { it.asString == string }
-            }
-        }
-    }
-
-    enum class StartReason(val asString: String) {
-        USER_APP_LAUNCH("user_app_launch"),
-        INACTIVITY_TIMEOUT("inactivity_timeout"),
-        MAX_DURATION("max_duration"),
-        BACKGROUND_LAUNCH("background_launch"),
-        PREWARM("prewarm"),
-        FROM_NON_INTERACTIVE_SESSION("from_non_interactive_session"),
-        EXPLICIT_STOP("explicit_stop")
-        ;
-
-        companion object {
-            fun fromString(string: String?): StartReason? {
-                return entries.firstOrNull { it.asString == string }
-            }
-        }
-    }
-
     // region RumScope
 
     @WorkerThread
@@ -158,14 +130,14 @@ internal class RumSessionScope(
         writer: DataWriter<Any>
     ): RumScope? {
         if (event is RumRawEvent.ResetSession) {
-            renewSession(event.eventTime, StartReason.EXPLICIT_STOP)
+            renewSession(event.eventTime, RumSessionStartReason.EXPLICIT_STOP)
         } else if (event is RumRawEvent.StopSession) {
             stopSession()
         }
 
         updateSession(event)
 
-        val actualWriter = if (sessionState == State.TRACKED) writer else noOpWriter
+        val actualWriter = if (sessionState == RumSessionState.TRACKED) writer else noOpWriter
 
         val rumContext = getActiveRumContext()
 
@@ -173,7 +145,7 @@ internal class RumSessionScope(
             is RumRawEvent.AppStartTTIDEvent -> {
                 rumSessionScopeStartupManager?.onTTIDEvent(
                     event = event,
-                    isSessionTracked = sessionState == State.TRACKED,
+                    isSessionTracked = sessionState == RumSessionState.TRACKED,
                     datadogContext = datadogContext,
                     writeScope = writeScope,
                     writer = actualWriter,
@@ -182,12 +154,12 @@ internal class RumSessionScope(
                 )
             }
             is RumRawEvent.AppStartEvent -> {
-                if (sessionState == State.TRACKED) {
+                if (sessionState == RumSessionState.TRACKED) {
                     rumSessionScopeStartupManager?.onAppStartEvent(event = event)
                 }
             }
             is RumRawEvent.AppStartTTFDEvent -> {
-                if (sessionState == State.TRACKED) {
+                if (sessionState == RumSessionState.TRACKED) {
                     rumSessionScopeStartupManager?.onTTFDEvent(
                         event = event,
                         datadogContext = datadogContext,
@@ -198,7 +170,8 @@ internal class RumSessionScope(
                     )
                 }
             }
-            is RumRawEvent.SdkInit -> {}
+            is RumRawEvent.SdkInit,
+            is RumRawEvent.SessionExpiryCheck -> {}
             else -> {
                 childScope =
                     childScope?.handleEvent(event, datadogContext, writeScope, actualWriter) as? RumViewManagerScope
@@ -221,7 +194,8 @@ internal class RumSessionScope(
             sessionState = sessionState,
             sessionStartReason = startReason,
             isSessionActive = isActive,
-            sessionSampleRate = sessionSampleRate
+            sessionSampleRate = sessionSampleRate,
+            hasTimeseries = timeseriesCollector.isTimeseriesCollected(sessionId)
         )
     }
 
@@ -238,7 +212,7 @@ internal class RumSessionScope(
     }
 
     private fun TimeseriesCollector.refreshRumContext() {
-        if (sessionState == State.TRACKED && isActive && this !is NoOpTimeseriesCollector) {
+        if (sessionState == RumSessionState.TRACKED && isActive && this !is NoOpTimeseriesCollector) {
             onRumContextUpdate(getActiveRumContext())
         }
     }
@@ -264,7 +238,7 @@ internal class RumSessionScope(
         return !isActive && childScope == null
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("CyclomaticComplexMethod")
     private fun updateSession(event: RumRawEvent) {
         val nanoTime = sdkCore.timeProvider.getDeviceElapsedRealtimeNanos()
         val isNewSession = sessionId == RumContext.NULL_UUID
@@ -290,36 +264,36 @@ internal class RumSessionScope(
         if (isInteraction || isSdkInitInForeground || isAppStart) {
             if (isNewSession || isExpired || isTimedOut) {
                 val reason = if (isNewSession) {
-                    StartReason.USER_APP_LAUNCH
+                    RumSessionStartReason.USER_APP_LAUNCH
                 } else if (isExpired) {
-                    StartReason.INACTIVITY_TIMEOUT
+                    RumSessionStartReason.INACTIVITY_TIMEOUT
                 } else {
-                    StartReason.MAX_DURATION
+                    RumSessionStartReason.MAX_DURATION
                 }
                 renewSession(event.eventTime, reason)
             }
             lastUserInteractionNs.set(nanoTime)
         } else if (isExpired) {
             if (backgroundTrackingEnabled && (isBackgroundEvent || isSdkInitInBackground)) {
-                renewSession(event.eventTime, StartReason.BACKGROUND_LAUNCH)
+                renewSession(event.eventTime, RumSessionStartReason.BACKGROUND_LAUNCH)
                 lastUserInteractionNs.set(nanoTime)
             } else {
                 stopTimeseries()
-                sessionState = State.EXPIRED
+                sessionState = RumSessionState.EXPIRED
             }
         } else if (isTimedOut) {
-            renewSession(event.eventTime, StartReason.MAX_DURATION)
+            renewSession(event.eventTime, RumSessionStartReason.MAX_DURATION)
         }
 
         updateSessionStateForSessionReplay(sessionId)
     }
 
-    private fun renewSession(time: Time, reason: StartReason) {
+    private fun renewSession(time: Time, reason: RumSessionStartReason) {
         stopTimeseries()
         val newSessionId = UUID.randomUUID().toString()
         val keepSession = sessionSampler.sample(newSessionId)
         startReason = reason
-        sessionState = if (keepSession) State.TRACKED else State.NOT_TRACKED
+        sessionState = if (keepSession) RumSessionState.TRACKED else RumSessionState.NOT_TRACKED
         sessionId = newSessionId
         sessionStartNs.set(sdkCore.timeProvider.getDeviceElapsedRealtimeNanos())
         rumSessionScopeStartupManager = rumSessionScopeStartupManagerFactory()
@@ -345,7 +319,7 @@ internal class RumSessionScope(
                 // Kept for backward compatibility with older Session Replay modules that
                 // don't yet consume sessionSampleRate.
                 // RUM-15962: Remove with SDK v4 release (RUM-13454).
-                RUM_KEEP_SESSION_BUS_MESSAGE_KEY to (sessionState == State.TRACKED)
+                RUM_KEEP_SESSION_BUS_MESSAGE_KEY to (sessionState == RumSessionState.TRACKED)
             )
         )
     }

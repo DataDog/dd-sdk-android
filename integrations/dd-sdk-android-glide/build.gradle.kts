@@ -45,7 +45,7 @@ android {
 dependencies {
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.okHttp)
     implementation(libs.bundles.glide)
 

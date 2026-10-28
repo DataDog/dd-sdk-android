@@ -473,7 +473,7 @@ class SampleApplication : Application() {
         return configBuilder.build()
     }
 
-    @Suppress("TooGenericExceptionCaught", "CheckInternal")
+    @Suppress("TooGenericExceptionCaught")
     private fun initializeTimber() {
         val logger = Logger.Builder()
             .setName("timber")

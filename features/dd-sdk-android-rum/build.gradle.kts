@@ -7,7 +7,7 @@
 
 import com.datadog.gradle.utils.cloneRumEventsFormat
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
-import com.datadog.gradle.utils.createRumSchemaCloneTask
+import com.datadog.gradle.utils.createRumEventsFormatCloneTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.nio.file.Paths
 
@@ -64,11 +64,12 @@ dependencies {
     api(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum-internal"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.gson)
     implementation(libs.okHttp)
 
     // Android Instrumentation
+    implementation(libs.androidXCollection)
     implementation(libs.androidXCore)
     implementation(libs.androidXMetrics)
     implementation(libs.bundles.androidXNavigation)
@@ -105,7 +106,7 @@ dependencies {
             )
         }
     }
-    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.kotlinRuntime)
     testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.okHttp)
     testFixturesImplementation(libs.bundles.testTools)
@@ -132,7 +133,7 @@ unMock {
     keepStartingWith("org.json")
 }
 
-createRumSchemaCloneTask("cloneRumSchema") {
+createRumEventsFormatCloneTask("cloneRumSchema") {
     cloneRumEventsFormat(
         project = project,
         subFolder = "schemas/rum",
@@ -140,7 +141,7 @@ createRumSchemaCloneTask("cloneRumSchema") {
     )
 }
 
-createRumSchemaCloneTask("cloneTelemetrySchema") {
+createRumEventsFormatCloneTask("cloneTelemetrySchema") {
     cloneRumEventsFormat(
         project = project,
         subFolder = "schemas/telemetry",
@@ -151,12 +152,15 @@ createRumSchemaCloneTask("cloneTelemetrySchema") {
 createJsonModelsGenerationTask("generateRumModelsFromJson") {
     inputDirPath = "src/main/json/rum"
     targetPackageName = "com.datadog.android.rum.model"
+    schemasWithoutConstructorDefaults = listOf("view_update-schema.json")
     ignoredFiles = listOf(
         "_common-schema.json",
         "_action-child-schema.json",
+        "_graphql-schema.json",
         "_perf-metric-schema.json",
         "_profiling-internal-context-schema.json",
         "_rect-schema.json",
+        "_trace-schema.json",
         "_view-container-schema.json",
         "_view-accessibility-schema.json",
         "_view-performance-schema.json",

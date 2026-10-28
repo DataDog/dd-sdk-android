@@ -36,7 +36,6 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
 
     // region Activity
 
-    @Suppress("CheckInternal")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

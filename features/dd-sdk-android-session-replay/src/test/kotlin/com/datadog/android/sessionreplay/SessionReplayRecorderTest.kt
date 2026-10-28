@@ -127,7 +127,8 @@ internal class SessionReplayRecorderTest {
             resourceResolver = mockResourceResolver,
             uiHandler = mockUiHandler,
             internalLogger = mockInternalLogger,
-            embeddedContentSlotRegistry = fakeSlotRegistry
+            embeddedContentSlotRegistry = fakeSlotRegistry,
+            adaptiveCaptureSchedulingEnabled = true
         )
     }
 
@@ -247,7 +248,10 @@ internal class SessionReplayRecorderTest {
         )
     }
 
-    private fun buildRecorderWith(windowFromDecorView: (View) -> Window?): SessionReplayRecorder {
+    private fun buildRecorderWith(
+        windowFromDecorView: (View) -> Window?,
+        adaptiveCaptureSchedulingEnabled: Boolean = false
+    ): SessionReplayRecorder {
         return SessionReplayRecorder(
             appContext = appContext.mockInstance,
             textAndInputPrivacy = fakeTextAndInputPrivacy,
@@ -261,7 +265,8 @@ internal class SessionReplayRecorderTest {
             resourceResolver = mockResourceResolver,
             uiHandler = mockUiHandler,
             internalLogger = mockInternalLogger,
-            windowFromDecorView = windowFromDecorView
+            windowFromDecorView = windowFromDecorView,
+            adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled
         )
     }
 
@@ -411,6 +416,94 @@ internal class SessionReplayRecorderTest {
 
         // Then
         verify(mockViewOnDrawInterceptor, never()).requestCapture()
+    }
+
+    @Test
+    fun `M schedule capture W onViewTransition { recorder resumed }`() {
+        // Given
+        testedSessionReplayRecorder.resumeRecorders()
+        clearInvocations(mockViewOnDrawInterceptor)
+
+        // When
+        testedSessionReplayRecorder.onViewTransition()
+
+        // Then
+        verify(mockViewOnDrawInterceptor).scheduleCapture()
+    }
+
+    @Test
+    fun `M do nothing W onViewTransition { recorder never resumed }`() {
+        // When
+        testedSessionReplayRecorder.onViewTransition()
+
+        // Then
+        verify(mockViewOnDrawInterceptor, never()).requestCapture()
+        verify(mockViewOnDrawInterceptor, never()).scheduleCapture()
+    }
+
+    @Test
+    fun `M do nothing W onViewTransition { recorder stopped after being resumed }`() {
+        // Given
+        testedSessionReplayRecorder.resumeRecorders()
+        testedSessionReplayRecorder.stopRecorders()
+        clearInvocations(mockViewOnDrawInterceptor)
+
+        // When
+        testedSessionReplayRecorder.onViewTransition()
+
+        // Then
+        verify(mockViewOnDrawInterceptor, never()).requestCapture()
+        verify(mockViewOnDrawInterceptor, never()).scheduleCapture()
+    }
+
+    @Test
+    fun `M preserve legacy transitions W onViewTransition { experiment disabled }`() {
+        // Given
+        testedSessionReplayRecorder = buildRecorderWith(windowFromDecorView = { null })
+        testedSessionReplayRecorder.resumeRecorders()
+        clearInvocations(mockViewOnDrawInterceptor)
+
+        // When
+        testedSessionReplayRecorder.onViewTransition()
+
+        // Then
+        verify(mockViewOnDrawInterceptor, never()).requestCapture()
+        verify(mockViewOnDrawInterceptor, never()).scheduleCapture()
+    }
+
+    @Test
+    fun `M ignore queued resume W stopRecorders {main thread has not resumed yet}`() {
+        // Given
+        val fakeUiCallbacks = mutableListOf<Runnable>()
+        whenever(mockUiHandler.post(any())).thenAnswer {
+            fakeUiCallbacks.add(it.getArgument(0))
+            true
+        }
+        testedSessionReplayRecorder.resumeRecorders()
+
+        // When
+        testedSessionReplayRecorder.stopRecorders()
+        fakeUiCallbacks.first().run()
+
+        // Then
+        verify(mockViewOnDrawInterceptor, never()).intercept(any(), any(), any())
+        verify(mockWindowCallbackInterceptor, never()).intercept(any(), any())
+    }
+
+    @Test
+    fun `M reject new windows W stopRecorders {main thread cleanup pending}`() {
+        // Given
+        testedSessionReplayRecorder.resumeRecorders()
+        clearInvocations(mockViewOnDrawInterceptor, mockWindowCallbackInterceptor)
+        whenever(mockUiHandler.post(any())).thenReturn(true)
+
+        // When
+        testedSessionReplayRecorder.stopRecorders()
+        testedSessionReplayRecorder.onWindowsAdded(fakeActiveWindows)
+
+        // Then
+        verify(mockViewOnDrawInterceptor, never()).intercept(any(), any(), any())
+        verify(mockWindowCallbackInterceptor, never()).intercept(any(), any())
     }
 
     @Test

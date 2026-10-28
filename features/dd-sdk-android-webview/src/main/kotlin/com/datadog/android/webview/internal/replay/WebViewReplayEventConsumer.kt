@@ -12,9 +12,10 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
-import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonObject
 import java.lang.IllegalStateException
 import java.lang.NumberFormatException
@@ -43,7 +44,7 @@ internal class WebViewReplayEventConsumer(
                     SESSION_REPLAY_ENABLED_KEY
                 ) as? Boolean ?: false
                 if (rumContext != null &&
-                    rumContext.sessionState == "TRACKED" &&
+                    rumContext.sessionState == RumSessionState.TRACKED &&
                     sessionReplayEnabled
                 ) {
                     writeScope {
@@ -96,7 +97,6 @@ internal class WebViewReplayEventConsumer(
 
     companion object {
         private const val RECORD_KEY = "record"
-        const val SESSION_TRACKED_STATE = "TRACKED"
         val REPLAY_EVENT_TYPES = setOf(RECORD_KEY)
         const val JSON_PARSING_ERROR_MESSAGE =
             "The bundled web Replay event could not be deserialized"

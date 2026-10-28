@@ -29,10 +29,17 @@ internal fun diffViewEvent(old: ViewEvent, new: ViewEvent): ViewUpdateEvent {
             source = diffEquals(ViewEvent::source)?.toViewUpdate(),
             usr = diffEquals(ViewEvent::usr)?.toViewUpdate(),
             account = diffEquals(ViewEvent::account)?.toViewUpdate(),
+            tab = diffEquals(ViewEvent::tab)?.let { ViewUpdateEvent.Tab(id = it.id) },
+            stream = diffEquals(ViewEvent::stream)?.let { ViewUpdateEvent.Stream(id = it.id) },
             connectivity = diffEquals(ViewEvent::connectivity)?.toViewUpdate(),
             display = diffEquals(ViewEvent::display)?.toViewUpdate(),
             synthetics = diffEquals(ViewEvent::synthetics)?.let {
-                ViewUpdateEvent.Synthetics(testId = it.testId, resultId = it.resultId, injected = it.injected)
+                ViewUpdateEvent.Synthetics(
+                    testId = it.testId,
+                    resultId = it.resultId,
+                    injected = it.injected,
+                    additionalProperties = it.additionalProperties
+                )
             },
             ciTest = diffEquals(ViewEvent::ciTest)?.let {
                 ViewUpdateEvent.CiTest(testExecutionId = it.testExecutionId)
@@ -75,7 +82,9 @@ private fun diffSession(
             type = diffRequired(ViewEvent.ViewEventSession::type).toViewUpdate(),
             hasReplay = diffEquals(ViewEvent.ViewEventSession::hasReplay),
             isActive = diffEquals(ViewEvent.ViewEventSession::isActive),
-            sampledForReplay = diffEquals(ViewEvent.ViewEventSession::sampledForReplay)
+            sampledForReplay = diffEquals(ViewEvent.ViewEventSession::sampledForReplay),
+            isMainProcess = diffEquals(ViewEvent.ViewEventSession::isMainProcess),
+            hasTimeseries = diffEquals(ViewEvent.ViewEventSession::hasTimeseries)
         )
     }
 }
@@ -181,7 +190,9 @@ private fun diffDd(old: ViewEvent.Dd, new: ViewEvent.Dd): ViewUpdateEvent.Dd {
                     sessionReplaySampleRate = it.sessionReplaySampleRate,
                     profilingSampleRate = it.profilingSampleRate,
                     traceSampleRate = it.traceSampleRate,
-                    startSessionReplayRecordingManually = it.startSessionReplayRecordingManually
+                    startSessionReplayRecordingManually = it.startSessionReplayRecordingManually,
+                    remoteConfigurationId = it.remoteConfigurationId,
+                    sessionReplayExperimentalFeatures = it.sessionReplayExperimentalFeatures
                 )
             },
             browserSdkVersion = diffEquals(ViewEvent.Dd::browserSdkVersion),
@@ -196,7 +207,8 @@ private fun diffDd(old: ViewEvent.Dd, new: ViewEvent.Dd): ViewUpdateEvent.Dd {
             profiling = diffEquals(ViewEvent.Dd::profiling)?.let {
                 ViewUpdateEvent.Profiling(
                     status = it.status?.toViewUpdate(),
-                    errorReason = it.errorReason?.toViewUpdate()
+                    errorReason = it.errorReason?.toViewUpdate(),
+                    quotaReason = it.quotaReason?.toViewUpdate()
                 )
             },
             // pageStates uses diffList (drop-by-size), consistent with inForegroundPeriods.
@@ -220,10 +232,20 @@ private fun diffSlowFrames(
     new: List<ViewEvent.SlowFrame>
 ): List<ViewUpdateEvent.SlowFrame>? {
     // diffList (drop-by-size) breaks when the backing EvictingQueue evicts the head at capacity:
-    // both lists have the same size but the content has shifted. Using the last known start
-    // timestamp as an anchor ensures only genuinely new frames are returned regardless of eviction.
-    val lastKnownStart = old.lastOrNull()?.start
-    val newFrames = if (lastKnownStart == null) new else new.filter { it.start > lastKnownStart }
+    // both lists have the same size but the content has shifted. Using the last known frame
+    // as an anchor ensures only genuinely new frames are returned regardless of eviction.
+    // The last known frame may still be growing (consecutive slow frames are merged into it), so it
+    // is resent whenever its duration changed. The backend deduplicates slow frames by `start`,
+    // keeping the larger `duration`.
+    val lastKnownFrame = old.lastOrNull()
+    val newFrames = if (lastKnownFrame == null) {
+        new
+    } else {
+        new.filter {
+            it.start > lastKnownFrame.start ||
+                (it.start == lastKnownFrame.start && it.duration != lastKnownFrame.duration)
+        }
+    }
     return newFrames.ifEmpty { null }
         ?.map { ViewUpdateEvent.SlowFrame(start = it.start, duration = it.duration) }
 }

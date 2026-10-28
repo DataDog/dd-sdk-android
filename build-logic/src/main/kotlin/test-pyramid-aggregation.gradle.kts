@@ -15,9 +15,13 @@ plugins {
 // Separate scopes per role - a single shared scope would make both resolvable configs below try
 // to resolve every producer project (surface AND usage), and fail hard on the ones that don't
 // expose the other role's variant at all.
+@Suppress("UnstableApiUsage")
 val testPyramidApiSurfaceAggregation = configurations.dependencyScope("testPyramidApiSurfaceAggregation")
+
+@Suppress("UnstableApiUsage")
 val testPyramidApiUsageAggregation = configurations.dependencyScope("testPyramidApiUsageAggregation")
 
+@Suppress("UnstableApiUsage")
 val apiSurfaceReportsConfiguration = configurations.resolvable("apiSurfaceReports") {
     extendsFrom(testPyramidApiSurfaceAggregation)
     attributes {
@@ -25,6 +29,7 @@ val apiSurfaceReportsConfiguration = configurations.resolvable("apiSurfaceReport
     }
 }
 
+@Suppress("UnstableApiUsage")
 val apiUsageReportsConfiguration = configurations.resolvable("apiUsageReports") {
     extendsFrom(testPyramidApiUsageAggregation)
     attributes {

@@ -19,7 +19,9 @@ import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
+import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.time.TimeProvider
@@ -27,13 +29,16 @@ import com.datadog.android.privacy.TrackingConsent
 import fr.xgouchet.elmyr.Forge
 import okhttp3.Call
 import okhttp3.OkHttpClient
-import org.mockito.Mockito.mock
+import okhttp3.Request
+import okhttp3.Response
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import org.mockito.kotlin.mock as kmock
 
 /**
  * A stub implementation of [InternalSdkCore].
@@ -44,14 +49,28 @@ import org.mockito.kotlin.mock as kmock
 @Suppress("UnsafeThirdPartyFunctionCall")
 class StubSDKCore(
     private val forge: Forge,
-    private val mockContext: Application = mock(),
-    private val mockSdkCore: InternalSdkCore = kmock { on { name } doReturn toString() },
+    // Default mocks are stub-only, so they don't record every invocation: those would reference the
+    // registered features (and this core), which Mockito's inline mock maker would never release.
+    // Stub-only mocks still keep their last invocation, which can still reference this core.
+    private val mockContext: Application = mock(stubOnly = true),
+    private val mockSdkCore: InternalSdkCore = mock(stubOnly = true) { on { name } doReturn toString() },
     private var datadogContext: DatadogContext = forge.getForgery<DatadogContext>().copy(source = "android")
 ) : InternalSdkCore by mockSdkCore {
 
+    override val source: String
+        get() = datadogContext.source
+
     private val featureScopes = mutableMapOf<String, FeatureScope>()
 
+    private val dataStores = mutableMapOf<String, DataStoreHandler>()
+
+    private val eventReceivers = mutableMapOf<String, FeatureEventReceiver>()
+
+    private val callFactory = StubCallFactory()
+
     private val contextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
+
+    private val scheduledExecutors = mutableListOf<StubScheduledExecutorService>()
 
     private var currentTimestampMillis: Long = 0L
     private var currentNanoTime: Long = 0L
@@ -64,7 +83,8 @@ class StubSDKCore(
         whenever(mockContext.resources) doReturn mockResources
         whenever(mockResources.configuration) doReturn mockConfiguration
         whenever(mockContext.contentResolver) doReturn mockContentResolver
-        whenever(mockContext.applicationContext) doReturn mockContext
+        // Answering with the invoked mock avoids a stubbing that strongly references its own mock
+        whenever(mockContext.applicationContext) doAnswer { it.mock as Application }
     }
 
     // region Stub
@@ -96,6 +116,46 @@ class StubSDKCore(
     }
 
     /**
+     * Lists all the requests sent through the [Call.Factory] created by [createOkHttpCallFactory].
+     * @return a list of [Request]
+     */
+    fun requestsSent(): List<Request> {
+        return callFactory.requestsSent()
+    }
+
+    /**
+     * Stubs the responses to the requests sent through the [Call.Factory] created by
+     * [createOkHttpCallFactory]. When the [responder] returns null, the call fails with an [IOException].
+     * @param responder a lambda creating a response for a given request
+     */
+    fun stubNetworkResponses(responder: (Request) -> Response?) {
+        callFactory.responder = responder
+    }
+
+    /**
+     * Gives the given feature a working in-memory datastore, instead of a mock one.
+     * Pass the same [dataStore] to two instances to simulate an application restart.
+     * Needs to be called before the feature reads its datastore.
+     * @param featureName the name of the feature
+     * @param dataStore the datastore to use
+     * @return the datastore used by the feature
+     */
+    fun stubDataStore(
+        featureName: String,
+        dataStore: DataStoreHandler = StubDataStoreHandler()
+    ): DataStoreHandler {
+        dataStores[featureName] = dataStore
+        return dataStore
+    }
+
+    /**
+     * Stops all the registered features, like [com.datadog.android.Datadog.stopInstance] does.
+     */
+    fun stopFeatures() {
+        featureScopes.values.forEach { it.unwrap<Feature>().onStop() }
+    }
+
+    /**
      * Stubs the network info visible via the SDK Core.
      * @param networkInfo the network info
      */
@@ -120,12 +180,16 @@ class StubSDKCore(
     }
 
     /**
-     * Advances the current time by the specified duration.
+     * Advances the current time and drains due tasks on all scheduled executors created by this core.
      * @param durationMs the duration to advance in milliseconds
      */
     fun advanceTimeBy(durationMs: Long) {
         currentTimestampMillis += durationMs
         currentNanoTime += TimeUnit.MILLISECONDS.toNanos(durationMs)
+        // A task may queue due work on an executor already visited or created during this pass.
+        do {
+            scheduledExecutors.toList().forEach { it.runDueTasks() }
+        } while (scheduledExecutors.any { it.hasDueTasks() })
     }
 
     /**
@@ -157,7 +221,6 @@ class StubSDKCore(
         featureScopes[feature.name] = featureScope
 
         feature.onInitialize(mockContext)
-        mockSdkCore.registerFeature(feature)
     }
 
     // endregion
@@ -195,11 +258,27 @@ class StubSDKCore(
     }
 
     override fun registerFeature(feature: Feature) {
-        stubFeatureScope(feature, StubFeatureScope(feature, { datadogContext }))
+        val featureName = feature.name
+        stubFeatureScope(
+            feature,
+            StubFeatureScope(
+                feature = feature,
+                datadogContextProvider = { datadogContext },
+                dataStoreProvider = { dataStores[featureName] },
+                eventReceiverProvider = { eventReceivers[featureName] }
+            )
+        )
+    }
+
+    override fun setEventReceiver(featureName: String, receiver: FeatureEventReceiver) {
+        eventReceivers[featureName] = receiver
+    }
+
+    override fun removeEventReceiver(featureName: String) {
+        eventReceivers.remove(featureName)
     }
 
     override fun getFeature(featureName: String): FeatureScope? {
-        mockSdkCore.getFeature(featureName)
         return featureScopes[featureName]
     }
 
@@ -241,7 +320,9 @@ class StubSDKCore(
     }
 
     override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
-        return StubScheduledExecutorService(executorContext, timeProvider::getDeviceTimestampMillis)
+        val executor = StubScheduledExecutorService(executorContext, timeProvider::getDeviceTimestampMillis)
+        scheduledExecutors.add(executor)
+        return executor
     }
 
     override fun createSingleThreadExecutorService(executorContext: String): ExecutorService {
@@ -249,7 +330,7 @@ class StubSDKCore(
     }
 
     override fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit): Call.Factory {
-        return StubCallFactory()
+        return callFactory
     }
 
     // endregion

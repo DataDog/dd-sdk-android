@@ -6,12 +6,12 @@
 
 package com.datadog.tools.detekt.rules.sdk
 
+import dev.detekt.api.Config
+import dev.detekt.test.lintWithContext
+import dev.detekt.test.utils.KotlinEnvironmentContainer
+import dev.detekt.test.utils.createEnvironment
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.github.detekt.test.utils.KotlinCoreEnvironmentWrapper
-import io.github.detekt.test.utils.createEnvironment
-import io.gitlab.arturbosch.detekt.test.assertThat
-import io.gitlab.arturbosch.detekt.test.compileAndLintWithContext
-import org.junit.jupiter.api.AfterEach
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -19,16 +19,11 @@ import org.junit.jupiter.api.extension.ExtendWith
 @ExtendWith(ForgeExtension::class)
 internal class InvalidStringFormatTest {
 
-    lateinit var kotlinEnv: KotlinCoreEnvironmentWrapper
+    lateinit var kotlinEnv: KotlinEnvironmentContainer
 
     @BeforeEach
     fun setup() {
         kotlinEnv = createEnvironment()
-    }
-
-    @AfterEach
-    fun tearDown() {
-        kotlinEnv.dispose()
     }
 
     // region Test unresolved format string
@@ -45,8 +40,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -64,8 +59,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -82,8 +77,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -100,8 +95,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -118,8 +113,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -136,8 +131,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -158,8 +153,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -177,8 +172,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -196,8 +191,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -216,8 +211,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -236,8 +231,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -258,8 +253,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -276,8 +271,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -295,8 +290,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -314,8 +309,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -334,8 +329,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -354,8 +349,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -376,8 +371,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -393,13 +388,13 @@ internal class InvalidStringFormatTest {
         val code =
             """ 
                 fun test(): String {
-                    return String.format("Called %1${"$"}d / %2${"$"}f", 3.14f, 42)
+                    return String.format("Called %1\${"$"}d / %2\${"$"}f", 3.14f, 42)
                 }
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(2)
@@ -416,8 +411,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(3)
@@ -434,8 +429,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(4)
@@ -452,8 +447,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -481,8 +476,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).isEmpty()
@@ -505,8 +500,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).isEmpty()
@@ -527,8 +522,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).isEmpty()
@@ -540,7 +535,8 @@ internal class InvalidStringFormatTest {
         val code =
             """ 
                 class Foo {
-                    fun format(s: String) {
+                    fun format(s: String): String {
+                        return s
                     }
                 }
                 
@@ -551,8 +547,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).isEmpty()
@@ -565,7 +561,8 @@ internal class InvalidStringFormatTest {
             """ 
                 class Foo {
                     companion object {
-                        fun format(s: String) {
+                        fun format(s: String): String {
+                            return s
                         }
                     }
                 }
@@ -576,8 +573,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).isEmpty()
@@ -589,13 +586,13 @@ internal class InvalidStringFormatTest {
         val code =
             """ 
                 fun test(s: String): String {
-                    return s.toLowercase()
+                    return s.plus("!")
                 }
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).isEmpty()
@@ -612,8 +609,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).isEmpty()
@@ -640,8 +637,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).isEmpty()
@@ -664,8 +661,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).hasSize(1)
@@ -688,8 +685,8 @@ internal class InvalidStringFormatTest {
             """.trimIndent()
 
         // When
-        val findings = InvalidStringFormat()
-            .compileAndLintWithContext(kotlinEnv.env, code)
+        val findings = InvalidStringFormat(Config.empty)
+            .lintWithContext(kotlinEnv, code)
 
         // Then
         assertThat(findings).isEmpty()

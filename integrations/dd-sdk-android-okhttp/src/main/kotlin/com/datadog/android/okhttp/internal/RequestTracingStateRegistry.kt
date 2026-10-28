@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * Striped lock pool for per-call synchronization.
  *
- * Using the call object itself as a monitor (`synchronized(call)`) is an anti-pattern:
+ * Using the call object itself as a monitor (`synchronized(call)`) is an antipattern:
  * external code could synchronize on the same object, risking deadlocks.
  * Instead, we use a fixed pool of private lock objects selected by hashCode.
  *
@@ -60,7 +60,7 @@ internal class RequestTracingStateRegistry(
 
         requestTracingStateByCall[call] = RequestTracingState(
             requestInfoBuilder = call.request()
-                .toHttpRequestInfo()
+                .toHttpRequestInfo(internalLogger)
                 .newBuilder()
                 .addTag(UUID::class.java, UUID.randomUUID()),
             isDefaultTracer = false
@@ -77,7 +77,7 @@ internal class RequestTracingStateRegistry(
 
     fun restoreUUIDTag(call: Call, request: Request): Request? = update(call) { current ->
         current.copy(
-            requestInfoBuilder = request.toHttpRequestInfo()
+            requestInfoBuilder = request.toHttpRequestInfo(internalLogger)
                 .newBuilder()
                 .restoreUUIDTag(current.createRequestInfo())
         )

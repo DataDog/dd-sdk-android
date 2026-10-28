@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
@@ -24,7 +23,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import org.mockito.kotlin.mock
 
-@OptIn(ExperimentalRumApi::class)
 internal class ConfigurationRumForgeryFactory :
     ForgeryFactory<RumFeature.Configuration> {
     override fun getForgery(forge: Forge): RumFeature.Configuration {

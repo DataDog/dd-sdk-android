@@ -123,6 +123,10 @@ internal class DatadogCore(
         get() = coreFeature.serviceName
 
     /** @inheritDoc */
+    override val source: String
+        get() = coreFeature.sourceName
+
+    /** @inheritDoc */
     override val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver
         get() = coreFeature.firstPartyHostHeaderTypeResolver
 
@@ -569,7 +573,7 @@ internal class DatadogCore(
         )
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("CyclomaticComplexMethod")
     private fun applyAdditionalConfiguration(
         additionalConfiguration: Map<String, Any>
     ) {

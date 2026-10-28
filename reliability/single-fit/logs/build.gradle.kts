@@ -31,9 +31,10 @@ android {
 dependencies {
     implementation(project(":dd-sdk-android-core"))
     implementation(project(":features:dd-sdk-android-logs"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     // Testing
+    testImplementation(project(":dd-sdk-android-internal"))
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(

@@ -58,7 +58,14 @@ class VitalOperationStepEventForgeryFactory : ForgeryFactory<VitalOperationStepE
             },
             dd = VitalOperationStepEvent.Dd(
                 session = forge.aNullable { VitalOperationStepEvent.DdSession(getForgery()) },
-                browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") }
+                browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") },
+                profiling = forge.aNullable {
+                    VitalOperationStepEvent.Profiling(
+                        status = aNullable { getForgery() },
+                        quotaReason = aNullable { getForgery() },
+                        errorReason = aNullable { getForgery() }
+                    )
+                }
             ),
             ddtags = forge.aNullable { ddTagsString() },
             view = VitalOperationStepEvent.VitalOperationStepEventView(

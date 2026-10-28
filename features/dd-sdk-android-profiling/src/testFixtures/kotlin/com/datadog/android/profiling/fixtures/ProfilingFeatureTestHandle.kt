@@ -8,7 +8,6 @@ package com.datadog.android.profiling.fixtures
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
@@ -26,8 +25,6 @@ import com.datadog.android.profiling.internal.ProfilingFeature
 class ProfilingFeatureTestHandle internal constructor(
     private val feature: ProfilingFeature
 ) {
-
-    val asFeature: Feature get() = feature
 
     val lastSeenRumSessionId: String? get() = feature.lastSeenRumSessionId
 

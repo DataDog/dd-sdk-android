@@ -73,6 +73,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -853,6 +854,39 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
+    fun `M proceed without tracing headers and report ids W intercept() {ArrayIndexOutOfBoundsException}`(
+        @StringForgery message: String
+    ) {
+        // Given
+        fakeUrl = forgeUrlWithQueryParams(forge.anElementFrom(fakeLocalHosts.keys))
+        fakeRequest = forgeRequest()
+        stubChain(mockChain)
+        val fakeException = ArrayIndexOutOfBoundsException(message)
+        mockPropagation.wheneverInjectThenThrow(fakeException)
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers.size).isZero()
+        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            TracingInterceptor.ERROR_TRACING_HEADERS_INJECTION,
+            fakeException,
+            onlyOnce = true,
+            additionalProperties = mapOf(
+                TracingInterceptor.SPAN_ID_HEX_ATTRIBUTE to fakeSpanId.toULong().toString(16),
+                TracingInterceptor.TRACE_ID_HEX_ATTRIBUTE to fakeTraceIdAsString
+            )
+        )
+    }
+
+    @Test
     fun `M update header with parent context W intercept() for request with tracing headers`(
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
@@ -1160,7 +1194,7 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M create a span with info W intercept() { resource url with no query paramaters }`(
+    fun `M create a span with info W intercept() { resource url with no query parameters }`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         val fakeUrlWithoutQueryParams = forgeUrlWithoutQueryParams()
@@ -1803,7 +1837,7 @@ internal open class TracingInterceptorTest {
             InternalLogger.Target.USER,
             expectedMessage,
             StackOverflowError::class.java,
-            mode = org.mockito.kotlin.atLeast(1)
+            mode = atLeast(1)
         )
     }
 

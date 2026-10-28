@@ -75,7 +75,22 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.customMappers).isEmpty()
         assertThat(sessionReplayConfiguration.customOptionSelectorDetectors).isEmpty()
         assertThat(sessionReplayConfiguration.dynamicOptimizationEnabled).isEqualTo(true)
+        assertThat(sessionReplayConfiguration.adaptiveCaptureSchedulingEnabled).isFalse()
         assertThat(sessionReplayConfiguration.heatmapsEnabled).isFalse()
+    }
+
+    @Test
+    fun `M keep opt in scoped to each configuration W build() {builder reused}`() {
+        // Given
+        val fakeEnabledConfiguration = testedBuilder.setAdaptiveCaptureSchedulingEnabled(true).build()
+
+        // When
+        val fakeDisabledConfiguration = testedBuilder.setAdaptiveCaptureSchedulingEnabled(false).build()
+
+        // Then
+        assertThat(fakeEnabledConfiguration.adaptiveCaptureSchedulingEnabled).isTrue()
+        assertThat(fakeDisabledConfiguration.adaptiveCaptureSchedulingEnabled).isFalse()
+        assertThat(SessionReplayConfiguration.Builder().build().adaptiveCaptureSchedulingEnabled).isFalse()
     }
 
     @Test
@@ -399,7 +414,7 @@ internal class SessionReplayConfigurationBuilderTest {
 
         testedBuilder.build()
 
-        val expected = String.format(DUPLICATE_MAPPER_DETECTED, ImageView::class.java)
+        val expected = String.format(Locale.US, DUPLICATE_MAPPER_DETECTED, ImageView::class.java)
 
         // Then
         mockLogger.verifyLog(

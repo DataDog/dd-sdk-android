@@ -4,7 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -44,11 +43,6 @@ android {
 
     defaultConfig {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        externalNativeBuild {
-            cmake {
-                version = Dependencies.Versions.CMake
-            }
-        }
     }
 
     testOptions {
@@ -60,17 +54,17 @@ android {
     externalNativeBuild {
         cmake {
             path = File("$projectDir/CMakeLists.txt")
-            version = Dependencies.Versions.CMake
+            version = libs.versions.cmake.get()
         }
     }
 
-    ndkVersion = Dependencies.Versions.Ndk
+    ndkVersion = libs.versions.ndk.get()
 }
 
 dependencies {
     implementation(project(":dd-sdk-android-internal"))
     api(project(":dd-sdk-android-core"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
     implementation(libs.okHttp)
 
     testImplementation(project(":tools:unit")) {

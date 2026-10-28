@@ -15,23 +15,23 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
-import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
-import com.datadog.android.rum.internal.instrumentation.insights.NoOpInsightsCollector
 import com.datadog.android.rum.internal.timeseries.factory.EventFactory
 import com.datadog.android.rum.internal.timeseries.provider.DataPointsReader
 
 @Suppress("LongParameterList")
 internal class Pipeline<T : Any>(
+    private val buffer: Buffer<T>,
     private val sdkCore: FeatureSdkCore,
     private val reader: DataPointsReader<T>,
-    private val buffer: Buffer<T>,
-    private val eventFactory: EventFactory<T, *>,
     private val dataWriter: DataWriter<Any>,
-    private val internalLogger: InternalLogger,
-    private val insightsCollector: InsightsCollector = NoOpInsightsCollector()
+    private val eventFactory: EventFactory<T, *>,
+    private val insightsCollector: InsightsCollector,
+    private val collectedSessionsRegistry: CollectedTimeseriesSessionRegistry
 ) {
     val intervalMs: Long get() = reader.intervalMs
+    private val internalLogger: InternalLogger get() = sdkCore.internalLogger
 
     @WorkerThread
     fun execute(rumContext: RumContext) {
@@ -39,7 +39,10 @@ internal class Pipeline<T : Any>(
         // flush() waits only for the buffer and never for I/O.
         val dataPoint = reader.read()
         synchronized(this) {
-            dataPoint?.let(buffer::add)
+            if (dataPoint != null) {
+                buffer.add(dataPoint)
+                collectedSessionsRegistry.setTimeseriesCollected(rumContext.sessionId)
+            }
             if (buffer.isFull()) drainAndWrite(rumContext)
         }
     }
@@ -85,7 +88,7 @@ internal class Pipeline<T : Any>(
     private inline fun <R> safeCall(message: String, block: () -> R): R? = try {
         block()
     } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-        sdkCore.internalLogger.log(
+        internalLogger.log(
             level = InternalLogger.Level.ERROR,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             messageBuilder = { message },

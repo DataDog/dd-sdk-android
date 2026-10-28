@@ -7,115 +7,85 @@
 package com.datadog.android.sessionreplay.internal
 
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.NULL_UUID
-import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_APPLICATION_ID_CONTEXT_KEY
-import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_SESSION_ID_CONTEXT_KEY
-import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_VIEW_ID_CONTEXT_KEY
-import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_VIEW_TIME_OFFSET_CONTEXT_KEY
-import com.datadog.android.sessionreplay.internal.SessionReplayRumContextProvider.Companion.RUM_VIEW_URL_CONTEXT_KEY
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
-import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.api.extension.Extensions
 import java.util.UUID
 
-@Extensions(
-    ExtendWith(ForgeExtension::class)
-)
+@ExtendWith(ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class SessionReplayRumContextProviderTest {
 
-    private val testedSessionReplayContextProvider = SessionReplayRumContextProvider()
-
     @Test
-    fun `M notify first view W onContextUpdate { new valid RUM view }`() {
+    fun `M preserve snapshot and notify each new view W onContextUpdate {core reuses mutable map}`(
+        @Forgery fakeRumContext: RumContext,
+        @Forgery fakeFirstViewId: UUID,
+        @Forgery fakeSecondViewId: UUID
+    ) {
         // Given
-        var notificationCount = 0
-        val testedProvider = SessionReplayRumContextProvider { notificationCount++ }
-        val viewId = UUID.randomUUID().toString()
-
-        // When
-        testedProvider.onContextUpdate(
-            Feature.RUM_FEATURE_NAME,
-            mapOf(RUM_VIEW_ID_CONTEXT_KEY to viewId)
-        )
-
-        // Then
-        assertThat(notificationCount).isEqualTo(1)
-    }
-
-    @Test
-    fun `M publish new context before notifying W onContextUpdate { new valid RUM view }`() {
-        // Given
-        val viewId = UUID.randomUUID().toString()
+        val fakeNotifications = mutableListOf<String>()
         lateinit var testedProvider: SessionReplayRumContextProvider
-        var notifiedViewId: String? = null
         testedProvider = SessionReplayRumContextProvider {
-            notifiedViewId = testedProvider.getRumContext().viewId
+            fakeNotifications.add(testedProvider.getRumContext().viewId)
         }
+        val fakeContext = mutableMapOf<String, Any?>(
+            FeatureContextKeys.RUM_CONTEXT to fakeRumContext.copy(viewId = fakeFirstViewId.toString())
+        )
+        testedProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
 
         // When
-        testedProvider.onContextUpdate(
-            Feature.RUM_FEATURE_NAME,
-            mapOf(RUM_VIEW_ID_CONTEXT_KEY to viewId)
-        )
+        fakeContext.clear()
+        fakeContext[FeatureContextKeys.RUM_CONTEXT] = fakeRumContext.copy(viewId = fakeSecondViewId.toString())
 
         // Then
-        assertThat(notifiedViewId).isEqualTo(viewId)
+        assertThat(testedProvider.getRumContext().viewId).isEqualTo(fakeFirstViewId.toString())
+        testedProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
+        testedProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
+        assertThat(fakeNotifications).containsExactly(fakeFirstViewId.toString(), fakeSecondViewId.toString())
+        assertThat(testedProvider.getRumContext().viewId).isEqualTo(fakeSecondViewId.toString())
     }
 
     @Test
-    fun `M notify view transition W onContextUpdate { valid RUM view changes }`() {
+    fun `M update metadata without notifying W onContextUpdate {same view}`(
+        @Forgery fakeRumContext: RumContext,
+        @Forgery fakeViewId: UUID,
+        @LongForgery(min = 1) fakeViewTimestampOffset: Long
+    ) {
         // Given
         var notificationCount = 0
         val testedProvider = SessionReplayRumContextProvider { notificationCount++ }
+        val fakeSnapshot = fakeRumContext.copy(
+            viewId = fakeViewId.toString(),
+            viewTimestampOffset = fakeViewTimestampOffset - 1
+        )
         testedProvider.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
+            mapOf(FeatureContextKeys.RUM_CONTEXT to fakeSnapshot)
         )
 
         // When
         testedProvider.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(RUM_VIEW_ID_CONTEXT_KEY to UUID.randomUUID().toString())
-        )
-
-        // Then
-        assertThat(notificationCount).isEqualTo(2)
-    }
-
-    @Test
-    fun `M not notify view change W onContextUpdate { same RUM view }`() {
-        // Given
-        var notificationCount = 0
-        val testedProvider = SessionReplayRumContextProvider { notificationCount++ }
-        val viewId = UUID.randomUUID().toString()
-        testedProvider.onContextUpdate(
-            Feature.RUM_FEATURE_NAME,
-            mapOf(RUM_VIEW_ID_CONTEXT_KEY to viewId)
-        )
-
-        // When
-        testedProvider.onContextUpdate(
-            Feature.RUM_FEATURE_NAME,
-            mapOf(RUM_VIEW_ID_CONTEXT_KEY to viewId, RUM_VIEW_TIME_OFFSET_CONTEXT_KEY to 10L)
+            mapOf(FeatureContextKeys.RUM_CONTEXT to fakeSnapshot.copy(viewTimestampOffset = fakeViewTimestampOffset))
         )
 
         // Then
         assertThat(notificationCount).isEqualTo(1)
+        assertThat(testedProvider.getRumContext().viewTimeOffsetMs).isEqualTo(fakeViewTimestampOffset)
     }
 
     @Test
-    fun `M not notify view change W onContextUpdate { invalid view }`() {
+    fun `M not notify view change W onContextUpdate {invalid view}`(@Forgery fakeRumContext: RumContext) {
         // Given
         var notificationCount = 0
         val testedProvider = SessionReplayRumContextProvider { notificationCount++ }
@@ -123,7 +93,7 @@ internal class SessionReplayRumContextProviderTest {
         // When
         testedProvider.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(RUM_VIEW_ID_CONTEXT_KEY to NULL_UUID)
+            mapOf(FeatureContextKeys.RUM_CONTEXT to fakeRumContext.copy(viewId = RumContext.NULL_UUID))
         )
         testedProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, emptyMap())
 
@@ -132,172 +102,70 @@ internal class SessionReplayRumContextProviderTest {
     }
 
     @Test
-    fun `M provide a valid Rum context W getRumContext()`(
-        @Forgery fakeApplicationId: UUID,
-        @Forgery fakeSessionId: UUID,
-        @Forgery fakeViewId: UUID,
-        @LongForgery(min = 0L) fakeViewTimeOffsetMs: Long,
-        @StringForgery fakeViewUrl: String
+    fun `M map snapshot W getRumContext()`(
+        @BoolForgery fakeHasViewUrl: Boolean,
+        @Forgery fakeRumContext: RumContext,
+        @LongForgery fakeViewTimestampOffset: Long
     ) {
         // Given
-        testedSessionReplayContextProvider.onContextUpdate(
+        val fakeSnapshot = fakeRumContext.copy(
+            viewTimestampOffset = fakeViewTimestampOffset,
+            viewUrl = if (fakeHasViewUrl) fakeRumContext.viewUrl else null
+        )
+        val testedProvider = SessionReplayRumContextProvider()
+        testedProvider.onContextUpdate(
             Feature.RUM_FEATURE_NAME,
-            mapOf(
-                RUM_APPLICATION_ID_CONTEXT_KEY to fakeApplicationId.toString(),
-                RUM_SESSION_ID_CONTEXT_KEY to fakeSessionId.toString(),
-                RUM_VIEW_ID_CONTEXT_KEY to fakeViewId.toString(),
-                RUM_VIEW_TIME_OFFSET_CONTEXT_KEY to fakeViewTimeOffsetMs,
-                RUM_VIEW_URL_CONTEXT_KEY to fakeViewUrl
-            )
+            mapOf(FeatureContextKeys.RUM_CONTEXT to fakeSnapshot)
         )
 
         // When
-        val context = testedSessionReplayContextProvider.getRumContext()
+        val context = testedProvider.getRumContext()
 
         // Then
-        assertThat(context.applicationId).isEqualTo(fakeApplicationId.toString())
-        assertThat(context.sessionId).isEqualTo(fakeSessionId.toString())
-        assertThat(context.viewId).isEqualTo(fakeViewId.toString())
-        assertThat(context.viewTimeOffsetMs).isEqualTo(fakeViewTimeOffsetMs)
-        assertThat(context.viewUrl).isEqualTo(fakeViewUrl)
-    }
-
-    @Test
-    fun `M provide null viewUrl W getRumContext() { view_url missing from RUM context }`(
-        @Forgery fakeApplicationId: UUID,
-        @Forgery fakeSessionId: UUID,
-        @Forgery fakeViewId: UUID,
-        @LongForgery(min = 0L) fakeViewTimeOffsetMs: Long
-    ) {
-        // Given — RUM context update that does NOT include view_url (mirrors the case where
-        // no RUM view is active yet).
-        testedSessionReplayContextProvider.onContextUpdate(
-            Feature.RUM_FEATURE_NAME,
-            mapOf(
-                RUM_APPLICATION_ID_CONTEXT_KEY to fakeApplicationId.toString(),
-                RUM_SESSION_ID_CONTEXT_KEY to fakeSessionId.toString(),
-                RUM_VIEW_ID_CONTEXT_KEY to fakeViewId.toString(),
-                RUM_VIEW_TIME_OFFSET_CONTEXT_KEY to fakeViewTimeOffsetMs
-            )
-        )
-
-        // When
-        val context = testedSessionReplayContextProvider.getRumContext()
-
-        // Then
-        assertThat(context.viewUrl).isNull()
-    }
-
-    @Test
-    fun `M provide null viewUrl W getRumContext() { view_url is not a String }`(
-        forge: Forge,
-        @Forgery fakeApplicationId: UUID,
-        @Forgery fakeSessionId: UUID,
-        @Forgery fakeViewId: UUID,
-        @LongForgery(min = 0L) fakeViewTimeOffsetMs: Long
-    ) {
-        // Given — view_url present but wrong type. We expect a silent null rather than a crash
-        // because SR cannot rely on the structure of someone else's feature context.
-        testedSessionReplayContextProvider.onContextUpdate(
-            Feature.RUM_FEATURE_NAME,
-            mapOf(
-                RUM_APPLICATION_ID_CONTEXT_KEY to fakeApplicationId.toString(),
-                RUM_SESSION_ID_CONTEXT_KEY to fakeSessionId.toString(),
-                RUM_VIEW_ID_CONTEXT_KEY to fakeViewId.toString(),
-                RUM_VIEW_TIME_OFFSET_CONTEXT_KEY to fakeViewTimeOffsetMs,
-                RUM_VIEW_URL_CONTEXT_KEY to forge.anInt()
-            )
-        )
-
-        // When
-        val context = testedSessionReplayContextProvider.getRumContext()
-
-        // Then
-        assertThat(context.viewUrl).isNull()
-    }
-
-    @RepeatedTest(10)
-    fun `M provide a valid Rum context W getRumContext() { different threads }`(
-        @Forgery fakeApplicationId: UUID,
-        @Forgery fakeSessionId: UUID,
-        @Forgery fakeViewId: UUID,
-        @LongForgery(min = 0L) fakeViewTimeOffsetMs: Long
-    ) {
-        // Given
-        Thread {
-            testedSessionReplayContextProvider.onContextUpdate(
-                Feature.RUM_FEATURE_NAME,
-                mapOf(
-                    RUM_APPLICATION_ID_CONTEXT_KEY to fakeApplicationId.toString(),
-                    RUM_SESSION_ID_CONTEXT_KEY to fakeSessionId.toString(),
-                    RUM_VIEW_ID_CONTEXT_KEY to fakeViewId.toString(),
-                    RUM_VIEW_TIME_OFFSET_CONTEXT_KEY to fakeViewTimeOffsetMs
-                )
-            )
-        }.apply {
-            start()
-            join()
-        }
-
-        // When
-        val context = testedSessionReplayContextProvider.getRumContext()
-
-        // Then
-        assertThat(context.applicationId).isEqualTo(fakeApplicationId.toString())
-        assertThat(context.sessionId).isEqualTo(fakeSessionId.toString())
-        assertThat(context.viewId).isEqualTo(fakeViewId.toString())
-        assertThat(context.viewTimeOffsetMs).isEqualTo(fakeViewTimeOffsetMs)
-    }
-
-    @RepeatedTest(10)
-    fun `M have atomic read W getRumContext() { update while reading }`(
-        @Forgery fakeApplicationId: UUID,
-        @Forgery fakeSessionId: UUID,
-        @Forgery fakeViewId: UUID,
-        @LongForgery(min = 0L) fakeViewTimeOffsetMs: Long
-    ) {
-        // Given
-        testedSessionReplayContextProvider.onContextUpdate(
-            Feature.RUM_FEATURE_NAME,
-            mapOf(
-                RUM_APPLICATION_ID_CONTEXT_KEY to fakeApplicationId.toString(),
-                RUM_SESSION_ID_CONTEXT_KEY to fakeSessionId.toString(),
-                RUM_VIEW_ID_CONTEXT_KEY to fakeViewId.toString(),
-                RUM_VIEW_TIME_OFFSET_CONTEXT_KEY to fakeViewTimeOffsetMs
-            )
-        )
-
-        // When
-        Thread {
-            testedSessionReplayContextProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, emptyMap())
-        }.apply {
-            start()
-            join()
-        }
-        val context = testedSessionReplayContextProvider.getRumContext()
-
-        // Then
-        // should never be a mix of values from two contexts
-        assertThat(context).isIn(
+        assertThat(context).isEqualTo(
             SessionReplayRumContext(
-                fakeApplicationId.toString(),
-                fakeSessionId.toString(),
-                fakeViewId.toString(),
-                fakeViewTimeOffsetMs
-            ),
-            SessionReplayRumContext(NULL_UUID, NULL_UUID, NULL_UUID, 0L)
+                applicationId = fakeSnapshot.applicationId,
+                sessionId = fakeSnapshot.sessionId,
+                viewId = fakeSnapshot.viewId ?: RumContext.NULL_UUID,
+                viewTimeOffsetMs = fakeViewTimestampOffset,
+                viewUrl = fakeSnapshot.viewUrl
+            )
         )
     }
 
     @Test
-    fun `M provide an invalid Rum context W getRumContext() { no RUM context received }`() {
+    fun `M ignore unrelated feature W onContextUpdate`(
+        @StringForgery fakeFeatureName: String,
+        @Forgery fakeRumContext: RumContext
+    ) {
+        // Given
+        val testedProvider = SessionReplayRumContextProvider()
+        val fakeContext = mapOf(FeatureContextKeys.RUM_CONTEXT to fakeRumContext)
+
         // When
-        val context = testedSessionReplayContextProvider.getRumContext()
+        testedProvider.onContextUpdate(fakeFeatureName, fakeContext)
 
         // Then
-        assertThat(context.applicationId).isEqualTo(SessionReplayRumContextProvider.NULL_UUID)
-        assertThat(context.sessionId).isEqualTo(SessionReplayRumContextProvider.NULL_UUID)
-        assertThat(context.viewId).isEqualTo(SessionReplayRumContextProvider.NULL_UUID)
-        assertThat(context.viewTimeOffsetMs).isZero()
+        assertThat(testedProvider.getRumContext()).isEqualTo(
+            SessionReplayRumContext(RumContext.NULL_UUID, RumContext.NULL_UUID, RumContext.NULL_UUID, 0L)
+        )
+    }
+
+    @Test
+    fun `M clear snapshot W onContextUpdate {no RUM context}`(@Forgery fakeRumContext: RumContext) {
+        // Given
+        val testedProvider = SessionReplayRumContextProvider()
+        testedProvider.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(FeatureContextKeys.RUM_CONTEXT to fakeRumContext)
+        )
+
+        // When
+        testedProvider.onContextUpdate(Feature.RUM_FEATURE_NAME, emptyMap())
+
+        // Then
+        assertThat(testedProvider.getRumContext()).isEqualTo(
+            SessionReplayRumContext(RumContext.NULL_UUID, RumContext.NULL_UUID, RumContext.NULL_UUID, 0L)
+        )
     }
 }

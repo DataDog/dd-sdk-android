@@ -34,6 +34,10 @@ data class SessionReplayConfiguration internal constructor(
     internal val heatmapsEnabled: Boolean
 ) {
 
+    // Keep this internal option out of the constructor to preserve the generated copy API.
+    // Generated copy() does not carry this property; SDK configuration copies must preserve it explicitly.
+    internal var adaptiveCaptureSchedulingEnabled: Boolean = false
+
     /**
      * A Builder class for a [SessionReplayConfiguration].
      */
@@ -67,7 +71,7 @@ data class SessionReplayConfiguration internal constructor(
         private var customEndpointUrl: String? = null
         private val privacy = SessionReplayPrivacy.MASK
 
-        // indicates whether fine grained masking levels have been explicitly set
+        // indicates whether fine-grained masking levels have been explicitly set
         private var fineGrainedMaskingSet = false
 
         private var imagePrivacy = ImagePrivacy.MASK_ALL
@@ -76,6 +80,8 @@ data class SessionReplayConfiguration internal constructor(
         private var textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL
         private val extensionSupportSet: MutableSet<ExtensionSupport> = mutableSetOf()
         private var dynamicOptimizationEnabled = true
+
+        private var adaptiveCaptureSchedulingEnabled = false
         private var systemRequirementsConfiguration = SystemRequirementsConfiguration.NONE
         private var internalCallback: SessionReplayInternalCallback = NoOpSessionReplayInternalCallback()
         private var heatmapsEnabled = false
@@ -198,7 +204,7 @@ data class SessionReplayConfiguration internal constructor(
 
         /**
          * This option controls whether optimization is enabled or disabled for recording Session Replay data.
-         * By default the value is true, meaning the dynamic optimization is enabled.
+         * By default, the value is true, meaning the dynamic optimization is enabled.
          */
         fun setDynamicOptimizationEnabled(dynamicOptimizationEnabled: Boolean): Builder {
             this.dynamicOptimizationEnabled = dynamicOptimizationEnabled
@@ -241,6 +247,14 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         /**
+         * Enables adaptive capture scheduling. Disabled by default.
+         */
+        internal fun setAdaptiveCaptureSchedulingEnabled(adaptiveCaptureSchedulingEnabled: Boolean): Builder {
+            this.adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled
+            return this
+        }
+
+        /**
          * Builds a [SessionReplayConfiguration] based on the current state of this Builder.
          */
         fun build(): SessionReplayConfiguration {
@@ -259,7 +273,9 @@ data class SessionReplayConfiguration internal constructor(
                 systemRequirementsConfiguration = systemRequirementsConfiguration,
                 internalCallback = internalCallback,
                 heatmapsEnabled = heatmapsEnabled
-            )
+            ).also {
+                it.adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled
+            }
         }
 
         private fun customMappers(): List<MapperTypeWrapper<*>> {

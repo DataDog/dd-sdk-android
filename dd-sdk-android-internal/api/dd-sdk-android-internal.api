@@ -35,6 +35,7 @@ public final class com/datadog/android/internal/FeatureContextKeys {
 	public static final field PROFILING_QUOTA_REASON Ljava/lang/String;
 	public static final field PROFILING_QUOTA_SESSION_ID Ljava/lang/String;
 	public static final field PROFILING_SAMPLE_RATE Ljava/lang/String;
+	public static final field RUM_CONTEXT Ljava/lang/String;
 	public static final field RUM_SESSION_ID Ljava/lang/String;
 	public static final field RUM_SESSION_SAMPLE_RATE Ljava/lang/String;
 	public static final field RUM_SESSION_STATE Ljava/lang/String;
@@ -475,10 +476,114 @@ public final class com/datadog/android/internal/profiling/ProfilingThreadDump {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/profiling/quota/QuotaReason : java/lang/Enum {
+	public static final field API_ERROR Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+	public static final field BACKEND_UNAVAILABLE Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+	public static final field ORG_DISABLED Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+	public static final field QUOTA_EXCEEDED Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+	public static final field QUOTA_OK Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+	public static final field TIMEOUT Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+	public static final field UNDEFINED Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun getRawValue ()Ljava/lang/String;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+	public static fun values ()[Lcom/datadog/android/internal/profiling/quota/QuotaReason;
+}
+
+public final class com/datadog/android/internal/rum/RumContext {
+	public static final field Companion Lcom/datadog/android/internal/rum/RumContext$Companion;
+	public static final field NULL_UUID Ljava/lang/String;
+	public static final field SAMPLE_ALL_RATE F
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/internal/rum/RumSessionState;Lcom/datadog/android/internal/rum/RumSessionStartReason;Lcom/datadog/android/internal/rum/RumViewType;Ljava/lang/String;Ljava/lang/String;JJZZF)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/internal/rum/RumSessionState;Lcom/datadog/android/internal/rum/RumSessionStartReason;Lcom/datadog/android/internal/rum/RumViewType;Ljava/lang/String;Ljava/lang/String;JJZZFILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component10 ()Lcom/datadog/android/internal/rum/RumViewType;
+	public final fun component11 ()Ljava/lang/String;
+	public final fun component12 ()Ljava/lang/String;
+	public final fun component13 ()J
+	public final fun component14 ()J
+	public final fun component15 ()Z
+	public final fun component16 ()Z
+	public final fun component17 ()F
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Z
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun component8 ()Lcom/datadog/android/internal/rum/RumSessionState;
+	public final fun component9 ()Lcom/datadog/android/internal/rum/RumSessionStartReason;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/internal/rum/RumSessionState;Lcom/datadog/android/internal/rum/RumSessionStartReason;Lcom/datadog/android/internal/rum/RumViewType;Ljava/lang/String;Ljava/lang/String;JJZZF)Lcom/datadog/android/internal/rum/RumContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/rum/RumContext;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/internal/rum/RumSessionState;Lcom/datadog/android/internal/rum/RumSessionStartReason;Lcom/datadog/android/internal/rum/RumViewType;Ljava/lang/String;Ljava/lang/String;JJZZFILjava/lang/Object;)Lcom/datadog/android/internal/rum/RumContext;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getActionId ()Ljava/lang/String;
+	public final fun getApplicationId ()Ljava/lang/String;
+	public final fun getHasReplay ()Z
+	public final fun getHasTimeseries ()Z
+	public final fun getSessionId ()Ljava/lang/String;
+	public final fun getSessionSampleRate ()F
+	public final fun getSessionStartReason ()Lcom/datadog/android/internal/rum/RumSessionStartReason;
+	public final fun getSessionState ()Lcom/datadog/android/internal/rum/RumSessionState;
+	public final fun getSyntheticsResultId ()Ljava/lang/String;
+	public final fun getSyntheticsTestId ()Ljava/lang/String;
+	public final fun getViewId ()Ljava/lang/String;
+	public final fun getViewName ()Ljava/lang/String;
+	public final fun getViewTimestamp ()J
+	public final fun getViewTimestampOffset ()J
+	public final fun getViewType ()Lcom/datadog/android/internal/rum/RumViewType;
+	public final fun getViewUrl ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun isSessionActive ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/rum/RumContext$Companion {
+}
+
+public final class com/datadog/android/internal/rum/RumContextKt {
+	public static final fun rumContext (Ljava/util/Map;)Lcom/datadog/android/internal/rum/RumContext;
+}
+
 public final class com/datadog/android/internal/rum/RumSessionConstants {
 	public static final field EMPTY_RUM_SESSION_ID Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/internal/rum/RumSessionConstants;
 	public static final field TRACKED_SESSION_STATE Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/rum/RumSessionStartReason : java/lang/Enum {
+	public static final field BACKGROUND_LAUNCH Lcom/datadog/android/internal/rum/RumSessionStartReason;
+	public static final field EXPLICIT_STOP Lcom/datadog/android/internal/rum/RumSessionStartReason;
+	public static final field FROM_NON_INTERACTIVE_SESSION Lcom/datadog/android/internal/rum/RumSessionStartReason;
+	public static final field INACTIVITY_TIMEOUT Lcom/datadog/android/internal/rum/RumSessionStartReason;
+	public static final field MAX_DURATION Lcom/datadog/android/internal/rum/RumSessionStartReason;
+	public static final field PREWARM Lcom/datadog/android/internal/rum/RumSessionStartReason;
+	public static final field USER_APP_LAUNCH Lcom/datadog/android/internal/rum/RumSessionStartReason;
+	public final fun getAsString ()Ljava/lang/String;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/rum/RumSessionStartReason;
+	public static fun values ()[Lcom/datadog/android/internal/rum/RumSessionStartReason;
+}
+
+public final class com/datadog/android/internal/rum/RumSessionState : java/lang/Enum {
+	public static final field EXPIRED Lcom/datadog/android/internal/rum/RumSessionState;
+	public static final field NOT_TRACKED Lcom/datadog/android/internal/rum/RumSessionState;
+	public static final field TRACKED Lcom/datadog/android/internal/rum/RumSessionState;
+	public final fun getAsString ()Ljava/lang/String;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/rum/RumSessionState;
+	public static fun values ()[Lcom/datadog/android/internal/rum/RumSessionState;
+}
+
+public final class com/datadog/android/internal/rum/RumViewType : java/lang/Enum {
+	public static final field APPLICATION_LAUNCH Lcom/datadog/android/internal/rum/RumViewType;
+	public static final field BACKGROUND Lcom/datadog/android/internal/rum/RumViewType;
+	public static final field FOREGROUND Lcom/datadog/android/internal/rum/RumViewType;
+	public static final field NONE Lcom/datadog/android/internal/rum/RumViewType;
+	public final fun getAsString ()Ljava/lang/String;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/rum/RumViewType;
+	public static fun values ()[Lcom/datadog/android/internal/rum/RumViewType;
 }
 
 public final class com/datadog/android/internal/sampling/DeterministicSampling {

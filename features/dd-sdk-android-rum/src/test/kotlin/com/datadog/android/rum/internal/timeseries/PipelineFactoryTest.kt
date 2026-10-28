@@ -19,11 +19,13 @@ import com.datadog.android.rum.internal.timeseries.factory.CpuEventFactory
 import com.datadog.android.rum.internal.timeseries.factory.MemoryEventFactory
 import com.datadog.android.rum.internal.timeseries.provider.CpuDatapointReader
 import com.datadog.android.rum.internal.timeseries.provider.VitalReaderWrapper
+import com.datadog.android.rum.timeseries.TimeseriesConfiguration
 import com.datadog.android.rum.timeseries.TimeseriesType
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.getFieldValue
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -62,6 +64,9 @@ internal class PipelineFactoryTest {
     lateinit var mockDataWriter: DataWriter<Any>
 
     @Mock
+    lateinit var mockCollectedSessionsRegistry: CollectedTimeseriesSessionRegistry
+
+    @Mock
     lateinit var mockInsightsCollector: InsightsCollector
 
     @Mock
@@ -84,19 +89,67 @@ internal class PipelineFactoryTest {
 
     private fun createTestedFactory(
         totalRamBytes: Long = fakeTotalRamBytes,
-        enabledTypes: Set<TimeseriesType> = setOf(TimeseriesType.CPU, TimeseriesType.MEMORY)
+        enabledTypes: Set<TimeseriesType> = setOf(TimeseriesType.CPU, TimeseriesType.MEMORY),
+        bufferSize: Int = TimeseriesConfiguration.DEFAULT_BUFFER_SIZE,
+        intervalMs: Long = TimeseriesConfiguration.DEFAULT_SAMPLING_INTERVAL_MS
     ) = PipelineFactory(
         totalRamBytes = totalRamBytes,
         sdkCore = mockSdkCore,
         dataWriter = mockDataWriter,
         insightsCollector = mockInsightsCollector,
-        enabledTypes = enabledTypes,
+        configuration = TimeseriesConfiguration(
+            enabledTypes,
+            bufferSize,
+            intervalMs,
+            TimeseriesConfiguration.BACKGROUND_TRANSITION_DELAY_MS
+        ),
         batteryInfoProvider = mockBatteryInfoProvider,
-        displayInfoProvider = mockDisplayInfoProvider
+        displayInfoProvider = mockDisplayInfoProvider,
+        sessionRegistry = mockCollectedSessionsRegistry
     )
 
     private fun Pipeline<*>.reader() = getFieldValue<Any, Pipeline<*>>("reader")
     private fun Pipeline<*>.eventFactory() = getFieldValue<Any, Pipeline<*>>("eventFactory")
+
+    @Test
+    fun `M apply collection settings to all pipelines W create()`(
+        @IntForgery(min = 2, max = 128) fakeBufferSize: Int,
+        @LongForgery(min = 1L, max = 1000L) fakeIntervalMs: Long
+    ) {
+        // Given
+        val testedFactory = createTestedFactory(bufferSize = fakeBufferSize, intervalMs = fakeIntervalMs)
+
+        // When
+        val pipelines = testedFactory.create(fakeSessionType)
+
+        // Then
+        assertThat(pipelines).hasSize(2)
+        pipelines.forEach { pipeline ->
+            assertThat(pipeline.intervalMs).isEqualTo(fakeIntervalMs)
+            val buffer = pipeline.getFieldValue<Buffer<Double>, Pipeline<*>>("buffer")
+            repeat(fakeBufferSize - 1) { buffer.add(DataPoint(it.toLong(), 0.0)) }
+            assertThat(buffer.isFull()).isFalse()
+            buffer.add(DataPoint(fakeBufferSize.toLong(), 0.0))
+            assertThat(buffer.isFull()).isTrue()
+        }
+    }
+
+    @Test
+    fun `M pass collected sessions registry to all pipelines W create()`() {
+        // Given
+        val testedFactory = createTestedFactory()
+
+        // When
+        val pipelines = testedFactory.create(fakeSessionType)
+
+        // Then
+        assertThat(pipelines).hasSize(2)
+        pipelines.forEach { pipeline ->
+            assertThat(
+                pipeline.getFieldValue<CollectedTimeseriesSessionRegistry, Pipeline<*>>("collectedSessionsRegistry")
+            ).isSameAs(mockCollectedSessionsRegistry)
+        }
+    }
 
     @Test
     fun `M create no pipeline W create() { no type enabled }`() {

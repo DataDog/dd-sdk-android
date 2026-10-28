@@ -28,7 +28,8 @@ import com.squareup.kotlinpoet.TypeSpec
 
 class ClassGenerator(
     packageName: String,
-    knownTypes: MutableSet<KotlinTypeWrapper>
+    knownTypes: MutableSet<KotlinTypeWrapper>,
+    private val generateConstructorDefaults: Boolean
 ) : TypeSpecGenerator<TypeDefinition.Class>(
     packageName,
     knownTypes
@@ -315,20 +316,24 @@ class ClassGenerator(
     ): FunSpec {
         val constructorBuilder = FunSpec.constructorBuilder()
 
-        definition.properties.forEach { p ->
-            if (p.type !is TypeDefinition.Constant) {
-                val propertyName = p.name.variableName()
-                val isRequired = definition.required.contains(p.name)
-                val isNullable = (!isRequired || p.type is TypeDefinition.Null)
-                val notNullableType = p.type.asKotlinTypeName(rootTypeName)
+        definition.properties.forEach { prop ->
+            if (prop.type !is TypeDefinition.Constant) {
+                val propertyName = prop.name.variableName()
+                val isRequired = definition.required.contains(prop.name)
+                val isNullable = (!isRequired || prop.type is TypeDefinition.Null)
+                val notNullableType = prop.type.asKotlinTypeName(rootTypeName)
                 val propertyType = notNullableType.copy(nullable = isNullable)
                 constructorBuilder.addParameter(
                     ParameterSpec.builder(propertyName, propertyType)
-                        .withDefaultValue(
-                            p = p,
-                            rootTypeName = rootTypeName,
-                            isRequired = isRequired
-                        )
+                        .apply {
+                            if (generateConstructorDefaults) {
+                                withDefaultValue(
+                                    prop = prop,
+                                    rootTypeName = rootTypeName,
+                                    isRequired = isRequired
+                                )
+                            }
+                        }
                         .build()
                 )
             }
@@ -341,7 +346,11 @@ class ClassGenerator(
             )
             constructorBuilder.addParameter(
                 ParameterSpec.builder(Identifier.PARAM_ADDITIONAL_PROPS, mapType)
-                    .defaultValue(if (definition.additionalProperties.readOnly) "mapOf()" else "mutableMapOf()")
+                    .apply {
+                        if (generateConstructorDefaults) {
+                            defaultValue(if (definition.additionalProperties.readOnly) "mapOf()" else "mutableMapOf()")
+                        }
+                    }
                     .build()
             )
         }
@@ -384,24 +393,23 @@ class ClassGenerator(
         value: Any?,
         type: Any?
     ): String {
-        return when {
-            value is JsonPrimitiveType -> {
+        return when (value) {
+            is JsonPrimitiveType -> {
                 error(
                     "Unable to get Kotlin Value from $value with type $type"
                 )
             }
 
-            value is String -> "\"$value\""
-            value is Double &&
-                (type == JsonType.INTEGER || type == JsonPrimitiveType.INTEGER) -> {
+            is String -> "\"$value\""
+            is Double if (type == JsonType.INTEGER || type == JsonPrimitiveType.INTEGER) -> {
                 "${value.toLong()}L"
             }
 
-            value is Double -> {
+            is Double -> {
                 "$value"
             }
 
-            value is Boolean -> {
+            is Boolean -> {
                 "$value"
             }
 
@@ -441,24 +449,24 @@ class ClassGenerator(
     // region Internal Extensions
 
     private fun ParameterSpec.Builder.withDefaultValue(
-        p: TypeProperty,
+        prop: TypeProperty,
         rootTypeName: String,
         isRequired: Boolean
     ): ParameterSpec.Builder {
-        val defaultValue = p.defaultValue
+        val defaultValue = prop.defaultValue
         if (defaultValue != null) {
-            when (p.type) {
+            when (prop.type) {
                 is TypeDefinition.Primitive -> defaultValue(
                     getKotlinValue(
                         defaultValue,
-                        p.type.type
+                        prop.type.type
                     )
                 )
 
                 is TypeDefinition.Enum -> defaultValue(
                     "%T.%L",
-                    p.type.asKotlinTypeName(rootTypeName),
-                    p.type.enumConstantName(
+                    prop.type.asKotlinTypeName(rootTypeName),
+                    prop.type.enumConstantName(
                         if (defaultValue is Number) {
                             defaultValue.toInt().toString()
                         } else {
@@ -468,11 +476,11 @@ class ClassGenerator(
                 )
 
                 else -> throw IllegalArgumentException(
-                    "Unable to generate default value for class: ${p.type}. " +
+                    "Unable to generate default value for class: ${prop.type}. " +
                         "This feature is not supported yet"
                 )
             }
-        } else if (!isRequired || p.type is TypeDefinition.Null) {
+        } else if (!isRequired || prop.type is TypeDefinition.Null) {
             defaultValue("null")
         }
         return this

@@ -31,7 +31,7 @@ android {
 dependencies {
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":dd-sdk-android-core"))
-    implementation(libs.kotlin)
+    implementation(libs.kotlinRuntime)
 
     // Testing
     implementation(project(":tools:unit")) {
@@ -46,9 +46,11 @@ dependencies {
     implementation(libs.bundles.testTools)
     implementation(libs.okHttp)
     implementation(libs.gson)
+    testImplementation(testFixtures(project(":dd-sdk-android-core")))
 }
 
 datadogBuild {
     applyAndroidLibraryConfig()
     applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyJunitConfig()
 }

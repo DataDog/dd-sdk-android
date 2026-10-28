@@ -41,7 +41,7 @@ internal fun extractResourceTiming(timingsPayload: Map<String, Any?>?): Resource
     }
 }
 
-@Suppress("ComplexMethod")
+@Suppress("CyclomaticComplexMethod")
 private fun createResourceTiming(timings: Map<String, Timing?>): ResourceTiming {
     return ResourceTiming(
         firstByteStart = timings[FIRST_BYTE_TIMING]?.startTime ?: 0L,

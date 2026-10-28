@@ -4,6 +4,7 @@ interface com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
   val heatmapIdentifierRegistry: com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 fun heatmapViewKey(android.view.View): Long
 object com.datadog.android.internal.FeatureContextKeys
+  const val RUM_CONTEXT: String
   const val PROFILER_IS_RUNNING: String
   const val PROFILING_SAMPLE_RATE: String
   const val PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE: String
@@ -203,9 +204,44 @@ data class com.datadog.android.internal.profiling.ProfilingRumContext
   constructor(String, String, String?, String?)
 data class com.datadog.android.internal.profiling.ProfilingThreadDump
   constructor(String, Thread.State, String)
+enum com.datadog.android.internal.profiling.quota.QuotaReason
+  constructor(String)
+  - QUOTA_OK
+  - QUOTA_EXCEEDED
+  - ORG_DISABLED
+  - BACKEND_UNAVAILABLE
+  - UNDEFINED
+  - TIMEOUT
+  - API_ERROR
+data class com.datadog.android.internal.rum.RumContext
+  constructor(String = NULL_UUID, String = NULL_UUID, Boolean = false, String? = null, String? = null, String? = null, String? = null, RumSessionState = RumSessionState.NOT_TRACKED, RumSessionStartReason = RumSessionStartReason.USER_APP_LAUNCH, RumViewType = RumViewType.NONE, String? = null, String? = null, Long = 0L, Long = 0L, Boolean = false, Boolean = false, Float = SAMPLE_ALL_RATE)
+  companion object 
+    const val NULL_UUID: String
+    const val SAMPLE_ALL_RATE: Float
+fun Map<String, Any?>.rumContext(): RumContext?
 object com.datadog.android.internal.rum.RumSessionConstants
   const val EMPTY_RUM_SESSION_ID: String
   const val TRACKED_SESSION_STATE: String
+enum com.datadog.android.internal.rum.RumSessionStartReason
+  constructor(String)
+  - USER_APP_LAUNCH
+  - INACTIVITY_TIMEOUT
+  - MAX_DURATION
+  - BACKGROUND_LAUNCH
+  - PREWARM
+  - FROM_NON_INTERACTIVE_SESSION
+  - EXPLICIT_STOP
+enum com.datadog.android.internal.rum.RumSessionState
+  constructor(String)
+  - NOT_TRACKED
+  - TRACKED
+  - EXPIRED
+enum com.datadog.android.internal.rum.RumViewType
+  constructor(String)
+  - NONE
+  - FOREGROUND
+  - BACKGROUND
+  - APPLICATION_LAUNCH
 object com.datadog.android.internal.sampling.DeterministicSampling
   fun combinedSampleRate(Float, Float): Float
 object com.datadog.android.internal.sampling.SessionSamplingIdProvider

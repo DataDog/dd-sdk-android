@@ -21,7 +21,8 @@ internal class ViewUIPerformanceReport private constructor(
     var slowFramesDurationNs: Long = 0L,
     @Volatile
     var freezeFramesDuration: Long = 0,
-    val minViewLifetimeThresholdNs: Long = 0
+    val minViewLifetimeThresholdNs: Long = 0,
+    var lastSlowFrameEndTimestampNs: Long? = null
 ) {
     constructor(
         viewStartedTimeStamp: Long,
@@ -40,7 +41,7 @@ internal class ViewUIPerformanceReport private constructor(
         // lastOrNull here is a function of EvictingQueue, because generally for the queue it is O(N)
         get() = slowFramesRecords.lastOrNull()
 
-    fun snapshot(): ViewUIPerformanceReport.Snapshot = ViewUIPerformanceReport.Snapshot(
+    fun snapshot(): Snapshot = Snapshot(
         viewStartedTimeStamp = viewStartedTimeStamp,
         // iterator over ConcurrentLinkedDeque is weekly consistent, but we are ok with that
         slowFramesRecords = slowFramesRecords.toList(),

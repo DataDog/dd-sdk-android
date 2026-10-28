@@ -169,11 +169,9 @@ internal class LogEventSerializerTest {
         }
         val faultyLogEvent = fakeLog.copy(
             usr = fakeLog.usr?.copy(
-                additionalProperties = fakeLog.usr?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = fakeLog.usr.additionalProperties
                     .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
             )
         )
 
@@ -198,11 +196,9 @@ internal class LogEventSerializerTest {
         }
         val faultyLogEvent = fakeLog.copy(
             account = fakeLog.account?.copy(
-                additionalProperties = fakeLog.account?.additionalProperties
-                    ?.toMutableMap()
-                    ?.apply { put(faultyKey, faultyObject) }
-                    .orEmpty()
+                additionalProperties = fakeLog.account.additionalProperties
                     .toMutableMap()
+                    .apply { put(faultyKey, faultyObject) }
             )
         )
 

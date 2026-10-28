@@ -755,7 +755,7 @@ internal class SdkFeatureTest {
         assertThrows<ClassCastException> {
             // strange enough nothing is thrown if we don't save the result.
             // Kotlin compiler removing/optimizing code unused?
-            @Suppress("UNUSED_VARIABLE")
+            @Suppress("UnusedVariable", "unused")
             val result = testedFeature.unwrap<AnotherFakeFeature>()
         }
     }

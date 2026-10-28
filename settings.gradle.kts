@@ -70,6 +70,7 @@ include(":reliability:single-fit:rum")
 include(":reliability:single-fit:trace")
 include(":reliability:single-fit:okhttp")
 include(":reliability:single-fit:profiling")
+include(":reliability:single-fit:flags")
 
 // CORE INTEGRATION TESTS
 include(":reliability:core-it")
