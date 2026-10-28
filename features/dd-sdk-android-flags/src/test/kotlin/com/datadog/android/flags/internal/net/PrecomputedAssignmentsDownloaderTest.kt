@@ -136,6 +136,27 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
+    fun `M return the ignored reason W readPrecomputedFlags() { selection sent, lowercase header name }`(
+        @StringForgery fakeResponseBody: String,
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        stubSuccessfulCall(
+            fakeResponseBody,
+            fakeUrl,
+            ignoredReason = "too_many_values",
+            headerName = "dd-flag-selection-ignored"
+        )
+        whenever(mockRequestFactory.sendsFlagSelection) doReturn true
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
+
+        // Then
+        assertThat(result).isEqualTo(PrecomputedAssignmentsResponse(fakeResponseBody, "too_many_values"))
+    }
+
+    @Test
     fun `M return no ignored reason W readPrecomputedFlags() { selection sent, empty ignored header }`(
         @StringForgery fakeResponseBody: String,
         @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
@@ -452,11 +473,16 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
     // region Helper methods
 
-    private fun stubSuccessfulCall(body: String, url: String, ignoredReason: String) {
+    private fun stubSuccessfulCall(
+        body: String,
+        url: String,
+        ignoredReason: String,
+        headerName: String = "DD-Flag-Selection-Ignored"
+    ) {
         val fakeRequest = Request.Builder().url(url).build()
         val fakeResponse = createSuccessfulResponse(body, url)
             .newBuilder()
-            .header("DD-Flag-Selection-Ignored", ignoredReason)
+            .header(headerName, ignoredReason)
             .build()
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
             .doReturn(fakeRequest)
