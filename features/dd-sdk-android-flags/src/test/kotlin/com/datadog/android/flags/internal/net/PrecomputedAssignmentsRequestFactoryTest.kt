@@ -11,6 +11,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Trigger
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.rum.RumContext
@@ -49,6 +51,9 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     @Forgery
     lateinit var fakeRumContext: RumContext
 
+    @Forgery
+    lateinit var fakeDiagnostics: Diagnostics
+
     private lateinit var testedFactory: PrecomputedAssignmentsRequestFactory
 
     @BeforeEach
@@ -63,6 +68,34 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         testedFactory = PrecomputedAssignmentsRequestFactory(mockInternalLogger, null)
     }
 
+    @Test
+    fun `M include diagnostics in request body W create()`(
+        @Forgery fakeEvaluationContext: EvaluationContext
+    ) {
+        // Given
+        val diagnostics = fakeDiagnostics
+        val expectedTrigger = when (diagnostics.fetch.trigger) {
+            Trigger.INITIALIZATION -> "initialization"
+            Trigger.CONTEXT_CHANGE -> "context_change"
+        }
+        val expectedDiagnostics = JsonParser.parseString(
+            """
+            {
+              "sdk": {"instance_id": "${diagnostics.sdk.instanceId}"},
+              "fetch": {"sequence": ${diagnostics.fetch.sequence}, "trigger": "$expectedTrigger"}
+            }
+            """.trimIndent()
+        )
+
+        // When
+        val request = testedFactory.create(fakeEvaluationContext, fakeDatadogContext, diagnostics)
+
+        // Then
+        val actualRequest = checkNotNull(request) { "Expected request with diagnostics" }
+        val body = JsonParser.parseString(extractRequestBodyAsString(actualRequest)).asJsonObject
+        assertThat(body.remove("diagnostics")).isEqualTo(expectedDiagnostics)
+    }
+
     // region create() - Success cases
 
     @Test
@@ -73,7 +106,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         val context = fakeDatadogContext.copy(source = "android")
 
         // When
-        val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context))
+        val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context, fakeDiagnostics))
         val buffer = Buffer()
         checkNotNull(request.body).writeTo(buffer)
         val attributes = JSONObject(buffer.readUtf8()).getJSONObject("data").getJSONObject("attributes")
@@ -95,7 +128,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
             val context = fakeDatadogContext.copy(source = source)
 
             // When
-            val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context))
+            val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context, fakeDiagnostics))
             val buffer = Buffer()
             checkNotNull(request.body).writeTo(buffer)
             val attributes = JSONObject(buffer.readUtf8()).getJSONObject("data").getJSONObject("attributes")
@@ -122,7 +155,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         )
 
         // When
-        val request = testedFactory.create(context, fakeDatadogContext)
+        val request = testedFactory.create(context, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         checkNotNull(request)
@@ -149,7 +182,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         )
 
         // When
-        val request = testedFactory.create(context, fakeDatadogContext)
+        val request = testedFactory.create(context, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         checkNotNull(request)
@@ -171,7 +204,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         )
 
         // When
-        val request = testedFactory.create(context, fakeDatadogContext)
+        val request = testedFactory.create(context, fakeDatadogContext, fakeDiagnostics)
 
         checkNotNull(request)
         assertThat(request.url.toString()).isEqualTo(fakeCustomEndpoint)
@@ -193,12 +226,12 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
         // When
-        val request = testedFactory.create(fakeContext, fakeDatadogContext)
+        val request = testedFactory.create(fakeContext, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         checkNotNull(request)
         val bodyJson = JsonParser.parseString(extractRequestBodyAsString(request)).asJsonObject
-        assertThat(bodyJson.keySet()).containsExactly("data")
+        assertThat(bodyJson.keySet()).containsExactlyInAnyOrder("data", "diagnostics")
         assertThat(bodyJson.getAsJsonObject("data").get("type").asString)
             .isEqualTo("precompute-assignments-request")
         val attributes = PrecomputedAssignmentsRequest.fromJsonObject(bodyJson).data.attributes
@@ -220,7 +253,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         )
 
         // When
-        val request = testedFactory.create(context, fakeDatadogContext)
+        val request = testedFactory.create(context, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         checkNotNull(request)
@@ -251,7 +284,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
         // When
-        val request = testedFactory.create(fakeContext, fakeDatadogContext)
+        val request = testedFactory.create(fakeContext, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         val json = JSONObject(extractRequestBodyAsString(checkNotNull(request)))
@@ -273,7 +306,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
         // When
-        val request = testedFactory.create(fakeContext, fakeDatadogContext)
+        val request = testedFactory.create(fakeContext, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         val json = JSONObject(extractRequestBodyAsString(checkNotNull(request)))
@@ -299,7 +332,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         )
 
         // When
-        val request = testedFactory.create(context, fakeDatadogContext)
+        val request = testedFactory.create(context, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         assertThat(request).isNull()
