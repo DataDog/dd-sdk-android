@@ -188,6 +188,8 @@ data class FlagsConfiguration internal constructor(
          * UTF-16 surrogate, is not sent, and the full flag configuration is loaded. The server may also ignore a very
          * large selection (`too_many_values`), in which case the full flag configuration is loaded. Servers that do
          * not support flag selection, or have it disabled, return the full flag configuration without a warning.
+         * A server reason that the SDK does not know is reported as `unknown`. With [useCustomFlagEndpoint], the proxy
+         * must forward the `DD-Flag-Selection-Ignored` response header for an ignored selection to be reported.
          *
          * When the server applies the selection, flags outside it are not loaded, so evaluating them returns the
          * default value with [ErrorCode.FLAG_NOT_FOUND].
