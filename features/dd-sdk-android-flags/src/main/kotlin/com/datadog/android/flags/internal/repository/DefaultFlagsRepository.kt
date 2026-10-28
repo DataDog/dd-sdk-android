@@ -52,6 +52,7 @@ internal class DefaultFlagsRepository(
     private val persistenceManager = FlagsPersistenceManager(
         dataStore = dataStore,
         instanceName = instanceName,
+        flagSelection = flagSelection,
         internalLogger = internalLogger
     ) { loadedState ->
         // State fetched with a different selection holds a different set of flags.
@@ -89,7 +90,6 @@ internal class DefaultFlagsRepository(
             persistenceManager.saveFlagsState(
                 context = context,
                 flags = flags,
-                flagSelection = flagSelection,
                 currentTimestamp = featureSdkCore.timeProvider.getDeviceTimestampMillis(),
                 callback = object : DataStoreWriteCallback {
                     override fun onSuccess() {

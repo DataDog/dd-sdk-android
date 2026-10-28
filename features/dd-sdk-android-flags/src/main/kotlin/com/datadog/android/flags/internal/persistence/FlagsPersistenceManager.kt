@@ -20,21 +20,28 @@ import com.datadog.android.flags.model.EvaluationContext
 internal class FlagsPersistenceManager(
     private val dataStore: DataStoreHandler,
     instanceName: String,
+    private val flagSelection: CanonicalFlagSelection?,
     private val internalLogger: InternalLogger,
     onStateLoaded: (FlagsStateEntry?) -> Unit
 ) {
     private val serializer = FlagsStateSerializer(internalLogger)
     private val deserializer = FlagsStateDeserializer(internalLogger)
-    private val flagsStateKey: String = "$FLAGS_STATE_KEY_PREFIX-$instanceName"
+
+    // SDK versions without flag selection read only the unselected key and ignore the flagSelection field,
+    // so selected state uses its own key and is never read by them as a full configuration.
+    private val unselectedStateKey = "$FLAGS_STATE_KEY_PREFIX-$instanceName"
+    private val selectedStateKey = "$FLAGS_SELECTION_STATE_KEY_PREFIX-$instanceName"
+    private val flagsStateKey: String = if (flagSelection == null) unselectedStateKey else selectedStateKey
 
     init {
+        // One persisted state per instance: changing to or from a selection discards the other key's state.
+        dataStore.removeValue(if (flagSelection == null) selectedStateKey else unselectedStateKey)
         loadFlagsState(onStateLoaded)
     }
 
     internal fun saveFlagsState(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
-        flagSelection: CanonicalFlagSelection?,
         currentTimestamp: Long,
         callback: DataStoreWriteCallback? = null,
         obfuscation: FlagKeyObfuscation? = null
@@ -79,5 +86,6 @@ internal class FlagsPersistenceManager(
 
     companion object {
         private const val FLAGS_STATE_KEY_PREFIX = "flags-state"
+        private const val FLAGS_SELECTION_STATE_KEY_PREFIX = "flags-selection-state"
     }
 }

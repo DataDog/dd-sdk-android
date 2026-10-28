@@ -22,6 +22,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -40,6 +41,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -557,6 +559,99 @@ internal class DefaultFlagsRepositoryTest {
         // Then
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(context)
         assertThat(testedRepository.getPrecomputedFlag(flagKey)).isNotNull()
+    }
+
+    @Test
+    fun `M persist the state under the selection key W setFlagsAndContext() { flag selection }`(
+        @StringForgery(regex = "fake-[a-z]{4,8}") fakeInstanceName: String,
+        forge: Forge
+    ) {
+        // Given
+        testedRepository = DefaultFlagsRepository(
+            mockFeatureSdkCore,
+            fakeInstanceName,
+            mockDataStore,
+            CanonicalFlagSelection(listOf("mobile"), emptyList())
+        )
+
+        // When
+        testedRepository.setFlagsAndContext(forge.getForgery(), emptyMap())
+
+        // Then
+        verify(mockDataStore).setValue<FlagsStateEntry>(
+            key = eq("flags-selection-state-$fakeInstanceName"),
+            data = any(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
+        verify(mockDataStore, never()).setValue<FlagsStateEntry>(
+            key = eq("flags-state-$fakeInstanceName"),
+            data = any(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
+    }
+
+    @Test
+    fun `M persist the state under the unselected key W setFlagsAndContext() { no flag selection }`(
+        @StringForgery(regex = "fake-[a-z]{4,8}") fakeInstanceName: String,
+        forge: Forge
+    ) {
+        // Given
+        testedRepository = DefaultFlagsRepository(mockFeatureSdkCore, fakeInstanceName, mockDataStore, null)
+
+        // When
+        testedRepository.setFlagsAndContext(forge.getForgery(), emptyMap())
+
+        // Then
+        verify(mockDataStore).setValue<FlagsStateEntry>(
+            key = eq("flags-state-$fakeInstanceName"),
+            data = any(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
+    }
+
+    @Test
+    fun `M read the selection key and remove the unselected state W init { flag selection }`(
+        @StringForgery(regex = "fake-[a-z]{4,8}") fakeInstanceName: String
+    ) {
+        // When
+        testedRepository = DefaultFlagsRepository(
+            mockFeatureSdkCore,
+            fakeInstanceName,
+            mockDataStore,
+            CanonicalFlagSelection(listOf("mobile"), emptyList())
+        )
+
+        // Then
+        verify(mockDataStore).value<FlagsStateEntry>(
+            key = eq("flags-selection-state-$fakeInstanceName"),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        verify(mockDataStore).removeValue(eq("flags-state-$fakeInstanceName"), anyOrNull())
+    }
+
+    @Test
+    fun `M read the unselected key and remove the selected state W init { no flag selection }`(
+        @StringForgery(regex = "fake-[a-z]{4,8}") fakeInstanceName: String
+    ) {
+        // When
+        testedRepository = DefaultFlagsRepository(mockFeatureSdkCore, fakeInstanceName, mockDataStore, null)
+
+        // Then
+        verify(mockDataStore).value<FlagsStateEntry>(
+            key = eq("flags-state-$fakeInstanceName"),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        verify(mockDataStore).removeValue(eq("flags-selection-state-$fakeInstanceName"), anyOrNull())
     }
 
     @Test
