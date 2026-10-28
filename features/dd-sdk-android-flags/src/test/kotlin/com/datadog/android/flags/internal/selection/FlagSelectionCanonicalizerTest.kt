@@ -443,6 +443,16 @@ internal class FlagSelectionCanonicalizerTest {
                 FlagSelectionError.MALFORMED_SELECTION
             ),
             Arguments.of(
+                "malformed before invalid key pattern",
+                FlagSelection(listOf("a\uD83D"), listOf("a".repeat(201))),
+                FlagSelectionError.MALFORMED_SELECTION
+            ),
+            Arguments.of(
+                "malformed before invalid tag",
+                FlagSelection(listOf("a".repeat(201)), listOf(null)),
+                FlagSelectionError.MALFORMED_SELECTION
+            ),
+            Arguments.of(
                 "too many values before invalid key pattern",
                 FlagSelection(values(32), listOf("a".repeat(201))),
                 FlagSelectionError.TOO_MANY_VALUES
