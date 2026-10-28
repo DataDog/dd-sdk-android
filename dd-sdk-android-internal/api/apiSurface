@@ -9,6 +9,7 @@ object com.datadog.android.internal.FeatureContextKeys
   const val PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE: String
   const val PROFILING_ANR_ENABLED: String
   const val PROFILING_OOM_TRIGGER_ACTIVE: String
+  const val PROFILING_OOM_PROFILE_ATTACHED_ERROR_ID: String
   const val RUM_SESSION_ID: String
   const val RUM_SESSION_SAMPLE_RATE: String
   const val RUM_SESSION_STATE: String
@@ -192,6 +193,19 @@ sealed class com.datadog.android.internal.profiling.ProfilerEvent
     constructor(String, Long, Long, ProfilingRumContext)
   data class RumOomErrorEvent : ProfilerEvent
     constructor(String, Long, ProfilingRumContext)
+  data class RumHeldOomErrorEvent : ProfilerEvent
+    constructor(String)
+  data class OomProfileAttachRequest : ProfilerEvent
+    constructor(String)
+  data class RumOomProfileAttachReply : ProfilerEvent
+    constructor(String, Boolean)
+  data class OomProfileResolution : ProfilerEvent
+    constructor(String, Outcome)
+    enum Outcome
+      - ATTACHED
+      - NOT_ATTACHED
+  data class RumOomProfileResolutionAck : ProfilerEvent
+    constructor(String)
   data class RumAnomalyErrorEvent : ProfilerEvent
     constructor(String, Long, ProfilingRumContext)
   data class RumLongTaskEvent : ProfilerEvent

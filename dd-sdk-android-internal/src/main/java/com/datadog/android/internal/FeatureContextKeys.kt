@@ -42,6 +42,13 @@ object FeatureContextKeys {
     const val PROFILING_OOM_TRIGGER_ACTIVE: String = "profiling_oom_trigger_active"
 
     /**
+     * ID of the RUM error whose OOM profile has been written and not yet acknowledged by RUM.
+     * Written by the profiling feature and read by RUM when it has to flush a held OOM error
+     * before its outcome arrived.
+     */
+    const val PROFILING_OOM_PROFILE_ATTACHED_ERROR_ID: String = "profiling_oom_profile_attached_error_id"
+
+    /**
      * Current RUM session identifier. Written by the RUM feature into its own feature
      * context on every session renewal; read by other features (e.g. profiling) that
      * subscribe via [com.datadog.android.api.feature.FeatureContextUpdateReceiver].

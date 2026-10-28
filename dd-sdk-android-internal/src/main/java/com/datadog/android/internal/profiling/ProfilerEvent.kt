@@ -32,9 +32,9 @@ sealed class ProfilerEvent {
     ) : ProfilerEvent()
 
     /**
-     * Sent by the RUM feature to the profiling feature when an OOM error event
-     * has been successfully written. Allows the profiling feature to correlate
-     * the captured heap histogram with the RUM error event.
+     * Sent by the RUM feature to the profiling feature when a fatal OOM error event is held
+     * until the outcome of its OOM profile is known, and only then. Allows the profiling feature
+     * to correlate the captured heap histogram with the RUM error event.
      *
      * @param id The ID of the corresponding RUM error event.
      * @param timestamp Timestamp in milliseconds since epoch (server time-adjusted).
@@ -44,6 +44,75 @@ sealed class ProfilerEvent {
         val id: String,
         val timestamp: Long,
         val rumContext: ProfilingRumContext
+    ) : ProfilerEvent()
+
+    /**
+     * Sent by the RUM feature to the profiling feature on launch, when a fatal OOM error held by a
+     * previous process is loaded and waits for the outcome of its OOM profile.
+     *
+     * @param id The ID of the held RUM error event.
+     */
+    data class RumHeldOomErrorEvent(
+        val id: String
+    ) : ProfilerEvent()
+
+    /**
+     * Sent by the profiling feature to the RUM feature before writing an OOM profile, to ask
+     * whether it may be attached to the held RUM error. Answered with [RumOomProfileAttachReply].
+     *
+     * @param rumErrorId The ID of the RUM error event the profile belongs to.
+     */
+    data class OomProfileAttachRequest(
+        val rumErrorId: String
+    ) : ProfilerEvent()
+
+    /**
+     * Sent by the RUM feature to the profiling feature in reply to [OomProfileAttachRequest].
+     * A grant is sent only once the reservation is durably stored.
+     *
+     * @param rumErrorId The ID of the RUM error event the profile belongs to.
+     * @param granted Whether the profile may be written.
+     */
+    data class RumOomProfileAttachReply(
+        val rumErrorId: String,
+        val granted: Boolean
+    ) : ProfilerEvent()
+
+    /**
+     * Sent by the profiling feature to the RUM feature with the outcome of the OOM profile of a
+     * held RUM error. Sent again until acknowledged with [RumOomProfileResolutionAck].
+     *
+     * @param rumErrorId The ID of the held RUM error event.
+     * @param outcome Whether the OOM profile was written.
+     */
+    data class OomProfileResolution(
+        val rumErrorId: String,
+        val outcome: Outcome
+    ) : ProfilerEvent() {
+        /**
+         * Outcome of an OOM profile.
+         */
+        enum class Outcome {
+            /**
+             * The OOM profile was written.
+             */
+            ATTACHED,
+
+            /**
+             * No OOM profile was or will be written.
+             */
+            NOT_ATTACHED
+        }
+    }
+
+    /**
+     * Sent by the RUM feature to the profiling feature once the outcome received in
+     * [OomProfileResolution] is durably stored.
+     *
+     * @param rumErrorId The ID of the held RUM error event.
+     */
+    data class RumOomProfileResolutionAck(
+        val rumErrorId: String
     ) : ProfilerEvent()
 
     /**
