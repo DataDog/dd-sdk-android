@@ -46,6 +46,7 @@ internal class EvaluationCallbackDispatchTest {
 
     @BeforeEach
     fun setUp() {
+        whenever(mockCore.timeProvider).thenReturn(mock())
         whenever(mockCore.internalLogger).thenReturn(mockLogger)
         whenever(mockCore.createOkHttpCallFactory()).thenReturn(mock())
         whenever(mockCore.createSingleThreadExecutorService(any())).thenAnswer {

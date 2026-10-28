@@ -20,12 +20,15 @@ import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.internal.utils.DDCoreStateHolder
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
 
@@ -43,6 +46,11 @@ internal class ExperimentationCallbackTest {
     @Mock lateinit var mockReader: PrecomputedAssignmentsReader
 
     @Mock lateinit var mockMapper: PrecomputeMapper
+
+    @BeforeEach
+    fun setUp() {
+        whenever(mockCore.timeProvider).thenReturn(mock())
+    }
 
     @ParameterizedTest
     @EnumSource(ExperimentationOptOutMode::class, names = ["IMMEDIATE", "FUTURE_EXPERIMENTS_ONLY"])

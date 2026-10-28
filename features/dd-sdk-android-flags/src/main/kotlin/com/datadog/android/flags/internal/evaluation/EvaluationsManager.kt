@@ -15,7 +15,12 @@ import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.internal.FlagsStateManager
+import com.datadog.android.flags.internal.diagnostics.UUIDv7Generator
 import com.datadog.android.flags.internal.model.PrecomputedAssignments
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Fetch
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Sdk
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Trigger
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
@@ -26,6 +31,7 @@ import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 
 internal fun interface InitializationTimeoutScheduler {
     fun schedule(timeoutMs: Long, action: () -> Unit): () -> Unit
@@ -101,6 +107,8 @@ internal class EvaluationsManager(
     private val experimentationOptOut: ExperimentationOptOut = ExperimentationOptOut(),
     private val callbackExecutor: Executor = InlineExecutor
 ) {
+    private val instanceId = UUIDv7Generator.generate(sdkCore.timeProvider.getDeviceTimestampMillis()).toString()
+    private val fetchSequence = AtomicLong(0)
     private val didStartInitialization = AtomicBoolean(false)
     private val initializationTerminalLock = experimentationOptOut.stateLock
     private val effects = EvaluationEffects(initializationTerminalLock, internalLogger)
@@ -152,12 +160,18 @@ internal class EvaluationsManager(
         fetchEvaluations(request, callback, onFetchFinished)
     }
 
+    @Suppress("LongMethod") // Keep diagnostics and opt-out checks with the fetch lifecycle.
     private fun fetchEvaluations(
         request: ExperimentationOptOut.Request,
         callback: EvaluationContextCallback?,
         onFetchFinished: () -> Unit
     ) {
         val context = request.context
+        val sequence = fetchSequence.incrementAndGet()
+        val diagnostics = Diagnostics(
+            Sdk(instanceId),
+            Fetch(sequence, if (sequence == 1L) Trigger.INITIALIZATION else Trigger.CONTEXT_CHANGE)
+        )
         val matchingCachedAssignments = AtomicBoolean(false)
         val initializationCompletion = startInitializationTimeout(request, callback, matchingCachedAssignments) {
             experimentationOptOut.ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
@@ -185,7 +199,7 @@ internal class EvaluationsManager(
                 matchingCachedAssignments.set(
                     flagsRepository.hasFlags() && flagsRepository.getEvaluationContext() == context
                 )
-                val response = datadogContext?.let { assignmentsReader.readPrecomputedFlags(context, it) }
+                val response = datadogContext?.let { assignmentsReader.readPrecomputedFlags(context, it, diagnostics) }
                 val assignments = response?.let { rawResponse ->
                     precomputeMapper.map(rawResponse, request.takeIf { it.optedOut })
                 }

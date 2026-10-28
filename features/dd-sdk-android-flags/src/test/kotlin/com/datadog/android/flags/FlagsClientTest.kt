@@ -266,6 +266,7 @@ internal class FlagsClientTest {
     @Test
     fun `M log both modes W Builder#build() {named client already exists}`() {
         // Given
+        whenever(mockSdkCore.timeProvider).thenReturn(mock())
         whenever(mockSdkCore.createSingleThreadExecutorService(any())).thenReturn(mock())
         whenever(mockSdkCore.createOkHttpCallFactory(any())).thenReturn(mock())
         val existingClient = FlagsClient.Builder(sdkCore = mockSdkCore).build()
