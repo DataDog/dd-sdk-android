@@ -53,6 +53,16 @@ interface PreferencesStorage {
     fun putString(key: String, value: String, sync: Boolean = false)
 
     /**
+     * Writes [values] and removes [removals] in a single synchronous commit, blocking until it is
+     * persisted.
+     *
+     * @param values the string values to store, by key.
+     * @param removals the keys to remove.
+     * @return whether the commit was persisted.
+     */
+    fun commitStrings(values: Map<String, String>, removals: Set<String> = emptySet()): Boolean
+
+    /**
      * Get a string set value from the storage.
      */
     fun getStringSet(key: String, defaultValue: Set<String> = emptySet()): Set<String>

@@ -57,6 +57,12 @@ sealed class ProfilerEvent {
     ) : ProfilerEvent()
 
     /**
+     * Sent by the profiling feature to the RUM feature once it can answer about OOM profiles, so
+     * that a held RUM error announced before profiling was registered is announced again.
+     */
+    object OomProfilingReady : ProfilerEvent()
+
+    /**
      * Sent by the profiling feature to the RUM feature before writing an OOM profile, to ask
      * whether it may be attached to the held RUM error. Answered with [RumOomProfileAttachReply].
      *

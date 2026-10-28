@@ -109,6 +109,18 @@ class SharedPreferencesStorage(appContext: Context) : PreferencesStorage {
         } ?: defaultValue
     }
 
+    override fun commitStrings(values: Map<String, String>, removals: Set<String>): Boolean {
+        return runSafe {
+            // Called in safe
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            val editor = prefs.edit()
+            values.forEach { (key, value) -> editor.putString(key, value) }
+            removals.forEach { editor.remove(it) }
+            @Suppress("ApplySharedPref")
+            editor.commit()
+        } ?: false
+    }
+
     override fun remove(key: String, sync: Boolean) {
         runSafe {
             // Called in safe

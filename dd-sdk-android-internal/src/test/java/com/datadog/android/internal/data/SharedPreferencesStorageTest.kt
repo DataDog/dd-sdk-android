@@ -344,4 +344,24 @@ internal class SharedPreferencesStorageTest {
             testedStorage.putString(fakeKey, fakeValue)
         }
     }
+
+    @Test
+    fun `M return the commit result W commitStrings`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeValue: String,
+        @StringForgery fakeRemovedKey: String,
+        @BoolForgery fakeCommitResult: Boolean
+    ) {
+        // Given
+        whenever(mockEditor.commit()) doReturn fakeCommitResult
+
+        // When
+        val result = testedStorage.commitStrings(mapOf(fakeKey to fakeValue), setOf(fakeRemovedKey))
+
+        // Then
+        assertThat(result).isEqualTo(fakeCommitResult)
+        verify(mockEditor).putString(fakeKey, fakeValue)
+        verify(mockEditor).remove(fakeRemovedKey)
+        verify(mockEditor, never()).apply()
+    }
 }
