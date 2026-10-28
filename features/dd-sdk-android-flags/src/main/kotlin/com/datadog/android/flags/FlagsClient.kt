@@ -251,6 +251,7 @@ interface FlagsClient {
         private val name: String
         private val sdkCore: FeatureSdkCore
         private var experimentationOptOutMode = ExperimentationOptOutMode.DISABLED
+        private var evaluationTelemetryOptOutParameterEnabled: Boolean = false
 
         /**
          * Controls how this client uses the subject's `dd_experimentation_opt_out_at` attribute.
@@ -262,7 +263,6 @@ interface FlagsClient {
         fun experimentationOptOutMode(mode: ExperimentationOptOutMode): Builder = apply {
             experimentationOptOutMode = mode
         }
-        private var evaluationTelemetryOptOutParameterEnabled: Boolean = false
 
         /**
          * Creates a builder for a named [FlagsClient].
