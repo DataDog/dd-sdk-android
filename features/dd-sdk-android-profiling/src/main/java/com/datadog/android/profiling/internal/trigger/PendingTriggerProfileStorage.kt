@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit
 @Suppress("TooManyFunctions")
 internal class PendingTriggerProfileStorage(
     private val appContext: Context,
+    private val namespace: String,
     private val executor: ScheduledExecutorService,
     private val timeProvider: TimeProvider,
     private val internalLogger: InternalLogger? = null,
@@ -88,6 +89,7 @@ internal class PendingTriggerProfileStorage(
         if (event is RumOomErrorEvent && !callback.isSessionQuotaDenied(event.rumContext.sessionId)) {
             ProfilingStorage.setPendingOomGatingEvent(
                 appContext,
+                namespace,
                 PendingOomGatingEvent(
                     rumErrorId = event.id,
                     timestampMs = event.timestamp,
@@ -126,10 +128,10 @@ internal class PendingTriggerProfileStorage(
 
     @Suppress("ReturnCount")
     private fun matchDeferredOomGatingEvent(): PendingOomGatingEvent? {
-        val deferred = ProfilingStorage.getPendingOomGatingEvent(appContext) ?: return null
+        val deferred = ProfilingStorage.getPendingOomGatingEvent(appContext, namespace) ?: return null
         val ageMs = timeProvider.getServerTimestampMillis() - deferred.timestampMs
         if (ageMs >= PENDING_OOM_PROFILE_MAX_AGE_MS) {
-            ProfilingStorage.removePendingOomGatingEvent(appContext)
+            ProfilingStorage.removePendingOomGatingEvent(appContext, namespace)
             return null
         }
         return deferred
@@ -142,6 +144,7 @@ internal class PendingTriggerProfileStorage(
     ) {
         ProfilingStorage.setPendingOomProfile(
             appContext,
+            namespace,
             PendingOomProfile(
                 resultFilePath = result.resultFilePath,
                 startMs = result.start,
@@ -151,7 +154,7 @@ internal class PendingTriggerProfileStorage(
                 rumContext = rumContext
             )
         )
-        ProfilingStorage.removePendingOomGatingEvent(appContext)
+        ProfilingStorage.removePendingOomGatingEvent(appContext, namespace)
     }
 
     private fun dropOomProfile(result: PerfettoResult) {
@@ -162,7 +165,7 @@ internal class PendingTriggerProfileStorage(
         )
         fileDeleteSafe(result.resultFilePath, internalLogger)
         // The gating event may have been persisted before the quota was denied.
-        ProfilingStorage.removePendingOomGatingEvent(appContext)
+        ProfilingStorage.removePendingOomGatingEvent(appContext, namespace)
     }
 
     private fun matchResult(): Pair<PerfettoResult, ProfilerEvent>? {

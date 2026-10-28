@@ -129,7 +129,13 @@ internal class PendingOomErrorStore(
                 actionsAwaitingLoad.add { onResolution(rumErrorId, outcome) }
                 return
             }
-            val current = record?.takeIf { it.errorId == rumErrorId && !it.state.isTerminal }
+            val matching = record?.takeIf { it.errorId == rumErrorId }
+            if (matching != null && matching.state.isTerminal && !matching.isPersisted) {
+                // Same outcome still being persisted: its own callback acknowledges it once it is on
+                // disk, and a failure leaves profiling to send it again.
+                return
+            }
+            val current = matching?.takeIf { !it.state.isTerminal }
             if (current != null) {
                 val state = if (outcome == Outcome.ATTACHED) State.RESOLVED_ATTACHED else State.RESOLVED_NOT_ATTACHED
                 transition(current, state) { isPersisted ->
