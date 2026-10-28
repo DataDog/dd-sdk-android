@@ -24,7 +24,7 @@ internal data class CanonicalFlagSelection(
 )
 
 /**
- * Reasons a flag selection is dropped. Values match the reasons used by Compute and ffe-service.
+ * Reasons a flag selection is dropped. The values are the reason codes that the server and the other Datadog SDKs use.
  */
 internal enum class FlagSelectionError(val reason: String, val limit: String) {
     MALFORMED_SELECTION(
@@ -52,7 +52,7 @@ internal sealed interface FlagSelectionResult {
 }
 
 /**
- * Canonicalizes and validates a flag selection the same way Compute and ffe-service do.
+ * Canonicalizes and validates a flag selection with the same rules as the server.
  */
 internal object FlagSelectionCanonicalizer {
 
@@ -60,7 +60,7 @@ internal object FlagSelectionCanonicalizer {
     internal const val MAX_TAG_BYTES = 200
     internal const val MAX_KEY_PATTERN_BYTES = 200
 
-    // The Unicode White_Space property, which Compute trims with Rust's str::trim.
+    // The Unicode White_Space property, which the server trims.
     // Kotlin's trim() differs: it also trims U+001C..U+001F and does not trim U+0085.
     private const val WHITE_SPACE = "\u0009\u000A\u000B\u000C\u000D\u0020\u0085\u00A0\u1680" +
         "\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A" +
