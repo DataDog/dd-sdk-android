@@ -11,6 +11,7 @@ import android.view.View
 import android.webkit.WebView
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ListView
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -23,6 +24,7 @@ import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedBackgroundShapeStyleResolver
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEditTextMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEmbeddedContentMapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedListViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedPixelFallbackMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedTextViewMapper
@@ -298,9 +300,14 @@ internal class DefaultCompositionPipelineFactory(
             val backgroundResolver = CapturedBackgroundShapeStyleResolver(
                 drawableToColorMapper = DrawableToColorMapper.getDefault(customDrawableMappers)
             )
+            val backgroundMapper = CapturedViewGroupFallbackMapper(
+                backgroundShapeStyleResolver = backgroundResolver,
+                internalLogger = internalLogger
+            )
             return CapturedViewMapperRegistry(
                 mappers = compatibilityMappers + listOf(
                     CapturedMapperTypeWrapper(WebView::class.java, CapturedWebViewMapper()),
+                    CapturedMapperTypeWrapper(ListView::class.java, CapturedListViewMapper(backgroundMapper)),
                     CapturedMapperTypeWrapper(
                         EditText::class.java,
                         CapturedEditTextMapper(
@@ -317,10 +324,7 @@ internal class DefaultCompositionPipelineFactory(
                     )
                 ),
                 fallbackMapper = CapturedPixelFallbackMapper(
-                    fallbackMapper = CapturedViewGroupFallbackMapper(
-                        backgroundShapeStyleResolver = backgroundResolver,
-                        internalLogger = internalLogger
-                    ),
+                    fallbackMapper = backgroundMapper,
                     internalLogger = internalLogger
                 ),
                 internalLogger = internalLogger
