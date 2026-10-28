@@ -1,6 +1,6 @@
 # Start here
 
-Read the [contributor guide](CONTRIBUTING.md) for setup and contribution procedures.
+Read and follow all guidance in [CONTRIBUTING.md](CONTRIBUTING.md).
 Use the [documentation map](docs/README.md) to select current SDK guidance and
 Foundation validation commands. Follow the module rules and validation tasks below.
 
@@ -272,6 +272,47 @@ To inspect the events the SDK emits from the sample app, use the `android-sdk-ev
 - Keep PRs focused. Don't include unrelated refactors, formatting churn, debug leftovers, stray files or "may be needed later" code (unused properties, schemas, files).
 - Don't edit `CHANGELOG.md` in feature PRs. It is updated only in release preparation PRs.
 - When preparing a release changelog: tags reflect customer impact, not change size. Internal-only changes are `[MAINTENANCE]`, not `[IMPROVEMENT]`. Follow the existing entry format: `* [TAG] Description. See [#N](link)`.
+
+## Handoff to human review
+
+Follow the [contributor handoff guidance](CONTRIBUTING.md#handoff-to-human-review)
+and the additional agent requirements below when checking whether to prompt the
+user to add `ready-for-human-review`. Check at these checkpoints:
+
+- After opening a PR, pushing changes to it, or marking it ready for review.
+- After replying to or resolving the remaining agentic feedback.
+- When an agentic review finishes and you inspect its result.
+- When the user asks about PR status or readiness for human review.
+
+After opening a PR, pushing changes, or marking a draft ready, agents must allow
+at least five minutes for asynchronous reviews to start before assessing
+eligibility. Measure from the latest of these actions and restart the grace period
+if the head changes. The grace period alone does not establish eligibility.
+
+Prompt for the label only when all of these conditions are met:
+
+- At least one agentic or bot review has completed against the current PR head. No feedback is not evidence that a review occurred; a review of an older revision does not qualify.
+- No observed agentic reviews remain queued or running. If an expected review has not appeared, eligibility remains unconfirmed.
+- All agentic feedback has been addressed or explicitly dispositioned with evidence, each feedback item has a posted reply, and all associated review threads are resolved, including outdated threads.
+
+Refresh the current PR head, review activity, feedback, and thread status. Check
+all pages of results; if retrieval fails or is incomplete, eligibility remains
+unconfirmed. Local fixes, draft replies, or a clean bot summary alone are not
+sufficient. Do not resolve unaddressed feedback solely to qualify for the label.
+
+If eligible and the label is absent, ask: "All agentic feedback has been addressed.
+Shall I add `ready-for-human-review`?" Apply the label only after user confirmation,
+then recheck the current head and eligibility immediately before labelling. If the
+label is already present, do not prompt or add it again.
+
+If eligibility is unconfirmed, report what remains pending. If the task ends
+before the grace period or reviews complete, report the deferred check; do not
+claim readiness or imply that monitoring will continue without a separately
+arranged follow-up.
+
+This instruction does not independently authorise posting replies, resolving
+threads, pushing, or merging; follow the applicable approval requirements for
+those actions. Carry this rule into delegated PR work and PR automations.
 
 # Dogfooding Branch
 
