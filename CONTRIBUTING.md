@@ -183,9 +183,15 @@ atomic, with a proper commit message. We tend to use
 
 ### Handoff to human review
 
-Before applying the `ready-for-human-review` label, address all agentic review
-feedback or explain with evidence why a suggestion does not apply. Reply to each
-feedback item and resolve its associated review thread, including outdated threads.
+Before applying the `ready-for-human-review` label, verify that at least one
+agentic or bot review has completed against the current PR head and that no
+agentic reviews remain queued or running. No feedback does not prove that a
+review occurred, and a review of an older revision does not qualify. If an
+expected review has not appeared, eligibility remains unconfirmed.
+
+Address all agentic review feedback or explain with evidence why a suggestion
+does not apply. Reply to each feedback item and resolve its associated review
+thread, including outdated threads.
 Check the latest PR revision, feedback, and thread status before applying the label;
 local fixes, draft replies, or a clean bot summary alone are not sufficient.
 
