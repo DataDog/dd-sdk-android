@@ -748,8 +748,8 @@ internal class ProfilingFeature(
 
     /** Retried once: on failure, the caller must not treat the outcome as on disk. */
     private fun commitOutcome(marker: OomProfileOutcomeMarker): Boolean {
-        return ProfilingStorage.setOomProfileOutcome(appContext, sdkCore.name, marker) ||
-            ProfilingStorage.setOomProfileOutcome(appContext, sdkCore.name, marker)
+        if (ProfilingStorage.setOomProfileOutcome(appContext, sdkCore.name, marker)) return true
+        return ProfilingStorage.setOomProfileOutcome(appContext, sdkCore.name, marker)
     }
 
     /**
