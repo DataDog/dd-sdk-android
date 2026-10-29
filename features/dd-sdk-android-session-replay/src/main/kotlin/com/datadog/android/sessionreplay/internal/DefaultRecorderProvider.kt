@@ -81,7 +81,8 @@ constructor(
         sdkCore = sdkCore,
         internalCallback = internalCallback,
         touchPrivacyManager = touchPrivacyManager,
-        dynamicOptimizationEnabled = dynamicOptimizationEnabled
+        dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+        customDrawableMappers = customDrawableMappers
     )
 ) : RecorderProvider {
 
