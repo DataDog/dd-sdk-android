@@ -128,9 +128,9 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `M warn W initialize() + initialize()`() {
+    fun `M warn and return no-op W initialize() + initialize()`() {
         // When
-        val initialized1 = Datadog.initialize(
+        Datadog.initialize(
             appContext.mockInstance,
             fakeConfiguration,
             fakeConsent
@@ -147,7 +147,7 @@ internal class DatadogTest {
             InternalLogger.Target.USER,
             Datadog.MESSAGE_ALREADY_INITIALIZED
         )
-        assertThat(initialized2).isSameAs(initialized1)
+        assertThat(initialized2).isSameAs(NoOpInternalSdkCore)
     }
 
     @Test
