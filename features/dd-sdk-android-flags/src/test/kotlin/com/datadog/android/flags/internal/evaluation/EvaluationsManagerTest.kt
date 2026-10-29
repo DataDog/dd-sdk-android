@@ -18,6 +18,7 @@ import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.internal.FlagsStateManager
+import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
@@ -1680,7 +1681,7 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
-    fun `M log the ignored reason and not install W updateEvaluationsForContext() { ignored reason, invalid body }`(
+    fun `M not log the ignored reason W updateEvaluationsForContext() { ignored reason, invalid body }`(
         @StringForgery fakeInvalidBody: String
     ) {
         // Given
@@ -1698,17 +1699,32 @@ internal class EvaluationsManagerTest {
         evaluationsManager.updateEvaluationsForContext(context)
 
         // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            "flagSelection was ignored by the server (too_many_values). Loaded the full flag configuration."
+        assertThat(capturedLogMessages()).noneMatch { "flagSelection" in it || "Flag selection" in it }
+        verify(mockFlagsRepository, never()).setFlagsAndContext(any(), any(), anyOrNull(), any())
+        verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
+    }
+
+    @Test
+    fun `M not log the ignored reason W updateEvaluationsForContext() { ignored reason, unsupported encoding }`() {
+        // Given
+        fakeDatadogContext = fakeDatadogContext.copy(source = "react-native")
+        val context = EvaluationContext(fakeTargetingKey, emptyMap())
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        ).thenReturn(PrecomputedAssignmentsResponse(ENCODED_RESPONSE_JSON, "too_many_values"))
+        whenever(mockPrecomputeMapper.map(ENCODED_RESPONSE_JSON)).thenReturn(
+            PrecomputedAssignments(emptyMap(), FlagKeyObfuscation.fromSalt("000102030405060708090a0b0c0d0e0f"))
         )
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.DEBUG,
-            InternalLogger.Target.TELEMETRY,
-            "Flag selection ignored",
-            additionalProperties = mapOf("reason" to "too_many_values")
-        )
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(context)
+
+        // Then
+        assertThat(capturedLogMessages()).noneMatch { "flagSelection" in it || "Flag selection" in it }
         verify(mockFlagsRepository, never()).setFlagsAndContext(any(), any(), anyOrNull(), any())
         verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
     }
@@ -1731,16 +1747,7 @@ internal class EvaluationsManagerTest {
         evaluationsManager.updateEvaluationsForContext(context)
 
         // Then
-        val messages = argumentCaptor<() -> String>()
-        verify(mockInternalLogger, atLeast(0)).log(
-            any<InternalLogger.Level>(),
-            any<InternalLogger.Target>(),
-            messages.capture(),
-            anyOrNull(),
-            any(),
-            anyOrNull()
-        )
-        assertThat(messages.allValues.map { it() }).noneMatch { "flagSelection" in it || "Flag selection" in it }
+        assertThat(capturedLogMessages()).noneMatch { "flagSelection" in it || "Flag selection" in it }
         verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(emptyMap()), anyOrNull(), any())
     }
 
@@ -1839,6 +1846,19 @@ internal class EvaluationsManagerTest {
         initializationTimeoutMs = initializationTimeoutMs,
         initializationTimeoutScheduler = scheduler
     )
+
+    private fun capturedLogMessages(): List<String> {
+        val messages = argumentCaptor<() -> String>()
+        verify(mockInternalLogger, atLeast(0)).log(
+            any<InternalLogger.Level>(),
+            any<InternalLogger.Target>(),
+            messages.capture(),
+            anyOrNull(),
+            any(),
+            anyOrNull()
+        )
+        return messages.allValues.map { it() }
+    }
 
     companion object {
         private val ENCODED_RESPONSE_JSON = """
