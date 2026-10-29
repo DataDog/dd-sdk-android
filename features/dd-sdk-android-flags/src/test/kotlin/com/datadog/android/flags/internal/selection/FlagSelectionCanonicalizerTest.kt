@@ -61,10 +61,8 @@ internal class FlagSelectionCanonicalizerTest {
     @Test
     fun `M trim the Unicode White_Space set W canonicalize()`() {
         // Given
-        val whiteSpace = "\t\n\u000B\u000C\r \u0085\u00A0\u1680" +
-            "\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u2028\u2029\u202F\u205F\u3000"
         val selection = FlagSelection(
-            tags = listOf("${whiteSpace}mobile$whiteSpace"),
+            tags = listOf("${UNICODE_WHITE_SPACE}mobile$UNICODE_WHITE_SPACE"),
             keyPatterns = listOf("\uFEFFcheckout\uFEFF", "\u001Cpayment\u001C")
         )
 
@@ -80,6 +78,23 @@ internal class FlagSelectionCanonicalizerTest {
                 )
             )
         )
+    }
+
+    @Test
+    fun `M keep interior Unicode White_Space W canonicalize()`() {
+        assertThat(UNICODE_WHITE_SPACE).hasSize(25)
+        UNICODE_WHITE_SPACE.forEach { whiteSpace ->
+            // Given
+            val selection = tags("${whiteSpace}a${whiteSpace}b$whiteSpace")
+
+            // When
+            val result = FlagSelectionCanonicalizer.canonicalize(selection)
+
+            // Then
+            assertThat(result)
+                .describedAs("U+%04X", whiteSpace.code)
+                .isEqualTo(selected(listOf("a${whiteSpace}b"), emptyList()))
+        }
     }
 
     @Test
@@ -168,6 +183,10 @@ internal class FlagSelectionCanonicalizerTest {
 
     companion object {
         private const val GRINNING_FACE = "\uD83D\uDE00"
+
+        // https://www.unicode.org/Public/UCD/latest/ucd/PropList.txt lists 25 White_Space code points.
+        private const val UNICODE_WHITE_SPACE = "\t\n\u000B\u000C\r \u0085\u00A0\u1680" +
+            "\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u2028\u2029\u202F\u205F\u3000"
 
         private fun numbered(prefix: String, count: Int) = List(count) { "$prefix%02d".format(Locale.US, it + 1) }
 
