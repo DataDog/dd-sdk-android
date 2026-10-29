@@ -1,3 +1,47 @@
+# 3.16.0 / 2026-10-29
+
+* [FEATURE] Profiling: Promote the Profiling API from experimental to stable. See [#4061](https://github.com/DataDog/dd-sdk-android/pull/4061)
+* [FEATURE] Flags: Add the local flag evaluation telemetry opt-out. See [#3990](https://github.com/DataDog/dd-sdk-android/pull/3990)
+* [FEATURE] Flags: Support obfuscated feature flag assignment keys. See [#3941](https://github.com/DataDog/dd-sdk-android/pull/3941)
+* [FEATURE] Flags: Add independent native flag tracking operations. See [#4012](https://github.com/DataDog/dd-sdk-android/pull/4012)
+* [IMPROVEMENT] Session Replay: Add internal opt-in adaptive scheduling for Session Replay captures. See [#3935](https://github.com/DataDog/dd-sdk-android/pull/3935)
+* [IMPROVEMENT] Core: Expose `request`/`response` payloads on `HttpRequestInfo`/`HttpResponseInfo`. See [#3714](https://github.com/DataDog/dd-sdk-android/pull/3714)
+* [IMPROVEMENT] RUM: Add the `unreal` source. See [#4048](https://github.com/DataDog/dd-sdk-android/pull/4048)
+* [IMPROVEMENT] RUM: Add `is_main_process` and `has_timeseries` to the RUM session:
+  - Add `is_main_process` and `has_timeseries` to the RUM session schema. See [#3983](https://github.com/DataDog/dd-sdk-android/pull/3983)
+  - Add `is_main_process` to the RUM session. See [#3984](https://github.com/DataDog/dd-sdk-android/pull/3984)
+  - Add `has_timeseries` to the RUM session. See [#3985](https://github.com/DataDog/dd-sdk-android/pull/3985)
+  - Send the session `has_timeseries` for WebView RUM events. See [#4029](https://github.com/DataDog/dd-sdk-android/pull/4029)
+* [IMPROVEMENT] RUM: Stop timeseries collection once the RUM session expires. See [#3940](https://github.com/DataDog/dd-sdk-android/pull/3940)
+* [IMPROVEMENT] RUM: Improve the safety of `ViewEventDiff`. See [#4021](https://github.com/DataDog/dd-sdk-android/pull/4021)
+* [IMPROVEMENT] RUM: Update the RUM schema. See [#4017](https://github.com/DataDog/dd-sdk-android/pull/4017)
+* [IMPROVEMENT] Profiling: Drop stack sampling profiles without stack samples:
+  - Drop stack sampling profiles without stack samples. See [#4003](https://github.com/DataDog/dd-sdk-android/pull/4003)
+  - Update the Profiling package version check for the empty samples issue. See [#4065](https://github.com/DataDog/dd-sdk-android/pull/4065)
+* [IMPROVEMENT] Session Replay: Increase the Session Replay batch expiration. See [#3981](https://github.com/DataDog/dd-sdk-android/pull/3981)
+* [IMPROVEMENT] Core: Report each API usage telemetry once per SDK instance. See [#4037](https://github.com/DataDog/dd-sdk-android/pull/4037)
+* [IMPROVEMENT] OkHttp: Report span id formatting failures in OkHttp tracing. See [#4057](https://github.com/DataDog/dd-sdk-android/pull/4057)
+* [BUGFIX] Core: Bump OkHttp to 4.12.1 to block compromised certificates (CVE-2026-111943). See [#4036](https://github.com/DataDog/dd-sdk-android/pull/4036)
+* [BUGFIX] RUM: Fix the slow frame continuity measurement and resend duration corrections in Partial View Updates. See [#3980](https://github.com/DataDog/dd-sdk-android/pull/3980)
+* [BUGFIX] Profiling: Clear pending RUM events when continuous profiling fails. See [#4002](https://github.com/DataDog/dd-sdk-android/pull/4002)
+* [MAINTENANCE] Extract the shared RUM context into an internal module:
+  - Extract the shared RUM context into the `dd-sdk-android-internal` module. See [#4019](https://github.com/DataDog/dd-sdk-android/pull/4019)
+  - Migrate readers to the shared RUM context. See [#4027](https://github.com/DataDog/dd-sdk-android/pull/4027)
+* [MAINTENANCE] Flags: Use a JSON schema and the model generator for the precomputed assignments request. See [#4053](https://github.com/DataDog/dd-sdk-android/pull/4053)
+* [MAINTENANCE] Flags: Send additional Flagging state telemetry on flag requests. See [#4030](https://github.com/DataDog/dd-sdk-android/pull/4030)
+* [MAINTENANCE] Use the JDK 21 toolchain. See [#4004](https://github.com/DataDog/dd-sdk-android/pull/4004)
+* [MAINTENANCE] Split the Kotlin version for the buildscript classpath and for the runtime classpath. See [#3973](https://github.com/DataDog/dd-sdk-android/pull/3973)
+* [MAINTENANCE] Enable custom Detekt checks again. See [#3978](https://github.com/DataDog/dd-sdk-android/pull/3978)
+* [MAINTENANCE] Resolve aggregation task dependencies lazily. See [#4011](https://github.com/DataDog/dd-sdk-android/pull/4011)
+* [MAINTENANCE] Clean up Gradle API usage in `build-logic`. See [#4016](https://github.com/DataDog/dd-sdk-android/pull/4016)
+* [MAINTENANCE] Remove stale generated models in `GenerateJsonSchemaTask`. See [#4022](https://github.com/DataDog/dd-sdk-android/pull/4022)
+* [MAINTENANCE] Update the Datadog Gradle Plugin version to 1.31.0. See [#3971](https://github.com/DataDog/dd-sdk-android/pull/3971)
+* [MAINTENANCE] Update the `com.datadoghq.dependency-license` plugin to version 0.8.1:
+  - Update to version 0.8.0. See [#3999](https://github.com/DataDog/dd-sdk-android/pull/3999)
+  - Update to version 0.8.1. See [#4051](https://github.com/DataDog/dd-sdk-android/pull/4051)
+* [MAINTENANCE] Optimize PR CI jobs. See [#4018](https://github.com/DataDog/dd-sdk-android/pull/4018)
+* [MAINTENANCE] Fix a memory leak in `StubSDKCore`. See [#4045](https://github.com/DataDog/dd-sdk-android/pull/4045)
+
 # 3.15.0 / 2026-10-08
 
 * [FEATURE] RUM: Add the `dd-sdk-android-rum-prelaunch` module to capture TTID before the SDK is initialized. This module is intended for internal use by Datadog cross-platform SDKs only. See [#3635](https://github.com/DataDog/dd-sdk-android/pull/3635)
