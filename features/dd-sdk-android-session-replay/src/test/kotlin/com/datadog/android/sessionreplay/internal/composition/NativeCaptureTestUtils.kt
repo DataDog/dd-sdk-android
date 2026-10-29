@@ -7,6 +7,8 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import android.graphics.Rect
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.TouchPrivacy
 
 internal fun WindowCopyResult.buildWindow(context: CaptureGenerationContext): WindowWalkResult = when (this) {

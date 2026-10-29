@@ -10,7 +10,7 @@ import android.graphics.PixelFormat
 import android.graphics.drawable.ColorDrawable
 import android.view.View
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.internal.composition.CapturedShapeStyle
+import com.datadog.android.internal.sessionreplay.composition.CapturedShapeStyle
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
