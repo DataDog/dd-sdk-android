@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("TooManyFunctions") // Native traversal keeps its capture state and geometry helpers together.
+
 package com.datadog.android.sessionreplay.internal.composition
 
 import android.graphics.Rect
@@ -17,6 +19,7 @@ import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedHiddenViewMapper
@@ -24,6 +27,8 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMap
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
+import com.datadog.android.sessionreplay.internal.putTouchOverrideArea
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
@@ -43,8 +48,9 @@ internal sealed interface WindowCopyResult {
 }
 
 /**
- * Copies one native window in a single UI-thread turn. Only this phase reads live Views; clipping,
- * text styling and wireframe/layer construction operate on the copy on the construction executor.
+ * Copies one native window in a single UI-thread turn. Only this phase reads live Views; native
+ * text styling and final clipping/layer construction operate on the copy on the construction executor.
+ * Compose hosts contribute owned subtrees without traversing their native implementation children.
  * The iterative walk avoids call-stack limits without yielding between inconsistent UI states.
  */
 internal class AndroidWindowTraversal(
@@ -55,25 +61,31 @@ internal class AndroidWindowTraversal(
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
     private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault(),
     private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
-    private val interopViewCallback: CapturedInteropViewCallback? = null,
+    compositionHostDecomposer: CompositionHostDecomposer? = null,
     private val drawingOrderResolver: ViewGroupDrawingOrderResolver = ViewGroupDrawingOrderResolver(internalLogger)
 ) {
     private val occlusionDetector = ViewOcclusionDetector(drawableToColorMapper, viewUtilsInternal, internalLogger)
+    private val compositionHostCapture = compositionHostDecomposer?.let { CompositionHostCapture(it, internalLogger) }
 
     @UiThread
-    @Suppress("ReturnCount") // Expiry discards all work.
     fun traverseWindow(
         windowRoot: View,
         windowIdentity: CapturedIdentity,
         identityFactory: CapturedIdentityFactory,
         context: CaptureGenerationContext
-    ): WindowCopyResult {
-        val state = CopyState(windowRoot.resources.displayMetrics.density, windowIdentity, identityFactory)
+    ): WindowCopyResult = copyWindow(
+        windowRoot,
+        CopyState(windowRoot.resources.displayMetrics.density, windowIdentity, identityFactory),
+        context
+    )
 
+    @UiThread
+    @Suppress("ReturnCount") // Expiry discards all work.
+    private fun copyWindow(windowRoot: View, state: CopyState, context: CaptureGenerationContext): WindowCopyResult {
         @Suppress("UnsafeThirdPartyFunctionCall") // Empty UI-owned deque.
         val stack = ArrayDeque<WorkItem>()
         @Suppress("UnsafeThirdPartyFunctionCall") // Unbounded UI-owned deque.
-        stack.addLast(WorkItem(windowRoot, -1, clipToBounds = true))
+        stack.addLast(WorkItem(windowRoot, -1, clipToBounds = state.rootKind == CapturedLayerKind.WINDOW_ROOT))
         while (stack.size > 0) {
             if (!context.shouldContinue()) return WindowCopyResult.Aborted
             @Suppress("UnsafeThirdPartyFunctionCall") // Non-empty check above; synchronous ownership.
@@ -124,47 +136,122 @@ internal class AndroidWindowTraversal(
         context: CaptureGenerationContext
     ) {
         val view = item.view
-        val identity = if (item.parentIndex < 0) {
-            state.windowIdentity
-        } else {
-            state.identityFactory.view(state.windowIdentity, viewIdentifierResolver.resolveViewId(view).toString())
-        }
+        val hidden = view.getTag(R.id.datadog_hidden) == true
+        val kind = resolveLayerKind(item, state, hidden)
+        val identity = resolveIdentity(item, kind, state)
         // Read geometry once. Retain the original pixels for coverage and derive the same replay bounds.
         val pixels = resolvePixelBounds(view, state.locationOnScreen)
         val bounds = pixels?.toNormalizedBounds(state.density)
             ?: viewBoundsResolver.resolveViewGlobalBounds(view, state.density).toCaptured()
         val mappingContext = CapturedMappingContext(state.identityFactory, identity, state.density, bounds)
-        val hidden = view.getTag(R.id.datadog_hidden) == true
-        val interop = if (hidden) null else interopViewCallback?.tryMap(view, mappingContext)
+        val composition = if (kind == CapturedLayerKind.COMPOSE_HOST) {
+            captureComposition(view, mappingContext, state, context)
+        } else {
+            null
+        }
         if (!context.shouldContinue()) return
-        val viewData = interop?.let { CapturedViewData.Mapped(it) }
-            ?: (if (hidden) hiddenViewMapper else mapperRegistry.resolve(view)).capture(view, mappingContext)
-        val children = if (!hidden && interop == null && !viewData.isTerminal) view as? ViewGroup else null
-        val pixelPaddingClip = children?.let { pixels?.paddingClip(it) }
-        val paddingClip = resolvePaddingClip(children, pixelPaddingClip, state.density)
+        val viewData = when {
+            composition != null -> CapturedViewData.Mapped(CapturedViewMapperResult.None)
+            hidden -> hiddenViewMapper.capture(view, mappingContext)
+            else -> mapperRegistry.resolve(view).capture(view, mappingContext)
+        }
+        val nativeChildren = if (hidden || composition != null || viewData.isTerminal) {
+            null
+        } else {
+            view as? ViewGroup
+        }
+        val clippingViewGroup = if (composition != null) view as? ViewGroup else nativeChildren
+        val pixelPaddingClip = clippingViewGroup?.let { pixels?.paddingClip(it) }
+        val paddingClip = resolvePaddingClip(clippingViewGroup, pixelPaddingClip, state.density)
         val pixelClip = pixels?.explicitClip(view)
         val clip = resolveExplicitClip(view, pixels, pixelClip, state.density)
-        val geometryIsReliable = item.isGeometryReliable && view.hasReliableGeometry(item.parentIndex)
+        val geometryIsReliable = item.isGeometryReliable &&
+            view.hasReliableGeometry(if (kind == CapturedLayerKind.WINDOW_ROOT) -1 else 0)
         val index = state.views.size
         state.views += CapturedNativeView(
-            identity,
-            item.parentIndex,
-            bounds,
-            view.alpha.toDouble(),
-            viewData,
-            item.clipToBounds,
-            clip,
-            paddingClip,
-            pixels,
-            pixelClip,
-            pixelPaddingClip,
-            geometryIsReliable
+            identity = identity,
+            parentIndex = item.parentIndex,
+            bounds = bounds,
+            alpha = view.alpha.toDouble(),
+            viewData = viewData,
+            clipToBounds = item.clipToBounds,
+            explicitClip = clip,
+            childPaddingClip = paddingClip,
+            pixelBounds = pixels,
+            pixelClip = pixelClip,
+            pixelChildPaddingClip = pixelPaddingClip,
+            isGeometryReliable = geometryIsReliable,
+            kind = kind,
+            composition = composition
         )
-        if (children != null) {
-            pushChildren(children, index, geometryIsReliable, stack, state)
+        if (nativeChildren != null) {
+            pushChildren(nativeChildren, index, geometryIsReliable, stack, state)
         } else {
             pushHiddenTouchChildren(view, hidden, stack)
         }
+    }
+
+    @UiThread
+    private fun resolveLayerKind(item: WorkItem, state: CopyState, hidden: Boolean): CapturedLayerKind = when {
+        item.parentIndex < 0 -> state.rootKind
+        !hidden && compositionHostCapture?.canDecompose(item.view) == true -> CapturedLayerKind.COMPOSE_HOST
+        else -> CapturedLayerKind.NATIVE_VIEW
+    }
+
+    @UiThread
+    private fun resolveIdentity(item: WorkItem, kind: CapturedLayerKind, state: CopyState): CapturedIdentity {
+        if (item.parentIndex < 0) return state.rootIdentity
+        val localId = viewIdentifierResolver.resolveViewId(item.view).toString()
+        return if (kind == CapturedLayerKind.COMPOSE_HOST) {
+            state.identityFactory.composeHost(state.windowIdentity, localId)
+        } else {
+            state.identityFactory.view(state.windowIdentity, localId)
+        }
+    }
+
+    @UiThread
+    private fun captureComposition(
+        view: View,
+        mappingContext: CapturedMappingContext,
+        state: CopyState,
+        context: CaptureGenerationContext
+    ): CapturedComposition? {
+        val capturedHost = compositionHostCapture?.capture(view, mappingContext) { interopView, childIdentity ->
+            copyNativeSubtree(interopView, childIdentity, state, context)
+        } ?: return null
+        for (copy in capturedHost.nativeCopies) {
+            copy.touchOverrideAreas.forEach { (bounds, privacy) ->
+                state.touchOverrideAreas.putTouchOverrideArea(bounds, privacy)
+            }
+            state.isDrawingOrderReliable = state.isDrawingOrderReliable && copy.window.isDrawingOrderReliable
+        }
+        return CapturedComposition(
+            result = capturedHost.decomposition,
+            nativeSubtrees = capturedHost.nativeCopies.map { copy -> copy.window }
+        )
+    }
+
+    /** Only copies live Views here; native subtree construction remains on the processing executor. */
+    @UiThread
+    // Filtered/expired subtrees contribute nothing; the identity map copies synchronous, capture-owned state.
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    private fun copyNativeSubtree(
+        view: View,
+        identity: CapturedIdentity,
+        outerState: CopyState,
+        context: CaptureGenerationContext
+    ): WindowCopyResult.Present? {
+        val state = CopyState(
+            outerState.density,
+            outerState.windowIdentity,
+            outerState.identityFactory,
+            rootIdentity = identity,
+            rootKind = CapturedLayerKind.NATIVE_VIEW,
+            // Seed ancestor visits to prevent re-entry, but keep tentative handoffs isolated so
+            // a null decomposition can still traverse the same native children in its fallback.
+            visited = IdentityHashMap(outerState.visited)
+        )
+        return copyWindow(view, state, context) as? WindowCopyResult.Present
     }
 
     @UiThread
@@ -237,13 +324,15 @@ internal class AndroidWindowTraversal(
     private class CopyState(
         val density: Float,
         val windowIdentity: CapturedIdentity,
-        val identityFactory: CapturedIdentityFactory
+        val identityFactory: CapturedIdentityFactory,
+        val rootIdentity: CapturedIdentity = windowIdentity,
+        val rootKind: CapturedLayerKind = CapturedLayerKind.WINDOW_ROOT,
+        val visited: IdentityHashMap<View, Boolean> = IdentityHashMap()
     ) {
         var isDrawingOrderReliable = true
         val locationOnScreen = IntArray(2)
         val views = mutableListOf<CapturedNativeView>()
         val touchOverrideAreas = mutableMapOf<Rect, TouchPrivacy>()
-        val visited = IdentityHashMap<View, Boolean>()
     }
 
     private data class WorkItem(

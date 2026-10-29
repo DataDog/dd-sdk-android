@@ -29,6 +29,7 @@ import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.composition.CapturePipelineSelector
+import com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposer
 import com.datadog.android.sessionreplay.internal.composition.CompositionPipelineFactory
 import com.datadog.android.sessionreplay.internal.composition.DefaultCompositionPipelineFactory
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
@@ -77,10 +78,12 @@ constructor(
     private val internalCallback: SessionReplayInternalCallback,
     private val heatmapsEnabled: Boolean,
     private val compositionTreeRecordingEnabled: Boolean,
+    private val compositionHostDecomposer: CompositionHostDecomposer? = null,
     private val compositionPipelineFactory: CompositionPipelineFactory = DefaultCompositionPipelineFactory(
         sdkCore = sdkCore,
         internalCallback = internalCallback,
         touchPrivacyManager = touchPrivacyManager,
+        compositionHostDecomposer = compositionHostDecomposer,
         dynamicOptimizationEnabled = dynamicOptimizationEnabled,
         customDrawableMappers = customDrawableMappers
     )

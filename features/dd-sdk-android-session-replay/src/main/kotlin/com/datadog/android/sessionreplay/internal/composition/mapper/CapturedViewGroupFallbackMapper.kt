@@ -15,9 +15,9 @@ import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 
 /**
  * Generic fallback for any [View]/[ViewGroup] with no dedicated mapper: a single background-color
- * [CapturedWireframe.Shape] if the background resolves to a solid color, else nothing. Also what an
- * unmapped `ComposeView`/`AndroidComposeView` falls through to, since no Compose-aware decomposition
- * exists in this module yet. Direct port of legacy `ViewWireframeMapper`.
+ * [CapturedWireframe.Shape] if the background resolves to a solid color, else nothing. Also what a
+ * `ComposeView`/`AndroidComposeView` falls through to when no `CompositionHostDecomposer` is
+ * configured, or it declines/fails to decompose that host. Direct port of legacy `ViewWireframeMapper`.
  */
 internal class CapturedViewGroupFallbackMapper(
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
