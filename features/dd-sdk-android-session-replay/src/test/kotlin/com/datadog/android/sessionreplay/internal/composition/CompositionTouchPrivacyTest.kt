@@ -22,6 +22,7 @@ import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
+import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.recorder.callback.MotionEventUtils
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
@@ -37,10 +38,12 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.Executor
 import java.util.concurrent.FutureTask
 import java.util.concurrent.TimeUnit
 
@@ -100,6 +103,30 @@ internal class CompositionTouchPrivacyTest {
     }
 
     @Test
+    fun `M require fresh privacy W root is re-added or RUM scope changes`() {
+        // Given
+        val fixture = Fixture(TouchPrivacy.SHOW)
+        fixture.onMap = {}
+        fixture.startCapture()
+        val fakeScope = RumViewIdentityScope("view")
+        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
+
+        // When
+        fixture.windowSource.update(emptyList())
+        fixture.windowSource.update(listOf(fixture.root))
+
+        // Then
+        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isFalse()
+        fixture.startCapture()
+        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
+        val fakeNextScope = RumViewIdentityScope("next-view")
+        fixture.rumViewScope = CapturedRumViewScope(fakeNextScope, 0L)
+        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeNextScope)).isFalse()
+        fixture.startCapture()
+        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeNextScope)).isTrue()
+    }
+
+    @Test
     fun `M keep touches disabled W traversal filters the root`() {
         // Given
         val fixture = Fixture(TouchPrivacy.SHOW)
@@ -110,6 +137,42 @@ internal class CompositionTouchPrivacyTest {
 
         // Then
         assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isFalse()
+    }
+
+    @ParameterizedTest
+    @EnumSource(TouchPrivacy::class)
+    fun `M suppress touches W redraw makes the committed privacy map stale`(fakeGlobalPrivacy: TouchPrivacy) {
+        // Given: a committed SHOW region must stop allowing gestures as soon as the window redraws.
+        val fixture = Fixture(fakeGlobalPrivacy)
+        fixture.onMap = {}
+        fixture.startCapture()
+        val mockWriter: RecordWriter = mock()
+        val mockDelegate: Window.Callback = mock()
+        val testedCallback = fixture.callback(fixture.root, mockWriter, mockDelegate)
+        val fakeDown = fixture.event(MotionEvent.ACTION_DOWN, 10f)
+        val fakeUp = fixture.event(MotionEvent.ACTION_UP, 10f)
+        whenever(fixture.root.getTag(R.id.datadog_touch_privacy)).thenReturn(
+            if (fakeGlobalPrivacy == TouchPrivacy.SHOW) TouchPrivacy.HIDE.name else null
+        )
+
+        // When: capture has only been requested; its delayed task has not run yet.
+        fixture.draw()
+        testedCallback.dispatchTouchEvent(fakeDown)
+        testedCallback.dispatchTouchEvent(fakeUp)
+
+        // Then: neither the old SHOW area nor the global SHOW fallback may bypass readiness.
+        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isTrue()
+        verify(mockWriter, never()).write(any(), any())
+        verify(mockDelegate).dispatchTouchEvent(fakeDown)
+        verify(mockDelegate).dispatchTouchEvent(fakeUp)
+
+        // Once the replacement map is committed, the now-hidden location stays excluded.
+        fixture.captureScheduler.runNext()
+        fixture.mainThreadExecutor.runNext()
+        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isTrue()
+        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, 10f))
+        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, 10f))
+        verify(mockWriter, never()).write(any(), any())
     }
 
     @ParameterizedTest
@@ -175,6 +238,120 @@ internal class CompositionTouchPrivacyTest {
     }
 
     @Test
+    fun `M refresh touch privacy W window redraws before worker construction finishes`() {
+        // Given: the UI copy finishes and publishes privacy while snapshot construction is queued.
+        val fixture = Fixture(deferProcessing = true)
+        fixture.onMap = {}
+        fixture.startCapture()
+        fixture.processNext()
+        fixture.startCapture()
+        val fakeScope = RumViewIdentityScope("view")
+        assertThat(fixture.consumed).hasSize(1)
+        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
+
+        // When: a redraw dirties the copied map before the worker completes the visual snapshot.
+        whenever(fixture.root.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
+        fixture.draw()
+        fixture.processNext()
+
+        // Then: a live privacy check restores readiness with the new policy, without the old SHOW area.
+        assertThat(fixture.consumed).hasSize(2)
+        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
+        assertThat(fixture.windowSource.currentTouchOverrideAreas(fixture.root, fakeScope)).isEmpty()
+        fixture.captureScheduler.runNext()
+        fixture.mainThreadExecutor.runNext()
+        fixture.processNext()
+        assertThat(fixture.consumed).hasSize(3)
+        assertThat(fixture.touchPrivacyManager.getCurrentOverrideAreas()).isEmpty()
+        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M discard a gesture across privacy revisions W redraw and recapture`(fakeEventWhileDirty: Boolean) {
+        // Given
+        val fixture = Fixture()
+        fixture.onMap = {}
+        fixture.startCapture()
+        val mockWriter: RecordWriter = mock()
+        val testedCallback = fixture.callback(fixture.root, mockWriter, mock())
+        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, 10f))
+
+        // When: invalidation may be followed by recapture before the next touch event arrives.
+        whenever(fixture.root.getTag(R.id.datadog_touch_privacy)).thenReturn(null)
+        fixture.draw()
+        if (fakeEventWhileDirty) testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_MOVE, 10f))
+        fixture.captureScheduler.runNext()
+        fixture.mainThreadExecutor.runNext()
+        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, 10f))
+
+        // Then: an old buffered down and its gesture tail are discarded even within the same RUM view.
+        verify(mockWriter, never()).write(any(), any())
+        whenever(fixture.root.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
+        fixture.draw()
+        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, 20f))
+        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, 20f))
+        val records = argumentCaptor<EnrichedRecord>()
+        verify(mockWriter).write(records.capture(), any())
+        assertThat(records.firstValue.records).hasSize(2)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M retain unchanged window policies W either tracked window redraws`(fakeSecondWindow: Boolean) {
+        // Given: both windows use the same committed override map.
+        val fixture = Fixture()
+        val fakeOtherWindow = fixture.window(200)
+        fixture.windowSource.update(listOf(fixture.root, fakeOtherWindow))
+        fixture.onMap = {}
+        fixture.startCapture()
+        val fakeWindowSnapshot = fixture.windowSource.snapshot()
+        val fakeScope = RumViewIdentityScope("view")
+        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
+        assertThat(fixture.windowSource.hasTouchPrivacy(fakeOtherWindow, fakeScope)).isTrue()
+
+        // When
+        fixture.draw(if (fakeSecondWindow) fakeOtherWindow else fixture.root)
+
+        // Then: refresh the affected window without revoking either unchanged policy.
+        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
+        assertThat(fixture.windowSource.hasTouchPrivacy(fakeOtherWindow, fakeScope)).isTrue()
+        assertThat(fixture.windowSource.isCurrent(fakeWindowSnapshot)).isTrue()
+        fixture.captureScheduler.runNext()
+        fixture.mainThreadExecutor.runNext()
+        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, fakeScope)).isTrue()
+        assertThat(fixture.windowSource.hasTouchPrivacy(fakeOtherWindow, fakeScope)).isTrue()
+    }
+
+    @Test
+    fun `M retain gestures W animation redraws and equivalent captures refresh privacy`() {
+        // Given
+        val fixture = Fixture(TouchPrivacy.SHOW)
+        fixture.onMap = {}
+        fixture.startCapture()
+        val mockWriter: RecordWriter = mock()
+        val testedCallback = fixture.callback(fixture.root, mockWriter, mock())
+        val fakeScope = fixture.windowSource.currentTouchPrivacyScope(fixture.root, RumViewIdentityScope("view"))
+        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, 10f))
+
+        // When: frames and complete refreshes arrive between the beginning and end of a gesture.
+        repeat(10) {
+            fixture.draw()
+            fixture.captureScheduler.runNext()
+            fixture.mainThreadExecutor.runNext()
+            assertThat(fixture.windowSource.currentTouchPrivacyScope(fixture.root, RumViewIdentityScope("view")))
+                .isEqualTo(fakeScope)
+        }
+        fixture.draw()
+        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, 10f))
+
+        // Then
+        val records = argumentCaptor<EnrichedRecord>()
+        verify(mockWriter).write(records.capture(), any())
+        assertThat(records.firstValue.records).hasSize(2)
+    }
+
+    @Test
     fun `M establish current privacy W redraw overtakes the initial native copy`() {
         // Given: draws during native mapping dirty the candidate without invalidating the copy.
         val fixture = Fixture(TouchPrivacy.SHOW)
@@ -199,6 +376,49 @@ internal class CompositionTouchPrivacyTest {
         assertThat(fixture.windowSource.currentTouchOverrideAreas(fixture.root, fakeScope))
             .containsValue(TouchPrivacy.HIDE).doesNotContainValue(TouchPrivacy.SHOW)
         verify(mockWriter, never()).write(any(), any())
+    }
+
+    @Test
+    fun `M deny dirty privacy W live refresh fails before visual recapture`() {
+        // Given
+        val fixture = Fixture(TouchPrivacy.SHOW)
+        fixture.onMap = {}
+        fixture.startCapture()
+        val mockWriter: RecordWriter = mock()
+        val testedCallback = fixture.callback(fixture.root, mockWriter, mock())
+        fixture.privacyReadAllowed = false
+        fixture.draw()
+
+        // When
+        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, 10f))
+        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, 10f))
+
+        // Then: even global SHOW and previously granted overrides cannot bypass a failed refresh.
+        assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isFalse()
+        verify(mockWriter, never()).write(any(), any())
+        fixture.privacyReadAllowed = true
+        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_DOWN, 10f))
+        testedCallback.dispatchTouchEvent(fixture.event(MotionEvent.ACTION_UP, 10f))
+        verify(mockWriter).write(any(), any())
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M reject privacy refresh W draw or cancellation overtakes live read`(fakeCancel: Boolean) {
+        // Given
+        val fixture = Fixture(TouchPrivacy.SHOW)
+        fixture.onMap = {}
+        fixture.startCapture()
+        fixture.draw()
+        fixture.onPrivacyRead = {
+            if (fakeCancel) fixture.windowSource.clearTouchPrivacy() else fixture.draw()
+        }
+
+        // When
+        val result = fixture.windowSource.currentTouchOverrideAreas(fixture.root, RumViewIdentityScope("view"))
+
+        // Then
+        assertThat(result).isNull()
     }
 
     @ParameterizedTest
@@ -386,6 +606,24 @@ internal class CompositionTouchPrivacyTest {
         assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("view"))).isTrue()
     }
 
+    private fun changeWindows(fixture: Fixture, firstWindow: View, change: WindowChange) {
+        val source = fixture.windowSource
+        when (change) {
+            WindowChange.ADD -> source.update(listOf(firstWindow, fixture.root, fixture.window(300)))
+            WindowChange.REMOVE_COMPLETED -> source.update(listOf(fixture.root))
+            WindowChange.REMOVE_CURRENT -> source.update(listOf(firstWindow))
+            WindowChange.REORDER -> source.update(listOf(fixture.root, firstWindow))
+            WindowChange.REMOVE_AND_READD -> {
+                source.update(listOf(firstWindow))
+                source.update(listOf(firstWindow, fixture.root))
+            }
+            WindowChange.CLEAR_AND_READD -> {
+                source.clear()
+                source.update(listOf(firstWindow, fixture.root))
+            }
+        }
+    }
+
     @Test
     fun `M complete capture W time offset changes within same RUM view`() {
         // Given
@@ -398,6 +636,26 @@ internal class CompositionTouchPrivacyTest {
         // Then
         assertThat(fixture.consumed).hasSize(1)
         assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isTrue()
+    }
+
+    @Test
+    fun `M publish overrides from every window W capture exceeds former slice budget`() {
+        // Given
+        val fixture = Fixture()
+        val firstWindow = fixture.window(200)
+        whenever(firstWindow.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
+        fixture.windowSource.update(listOf(firstWindow, fixture.root))
+        fixture.onMap = { fixture.nowNs += SLICE_BUDGET_NS }
+
+        // When
+        fixture.startCapture()
+
+        // Then: the complete multi-window copy is published together without a continuation.
+        assertThat(fixture.consumed).hasSize(1)
+        assertThat(fixture.mainThreadExecutor.size).isEqualTo(1)
+        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(10, 10))).isTrue()
+        assertThat(fixture.touchPrivacyManager.shouldRecordTouch(Point(210, 10))).isTrue()
+        assertThat(fixture.touchPrivacyManager.getNextOverrideAreas()).isEmpty()
     }
 
     @Test
@@ -558,7 +816,7 @@ internal class CompositionTouchPrivacyTest {
     fun `M capture new RUM view W onRumViewChanged { native copy in progress }`() {
         // Given
         val fixture = Fixture()
-        val testedPipeline = CompositionCapturePipeline(fixture.orchestrator, mock(), mock(), mock())
+        val testedPipeline = CompositionCapturePipeline(fixture.orchestrator, mock(), mock(), mock(), mock())
         fixture.onMap = { view ->
             if (view === fixture.root) {
                 fixture.rumViewScope = CapturedRumViewScope(RumViewIdentityScope("next-view"), 0L)
@@ -579,24 +837,6 @@ internal class CompositionTouchPrivacyTest {
         assertThat(fixture.windowSource.hasTouchPrivacy(fixture.root, RumViewIdentityScope("next-view"))).isTrue()
     }
 
-    private fun changeWindows(fixture: Fixture, firstWindow: View, change: WindowChange) {
-        val source = fixture.windowSource
-        when (change) {
-            WindowChange.ADD -> source.update(listOf(firstWindow, fixture.root, fixture.window(300)))
-            WindowChange.REMOVE_COMPLETED -> source.update(listOf(fixture.root))
-            WindowChange.REMOVE_CURRENT -> source.update(listOf(firstWindow))
-            WindowChange.REORDER -> source.update(listOf(fixture.root, firstWindow))
-            WindowChange.REMOVE_AND_READD -> {
-                source.update(listOf(firstWindow))
-                source.update(listOf(firstWindow, fixture.root))
-            }
-            WindowChange.CLEAR_AND_READD -> {
-                source.clear()
-                source.update(listOf(firstWindow, fixture.root))
-            }
-        }
-    }
-
     private fun runCancellation(task: () -> Unit) {
         val fakeTask = FutureTask { task(); Unit }
         val fakeWorker = Thread(fakeTask).apply { isDaemon = true }
@@ -610,7 +850,10 @@ internal class CompositionTouchPrivacyTest {
         assertThat(fakeWorker.isAlive).isFalse()
     }
 
-    private class Fixture(globalTouchPrivacy: TouchPrivacy = TouchPrivacy.HIDE) {
+    private class Fixture(
+        globalTouchPrivacy: TouchPrivacy = TouchPrivacy.HIDE,
+        deferProcessing: Boolean = false
+    ) {
         var nowNs = 0L
         var captureAllowed = true
         var rumViewScope: CapturedRumViewScope? = CapturedRumViewScope(RumViewIdentityScope("view"), 0L)
@@ -620,6 +863,7 @@ internal class CompositionTouchPrivacyTest {
         val expiryScheduler = TaskQueue()
         val mainThreadExecutor = TaskQueue()
         val consumed = mutableListOf<CompletedSnapshotCapture>()
+        private val processingTasks = mutableListOf<Runnable>()
         private val viewIdentifierResolver: ViewIdentifierResolver = mock()
         private val viewBoundsResolver: ViewBoundsResolver = mock()
         private val drawListeners = mutableMapOf<View, ViewTreeObserver.OnDrawListener>()
@@ -637,7 +881,7 @@ internal class CompositionTouchPrivacyTest {
             onPrivacyRead()
             if (privacyReadAllowed) privacyReader.read(view) else null
         }.apply { update(listOf(root)) }
-        var onMap: (View) -> Unit = {}
+        var onMap: (View) -> Unit = { view -> if (view === root) nowNs += SLICE_BUDGET_NS }
 
         init {
             whenever(root.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.SHOW.name)
@@ -668,7 +912,11 @@ internal class CompositionTouchPrivacyTest {
         )
         val orchestrator = SnapshotCaptureOrchestrator(
             producer = producer,
-            processor = ImmediateCapturedSnapshotProcessor(),
+            processor = if (deferProcessing) {
+                ExecutorCapturedSnapshotProcessor(Executor(processingTasks::add), mock())
+            } else {
+                ImmediateCapturedSnapshotProcessor()
+            },
             consumer = CompletedSnapshotConsumer(consumed::add),
             timeProvider = CaptureTimeProvider { nowNs },
             captureScheduler = captureScheduler,
@@ -691,6 +939,8 @@ internal class CompositionTouchPrivacyTest {
             drawInterceptor.intercept(windowSource.currentWindows())
             drawListeners.getValue(view).onDraw()
         }
+
+        fun processNext() = processingTasks.removeAt(0).run()
 
         fun startCapture() {
             orchestrator.start()
@@ -761,6 +1011,7 @@ internal class CompositionTouchPrivacyTest {
     }
 
     private class TaskQueue : CaptureTaskScheduler, CaptureMainThreadExecutor {
+        val size: Int get() = tasks.size
         private val tasks = mutableListOf<Task>()
 
         override fun execute(task: () -> Unit): CancellableCaptureWork = schedule(0L, task)

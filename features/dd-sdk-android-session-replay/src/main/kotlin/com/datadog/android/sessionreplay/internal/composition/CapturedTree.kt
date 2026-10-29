@@ -231,4 +231,4 @@ internal data class CapturedFullSnapshot(
     val root: CapturedLayer?,
     val layers: List<CapturedLayer>,
     val wireframes: List<CapturedWireframe>
-)
+) : CapturedSnapshotInput

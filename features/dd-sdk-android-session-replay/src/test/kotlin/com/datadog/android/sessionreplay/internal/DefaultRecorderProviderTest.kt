@@ -27,6 +27,7 @@ import com.datadog.android.sessionreplay.internal.composition.CompositionPipelin
 import com.datadog.android.sessionreplay.internal.composition.DefaultCapturedIdentityFactory
 import com.datadog.android.sessionreplay.internal.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.internal.composition.WindowWalkResult
+import com.datadog.android.sessionreplay.internal.composition.buildWindow
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
@@ -199,7 +200,7 @@ internal class DefaultRecorderProviderTest {
                 fakeIdentityFactory.window("window"),
                 fakeIdentityFactory,
                 fakeContext
-            )
+            ).buildWindow(fakeContext)
 
             // Then: both the text mapper and generic fallback retain the extension's background color.
             val snapshot = result as WindowWalkResult.Present

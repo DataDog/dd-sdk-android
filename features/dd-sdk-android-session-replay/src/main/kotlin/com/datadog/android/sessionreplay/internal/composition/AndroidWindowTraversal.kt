@@ -7,6 +7,8 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import android.graphics.Rect
+import android.view.SurfaceView
+import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewParent
@@ -17,49 +19,32 @@ import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedHiddenViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
-import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 import java.util.IdentityHashMap
-import kotlin.math.max
-import kotlin.math.min
 
-internal sealed interface WindowWalkResult {
+internal sealed interface WindowCopyResult {
     data class Present(
-        val rootLayer: CapturedLayer,
-        val layers: List<CapturedLayer>,
-        val wireframes: List<CapturedWireframe>,
+        val window: CapturedNativeWindow,
         val touchOverrideAreas: Map<Rect, TouchPrivacy>
-    ) : WindowWalkResult
-
-    /** The window (e.g. not shown, or on a secondary display) contributes nothing - skip it. */
-    object Filtered : WindowWalkResult
-
-    /** The deadline expired mid-walk - the whole capture must be discarded, not just this window. */
-    object Aborted : WindowWalkResult
+    ) : WindowCopyResult
+    object Filtered : WindowCopyResult
+    object Aborted : WindowCopyResult
 }
 
 /**
- * Walks one window's native View hierarchy into a [CapturedLayer] tree, combining legacy
- * `TreeViewTraversal` (per-view decisions) and `SnapshotProducer` (recursion) into a single pass,
- * with clip computed inline from an accumulated ancestor intersection instead of a separate flatten step.
- *
- * Every visited [View] becomes exactly one [CapturedLayer] (kind [CapturedLayerKind.NATIVE_VIEW],
- * or [CapturedLayerKind.WINDOW_ROOT] for the window's own root). Its identity is always created via
- * [CapturedIdentityFactory.view] against the *window's* identity - never the view's real structural
- * parent - per the flat-namespacing rule [CapturedIdentityFactory] enforces; real nesting is carried
- * purely by [CapturedLayer.children].
- *
- * An explicit work stack keeps deep hierarchies off the call stack. The synchronous main-thread
- * pass checks the generation's absolute deadline before every work item.
+ * Copies one native window in a single UI-thread turn. Only this phase reads live Views; clipping,
+ * text styling and wireframe/layer construction operate on the copy on the construction executor.
+ * The iterative walk avoids call-stack limits without yielding between inconsistent UI states.
  */
-@Suppress("TooManyFunctions") // Keep both completion entry points without allocating finish items for leaves.
 internal class AndroidWindowTraversal(
     private val mapperRegistry: CapturedViewMapperRegistry,
     private val internalLogger: InternalLogger,
@@ -68,373 +53,211 @@ internal class AndroidWindowTraversal(
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
     private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault(),
     private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
-    private val composeHostCallback: CapturedInteropViewCallback? = null,
+    private val interopViewCallback: CapturedInteropViewCallback? = null,
     private val drawingOrderResolver: ViewGroupDrawingOrderResolver = ViewGroupDrawingOrderResolver(internalLogger)
 ) {
-
-    private val occlusionDetector = ViewOcclusionDetector(
-        drawableToColorMapper = drawableToColorMapper,
-        viewUtilsInternal = viewUtilsInternal,
-        internalLogger = internalLogger
-    )
+    private val occlusionDetector = ViewOcclusionDetector(drawableToColorMapper, viewUtilsInternal, internalLogger)
 
     @UiThread
+    @Suppress("ReturnCount") // Expiry discards all work.
     fun traverseWindow(
         windowRoot: View,
         windowIdentity: CapturedIdentity,
         identityFactory: CapturedIdentityFactory,
         context: CaptureGenerationContext
-    ): WindowWalkResult {
-        val state = TraversalState(screenDensity = windowRoot.resources.displayMetrics.density)
-        val stack = newWorkStack<WorkItem>()
-        stack.push(
-            WorkItem.Visit(
-                view = windowRoot,
-                ownIdentity = windowIdentity,
-                ownKind = CapturedLayerKind.WINDOW_ROOT,
-                windowIdentity = windowIdentity,
-                identityFactory = identityFactory,
-                ancestorClip = null,
-                clipToBounds = true,
-                sink = ResultSink.Root
-            )
-        )
-        return runStack(stack, state, context)
-    }
+    ): WindowCopyResult {
+        val state = CopyState(windowRoot.resources.displayMetrics.density, windowIdentity, identityFactory)
 
-    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // isNotEmpty only checks this walk's deque size.
-    @UiThread
-    private fun runStack(
-        stack: ArrayDeque<WorkItem>,
-        state: TraversalState,
-        context: CaptureGenerationContext
-    ): WindowWalkResult {
-        while (stack.isNotEmpty()) {
-            if (!context.shouldContinue()) return WindowWalkResult.Aborted
-            when (val item = stack.pop()) {
-                is WorkItem.Visit -> {
-                    val aborted = visitItem(item, stack, state, context)
-                    if (aborted) return WindowWalkResult.Aborted
-                }
-                is WorkItem.VisitTouchPrivacy -> visitTouchPrivacy(item, stack, state)
-                is WorkItem.Finish -> completeLayer(item, state)
-            }
-        }
-        // The root Visit is the only one with a Root sink and always completes a layer, setting
-        // rootLayer, unless filtered - the only other way this loop empties without it.
-        return state.rootLayer?.let {
-            WindowWalkResult.Present(it, state.layers, state.wireframes, state.touchOverrideAreas)
-        } ?: WindowWalkResult.Filtered
-    }
-
-    /** `true` only when the whole window walk must be discarded - a compose host handoff outlived the deadline. */
-    @Suppress("ReturnCount")
-    @UiThread
-    private fun visitItem(
-        item: WorkItem.Visit,
-        stack: ArrayDeque<WorkItem>,
-        state: TraversalState,
-        context: CaptureGenerationContext
-    ): Boolean {
-        val view = item.view
-        if (!tryVisit(view, item.expectedParent, state)) return false
-
-        collectTouchOverrideArea(view, state)
-
-        val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, state.screenDensity).toCaptured()
-        val mappingContext = CapturedMappingContext(item.identityFactory, item.ownIdentity, state.screenDensity)
-        val isHidden = view.getTag(R.id.datadog_hidden) == true
-
-        val children = mutableListOf<CapturedChild>()
-        val interopResult = composeHostCallback.mapVisibleHost(view, mappingContext, isHidden)
-        if (interopResult != null && !context.shouldContinue()) return true
-        val mapped = interopResult
-            ?: (if (isHidden) hiddenViewMapper else mapperRegistry.resolve(view)).map(view, mappingContext)
-        // clipChildren belongs to the containing ViewGroup: it clips this View's entire drawing
-        // (including descendants) to this View's bounds. A window root is always bounded by its surface.
-        val inheritedClip = if (item.clipToBounds) item.ancestorClip.intersectWith(bounds) else item.ancestorClip
-        val clip = view.applyExplicitClip(inheritedClip, state.screenDensity)
-        val alpha = view.alpha.toDouble()
-        addWireframes(mapped, clip, children, state)
-
-        val isTerminalMapping = (mapped as? CapturedViewMapperResult.Wireframes)?.isTerminal == true
-        val canHaveChildren = !isHidden && interopResult == null && !isTerminalMapping
-        if (canHaveChildren && view is ViewGroup && view.childCount > 0) {
-            stack.push(
-                WorkItem.Finish(
-                    item.ownIdentity,
-                    item.ownKind,
-                    bounds,
-                    children,
-                    item.sink,
-                    alpha
-                )
-            )
-            pushChildren(view, item, state.screenDensity, clip, children, stack)
-        } else {
-            completeLayer(item.ownIdentity, item.ownKind, bounds, children, item.sink, state, alpha)
-            if (isHidden) {
-                pushTouchPrivacyChildren(view, stack)
-            }
-        }
-        return false
-    }
-
-    private fun completeLayer(item: WorkItem.Finish, state: TraversalState) {
-        completeLayer(
-            identity = item.ownIdentity,
-            kind = item.ownKind,
-            bounds = item.bounds,
-            children = item.children,
-            sink = item.sink,
-            state = state,
-            alpha = item.alpha
-        )
-    }
-
-    private fun completeLayer(
-        identity: CapturedIdentity,
-        kind: CapturedLayerKind,
-        bounds: CapturedBounds,
-        children: MutableList<CapturedChild>,
-        sink: ResultSink,
-        state: TraversalState,
-        alpha: Double
-    ) {
-        @Suppress("UnsafeThirdPartyFunctionCall") // listOf wraps an already captured opacity value.
-        val layer = CapturedLayer(
-            identity = identity,
-            kind = kind,
-            bounds = bounds,
-            children = children,
-            modifiers = if (alpha == 1.0) emptyList() else listOf(CapturedModifier.Opacity(alpha))
-        )
-        state.layers.add(layer)
-        when (sink) {
-            is ResultSink.ChildOf -> sink.list.add(CapturedChild.Layer(identity))
-            ResultSink.Root -> state.rootLayer = layer
-        }
-    }
-
-    /**
-     * A Compose host's interior is Compose's own node tree, not further Android child Views - its
-     * content is fully described by whatever `composeHostCallback` returned in [visitItem], which
-     * is why that case never reaches here. Pushed in reverse child order so the stack (LIFO) pops
-     * them back out in effective painting order (custom order, then stable Z ordering).
-     */
-    @UiThread
-    private fun pushChildren(
-        viewGroup: ViewGroup,
-        parent: WorkItem.Visit,
-        screenDensity: Float,
-        ancestorClip: ClipBounds?,
-        appendTo: MutableList<CapturedChild>,
-        stack: ArrayDeque<WorkItem>
-    ) {
-        val drawingOrder = drawingOrderResolver.resolve(viewGroup)
-        val clipChildren = viewGroup.clipChildren
-        // A covered child rectangle does not imply its overflowing subtree is covered.
-        val occludedIndices = if (clipChildren) {
-            occlusionDetector.occludedChildIndices(drawingOrder)
-        } else {
-            emptySet()
-        }
-        val childClip = if (viewGroup.clipToPadding && viewGroup.hasNonZeroPadding()) {
-            ancestorClip.intersectWith(
-                viewBoundsResolver.resolveViewPaddedBounds(viewGroup, screenDensity).toCaptured()
-            )
-        } else {
-            ancestorClip
-        }
-        for (i in drawingOrder.children.indices.reversed()) {
-            val child = drawingOrder.children[i]
-            if (i in occludedIndices) {
-                // No identity is minted here: an occluded child's identity is never read, since it
-                // never reaches completeLayer() - see visitTouchPrivacy().
-                stack.push(WorkItem.VisitTouchPrivacy(child))
+        @Suppress("UnsafeThirdPartyFunctionCall") // Empty UI-owned deque.
+        val stack = ArrayDeque<WorkItem>()
+        @Suppress("UnsafeThirdPartyFunctionCall") // Unbounded UI-owned deque.
+        stack.addLast(WorkItem(windowRoot, -1, clipToBounds = true))
+        while (stack.size > 0) {
+            if (!context.shouldContinue()) return WindowCopyResult.Aborted
+            @Suppress("UnsafeThirdPartyFunctionCall") // Non-empty check above; synchronous ownership.
+            val item = stack.removeLast()
+            if (!tryVisit(item, state)) continue
+            // Separate surfaces remain uncertain even inside a subtree omitted by sibling culling.
+            state.isDrawingOrderReliable = state.isDrawingOrderReliable && item.view.sharesNativePaintOrder()
+            collectTouchOverrideArea(item.view, state.touchOverrideAreas, internalLogger)
+            if (item.touchOnly) {
+                (item.view as? ViewGroup)?.let { pushTouchChildren(it, stack) }
             } else {
-                val childIdentity = parent.identityFactory.view(
-                    parent.windowIdentity,
-                    viewIdentifierResolver.resolveViewId(child).toString()
-                )
-                stack.push(
-                    WorkItem.Visit(
-                        view = child,
-                        ownIdentity = childIdentity,
-                        ownKind = CapturedLayerKind.NATIVE_VIEW,
-                        windowIdentity = parent.windowIdentity,
-                        identityFactory = parent.identityFactory,
-                        ancestorClip = childClip,
-                        clipToBounds = clipChildren,
-                        sink = ResultSink.ChildOf(appendTo)
-                    )
-                )
+                copyView(item, stack, state, context)
             }
+        }
+        if (!context.shouldContinue()) return WindowCopyResult.Aborted
+        return if (state.views.isEmpty()) {
+            WindowCopyResult.Filtered
+        } else {
+            // Lists are owned by this copy and are never mutated after this handoff.
+            WindowCopyResult.Present(
+                CapturedNativeWindow(state.density, state.views, state.isDrawingOrderReliable),
+                state.touchOverrideAreas
+            )
         }
     }
 
     @UiThread
-    private fun tryVisit(view: View, expectedParent: ViewParent?, state: TraversalState): Boolean {
-        if (viewUtilsInternal.isNotVisible(view) ||
-            viewUtilsInternal.isSystemNoise(view) ||
-            viewUtilsInternal.isOnSecondaryDisplay(view)
+    private fun tryVisit(item: WorkItem, state: CopyState): Boolean {
+        val view = item.view
+        val isFiltered = viewUtilsInternal.isNotVisible(view) || viewUtilsInternal.isSystemNoise(view)
+        if (isFiltered || viewUtilsInternal.isOnSecondaryDisplay(view) ||
+            !(view.parent isSameInstanceAs item.expectedParent)
         ) {
             return false
         }
-        return state.tryVisit(view, expectedParent)
+        @Suppress("UnsafeThirdPartyFunctionCall") // UI-owned IdentityHashMap accepts this non-null key/value.
+        return state.visited.put(view, true) == null
     }
 
-    /**
-     * A visually occluded view contributes nothing to the final image, so it's never mapped or
-     * turned into a wireframe/layer. It can still receive touches, though - occlusion only
-     * guarantees nothing paints on screen, not that the content covering it actually consumes touch
-     * events, since a non-interactive covering view lets touches fall through to whatever is beneath
-     * it - so this still visits the whole subtree to collect touch-privacy tags.
-     */
+    // Queued work belongs to one parent instance, even when distinct parents compare equal.
+    private infix fun ViewParent?.isSameInstanceAs(other: ViewParent?): Boolean = this === other
+
     @UiThread
-    private fun visitTouchPrivacy(
-        item: WorkItem.VisitTouchPrivacy,
+    private fun copyView(
+        item: WorkItem,
         stack: ArrayDeque<WorkItem>,
-        state: TraversalState
+        state: CopyState,
+        context: CaptureGenerationContext
     ) {
         val view = item.view
-        if (!tryVisit(view, item.expectedParent, state)) return
-        collectTouchOverrideArea(view, state)
-        pushTouchPrivacyChildren(view, stack)
+        val identity = if (item.parentIndex < 0) {
+            state.windowIdentity
+        } else {
+            state.identityFactory.view(state.windowIdentity, viewIdentifierResolver.resolveViewId(view).toString())
+        }
+        // Read geometry once. Retain the original pixels for coverage and derive the same replay bounds.
+        val pixels = resolvePixelBounds(view, state.locationOnScreen)
+        val bounds = pixels?.toNormalizedBounds(state.density)
+            ?: viewBoundsResolver.resolveViewGlobalBounds(view, state.density).toCaptured()
+        val mappingContext = CapturedMappingContext(state.identityFactory, identity, state.density, bounds)
+        val hidden = view.getTag(R.id.datadog_hidden) == true
+        val interop = if (hidden) null else interopViewCallback?.tryMap(view, mappingContext)
+        if (!context.shouldContinue()) return
+        val viewData = interop?.let { CapturedViewData.Mapped(it) }
+            ?: (if (hidden) hiddenViewMapper else mapperRegistry.resolve(view)).capture(view, mappingContext)
+        val children = if (!hidden && interop == null && !viewData.isTerminal) view as? ViewGroup else null
+        val pixelPaddingClip = children?.let { pixels?.paddingClip(it) }
+        val paddingClip = resolvePaddingClip(children, pixelPaddingClip, state.density)
+        val pixelClip = pixels?.explicitClip(view)
+        val clip = resolveExplicitClip(view, pixels, pixelClip, state.density)
+        val geometryIsReliable = item.isGeometryReliable && view.hasReliableGeometry(item.parentIndex)
+        val index = state.views.size
+        state.views += CapturedNativeView(
+            identity,
+            item.parentIndex,
+            bounds,
+            view.alpha.toDouble(),
+            viewData,
+            item.clipToBounds,
+            clip,
+            paddingClip,
+            pixels,
+            pixelClip,
+            pixelPaddingClip,
+            geometryIsReliable
+        )
+        if (children != null) {
+            pushChildren(children, index, geometryIsReliable, stack, state)
+        } else {
+            pushHiddenTouchChildren(view, hidden, stack)
+        }
     }
 
-    /** Hidden and occluded descendants can still receive touches, without contributing visual layers. */
     @UiThread
-    private fun pushTouchPrivacyChildren(
+    private fun resolvePixelBounds(view: View, location: IntArray): GlobalBounds? {
+        if (viewBoundsResolver !== DefaultViewBoundsResolver) return null
+        @Suppress("UnsafeThirdPartyFunctionCall") // Capture-owned coordinate array always has two entries.
+        view.getLocationOnScreen(location)
+        return GlobalBounds(location[0].toLong(), location[1].toLong(), view.width.toLong(), view.height.toLong())
+    }
+
+    @UiThread
+    private fun resolvePaddingClip(
+        children: ViewGroup?,
+        pixels: GlobalBounds?,
+        density: Float
+    ): CapturedBounds? {
+        if (pixels != null) return pixels.toNormalizedBounds(density)
+        return if (children != null && children.clipToPadding && children.hasNonZeroPadding()) {
+            viewBoundsResolver.resolveViewPaddedBounds(children, density).toCaptured()
+        } else {
+            null
+        }
+    }
+
+    @UiThread
+    private fun resolveExplicitClip(
         view: View,
-        stack: ArrayDeque<WorkItem>
-    ) {
-        // Native WebView implementation children remain outside the supported traversal boundary.
-        if (view !is ViewGroup || view is WebView) return
-        val children = drawingOrderResolver.resolve(view).children
-        for (i in children.indices.reversed()) {
-            val child = children[i]
-            stack.push(WorkItem.VisitTouchPrivacy(child))
-        }
-    }
+        pixels: GlobalBounds?,
+        clip: GlobalBounds?,
+        density: Float
+    ): CapturedBounds? = if (pixels != null) clip?.toNormalizedClip(density) else view.clipBoundsOnScreen(density)
 
-    private fun addWireframes(
-        result: CapturedViewMapperResult,
-        ancestorClip: ClipBounds?,
-        children: MutableList<CapturedChild>,
-        state: TraversalState
-    ) {
-        if (result !is CapturedViewMapperResult.Wireframes) return
-        for (wireframe in result.wireframes) {
-            val clipped = wireframe.withClip(wireframe.clip.intersectWith(ancestorClip?.clip(wireframe.bounds)))
-            state.wireframes.add(clipped)
-            children.add(CapturedChild.Wireframe(clipped.identity))
-        }
-    }
-
-    // MotionEvents report raw screen pixels, so the override area must come from the view's actual
-    // on-screen geometry rather than the density-scaled CapturedBounds used for wireframes.
     @UiThread
-    private fun collectTouchOverrideArea(view: View, state: TraversalState) {
-        collectTouchOverrideArea(view, state.touchOverrideAreas, internalLogger)
+    private fun pushChildren(
+        viewGroup: ViewGroup,
+        parentIndex: Int,
+        geometryIsReliable: Boolean,
+        stack: ArrayDeque<WorkItem>,
+        state: CopyState
+    ) {
+        val drawingOrder = drawingOrderResolver.resolve(viewGroup)
+        state.isDrawingOrderReliable = state.isDrawingOrderReliable && drawingOrder.isReliable
+        val clipChildren = viewGroup.clipChildren
+        val occluded = if (clipChildren) occlusionDetector.occludedChildIndices(drawingOrder) else emptySet()
+        for (i in drawingOrder.children.indices.reversed()) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // Unbounded UI-owned deque.
+            stack.addLast(
+                WorkItem(drawingOrder.children[i], parentIndex, clipChildren, i in occluded, geometryIsReliable)
+            )
+        }
     }
 
-    private sealed interface WorkItem {
-        data class Visit(
-            val view: View,
-            val ownIdentity: CapturedIdentity,
-            val ownKind: CapturedLayerKind,
-            val windowIdentity: CapturedIdentity,
-            val identityFactory: CapturedIdentityFactory,
-            val ancestorClip: ClipBounds?,
-            val clipToBounds: Boolean,
-            val sink: ResultSink,
-            val expectedParent: ViewParent? = view.parent
-        ) : WorkItem
-
-        /**
-         * A view inside an occluded subtree - deliberately carries no identity, bounds, or sink:
-         * [visitTouchPrivacy] never maps it or builds a layer, only walks it for touch-privacy tags.
-         */
-        data class VisitTouchPrivacy(
-            val view: View,
-            val expectedParent: ViewParent? = view.parent
-        ) : WorkItem
-
-        class Finish(
-            val ownIdentity: CapturedIdentity,
-            val ownKind: CapturedLayerKind,
-            val bounds: CapturedBounds,
-            val children: MutableList<CapturedChild>,
-            val sink: ResultSink,
-            val alpha: Double
-        ) : WorkItem
+    // Occlusion affects drawing, not touch delivery: keep collecting tags throughout covered subtrees.
+    @UiThread
+    private fun pushTouchChildren(viewGroup: ViewGroup, stack: ArrayDeque<WorkItem>) {
+        if (viewGroup is WebView) return
+        val children = drawingOrderResolver.resolve(viewGroup).children
+        for (i in children.indices.reversed()) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // Unbounded UI-owned deque.
+            stack.addLast(WorkItem(children[i], -1, false, touchOnly = true))
+        }
     }
 
-    private sealed interface ResultSink {
-        class ChildOf(val list: MutableList<CapturedChild>) : ResultSink
-        object Root : ResultSink
+    /** Visual hiding still allows descendant touch overrides; WebView internals remain opaque. */
+    @UiThread
+    private fun pushHiddenTouchChildren(view: View, hidden: Boolean, stack: ArrayDeque<WorkItem>) {
+        if (hidden && view is ViewGroup) pushTouchChildren(view, stack)
     }
 
-    private class TraversalState(val screenDensity: Float) {
-        var rootLayer: CapturedLayer? = null
-        val layers = mutableListOf<CapturedLayer>()
-        val wireframes = mutableListOf<CapturedWireframe>()
-
-        // Owned by this walk. Cancellation drops it without touching another capture.
+    private class CopyState(
+        val density: Float,
+        val windowIdentity: CapturedIdentity,
+        val identityFactory: CapturedIdentityFactory
+    ) {
+        var isDrawingOrderReliable = true
+        val locationOnScreen = IntArray(2)
+        val views = mutableListOf<CapturedNativeView>()
         val touchOverrideAreas = mutableMapOf<Rect, TouchPrivacy>()
-        private val visitedViews = IdentityHashMap<View, Boolean>()
-
-        // Custom mappers can change the hierarchy. Skip stale work and never define a view twice,
-        // including when it moves after its first visit or was previously visited for touch tags only.
-        @UiThread
-        @Suppress("UnsafeThirdPartyFunctionCall") // The identity map is owned by this main-thread walk.
-        fun tryVisit(view: View, expectedParent: ViewParent?): Boolean =
-            view.parent === expectedParent && visitedViews.put(view, true) == null
+        val visited = IdentityHashMap<View, Boolean>()
     }
-}
 
-@UiThread
-private fun CapturedInteropViewCallback?.mapVisibleHost(
-    view: View,
-    context: CapturedMappingContext,
-    isHidden: Boolean
-): CapturedViewMapperResult? =
-    this?.takeIf { !isHidden && isComposeHost(view) }?.map(view, context)
-
-private const val COMPOSE_VIEW_CLASS_NAME = "androidx.compose.ui.platform.ComposeView"
-
-private fun <T> newWorkStack(): ArrayDeque<T> {
-    @Suppress("UnsafeThirdPartyFunctionCall") // no-arg constructor, cannot fail
-    return ArrayDeque()
-}
-
-@Suppress("UnsafeThirdPartyFunctionCall") // an unbounded ArrayDeque's addLast never throws
-private fun <T> ArrayDeque<T>.push(item: T) = addLast(item)
-
-@Suppress("UnsafeThirdPartyFunctionCall") // only ever called guarded by a prior isNotEmpty() check
-private fun <T> ArrayDeque<T>.pop(): T = removeLast()
-
-/**
- * Detected by class name only, deliberately with no compile-time `androidx.compose` dependency from
- * this module. `ComposeView` is the public entry point apps add to a native layout; the internal
- * `AndroidComposeView` it creates as its single child is Compose-owned and never itself an
- * addressable child in the surrounding native hierarchy.
- */
-private fun isComposeHost(view: View): Boolean = view.javaClass.name == COMPOSE_VIEW_CLASS_NAME
-
-private fun CapturedWireframe.withClip(clip: CapturedClip?): CapturedWireframe = when (this) {
-    is CapturedWireframe.Shape -> copy(clip = clip)
-    is CapturedWireframe.Text -> copy(clip = clip)
-    is CapturedWireframe.WebView -> copy(clip = clip)
-    is CapturedWireframe.Pixel -> copy(clip = clip)
-    is CapturedWireframe.PrivacyPlaceholder -> copy(clip = clip)
+    private data class WorkItem(
+        val view: View,
+        val parentIndex: Int,
+        val clipToBounds: Boolean,
+        val touchOnly: Boolean = false,
+        val isGeometryReliable: Boolean = true,
+        val expectedParent: ViewParent? = view.parent
+    )
 }
 
 /** Explicit view clips apply to the view and its whole subtree, regardless of clipChildren. */
 @UiThread
-private fun View.applyExplicitClip(inheritedClip: ClipBounds?, screenDensity: Float): ClipBounds? {
-    val clip = clipBounds ?: return inheritedClip
+private fun View.clipBoundsOnScreen(screenDensity: Float): CapturedBounds? {
+    val clip = clipBounds ?: return null
     val location = IntArray(2)
     @Suppress("UnsafeThirdPartyFunctionCall") // The coordinate array always has two entries.
     getLocationOnScreen(location)
@@ -443,57 +266,53 @@ private fun View.applyExplicitClip(inheritedClip: ClipBounds?, screenDensity: Fl
     val top = ((location[1].toLong() + clip.top) * inverseDensity).toLong()
     val right = ((location[0].toLong() + clip.right) * inverseDensity).toLong()
     val bottom = ((location[1].toLong() + clip.bottom) * inverseDensity).toLong()
-    return inheritedClip.intersectWith(CapturedBounds(left, top, right - left, bottom - top))
+    return CapturedBounds(left, top, right - left, bottom - top)
 }
 
 // Android applies clipToPadding only when at least one padding edge is non-zero.
 private fun ViewGroup.hasNonZeroPadding(): Boolean =
     paddingLeft != 0 || paddingTop != 0 || paddingRight != 0 || paddingBottom != 0
 
-/**
- * Immutable intersection of all inherited rectangular clipping constraints. Four edges replace
- * depth-sized ancestor lists, so adding a constraint and clipping a wireframe are both O(1).
- * Right/bottom may be at or before left/top: keeping those inverted edges preserves empty clips
- * through further intersections. Null in a work item means unbounded, never empty.
- */
-private class ClipBounds private constructor(
-    private val left: Long,
-    private val top: Long,
-    private val right: Long,
-    private val bottom: Long
-) {
-    constructor(bounds: CapturedBounds) : this(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height)
+// The window-root outline is a common clip for every view in this window. Other outline clips,
+// transforms and animations are uncertain coverage and disable culling for their descendants.
+private fun View.hasStableGeometry(): Boolean =
+    rotation == 0f && rotationX == 0f && rotationY == 0f && scaleX == 1f && scaleY == 1f &&
+        translationX % 1f == 0f && translationY % 1f == 0f && animation == null
 
-    fun intersect(bounds: CapturedBounds): ClipBounds {
-        val left = max(this.left, bounds.x)
-        val top = max(this.top, bounds.y)
-        val right = min(this.right, bounds.x + bounds.width)
-        val bottom = min(this.bottom, bounds.y + bounds.height)
-        val hasSameHorizontalBounds = left == this.left && right == this.right
-        val hasSameVerticalBounds = top == this.top && bottom == this.bottom
-        return if (hasSameHorizontalBounds && hasSameVerticalBounds) {
-            this
-        } else {
-            ClipBounds(left, top, right, bottom)
-        }
-    }
-
-    fun clip(bounds: CapturedBounds): CapturedClip? {
-        val clipTop = top - bounds.y
-        val clipBottom = bounds.y + bounds.height - bottom
-        val clipLeft = left - bounds.x
-        val clipRight = bounds.x + bounds.width - right
-        val hasHorizontalClip = clipLeft > 0 || clipRight > 0
-        val hasVerticalClip = clipTop > 0 || clipBottom > 0
-        if (!hasHorizontalClip && !hasVerticalClip) return null
-        return CapturedClip(
-            top = clipTop.takeIf { it > 0 },
-            bottom = clipBottom.takeIf { it > 0 },
-            left = clipLeft.takeIf { it > 0 },
-            right = clipRight.takeIf { it > 0 }
-        )
-    }
+private fun GlobalBounds.toNormalizedBounds(screenDensity: Float): CapturedBounds {
+    val inverseDensity = if (screenDensity == 0f) 1f else 1f / screenDensity
+    return CapturedBounds(
+        (x * inverseDensity).toLong(),
+        (y * inverseDensity).toLong(),
+        (width * inverseDensity).toLong(),
+        (height * inverseDensity).toLong()
+    )
 }
 
-private fun ClipBounds?.intersectWith(bounds: CapturedBounds): ClipBounds =
-    this?.intersect(bounds) ?: ClipBounds(bounds)
+private fun GlobalBounds.toNormalizedClip(screenDensity: Float): CapturedBounds {
+    val inverseDensity = if (screenDensity == 0f) 1f else 1f / screenDensity
+    val left = (x * inverseDensity).toLong()
+    val top = (y * inverseDensity).toLong()
+    val right = ((x + width) * inverseDensity).toLong()
+    val bottom = ((y + height) * inverseDensity).toLong()
+    return CapturedBounds(left, top, right - left, bottom - top)
+}
+
+private fun GlobalBounds.paddedBounds(view: View): GlobalBounds = GlobalBounds(
+    x + view.paddingLeft,
+    y + view.paddingTop,
+    width - view.paddingLeft - view.paddingRight,
+    height - view.paddingTop - view.paddingBottom
+)
+
+private fun GlobalBounds.explicitClip(view: View): GlobalBounds? = view.clipBounds?.let {
+    GlobalBounds(x + it.left, y + it.top, it.right.toLong() - it.left, it.bottom.toLong() - it.top)
+}
+
+private fun View.sharesNativePaintOrder(): Boolean = this !is SurfaceView && this !is TextureView
+
+private fun View.hasReliableGeometry(parentIndex: Int): Boolean =
+    (parentIndex < 0 || !clipToOutline) && hasStableGeometry()
+
+private fun GlobalBounds.paddingClip(view: ViewGroup): GlobalBounds? =
+    if (view.clipToPadding && view.hasNonZeroPadding()) paddedBounds(view) else null

@@ -25,6 +25,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.lang.ref.Reference
 import java.util.concurrent.ExecutorService
 
 @Extensions(
@@ -71,11 +72,13 @@ internal class SnapshotOrchestrationIntegrationTest {
             expiryScheduler = expiryScheduler,
             captureDelayNs = 0
         )
-        val listener = CompositionOnDrawListener(mock<View>()) { orchestrator.requestCapture() }
+        val mockView: View = mock()
+        val listener = CompositionOnDrawListener(mockView) { orchestrator.requestCapture() }
 
         // When
         orchestrator.start()
         listener.onDraw()
+        Reference.reachabilityFence(mockView)
         scheduler.runNext()
         val completionTask = argumentCaptor<Runnable>()
         verify(executor).execute(completionTask.capture())

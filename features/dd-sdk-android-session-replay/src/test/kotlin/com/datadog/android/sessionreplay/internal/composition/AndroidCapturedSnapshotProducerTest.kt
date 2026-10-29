@@ -113,6 +113,13 @@ internal class AndroidCapturedSnapshotProducerTest {
     )
 
     /** These trees are tiny and the deadline is generous, so every capture must complete in one slice. */
+    private fun CapturedSnapshotInput?.doneValue(): CapturedFullSnapshot? =
+        when (val input = this) {
+            null -> null
+            is CapturedFullSnapshot -> input
+            is CapturedNativeSnapshot -> CapturedNativeSnapshotBuilder().build(input, fakeContext)
+        }
+
     private fun producer(
         windows: List<View>,
         scope: CapturedRumViewScope?,
@@ -145,7 +152,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedProducer.capture(fakeContext)
+        val snapshot = testedProducer.capture(fakeContext).doneValue()
 
         // Then
         assertThat(snapshot).isNull()
@@ -166,7 +173,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedProducer.capture(fakeContext)
+        val snapshot = testedProducer.capture(fakeContext).doneValue()
 
         // Then
         assertThat(snapshot).isNull()
@@ -187,7 +194,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedProducer.capture(fakeContext)
+        val snapshot = testedProducer.capture(fakeContext).doneValue()
 
         // Then
         assertThat(snapshot?.timestamp).isEqualTo(fakeTimestamp + fakeOffset)
@@ -213,7 +220,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedProducer.capture(fakeContext)
+        val snapshot = testedProducer.capture(fakeContext).doneValue()
 
         // Then
         val root = snapshot!!.root!!
@@ -256,7 +263,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         )
 
         // When
-        val snapshot = testedProducer.capture(fakeContext)
+        val snapshot = testedProducer.capture(fakeContext).doneValue()
 
         // Then
         val validation = DefaultCapturedTreeValidator().validate(snapshot!!)

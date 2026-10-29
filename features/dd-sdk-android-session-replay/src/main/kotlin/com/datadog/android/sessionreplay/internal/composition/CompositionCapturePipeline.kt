@@ -8,16 +8,16 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
+import java.util.concurrent.ExecutorService
 
 /**
- * Lifecycle entry point for the composition capture pipeline. Platform callback wiring and
- * traversal are added by later workstreams; keeping this recorder and its orchestration isolated
- * prevents legacy state from crossing pipelines.
+ * Owns the composition capture lifecycle and its construction and completion workers.
  */
 internal class CompositionCapturePipeline(
     private val orchestrator: SnapshotCaptureOrchestrator,
     private val lifecycle: CompositionCaptureLifecycle,
     private val completionQueue: SnapshotCompletionQueue,
+    private val constructionExecutor: ExecutorService,
     private val internalLogger: InternalLogger
 ) : Recorder {
     override fun registerCallbacks() {
@@ -30,6 +30,7 @@ internal class CompositionCapturePipeline(
 
     override fun stopProcessingRecords() {
         orchestrator.shutdown()
+        constructionExecutor.shutdownNow()
         completionQueue.stop()
     }
 

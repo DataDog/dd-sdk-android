@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.composition.mapper
 
 import android.view.View
+import com.datadog.android.sessionreplay.internal.composition.CapturedBounds
 import com.datadog.android.sessionreplay.internal.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.internal.composition.toCaptured
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
@@ -23,17 +24,35 @@ internal class CapturedViewGroupFallbackMapper(
     private val backgroundShapeStyleResolver: CapturedBackgroundShapeStyleResolver
 ) : CapturedViewMapper<View> {
 
-    override fun map(view: View, mappingContext: CapturedMappingContext): CapturedViewMapperResult {
-        val style = backgroundShapeStyleResolver.resolve(view)
-            ?: return CapturedViewMapperResult.None
-        val bounds = viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity)
-        val identity = mappingContext.identityFactory.shapeWireframe(mappingContext.ownerIdentity)
-        return CapturedViewMapperResult.Wireframes(
-            CapturedWireframe.Shape(
-                identity = identity,
-                bounds = bounds.toCaptured(),
-                style = style
-            )
+    override fun map(view: View, mappingContext: CapturedMappingContext): CapturedViewMapperResult =
+        capture(view, mappingContext).map(mappingContext)
+
+    override fun capture(view: View, mappingContext: CapturedMappingContext): CapturedViewData {
+        val background = backgroundShapeStyleResolver.capture(view)
+            ?: return CapturedViewData.Mapped(CapturedViewMapperResult.None)
+        return CapturedBackgroundViewData(
+            (
+                mappingContext.bounds
+                    ?: viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity).toCaptured()
+                ),
+            background
         )
     }
+}
+
+private data class CapturedBackgroundViewData(
+    val bounds: CapturedBounds,
+    val background: CapturedBackgroundColor
+) : CapturedViewData {
+    override val isOcclusionBounded: Boolean get() = true
+    override val hasOpaqueBackground: Boolean get() = background.isOpaque
+
+    override fun map(mappingContext: CapturedMappingContext): CapturedViewMapperResult =
+        CapturedViewMapperResult.Wireframes(
+            CapturedWireframe.Shape(
+                identity = mappingContext.identityFactory.shapeWireframe(mappingContext.ownerIdentity),
+                bounds = bounds,
+                style = background.resolve()
+            )
+        )
 }

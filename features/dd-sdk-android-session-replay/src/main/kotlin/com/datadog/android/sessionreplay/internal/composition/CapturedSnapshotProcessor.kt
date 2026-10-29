@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition
 
 internal data class SnapshotProcessingRequest(
     val generation: CaptureGenerationContext,
-    val snapshot: CapturedFullSnapshot
+    val snapshot: CapturedSnapshotInput
 )
 
 internal sealed interface SnapshotProcessingResult {
@@ -30,7 +30,8 @@ internal fun interface SnapshotProcessingCallback {
 
 /**
  * Owns every asynchronous enrichment operation for one capture generation. Implementations must
- * report one terminal result. Cancelling the returned work cancels the whole generation scope.
+ * report one terminal result. Cancelling unfinished work cancels the generation scope; after the
+ * callback hands off a result, cancellation must not invalidate that downstream result.
  */
 internal fun interface CapturedSnapshotProcessor {
     fun process(

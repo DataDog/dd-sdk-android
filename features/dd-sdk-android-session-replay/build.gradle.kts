@@ -72,6 +72,9 @@ dependencies {
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
+    // Exercise the optional Compose boundary with the real dependency used by the Compose integration.
+    testImplementation(platform(libs.androidXComposeBom))
+    testImplementation(libs.androidXComposeUi)
     unmock(libs.robolectric)
 }
 
