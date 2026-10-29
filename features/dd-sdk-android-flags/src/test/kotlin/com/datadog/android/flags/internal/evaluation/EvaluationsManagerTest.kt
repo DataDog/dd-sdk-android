@@ -679,7 +679,7 @@ internal class EvaluationsManagerTest {
                 isA<Diagnostics>()
             )
         )
-            .thenReturn(PrecomputedAssignmentsResponse(EMPTY_FLAGS_RESPONSE_JSON, null))
+            .thenReturn(EMPTY_FLAGS_RESPONSE)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val testedManager = createManager(
             initializationTimeoutMs = 2_500L,
@@ -831,7 +831,7 @@ internal class EvaluationsManagerTest {
                 isA<Diagnostics>()
             )
         )
-            .thenReturn(PrecomputedAssignmentsResponse(EMPTY_FLAGS_RESPONSE_JSON, null))
+            .thenReturn(EMPTY_FLAGS_RESPONSE)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val stateManager = FlagsStateManager(
             DDCoreStateHolder.create(
@@ -998,7 +998,7 @@ internal class EvaluationsManagerTest {
                 isA<Diagnostics>()
             )
         )
-            .thenReturn(PrecomputedAssignmentsResponse(EMPTY_FLAGS_RESPONSE_JSON, null))
+            .thenReturn(EMPTY_FLAGS_RESPONSE)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val testedManager = createManager(
             initializationTimeoutMs = 2_500L,
@@ -1047,7 +1047,7 @@ internal class EvaluationsManagerTest {
                 isA<Diagnostics>()
             )
         )
-            .thenReturn(PrecomputedAssignmentsResponse(EMPTY_FLAGS_RESPONSE_JSON, null))
+            .thenReturn(EMPTY_FLAGS_RESPONSE)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val testedManager = createManager(
             initializationTimeoutMs = 2_500L,
@@ -1080,7 +1080,7 @@ internal class EvaluationsManagerTest {
                 isA<Diagnostics>()
             )
         )
-            .thenReturn(PrecomputedAssignmentsResponse(EMPTY_FLAGS_RESPONSE_JSON, null))
+            .thenReturn(EMPTY_FLAGS_RESPONSE)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenAnswer {
             checkNotNull(timeoutAction).invoke()
             PrecomputedAssignments(emptyMap())
@@ -1115,7 +1115,7 @@ internal class EvaluationsManagerTest {
                 isA<Diagnostics>()
             )
         )
-            .thenReturn(PrecomputedAssignmentsResponse(EMPTY_FLAGS_RESPONSE_JSON, null))
+            .thenReturn(EMPTY_FLAGS_RESPONSE)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val testedManager = createManager(
             initializationTimeoutMs = 2_500L,
@@ -1146,7 +1146,7 @@ internal class EvaluationsManagerTest {
                 isA<Diagnostics>()
             )
         )
-            .thenReturn(PrecomputedAssignmentsResponse(EMPTY_FLAGS_RESPONSE_JSON, null))
+            .thenReturn(EMPTY_FLAGS_RESPONSE)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val testedManager = createManager(
             initializationTimeoutMs = null,
@@ -1207,7 +1207,7 @@ internal class EvaluationsManagerTest {
                 isA<Diagnostics>()
             )
         )
-            .thenReturn(PrecomputedAssignmentsResponse(EMPTY_FLAGS_RESPONSE_JSON, null))
+            .thenReturn(EMPTY_FLAGS_RESPONSE)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val stateManager = FlagsStateManager(
             DDCoreStateHolder.create(
@@ -1724,7 +1724,7 @@ internal class EvaluationsManagerTest {
                 isA<Diagnostics>()
             )
         )
-            .thenReturn(PrecomputedAssignmentsResponse(EMPTY_FLAGS_RESPONSE_JSON, null))
+            .thenReturn(EMPTY_FLAGS_RESPONSE)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
 
         // When
@@ -1775,7 +1775,7 @@ internal class EvaluationsManagerTest {
                 isA<Diagnostics>()
             )
         )
-            .thenReturn(PrecomputedAssignmentsResponse(EMPTY_FLAGS_RESPONSE_JSON, null), null)
+            .thenReturn(EMPTY_FLAGS_RESPONSE, null)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val testedManager = EvaluationsManager(
             sdkCore = mockSdkCore,
@@ -1853,5 +1853,6 @@ internal class EvaluationsManagerTest {
             }}}
         """.trimIndent()
         private const val EMPTY_FLAGS_RESPONSE_JSON = "{\"data\": {\"attributes\": {\"flags\": {}}}}"
+        private val EMPTY_FLAGS_RESPONSE = PrecomputedAssignmentsResponse(EMPTY_FLAGS_RESPONSE_JSON, null)
     }
 }
