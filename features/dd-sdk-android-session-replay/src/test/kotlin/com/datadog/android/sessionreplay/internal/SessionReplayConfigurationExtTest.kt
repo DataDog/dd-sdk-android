@@ -13,6 +13,7 @@ import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposer
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -64,6 +66,23 @@ internal class SessionReplayConfigurationExtTest {
         assertThat(result).isNotSameAs(testedConfiguration)
         assertThat(testedConfiguration.sampleRate).isEqualTo(100f)
         assertThat(testedConfiguration.adaptiveCaptureSchedulingEnabled).isEqualTo(fakeSchedulingEnabled)
+    }
+
+    @Test
+    fun `M preserve composition decomposer W applyRemoteConfiguration()`(
+        @Mock mockDecomposer: CompositionHostDecomposer
+    ) {
+        // Given
+        testedConfiguration.compositionHostDecomposer = mockDecomposer
+        val fakeRc = RemoteConfiguration(sessionReplay = RemoteConfiguration.SessionReplay())
+
+        // When
+        val result = testedConfiguration.applyRemoteConfiguration(fakeRc)
+
+        // Then
+        assertThat(result).isNotSameAs(testedConfiguration)
+        assertThat(result.compositionHostDecomposer).isSameAs(mockDecomposer)
+        assertThat(testedConfiguration.compositionHostDecomposer).isSameAs(mockDecomposer)
     }
 
     // region null RC
