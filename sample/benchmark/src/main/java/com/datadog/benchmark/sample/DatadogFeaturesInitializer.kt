@@ -12,7 +12,6 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.compose.enableComposeActionTracking
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
-import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.Profiling
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.rum.ExperimentalRumApi
@@ -89,7 +88,6 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         return config.isInstrumentedRun() && config.isProfilingScenario()
     }
 
-    @OptIn(ExperimentalProfilingApi::class)
     private fun enableProfiling() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             val profilingConfig = ProfilingConfiguration.Builder()

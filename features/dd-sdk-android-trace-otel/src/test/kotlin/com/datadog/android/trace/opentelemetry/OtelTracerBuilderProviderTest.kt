@@ -11,9 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
-import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.api.feature.SdkFeatureMock
-import com.datadog.android.api.feature.getContextFuture
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.forceSamplingDecision
@@ -80,7 +78,7 @@ internal class OtelTracerBuilderProviderTest {
     lateinit var mockTracingFeature: StubTracingFeature
 
     @Mock
-    lateinit var mockSdkCore: FeatureSdkCore
+    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -94,33 +92,12 @@ internal class OtelTracerBuilderProviderTest {
     @Mock
     lateinit var mockTraceWriter: DatadogSpanWriter
 
-    lateinit var fakeRumContext: Map<String, String>
-
-    @StringForgery(type = StringForgeryType.HEXADECIMAL)
-    lateinit var fakeApplicationId: String
-
-    @StringForgery(type = StringForgeryType.HEXADECIMAL)
-    lateinit var fakeSessionId: String
-
-    @StringForgery(type = StringForgeryType.HEXADECIMAL)
-    lateinit var fakeViewId: String
-
-    @StringForgery(type = StringForgeryType.HEXADECIMAL)
-    lateinit var fakeActionId: String
-
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeServiceName = forge.anAlphabeticalString()
         whenever(
             mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         ) doReturn mockTracingFeatureScope
-        fakeRumContext = mapOf(
-            OtelTracerProvider.RUM_APPLICATION_ID_KEY to fakeApplicationId,
-            OtelTracerProvider.RUM_SESSION_ID_KEY to fakeSessionId,
-            OtelTracerProvider.RUM_VIEW_ID_KEY to fakeViewId,
-            OtelTracerProvider.RUM_ACTION_ID_KEY to fakeActionId
-        )
-        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn fakeRumContext
         whenever(mockTracingFeatureScope.unwrap<Feature>()) doReturn mockTracingFeature
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
         whenever(mockSdkCore.service) doReturn fakeServiceName
@@ -466,8 +443,8 @@ internal class OtelTracerBuilderProviderTest {
 
         val mockContextFuture = completedFutureMock(fakeInitialDatadogContext)
 
-        val mockRumFeatureScope = SdkFeatureMock.create()
-        whenever(mockRumFeatureScope.getContextFuture(setOf(Feature.RUM_FEATURE_NAME)))
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getDatadogContextFuture(setOf(Feature.RUM_FEATURE_NAME)))
             .thenReturn(mockContextFuture)
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME))
             .thenReturn(mockRumFeatureScope)

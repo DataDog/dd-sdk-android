@@ -15,15 +15,23 @@ import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.ExperimentationOptOutMode
+import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
+import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedAssignments
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Fetch
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Sdk
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Trigger
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
+import com.datadog.android.flags.internal.repository.FlagsInstallation
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
@@ -31,7 +39,9 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.utils.DDCoreStateHolder
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -43,6 +53,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -60,19 +72,157 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.UUID
+import java.util.concurrent.Callable
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class EvaluationsManagerTest {
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M deliver completion off caller W updateEvaluationsForContext() {caller drains reconciling}`(
+        mode: ExperimentationOptOutMode
+    ) {
+        // Given
+        val fetchExecutor = Executors.newSingleThreadExecutor()
+        val callbackExecutor = Executors.newSingleThreadExecutor()
+        val readerEntered = CountDownLatch(1)
+        val releaseReader = CountDownLatch(1)
+        val fetchFinished = CountDownLatch(1)
+        val completed = CountDownLatch(1)
+        val callbackThread = AtomicReference<Thread>()
+        val caller = Thread.currentThread()
+        val calls = AtomicInteger()
+        val callback = object : EvaluationContextCallback {
+            override fun onSuccess() { callbackThread.set(Thread.currentThread()); completed.countDown() }
+            override fun onFailure(
+                error: Throwable
+            ) { callbackThread.set(Thread.currentThread()); completed.countDown() }
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), any(), any())).thenAnswer {
+            readerEntered.countDown()
+            check(releaseReader.await(5, TimeUnit.SECONDS))
+            "response"
+        }
+        whenever(mockPrecomputeMapper.map(eq("response"), anyOrNull()))
+            .thenReturn(PrecomputedAssignments(emptyMap(), null))
+        whenever(mockFlagsStateManager.updateState(any())).thenAnswer {
+            if (it.getArgument<FlagsClientState>(0) == FlagsClientState.Reconciling && calls.incrementAndGet() == 2) {
+                releaseReader.countDown()
+                fetchExecutor.submit { fetchFinished.countDown() }
+                check(fetchFinished.await(5, TimeUnit.SECONDS))
+            }
+            Unit
+        }
+        val manager = EvaluationsManager(
+            mockSdkCore, fetchExecutor, mockInternalLogger, mockFlagsRepository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
+            null, { _, _ -> {} }, ExperimentationOptOut(mode), callbackExecutor
+        )
+
+        try {
+            // When
+            manager.updateEvaluationsForContext(EvaluationContext("first-subject"), callback)
+            assertThat(readerEntered.await(5, TimeUnit.SECONDS)).isTrue()
+            manager.updateEvaluationsForContext(EvaluationContext("second-subject"))
+
+            // Then
+            assertThat(completed.await(5, TimeUnit.SECONDS)).isTrue()
+            assertThat(callbackThread.get()).isNotSameAs(caller)
+        } finally {
+            releaseReader.countDown()
+            fetchExecutor.shutdownNow()
+            callbackExecutor.shutdownNow()
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M deliver timeout while fetch is blocked W updateEvaluationsForContext()`(mode: ExperimentationOptOutMode) {
+        // Given
+        val fetchExecutor = Executors.newSingleThreadExecutor()
+        val callbackExecutor = Executors.newSingleThreadExecutor()
+        val readerEntered = CountDownLatch(1)
+        val releaseReader = CountDownLatch(1)
+        val completed = CountDownLatch(1)
+        val failure = AtomicReference<Throwable>()
+        var timeout: (() -> Unit)? = null
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), any(), any())).thenAnswer {
+            readerEntered.countDown()
+            check(releaseReader.await(5, TimeUnit.SECONDS))
+            null
+        }
+        val manager = EvaluationsManager(
+            mockSdkCore, fetchExecutor, mockInternalLogger, mockFlagsRepository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
+            100, { _, action -> timeout = action; {} }, ExperimentationOptOut(mode), callbackExecutor
+        )
+        val callback = object : EvaluationContextCallback {
+            override fun onSuccess() = Unit
+            override fun onFailure(error: Throwable) { failure.set(error); completed.countDown() }
+        }
+
+        try {
+            // When
+            manager.updateEvaluationsForContext(EvaluationContext("subject"), callback)
+            assertThat(readerEntered.await(5, TimeUnit.SECONDS)).isTrue()
+            checkNotNull(timeout).invoke()
+
+            // Then
+            assertThat(completed.await(1, TimeUnit.SECONDS)).isTrue()
+            assertThat(failure.get()).isInstanceOf(FlagsInitializationTimeoutException::class.java)
+            assertThat(releaseReader.count).isEqualTo(1)
+        } finally {
+            releaseReader.countDown()
+            fetchExecutor.shutdownNow()
+            callbackExecutor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `M fail with FlagsInvalidContextException W updateEvaluationsForContext() { invalid opt-out timestamp }`() {
+        // Given
+        val callback = mock<EvaluationContextCallback>()
+        val context = EvaluationContext(fakeTargetingKey, mapOf(ExperimentationOptOut.ATTRIBUTE to "junk"))
+        val manager = EvaluationsManager(
+            sdkCore = mockSdkCore,
+            executorService = mockExecutorService,
+            internalLogger = mockInternalLogger,
+            flagsRepository = mockFlagsRepository,
+            assignmentsReader = mockAssignmentsDownloader,
+            precomputeMapper = mockPrecomputeMapper,
+            flagStateManager = mockFlagsStateManager,
+            initializationTimeoutMs = null,
+            initializationTimeoutScheduler = { _, _ -> {} },
+            experimentationOptOut = ExperimentationOptOut(ExperimentationOptOutMode.IMMEDIATE)
+        )
+
+        // When
+        manager.updateEvaluationsForContext(context, callback)
+
+        // Then
+        argumentCaptor<Throwable> {
+            verify(callback).onFailure(capture())
+            assertThat(firstValue)
+                .isInstanceOf(FlagsInvalidContextException::class.java)
+                .hasMessage(ExperimentationOptOut.INVALID_CONTEXT_MESSAGE)
+            verify(mockFlagsStateManager).updateState(FlagsClientState.Error(firstValue))
+        }
+        verifyNoInteractions(mockAssignmentsDownloader)
+    }
 
     @Mock
     lateinit var mockExecutorService: ExecutorService
@@ -123,6 +273,7 @@ internal class EvaluationsManagerTest {
 
     @BeforeEach
     fun setUp() {
+        whenever(mockSdkCore.timeProvider).thenReturn(mock())
         evaluationsManager = EvaluationsManager(
             sdkCore = mockSdkCore,
             executorService = mockExecutorService,
@@ -132,7 +283,8 @@ internal class EvaluationsManagerTest {
             precomputeMapper = mockPrecomputeMapper,
             flagStateManager = mockFlagsStateManager,
             initializationTimeoutMs = null,
-            initializationTimeoutScheduler = { _, _ -> {} }
+            initializationTimeoutScheduler = { _, _ -> {} },
+            experimentationOptOut = ExperimentationOptOut()
         )
 
         whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)) doReturn mockFlagsFeatureScope
@@ -141,15 +293,113 @@ internal class EvaluationsManagerTest {
             fakeDatadogContext
         }
 
-        doAnswer {
-            it.getArgument<() -> Unit>(3).invoke()
-            null
-        }.whenever(mockFlagsRepository).setFlagsAndContext(any(), any(), anyOrNull(), any())
+        whenever(mockFlagsRepository.installFlagsAndContext(any(), any(), anyOrNull())).thenAnswer {
+            FlagsInstallation { onInstalled -> onInstalled() }
+        }
 
         // Mock executor to run tasks synchronously for testing
         whenever(mockExecutorService.execute(any())).thenAnswer { invocation ->
             val runnable = invocation.getArgument<Runnable>(0)
             runnable.run()
+        }
+    }
+
+    @Test
+    fun `M retain instance identity and advance logical fetch W updateEvaluationsForContext()`(
+        @Forgery fakeFirstContext: EvaluationContext,
+        @Forgery fakeSecondContext: EvaluationContext
+    ) {
+        // Given
+        val diagnostics = argumentCaptor<Diagnostics>()
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(fakeFirstContext)
+        evaluationsManager.updateEvaluationsForContext(fakeSecondContext)
+
+        // Then
+        inOrder(mockAssignmentsDownloader) {
+            listOf(fakeFirstContext, fakeSecondContext).forEach { expectedContext ->
+                verify(mockAssignmentsDownloader).readPrecomputedFlags(
+                    eq(expectedContext),
+                    eq(fakeDatadogContext),
+                    diagnostics.capture()
+                )
+            }
+        }
+        val instanceId = diagnostics.firstValue.sdk.instanceId
+        val uuid = UUID.fromString(instanceId)
+        assertThat(uuid.version()).isEqualTo(7)
+        assertThat(uuid.variant()).isEqualTo(2)
+        assertThat(diagnostics.allValues).containsExactly(
+            Diagnostics(Sdk(instanceId), Fetch(1, Trigger.INITIALIZATION)),
+            Diagnostics(Sdk(instanceId), Fetch(2, Trigger.CONTEXT_CHANGE))
+        )
+    }
+
+    @Test
+    fun `M allocate unique sequences W updateEvaluationsForContext() {concurrent calls}`(
+        @IntForgery(min = 2, max = 32) fakeCount: Int,
+        @Forgery fakeContext: EvaluationContext
+    ) {
+        // Given
+        val executor = Executors.newFixedThreadPool(8)
+        val diagnostics = argumentCaptor<Diagnostics>()
+        try {
+            // When
+            val results = executor.invokeAll(
+                (0 until fakeCount).map { Callable { evaluationsManager.updateEvaluationsForContext(fakeContext) } },
+                10,
+                TimeUnit.SECONDS
+            )
+
+            // Then
+            results.forEach {
+                assertThat(it.isDone).isTrue()
+                assertThat(it.isCancelled).isFalse()
+                it.get()
+            }
+            verify(mockAssignmentsDownloader, times(fakeCount)).readPrecomputedFlags(
+                eq(fakeContext),
+                eq(fakeDatadogContext),
+                diagnostics.capture()
+            )
+            assertThat(diagnostics.allValues.map { it.fetch.sequence }).containsExactlyInAnyOrderElementsOf(
+                1L..fakeCount.toLong()
+            )
+            assertThat(diagnostics.allValues.map { it.sdk.instanceId }.toSet()).hasSize(1)
+            assertThat(
+                diagnostics.allValues.count {
+                    it.fetch.trigger == Trigger.INITIALIZATION
+                }
+            ).isEqualTo(1)
+        } finally {
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `M use independent diagnostics W updateEvaluationsForContext() {distinct managers}`(
+        @Forgery fakeContext: EvaluationContext
+    ) {
+        // Given
+        val otherManager = createManager(scheduler = { _, _ -> {} })
+        val diagnostics = argumentCaptor<Diagnostics>()
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(fakeContext)
+        otherManager.updateEvaluationsForContext(fakeContext)
+
+        // Then
+        verify(mockAssignmentsDownloader, times(2)).readPrecomputedFlags(
+            eq(fakeContext),
+            eq(fakeDatadogContext),
+            diagnostics.capture()
+        )
+        assertThat(diagnostics.allValues.map { it.sdk.instanceId }).doesNotHaveDuplicates()
+        diagnostics.allValues.forEach {
+            assertThat(it).isEqualTo(
+                Diagnostics(it.sdk, Fetch(1, Trigger.INITIALIZATION))
+            )
         }
     }
 
@@ -166,24 +416,166 @@ internal class EvaluationsManagerTest {
         inOrder(mockFlagsRepository, mockAssignmentsDownloader) {
             verify(mockFlagsRepository).hasFlags()
             verify(mockAssignmentsDownloader).readPrecomputedFlags(
-                EvaluationContext(fakeTargetingKey, emptyMap()),
-                fakeDatadogContext
+                eq(EvaluationContext(fakeTargetingKey, emptyMap())),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
             )
         }
     }
 
     @Test
-    fun `M release request state W updateEvaluationsForContext() {context dispatch unavailable}`() {
+    fun `M release request state W updateEvaluationsForContext() {context dispatch unavailable}`(
+        @Forgery fakeContext: EvaluationContext
+    ) {
         // Given
         whenever(mockSdkCore.getDatadogContext(setOf(Feature.RUM_FEATURE_NAME))) doReturn null
         var finished = 0
 
         // When
-        evaluationsManager.updateEvaluationsForContext(EvaluationContext.EMPTY, null) { finished++ }
+        evaluationsManager.updateEvaluationsForContext(fakeContext, null) { finished++ }
 
         // Then
         assertThat(finished).isEqualTo(1)
-        verify(mockAssignmentsDownloader, never()).readPrecomputedFlags(any(), any())
+        verifyNoInteractions(mockAssignmentsDownloader)
+    }
+
+    @Test
+    fun `M avoid listener lock inversion W updateEvaluationsForContext() { concurrent registration }`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey)
+        val policy = ExperimentationOptOut(ExperimentationOptOutMode.IMMEDIATE)
+        val listenerEntered = CountDownLatch(1)
+        val publishing = CountDownLatch(1)
+        val listenerFinished = CountDownLatch(1)
+        val updateFinished = CountDownLatch(1)
+        val holder = DDCoreStateHolder.create<FlagsClientState, FlagsStateListener>(FlagsClientState.NotReady) {
+            onStateChanged(it)
+        }
+        val observedHolder = object : DDCoreStateHolder<FlagsClientState, FlagsStateListener> by holder {
+            override fun updateState(newState: FlagsClientState) {
+                publishing.countDown()
+                holder.updateState(newState)
+            }
+        }
+        val states = FlagsStateManager(observedHolder)
+        val manager = EvaluationsManager(
+            mockSdkCore, mockExecutorService, mockInternalLogger, mockFlagsRepository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, states, null, { _, _ -> {} }, policy
+        )
+        val listener = Thread {
+            states.addListener(object : FlagsStateListener {
+                override fun onStateChanged(newState: FlagsClientState) {
+                    listenerEntered.countDown()
+                    check(publishing.await(2, TimeUnit.SECONDS))
+                    policy.resolutionError(context)
+                }
+            })
+            listenerFinished.countDown()
+        }.apply { isDaemon = true }
+        val updater = Thread {
+            manager.updateEvaluationsForContext(context)
+            updateFinished.countDown()
+        }.apply { isDaemon = true }
+
+        // When
+        listener.start()
+        check(listenerEntered.await(2, TimeUnit.SECONDS))
+        updater.start()
+        val listenerDone = listenerFinished.await(2, TimeUnit.SECONDS)
+        val updaterDone = updateFinished.await(2, TimeUnit.SECONDS)
+
+        // Then
+        assertThat(listenerDone).isTrue()
+        assertThat(updaterDone).isTrue()
+        listener.join(TimeUnit.SECONDS.toMillis(2))
+        updater.join(TimeUnit.SECONDS.toMillis(2))
+    }
+
+    @Test
+    fun `M release policy lock W updateEvaluationsForContext() { persistence and callbacks }`() {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey)
+        val policy = ExperimentationOptOut(ExperimentationOptOutMode.IMMEDIATE)
+        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockSdkCore.timeProvider).thenReturn(mock())
+        val store = mock<DataStoreHandler>()
+        val repository = DefaultFlagsRepository(mockSdkCore, fakeTargetingKey, store, persistenceLoadTimeoutMs = 0)
+        val manager = EvaluationsManager(
+            mockSdkCore, mockExecutorService, mockInternalLogger, repository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
+            null, { _, _ -> {} }, policy
+        )
+        val completed = mutableListOf<Boolean>()
+        fun probe() {
+            val done = CountDownLatch(1)
+            val reader = Thread {
+                policy.resolutionError(repository.getPrecomputedFlagWithContext(fakeAttributeKey)?.second)
+                done.countDown()
+            }.apply { isDaemon = true }
+            reader.start()
+            completed.add(done.await(2, TimeUnit.SECONDS))
+            reader.join(TimeUnit.SECONDS.toMillis(2))
+        }
+        doAnswer { probe() }.whenever(store).setValue<FlagsStateEntry>(any(), any(), any(), anyOrNull(), any())
+        repository.firstFlags.whenComplete { probe() }
+        val callback = object : EvaluationContextCallback {
+            override fun onSuccess() = probe()
+            override fun onFailure(error: Throwable) = fail<Unit>("Unexpected failure", error)
+        }
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(eq(context), eq(fakeDatadogContext), any())
+        ).thenReturn("response")
+        whenever(
+            mockPrecomputeMapper.map(eq("response"), anyOrNull())
+        ).thenReturn(PrecomputedAssignments(emptyMap(), null))
+
+        // When
+        manager.updateEvaluationsForContext(context, callback)
+
+        // Then
+        assertThat(completed).containsExactly(true, true, true)
+    }
+
+    @Test
+    fun `M preserve state order W updateEvaluationsForContext() { newer context during storage submission }`() {
+        // Given
+        val first = EvaluationContext(fakeTargetingKey)
+        val newer = EvaluationContext(fakeAttributeKey)
+        val policy = ExperimentationOptOut(ExperimentationOptOutMode.IMMEDIATE)
+        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockSdkCore.timeProvider).thenReturn(mock())
+        val store = mock<DataStoreHandler>()
+        val repository = DefaultFlagsRepository(mockSdkCore, fakeTargetingKey, store, persistenceLoadTimeoutMs = 0)
+        val manager = EvaluationsManager(
+            mockSdkCore, mockExecutorService, mockInternalLogger, repository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
+            null, { _, _ -> {} }, policy
+        )
+        val savedContexts = mutableListOf<EvaluationContext>()
+        doAnswer {
+            val entry = it.getArgument<FlagsStateEntry>(1)
+            savedContexts.add(entry.evaluationContext)
+            if (entry.evaluationContext == first) manager.updateEvaluationsForContext(newer)
+        }.whenever(store).setValue<FlagsStateEntry>(any(), any(), any(), anyOrNull(), any())
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(any(), eq(fakeDatadogContext), any())
+        ).thenReturn("response")
+        whenever(
+            mockPrecomputeMapper.map(eq("response"), anyOrNull())
+        ).thenReturn(PrecomputedAssignments(emptyMap(), null))
+
+        // When
+        manager.updateEvaluationsForContext(first)
+
+        // Then
+        assertThat(savedContexts).containsExactly(first, newer)
+        assertThat(repository.getEvaluationContext()).isEqualTo(newer)
+        inOrder(mockFlagsStateManager) {
+            verify(mockFlagsStateManager).updateState(FlagsClientState.Reconciling)
+            verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
+            verify(mockFlagsStateManager).updateState(FlagsClientState.Reconciling)
+            verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
+        }
     }
 
     @Test
@@ -203,9 +595,17 @@ internal class EvaluationsManagerTest {
             precomputeMapper = mockPrecomputeMapper,
             flagStateManager = mockFlagsStateManager,
             initializationTimeoutMs = null,
-            initializationTimeoutScheduler = { _, _ -> {} }
+            initializationTimeoutScheduler = { _, _ -> {} },
+            experimentationOptOut = ExperimentationOptOut()
         )
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext)).thenReturn("response")
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
+            .thenReturn("response")
         whenever(mockPrecomputeMapper.map("response")).thenReturn(PrecomputedAssignments(emptyMap(), null))
 
         // When
@@ -215,7 +615,7 @@ internal class EvaluationsManagerTest {
         verify(callback).onSuccess()
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
         assertThat(notified).isFalse()
-        assertThat(repository.getFlagsSnapshot()).isEmpty()
+        assertThat(repository.getAssignmentsSnapshot()?.flags.orEmpty()).isEmpty()
         assertThat(repository.getEvaluationContext()).isNull()
     }
 
@@ -257,7 +657,13 @@ internal class EvaluationsManagerTest {
             )
         )
 
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(mockResponse)
         whenever(mockPrecomputeMapper.map(mockResponse)).thenReturn(PrecomputedAssignments(expectedFlags))
 
@@ -265,7 +671,7 @@ internal class EvaluationsManagerTest {
         evaluationsManager.updateEvaluationsForContext(context)
 
         // Then
-        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(expectedFlags), anyOrNull(), any())
+        verify(mockFlagsRepository).installFlagsAndContext(context, expectedFlags, null)
         verify(mockInternalLogger, times(2)).log(
             eq(InternalLogger.Level.DEBUG),
             eq(InternalLogger.Target.MAINTAINER),
@@ -281,9 +687,6 @@ internal class EvaluationsManagerTest {
         // Given
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
         val context = publicContext
-
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
-            .thenReturn(null)
 
         // When
         evaluationsManager.updateEvaluationsForContext(context)
@@ -318,8 +721,9 @@ internal class EvaluationsManagerTest {
         val invalidResponse = "{ invalid json }"
         whenever(
             mockAssignmentsDownloader.readPrecomputedFlags(
-                context,
-                fakeDatadogContext
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
             )
         ).thenReturn(invalidResponse)
         whenever(mockPrecomputeMapper.map(invalidResponse)).thenReturn(null)
@@ -328,7 +732,7 @@ internal class EvaluationsManagerTest {
         evaluationsManager.updateEvaluationsForContext(context, callback)
 
         // Then
-        verify(mockFlagsRepository, never()).setFlagsAndContext(any(), any(), anyOrNull(), any())
+        verify(mockFlagsRepository, never()).installFlagsAndContext(any(), any(), anyOrNull())
         verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
         verify(mockFlagsStateManager, never()).updateState(FlagsClientState.Ready)
         verify(callback).onFailure(any())
@@ -340,9 +744,6 @@ internal class EvaluationsManagerTest {
         // Given
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
         val context = publicContext
-
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
-            .thenReturn(null)
 
         // When
         evaluationsManager.updateEvaluationsForContext(context)
@@ -370,7 +771,13 @@ internal class EvaluationsManagerTest {
         val mockResponse = "{}"
         val expectedFlags = mapOf<String, PrecomputedFlag>()
 
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(publicContext),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(mockResponse)
         whenever(mockPrecomputeMapper.map(mockResponse)).thenReturn(PrecomputedAssignments(expectedFlags))
 
@@ -390,8 +797,6 @@ internal class EvaluationsManagerTest {
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
 
         whenever(mockFlagsRepository.hasFlags()).thenReturn(false)
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
-            .thenReturn(null)
 
         // When
         evaluationsManager.updateEvaluationsForContext(publicContext)
@@ -410,8 +815,6 @@ internal class EvaluationsManagerTest {
 
         whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
         whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(publicContext)
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
-            .thenReturn(null)
 
         // When
         evaluationsManager.updateEvaluationsForContext(publicContext)
@@ -431,7 +834,13 @@ internal class EvaluationsManagerTest {
 
         whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
         whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(cachedContext)
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(requestedContext, fakeDatadogContext))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(requestedContext),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(null)
 
         // When
@@ -452,7 +861,13 @@ internal class EvaluationsManagerTest {
         val jsonResponse = EMPTY_FLAGS_RESPONSE_JSON
         val flagsMap = emptyMap<String, PrecomputedFlag>()
 
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(publicContext),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(jsonResponse)
         whenever(mockPrecomputeMapper.map(jsonResponse)).thenReturn(PrecomputedAssignments(flagsMap))
 
@@ -462,7 +877,7 @@ internal class EvaluationsManagerTest {
         // Then
         verify(mockCallback).onSuccess()
         verify(mockCallback, never()).onFailure(any())
-        verify(mockFlagsRepository).setFlagsAndContext(eq(publicContext), eq(emptyMap()), anyOrNull(), any())
+        verify(mockFlagsRepository).installFlagsAndContext(publicContext, emptyMap(), null)
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
     }
 
@@ -473,8 +888,6 @@ internal class EvaluationsManagerTest {
         val mockCallback = mock<EvaluationContextCallback>()
 
         whenever(mockFlagsRepository.hasFlags()).thenReturn(false)
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
-            .thenReturn(null)
 
         // When
         evaluationsManager.updateEvaluationsForContext(publicContext, callback = mockCallback)
@@ -493,8 +906,6 @@ internal class EvaluationsManagerTest {
         val mockCallback = mock<EvaluationContextCallback>()
 
         whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
-            .thenReturn(null)
 
         // When
         evaluationsManager.updateEvaluationsForContext(publicContext, callback = mockCallback)
@@ -513,11 +924,17 @@ internal class EvaluationsManagerTest {
         val jsonResponse = EMPTY_FLAGS_RESPONSE_JSON
         val flagsMap = emptyMap<String, PrecomputedFlag>()
 
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(publicContext),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(jsonResponse)
         whenever(mockPrecomputeMapper.map(jsonResponse)).thenReturn(PrecomputedAssignments(flagsMap))
 
-        // When/Then - should not throw
+        // When / Then - should not throw
         assertDoesNotThrow { evaluationsManager.updateEvaluationsForContext(publicContext, callback = null) }
     }
 
@@ -533,7 +950,13 @@ internal class EvaluationsManagerTest {
             operation = it.getArgument(0)
             null
         }
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val testedManager = createManager(
@@ -593,7 +1016,13 @@ internal class EvaluationsManagerTest {
         }
         whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
         whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(context)
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext)).thenAnswer {
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        ).thenAnswer {
             checkNotNull(timeoutAction).invoke()
             null
         }
@@ -628,7 +1057,13 @@ internal class EvaluationsManagerTest {
         )
         whenever(mockFlagsRepository.hasFlags()).thenReturn(false)
         whenever(mockFlagsRepository.hasLoadedFlagsForContext(context)).thenReturn(true)
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext)).thenAnswer {
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        ).thenAnswer {
             checkNotNull(timeoutAction).invoke()
             null
         }
@@ -667,7 +1102,13 @@ internal class EvaluationsManagerTest {
             operations += it.getArgument<Runnable>(0)
             null
         }
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), eq(fakeDatadogContext)))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                any(),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val stateManager = FlagsStateManager(
@@ -696,6 +1137,18 @@ internal class EvaluationsManagerTest {
         // Then
         verify(mockFirstCallback).onFailure(any<FlagsInitializationTimeoutException>())
         assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        val diagnostics = argumentCaptor<Diagnostics>()
+        verify(mockAssignmentsDownloader).readPrecomputedFlags(
+            eq(EvaluationContext("newer", emptyMap())),
+            eq(fakeDatadogContext),
+            diagnostics.capture()
+        )
+        assertThat(diagnostics.firstValue).isEqualTo(
+            Diagnostics(
+                diagnostics.firstValue.sdk,
+                Fetch(2, Trigger.CONTEXT_CHANGE)
+            )
+        )
     }
 
     @Test
@@ -799,24 +1252,26 @@ internal class EvaluationsManagerTest {
         val currentState = AtomicReference<FlagsClientState>(FlagsClientState.NotReady)
         val timeoutReadState = CountDownLatch(1)
         val releaseTimeout = CountDownLatch(1)
-        val readyPublished = CountDownLatch(1)
         whenever(mockExecutorService.execute(any())).thenAnswer {
             operation = it.getArgument(0)
             null
         }
-        whenever(mockFlagsStateManager.getCurrentState()).thenAnswer {
-            val observedState = currentState.get()
-            timeoutReadState.countDown()
-            check(releaseTimeout.await(5, TimeUnit.SECONDS))
-            observedState
-        }
         doAnswer {
             val newState = it.getArgument<FlagsClientState>(0)
+            if (newState is FlagsClientState.Error) {
+                timeoutReadState.countDown()
+                check(releaseTimeout.await(5, TimeUnit.SECONDS))
+            }
             currentState.set(newState)
-            if (newState == FlagsClientState.Ready) readyPublished.countDown()
             null
         }.whenever(mockFlagsStateManager).updateState(any())
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val testedManager = createManager(
@@ -834,14 +1289,7 @@ internal class EvaluationsManagerTest {
         check(timeoutReadState.await(5, TimeUnit.SECONDS))
         val operationThread = Thread { checkNotNull(operation).run() }
         operationThread.start()
-        val waitDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
-        while (
-            readyPublished.count > 0 &&
-            operationThread.state != Thread.State.BLOCKED &&
-            System.nanoTime() < waitDeadline
-        ) {
-            Thread.yield()
-        }
+        operationThread.join(TimeUnit.SECONDS.toMillis(2))
         releaseTimeout.countDown()
         timeoutThread.join(TimeUnit.SECONDS.toMillis(5))
         operationThread.join(TimeUnit.SECONDS.toMillis(5))
@@ -850,6 +1298,8 @@ internal class EvaluationsManagerTest {
         assertThat(timeoutThread.isAlive).isFalse()
         assertThat(operationThread.isAlive).isFalse()
         assertThat(currentState.get()).isEqualTo(FlagsClientState.Ready)
+        verify(mockCallback).onFailure(any<FlagsInitializationTimeoutException>())
+        verify(mockCallback, never()).onSuccess()
     }
 
     @Test
@@ -859,7 +1309,13 @@ internal class EvaluationsManagerTest {
         val mockCallback = mock<EvaluationContextCallback>()
         var timeoutAction: (() -> Unit)? = null
         var cancellationCount = 0
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val testedManager = createManager(
@@ -886,7 +1342,13 @@ internal class EvaluationsManagerTest {
         val context = EvaluationContext(fakeTargetingKey, emptyMap())
         val mockCallback = mock<EvaluationContextCallback>()
         var timeoutAction: (() -> Unit)? = null
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenAnswer {
             checkNotNull(timeoutAction).invoke()
@@ -906,7 +1368,7 @@ internal class EvaluationsManagerTest {
         // Then
         verify(mockCallback).onFailure(any<FlagsInitializationTimeoutException>())
         verify(mockCallback, never()).onSuccess()
-        verify(mockFlagsRepository).setFlagsAndContext(eq(context), eq(emptyMap()), anyOrNull(), any())
+        verify(mockFlagsRepository).installFlagsAndContext(context, emptyMap(), null)
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
     }
 
@@ -915,7 +1377,13 @@ internal class EvaluationsManagerTest {
         // Given
         val mockCallback = mock<EvaluationContextCallback>()
         var scheduleCount = 0
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), eq(fakeDatadogContext)))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                any(),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val testedManager = createManager(
@@ -940,7 +1408,13 @@ internal class EvaluationsManagerTest {
         // Given
         val mockCallback = mock<EvaluationContextCallback>()
         var scheduleCount = 0
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), eq(fakeDatadogContext)))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                any(),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val testedManager = createManager(
@@ -995,7 +1469,13 @@ internal class EvaluationsManagerTest {
         val context = EvaluationContext(fakeTargetingKey, emptyMap())
         val mockCallback = mock<EvaluationContextCallback>()
         var timeoutAction: (() -> Unit)? = null
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val stateManager = FlagsStateManager(
@@ -1100,7 +1580,8 @@ internal class EvaluationsManagerTest {
             precomputeMapper = mockPrecomputeMapper,
             flagStateManager = realStateManager,
             initializationTimeoutMs = null,
-            initializationTimeoutScheduler = { _, _ -> {} }
+            initializationTimeoutScheduler = { _, _ -> {} },
+            experimentationOptOut = ExperimentationOptOut()
         )
 
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
@@ -1119,7 +1600,13 @@ internal class EvaluationsManagerTest {
             }
         }
 
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(publicContext, fakeDatadogContext))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(publicContext),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(jsonResponse)
         whenever(mockPrecomputeMapper.map(jsonResponse)).thenReturn(PrecomputedAssignments(flagsMap))
 
@@ -1153,16 +1640,25 @@ internal class EvaluationsManagerTest {
             mockAssignmentsDownloader,
             mockPrecomputeMapper,
             state,
-            1000
-        ) { _, action ->
-            timeout = action;
-            {}
-        }
+            1000,
+            initializationTimeoutScheduler = { _, action ->
+                timeout = action;
+                {}
+            },
+            experimentationOptOut = ExperimentationOptOut()
+        )
         val context = EvaluationContext(fakeTargetingKey)
         val callback = mock<EvaluationContextCallback>()
         val firstKeys = mutableListOf<List<String>>()
         repository.firstFlags.whenComplete { firstKeys.add(it) }
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext)).thenReturn("response")
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
+            .thenReturn("response")
         whenever(mockPrecomputeMapper.map("response"))
             .thenReturn(PrecomputedAssignments(mapOf("enabled" to mock())))
 
@@ -1181,7 +1677,7 @@ internal class EvaluationsManagerTest {
 
         // Then
         assertThat(firstKeys).containsExactly(listOf("enabled"))
-        assertThat(repository.getFlagsSnapshot()).containsOnlyKeys("enabled")
+        assertThat(repository.getAssignmentsSnapshot()?.flags.orEmpty()).containsOnlyKeys("enabled")
         assertThat(state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
         verifyNoMoreInteractions(callback)
     }
@@ -1214,11 +1710,13 @@ internal class EvaluationsManagerTest {
             mockAssignmentsDownloader,
             mockPrecomputeMapper,
             state,
-            1000
-        ) { _, action ->
-            timeout = action;
-            { cancelled = true }
-        }
+            1000,
+            initializationTimeoutScheduler = { _, action ->
+                timeout = action;
+                { cancelled = true }
+            },
+            experimentationOptOut = ExperimentationOptOut()
+        )
         val context = EvaluationContext(fakeTargetingKey)
         val callback = mock<EvaluationContextCallback>()
         var firstFlagsCount = 0
@@ -1226,7 +1724,14 @@ internal class EvaluationsManagerTest {
             firstFlagsCount++
             manager.updateEvaluationsForContext(EvaluationContext("newer"))
         }
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext)).thenReturn("response")
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
+            .thenReturn("response")
         whenever(mockPrecomputeMapper.map("response")).thenReturn(PrecomputedAssignments(emptyMap()))
 
         // When
@@ -1254,7 +1759,13 @@ internal class EvaluationsManagerTest {
         val context = EvaluationContext(fakeTargetingKey, emptyMap())
         val testedRepository = createRepository()
         val testedManager = createManagerWithRepository(testedRepository)
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(ENCODED_RESPONSE_JSON)
 
         // When
@@ -1267,7 +1778,11 @@ internal class EvaluationsManagerTest {
         // Given
         val invalidResponse = ENCODED_RESPONSE_JSON.replace("flag-key-sha256-v1", "unknown")
         whenever(
-            mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext)
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
         ).thenReturn(invalidResponse)
 
         // When
@@ -1282,7 +1797,13 @@ internal class EvaluationsManagerTest {
 
         // Given
         val otherContext = EvaluationContext("$fakeTargetingKey-other", emptyMap())
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(otherContext, fakeDatadogContext))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(otherContext),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(invalidResponse)
 
         // When
@@ -1304,7 +1825,13 @@ internal class EvaluationsManagerTest {
         val context = EvaluationContext(fakeTargetingKey, emptyMap())
         val testedRepository = createRepository()
         val testedManager = createManagerWithRepository(testedRepository)
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        )
             .thenReturn(ENCODED_RESPONSE_JSON)
 
         // When
@@ -1315,7 +1842,7 @@ internal class EvaluationsManagerTest {
         verify(mockCallback).onFailure(failure.capture())
         assertThat(failure.firstValue.message).isEqualTo("Unable to read the feature flags response.")
         assertThat(testedRepository.hasFlags()).isFalse()
-        assertThat(testedRepository.getFlagsSnapshot()).isEmpty()
+        assertThat(testedRepository.getAssignmentsSnapshot()?.flags.orEmpty()).isEmpty()
     }
 
     @Test
@@ -1363,8 +1890,6 @@ internal class EvaluationsManagerTest {
         )
 
         // Network call returns null (simulates network failure)
-        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context, fakeDatadogContext))
-            .thenReturn(null)
 
         val integrationManager = EvaluationsManager(
             sdkCore = mockSdkCore,
@@ -1375,7 +1900,8 @@ internal class EvaluationsManagerTest {
             precomputeMapper = mockPrecomputeMapper,
             flagStateManager = mockFlagsStateManager,
             initializationTimeoutMs = null,
-            initializationTimeoutScheduler = { _, _ -> {} }
+            initializationTimeoutScheduler = { _, _ -> {} },
+            experimentationOptOut = ExperimentationOptOut()
         )
 
         // When
@@ -1390,6 +1916,221 @@ internal class EvaluationsManagerTest {
 
     // endregion
 
+    @ParameterizedTest
+    @CsvSource("IMMEDIATE,true", "IMMEDIATE,false", "FUTURE_EXPERIMENTS_ONLY,true", "FUTURE_EXPERIMENTS_ONLY,false")
+    fun `M fail superseded callback W updateEvaluationsForContext() {superseded fetch fails}`(
+        mode: ExperimentationOptOutMode,
+        networkFailed: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val tasks = mutableListOf<Runnable>()
+        val testedManager = queuedManager(mode, tasks)
+        val first = EvaluationContext(forge.anAlphabeticalString())
+        val firstCallback = mock<EvaluationContextCallback>()
+        val newerCallback = mock<EvaluationContextCallback>()
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(eq(first), any(), any())) doReturn
+            if (networkFailed) null else "unreadable"
+        testedManager.updateEvaluationsForContext(first, firstCallback)
+        testedManager.updateEvaluationsForContext(EvaluationContext(forge.anAlphabeticalString()), newerCallback)
+
+        // When
+        tasks[0].run()
+
+        // Then
+        verify(firstCallback).onFailure(isA<FlagsContextSupersededException>())
+        verify(mockFlagsStateManager, never()).updateState(isA<FlagsClientState.Error>())
+        verify(mockFlagsStateManager, never()).updateState(FlagsClientState.Stale)
+        verifyNoInteractions(newerCallback)
+    }
+
+    @Test
+    fun `M fail with network error W updateEvaluationsForContext() {disabled, earlier fetch fails}`(forge: Forge) {
+        // Given
+        val tasks = mutableListOf<Runnable>()
+        val testedManager = queuedManager(ExperimentationOptOutMode.DISABLED, tasks)
+        val firstCallback = mock<EvaluationContextCallback>()
+        testedManager.updateEvaluationsForContext(EvaluationContext(forge.anAlphabeticalString()), firstCallback)
+        testedManager.updateEvaluationsForContext(EvaluationContext(forge.anAlphabeticalString()))
+
+        // When
+        tasks[0].run()
+
+        // Then
+        verify(firstCallback).onFailure(isA<NetworkRequestFailedException>())
+        verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class, names = ["IMMEDIATE", "FUTURE_EXPERIMENTS_ONLY"])
+    fun `M keep initialization timeout W updateEvaluationsForContext() {invalid timestamp first}`(
+        mode: ExperimentationOptOutMode,
+        forge: Forge
+    ) {
+        // Given
+        val scheduled = mutableListOf<Long>()
+        val timeouts = mutableListOf<() -> Unit>()
+        val testedManager = queuedManager(mode, mutableListOf(), timeouts, scheduled)
+        val invalidCallback = mock<EvaluationContextCallback>()
+        val validCallback = mock<EvaluationContextCallback>()
+        testedManager.updateEvaluationsForContext(
+            EvaluationContext(forge.anAlphabeticalString(), mapOf(ExperimentationOptOut.ATTRIBUTE to "junk")),
+            invalidCallback
+        )
+
+        // When
+        testedManager.updateEvaluationsForContext(EvaluationContext(forge.anAlphabeticalString()), validCallback)
+        timeouts.single().invoke()
+
+        // Then
+        assertThat(scheduled).containsExactly(QUEUED_TIMEOUT_MS)
+        verify(invalidCallback).onFailure(isA<FlagsInvalidContextException>())
+        verify(validCallback).onFailure(isA<FlagsInitializationTimeoutException>())
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M cancel initialization timeout W updateEvaluationsForContext() {first completes, newer loading}`(
+        mode: ExperimentationOptOutMode,
+        forge: Forge
+    ) {
+        // Given
+        val tasks = mutableListOf<Runnable>()
+        val timeouts = mutableListOf<() -> Unit>()
+        var cancellations = 0
+        val testedManager = queuedManager(mode, tasks, timeouts, onCancel = { cancellations++ })
+        val firstCallback = mock<EvaluationContextCallback>()
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), any(), any())) doReturn "response"
+        whenever(mockPrecomputeMapper.map(any(), anyOrNull())) doReturn PrecomputedAssignments(emptyMap(), null)
+        testedManager.updateEvaluationsForContext(EvaluationContext(forge.anAlphabeticalString()), firstCallback)
+        testedManager.updateEvaluationsForContext(EvaluationContext(forge.anAlphabeticalString()))
+
+        // When
+        tasks[0].run()
+
+        // Then
+        assertThat(cancellations).isEqualTo(1)
+        if (mode == ExperimentationOptOutMode.DISABLED) {
+            verify(firstCallback).onSuccess()
+        } else {
+            verify(firstCallback).onFailure(isA<FlagsContextSupersededException>())
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "DISABLED,true",
+        "DISABLED,false",
+        "IMMEDIATE,true",
+        "IMMEDIATE,false",
+        "FUTURE_EXPERIMENTS_ONLY,true",
+        "FUTURE_EXPERIMENTS_ONLY,false"
+    )
+    fun `M not complete twice W updateEvaluationsForContext() {fetch ends after timeout}`(
+        mode: ExperimentationOptOutMode,
+        succeeds: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val tasks = mutableListOf<Runnable>()
+        val timeouts = mutableListOf<() -> Unit>()
+        val testedManager = queuedManager(mode, tasks, timeouts)
+        val callback = mock<EvaluationContextCallback>()
+        if (succeeds) {
+            whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), any(), any())) doReturn "response"
+            whenever(mockPrecomputeMapper.map(any(), anyOrNull())) doReturn PrecomputedAssignments(emptyMap(), null)
+        }
+        testedManager.updateEvaluationsForContext(EvaluationContext(forge.anAlphabeticalString()), callback)
+        timeouts.single().invoke()
+
+        // When
+        tasks.single().run()
+
+        // Then
+        verify(callback).onFailure(isA<FlagsInitializationTimeoutException>())
+        verifyNoMoreInteractions(callback)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M retain newer failure W updateEvaluationsForContext() {reentrant listener, FIFO fetches}`(
+        mode: ExperimentationOptOutMode,
+        forge: Forge
+    ) {
+        // Given
+        val tasks = mutableListOf<Runnable>()
+        val timeouts = mutableListOf<() -> Unit>()
+        val fakeFirst = EvaluationContext(forge.anAlphabeticalString())
+        val fakeNewer = EvaluationContext(forge.anAlphabeticalString())
+        val firstCallback = mock<EvaluationContextCallback>()
+        val stateManager = FlagsStateManager(
+            DDCoreStateHolder.create(
+                initialState = FlagsClientState.NotReady,
+                onStateChanged = FlagsStateListener::onStateChanged
+            )
+        )
+        val testedManager = queuedManager(mode, tasks, timeouts, stateManager = stateManager)
+        val states = mutableListOf<FlagsClientState>()
+        var reentered = false
+        stateManager.addListener(object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                states += newState
+                if (newState == FlagsClientState.Reconciling && !reentered) {
+                    reentered = true
+                    testedManager.updateEvaluationsForContext(fakeNewer)
+                }
+            }
+        })
+
+        // When
+        testedManager.updateEvaluationsForContext(fakeFirst, firstCallback)
+        tasks.removeAt(0).run()
+        timeouts.single().invoke()
+
+        // Then
+        verify(mockAssignmentsDownloader).readPrecomputedFlags(eq(fakeNewer), any(), any())
+        assertThat(tasks).hasSize(1)
+        val errors = states.filterIsInstance<FlagsClientState.Error>()
+        assertThat(stateManager.getCurrentState()).isSameAs(errors.last())
+        if (mode == ExperimentationOptOutMode.DISABLED) {
+            assertThat(errors).hasSize(2)
+            assertThat(errors.last().error).isInstanceOf(FlagsInitializationTimeoutException::class.java)
+        } else {
+            assertThat(errors).hasSize(1)
+            assertThat(errors.single().error).isInstanceOf(NetworkRequestFailedException::class.java)
+        }
+        verify(firstCallback).onFailure(isA<FlagsInitializationTimeoutException>())
+    }
+
+    private fun queuedManager(
+        mode: ExperimentationOptOutMode,
+        tasks: MutableList<Runnable>,
+        timeouts: MutableList<() -> Unit>? = null,
+        scheduled: MutableList<Long> = mutableListOf(),
+        onCancel: () -> Unit = {},
+        stateManager: FlagsStateManager = mockFlagsStateManager
+    ): EvaluationsManager {
+        doAnswer {
+            tasks += it.getArgument<Runnable>(0)
+            null
+        }.whenever(mockExecutorService).execute(any())
+        return EvaluationsManager(
+            mockSdkCore,
+            mockExecutorService,
+            mockInternalLogger,
+            mockFlagsRepository,
+            mockAssignmentsDownloader,
+            mockPrecomputeMapper,
+            stateManager,
+            if (timeouts == null) null else QUEUED_TIMEOUT_MS,
+            { timeoutMs, action ->
+                scheduled += timeoutMs
+                timeouts?.add(action)
+                onCancel
+            },
+            ExperimentationOptOut(mode)
+        )
+    }
     private fun createRepository(): DefaultFlagsRepository {
         val mockDataStore = mock<DataStoreHandler>()
         whenever(mockSdkCore.timeProvider) doReturn mock()
@@ -1409,7 +2150,8 @@ internal class EvaluationsManagerTest {
         precomputeMapper = PrecomputeMapper(mockInternalLogger),
         flagStateManager = mockFlagsStateManager,
         initializationTimeoutMs = null,
-        initializationTimeoutScheduler = { _, _ -> {} }
+        initializationTimeoutScheduler = { _, _ -> {} },
+        experimentationOptOut = ExperimentationOptOut()
     )
 
     private fun createManager(
@@ -1425,10 +2167,12 @@ internal class EvaluationsManagerTest {
         precomputeMapper = mockPrecomputeMapper,
         flagStateManager = flagStateManager,
         initializationTimeoutMs = initializationTimeoutMs,
-        initializationTimeoutScheduler = scheduler
+        initializationTimeoutScheduler = scheduler,
+        experimentationOptOut = ExperimentationOptOut()
     )
 
     companion object {
+        private const val QUEUED_TIMEOUT_MS = 1_000L
         private val ENCODED_RESPONSE_JSON = """
             {"data":{"attributes":{
               "obfuscated":true,
@@ -1441,5 +2185,81 @@ internal class EvaluationsManagerTest {
             }}}
         """.trimIndent()
         private const val EMPTY_FLAGS_RESPONSE_JSON = "{\"data\": {\"attributes\": {\"flags\": {}}}}"
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class, names = ["IMMEDIATE", "FUTURE_EXPERIMENTS_ONLY"])
+    fun `M fail superseded callback W updateEvaluationsForContext() {newer request installs}`(
+        mode: ExperimentationOptOutMode
+    ) {
+        // Given
+        val first = EvaluationContext("first-subject")
+        val newer = EvaluationContext("newer-subject")
+        val firstCallback = mock<EvaluationContextCallback>()
+        val newerCallback = mock<EvaluationContextCallback>()
+        lateinit var testedManager: EvaluationsManager
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(eq(first), any(), any())).thenAnswer {
+            testedManager.updateEvaluationsForContext(newer, newerCallback)
+            "first-response"
+        }
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(eq(newer), any(), any())) doReturn "newer-response"
+        whenever(mockPrecomputeMapper.map(any(), anyOrNull())) doReturn PrecomputedAssignments(emptyMap(), null)
+        testedManager = EvaluationsManager(
+            mockSdkCore, mockExecutorService, mockInternalLogger, mockFlagsRepository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
+            null, { _, _ -> {} }, ExperimentationOptOut(mode)
+        )
+
+        // When
+        testedManager.updateEvaluationsForContext(first, firstCallback)
+
+        // Then
+        verify(newerCallback).onSuccess()
+        verify(firstCallback).onFailure(isA<FlagsContextSupersededException>())
+        verify(firstCallback, never()).onSuccess()
+        verify(mockFlagsRepository, never()).installFlagsAndContext(eq(first), any(), anyOrNull())
+    }
+
+    @ParameterizedTest
+    @CsvSource("IMMEDIATE,false", "IMMEDIATE,true", "FUTURE_EXPERIMENTS_ONLY,false", "FUTURE_EXPERIMENTS_ONLY,true")
+    fun `M time out newer request W updateEvaluationsForContext() {first request superseded}`(
+        mode: ExperimentationOptOutMode,
+        cached: Boolean
+    ) {
+        // Given
+        doAnswer { null }.whenever(mockExecutorService).execute(any())
+        val fakeNewer = EvaluationContext("newer-subject")
+        whenever(mockFlagsRepository.hasLoadedFlagsForContext(fakeNewer)) doReturn cached
+        lateinit var timeout: () -> Unit
+        val manager = EvaluationsManager(
+            mockSdkCore,
+            mockExecutorService,
+            mockInternalLogger,
+            mockFlagsRepository,
+            mockAssignmentsDownloader,
+            mockPrecomputeMapper,
+            mockFlagsStateManager,
+            1000,
+            initializationTimeoutScheduler = { _, action ->
+                timeout = action;
+                {}
+            },
+            experimentationOptOut = ExperimentationOptOut(mode)
+        )
+        val firstCallback = mock<EvaluationContextCallback>()
+        manager.updateEvaluationsForContext(EvaluationContext("first-subject"), firstCallback)
+        manager.updateEvaluationsForContext(fakeNewer)
+
+        // When
+        timeout()
+
+        // Then
+        verify(firstCallback).onFailure(isA<FlagsInitializationTimeoutException>())
+        if (cached) {
+            verify(mockFlagsStateManager).updateState(FlagsClientState.Stale)
+        } else {
+            verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
+        }
+        verify(mockFlagsRepository).hasLoadedFlagsForContext(fakeNewer)
     }
 }

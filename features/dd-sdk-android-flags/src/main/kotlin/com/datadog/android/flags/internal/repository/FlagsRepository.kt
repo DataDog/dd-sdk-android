@@ -14,10 +14,18 @@ internal interface FlagsRepository {
     fun getPrecomputedFlag(key: String): PrecomputedFlag?
     fun getEvaluationContext(): EvaluationContext?
 
+    /** Installs memory only. The caller must complete storage and notifications outside its locks. */
+    fun installFlagsAndContext(
+        context: EvaluationContext,
+        flags: Map<String, PrecomputedFlag>,
+        obfuscation: FlagKeyObfuscation? = null
+    ): FlagsInstallation
+
     /**
      * Runs [onInstalled] after attempting storage submission, including when submission fails.
      * For the first installation, it runs before publishing the first-flags result to listeners.
      */
+    @Deprecated("Use installFlagsAndContext instead")
     fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
@@ -33,5 +41,14 @@ internal interface FlagsRepository {
     val firstFlags: FirstFlagsLatch
     fun hasFlags(): Boolean
     fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean
+
+    @Deprecated("Use getAssignmentsSnapshot instead")
     fun getFlagsSnapshot(): Map<String, PrecomputedFlag>
+    fun getAssignmentsSnapshot(): FlagsAssignmentsSnapshot?
+}
+
+internal data class FlagsAssignmentsSnapshot(val flags: Map<String, PrecomputedFlag>, val context: EvaluationContext)
+
+internal fun interface FlagsInstallation {
+    fun complete(onInstalled: () -> Unit)
 }

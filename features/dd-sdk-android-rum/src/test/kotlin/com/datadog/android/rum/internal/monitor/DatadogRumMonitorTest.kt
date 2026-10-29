@@ -1968,6 +1968,7 @@ internal class DatadogRumMonitorTest {
             "ndk" to RumErrorSourceType.NDK,
             "ndk+il2cpp" to RumErrorSourceType.NDK_IL2CPP,
             "maui" to RumErrorSourceType.MAUI,
+            "unreal" to RumErrorSourceType.UNREAL,
             nonSupportedValue to RumErrorSourceType.ANDROID,
             null to RumErrorSourceType.ANDROID
         )

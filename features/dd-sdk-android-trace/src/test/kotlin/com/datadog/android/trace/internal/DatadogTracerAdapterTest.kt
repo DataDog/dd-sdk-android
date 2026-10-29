@@ -8,18 +8,14 @@ package com.datadog.android.trace.internal
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
-import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.trace.api.scope.DatadogScopeListener
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
-import com.datadog.android.trace.utils.RumContextTestsUtils.aDatadogContextWithRumContext
-import com.datadog.android.trace.utils.RumContextTestsUtils.aRumContext
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScope
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -68,6 +64,7 @@ internal class DatadogTracerAdapterTest {
     @Mock
     lateinit var mockDatadogSpan: DatadogSpanAdapter
 
+    @Mock
     lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock
@@ -82,16 +79,12 @@ internal class DatadogTracerAdapterTest {
     @BoolForgery
     private var fakeBool: Boolean = false
 
-    lateinit var fakeRumContext: Map<String, Any?>
-
     @Mock
     private lateinit var mockContextFuture: Future<DatadogContext?>
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        fakeRumContext = forge.aRumContext()
-        mockRumFeatureScope = SdkFeatureMock.create(mockContextFuture)
-        whenever(mockContextFuture.get()) doReturn forge.aDatadogContextWithRumContext(fakeRumContext)
+    fun `set up`() {
+        whenever(mockSdkCore.getDatadogContextFuture(any())) doReturn mockContextFuture
 
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.internalLogger).thenReturn(mock())

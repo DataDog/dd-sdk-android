@@ -12,7 +12,6 @@ import androidx.annotation.FloatRange
  * Describes configuration to be used for the Profiling feature.
  */
 @ExposedCopyVisibility
-@ExperimentalProfilingApi
 data class ProfilingConfiguration internal constructor(
     internal val customEndpointUrl: String?,
     internal val applicationLaunchSampleRate: Float,
