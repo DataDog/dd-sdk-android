@@ -194,8 +194,9 @@ data class FlagsConfiguration internal constructor(
          * When the server applies the selection, flags outside it are not loaded, so evaluating them returns the
          * default value with [ErrorCode.FLAG_NOT_FOUND].
          *
-         * The selection is fixed when the Flags feature is enabled. Calling this method again replaces the
-         * previous selection.
+         * The selection is fixed when the feature is enabled and applies to every [FlagsClient]. Flags cached under a
+         * different selection are not loaded at startup; until the next successful fetch, a client starts without
+         * cached flags. Calling this method again replaces the previous selection.
          *
          * @param tags The flag tags to load, or null for none.
          * @param keyPatterns The flag key patterns to load, or null for none.

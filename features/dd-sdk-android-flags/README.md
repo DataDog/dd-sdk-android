@@ -109,7 +109,7 @@ val flagsConfig = FlagsConfiguration.Builder()
 - Tags match exactly and are case-sensitive. A key pattern matches the whole flag key, and only `*` is a wildcard.
 - Each list accepts at most 31 values, and each value is at most 200 UTF-8 bytes. The SDK does not send a selection that is over a limit. It logs an error and loads the full flag configuration.
 - When the server applies the selection, evaluating a flag outside it returns the default value with `ErrorCode.FLAG_NOT_FOUND`.
-- The selection is fixed when you call `Flags.enable`.
+- The selection is fixed when the feature is enabled and applies to every `FlagsClient`. Flags cached under a different selection are not loaded at startup; until the next successful fetch, a client starts without cached flags.
 - If the server ignores a selection, the SDK loads the full flag configuration and logs an error with the reason. A reason that the SDK does not know is reported as `unknown`.
 - With a custom flag endpoint, the proxy must forward the `DD-Flag-Selection-Ignored` response header. Otherwise, the SDK cannot report a selection that the server ignored.
 
