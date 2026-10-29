@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -259,6 +261,29 @@ internal class FlagsClientTest {
                 "[Datadog Flags] Attempted to create a FlagsClient named 'default', but one already exists."
             )
         }
+    }
+
+    @Test
+    fun `M log both modes W Builder#build() {named client already exists}`() {
+        // Given
+        whenever(mockSdkCore.timeProvider).thenReturn(mock())
+        whenever(mockSdkCore.createSingleThreadExecutorService(any())).thenReturn(mock())
+        whenever(mockSdkCore.createOkHttpCallFactory(any())).thenReturn(mock())
+        val existingClient = FlagsClient.Builder(sdkCore = mockSdkCore).build()
+
+        // When
+        val client = FlagsClient.Builder(sdkCore = mockSdkCore)
+            .experimentationOptOutMode(ExperimentationOptOutMode.IMMEDIATE).build()
+
+        // Then
+        assertThat(client).isSameAs(existingClient)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            "[Datadog Flags] Attempted to create a FlagsClient named 'default' with experimentation " +
+                "opt-out mode IMMEDIATE, but one already exists with mode DISABLED. " +
+                "The existing client will be used. Use a separate client name for each mode."
+        )
     }
 
     // endregion
