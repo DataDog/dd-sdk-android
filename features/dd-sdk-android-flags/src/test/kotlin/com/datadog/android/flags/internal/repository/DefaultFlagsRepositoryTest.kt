@@ -99,7 +99,7 @@ internal class DefaultFlagsRepositoryTest {
             instanceName = "default"
         )
 
-        // Setup test fixtures for hasFlags tests
+        // Setup test fixtures for hasConfiguration tests
         testContext = EvaluationContext(forge.anAlphabeticalString(), emptyMap())
 
         singleFlagMap = mapOf(
@@ -211,7 +211,7 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
-    fun `M not wait for persistence W hasLoadedFlagsForContext() { persistence is loading }`(forge: Forge) {
+    fun `M not wait for persistence W hasConfigurationForContext() { persistence is loading }`(forge: Forge) {
         // Given
         doAnswer { null }.whenever(mockDataStore).value<FlagsStateEntry>(
             key = any(),
@@ -230,7 +230,7 @@ internal class DefaultFlagsRepositoryTest {
         val completed = CountDownLatch(1)
         val context = EvaluationContext(forge.anAlphabeticalString(), emptyMap())
         val readThread = Thread {
-            result.set(testedRepository.hasLoadedFlagsForContext(context))
+            result.set(testedRepository.hasConfigurationForContext(context))
             completed.countDown()
         }.apply { isDaemon = true }
 
@@ -421,7 +421,7 @@ internal class DefaultFlagsRepositoryTest {
         // Then
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(context)
         assertThat(testedRepository.getFlagsSnapshot()).isEmpty()
-        assertThat(testedRepository.hasFlags()).isTrue()
+        assertThat(testedRepository.hasConfiguration()).isTrue()
         verify(mockDataStore, never()).setValue<FlagsStateEntry>(
             key = any(),
             data = any(),
@@ -488,7 +488,7 @@ internal class DefaultFlagsRepositoryTest {
 
         // Then
         assertThat(testedRepository.getEvaluationContext()).isNull()
-        assertThat(testedRepository.hasFlags()).isFalse()
+        assertThat(testedRepository.hasConfiguration()).isFalse()
     }
 
     @Test
@@ -506,7 +506,7 @@ internal class DefaultFlagsRepositoryTest {
 
         // Then
         assertThat(testedRepository.getEvaluationContext()).isNull()
-        assertThat(testedRepository.hasFlags()).isFalse()
+        assertThat(testedRepository.hasConfiguration()).isFalse()
     }
 
     @Test
@@ -689,24 +689,24 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
-    fun `M return true W hasLoadedFlagsForContext() { empty flags map for the same context }`(forge: Forge) {
+    fun `M return true W hasConfigurationForContext() { empty flags map for the same context }`(forge: Forge) {
         // Given
         val context = forge.getForgery<EvaluationContext>()
         testedRepository.setFlagsAndContext(context, emptyMap())
 
         // When / Then
-        assertThat(testedRepository.hasLoadedFlagsForContext(context)).isTrue()
+        assertThat(testedRepository.hasConfigurationForContext(context)).isTrue()
     }
 
     @Test
-    fun `M return false W hasLoadedFlagsForContext() { different context }`(forge: Forge) {
+    fun `M return false W hasConfigurationForContext() { different context }`(forge: Forge) {
         // Given
         val context = forge.getForgery<EvaluationContext>()
         testedRepository.setFlagsAndContext(context, singleFlagMap)
 
         // When / Then
         assertThat(
-            testedRepository.hasLoadedFlagsForContext(context.copy(targetingKey = context.targetingKey + "-other"))
+            testedRepository.hasConfigurationForContext(context.copy(targetingKey = context.targetingKey + "-other"))
         ).isFalse()
     }
 
@@ -731,16 +731,16 @@ internal class DefaultFlagsRepositoryTest {
         return callback
     }
 
-    // region hasFlags
+    // region hasConfiguration
 
     @Test
-    fun `M return false W hasFlags() { no state set }`() {
+    fun `M return false W hasConfiguration() { no state set }`() {
         // When + Then
-        assertThat(testedRepository.hasFlags()).isFalse()
+        assertThat(testedRepository.hasConfiguration()).isFalse()
     }
 
     @Test
-    fun `M return true W hasFlags() { empty flags map }`(forge: Forge) {
+    fun `M return true W hasConfiguration() { empty flags map }`(forge: Forge) {
         // Given
         testedRepository.setFlagsAndContext(
             EvaluationContext(forge.anAlphabeticalString(), emptyMap()),
@@ -748,29 +748,29 @@ internal class DefaultFlagsRepositoryTest {
         )
 
         // When + Then
-        assertThat(testedRepository.hasFlags()).isTrue()
+        assertThat(testedRepository.hasConfiguration()).isTrue()
     }
 
     @Test
-    fun `M return true W hasFlags() { single flag }`() {
+    fun `M return true W hasConfiguration() { single flag }`() {
         // Given
         testedRepository.setFlagsAndContext(testContext, singleFlagMap)
 
         // When + Then
-        assertThat(testedRepository.hasFlags()).isTrue()
+        assertThat(testedRepository.hasConfiguration()).isTrue()
     }
 
     @Test
-    fun `M return true W hasFlags() { multiple flags }`() {
+    fun `M return true W hasConfiguration() { multiple flags }`() {
         // Given
         testedRepository.setFlagsAndContext(testContext, multipleFlagsMap)
 
         // When + Then
-        assertThat(testedRepository.hasFlags()).isTrue()
+        assertThat(testedRepository.hasConfiguration()).isTrue()
     }
 
     @Test
-    fun `M return true W hasFlags() { persistence loads with non-empty flags }`() {
+    fun `M return true W hasConfiguration() { persistence loads with non-empty flags }`() {
         // Given
         val persistedEntry = FlagsStateEntry(
             flags = singleFlagMap,
@@ -796,11 +796,11 @@ internal class DefaultFlagsRepositoryTest {
         )
 
         // When + Then
-        assertThat(repository.hasFlags()).isTrue()
+        assertThat(repository.hasConfiguration()).isTrue()
     }
 
     @Test
-    fun `M return false W hasFlags() { persistence loads with no data }`() {
+    fun `M return false W hasConfiguration() { persistence loads with no data }`() {
         // Given
         doAnswer {
             it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
@@ -820,11 +820,11 @@ internal class DefaultFlagsRepositoryTest {
         )
 
         // When + Then
-        assertThat(repository.hasFlags()).isFalse()
+        assertThat(repository.hasConfiguration()).isFalse()
     }
 
     @Test
-    fun `M return false W hasFlags() { persistence callback never fires within timeout }`() {
+    fun `M return false W hasConfiguration() { persistence callback never fires within timeout }`() {
         // Given
         doAnswer {
             // Never call the callback
@@ -844,7 +844,7 @@ internal class DefaultFlagsRepositoryTest {
         )
 
         // When
-        val result = timeoutRepository.hasFlags()
+        val result = timeoutRepository.hasConfiguration()
 
         // Then
         assertThat(result).isFalse()

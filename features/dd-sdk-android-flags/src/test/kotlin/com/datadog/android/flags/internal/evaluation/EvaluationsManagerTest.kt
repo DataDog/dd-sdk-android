@@ -276,7 +276,7 @@ internal class EvaluationsManagerTest {
 
         // Then
         inOrder(mockFlagsRepository, mockAssignmentsDownloader) {
-            verify(mockFlagsRepository).hasFlags()
+            verify(mockFlagsRepository).hasConfiguration()
             verify(mockAssignmentsDownloader).readPrecomputedFlags(
                 eq(EvaluationContext(fakeTargetingKey, emptyMap())),
                 eq(fakeDatadogContext),
@@ -518,7 +518,7 @@ internal class EvaluationsManagerTest {
         // Given
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
 
-        whenever(mockFlagsRepository.hasFlags()).thenReturn(false)
+        whenever(mockFlagsRepository.hasConfiguration()).thenReturn(false)
 
         // When
         evaluationsManager.updateEvaluationsForContext(publicContext)
@@ -535,7 +535,7 @@ internal class EvaluationsManagerTest {
         // Given
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
 
-        whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
+        whenever(mockFlagsRepository.hasConfiguration()).thenReturn(true)
         whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(publicContext)
 
         // When
@@ -554,7 +554,7 @@ internal class EvaluationsManagerTest {
         val requestedContext = EvaluationContext(fakeTargetingKey, emptyMap())
         val cachedContext = EvaluationContext("different-user", emptyMap())
 
-        whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
+        whenever(mockFlagsRepository.hasConfiguration()).thenReturn(true)
         whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(cachedContext)
         whenever(
             mockAssignmentsDownloader.readPrecomputedFlags(
@@ -609,7 +609,7 @@ internal class EvaluationsManagerTest {
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
         val mockCallback = mock<EvaluationContextCallback>()
 
-        whenever(mockFlagsRepository.hasFlags()).thenReturn(false)
+        whenever(mockFlagsRepository.hasConfiguration()).thenReturn(false)
 
         // When
         evaluationsManager.updateEvaluationsForContext(publicContext, callback = mockCallback)
@@ -627,7 +627,7 @@ internal class EvaluationsManagerTest {
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
         val mockCallback = mock<EvaluationContextCallback>()
 
-        whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
+        whenever(mockFlagsRepository.hasConfiguration()).thenReturn(true)
 
         // When
         evaluationsManager.updateEvaluationsForContext(publicContext, callback = mockCallback)
@@ -736,7 +736,7 @@ internal class EvaluationsManagerTest {
                 callbackError = error
             }
         }
-        whenever(mockFlagsRepository.hasFlags()).thenReturn(true)
+        whenever(mockFlagsRepository.hasConfiguration()).thenReturn(true)
         whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(context)
         whenever(
             mockAssignmentsDownloader.readPrecomputedFlags(
@@ -777,8 +777,8 @@ internal class EvaluationsManagerTest {
                 onStateChanged = FlagsStateListener::onStateChanged
             )
         )
-        whenever(mockFlagsRepository.hasFlags()).thenReturn(false)
-        whenever(mockFlagsRepository.hasLoadedFlagsForContext(context)).thenReturn(true)
+        whenever(mockFlagsRepository.hasConfiguration()).thenReturn(false)
+        whenever(mockFlagsRepository.hasConfigurationForContext(context)).thenReturn(true)
         whenever(
             mockAssignmentsDownloader.readPrecomputedFlags(
                 eq(context),
@@ -882,7 +882,7 @@ internal class EvaluationsManagerTest {
         val callbackCompleted = CountDownLatch(1)
         var timeoutAction: (() -> Unit)? = null
         whenever(mockExecutorService.execute(any())).thenAnswer { null }
-        whenever(mockFlagsRepository.hasFlags()).thenAnswer {
+        whenever(mockFlagsRepository.hasConfiguration()).thenAnswer {
             cacheReadStarted.countDown()
             check(releaseCacheRead.await(1, TimeUnit.SECONDS))
             false
@@ -1567,7 +1567,7 @@ internal class EvaluationsManagerTest {
         val failure = argumentCaptor<NetworkRequestFailedException>()
         verify(mockCallback).onFailure(failure.capture())
         assertThat(failure.firstValue.message).isEqualTo("Unable to read the feature flags response.")
-        assertThat(testedRepository.hasFlags()).isFalse()
+        assertThat(testedRepository.hasConfiguration()).isFalse()
         assertThat(testedRepository.getFlagsSnapshot()).isEmpty()
     }
 
@@ -1592,7 +1592,7 @@ internal class EvaluationsManagerTest {
         )
 
         // Configure DataStore to fire callback synchronously during DefaultFlagsRepository
-        // construction, so the persistence latch is counted down before hasFlags() is called.
+        // construction, so the persistence latch is counted down before hasConfiguration() is called.
         val mockDataStore = mock<DataStoreHandler>()
         whenever(
             mockDataStore.value<FlagsStateEntry>(

@@ -208,7 +208,7 @@ internal class FirstFlagsInstallationTest {
                     assertThat(tested.getPrecomputedFlag("unknown")).isNull()
                     assertThat(tested.getEvaluationContext()).isNull()
                     assertThat(tested.getFlagsSnapshot()).isEmpty()
-                    assertThat(tested.hasFlags()).isFalse()
+                    assertThat(tested.hasConfiguration()).isFalse()
                     assertThat(tested.getPrecomputedFlagWithContext("unknown")).isNull()
                 }
                 if (missing) disk.onSuccess(null) else disk.onFailure()

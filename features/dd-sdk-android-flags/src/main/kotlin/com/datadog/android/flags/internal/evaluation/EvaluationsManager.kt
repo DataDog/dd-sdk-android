@@ -166,9 +166,9 @@ internal class EvaluationsManager(
                     { "Processing evaluation context: ${context.targetingKey}" }
                 )
 
-                val hadFlags = flagsRepository.hasFlags()
+                val hadConfiguration = flagsRepository.hasConfiguration()
                 matchingCachedAssignments.set(
-                    hadFlags && flagsRepository.getEvaluationContext() == context
+                    hadConfiguration && flagsRepository.getEvaluationContext() == context
                 )
                 val response = datadogContext?.let { assignmentsReader.readPrecomputedFlags(context, it, diagnostics) }
                 val assignments = response?.let(::mapResponse)
@@ -264,7 +264,7 @@ internal class EvaluationsManager(
                     val currentState = flagStateManager.getCurrentState()
                     if (currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale) {
                         val hasMatchingCachedAssignments = matchingCachedAssignments.get() ||
-                            flagsRepository.hasLoadedFlagsForContext(context)
+                            flagsRepository.hasConfigurationForContext(context)
                         val timeoutState = if (hasMatchingCachedAssignments) {
                             FlagsClientState.Stale
                         } else {

@@ -161,12 +161,12 @@ internal class DefaultFlagsRepository(
         return readableState?.context
     }
 
-    override fun hasFlags(): Boolean {
+    override fun hasConfiguration(): Boolean {
         waitForPersistenceLoad()
         return readableState != null
     }
 
-    override fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean =
+    override fun hasConfigurationForContext(context: EvaluationContext): Boolean =
         readableState?.context == context
 
     override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>? {

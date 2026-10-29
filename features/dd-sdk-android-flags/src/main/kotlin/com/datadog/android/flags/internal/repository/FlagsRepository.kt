@@ -33,9 +33,9 @@ internal interface FlagsRepository {
     val firstFlags: FirstFlagsLatch
 
     /** True once a configuration is installed, including a valid configuration with zero flags. */
-    fun hasFlags(): Boolean
+    fun hasConfiguration(): Boolean
 
     /** True when the installed configuration is for [context], including a valid configuration with zero flags. */
-    fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean
+    fun hasConfigurationForContext(context: EvaluationContext): Boolean
     fun getFlagsSnapshot(): Map<String, PrecomputedFlag>
 }

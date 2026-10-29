@@ -31,9 +31,9 @@ internal class NoOpFlagsRepository : FlagsRepository {
 
     override val firstFlags = FirstFlagsLatch()
 
-    override fun hasFlags(): Boolean = false
+    override fun hasConfiguration(): Boolean = false
 
-    override fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean = false
+    override fun hasConfigurationForContext(context: EvaluationContext): Boolean = false
 
     override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> = emptyMap()
 }

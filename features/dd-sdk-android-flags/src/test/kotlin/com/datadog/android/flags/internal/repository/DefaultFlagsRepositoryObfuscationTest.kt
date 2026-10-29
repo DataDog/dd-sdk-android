@@ -135,8 +135,8 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         // Then
         val readable = !encoded || source == "android"
         assertThat(result?.variationValue).isEqualTo(if (readable) fakeFlag.variationValue else null)
-        assertThat(testedRepository.hasFlags()).isEqualTo(readable)
-        assertThat(testedRepository.hasLoadedFlagsForContext(fakeContext)).isEqualTo(readable)
+        assertThat(testedRepository.hasConfiguration()).isEqualTo(readable)
+        assertThat(testedRepository.hasConfigurationForContext(fakeContext)).isEqualTo(readable)
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(if (readable) fakeContext else null)
         assertThat(testedRepository.getPrecomputedFlagWithContext(fakeFlagKey) != null).isEqualTo(readable)
         assertThat(testedRepository.getFlagsSnapshot().isEmpty()).isEqualTo(encoded)
