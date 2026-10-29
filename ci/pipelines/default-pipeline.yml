@@ -213,7 +213,7 @@ test:kover:
     - !reference [ .snippets, setup-gradle ]
   script:
     # The init script `gradle-cache-cleanup.init.gradle.kts` runs Gradle cache cleanup AFTER the build.
-    # Cache-entry retention policies: https://docs.gradle.org/9.4.0/userguide/directory_layout.html#dir:gradle_user_home:configure_cache_cleanup
+    # Cache-entry retention policies: https://docs.gradle.org/9.8.2/userguide/directory_layout.html#dir:gradle_user_home:configure_cache_cleanup
     # We force the cache cleanup only here because right now only test:kover uploads the new cache to GitLab.
     - >-
       DD_TAGS="test.configuration.variant:release" ./gradlew
