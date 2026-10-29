@@ -3617,9 +3617,7 @@ internal class RumActionScopeTest {
     // region Internal
 
     private fun mockEvent(timeOffset: Long = 0L): RumRawEvent {
-        val event: RumRawEvent = mock()
-        whenever(event.eventTime) doReturn timeWithOffset(timeOffset)
-        return event
+        return RumRawEvent.WebViewEvent(eventTime = timeWithOffset(timeOffset))
     }
 
     private fun timeWithOffset(offsetMs: Long): Time {

@@ -134,6 +134,10 @@ internal class EmbeddedContentReceiver(
      * also no longer registered has been torn down, and nothing will draw it again; holding its
      * batches until the bounds happen to displace them only delays the same unshifted write.
      */
+    // Not a sequence on purpose: the chain must stay eager so that the `remove` calls happen
+    // inside the `synchronized` block. A sequence would be consumed by `writeAll` after the
+    // lock is released, mutating `pendingBatches` unguarded.
+    @Suppress("CouldBeSequence")
     private fun flushAbandonedSlots(drawnSlotIds: Set<String>) {
         val activeSlotIds = embeddedContentSlotRegistry.activeSlotIds()
         val abandoned = synchronized(pendingBatches) {

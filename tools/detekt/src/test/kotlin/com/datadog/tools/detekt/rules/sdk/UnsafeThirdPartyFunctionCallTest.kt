@@ -28,6 +28,32 @@ internal class UnsafeThirdPartyFunctionCallTest {
     }
 
     @Test
+    fun `M resolve generic implicit receiver W lintWithContext() {handled close}`() {
+        // Given
+        val config = TestConfig(
+            "knownThrowingCalls" to listOf("java.io.Closeable.close():java.io.IOException")
+        )
+        val code = """
+            import java.io.Closeable
+            import java.io.IOException
+
+            fun <T : Closeable> T.closeSafely() {
+                try {
+                    close()
+                } catch (e: IOException) {
+                    // Handled by the caller.
+                }
+            }
+        """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config).lintWithContext(kotlinEnv, code)
+
+        // Then
+        assertThat(findings).isEmpty()
+    }
+
+    @Test
     fun `ignore call on internal type`() {
         // Given
         val config = TestConfig("internalPackagePrefix" to "java.io")
