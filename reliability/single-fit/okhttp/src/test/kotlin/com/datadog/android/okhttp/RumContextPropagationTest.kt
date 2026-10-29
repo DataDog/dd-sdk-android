@@ -45,6 +45,7 @@ import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.AutoClose
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -64,6 +65,8 @@ import java.util.UUID
 class RumContextPropagationTest {
     private lateinit var mockServer: MockWebServer
     private lateinit var testedClient: OkHttpClient
+
+    @AutoClose
     private lateinit var stubSdkCore: SdkCore
 
     @BeforeEach
