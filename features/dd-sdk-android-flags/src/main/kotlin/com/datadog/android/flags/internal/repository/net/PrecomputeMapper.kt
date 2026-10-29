@@ -21,7 +21,10 @@ import com.google.gson.JsonParseException
 /**
  * Responsible for parsing network response to [PrecomputedFlag] objects.
  */
-internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
+internal class PrecomputeMapper(
+    private val internalLogger: InternalLogger,
+    private val experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED
+) {
     internal fun map(
         rawJson: String,
         experimentationOptOut: ExperimentationOptOut.Request? = null
@@ -51,8 +54,8 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
                 level = InternalLogger.Level.WARN,
                 target = InternalLogger.Target.TELEMETRY,
                 messageBuilder = {
-                    "Rejected experimentation opt-out acknowledgement: requested=" +
-                        (experimentationOptOut?.mode?.wireValue ?: "none")
+                    "Rejected experimentation opt-out acknowledgement: mode=${experimentationOptOutMode.wireValue} " +
+                        "policy=${if (experimentationOptOut == null) "none" else "applied"}"
                 },
                 onlyOnce = true
             )

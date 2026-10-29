@@ -136,10 +136,11 @@ client.setEvaluationContext(
 
 `setEvaluationContext` is asynchronous. Resolve the flag after its success callback.
 Callbacks run on a background thread. Dispatch UI changes to the main thread.
-A newer context can replace the assignments before a callback runs. In enabled modes, a usable response
-that is discarded after supersession fails with `FlagsContextSupersededException`, unless its timeout already completed it.
+A newer context can replace the assignments before a callback runs. In enabled modes, a request replaced
+before its result is processed fails with `FlagsContextSupersededException`, unless its timeout already completed it.
 Treat this exception as cancellation. OpenFeature maps it to coroutine cancellation instead of a provider error.
-Failed fetches still report their network or response error, including when a newer request exists.
+This applies whether the superseded fetch succeeds or fails. A result processed before replacement keeps its original outcome.
+In `DISABLED`, previous assignments remain available and superseded requests retain their ordinary completion behavior.
 
 | Mode | Behavior when the subject timestamp is present |
 | --- | --- |
@@ -170,7 +171,8 @@ Until matching assignments are available, evaluation returns the application def
 A malformed timestamp returns `INVALID_CONTEXT` instead. With `DISABLED`, persisted and previous assignments remain available.
 Previously accepted assignments can be reused only for the same context, cutoff, and mode.
 Each mode retains a separate disk cache. Changing modes does not delete another mode's cache.
-Switching back can reuse that mode's older snapshot. In `DISABLED`, it can be served before a new context fetch completes.
+Switching back can reuse that mode's older snapshot. In `DISABLED`, it is served as soon as persisted state loads,
+for whichever subject it belonged to, until a successful context fetch replaces it. A failed fetch keeps it.
 Call `setEvaluationContext` for the active subject; mode changes do not provide cache eviction.
 `onFirstFlags` can report cached keys before an enabled-mode client has a matching requested context.
 Those keys do not indicate readable values, and setting the context does not emit a second first-flags notification.

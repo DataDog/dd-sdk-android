@@ -120,22 +120,50 @@ internal class PrecomputeMapperOptOutTest {
     }
 
     @ParameterizedTest
-    @EnumSource(ExperimentationOptOutMode::class, names = ["IMMEDIATE", "FUTURE_EXPERIMENTS_ONLY"])
-    fun `M report rejected policy W map() {acknowledgement absent}`(mode: ExperimentationOptOutMode) {
+    @ValueSource(strings = ["1", "true", "\"\"", "{}", "[]"])
+    fun `M reject malformed mode W map() {immediate, legacy acknowledgement}`(mode: String) {
         // Given
-        val request = ExperimentationOptOut(mode)
+        val request = ExperimentationOptOut(ExperimentationOptOutMode.IMMEDIATE)
             .prepare(EvaluationContext("subject", mapOf(ExperimentationOptOut.ATTRIBUTE to "2026-10-21T10:00:00Z")))
+        val options = JSONObject("{\"experimentation_opt_out\":true,\"experimentation_opt_out_mode\":$mode}")
 
         // When
-        val result = testedMapper.map(response(null), request)
+        val result = testedMapper.map(response(options), request)
 
         // Then
         assertThat(result).isNull()
-        val expectedMode = if (mode == ExperimentationOptOutMode.IMMEDIATE) "immediate" else "future_experiments_only"
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "DISABLED,,'{\"experimentation_opt_out\":true}',disabled,none",
+        "DISABLED,2026-10-21T10:00:00Z,'{\"experimentation_opt_out\":true}',disabled,none",
+        "IMMEDIATE,,'{\"experimentation_opt_out\":true}',immediate,none",
+        "FUTURE_EXPERIMENTS_ONLY,,'{\"experimentation_opt_out_mode\":\"immediate\"}',future_experiments_only,none",
+        "IMMEDIATE,2026-10-21T10:00:00Z,,immediate,applied",
+        "FUTURE_EXPERIMENTS_ONLY,2026-10-21T10:00:00Z,,future_experiments_only,applied"
+    )
+    fun `M report configured mode and policy W map() {response rejected}`(
+        mode: ExperimentationOptOutMode,
+        timestamp: String?,
+        options: String?,
+        expectedMode: String,
+        expectedPolicy: String
+    ) {
+        // Given
+        val mapper = PrecomputeMapper(mockInternalLogger, mode)
+        val attributes = if (timestamp == null) emptyMap() else mapOf(ExperimentationOptOut.ATTRIBUTE to timestamp)
+        val request = ExperimentationOptOut(mode).prepare(EvaluationContext("subject", attributes))
+
+        // When
+        val result = mapper.map(response(options?.let { JSONObject(it) }), request.takeIf { it.optedOut })
+
+        // Then
+        assertThat(result).isNull()
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.TELEMETRY,
-            "Rejected experimentation opt-out acknowledgement: requested=$expectedMode",
+            "Rejected experimentation opt-out acknowledgement: mode=$expectedMode policy=$expectedPolicy",
             onlyOnce = true
         )
     }

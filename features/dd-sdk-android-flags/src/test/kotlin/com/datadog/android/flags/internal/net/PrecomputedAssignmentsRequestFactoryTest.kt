@@ -251,6 +251,10 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         val body = JSONObject(extractRequestBodyAsString(request))
         val attributes = body.getJSONObject("data").getJSONObject("attributes")
         assertThat(attributes.has("evaluation_options")).isEqualTo(mode != ExperimentationOptOutMode.DISABLED)
+        assertThat(
+            attributes.getJSONObject("subject").getJSONObject("targeting_attributes")
+                .getString(ExperimentationOptOut.ATTRIBUTE)
+        ).isEqualTo("2026-10-01T00:00:00Z")
         if (mode != ExperimentationOptOutMode.DISABLED) {
             val expectedMode = when (mode) {
                 ExperimentationOptOutMode.IMMEDIATE -> "immediate"

@@ -19,16 +19,22 @@ import com.datadog.android.flags.integration.tests.utils.FakeAssignment
 import com.datadog.android.flags.integration.tests.utils.bodyAsJson
 import com.datadog.android.flags.integration.tests.utils.httpResponse
 import com.datadog.android.flags.integration.tests.utils.precomputedAssignmentsBody
+import com.datadog.android.flags.integration.tests.utils.targetingKey
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.openfeature.asOpenFeatureProvider
 import dev.openfeature.kotlin.sdk.ImmutableContext
+import dev.openfeature.kotlin.sdk.OpenFeatureAPI
+import dev.openfeature.kotlin.sdk.OpenFeatureStatus
 import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
@@ -44,6 +50,53 @@ import org.junit.jupiter.params.provider.ValueSource
 @ExtendWith(ForgeExtension::class)
 @ForgeConfiguration(FlagsIntegrationForgeConfigurator::class)
 internal class ExperimentationOptOutTest {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class, names = ["IMMEDIATE", "FUTURE_EXPERIMENTS_ONLY"])
+    fun `M not report Error W setEvaluationContext() {superseded request fails, OpenFeatureAPI}`(
+        mode: ExperimentationOptOutMode,
+        forge: Forge
+    ) = runTest {
+        // Given
+        val stubSdkCore = FlagsClientTest.createStubSdkCore(forge)
+        val testedClient = buildClient(stubSdkCore, mode)
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val fakeInitialKey = forge.anAlphabeticalString()
+        val fakeSupersededKey = forge.anAlphabeticalString()
+        val fakeNewerKey = forge.anAlphabeticalString()
+        stubSdkCore.stubNetworkResponses {
+            when (it.targetingKey()) {
+                fakeSupersededKey -> {
+                    testedClient.setEvaluationContext(EvaluationContext(fakeNewerKey))
+                    httpResponse(it, code = 500)
+                }
+                fakeNewerKey -> httpResponse(it, body = response(false))
+                else -> httpResponse(it, body = response(true))
+            }
+        }
+        val statuses = mutableListOf<OpenFeatureStatus>()
+        try {
+            OpenFeatureAPI.setProviderAndWait(
+                provider = testedClient.asOpenFeatureProvider(),
+                initialContext = ImmutableContext(fakeInitialKey),
+                dispatcher = dispatcher
+            )
+            backgroundScope.launch(dispatcher) { OpenFeatureAPI.statusFlow.collect { statuses += it } }
+
+            // When
+            OpenFeatureAPI.setEvaluationContext(ImmutableContext(fakeSupersededKey), dispatcher)
+            testScheduler.runCurrent()
+
+            // Then
+            assertThat(statuses).noneMatch { it is OpenFeatureStatus.Error }
+            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Ready)
+            assertThat(testedClient.resolve("flag", true).value).isFalse()
+        } finally {
+            OpenFeatureAPI.shutdown()
+            stubSdkCore.stopFeatures()
+        }
+    }
+
     @Test
     fun `M forward opt out W setEvaluationContext()`(forge: Forge) {
         // Given

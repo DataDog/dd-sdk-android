@@ -30,7 +30,8 @@ import kotlin.coroutines.suspendCoroutine
  *
  * @param context The evaluation context to set
  * @param telemetryOptedOut The typed subject decision, or null to preserve native telemetry configuration.
- * @throws [CancellationException] if a newer request replaces this request before its usable response is installed.
+ * @throws [CancellationException] in enabled experimentation opt-out modes, if a newer request replaces this
+ * request before its result is processed.
  * @throws [OpenFeatureError.GeneralError] if setting the context fails. The first context operation also
  * fails when the configured Flags initialization timeout elapses without matching cached assignments.
  */

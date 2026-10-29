@@ -186,6 +186,7 @@ internal class EvaluationsManager(
         completionAwareExecutor(onFetchFinished).executeSafe(FETCH_AND_STORE_OPERATION_NAME, internalLogger) {
             try {
                 // Read on the fetch executor so unavailable core context still releases pending telemetry state.
+                // withContext can silently skip its callback after shutdown or rejected dispatch.
                 val datadogContext = if (sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME) != null) {
                     (sdkCore as? InternalSdkCore)?.getDatadogContext(setOf(Feature.RUM_FEATURE_NAME))
                 } else {
@@ -249,7 +250,7 @@ internal class EvaluationsManager(
         val throwable = NetworkRequestFailedException(message)
         synchronized(initializationTerminalLock) {
             val result = takeCompletion(initializationCompletion, callback)
-            experimentationOptOut.ifCurrent(request) {
+            val current = experimentationOptOut.ifCurrent(request) {
                 // Lifecycle is Stale only when retained flags match the requested context.
                 if (matchingCachedAssignments) {
                     enqueueState(FlagsClientState.Stale)
@@ -257,7 +258,7 @@ internal class EvaluationsManager(
                     enqueueState(FlagsClientState.Error(throwable))
                 }
             }
-            enqueueCompletion(result, throwable)
+            enqueueCompletion(result, if (current) throwable else FlagsContextSupersededException(SUPERSEDED_MESSAGE))
         }
         effects.drain()
     }
@@ -288,7 +289,7 @@ internal class EvaluationsManager(
             if (!installed) {
                 enqueueCompletion(
                     takeCompletion(initializationCompletion, callback),
-                    FlagsContextSupersededException("A newer evaluation context replaced this request.")
+                    FlagsContextSupersededException(SUPERSEDED_MESSAGE)
                 )
             }
         }
@@ -321,7 +322,8 @@ internal class EvaluationsManager(
                     } else {
                         request
                     }
-                    if (target != null) {
+                    val newerFailed = target !== request && currentState is FlagsClientState.Error
+                    if (target != null && !newerFailed) {
                         if (currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale) {
                             val hasMatchingCachedAssignments =
                                 (target === request && matchingCachedAssignments.get()) ||
@@ -374,6 +376,7 @@ internal class EvaluationsManager(
     }
 
     companion object {
+        private const val SUPERSEDED_MESSAGE = "A newer evaluation context replaced this request."
         private const val FETCH_AND_STORE_OPERATION_NAME = "Fetch and store flags for evaluation context"
         private const val INVALID_RESPONSE_MESSAGE = "Unable to read the feature flags response."
         private const val NETWORK_REQUEST_FAILED_MESSAGE =

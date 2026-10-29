@@ -20,7 +20,8 @@ interface EvaluationContextCallback {
      *
      * This method is called on a background executor thread after the state transitions
      * to [FlagsClientState.Ready]. A newer context can replace the installed assignments before delivery.
-     * Subsequent resolutions use the current context and can return defaults while it is loading.
+     * In enabled experimentation opt-out modes, resolutions return defaults while the newer context is loading.
+     * In disabled mode, previous assignments remain available until replaced.
      */
     fun onSuccess()
 
@@ -34,8 +35,9 @@ interface EvaluationContextCallback {
      * transition the client to [FlagsClientState.Ready] later.
      *
      * In enabled experimentation opt-out modes, malformed timestamps fail with [FlagsInvalidContextException]
-     * without an assignment request. A usable response discarded after a newer context request fails with
-     * [FlagsContextSupersededException], unless the initialization timeout already completed the callback.
+     * without an assignment request. In enabled modes, a request replaced before its result is processed fails with
+     * [FlagsContextSupersededException], whether its fetch succeeds or fails, unless its timeout already completed it.
+     * A result processed before the request is replaced keeps its original completion outcome.
      * Treat that exception as cancellation. It does not change the newer request's client state.
      *
      * @param error A [Throwable] containing details about the failure, typically including

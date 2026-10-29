@@ -6,5 +6,8 @@
 
 package com.datadog.android.flags
 
-/** Indicates that a later context request replaced this request before its usable response was installed. */
+/**
+ * Indicates that a later context request replaced this request before its result was processed.
+ * Applies only in enabled experimentation opt-out modes.
+ */
 class FlagsContextSupersededException internal constructor(message: String) : IllegalStateException(message)

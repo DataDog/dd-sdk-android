@@ -101,7 +101,7 @@ interface FlagsClient {
      * In enabled experimentation opt-out modes, assignments are unavailable until they match this context,
      * including when the timestamp attribute is absent. Resolutions return defaults with PROVIDER_NOT_READY.
      * An invalid timestamp prevents the assignment request and fails with [FlagsInvalidContextException].
-     * If a newer context replaces this request before its usable response installs, the callback fails with
+     * In enabled modes, if a newer context replaces this request before its result is processed, the callback fails with
      * [FlagsContextSupersededException], unless its initialization timeout already completed it.
      *
      * @param context The [EvaluationContext] containing targeting key and attributes.
@@ -499,7 +499,7 @@ interface FlagsClient {
                 }
             )
 
-            val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
+            val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger, experimentationOptOutMode)
 
             val flagStateManager = FlagsStateManager(
                 stateHolder = DDCoreStateHolder.create(

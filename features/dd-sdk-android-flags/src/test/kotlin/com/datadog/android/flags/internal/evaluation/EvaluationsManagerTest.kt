@@ -39,6 +39,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.utils.DDCoreStateHolder
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -1915,6 +1916,221 @@ internal class EvaluationsManagerTest {
 
     // endregion
 
+    @ParameterizedTest
+    @CsvSource("IMMEDIATE,true", "IMMEDIATE,false", "FUTURE_EXPERIMENTS_ONLY,true", "FUTURE_EXPERIMENTS_ONLY,false")
+    fun `M fail superseded callback W updateEvaluationsForContext() {superseded fetch fails}`(
+        mode: ExperimentationOptOutMode,
+        networkFailed: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val tasks = mutableListOf<Runnable>()
+        val testedManager = queuedManager(mode, tasks)
+        val first = EvaluationContext(forge.anAlphabeticalString())
+        val firstCallback = mock<EvaluationContextCallback>()
+        val newerCallback = mock<EvaluationContextCallback>()
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(eq(first), any(), any())) doReturn
+            if (networkFailed) null else "unreadable"
+        testedManager.updateEvaluationsForContext(first, firstCallback)
+        testedManager.updateEvaluationsForContext(EvaluationContext(forge.anAlphabeticalString()), newerCallback)
+
+        // When
+        tasks[0].run()
+
+        // Then
+        verify(firstCallback).onFailure(isA<FlagsContextSupersededException>())
+        verify(mockFlagsStateManager, never()).updateState(isA<FlagsClientState.Error>())
+        verify(mockFlagsStateManager, never()).updateState(FlagsClientState.Stale)
+        verifyNoInteractions(newerCallback)
+    }
+
+    @Test
+    fun `M fail with network error W updateEvaluationsForContext() {disabled, earlier fetch fails}`(forge: Forge) {
+        // Given
+        val tasks = mutableListOf<Runnable>()
+        val testedManager = queuedManager(ExperimentationOptOutMode.DISABLED, tasks)
+        val firstCallback = mock<EvaluationContextCallback>()
+        testedManager.updateEvaluationsForContext(EvaluationContext(forge.anAlphabeticalString()), firstCallback)
+        testedManager.updateEvaluationsForContext(EvaluationContext(forge.anAlphabeticalString()))
+
+        // When
+        tasks[0].run()
+
+        // Then
+        verify(firstCallback).onFailure(isA<NetworkRequestFailedException>())
+        verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class, names = ["IMMEDIATE", "FUTURE_EXPERIMENTS_ONLY"])
+    fun `M keep initialization timeout W updateEvaluationsForContext() {invalid timestamp first}`(
+        mode: ExperimentationOptOutMode,
+        forge: Forge
+    ) {
+        // Given
+        val scheduled = mutableListOf<Long>()
+        val timeouts = mutableListOf<() -> Unit>()
+        val testedManager = queuedManager(mode, mutableListOf(), timeouts, scheduled)
+        val invalidCallback = mock<EvaluationContextCallback>()
+        val validCallback = mock<EvaluationContextCallback>()
+        testedManager.updateEvaluationsForContext(
+            EvaluationContext(forge.anAlphabeticalString(), mapOf(ExperimentationOptOut.ATTRIBUTE to "junk")),
+            invalidCallback
+        )
+
+        // When
+        testedManager.updateEvaluationsForContext(EvaluationContext(forge.anAlphabeticalString()), validCallback)
+        timeouts.single().invoke()
+
+        // Then
+        assertThat(scheduled).containsExactly(QUEUED_TIMEOUT_MS)
+        verify(invalidCallback).onFailure(isA<FlagsInvalidContextException>())
+        verify(validCallback).onFailure(isA<FlagsInitializationTimeoutException>())
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M cancel initialization timeout W updateEvaluationsForContext() {first completes, newer loading}`(
+        mode: ExperimentationOptOutMode,
+        forge: Forge
+    ) {
+        // Given
+        val tasks = mutableListOf<Runnable>()
+        val timeouts = mutableListOf<() -> Unit>()
+        var cancellations = 0
+        val testedManager = queuedManager(mode, tasks, timeouts, onCancel = { cancellations++ })
+        val firstCallback = mock<EvaluationContextCallback>()
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), any(), any())) doReturn "response"
+        whenever(mockPrecomputeMapper.map(any(), anyOrNull())) doReturn PrecomputedAssignments(emptyMap(), null)
+        testedManager.updateEvaluationsForContext(EvaluationContext(forge.anAlphabeticalString()), firstCallback)
+        testedManager.updateEvaluationsForContext(EvaluationContext(forge.anAlphabeticalString()))
+
+        // When
+        tasks[0].run()
+
+        // Then
+        assertThat(cancellations).isEqualTo(1)
+        if (mode == ExperimentationOptOutMode.DISABLED) {
+            verify(firstCallback).onSuccess()
+        } else {
+            verify(firstCallback).onFailure(isA<FlagsContextSupersededException>())
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "DISABLED,true",
+        "DISABLED,false",
+        "IMMEDIATE,true",
+        "IMMEDIATE,false",
+        "FUTURE_EXPERIMENTS_ONLY,true",
+        "FUTURE_EXPERIMENTS_ONLY,false"
+    )
+    fun `M not complete twice W updateEvaluationsForContext() {fetch ends after timeout}`(
+        mode: ExperimentationOptOutMode,
+        succeeds: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val tasks = mutableListOf<Runnable>()
+        val timeouts = mutableListOf<() -> Unit>()
+        val testedManager = queuedManager(mode, tasks, timeouts)
+        val callback = mock<EvaluationContextCallback>()
+        if (succeeds) {
+            whenever(mockAssignmentsDownloader.readPrecomputedFlags(any(), any(), any())) doReturn "response"
+            whenever(mockPrecomputeMapper.map(any(), anyOrNull())) doReturn PrecomputedAssignments(emptyMap(), null)
+        }
+        testedManager.updateEvaluationsForContext(EvaluationContext(forge.anAlphabeticalString()), callback)
+        timeouts.single().invoke()
+
+        // When
+        tasks.single().run()
+
+        // Then
+        verify(callback).onFailure(isA<FlagsInitializationTimeoutException>())
+        verifyNoMoreInteractions(callback)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M retain newer failure W updateEvaluationsForContext() {reentrant listener, FIFO fetches}`(
+        mode: ExperimentationOptOutMode,
+        forge: Forge
+    ) {
+        // Given
+        val tasks = mutableListOf<Runnable>()
+        val timeouts = mutableListOf<() -> Unit>()
+        val fakeFirst = EvaluationContext(forge.anAlphabeticalString())
+        val fakeNewer = EvaluationContext(forge.anAlphabeticalString())
+        val firstCallback = mock<EvaluationContextCallback>()
+        val stateManager = FlagsStateManager(
+            DDCoreStateHolder.create(
+                initialState = FlagsClientState.NotReady,
+                onStateChanged = FlagsStateListener::onStateChanged
+            )
+        )
+        val testedManager = queuedManager(mode, tasks, timeouts, stateManager = stateManager)
+        val states = mutableListOf<FlagsClientState>()
+        var reentered = false
+        stateManager.addListener(object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                states += newState
+                if (newState == FlagsClientState.Reconciling && !reentered) {
+                    reentered = true
+                    testedManager.updateEvaluationsForContext(fakeNewer)
+                }
+            }
+        })
+
+        // When
+        testedManager.updateEvaluationsForContext(fakeFirst, firstCallback)
+        tasks.removeAt(0).run()
+        timeouts.single().invoke()
+
+        // Then
+        verify(mockAssignmentsDownloader).readPrecomputedFlags(eq(fakeNewer), any(), any())
+        assertThat(tasks).hasSize(1)
+        val errors = states.filterIsInstance<FlagsClientState.Error>()
+        assertThat(stateManager.getCurrentState()).isSameAs(errors.last())
+        if (mode == ExperimentationOptOutMode.DISABLED) {
+            assertThat(errors).hasSize(2)
+            assertThat(errors.last().error).isInstanceOf(FlagsInitializationTimeoutException::class.java)
+        } else {
+            assertThat(errors).hasSize(1)
+            assertThat(errors.single().error).isInstanceOf(NetworkRequestFailedException::class.java)
+        }
+        verify(firstCallback).onFailure(isA<FlagsInitializationTimeoutException>())
+    }
+
+    private fun queuedManager(
+        mode: ExperimentationOptOutMode,
+        tasks: MutableList<Runnable>,
+        timeouts: MutableList<() -> Unit>? = null,
+        scheduled: MutableList<Long> = mutableListOf(),
+        onCancel: () -> Unit = {},
+        stateManager: FlagsStateManager = mockFlagsStateManager
+    ): EvaluationsManager {
+        doAnswer {
+            tasks += it.getArgument<Runnable>(0)
+            null
+        }.whenever(mockExecutorService).execute(any())
+        return EvaluationsManager(
+            mockSdkCore,
+            mockExecutorService,
+            mockInternalLogger,
+            mockFlagsRepository,
+            mockAssignmentsDownloader,
+            mockPrecomputeMapper,
+            stateManager,
+            if (timeouts == null) null else QUEUED_TIMEOUT_MS,
+            { timeoutMs, action ->
+                scheduled += timeoutMs
+                timeouts?.add(action)
+                onCancel
+            },
+            ExperimentationOptOut(mode)
+        )
+    }
     private fun createRepository(): DefaultFlagsRepository {
         val mockDataStore = mock<DataStoreHandler>()
         whenever(mockSdkCore.timeProvider) doReturn mock()
@@ -1956,6 +2172,7 @@ internal class EvaluationsManagerTest {
     )
 
     companion object {
+        private const val QUEUED_TIMEOUT_MS = 1_000L
         private val ENCODED_RESPONSE_JSON = """
             {"data":{"attributes":{
               "obfuscated":true,

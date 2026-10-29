@@ -103,8 +103,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * The method suspends while the [FlagsClient] in turn, takes the context and fetches the flags from the server.
      *
      * @param initialContext The initial evaluation context to set (optional)
-     * @throws java.util.concurrent.CancellationException if a newer context replaces this request
-     * before its usable response is installed.
+     * @throws java.util.concurrent.CancellationException in enabled experimentation opt-out modes, if a newer
+     * context replaces this request before its result is processed.
      * @throws OpenFeatureError if initialization fails or reaches the configured Flags initialization timeout
      * without matching cached assignments
      */
@@ -123,8 +123,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      *
      * @param oldContext The previous evaluation context
      * @param newContext The new evaluation context to set
-     * @throws java.util.concurrent.CancellationException if a newer context replaces this request
-     * before its usable response is installed.
+     * @throws java.util.concurrent.CancellationException in enabled experimentation opt-out modes, if a newer
+     * context replaces this request before its result is processed.
      * @throws OpenFeatureError if the provider is unable to set the new context.
      */
     override suspend fun onContextSet(
