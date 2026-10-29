@@ -624,17 +624,29 @@ test:dd-octo-sts-cross-org:
     - |
       echo "ID token claims:"
       python3 -c 'import os,json,base64; p=os.environ["DDOCTOSTS_ID_TOKEN"].split(".")[1]; c=json.loads(base64.urlsafe_b64decode(p+"="*(-len(p)%4))); print(json.dumps({k:c.get(k) for k in ("iss","sub","project_path","ref_type","ref")}, indent=2))' || true
+      probe() {
+        label="$1"; scope="$2"; policy="$3"
+        echo "=== [$label] scope=$scope policy=$policy"
+        out=$(dd-octo-sts token --scope "$scope" --policy "$policy" 2>/tmp/octo_err)
+        rc=$?
+        if [ $rc -eq 0 ] && [ -n "$out" ]; then
+          echo "SUCCESS (length ${#out})"
+        else
+          echo "FAILED (exit $rc). Full error:"
+          cat /tmp/octo_err
+        fi
+        out=""
+      }
       set +e
-      OUT=$(dd-octo-sts token --scope ddoghq/datadog-android --policy all.gitlab.pr 2>/tmp/octo_err)
-      RC=$?
-      set -e
-      if [ $RC -eq 0 ] && [ -n "$OUT" ]; then
-        echo "SUCCESS: token minted for ddoghq/datadog-android (length ${#OUT})"
-      else
-        echo "FAILED (exit $RC). Full error:"
-        cat /tmp/octo_err
-        exit 1
-      fi
+      probe "1 real target" ddoghq/datadog-android all.gitlab.pr
+      probe "2 same repo, missing policy" ddoghq/datadog-android does-not-exist-policy
+      probe "3 same org, missing repo" ddoghq/does-not-exist-repo-xyz all.gitlab.pr
+      probe "4 control: DataDog org, app installed" DataDog/shopist-android all.gitlab.pr
+      probe "5 control: same repo" DataDog/dd-sdk-android self.gitlab.read
+      probe "6 control: org without app" octocat/Hello-World all.gitlab.pr
+      echo "Legend: if 1 matches 4 and differs from 6, the ddoghq install works and only the subject is rejected."
+      echo "        if 1 matches 6, the app can't use ddoghq."
+      exit 0
 
 notify:dogfood-demo:
   tags: [ "arch:amd64" ]
