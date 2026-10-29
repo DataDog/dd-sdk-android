@@ -52,10 +52,6 @@ internal class CaptureGenerationContextTest {
         @LongForgery(min = 1L, max = 1_000_000L) fakeBudgetNs: Long
     ) {
         // Given
-        // The first isActive() check inside track() reads a timestamp before the deadline; the
-        // second reads one at the deadline, so the generation transitions from active to expired
-        // strictly between registering the work and re-checking liveness - the same window a
-        // concurrent expire()/tryAccept() races with registration in production.
         val fakeDeadlineNs = fakeStartedAtNs + fakeBudgetNs
         val fakeClock = SequencedClock(fakeStartedAtNs, fakeDeadlineNs)
         val testedContext = CaptureGenerationContext(
@@ -104,10 +100,6 @@ internal class CaptureGenerationContextTest {
         @LongForgery(min = 1L, max = 1_000_000L) fakeBudgetNs: Long
     ) {
         // Given
-        // The first isActive() check inside createWorkToken() reads a timestamp before the
-        // deadline (admitting the token); the second reads one at the deadline, so the generation
-        // expires strictly between allocating the token and re-checking liveness - the same window
-        // a concurrent expire()/tryAccept() races with allocation in production.
         val fakeDeadlineNs = fakeStartedAtNs + fakeBudgetNs
         val fakeClock = SequencedClock(fakeStartedAtNs, fakeDeadlineNs)
         val testedContext = CaptureGenerationContext(
@@ -139,11 +131,11 @@ internal class CaptureGenerationContextTest {
             deadlineNs = fakeStartedAtNs + fakeBudgetNs,
             timeProvider = fakeClock
         )
-        val token = testedContext.createWorkToken()
+        val testedToken = testedContext.createWorkToken()
 
         // When
-        val firstComplete = token?.complete()
-        val secondComplete = token?.complete()
+        val firstComplete = testedToken?.complete()
+        val secondComplete = testedToken?.complete()
 
         // Then
         assertThat(firstComplete).isTrue()

@@ -49,15 +49,15 @@ internal class CapturedWebViewMapperTest {
     ) {
         // Given
         val mockWebView: WebView = mock()
-        val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
-        val window = factory.window("window")
-        val owner = factory.view(window, "webview-owner")
-        val mappingContext = CapturedMappingContext(factory, owner, screenDensity = 2f)
+        val fakeFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
+        val fakeWindow = fakeFactory.window("window")
+        val fakeOwner = fakeFactory.view(fakeWindow, "webview-owner")
+        val fakeMappingContext = CapturedMappingContext(fakeFactory, fakeOwner, screenDensity = 2f)
         whenever(mockViewIdentifierResolver.resolveViewId(mockWebView)).thenReturn(fakeSlotId)
         whenever(mockViewBoundsResolver.resolveViewGlobalBounds(mockWebView, 2f)).thenReturn(fakeBounds)
 
         // When
-        val result = testedMapper.map(mockWebView, mappingContext) as CapturedViewMapperResult.Wireframes
+        val result = testedMapper.map(mockWebView, fakeMappingContext) as CapturedViewMapperResult.Wireframes
 
         // Then
         assertThat(result.isTerminal).isTrue()

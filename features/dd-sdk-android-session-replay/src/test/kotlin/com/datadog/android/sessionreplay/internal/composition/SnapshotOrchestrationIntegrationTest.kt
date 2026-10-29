@@ -13,6 +13,7 @@ import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -20,77 +21,85 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.kotlin.any
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 import java.lang.ref.Reference
 import java.util.concurrent.ExecutorService
 
 @Extensions(
+    ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
 @ForgeConfiguration(ForgeConfigurator::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class SnapshotOrchestrationIntegrationTest {
 
     @Test
-    fun `M write completed snapshot W draw signal traverses orchestration boundary`(
+    fun `M write completed snapshot W onDraw() { draw signal traverses orchestration boundary }`(
         @StringForgery fakeApplicationId: String,
-        @StringForgery fakeSessionId: String
+        @StringForgery fakeSessionId: String,
+        @Forgery fakeTree: CompositionTestTree
     ) {
         // Given
-        val tree = compositionTestTree()
-        val scheduler = TestScheduler()
-        val expiryScheduler = TestScheduler()
-        val clock = CaptureTimeProvider { 0L }
-        val executor = mock<ExecutorService>()
-        val writer = mock<RecordWriter>()
-        val rumContextProvider = mock<RumContextProvider>()
-        whenever(rumContextProvider.getRumContext()).thenReturn(
-            SessionReplayRumContext(fakeApplicationId, fakeSessionId, tree.scope.value)
-        )
-        val completionQueue = SnapshotCompletionQueue(
-            executorService = executor,
-            processor = DefaultSnapshotCompletionProcessor(
-                rumContextProvider = rumContextProvider,
-                recordWriter = writer,
-                internalLogger = mock()
-            ),
+        val fakeFixture = RecordingFixture(fakeApplicationId, fakeSessionId, fakeTree)
+
+        // When
+        fakeFixture.orchestrator.start()
+        fakeFixture.listener.onDraw()
+        Reference.reachabilityFence(fakeFixture.mockView)
+        fakeFixture.captureScheduler.runNext()
+        fakeFixture.runCompletion()
+
+        // Then
+        val record = argumentCaptor<EnrichedRecord>()
+        verify(fakeFixture.mockWriter).write(record.capture(), isA())
+        assertThat(record.firstValue.applicationId).isEqualTo(fakeApplicationId)
+        assertThat(record.firstValue.sessionId).isEqualTo(fakeSessionId)
+        assertThat(record.firstValue.viewId).isEqualTo(fakeFixture.fakeTree.scope.value)
+        assertThat(record.firstValue.records).hasSize(1)
+    }
+
+    private class RecordingFixture(
+        fakeApplicationId: String,
+        fakeSessionId: String,
+        val fakeTree: CompositionTestTree
+    ) {
+        val captureScheduler = TestScheduler()
+        private val mockExecutor: ExecutorService = mock()
+        val mockWriter: RecordWriter = mock()
+        private val mockRumContextProvider: RumContextProvider = mock {
+            on { getRumContext() } doReturn
+                SessionReplayRumContext(fakeApplicationId, fakeSessionId, fakeTree.scope.value)
+        }
+        private val completionQueue = SnapshotCompletionQueue(
+            executorService = mockExecutor,
+            processor = DefaultSnapshotCompletionProcessor(mockRumContextProvider, mockWriter, mock()),
             internalLogger = mock<InternalLogger>()
         )
         val orchestrator = SnapshotCaptureOrchestrator(
-            producer = CapturedSnapshotProducer { _ -> tree.snapshot },
+            producer = CapturedSnapshotProducer { fakeTree.snapshot },
             processor = ImmediateCapturedSnapshotProcessor(),
             consumer = completionQueue,
-            timeProvider = clock,
-            captureScheduler = scheduler,
-            mainThreadExecutor = CaptureMainThreadExecutor { task ->
-                task()
-                CancellableCaptureWork.NONE
-            },
-            expiryScheduler = expiryScheduler,
+            timeProvider = CaptureTimeProvider { 0L },
+            captureScheduler = captureScheduler,
+            mainThreadExecutor = CaptureMainThreadExecutor { task -> task(); CancellableCaptureWork.NONE },
+            expiryScheduler = TestScheduler(),
             captureDelayNs = 0
         )
         val mockView: View = mock()
         val listener = CompositionOnDrawListener(mockView) { orchestrator.requestCapture() }
 
-        // When
-        orchestrator.start()
-        listener.onDraw()
-        Reference.reachabilityFence(mockView)
-        scheduler.runNext()
-        val completionTask = argumentCaptor<Runnable>()
-        verify(executor).execute(completionTask.capture())
-        completionTask.firstValue.run()
-
-        // Then
-        val record = argumentCaptor<EnrichedRecord>()
-        verify(writer).write(record.capture(), any())
-        assertThat(record.firstValue.applicationId).isEqualTo(fakeApplicationId)
-        assertThat(record.firstValue.sessionId).isEqualTo(fakeSessionId)
-        assertThat(record.firstValue.viewId).isEqualTo(tree.scope.value)
-        assertThat(record.firstValue.records).hasSize(1)
+        fun runCompletion() {
+            val fakeCompletion = argumentCaptor<Runnable>()
+            verify(mockExecutor).execute(fakeCompletion.capture())
+            fakeCompletion.firstValue.run()
+        }
     }
 
     private class TestScheduler : CaptureTaskScheduler {
