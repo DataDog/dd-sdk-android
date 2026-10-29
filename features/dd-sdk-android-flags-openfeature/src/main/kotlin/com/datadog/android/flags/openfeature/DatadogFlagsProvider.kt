@@ -10,7 +10,6 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsClient
-import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.FlagsClientState
@@ -225,11 +224,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
                     FlagsClientState.Stale -> OpenFeatureProviderEvents.ProviderStale
                     is FlagsClientState.Error -> newState.error.let { cause ->
                         OpenFeatureProviderEvents.ProviderError(
-                            error = if (cause is FlagsInitializationTimeoutException) {
-                                OpenFeatureError.GeneralError(cause.message ?: "Flags initialization timed out")
-                            } else {
-                                OpenFeatureError.ProviderFatalError()
-                            }
+                            error = OpenFeatureError.GeneralError(cause?.message ?: "Unknown flags client error")
                         )
                     }
                 }
