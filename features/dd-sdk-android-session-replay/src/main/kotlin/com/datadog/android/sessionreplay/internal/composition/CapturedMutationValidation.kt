@@ -6,6 +6,11 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
+import com.datadog.android.internal.sessionreplay.composition.CapturedIdentityKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+
 @Suppress("TooManyFunctions") // Each function validates one independent mutation invariant.
 internal class CapturedMutationValidation(
     private val mutation: CapturedMutationSet,
