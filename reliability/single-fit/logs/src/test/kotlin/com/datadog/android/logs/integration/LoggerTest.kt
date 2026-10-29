@@ -601,7 +601,7 @@ class LoggerTest {
         @FloatForgery(0f, 100f) fakeSampleRate: Float
     ) {
         // Given
-        val repeatCount = 256
+        val repeatCount = 1024
         val offsetMargin = repeatCount / 10 // allow 10% margin
         val testedLogger = Logger.Builder(stubSdkCore).setRemoteSampleRate(fakeSampleRate).build()
 
