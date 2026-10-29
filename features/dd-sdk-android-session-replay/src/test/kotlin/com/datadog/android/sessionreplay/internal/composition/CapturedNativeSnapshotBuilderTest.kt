@@ -56,6 +56,7 @@ internal class CapturedNativeSnapshotBuilderTest {
     private lateinit var fakeWindowIdentity: CapturedIdentity
     private lateinit var fakeHostIdentity: CapturedIdentity
     private lateinit var fakeNodeIdentity: CapturedIdentity
+    private lateinit var fakeContentIdentity: CapturedIdentity
     private lateinit var fakeInteropIdentity: CapturedIdentity
     private lateinit var fakeGeneration: CaptureGenerationContext
     private var fakeDensity: Float = 1f
@@ -75,6 +76,7 @@ internal class CapturedNativeSnapshotBuilderTest {
         fakeFactory = DefaultCapturedIdentityFactory(RumViewIdentityScope(fakeScope))
         fakeWindowIdentity = fakeFactory.window(fakeWindowId)
         fakeHostIdentity = fakeFactory.composeHost(fakeWindowIdentity, fakeHostId)
+        fakeContentIdentity = fakeFactory.layer(fakeHostIdentity, "composition-content")
         fakeNodeIdentity = fakeFactory.composeNode(fakeHostIdentity, fakeNodeId)
         fakeInteropIdentity = fakeFactory.composeNode(fakeHostIdentity, fakeInteropId)
         fakeDensity = fakeDensityValue
@@ -116,15 +118,18 @@ internal class CapturedNativeSnapshotBuilderTest {
                 CapturedClip(bottom = 3, left = 10, right = 10)
             }
         )
-        assertThat(snapshot.layers.single { it.identity == fakeHostIdentity }.modifiers).containsExactly(
-            CapturedModifier.Opacity(0.5),
+        assertThat(snapshot.layers.single { it.identity == fakeHostIdentity }.modifiers)
+            .containsExactly(CapturedModifier.Opacity(0.5))
+        assertThat(snapshot.layers.single { it.identity == fakeContentIdentity }.modifiers).containsExactly(
             CapturedModifier.Clip(
                 if (fakeRestrictiveHostClip) "M20 0 H80 V100 H20 Z" else "M0 0 H100 V100 H0 Z"
             )
         )
         assertThat(snapshot.layers.single { it.identity == fakeWindowIdentity }.modifiers).isEmpty()
         assertThat(snapshot.layers.single { it.identity == fakeInteropIdentity }.modifiers).isEmpty()
-        assertThat(snapshot.layers.single { it.identity == fakeHostIdentity }.children).containsExactly(
+        assertThat(snapshot.layers.single { it.identity == fakeHostIdentity }.children)
+            .containsExactly(CapturedChild.Layer(fakeContentIdentity))
+        assertThat(snapshot.layers.single { it.identity == fakeContentIdentity }.children).containsExactly(
             CapturedChild.Layer(fakeNodeIdentity),
             CapturedChild.Layer(fakeInteropIdentity)
         )
@@ -162,7 +167,7 @@ internal class CapturedNativeSnapshotBuilderTest {
 
         // Then
         val snapshot = checkNotNull(result)
-        assertThat(snapshot.layers.single { it.identity == fakeHostIdentity }.modifiers)
+        assertThat(snapshot.layers.single { it.identity == fakeContentIdentity }.modifiers)
             .containsExactly(CapturedModifier.Clip(fakeExpectedPath))
         assertThat(DefaultCapturedTreeValidator().validate(snapshot)).isEqualTo(CaptureValidationResult.Valid)
     }
@@ -208,7 +213,7 @@ internal class CapturedNativeSnapshotBuilderTest {
         // Then
         if (fakeAccepted) {
             val snapshot = checkNotNull(result)
-            assertThat(snapshot.layers).hasSize(2 * fakeDepth + 1)
+            assertThat(snapshot.layers).hasSize(3 * fakeDepth + 1)
             assertThat(DefaultCapturedTreeValidator().validate(snapshot)).isEqualTo(CaptureValidationResult.Valid)
             verify(mockNativeData).map(isA())
         } else {
@@ -255,7 +260,11 @@ internal class CapturedNativeSnapshotBuilderTest {
                             emptyList(),
                             emptyList()
                         ),
-                        listOf(nested)
+                        listOf(nested),
+                        fakeFactory.layer(
+                            fakeFactory.composeHost(fakeWindowIdentity, "host-$level"),
+                            "composition-content"
+                        )
                     )
                 )
                 listOf(root, host)
@@ -328,7 +337,8 @@ internal class CapturedNativeSnapshotBuilderTest {
                 listOf(node),
                 listOf(shape)
             ),
-            listOf(CapturedNativeWindow(fakeDensity, listOf(native)))
+            listOf(CapturedNativeWindow(fakeDensity, listOf(native))),
+            fakeContentIdentity
         )
     }
 }

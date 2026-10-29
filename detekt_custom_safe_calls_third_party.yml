@@ -793,6 +793,7 @@ datadog:
       - "kotlin.collections.listOf(com.datadog.android.core.feature.event.ThreadDump)"
       - "kotlin.collections.listOf(com.datadog.android.flags.model.BatchedFlagEvaluations.FlagEvaluation)"
       - "kotlin.collections.listOf(com.datadog.android.internal.sessionreplay.composition.CapturedChild.Wireframe)"
+      - "kotlin.collections.listOf(com.datadog.android.internal.sessionreplay.composition.CapturedModifier.Clip)"
       - "kotlin.collections.listOf(com.datadog.android.internal.sessionreplay.composition.CapturedModifier.Opacity)"
       - "kotlin.collections.listOf(com.datadog.android.internal.sessionreplay.composition.CapturedWireframe.PrivacyPlaceholder)"
       - "kotlin.collections.listOf(com.datadog.android.internal.sessionreplay.composition.CapturedWireframe.Shape)"

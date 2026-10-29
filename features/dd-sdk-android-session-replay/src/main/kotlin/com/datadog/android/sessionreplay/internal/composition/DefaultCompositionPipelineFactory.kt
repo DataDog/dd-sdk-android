@@ -34,6 +34,7 @@ internal class DefaultCompositionPipelineFactory(
     private val sdkCore: FeatureSdkCore,
     private val internalCallback: SessionReplayInternalCallback,
     private val touchPrivacyManager: TouchPrivacyManager,
+    private val compositionHostDecomposer: CompositionHostDecomposer? = null,
     private val dynamicOptimizationEnabled: Boolean,
     private val customDrawableMappers: List<DrawableToColorMapper> = emptyList(),
     private val snapshotProducerFactory: (ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer = {
@@ -46,7 +47,8 @@ internal class DefaultCompositionPipelineFactory(
             timeProvider = sdkCore.timeProvider,
             traversal = AndroidWindowTraversal(
                 mapperRegistry = builtInCapturedMappers(sdkCore.internalLogger, customDrawableMappers),
-                internalLogger = sdkCore.internalLogger
+                internalLogger = sdkCore.internalLogger,
+                compositionHostDecomposer = compositionHostDecomposer
             ),
             touchPrivacyManager = touchPrivacyManager
         )

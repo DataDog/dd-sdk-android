@@ -27,6 +27,7 @@ import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.composition.CompositionCapturePipeline
+import com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposer
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentEvent
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentReceiver
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistration
@@ -91,7 +92,8 @@ internal class SessionReplayFeature(
         adaptiveCaptureSchedulingEnabled: Boolean,
         internalCallback: SessionReplayInternalCallback,
         heatmapsEnabled: Boolean,
-        compositionTreeRecordingEnabled: Boolean
+        compositionTreeRecordingEnabled: Boolean,
+        compositionHostDecomposer: CompositionHostDecomposer? = null
     ) : this(
         sdkCore,
         customEndpointUrl,
@@ -114,7 +116,8 @@ internal class SessionReplayFeature(
             adaptiveCaptureSchedulingEnabled,
             internalCallback,
             heatmapsEnabled,
-            compositionTreeRecordingEnabled
+            compositionTreeRecordingEnabled,
+            compositionHostDecomposer
         )
     )
 

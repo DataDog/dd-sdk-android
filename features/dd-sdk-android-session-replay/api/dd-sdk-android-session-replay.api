@@ -175,12 +175,13 @@ public final class com/datadog/android/sessionreplay/internal/TouchPrivacyManage
 }
 
 public final class com/datadog/android/sessionreplay/internal/composition/CompositionHostDecomposeRequest {
-	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CompositionIdentityFactory;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;FLcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lkotlin/jvm/functions/Function2;)V
+	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CompositionIdentityFactory;Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;FLcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function2;)V
 	public final fun getHostBounds ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedBounds;
 	public final fun getHostIdentity ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedIdentity;
 	public final fun getIdentityFactory ()Lcom/datadog/android/internal/sessionreplay/composition/CompositionIdentityFactory;
 	public final fun getNativeViewHandoff ()Lkotlin/jvm/functions/Function2;
 	public final fun getScreenDensity ()F
+	public final fun getShouldContinue ()Lkotlin/jvm/functions/Function0;
 }
 
 public final class com/datadog/android/sessionreplay/internal/composition/CompositionHostDecomposeResult {
@@ -197,13 +198,6 @@ public abstract interface class com/datadog/android/sessionreplay/internal/compo
 
 public abstract interface class com/datadog/android/sessionreplay/internal/composition/CompositionHostDecomposerProvider : com/datadog/android/sessionreplay/ExtensionSupport {
 	public abstract fun getCompositionHostDecomposer ()Lcom/datadog/android/sessionreplay/internal/composition/CompositionHostDecomposer;
-}
-
-public final class com/datadog/android/sessionreplay/internal/composition/CompositionNativeSubtree {
-	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayer;Ljava/util/List;Ljava/util/List;)V
-	public final fun getLayers ()Ljava/util/List;
-	public final fun getRootLayer ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayer;
-	public final fun getWireframes ()Ljava/util/List;
 }
 
 public abstract interface class com/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator {
