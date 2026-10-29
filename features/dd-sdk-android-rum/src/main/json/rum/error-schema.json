@@ -133,7 +133,8 @@
                 "macos",
                 "linux",
                 "maui",
-                "nodejs"
+                "nodejs",
+                "unreal"
               ],
               "readOnly": true
             },
