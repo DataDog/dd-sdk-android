@@ -20,7 +20,7 @@ interface EvaluationContextCallback {
      *
      * This method is called on a background executor thread after the state transitions
      * to [FlagsClientState.Ready]. A newer context can replace the installed assignments before delivery.
-     * In enabled experimentation opt-out modes, resolutions return defaults while the newer context is loading.
+     * In enabled experimentation opt-out modes, resolutions return defaults until assignments match the current context.
      * In disabled mode, previous assignments remain available until replaced.
      */
     fun onSuccess()
