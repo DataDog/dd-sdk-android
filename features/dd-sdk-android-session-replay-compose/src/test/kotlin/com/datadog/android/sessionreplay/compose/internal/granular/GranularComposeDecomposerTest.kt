@@ -395,11 +395,21 @@ internal class GranularComposeDecomposerTest {
     }
 
     @ParameterizedTest
-    @CsvSource("false,true,false", "true,true,false", "false,false,false", "false,true,true")
+    @CsvSource(
+        "false,true,false,false",
+        "true,true,false,false",
+        "false,false,false,false",
+        "false,true,true,false",
+        "false,true,false,true",
+        "true,true,false,true",
+        "false,false,false,true",
+        "false,true,true,true"
+    )
     fun `M bake equivalent rounded image clips W decompose() { permitted source only }`(
         masked: Boolean,
         sameBounds: Boolean,
-        fails: Boolean
+        fails: Boolean,
+        shared: Boolean
     ) {
         // Given
         val node = mockLeafNode()
@@ -421,7 +431,7 @@ internal class GranularComposeDecomposerTest {
         whenever(bitmap.width).thenReturn(200)
         whenever(bitmap.height).thenReturn(100)
         whenever(mockSemanticsUtils.resolveCompositionPainter(eq(node), any()))
-            .thenReturn(BitmapInfo(bitmap, false, ContentScale.Crop))
+            .thenReturn(BitmapInfo(bitmap, false, ContentScale.Crop, isShared = shared))
         val viewport = GlobalBounds(32, 32, 160, 160)
         whenever(mockSemanticsUtils.resolveUnclippedBounds(eq(node), any())).thenReturn(viewport)
         whenever(mockSemanticsUtils.resolveVisibleBounds(eq(node), any())).thenReturn(viewport)
@@ -458,7 +468,7 @@ internal class GranularComposeDecomposerTest {
         }
         if (fails) {
             assertThatThrownBy { capture() }.isSameAs(failure)
-            verify(bitmap).recycle()
+            verify(bitmap, if (shared) never() else org.mockito.kotlin.times(1)).recycle()
             assertThat(captures).isEmpty()
             return
         }
@@ -474,7 +484,7 @@ internal class GranularComposeDecomposerTest {
             assertThat(captures.single().bitmap).isSameAs(if (sameBounds) clippedBitmap else bitmap)
             if (sameBounds) {
                 assertThat(result.wireframes.single().bounds).isEqualTo(CapturedBounds(32, 32, 160, 160))
-                verify(bitmap).recycle()
+                verify(bitmap, if (shared) never() else org.mockito.kotlin.times(1)).recycle()
             }
         }
     }

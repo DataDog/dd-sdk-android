@@ -14,5 +14,12 @@ internal data class BitmapInfo(
     val bitmap: Bitmap,
     val isContextualImage: Boolean,
     val contentScale: ContentScale? = null,
-    val alignment: Alignment? = null
-)
+    val alignment: Alignment? = null,
+    /** Recorder-owned read-only pixels may be reused by later composition captures. */
+    val isShared: Boolean = false
+) {
+    @Suppress("UnsafeThirdPartyFunctionCall") // Only uncached recorder-owned pixels can be released by a caller.
+    fun recycleIfOwned() {
+        if (!isShared) bitmap.recycle()
+    }
+}

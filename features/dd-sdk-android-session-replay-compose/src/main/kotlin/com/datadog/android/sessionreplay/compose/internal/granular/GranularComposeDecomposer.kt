@@ -61,6 +61,7 @@ import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
+import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.ImageSemanticsNodeMapper
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.compose.internal.utils.ComposeTextCaptureCache
@@ -836,11 +837,11 @@ internal class GranularComposeDecomposer(
                     image,
                     request.screenDensity
                 )
-                val clipped = clipSourceImage(node, modifiers, bitmap, scaled.bounds, painterBounds)
+                val clipped = clipSourceImage(node, modifiers, image, scaled.bounds, painterBounds)
                 // The clip is also retained in the composition tree. Baking it into this permitted
                 // source image preserves the same pixels in players consuming only flat wireframes.
                 val pixelBounds = if (clipped != null) painterBounds else scaled.bounds
-                if (clipped != null && clipped !== bitmap) bitmap.recycle()
+                if (clipped != null && clipped !== bitmap) image.recycleIfOwned()
                 val pixelId = request.identityFactory.imageWireframe(identity)
                 request.pendingPixelCaptureSink.register(
                     PendingPixelCapture(pixelId, identity, clipped ?: bitmap, isSourceImage = true)
@@ -852,7 +853,7 @@ internal class GranularComposeDecomposer(
                     resource = PixelResource.Unresolved
                 )
             } else {
-                bitmap?.recycle()
+                image?.recycleIfOwned()
                 CapturedWireframe.PrivacyPlaceholder(
                     request.identityFactory.placeholderWireframe(identity),
                     CapturedBounds(painterBounds.x, painterBounds.y, painterBounds.width, painterBounds.height),
@@ -876,7 +877,7 @@ internal class GranularComposeDecomposer(
         private fun clipSourceImage(
             node: SemanticsNode,
             modifiers: List<ModifierInfo>,
-            bitmap: Bitmap,
+            image: BitmapInfo,
             scaledBounds: GlobalBounds,
             painterBounds: GlobalBounds
         ): Bitmap? {
@@ -890,11 +891,11 @@ internal class GranularComposeDecomposer(
                     image = true
                 )
                 radius?.let {
-                    sourceImageClipper.clip(bitmap, scaledBounds, painterBounds, it, request.screenDensity)
+                    sourceImageClipper.clip(image.bitmap, scaledBounds, painterBounds, it, request.screenDensity)
                 }.also { completed = true }
             } finally {
                 // This source copy has not reached the pending-capture owner if clipping failed.
-                if (!completed) bitmap.recycle()
+                if (!completed) image.recycleIfOwned()
             }
         }
 

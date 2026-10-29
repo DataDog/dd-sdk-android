@@ -1688,6 +1688,38 @@ internal class SemanticsUtilsTest {
     }
 
     @Test
+    fun `M reuse source pixels while refreshing layout metadata W resolveCompositionPainter`() {
+        // Given
+        val painter: BitmapPainter = mock()
+        val source: Bitmap = mock()
+        val frozen: Bitmap = mock()
+        whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn painter
+        whenever(mockReflectionUtils.getBitmapInBitmapPainter(painter)) doReturn source
+        whenever(mockReflectionUtils.getImageAlpha(mockSemanticsNode)) doReturn 1f
+        whenever(mockReflectionUtils.getContentScale(mockSemanticsNode)) doReturn ContentScale.Fit
+        whenever(source.width) doReturn 120
+        whenever(source.height) doReturn 80
+        whenever(source.config) doReturn Bitmap.Config.ARGB_8888
+        whenever(source.copy(Bitmap.Config.ARGB_8888, false)) doReturn frozen
+
+        // When
+        val first = testedSemanticsUtils.resolveCompositionPainter(mockSemanticsNode, mockInternalLogger)!!
+        whenever(mockReflectionUtils.getContentScale(mockSemanticsNode)) doReturn ContentScale.Crop
+        whenever(mockReflectionUtils.getAlignment(mockSemanticsNode)) doReturn Alignment.BottomEnd
+        val updated = testedSemanticsUtils.resolveCompositionPainter(mockSemanticsNode, mockInternalLogger)!!
+
+        // Then - placement remains current while the frozen pixels are shared read-only.
+        assertThat(first.bitmap).isSameAs(frozen)
+        assertThat(updated.bitmap).isSameAs(frozen)
+        assertThat(updated.contentScale).isSameAs(ContentScale.Crop)
+        assertThat(updated.alignment).isSameAs(Alignment.BottomEnd)
+        assertThat(first.isShared && updated.isShared).isTrue()
+        verify(source).copy(Bitmap.Config.ARGB_8888, false)
+        verify(source, never()).recycle()
+        verify(frozen, never()).recycle()
+    }
+
+    @Test
     fun `M return local bitmap W resolveSemanticsPainter { local image }`() {
         // Given
         val mockVectorPainter = mock<VectorPainter>()

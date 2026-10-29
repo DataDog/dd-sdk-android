@@ -12,6 +12,7 @@ import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
+import com.datadog.android.sessionreplay.compose.internal.utils.ComposeImageBitmapCache
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import kotlin.math.roundToInt
 
@@ -27,6 +28,16 @@ internal fun interface ComposeSourceImageClipper {
 }
 
 internal class DefaultComposeSourceImageClipper : ComposeSourceImageClipper {
+    private data class ClipKey(
+        val scaled: GlobalBounds,
+        val width: Int,
+        val height: Int,
+        val radius: Float,
+        val density: Float
+    )
+
+    private val imageCache = ComposeImageBitmapCache<ClipKey>()
+
     @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall")
     override fun clip(
         bitmap: Bitmap,
@@ -41,21 +52,43 @@ internal class DefaultComposeSourceImageClipper : ComposeSourceImageClipper {
         val width = (viewport.width * density).roundToInt()
         val height = (viewport.height * density).roundToInt()
         if (width <= 0 || height <= 0 || width.toLong() * height > MAX_IMAGE_PIXELS) return null
-        val pixels = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        // Scrolling changes absolute placement, not these source-image pixels.
+        val key = ClipKey(
+            GlobalBounds(
+                scaledBounds.x - viewport.x,
+                scaledBounds.y - viewport.y,
+                scaledBounds.width,
+                scaledBounds.height
+            ),
+            width,
+            height,
+            radiusDp * density,
+            density
+        )
+        return imageCache.getOrCreate(bitmap, key) { rasterize(bitmap, key) }
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // Render permitted source pixels into recorder-owned output.
+    private fun rasterize(bitmap: Bitmap, key: ClipKey): Bitmap {
+        val pixels = Bitmap.createBitmap(key.width, key.height, Bitmap.Config.ARGB_8888)
         var completed = false
         return try {
             val canvas = Canvas(pixels)
             val mask = Paint(Paint.ANTI_ALIAS_FLAG)
-            val radius = radiusDp * density
-            canvas.drawRoundRect(RectF(0f, 0f, width.toFloat(), height.toFloat()), radius, radius, mask)
+            canvas.drawRoundRect(
+                RectF(0f, 0f, key.width.toFloat(), key.height.toFloat()),
+                key.radius,
+                key.radius,
+                mask
+            )
             val paint = Paint(Paint.FILTER_BITMAP_FLAG).apply {
                 xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
             }
             val target = RectF(
-                (scaledBounds.x - viewport.x) * density,
-                (scaledBounds.y - viewport.y) * density,
-                (scaledBounds.x + scaledBounds.width - viewport.x) * density,
-                (scaledBounds.y + scaledBounds.height - viewport.y) * density
+                key.scaled.x * key.density,
+                key.scaled.y * key.density,
+                (key.scaled.x + key.scaled.width) * key.density,
+                (key.scaled.y + key.scaled.height) * key.density
             )
             canvas.drawBitmap(bitmap, null, target, paint)
             completed = true

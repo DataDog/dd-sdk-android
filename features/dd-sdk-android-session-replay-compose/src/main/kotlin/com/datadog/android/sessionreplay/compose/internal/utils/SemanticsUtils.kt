@@ -66,6 +66,7 @@ internal class SemanticsUtils(
     private val sampler: RateBasedSampler<Unit> = RateBasedSampler(BITMAP_TELEMETRY_SAMPLE_RATE),
     private val textCaptureCache: ComposeTextCaptureCache? = null
 ) {
+    private val compositionImageCache = ComposeImageBitmapCache<Unit>()
     private val backgroundResolver = BackgroundResolver(
         reflectionUtils,
         { node, offset -> resolveInnerBounds(node, offset) }
@@ -388,12 +389,15 @@ internal class SemanticsUtils(
         if (canCopyPainterSource(painter, source, alpha, colorFilter)) {
             // Own a frozen software copy without also allocating and drawing an identical second
             // bitmap. The tinted/transparent and vector paths still render their painter output.
-            val frozen = source.copy(Bitmap.Config.ARGB_8888, false) ?: return null
+            val frozen = compositionImageCache.getOrCreate(source, Unit) {
+                source.copy(Bitmap.Config.ARGB_8888, false)
+            } ?: return null
             return BitmapInfo(
                 frozen,
                 contextual,
                 reflectionUtils.getContentScale(semanticsNode),
-                reflectionUtils.getAlignment(semanticsNode)
+                reflectionUtils.getAlignment(semanticsNode),
+                isShared = true
             )
         }
         val pixels = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
@@ -421,16 +425,6 @@ internal class SemanticsUtils(
         } finally {
             if (!completed) pixels.recycle()
         }
-    }
-
-    private fun canCopyPainterSource(
-        painter: Painter,
-        source: Bitmap,
-        alpha: Float,
-        colorFilter: androidx.compose.ui.graphics.ColorFilter?
-    ): Boolean {
-        val unmodified = alpha == 1f && colorFilter == null
-        return unmodified && painter !is VectorPainter && source.config != Bitmap.Config.ALPHA_8
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Supported software copy; the temporary source is always recycled.
@@ -788,4 +782,14 @@ internal class SemanticsUtils(
         internal const val TEXT_OVERFLOW_ELLIPSIS_START = 4
         internal const val TEXT_OVERFLOW_ELLIPSIS_MIDDLE = 5
     }
+}
+
+private fun canCopyPainterSource(
+    painter: Painter,
+    source: Bitmap,
+    alpha: Float,
+    colorFilter: androidx.compose.ui.graphics.ColorFilter?
+): Boolean {
+    val unmodified = alpha == 1f && colorFilter == null
+    return unmodified && painter !is VectorPainter && source.config != Bitmap.Config.ALPHA_8
 }
