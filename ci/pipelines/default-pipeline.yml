@@ -608,6 +608,34 @@ notify:dogfood-app:
     - pip3 install GitPython requests
     - python3 ./ci/scripts/dogfood.py -v $CI_COMMIT_TAG -t app
 
+# TEMPORARY: checks whether dd-octo-sts can mint a token for a repo in another GitHub org.
+# Never prints the token. Remove once the cross-org question is answered.
+test:dd-octo-sts-cross-org:
+  tags: [ "arch:amd64" ]
+  interruptible: false
+  image: $CI_IMAGE_DOCKER
+  id_tokens:
+    DDOCTOSTS_ID_TOKEN:
+      aud: dd-octo-sts
+  stage: notify
+  when: manual
+  allow_failure: true
+  script:
+    - |
+      echo "ID token claims:"
+      python3 -c 'import os,json,base64; p=os.environ["DDOCTOSTS_ID_TOKEN"].split(".")[1]; c=json.loads(base64.urlsafe_b64decode(p+"="*(-len(p)%4))); print(json.dumps({k:c.get(k) for k in ("iss","sub","project_path","ref_type","ref")}, indent=2))' || true
+      set +e
+      OUT=$(dd-octo-sts token --scope ddoghq/datadog-android --policy all.gitlab.pr 2>/tmp/octo_err)
+      RC=$?
+      set -e
+      if [ $RC -eq 0 ] && [ -n "$OUT" ]; then
+        echo "SUCCESS: token minted for ddoghq/datadog-android (length ${#OUT})"
+      else
+        echo "FAILED (exit $RC). Full error:"
+        cat /tmp/octo_err
+        exit 1
+      fi
+
 notify:dogfood-demo:
   tags: [ "arch:amd64" ]
   interruptible: false
