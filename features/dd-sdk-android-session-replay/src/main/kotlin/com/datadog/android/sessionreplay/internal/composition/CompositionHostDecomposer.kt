@@ -6,7 +6,9 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import android.graphics.Rect
 import android.view.View
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
@@ -14,6 +16,8 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
 import com.datadog.android.lint.InternalApi
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.TouchPrivacy
 
 /**
  * SDK-internal extension point: decomposes a Compose host view (`ComposeView`/`AndroidComposeView`)
@@ -38,6 +42,14 @@ interface CompositionHostDecomposer {
     fun canDecompose(view: View): Boolean
 
     /**
+     * Refreshes screen-pixel touch overrides without producing visual output. Return an empty map
+     * for unsupported Views, or null when current privacy cannot be established within the budget.
+     * A null result denies touches until a later successful refresh or capture.
+     */
+    @InternalApi
+    fun readTouchOverrideAreas(view: View, shouldContinue: () -> Boolean): Map<Rect, TouchPrivacy>?
+
+    /**
      * Decomposes [view]'s content per [request]. Returns null when the host cannot be decomposed.
      * The SDK caller contains thrown failures, reports them through its SDK-bound logger, and
      * falls back to ordinary native-View capture. An implementation may disable itself after an
@@ -60,6 +72,8 @@ interface CompositionHostDecomposer {
  * composition output to this rectangle after subtree effects, even when the host does not clip
  * native children.
  * Null means that guarantee is unavailable and the decomposer must not cull against host bounds.
+ * @param textAndInputPrivacy Effective host policy, inherited by Compose nodes unless overridden.
+ * @param internalLogger Logger bound to the SDK core performing this capture.
  * @param shouldContinue Cooperative deadline/cancellation check. Stop between nodes and return null
  * when it returns false; partial output must not be returned or treated as a compatibility failure.
  * @param nativeViewHandoff Copies an embedded native View for construction on the processing
@@ -74,6 +88,8 @@ class CompositionHostDecomposeRequest(
     val hostIdentity: CapturedIdentity,
     val screenDensity: Float,
     val hostBounds: CapturedBounds?,
+    val textAndInputPrivacy: TextAndInputPrivacy,
+    val internalLogger: InternalLogger,
     val shouldContinue: () -> Boolean,
     val nativeViewHandoff: (view: View, childIdentity: CapturedIdentity) -> Boolean
 )
@@ -88,10 +104,13 @@ class CompositionHostDecomposeRequest(
  * only Compose-owned layers; native handoff layers are constructed separately by the caller.
  * @param wireframes Every Compose-owned leaf [CapturedWireframe] the decomposer produced,
  * referenced from [rootChildren]/[nodes] by identity. Native handoff output is added by the caller.
+ * @param touchOverrideAreas Owned screen-pixel rectangles carrying Compose touch overrides.
+ * Only published after the enclosing decomposition succeeds.
  */
 @InternalApi
 class CompositionHostDecomposeResult(
     val rootChildren: List<CapturedChild>,
     val nodes: List<CapturedLayer>,
-    val wireframes: List<CapturedWireframe>
+    val wireframes: List<CapturedWireframe>,
+    val touchOverrideAreas: Map<Rect, TouchPrivacy> = emptyMap()
 )

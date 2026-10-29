@@ -11,10 +11,15 @@ import android.graphics.Rect
 import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TouchPrivacy
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.utils.verifyLog
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -33,7 +38,8 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
-@ExtendWith(MockitoExtension::class)
+@ExtendWith(MockitoExtension::class, ForgeExtension::class)
+@ForgeConfiguration(ForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class WindowTouchPrivacyReaderTest {
     @ParameterizedTest
@@ -153,5 +159,92 @@ internal class WindowTouchPrivacyReaderTest {
     private fun pointAt(x: Int, y: Int): Point = Point().apply {
         this.x = x
         this.y = y
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M refresh Compose privacy after capture or redraw W read()`(
+        fakeHidden: Boolean,
+        @StringForgery fakeScopeId: String
+    ) {
+        // Given
+        val mockRoot: View = mock {
+            on { isShown } doReturn true
+            on { width } doReturn 100
+            on { height } doReturn 100
+        }
+        val fakeArea = Rect(10, 20, 40, 60)
+        val fakePrivacy = if (fakeHidden) TouchPrivacy.HIDE else TouchPrivacy.SHOW
+        val testedReader = WindowTouchPrivacyReader(
+            timeProvider = CaptureTimeProvider { 0L },
+            isMainThreadWindow = { true },
+            readCompositionTouchPrivacy = { _, shouldContinue ->
+                if (shouldContinue()) mapOf(fakeArea to fakePrivacy) else null
+            }
+        )
+        val windows =
+            ActiveWindowSource(readTouchPrivacy = testedReader::read, refreshTouchPrivacyAfterCapture = fakeHidden)
+        windows.update(listOf(mockRoot))
+        val fakeScope = RumViewIdentityScope(fakeScopeId)
+        windows.publishTouchPrivacy(windows.snapshot(), listOf(mockRoot), fakeScope) {}
+        if (!fakeHidden) windows.onDraw(mockRoot)
+
+        // When
+        val result = windows.currentTouchOverrideAreas(mockRoot, fakeScope)
+
+        // Then
+        assertThat(result).containsEntry(fakeArea, fakePrivacy)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M deny touches W read() { Compose refresh unavailable or exceeds budget }`(fakeExpires: Boolean) {
+        // Given
+        val mockRoot: View = mock {
+            on { isShown } doReturn true
+            on { width } doReturn 100
+            on { height } doReturn 100
+        }
+        var fakeNow = 0L
+        var fakeContinueAfterExpiry: Boolean? = null
+        val testedReader = WindowTouchPrivacyReader(
+            timeProvider = CaptureTimeProvider { fakeNow },
+            budgetNs = 100L,
+            isMainThreadWindow = { true },
+            readCompositionTouchPrivacy = { _, shouldContinue ->
+                if (fakeExpires) {
+                    fakeNow = 100L
+                    fakeContinueAfterExpiry = shouldContinue()
+                    emptyMap()
+                } else {
+                    null
+                }
+            }
+        )
+
+        // When
+        val result = testedReader.read(mockRoot)
+
+        // Then
+        assertThat(result).isNull()
+        if (fakeExpires) assertThat(fakeContinueAfterExpiry).isFalse()
+    }
+
+    @Test
+    fun `M deny touch scope W currentTouchPrivacyScope() { visual fallback cannot establish Compose privacy }`(
+        @StringForgery fakeScopeId: String
+    ) {
+        // Given
+        val root: View = mock()
+        val windows = ActiveWindowSource(readTouchPrivacy = { null }, refreshTouchPrivacyAfterCapture = true)
+        windows.update(listOf(root))
+        val scope = RumViewIdentityScope(fakeScopeId)
+        windows.publishTouchPrivacy(windows.snapshot(), listOf(root), scope) {}
+
+        // When
+        val result = windows.currentTouchPrivacyScope(root, scope)
+
+        // Then
+        assertThat(result).isNull()
     }
 }

@@ -29,7 +29,8 @@ internal class WindowTouchPrivacyReader(
     private val timeProvider: CaptureTimeProvider = CaptureTimeProvider(System::nanoTime),
     private val budgetNs: Long = DEFAULT_BUDGET_NS,
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND,
-    private val isMainThreadWindow: (View) -> Boolean = ::isAttachedToMainLooper
+    private val isMainThreadWindow: (View) -> Boolean = ::isAttachedToMainLooper,
+    private val readCompositionTouchPrivacy: ((View, () -> Boolean) -> Map<Rect, TouchPrivacy>?)? = null
 ) {
     private val viewUtils = ViewUtilsInternal()
 
@@ -66,6 +67,13 @@ internal class WindowTouchPrivacyReader(
             val view = pending.removeLast()
             if (shouldSkipSubtree(view)) continue
             collectTouchOverrideArea(view, areas, internalLogger)
+            val readComposition = readCompositionTouchPrivacy
+            if (readComposition != null) {
+                val compositionAreas = readComposition(view) {
+                    timeProvider.elapsedRealtimeNanos() - startedAtNs < budgetNs
+                } ?: return null
+                compositionAreas.forEach { (bounds, privacy) -> areas.putTouchOverrideArea(bounds, privacy) }
+            }
             if (!enqueueChildren(view, pending, startedAtNs)) return null
         }
         return areas.takeIf {

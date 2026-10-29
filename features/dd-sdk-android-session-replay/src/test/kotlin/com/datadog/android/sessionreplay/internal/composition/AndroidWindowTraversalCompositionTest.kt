@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -161,6 +162,9 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
         var capturedHostIdentity: CapturedIdentity? = null
         var capturedHostBounds: CapturedBounds? = null
         val decomposer = object : CompositionHostDecomposer {
+            override fun readTouchOverrideAreas(view: View, shouldContinue: () -> Boolean): Map<Rect, TouchPrivacy> =
+                emptyMap()
+
             override fun canDecompose(view: View) = view === composeHost
             override fun decompose(
                 view: View,
@@ -249,6 +253,9 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
         val windowIdentity = identityFactory.window("window")
 
         val decomposer = object : CompositionHostDecomposer {
+            override fun readTouchOverrideAreas(view: View, shouldContinue: () -> Boolean): Map<Rect, TouchPrivacy> =
+                emptyMap()
+
             override fun canDecompose(view: View) = view === composeHost
             override fun decompose(
                 view: View,
@@ -705,4 +712,36 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
     }
 
     private fun GlobalBounds.toCapturedBounds() = CapturedBounds(x, y, width, height)
+
+    @ParameterizedTest
+    @CsvSource("HIDE,SHOW,HIDE", "SHOW,HIDE,HIDE", "SHOW,SHOW,SHOW")
+    fun `M merge Compose and native touch overrides W traverseWindow()`(
+        fakeNativePrivacy: TouchPrivacy,
+        fakeComposePrivacy: TouchPrivacy,
+        fakeExpected: TouchPrivacy
+    ) {
+        // Given
+        val root = mockViewGroup(GlobalBounds(0, 0, 100, 100))
+        val host = mockView(GlobalBounds(0, 0, 100, 100))
+        root.withChildren(host)
+        whenever(host.getTag(R.id.datadog_touch_privacy)).thenReturn(fakeNativePrivacy.name)
+        val decomposer: CompositionHostDecomposer = mock()
+        whenever(decomposer.canDecompose(host)).thenReturn(true)
+        whenever(decomposer.decompose(eq(host), any())).thenReturn(
+            CompositionHostDecomposeResult(
+                emptyList(),
+                emptyList(),
+                emptyList(),
+                mapOf(Rect(0, 0, 100, 100) to fakeComposePrivacy)
+            )
+        )
+
+        // When
+        val result = traversal(compositionHostDecomposer = decomposer)
+            .traverseWindow(root, identityFactory.window("window"), identityFactory, fakeContext)
+
+        // Then
+        val captured = result as WindowCopyResult.Present
+        assertThat(captured.touchOverrideAreas).containsEntry(Rect(0, 0, 100, 100), fakeExpected)
+    }
 }
