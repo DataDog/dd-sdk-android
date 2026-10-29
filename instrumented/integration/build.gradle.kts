@@ -5,7 +5,6 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -88,12 +87,6 @@ android {
             testProguardFile("test-proguard-rules.pro")
         }
     }
-}
-
-repositories.depotProxied(providers) {
-    google()
-    mavenLocal()
-    mavenCentral()
 }
 
 dependencies {

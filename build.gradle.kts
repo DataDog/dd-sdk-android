@@ -6,7 +6,6 @@
 @file:Suppress("StringLiteralDuplication")
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.registerSubModuleAggregationTask
 import com.datadog.gradle.utils.CLONE_RUM_EVENTS_FORMAT_SCHEMAS_TASK_NAME
 import com.datadog.gradle.utils.GENERATE_JSON_MODELS_TASK_NAME
@@ -29,35 +28,10 @@ plugins {
     alias(libs.plugins.kotlinAndroidPlugin) apply false
     alias(libs.plugins.dokkaGradlePlugin) apply false
     alias(libs.plugins.detektGradlePlugin) apply false
+    alias(libs.plugins.unmockGradlePlugin) apply false
 }
 
 version = AndroidConfig.VERSION.name
-
-buildscript {
-    repositories {
-        // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
-        // Inlined here because `buildscript {}` is resolved before the `build-logic`
-        // convention plugins are on the classpath.
-        listOf("gradlePluginProxy", "mavenRepositoryProxy")
-            .mapNotNull { providers.gradleProperty(it).orNull?.takeIf { url -> url.isNotBlank() } }
-            .forEach { url -> maven { setUrl(url) } }
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
-
-    dependencies {
-        classpath(libs.unmockGradlePlugin)
-    }
-}
-
-allprojects {
-    repositories.depotProxied(providers) {
-        google()
-        mavenCentral()
-        maven { setUrl("https://jitpack.io") }
-    }
-}
 
 nexusPublishing {
     this.repositories {

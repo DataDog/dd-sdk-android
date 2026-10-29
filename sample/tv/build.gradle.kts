@@ -6,7 +6,6 @@
 
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.configureFlavorForTvApp
-import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -65,8 +64,6 @@ android {
         java.srcDir("src/androidTest/kotlin")
     }
 }
-
-repositories.depotProxied(providers) {}
 
 dependencies {
 

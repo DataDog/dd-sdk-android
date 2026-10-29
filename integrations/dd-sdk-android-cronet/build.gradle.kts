@@ -59,7 +59,7 @@ dependencies {
 
     unmock(libs.robolectric)
     // Trying to add most recent lib version in order to test the instrumentation, see CronetApiInstrumentationTest
-    testImplementation("${libs.cronetApi.get().module}:+")
+    testImplementation(libs.cronetApi.map { "${it.module}:+" })
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))

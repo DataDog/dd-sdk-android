@@ -9,27 +9,6 @@ plugins {
     alias(libs.plugins.ktlintGradlePlugin)
 }
 
-buildscript {
-    repositories {
-        // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
-        listOf("gradlePluginProxy", "mavenRepositoryProxy")
-            .mapNotNull { providers.gradleProperty(it).orNull?.takeIf { url -> url.isNotBlank() } }
-            .forEach { url -> maven { setUrl(url) } }
-        mavenCentral()
-    }
-}
-
-repositories {
-    // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
-    listOf("gradlePluginProxy", "mavenRepositoryProxy")
-        .mapNotNull { providers.gradleProperty(it).orNull?.takeIf { url -> url.isNotBlank() } }
-        .forEach { url -> maven { setUrl(url) } }
-    mavenCentral()
-    google()
-    gradlePluginPortal()
-    maven { setUrl("https://jitpack.io") }
-}
-
 dependencies {
 
     // Plugins whose types are only referenced when configuring a consuming project. They are
