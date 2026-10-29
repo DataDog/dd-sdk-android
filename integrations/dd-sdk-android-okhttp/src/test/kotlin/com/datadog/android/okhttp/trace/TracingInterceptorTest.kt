@@ -854,6 +854,39 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
+    fun `M proceed without tracing headers and report ids W intercept() {ArrayIndexOutOfBoundsException}`(
+        @StringForgery message: String
+    ) {
+        // Given
+        fakeUrl = forgeUrlWithQueryParams(forge.anElementFrom(fakeLocalHosts.keys))
+        fakeRequest = forgeRequest()
+        stubChain(mockChain)
+        val fakeException = ArrayIndexOutOfBoundsException(message)
+        mockPropagation.wheneverInjectThenThrow(fakeException)
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers.size).isZero()
+        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            TracingInterceptor.ERROR_TRACING_HEADERS_INJECTION,
+            fakeException,
+            onlyOnce = true,
+            additionalProperties = mapOf(
+                TracingInterceptor.SPAN_ID_HEX_ATTRIBUTE to fakeSpanId.toULong().toString(16),
+                TracingInterceptor.TRACE_ID_HEX_ATTRIBUTE to fakeTraceIdAsString
+            )
+        )
+    }
+
+    @Test
     fun `M update header with parent context W intercept() for request with tracing headers`(
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,

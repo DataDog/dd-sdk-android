@@ -209,7 +209,7 @@ internal class ProfilingDataWriterTest {
                     ).toSet()
             )
             .hasVitalIds(fakeVitals.map { it.id })
-            .hasVitalNames(fakeVitals.mapNotNull { it.name })
+            .hasVitalNames(fakeVitals.mapNotNull { it.name }.toSet())
             .hasErrorIds(fakeAnrs.map { it.id })
             .hasLongTaskIds(fakeLongTasks.map { it.id })
 
@@ -459,7 +459,7 @@ internal class ProfilingDataWriterTest {
             .hasApplicationId(rumContext.applicationId)
             .hasSessionId(rumContext.sessionId)
             .hasVitalIds(alignedVitals.map { it.id })
-            .hasVitalNames(alignedVitals.mapNotNull { it.name })
+            .hasVitalNames(alignedVitals.mapNotNull { it.name }.toSet())
             .hasLongTaskIds(emptyList())
             .hasErrorIds(emptyList())
 

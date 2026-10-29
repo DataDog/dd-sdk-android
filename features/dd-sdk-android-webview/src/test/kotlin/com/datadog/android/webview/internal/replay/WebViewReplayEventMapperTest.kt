@@ -7,9 +7,9 @@
 package com.datadog.android.webview.internal.replay
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.webview.internal.rum.TimestampOffsetProvider
-import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.Forge

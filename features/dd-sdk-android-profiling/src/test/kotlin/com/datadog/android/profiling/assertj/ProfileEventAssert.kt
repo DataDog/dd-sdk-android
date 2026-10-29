@@ -127,13 +127,13 @@ internal class ProfileEventAssert(actual: ProfileEvent) :
         return this
     }
 
-    fun hasVitalNames(expected: List<String>): ProfileEventAssert {
+    fun hasVitalNames(expected: Set<String>): ProfileEventAssert {
         assertThat(actual.vital?.label)
             .overridingErrorMessage(
                 "Expected event data to have vital.label $expected " +
                     "but was ${actual.vital?.label}"
             )
-            .isEqualTo(expected)
+            .isEqualTo(expected.toList())
         return this
     }
 

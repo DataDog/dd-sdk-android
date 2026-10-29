@@ -19,7 +19,7 @@ kotlinRuntime = "2.0.21"
 kotlinSP = "2.2.10-2.0.2"
 kronosNTP = "0.0.1-alpha11"
 kotlinxSerialization = "1.6.3"
-okHttp = "4.12.0"
+okHttp = "4.12.1"
 
 # Android
 adapterDelegates = "4.3.2"
@@ -86,7 +86,7 @@ datadogPlugin = "1.31.0"
 kotlinPoet = "2.2.0"
 jsonSchemaValidator = "1.14.6"
 binaryCompatibility = "0.18.1"
-dependencyLicense = "0.8.0"
+dependencyLicense = "0.8.1"
 kotlinXmlBuilder = "1.9.3"
 
 # Integrations

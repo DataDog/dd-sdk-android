@@ -16,18 +16,14 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.event.EventMapper
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.RumContextPropagator
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.domain.event.FORCE_DROP_SPAN
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
-import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_ACTION_ID
-import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_APPLICATION_ID
-import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_SESSION_ID
-import com.datadog.android.trace.utils.RumContextTestsUtils.RUM_CONTEXT_VIEW_ID
-import com.datadog.android.trace.utils.RumContextTestsUtils.aDatadogContextWithRumContext
-import com.datadog.android.trace.utils.RumContextTestsUtils.aRumContext
+import com.datadog.android.utils.aDatadogContextWithRumContext
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.completedFutureMock
@@ -46,11 +42,13 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -167,10 +165,10 @@ internal class CoreTraceWriterTest {
 
     @Test
     fun `M write spans W write() { with RUM context }`(
+        @Forgery fakeRumContext: RumContext,
         forge: Forge
     ) {
         // GIVEN
-        val fakeRumContext = forge.aRumContext()
         val fakeInitialDatadogContext = forge.aDatadogContextWithRumContext(fakeRumContext)
         val fakeLazyContext = completedFutureMock(fakeInitialDatadogContext)
         val ddSpans = createNonEmptyDdSpans(forge, includeDropSamplingPriority = false).map { span ->
@@ -181,17 +179,17 @@ internal class CoreTraceWriterTest {
         testedWriter.write(ddSpans)
 
         // THEN
+        val expectedTags = mapOf<String, Any?>(
+            LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+            LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+            LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+            LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId,
+            RumContextPropagator.DATADOG_INITIAL_CONTEXT to null
+        )
         argumentCaptor<DDSpan> {
             verify(mockLegacyMapper, times(ddSpans.size)).map(eq(fakeDatadogContext), capture())
             allValues.forEach { span ->
-                verify(span).setTag(
-                    LogAttributes.RUM_APPLICATION_ID,
-                    fakeRumContext[RUM_CONTEXT_APPLICATION_ID]
-                )
-                verify(span).setTag(LogAttributes.RUM_SESSION_ID, fakeRumContext[RUM_CONTEXT_SESSION_ID])
-                verify(span).setTag(LogAttributes.RUM_VIEW_ID, fakeRumContext[RUM_CONTEXT_VIEW_ID])
-                verify(span).setTag(LogAttributes.RUM_ACTION_ID, fakeRumContext[RUM_CONTEXT_ACTION_ID])
-                verify(span).setTag(RumContextPropagator.DATADOG_INITIAL_CONTEXT, null as Any?)
+                expectedTags.forEach { (key, value) -> verify(span).setTag(key, value) }
             }
         }
 
@@ -203,8 +201,8 @@ internal class CoreTraceWriterTest {
         forge: Forge
     ) {
         // GIVEN
-        val fakeInitialDatadogContext = forge.aDatadogContextWithRumContext(emptyMap())
-        val fakeLazyContext = mock<Future<DatadogContext>> { on { get() } doReturn fakeInitialDatadogContext }
+        val fakeInitialDatadogContext = forge.aDatadogContextWithRumContext(null)
+        val fakeLazyContext = completedFutureMock(fakeInitialDatadogContext)
         val ddSpans = createNonEmptyDdSpans(forge, includeDropSamplingPriority = false).map { span ->
             span.withLazyContext(fakeLazyContext)
         }
@@ -213,14 +211,17 @@ internal class CoreTraceWriterTest {
         testedWriter.write(ddSpans)
 
         // THEN
+        val expectedTags = mapOf<String, Any?>(
+            LogAttributes.RUM_APPLICATION_ID to null,
+            LogAttributes.RUM_SESSION_ID to null,
+            LogAttributes.RUM_VIEW_ID to null,
+            LogAttributes.RUM_ACTION_ID to null,
+            RumContextPropagator.DATADOG_INITIAL_CONTEXT to null
+        )
         argumentCaptor<DDSpan> {
             verify(mockLegacyMapper, times(ddSpans.size)).map(eq(fakeDatadogContext), capture())
-            allValues.forEach {
-                verify(it, never()).setTag(eq(LogAttributes.RUM_APPLICATION_ID), any<String>())
-                verify(it, never()).setTag(eq(LogAttributes.RUM_SESSION_ID), any<String>())
-                verify(it, never()).setTag(eq(LogAttributes.RUM_VIEW_ID), any<String>())
-                verify(it, never()).setTag(eq(LogAttributes.RUM_ACTION_ID), any<String>())
-                verify(it).setTag(RumContextPropagator.DATADOG_INITIAL_CONTEXT, null as Any?)
+            allValues.forEach { span ->
+                expectedTags.forEach { (key, value) -> verify(span).setTag(key, value) }
             }
             assertThat(allValues).isEqualTo(ddSpans)
         }
@@ -246,12 +247,14 @@ internal class CoreTraceWriterTest {
         // THEN
         argumentCaptor<DDSpan> {
             verify(mockLegacyMapper, times(ddSpans.size)).map(eq(fakeDatadogContext), capture())
-            allValues.forEach {
-                verify(it, never()).setTag(eq(LogAttributes.RUM_APPLICATION_ID), any<String>())
-                verify(it, never()).setTag(eq(LogAttributes.RUM_SESSION_ID), any<String>())
-                verify(it, never()).setTag(eq(LogAttributes.RUM_VIEW_ID), any<String>())
-                verify(it, never()).setTag(eq(LogAttributes.RUM_ACTION_ID), any<String>())
-                verify(it).setTag(RumContextPropagator.DATADOG_INITIAL_CONTEXT, null as Any?)
+            allValues.forEach { span ->
+                listOf(
+                    LogAttributes.RUM_APPLICATION_ID,
+                    LogAttributes.RUM_SESSION_ID,
+                    LogAttributes.RUM_VIEW_ID,
+                    LogAttributes.RUM_ACTION_ID
+                ).forEach { key -> verify(span, never()).setTag(eq(key), anyOrNull<Any>()) }
+                verify(span).setTag(eq(RumContextPropagator.DATADOG_INITIAL_CONTEXT), isNull<Any>())
             }
             assertThat(allValues).isEqualTo(ddSpans)
         }
@@ -281,11 +284,13 @@ internal class CoreTraceWriterTest {
         // THEN
         argumentCaptor<DDSpan> {
             verify(mockLegacyMapper, times(ddSpans.size)).map(eq(fakeDatadogContext), capture())
-            allValues.forEach {
-                verify(it, never()).setTag(eq(LogAttributes.RUM_APPLICATION_ID), any<String>())
-                verify(it, never()).setTag(eq(LogAttributes.RUM_SESSION_ID), any<String>())
-                verify(it, never()).setTag(eq(LogAttributes.RUM_VIEW_ID), any<String>())
-                verify(it, never()).setTag(eq(LogAttributes.RUM_ACTION_ID), any<String>())
+            allValues.forEach { span ->
+                listOf(
+                    LogAttributes.RUM_APPLICATION_ID,
+                    LogAttributes.RUM_SESSION_ID,
+                    LogAttributes.RUM_VIEW_ID,
+                    LogAttributes.RUM_ACTION_ID
+                ).forEach { key -> verify(span, never()).setTag(eq(key), anyOrNull<Any>()) }
             }
             assertThat(allValues).isEqualTo(ddSpans)
         }
