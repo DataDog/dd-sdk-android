@@ -52,6 +52,7 @@ import java.util.concurrent.atomic.AtomicReference
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
+@Suppress("DEPRECATION") // These tests retain coverage for the deprecated repository helpers.
 internal class DefaultFlagsRepositoryTest {
 
     @Mock

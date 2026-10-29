@@ -272,6 +272,7 @@ To inspect the events the SDK emits from the sample app, use the `android-sdk-ev
 - Keep PRs focused. Don't include unrelated refactors, formatting churn, debug leftovers, stray files or "may be needed later" code (unused properties, schemas, files).
 - Don't edit `CHANGELOG.md` in feature PRs. It is updated only in release preparation PRs.
 - When preparing a release changelog: tags reflect customer impact, not change size. Internal-only changes are `[MAINTENANCE]`, not `[IMPROVEMENT]`. Follow the existing entry format: `* [TAG] Description. See [#N](link)`.
+- When reviewing a release preparation PR (version bump and `CHANGELOG.md` update for a new release), review only the changes the PR itself makes. The release includes changes from PRs that were already reviewed and merged, so don't flag breaking changes or binary incompatibilities that come from them (e.g. a public API diff against the previous release): those were approved in their own PRs.
 
 ## Handoff to human review
 
