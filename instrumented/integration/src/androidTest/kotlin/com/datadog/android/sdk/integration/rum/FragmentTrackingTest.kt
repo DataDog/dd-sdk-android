@@ -7,9 +7,6 @@
 package com.datadog.android.sdk.integration.rum
 
 import androidx.fragment.app.Fragment
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions
-import androidx.test.espresso.matcher.ViewMatchers
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
@@ -59,12 +56,11 @@ internal abstract class FragmentTrackingTest :
             )
         )
 
-        // swipe to change the fragment
-        instrumentation.waitForIdleSync()
-        onView(ViewMatchers.withId(R.id.btn_next)).perform(ViewActions.click())
-        instrumentation.waitForIdleSync()
+        // Exercise fragment tracking without depending on injected taps or smooth scrolling.
+        instrumentation.runOnMainSync {
+            activity.viewPager.setCurrentItem(1, false)
+        }
         val fragmentBViewUrl = currentFragmentViewUrl(activity)
-        mockServerRule.activity.supportFragmentManager.fragments
         waitForPendingRUMEvents()
 
         // fragment B view started
@@ -85,9 +81,10 @@ internal abstract class FragmentTrackingTest :
             )
         )
 
-        // swipe to close the view
-        onView(ViewMatchers.withId(R.id.btn_last)).perform(ViewActions.click())
-        instrumentation.waitForIdleSync()
+        // navigate back to fragment A
+        instrumentation.runOnMainSync {
+            activity.viewPager.setCurrentItem(0, false)
+        }
         waitForPendingRUMEvents()
 
         // fragment A view started (again)
@@ -113,9 +110,13 @@ internal abstract class FragmentTrackingTest :
     private fun currentFragment(
         activity: FragmentTrackingPlaygroundActivity
     ): Fragment? {
-        val viewPager = activity.viewPager
-        return activity.supportFragmentManager
-            .findFragmentByTag("android:switcher:${R.id.pager}:${viewPager.getCurrentItem()}")
+        var fragment: Fragment? = null
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            val position = activity.viewPager.currentItem
+            fragment = activity.supportFragmentManager
+                .findFragmentByTag("android:switcher:${R.id.pager}:$position")
+        }
+        return fragment
     }
 
     private fun currentFragmentExtras(
