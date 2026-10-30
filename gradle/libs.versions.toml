@@ -78,7 +78,7 @@ robolectric = "4.4_r1-robolectric-r2"
 androidLint = "31.0.2"
 
 nexusPublishGradlePlugin = "2.0.0"
-datadogPlugin = "1.31.0"
+datadogPlugin = "1.32.0"
 
 kotlinPoet = "2.2.0"
 jsonSchemaValidator = "1.14.6"
