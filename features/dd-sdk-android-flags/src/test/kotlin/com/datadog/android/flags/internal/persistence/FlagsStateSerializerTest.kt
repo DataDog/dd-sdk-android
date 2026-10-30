@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -187,5 +188,45 @@ internal class FlagsStateSerializerTest {
         // Should still produce valid JSON even in edge cases
         SerializedFlagsStateAssert.assertThatSerializedFlagsState(serialized)
             .hasEmptyFlags()
+    }
+
+    @Test
+    fun `M round trip the flag selection W serialize() + deserialize()`(forge: Forge) {
+        // Given
+        val flagSelection = CanonicalFlagSelection(
+            tags = listOf("mobile", "\u00E9t\u00E9"),
+            keyPatterns = listOf("checkout-*")
+        )
+        val flagsState = FlagsStateEntry(
+            EvaluationContext(forge.anAlphabeticalString(), emptyMap()),
+            emptyMap(),
+            fakeTimestamp,
+            flagSelection = flagSelection
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(flagsState)
+        val deserialized = FlagsStateDeserializer(mockInternalLogger).deserialize(serialized)
+
+        // Then
+        checkNotNull(deserialized)
+        assertThat(deserialized.flagSelection).isEqualTo(flagSelection)
+    }
+
+    @Test
+    fun `M omit the flag selection W serialize() { no flag selection }`(forge: Forge) {
+        // Given
+        val flagsState = FlagsStateEntry(
+            EvaluationContext(forge.anAlphabeticalString(), emptyMap()),
+            emptyMap(),
+            fakeTimestamp,
+            null
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(flagsState)
+
+        // Then
+        assertThat(JSONObject(serialized).has("flagSelection")).isFalse()
     }
 }

@@ -26,6 +26,7 @@ import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
+import com.datadog.android.flags.internal.selection.logIgnoredFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import java.util.concurrent.Executor
@@ -200,15 +201,21 @@ internal class EvaluationsManager(
                     { "Processing evaluation context: ${context.targetingKey}" }
                 )
                 matchingCachedAssignments.set(
-                    flagsRepository.hasFlags() && flagsRepository.getEvaluationContext() == context
+                    flagsRepository.hasConfiguration() && flagsRepository.getEvaluationContext() == context
                 )
                 val response = datadogContext?.let { assignmentsReader.readPrecomputedFlags(context, it, diagnostics) }
                 val assignments = response?.let { rawResponse ->
-                    precomputeMapper.map(rawResponse, request.takeIf { it.optedOut })
+                    precomputeMapper.map(rawResponse.body, request.takeIf { it.optedOut })
                 }
                     ?.takeIf { it.obfuscation == null || supportsObfuscation }
                 if (assignments != null) {
-                    installFlags(request, assignments, initializationCompletion, callback)
+                    installFlags(
+                        request,
+                        assignments,
+                        response.flagSelectionIgnoredReason,
+                        initializationCompletion,
+                        callback
+                    )
                 } else {
                     handleRequestFailure(
                         request,
@@ -266,11 +273,12 @@ internal class EvaluationsManager(
     private fun installFlags(
         request: ExperimentationOptOut.Request,
         assignments: PrecomputedAssignments,
+        flagSelectionIgnoredReason: String?,
         initializationCompletion: InitializationCompletion?,
         callback: EvaluationContextCallback?
     ) {
         val context = request.context
-        synchronized(initializationTerminalLock) {
+        val installed = synchronized(initializationTerminalLock) {
             val installed = experimentationOptOut.ifCurrent(request) {
                 val installation = flagsRepository.installFlagsAndContext(
                     context,
@@ -292,8 +300,13 @@ internal class EvaluationsManager(
                     FlagsContextSupersededException(SUPERSEDED_MESSAGE)
                 )
             }
+            installed
         }
         effects.drain()
+        // A superseded response is not installed, so its ignored reason would describe flags that never loaded.
+        if (installed) {
+            flagSelectionIgnoredReason?.let { internalLogger.logIgnoredFlagSelection(it) }
+        }
         internalLogger.log(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.MAINTAINER,
@@ -327,7 +340,7 @@ internal class EvaluationsManager(
                         if (currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale) {
                             val hasMatchingCachedAssignments =
                                 (target === request && matchingCachedAssignments.get()) ||
-                                    flagsRepository.hasLoadedFlagsForContext(target.context)
+                                    flagsRepository.hasConfigurationForContext(target.context)
                             val timeoutState = if (hasMatchingCachedAssignments) {
                                 FlagsClientState.Stale
                             } else {

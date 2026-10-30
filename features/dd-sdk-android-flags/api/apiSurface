@@ -38,6 +38,7 @@ data class com.datadog.android.flags.FlagsConfiguration
     fun evaluationFlushInterval(Long): Builder
     fun useCustomFlagEndpoint(String): Builder
     fun initializationTimeout(Long): Builder
+    fun flagSelection(List<String>?, List<String>?): Builder
     fun rumIntegrationEnabled(Boolean): Builder
     fun gracefulModeEnabled(Boolean): Builder
     fun build(): FlagsConfiguration

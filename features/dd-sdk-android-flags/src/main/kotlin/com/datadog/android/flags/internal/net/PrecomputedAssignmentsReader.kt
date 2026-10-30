@@ -19,5 +19,13 @@ internal interface PrecomputedAssignmentsReader {
         context: EvaluationContext,
         datadogContext: DatadogContext,
         diagnostics: Diagnostics
-    ): String?
+    ): PrecomputedAssignmentsResponse?
 }
+
+/**
+ * [flagSelectionIgnoredReason] is the sanitized `DD-Flag-Selection-Ignored` reason, or null when the header is absent.
+ */
+internal data class PrecomputedAssignmentsResponse(
+    val body: String,
+    val flagSelectionIgnoredReason: String?
+)

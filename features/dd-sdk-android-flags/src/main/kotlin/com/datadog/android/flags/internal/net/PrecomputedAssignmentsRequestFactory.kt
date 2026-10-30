@@ -15,6 +15,7 @@ import com.datadog.android.flags.internal.evaluation.wireValue
 import com.datadog.android.flags.internal.getFlagsEndpoint
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest
+import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.internal.rum.rumContext
 import okhttp3.Headers
@@ -28,8 +29,11 @@ import okhttp3.RequestBody.Companion.toRequestBody
 internal class PrecomputedAssignmentsRequestFactory(
     private val internalLogger: InternalLogger,
     private val customFlagEndpoint: String?,
+    private val flagSelection: CanonicalFlagSelection?,
     private val experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED
 ) {
+
+    val sendsFlagSelection: Boolean = flagSelection != null
 
     /**
      * Creates an OkHttp Request for fetching precomputed flag assignments.
@@ -134,7 +138,10 @@ internal class PrecomputedAssignmentsRequestFactory(
                         targetingAttributes = PrecomputedAssignmentsRequest.TargetingAttributes(
                             additionalProperties = targetingAttributes
                         )
-                    )
+                    ),
+                    flagSelection = flagSelection?.let {
+                        PrecomputedAssignmentsRequest.FlagSelection(tags = it.tags, keyPatterns = it.keyPatterns)
+                    }
                 )
             )
         )

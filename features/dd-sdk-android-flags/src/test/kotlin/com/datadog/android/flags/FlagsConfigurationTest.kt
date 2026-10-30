@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags
 
+import com.datadog.android.flags.internal.selection.FlagSelection
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -30,6 +31,7 @@ internal class FlagsConfigurationTest {
         assertThat(configuration.customFlagEndpoint).isNull()
         assertThat(configuration.gracefulModeEnabled).isTrue()
         assertThat(configuration.initializationTimeoutMs).isEqualTo(5_000L)
+        assertThat(configuration.flagSelection).isNull()
     }
 
     @Test
@@ -179,6 +181,64 @@ internal class FlagsConfigurationTest {
 
         // Then
         assertThat(copiedConfiguration.initializationTimeoutMs).isEqualTo(2_500L)
+    }
+
+    @Test
+    fun `M set the flag selection W flagSelection() { called twice }`() {
+        // Given
+        val builder = FlagsConfiguration.Builder()
+            .flagSelection(tags = listOf("web"), keyPatterns = listOf("web-*"))
+
+        // When
+        val configuration = builder
+            .flagSelection(tags = listOf("mobile"), keyPatterns = emptyList())
+            .build()
+
+        // Then
+        assertThat(configuration.flagSelection)
+            .isEqualTo(FlagSelection(tags = listOf("mobile"), keyPatterns = emptyList()))
+    }
+
+    @Test
+    fun `M copy the lists W flagSelection() { caller mutates the lists after the call }`() {
+        // Given
+        val tags = mutableListOf("mobile")
+        val keyPatterns = mutableListOf("checkout-*")
+        val builder = FlagsConfiguration.Builder().flagSelection(tags, keyPatterns)
+
+        // When
+        tags += "web"
+        keyPatterns.clear()
+
+        // Then
+        assertThat(builder.build().flagSelection)
+            .isEqualTo(FlagSelection(tags = listOf("mobile"), keyPatterns = listOf("checkout-*")))
+    }
+
+    @Test
+    fun `M keep null lists as absent W flagSelection() { null lists }`() {
+        // When
+        val configuration = FlagsConfiguration.Builder()
+            .flagSelection(tags = null, keyPatterns = listOf("checkout-*"))
+            .build()
+
+        // Then
+        assertThat(configuration.flagSelection)
+            .isEqualTo(FlagSelection(tags = null, keyPatterns = listOf("checkout-*")))
+    }
+
+    @Test
+    fun `M preserve the flag selection W copy() { legacy parameters }`() {
+        // Given
+        val testedConfiguration = FlagsConfiguration.Builder()
+            .flagSelection(tags = listOf("mobile"), keyPatterns = listOf("checkout-*"))
+            .build()
+
+        // When
+        val copiedConfiguration = testedConfiguration.copy(trackExposures = false)
+
+        // Then
+        assertThat(copiedConfiguration.flagSelection).isEqualTo(testedConfiguration.flagSelection)
     }
 
     // endregion

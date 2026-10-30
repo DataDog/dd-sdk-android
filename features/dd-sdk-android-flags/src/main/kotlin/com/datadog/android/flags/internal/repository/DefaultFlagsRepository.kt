@@ -15,6 +15,7 @@ import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
+import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
 import java.util.concurrent.CountDownLatch
@@ -25,6 +26,7 @@ internal class DefaultFlagsRepository(
     private val featureSdkCore: FeatureSdkCore,
     private val instanceName: String,
     private val dataStore: DataStoreHandler,
+    private val flagSelection: CanonicalFlagSelection?,
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
     private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS,
     private val deliverFirstFlags: (Runnable) -> Unit = Runnable::run,
@@ -52,9 +54,12 @@ internal class DefaultFlagsRepository(
     private val persistenceManager = FlagsPersistenceManager(
         dataStore = dataStore,
         instanceName = instanceName,
+        flagSelection = flagSelection,
         internalLogger = internalLogger,
         experimentationOptOutMode = experimentationOptOutMode
-    ) { persistedState ->
+    ) { loadedState ->
+        // State fetched with a different selection holds a different set of flags.
+        val persistedState = loadedState?.takeIf { it.flagSelection == flagSelection }
         val cachedState = try {
             persistedState?.let {
                 FlagsState(
@@ -181,15 +186,13 @@ internal class DefaultFlagsRepository(
         return readableState?.context
     }
 
-    override fun hasFlags(): Boolean {
+    override fun hasConfiguration(): Boolean {
         waitForPersistenceLoad()
-        return readableState?.flags?.isNotEmpty() ?: false
+        return readableState != null
     }
 
-    override fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean {
-        val state = readableState
-        return state?.context == context && state.flags.isNotEmpty()
-    }
+    override fun hasConfigurationForContext(context: EvaluationContext): Boolean =
+        readableState?.context == context
 
     override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>? {
         val state = readableState ?: return null

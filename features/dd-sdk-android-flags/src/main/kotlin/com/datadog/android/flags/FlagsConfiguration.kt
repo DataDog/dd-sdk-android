@@ -6,6 +6,9 @@
 
 package com.datadog.android.flags
 
+import com.datadog.android.flags.internal.selection.FlagSelection
+import com.datadog.android.flags.model.ErrorCode
+
 private const val DEFAULT_INITIALIZATION_TIMEOUT_MS = 5_000L
 
 /**
@@ -21,10 +24,11 @@ data class FlagsConfiguration internal constructor(
     internal val evaluationFlushIntervalMs: Long,
     internal val rumIntegrationEnabled: Boolean,
     internal val gracefulModeEnabled: Boolean,
-    internal val initializationTimeoutMs: Long?
+    internal val initializationTimeoutMs: Long?,
+    internal val flagSelection: FlagSelection?
 ) {
     /**
-     * Copies this configuration and preserves the initialization timeout.
+     * Copies this configuration and preserves the initialization timeout and the flag selection.
      *
      * This overload keeps the public JVM signature that existed before the initialization timeout was added.
      */
@@ -46,7 +50,8 @@ data class FlagsConfiguration internal constructor(
         evaluationFlushIntervalMs = evaluationFlushIntervalMs,
         rumIntegrationEnabled = rumIntegrationEnabled,
         gracefulModeEnabled = gracefulModeEnabled,
-        initializationTimeoutMs = initializationTimeoutMs
+        initializationTimeoutMs = initializationTimeoutMs,
+        flagSelection = flagSelection
     )
 
     /**
@@ -62,6 +67,7 @@ data class FlagsConfiguration internal constructor(
         private var rumIntegrationEnabled: Boolean = true
         private var gracefulModeEnabled: Boolean = true
         private var initializationTimeoutMs: Long? = DEFAULT_INITIALIZATION_TIMEOUT_MS
+        private var flagSelection: FlagSelection? = null
 
         /**
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint.
@@ -173,6 +179,36 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
+         * Loads only the flags that match the given tags or key patterns.
+         *
+         * Tags match exactly and are case-sensitive; a flag matches if it has any of the tags. Key patterns are
+         * whole-key globs where only `*` is special. Leading and trailing Unicode whitespace is trimmed from every
+         * value, empty values are dropped, and duplicates are removed. A null list is treated as absent.
+         *
+         * Each list accepts at most 31 values after duplicates are removed, and each tag and key pattern is at most
+         * 200 UTF-8 bytes after trimming. A selection over a limit, or one that contains a null value or an unpaired
+         * UTF-16 surrogate, is not sent, and the full flag configuration is loaded. The server may also ignore a very
+         * large selection (`too_many_values`), in which case the full flag configuration is loaded. Servers that do
+         * not support flag selection, or have it disabled, return the full flag configuration without a warning.
+         * A server reason that the SDK does not know is reported as `unknown`. With [useCustomFlagEndpoint], the proxy
+         * must forward the `DD-Flag-Selection-Ignored` response header for an ignored selection to be reported.
+         *
+         * When the server applies the selection, flags outside it are not loaded, so evaluating them returns the
+         * default value with [ErrorCode.FLAG_NOT_FOUND].
+         *
+         * The selection is fixed when the feature is enabled and applies to every [FlagsClient]. Flags cached under a
+         * different selection are not loaded at startup; until the next successful fetch, a client starts without
+         * cached flags. Calling this method again replaces the previous selection.
+         *
+         * @param tags The flag tags to load, or null for none.
+         * @param keyPatterns The flag key patterns to load, or null for none.
+         * @return this [Builder] instance for method chaining.
+         */
+        fun flagSelection(tags: List<String>?, keyPatterns: List<String>?): Builder = apply {
+            flagSelection = FlagSelection(tags?.toList(), keyPatterns?.toList())
+        }
+
+        /**
          * Sets whether RUM evaluation logging is enabled.
          * This adds the result of evaluating a feature flag to the view.
          * Enabled by default.
@@ -217,7 +253,8 @@ data class FlagsConfiguration internal constructor(
             evaluationFlushIntervalMs = evaluationFlushIntervalMs,
             rumIntegrationEnabled = rumIntegrationEnabled,
             gracefulModeEnabled = gracefulModeEnabled,
-            initializationTimeoutMs = initializationTimeoutMs
+            initializationTimeoutMs = initializationTimeoutMs,
+            flagSelection = flagSelection
         )
 
         internal companion object {
