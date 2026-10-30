@@ -13,6 +13,7 @@ import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.rum.RumContext
@@ -38,6 +39,8 @@ import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.utils.verifyApiUsage
 import com.datadog.android.utils.verifyLog
@@ -55,11 +58,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -154,6 +160,11 @@ internal class RumViewManagerScopeTest {
     lateinit var mockViewEventMapper: ViewEventMapper
 
     @Mock
+    lateinit var mockEventBatchWriter: EventBatchWriter
+
+    private var savedProcessImportance: Int = 0
+
+    @Mock
     lateinit var mockBatteryInfoProvider: InfoProvider<BatteryInfo>
 
     @Mock
@@ -171,6 +182,7 @@ internal class RumViewManagerScopeTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        savedProcessImportance = DdRumContentProvider.processImportance
         fakeSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 
         whenever(mockSdkCore.time) doReturn fakeTime
@@ -218,6 +230,7 @@ internal class RumViewManagerScopeTest {
 
     @AfterEach
     fun `tear down`() {
+        DdRumContentProvider.processImportance = savedProcessImportance
         // whatever happens
         assertThat(testedScope.getRumContext()).isEqualTo(fakeParentContext)
     }
@@ -832,7 +845,6 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        val mockEventBatchWriter: EventBatchWriter = mock()
         whenever(mockEventWriteScope.invoke(any())) doAnswer {
             val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
             callback.invoke(mockEventBatchWriter)
@@ -843,7 +855,161 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeAppStartEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
-        verifyNoInteractions(mockWriter)
+        val written = captureWrittenData()
+        assertThat(written.filterIsInstance<ActionEvent>()).isEmpty()
+        assertThat(written.mapNotNull { it.asViewEvent() }.map { it.view.name })
+            .containsExactly(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_NAME)
+    }
+
+    @Test
+    fun `M write the ApplicationLaunch view W handleEvent { ApplicationStarted }`(
+        forge: Forge
+    ) {
+        // Given
+        stubWriteScopeAndMapper()
+        DdRumContentProvider.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        testedScope.applicationDisplayed = false
+        val fakeAppStartEvent = forge.applicationStartedEvent()
+
+        // When
+        testedScope.handleEvent(fakeAppStartEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        val viewEvents = captureWrittenData().map { it.asViewEvent() }
+        assertThat(viewEvents).hasSize(1)
+        val viewEvent = checkNotNull(viewEvents[0])
+        assertThat(viewEvent.view.name).isEqualTo(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_NAME)
+        assertThat(viewEvent.dd.documentVersion).isEqualTo(2L)
+        assertThat(viewEvent.view.isActive).isTrue()
+        assertThat(viewEvent.view.timeSpent).isEqualTo(1L)
+        assertThat((testedScope.childrenScopes.single() as RumViewScope).version).isEqualTo(2L)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            { it.startsWith("The computed duration for the view") },
+            mode = never()
+        )
+    }
+
+    @Test
+    fun `M write AppLaunch final update before new view W handleEvent { ApplicationStarted then StartView }`(
+        forge: Forge
+    ) {
+        // Given
+        stubWriteScopeAndMapper()
+        DdRumContentProvider.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        testedScope.applicationDisplayed = false
+        val fakeAppStartEvent = forge.applicationStartedEvent()
+        testedScope.handleEvent(fakeAppStartEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val fakeStartView = forge.startViewEvent(
+            eventTime = Time(
+                fakeAppStartEvent.eventTime.timestamp + 10,
+                fakeAppStartEvent.eventTime.nanoTime + TimeUnit.MILLISECONDS.toNanos(10)
+            )
+        )
+
+        // When
+        testedScope.handleEvent(fakeStartView, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        val viewEvents = captureWrittenData().mapNotNull { it.asViewEvent() }
+            .map { Triple(it.view.name, it.dd.documentVersion, it.view.isActive) }
+        assertThat(viewEvents).containsExactly(
+            Triple(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_NAME, 2L, true),
+            Triple(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_NAME, 3L, false),
+            Triple(fakeStartView.key.name, 2L, true)
+        )
+    }
+
+    @Test
+    fun `M write previous view final update before new view W handleEvent { StartView A then StartView B }`(
+        forge: Forge
+    ) {
+        // Given
+        stubWriteScopeAndMapper()
+        testedScope.applicationDisplayed = true
+        val fakeStartViewA = forge.startViewEvent()
+        testedScope.handleEvent(fakeStartViewA, fakeDatadogContext, mockEventWriteScope, mockWriter)
+        val fakeStartViewB = forge.startViewEvent(
+            eventTime = Time(
+                fakeStartViewA.eventTime.timestamp + 10,
+                fakeStartViewA.eventTime.nanoTime + TimeUnit.MILLISECONDS.toNanos(10)
+            )
+        )
+
+        // When
+        testedScope.handleEvent(fakeStartViewB, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        val viewEvents = captureWrittenData().mapNotNull { it.asViewEvent() }
+            .map { Triple(it.view.id, it.dd.documentVersion, it.view.isActive) }
+        assertThat(viewEvents).hasSize(3)
+        assertThat(viewEvents[1].third).isFalse()
+        assertThat(viewEvents[1].first).isEqualTo(viewEvents[0].first)
+        assertThat(viewEvents[2].first).isNotEqualTo(viewEvents[0].first)
+        assertThat(viewEvents[2].second).isEqualTo(2L)
+        assertThat(viewEvents[2].third).isTrue()
+    }
+
+    @ParameterizedTest
+    @EnumSource(BackgroundEventCase::class)
+    fun `M write the background view exactly once W handleEvent { event creating a background view }`(
+        case: BackgroundEventCase,
+        forge: Forge
+    ) {
+        // Given
+        stubWriteScopeAndMapper()
+        testedScope.applicationDisplayed = true
+        val fakeEvent = case.create(forge)
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        val viewWrites = captureWrites().filter { it.data.asViewEvent() != null }
+        assertThat(viewWrites).hasSize(1)
+        val viewEvent = checkNotNull(viewWrites[0].data.asViewEvent())
+        assertThat(viewEvent.view.name).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_NAME)
+        assertThat(viewEvent.dd.documentVersion).isEqualTo(2L)
+        assertThat(viewWrites[0].eventType).isEqualTo(case.expectedViewEventType)
+    }
+
+    private fun stubWriteScopeAndMapper() {
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
+        whenever(mockViewEventMapper.map(any())) doAnswer { it.getArgument(0) }
+    }
+
+    private fun captureWrites(): List<CapturedWrite> {
+        val dataCaptor = argumentCaptor<Any>()
+        val eventTypeCaptor = argumentCaptor<EventType>()
+        verify(mockWriter, atLeast(0)).write(eq(mockEventBatchWriter), dataCaptor.capture(), eventTypeCaptor.capture())
+        return dataCaptor.allValues.zip(eventTypeCaptor.allValues) { data, type -> CapturedWrite(data, type) }
+    }
+
+    private fun captureWrittenData(): List<Any> = captureWrites().map { it.data }
+
+    private data class CapturedWrite(val data: Any, val eventType: EventType)
+
+    enum class BackgroundEventCase(
+        val create: (Forge) -> RumRawEvent,
+        val expectedViewEventType: EventType
+    ) {
+        START_ACTION({ it.startActionEvent() }, EventType.DEFAULT),
+        START_RESOURCE({ it.startResourceEvent() }, EventType.DEFAULT),
+        NON_FATAL_ERROR({ it.addErrorEvent().copy(isFatal = false) }, EventType.DEFAULT),
+        FATAL_ERROR({ it.addErrorEvent().copy(isFatal = true) }, EventType.CRASH),
+        START_OPERATION({ it.startOperationEvent() }, EventType.DEFAULT)
+    }
+
+    private fun Any.asViewEvent(): ViewEvent? = when (this) {
+        is ViewEvent -> this
+        is MappedViewEvent -> viewEvent
+        is RumViewUpdateData -> viewEvent
+        is DiffThenFullView -> viewEvent
+        else -> null
     }
 
     // endregion

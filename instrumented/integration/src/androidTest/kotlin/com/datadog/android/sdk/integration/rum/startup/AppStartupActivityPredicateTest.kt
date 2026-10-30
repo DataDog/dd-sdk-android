@@ -67,7 +67,7 @@ internal class AppStartupActivityPredicateTest :
         // Expect application launch view for MainContentActivity (not InterstitialSplashActivity)
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
-                docVersion = 2
+                docVersion = 3
             )
         )
 
