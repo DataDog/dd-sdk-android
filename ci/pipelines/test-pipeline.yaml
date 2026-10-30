@@ -1,5 +1,5 @@
 # Temporary default for the CI experiment. Build the diagnostic APKs once, then run
-# five independent copies of the latest-API job, each with three 2-core emulators.
+# the complete latest-API suite five times, with one 4-core emulator per CI job.
 default:
   interruptible: true
 

@@ -4,7 +4,7 @@
 # This product includes software developed at Datadog (https://www.datadoghq.com/).
 # Copyright 2016-Present Datadog, Inc.
 
-"""Run the legacy integration suite in three package shards."""
+"""Run the complete legacy integration suite on one emulator."""
 
 import os
 import shlex
@@ -50,37 +50,13 @@ def main() -> int:
     return run_instrumented_apks(
         (
             emulator_for_api_level(
-                f"api-{api_level}-rum",
+                f"api-{api_level}-all",
                 api_level,
                 (
                     instrumentation_run(
-                        "rum",
-                        instrumentation_arguments,
-                        "com.datadog.android.sdk.integration.rum",
-                    ),
-                ),
-            ),
-            emulator_for_api_level(
-                f"api-{api_level}-session-replay",
-                api_level,
-                (
-                    instrumentation_run(
-                        "session-replay",
-                        instrumentation_arguments,
-                        "com.datadog.android.sdk.integration.sessionreplay",
-                    ),
-                ),
-            ),
-            emulator_for_api_level(
-                f"api-{api_level}-other",
-                api_level,
-                (
-                    instrumentation_run(
-                        "other",
+                        "all",
                         instrumentation_arguments,
                         "com.datadog.android.sdk.integration",
-                        "com.datadog.android.sdk.integration.rum,"
-                        "com.datadog.android.sdk.integration.sessionreplay",
                     ),
                 ),
             ),
