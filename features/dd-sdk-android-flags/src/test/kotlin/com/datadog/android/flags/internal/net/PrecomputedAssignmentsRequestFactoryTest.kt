@@ -10,6 +10,8 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.flags.ExperimentationOptOutMode
+import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest
 import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
 import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Trigger
@@ -213,6 +215,59 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     // endregion
 
     // region create() - Request body validation
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M omit evaluation options W create() {timestamp absent}`(mode: ExperimentationOptOutMode) {
+        // Given
+        testedFactory = PrecomputedAssignmentsRequestFactory(mockInternalLogger, null, mode)
+        val context = EvaluationContext("subject")
+
+        // When
+        val request = checkNotNull(testedFactory.create(context, fakeDatadogContext, fakeDiagnostics))
+
+        // Then
+        val attributes = JSONObject(extractRequestBodyAsString(request))
+            .getJSONObject("data").getJSONObject("attributes")
+        assertThat(attributes.has("evaluation_options")).isFalse()
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M include evaluation options only for enabled mode W create() {valid timestamp}`(
+        mode: ExperimentationOptOutMode
+    ) {
+        // Given
+        testedFactory = PrecomputedAssignmentsRequestFactory(mockInternalLogger, null, mode)
+        val context = EvaluationContext(
+            "subject",
+            mapOf(ExperimentationOptOut.ATTRIBUTE to "2026-10-01T00:00:00Z")
+        )
+
+        // When
+        val request = checkNotNull(testedFactory.create(context, fakeDatadogContext, fakeDiagnostics))
+
+        // Then
+        val body = JSONObject(extractRequestBodyAsString(request))
+        val attributes = body.getJSONObject("data").getJSONObject("attributes")
+        assertThat(attributes.has("evaluation_options")).isEqualTo(mode != ExperimentationOptOutMode.DISABLED)
+        assertThat(
+            attributes.getJSONObject("subject").getJSONObject("targeting_attributes")
+                .getString(ExperimentationOptOut.ATTRIBUTE)
+        ).isEqualTo("2026-10-01T00:00:00Z")
+        if (mode != ExperimentationOptOutMode.DISABLED) {
+            val expectedMode = when (mode) {
+                ExperimentationOptOutMode.IMMEDIATE -> "immediate"
+                else -> "future_experiments_only"
+            }
+            assertThat(attributes.getJSONObject("evaluation_options").getString("experimentation_opt_out_mode"))
+                .isEqualTo(expectedMode)
+        }
+        assertThat(body.getJSONObject("diagnostics").getJSONObject("sdk").getString("instance_id"))
+            .isEqualTo(fakeDiagnostics.sdk.instanceId)
+        assertThat(body.getJSONObject("diagnostics").getJSONObject("fetch").getLong("sequence"))
+            .isEqualTo(fakeDiagnostics.fetch.sequence)
+    }
 
     @Test
     fun `M create correct JSON body W create() { with attributes }`(

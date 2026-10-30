@@ -29,6 +29,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.AutoClose
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.extension.ExtendWith
@@ -48,6 +49,7 @@ import kotlin.system.measureNanoTime
 @MockitoSettings(strictness = Strictness.LENIENT)
 class UtilitiesTest {
 
+    @AutoClose
     private lateinit var stubSdkCore: StubSDKCore
 
     @BeforeEach

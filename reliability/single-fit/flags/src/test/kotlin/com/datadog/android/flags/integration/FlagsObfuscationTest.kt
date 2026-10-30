@@ -25,6 +25,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
+import org.junit.jupiter.api.AutoClose
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -38,6 +39,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(FlagsIntegrationForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class FlagsObfuscationTest {
+    @AutoClose
     private lateinit var stubSdkCore: StubSDKCore
 
     @StringForgery

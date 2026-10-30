@@ -52,6 +52,7 @@ import java.util.concurrent.atomic.AtomicReference
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
+@Suppress("DEPRECATION") // These tests retain coverage for the deprecated repository helpers.
 internal class DefaultFlagsRepositoryTest {
 
     @Mock
@@ -581,6 +582,36 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     // endregion
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M reject invalidated snapshots W clearFlagsIfContextChanged()`(acceptedBefore: Boolean, forge: Forge) {
+        // Given
+        if (acceptedBefore) testedRepository.setFlagsAndContext(testContext, multipleFlagsMap)
+        val nextContext = EvaluationContext(forge.anAlphabeticalString())
+
+        // When
+        testedRepository.clearFlagsIfContextChanged(nextContext)
+
+        // Then
+        assertThat(testedRepository.getAssignmentsSnapshot()).isNull()
+        assertThat(testedRepository.getEvaluationContext()).isNull()
+        assertThat(testedRepository.getPrecomputedFlagWithContext(singleFlagMap.keys.first())).isNull()
+    }
+
+    @Test
+    fun `M expose accepted empty snapshot W setFlagsAndContext()`() {
+        // Given
+        testedRepository.clearFlagsIfContextChanged(testContext)
+
+        // When
+        testedRepository.setFlagsAndContext(testContext, emptyMap())
+
+        // Then
+        val snapshot = checkNotNull(testedRepository.getAssignmentsSnapshot())
+        assertThat(snapshot.context).isEqualTo(testContext)
+        assertThat(snapshot.flags).isEmpty()
+    }
 
     // region getFlagsSnapshot
 

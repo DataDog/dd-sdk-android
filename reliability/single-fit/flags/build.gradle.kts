@@ -48,6 +48,7 @@ dependencies {
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(project(":reliability:stub-core"))
+    testImplementation(libs.coroutinesTest)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttp)

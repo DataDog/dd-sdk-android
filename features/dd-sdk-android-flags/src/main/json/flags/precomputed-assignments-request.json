@@ -13,6 +13,17 @@
         "attributes": {
           "type": "object",
           "properties": {
+            "evaluation_options": {
+              "type": "object",
+              "properties": {
+                "experimentation_opt_out_mode": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "experimentation_opt_out_mode"
+              ]
+            },
             "env": {
               "type": "object",
               "properties": {
