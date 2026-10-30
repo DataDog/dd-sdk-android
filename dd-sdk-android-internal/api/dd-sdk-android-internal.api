@@ -118,7 +118,6 @@ public final class com/datadog/android/internal/collections/EvictingQueue : java
 
 public abstract interface class com/datadog/android/internal/data/PreferencesStorage {
 	public abstract fun clear ()V
-	public abstract fun commitStrings (Ljava/util/Map;Ljava/util/Set;)Z
 	public abstract fun getBoolean (Ljava/lang/String;Z)Z
 	public abstract fun getFloat (Ljava/lang/String;F)F
 	public abstract fun getInt (Ljava/lang/String;I)I
@@ -133,7 +132,6 @@ public abstract interface class com/datadog/android/internal/data/PreferencesSto
 }
 
 public final class com/datadog/android/internal/data/PreferencesStorage$DefaultImpls {
-	public static synthetic fun commitStrings$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/util/Map;Ljava/util/Set;ILjava/lang/Object;)Z
 	public static synthetic fun getBoolean$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;ZILjava/lang/Object;)Z
 	public static synthetic fun getFloat$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;FILjava/lang/Object;)F
 	public static synthetic fun getInt$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;IILjava/lang/Object;)I
@@ -146,7 +144,6 @@ public final class com/datadog/android/internal/data/PreferencesStorage$DefaultI
 public final class com/datadog/android/internal/data/SharedPreferencesStorage : com/datadog/android/internal/data/PreferencesStorage {
 	public fun <init> (Landroid/content/Context;)V
 	public fun clear ()V
-	public fun commitStrings (Ljava/util/Map;Ljava/util/Set;)Z
 	public fun getBoolean (Ljava/lang/String;Z)Z
 	public fun getFloat (Ljava/lang/String;F)F
 	public fun getInt (Ljava/lang/String;I)I
@@ -362,36 +359,17 @@ public final class com/datadog/android/internal/profiler/GlobalBenchmark {
 public abstract class com/datadog/android/internal/profiling/ProfilerEvent {
 }
 
-public final class com/datadog/android/internal/profiling/ProfilerEvent$OomProfileAttachRequest : com/datadog/android/internal/profiling/ProfilerEvent {
-	public fun <init> (Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileAttachRequest;
-	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileAttachRequest;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileAttachRequest;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getRumErrorId ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
 public final class com/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution : com/datadog/android/internal/profiling/ProfilerEvent {
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution$Outcome;)V
+	public fun <init> (Ljava/lang/String;Z)V
 	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution$Outcome;
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution$Outcome;)Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution;
-	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution;Ljava/lang/String;Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution$Outcome;ILjava/lang/Object;)Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution;
+	public final fun component2 ()Z
+	public final fun copy (Ljava/lang/String;Z)Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution;Ljava/lang/String;ZILjava/lang/Object;)Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getOutcome ()Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution$Outcome;
 	public final fun getRumErrorId ()Ljava/lang/String;
 	public fun hashCode ()I
+	public final fun isProfileWritten ()Z
 	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution$Outcome : java/lang/Enum {
-	public static final field ATTACHED Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution$Outcome;
-	public static final field NOT_ATTACHED Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution$Outcome;
-	public static fun getEntries ()Lkotlin/enums/EnumEntries;
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution$Outcome;
-	public static fun values ()[Lcom/datadog/android/internal/profiling/ProfilerEvent$OomProfileResolution$Outcome;
 }
 
 public final class com/datadog/android/internal/profiling/ProfilerEvent$OomProfilingReady : com/datadog/android/internal/profiling/ProfilerEvent {
@@ -469,30 +447,6 @@ public final class com/datadog/android/internal/profiling/ProfilerEvent$RumOomEr
 	public final fun getId ()Ljava/lang/String;
 	public final fun getRumContext ()Lcom/datadog/android/internal/profiling/ProfilingRumContext;
 	public final fun getTimestamp ()J
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/internal/profiling/ProfilerEvent$RumOomProfileAttachReply : com/datadog/android/internal/profiling/ProfilerEvent {
-	public fun <init> (Ljava/lang/String;Z)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Z
-	public final fun copy (Ljava/lang/String;Z)Lcom/datadog/android/internal/profiling/ProfilerEvent$RumOomProfileAttachReply;
-	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/ProfilerEvent$RumOomProfileAttachReply;Ljava/lang/String;ZILjava/lang/Object;)Lcom/datadog/android/internal/profiling/ProfilerEvent$RumOomProfileAttachReply;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getGranted ()Z
-	public final fun getRumErrorId ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/internal/profiling/ProfilerEvent$RumOomProfileResolutionAck : com/datadog/android/internal/profiling/ProfilerEvent {
-	public fun <init> (Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lcom/datadog/android/internal/profiling/ProfilerEvent$RumOomProfileResolutionAck;
-	public static synthetic fun copy$default (Lcom/datadog/android/internal/profiling/ProfilerEvent$RumOomProfileResolutionAck;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/profiling/ProfilerEvent$RumOomProfileResolutionAck;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getRumErrorId ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

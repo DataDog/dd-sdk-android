@@ -522,12 +522,8 @@ internal class RumFeature(
             is ProfilingAnrDetectedEvent -> handleProfilingAnrDetectedEvent(event)
             is ProfilingAnomalyDetectedEvent -> handleProfilingAnomalyDetectedEvent(event)
             // Off the sender's thread: the profiling feature may send these from its own executors.
-            is ProfilerEvent.OomProfileAttachRequest -> onContextThread {
-                pendingOomErrorStore.onAttachRequest(event.rumErrorId)
-            }
-
             is ProfilerEvent.OomProfileResolution -> onContextThread {
-                pendingOomErrorStore.onResolution(event.rumErrorId, event.outcome)
+                pendingOomErrorStore.onOomProfileResolution(event.rumErrorId, event.isProfileWritten)
             }
 
             is ProfilerEvent.OomProfilingReady -> onContextThread { pendingOomErrorStore.onProfilingReady() }

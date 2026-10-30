@@ -2002,14 +2002,11 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(appContext.mockInstance)
 
         // When
-        testedFeature.onReceive(ProfilerEvent.OomProfileAttachRequest(fakeErrorId))
-        testedFeature.onReceive(
-            ProfilerEvent.OomProfileResolution(fakeErrorId, ProfilerEvent.OomProfileResolution.Outcome.ATTACHED)
-        )
+        testedFeature.onReceive(ProfilerEvent.OomProfileResolution(fakeErrorId, true))
         testedFeature.onReceive(ProfilerEvent.OomProfilingReady)
 
         // Then
-        verify(mockRumScope, times(3)).withContext(any(), any())
+        verify(mockRumScope, times(2)).withContext(any(), any())
     }
 
     @Test

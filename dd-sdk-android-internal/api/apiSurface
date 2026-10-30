@@ -54,7 +54,6 @@ interface com.datadog.android.internal.data.PreferencesStorage
   fun getInt(String, Int = 0): Int
   fun getString(String, String? = null): String?
   fun putString(String, String, Boolean = false)
-  fun commitStrings(Map<String, String>, Set<String> = emptySet()): Boolean
   fun getStringSet(String, Set<String> = emptySet()): Set<String>
   fun putStringSet(String, Set<String>)
   fun putBoolean(String, Boolean)
@@ -73,7 +72,6 @@ class com.datadog.android.internal.data.SharedPreferencesStorage : PreferencesSt
   override fun putStringSet(String, Set<String>)
   override fun putBoolean(String, Boolean)
   override fun getBoolean(String, Boolean): Boolean
-  override fun commitStrings(Map<String, String>, Set<String>): Boolean
   override fun remove(String, Boolean)
   override fun clear()
 data class com.datadog.android.internal.flags.RumFlagEvaluationMessage
@@ -197,17 +195,8 @@ sealed class com.datadog.android.internal.profiling.ProfilerEvent
   data class RumHeldOomErrorEvent : ProfilerEvent
     constructor(String)
   object OomProfilingReady : ProfilerEvent
-  data class OomProfileAttachRequest : ProfilerEvent
-    constructor(String)
-  data class RumOomProfileAttachReply : ProfilerEvent
-    constructor(String, Boolean)
   data class OomProfileResolution : ProfilerEvent
-    constructor(String, Outcome)
-    enum Outcome
-      - ATTACHED
-      - NOT_ATTACHED
-  data class RumOomProfileResolutionAck : ProfilerEvent
-    constructor(String)
+    constructor(String, Boolean)
   data class RumAnomalyErrorEvent : ProfilerEvent
     constructor(String, Long, ProfilingRumContext)
   data class RumLongTaskEvent : ProfilerEvent

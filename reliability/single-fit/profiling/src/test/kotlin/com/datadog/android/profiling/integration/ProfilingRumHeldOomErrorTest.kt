@@ -42,7 +42,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -147,8 +146,7 @@ class ProfilingRumHeldOomErrorTest {
     private class Launch(val core: StubSDKCore, val profiling: ProfilingFeatureTestHandle)
 
     private fun launch(forge: Forge, isProfilingFirst: Boolean): Launch {
-        // Each launch is the same SDK instance: its OOM handshake records are namespaced by name.
-        val core = StubSDKCore(forge, mockSdkCore = mock { on { name } doReturn SDK_INSTANCE_NAME })
+        val core = StubSDKCore(forge)
         core.stubDataStore(Feature.RUM_FEATURE_NAME, rumDataStore)
         val enableProfiling = {
             ProfilingFeatureTestHandle.create(
@@ -224,16 +222,10 @@ class ProfilingRumHeldOomErrorTest {
                 prefs.remove(it.getArgument<String>(0))
                 Unit
             }
-            whenever(storage.commitStrings(any(), any())) doAnswer {
-                prefs.putAll(it.getArgument<Map<String, String>>(0))
-                it.getArgument<Set<String>>(1).forEach { key -> prefs.remove(key) }
-                true
-            }
         }
     }
 
     companion object {
-        private const val SDK_INSTANCE_NAME = "held-oom-test-core"
         private const val START_MS = 1_000L
         private const val END_MS = 2_000L
         private val mainLooper = MainLooperTestConfiguration()
