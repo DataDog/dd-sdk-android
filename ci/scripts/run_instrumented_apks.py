@@ -472,6 +472,13 @@ def run_on_emulator(
 ) -> int:
     if not dry_run_only:
         wait_for_boot(adb, serial)
+    hide_error_dialogs_command = [
+        adb, "-s", serial, "shell", "settings", "put", "global", "hide_error_dialogs", "1"
+    ]
+    if dry_run_only:
+        print_command(hide_error_dialogs_command)
+    else:
+        subprocess.run(hide_error_dialogs_command, check=True)
     exit_code = 0
     for run in configuration.runs:
         if run_tests(run, configuration.label, adb, serial, dry_run_only) != 0:
