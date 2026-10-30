@@ -1,4 +1,4 @@
-# Select with CI_PIPELINE_KEY=test. Build the diagnostic APKs once, then run
+# Temporary default for the CI experiment. Build the diagnostic APKs once, then run
 # five independent copies of the latest-API job, each with its usual three shards.
 default:
   interruptible: true
