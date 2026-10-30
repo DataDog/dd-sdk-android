@@ -1954,6 +1954,7 @@ internal class EvaluationsManagerTest {
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.TELEMETRY,
             "Flag selection ignored",
+            onlyOnce = true,
             additionalProperties = mapOf("reason" to fakeIgnoredReason)
         )
         verify(mockFlagsRepository).installFlagsAndContext(eq(context), eq(emptyMap()), anyOrNull())

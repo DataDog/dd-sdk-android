@@ -261,6 +261,7 @@ internal class FlagsFeatureTest {
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.TELEMETRY,
             "Flag selection dropped",
+            onlyOnce = true,
             additionalProperties = mapOf("reason" to "too_many_values")
         )
     }

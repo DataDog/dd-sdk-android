@@ -8,7 +8,7 @@ package com.datadog.android.flags.internal.selection
 
 import com.datadog.android.api.InternalLogger
 
-// Telemetry carries only the reason, never selection values.
+// Telemetry carries only the reason, never selection values, and is sent once per process.
 private const val TELEMETRY_REASON_KEY = "reason"
 
 private const val FLAG_SELECTION_DROPPED_TELEMETRY_MESSAGE = "Flag selection dropped"
@@ -27,7 +27,8 @@ internal fun InternalLogger.logDroppedFlagSelection(error: FlagSelectionError) {
         InternalLogger.Level.DEBUG,
         InternalLogger.Target.TELEMETRY,
         { FLAG_SELECTION_DROPPED_TELEMETRY_MESSAGE },
-        additionalProperties = mapOf(TELEMETRY_REASON_KEY to error.reason)
+        additionalProperties = mapOf(TELEMETRY_REASON_KEY to error.reason),
+        onlyOnce = true
     )
 }
 
@@ -41,6 +42,7 @@ internal fun InternalLogger.logIgnoredFlagSelection(reason: String) {
         InternalLogger.Level.DEBUG,
         InternalLogger.Target.TELEMETRY,
         { FLAG_SELECTION_IGNORED_TELEMETRY_MESSAGE },
-        additionalProperties = mapOf(TELEMETRY_REASON_KEY to reason)
+        additionalProperties = mapOf(TELEMETRY_REASON_KEY to reason),
+        onlyOnce = true
     )
 }
