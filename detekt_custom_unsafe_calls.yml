@@ -73,6 +73,7 @@ datadog:
       # region Java File
       - "java.io.BufferedInputStream.use(kotlin.Function1):java.io.IOException"
       - "java.io.ByteArrayOutputStream.write(kotlin.ByteArray, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
+      - "java.io.Closeable.close():java.io.IOException"
       - "java.io.File.canRead():java.lang.SecurityException"
       - "java.io.File.canWrite():java.lang.SecurityException"
       - "java.io.File.delete():java.lang.SecurityException"

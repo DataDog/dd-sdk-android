@@ -18,16 +18,21 @@ comments:
   active: true
   AbsentOrWrongFileLicense:
     active: true
-    licenseTemplateFile: 'license.template'
+    licenseTemplate: |
+      /*
+       * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+       * This product includes software developed at Datadog (https://www.datadoghq.com/).
+       * Copyright 2016-Present Datadog, Inc.
+       */
     licenseTemplateIsRegex: false
     excludes:
       # Gradle build outputs and generated artifacts.
       - '**/build/generated/**'
       # Vendored test files ported from the upstream dd-trace-java library.
       - '**/features/dd-sdk-android-trace-internal/src/test/kotlin/com/datadog/trace/**'
-  CommentOverPrivateFunction:
+  DocumentationOverPrivateFunction:
     active: false
-  CommentOverPrivateProperty:
+  DocumentationOverPrivateProperty:
     active: false
   DeprecatedBlockTag:
     active: true
@@ -623,8 +628,8 @@ style:
     allowedPatterns: ''
   ForbiddenImport:
     active: false
-    imports: []
-    forbiddenPatterns: ''
+    forbiddenImports: []
+    allowedImports: []
   ForbiddenMethodCall:
     active: false
     methods:
@@ -749,8 +754,6 @@ style:
   AbstractClassCanBeInterface:
     active: false
     excludes: ['**/test/**', '**/*Test/**', '**/testFixtures/**', '**/tools/**']
-  UnnecessaryAnnotationUseSiteTarget:
-    active: false
   UnnecessaryApply:
     active: true
   UnnecessaryBackticks:

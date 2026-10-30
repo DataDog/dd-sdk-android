@@ -113,7 +113,6 @@ data class com.datadog.android.log.model.LogEvent
       fun fromJson(kotlin.String): SimCarrier
       fun fromJsonObject(com.google.gson.JsonObject): SimCarrier
   enum Status
-    constructor(kotlin.String)
     - CRITICAL
     - ERROR
     - WARN
@@ -125,7 +124,6 @@ data class com.datadog.android.log.model.LogEvent
     companion object 
       fun fromJson(kotlin.String): Status
   enum Type
-    constructor(kotlin.String)
     - MOBILE
     - DESKTOP
     - TABLET

@@ -7,12 +7,11 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    // Apply ktlint before AGP: built-in Kotlin otherwise causes duplicate ktlint tasks.
+    id("ktlint")
+
     // Build
     id("com.android.library")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    kotlin("android")
     id("datadogBuildConfig")
 
     // Analysis tools
@@ -23,8 +22,6 @@ plugins {
     alias(libs.plugins.apolloPlugin)
 }
 
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.okhttp.integration"
 }
@@ -66,9 +63,8 @@ apollo {
         srcDir("src/test/resources/graphql")
         packageName.set("com.datadog.android.testgraphql")
         schemaFiles.from("src/test/resources/graphql/schema.graphqls")
-
         outputDirConnection {
-            connectToKotlinSourceSet("test")
+            connectToAndroidTestComponents(kotlin = true)
         }
     }
 }

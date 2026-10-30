@@ -11,6 +11,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import java.io.File
 
 internal class KotlinFileVisitorTest {
@@ -113,6 +115,42 @@ internal class KotlinFileVisitorTest {
                 "  - A\n" +
                 "  - B\n" +
                 "  - C\n"
+        )
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["", "private "])
+    fun `M omit enum constructors W visitFile() {implicit or explicit private visibility}`(visibility: String) {
+        // Given
+        tempFile.writeText(
+            """
+            package foo.bar
+            enum class Spam ${visibility}constructor(i: Int) {
+                A(0), B("B");
+
+                ${visibility}constructor(s: String) : this(s.length)
+
+                val value: Int = i
+
+                class Nested(i: Int) {
+                    constructor(s: String) : this(s.length)
+                }
+            }
+            """.trimIndent()
+        )
+
+        // When
+        testedVisitor.visitFile(tempFile)
+
+        // Then
+        assertThat(testedVisitor.description.toString()).isEqualTo(
+            "enum foo.bar.Spam\n" +
+                "  - A\n" +
+                "  - B\n" +
+                "  val value: Int\n" +
+                "  class Nested\n" +
+                "    constructor(Int)\n" +
+                "    constructor(String)\n"
         )
     }
 
