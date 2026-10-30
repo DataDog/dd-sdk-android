@@ -242,7 +242,7 @@ internal class ProfilingFeatureTest {
         whenever(mockProfiler.timeProvider) doReturn mockMutableTimeProvider
         whenever(mockSdkCore.createOkHttpCallFactory(any())) doReturn mockCallFactory
         whenever(mockProfiler.scheduledExecutorService) doReturn mockSchedulerExecutor
-        whenever(mockProfiler.isOomTriggerActive) doReturn true
+        whenever(mockProfiler.isOomTriggerRegistered) doReturn true
         whenever(mockContext.getSystemService(ProfilingManager::class.java)) doReturn (mockService)
         whenever(mockContext.getSharedPreferences(any(), any())) doReturn mockSharedPreferences
         whenever(mockSharedPreferences.edit()) doReturn mockEditor
@@ -760,6 +760,58 @@ internal class ProfilingFeatureTest {
 
         // Then
         verify(mockProfiler).setTriggersEnabled(mockContext, false)
+    }
+
+    @Test
+    fun `M publish OOM trigger registration W onOomTriggerRegisteredChanged()`(
+        @BoolForgery fakeIsRegistered: Boolean
+    ) {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        val update = mutableMapOf<String, Any?>()
+        whenever(mockSdkCore.updateFeatureContext(eq(Feature.PROFILING_FEATURE_NAME), any(), any())) doAnswer {
+            it.getArgument<(MutableMap<String, Any?>) -> Unit>(2).invoke(update)
+        }
+
+        // When
+        testedFeature.onOomTriggerRegisteredChanged(fakeIsRegistered)
+
+        // Then
+        assertThat(update).containsEntry(FeatureContextKeys.PROFILING_OOM_TRIGGER_REGISTERED, fakeIsRegistered)
+    }
+
+    @Test
+    fun `M retry enabling triggers W onContextUpdate {previous registration failed}`() {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning()) doReturn false
+        whenever(mockProfiler.isOomTriggerRegistered) doReturn false
+        testedFeature.onInitialize(mockContext)
+        val sessionId = sampledInSessionId()
+        testedFeature.dispatchRumSession(sessionId, 100f)
+
+        // When
+        testedFeature.dispatchRumSession(sessionId, 100f)
+
+        // Then
+        verify(mockProfiler, times(2)).setTriggersEnabled(mockContext, true)
+    }
+
+    @Test
+    fun `M disable triggers W onStop {triggers already disabled}`() {
+        // Given
+        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
+        whenever(mockProfiler.isRunning()) doReturn false
+        testedFeature.onInitialize(mockContext)
+        val sessionId = sampledInSessionId()
+        testedFeature.dispatchRumSession(sessionId, 100f)
+        testedFeature.dispatchRumSession(sessionId, 100f, RumSessionState.EXPIRED)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(mockProfiler, times(2)).setTriggersEnabled(mockContext, false)
     }
 
     // endregion
@@ -2559,11 +2611,11 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M not persist gating event W onReceive() {RumOomErrorEvent, OOM trigger inactive}`(
+    fun `M not persist gating event W onReceive() {RumOomErrorEvent, OOM trigger not registered}`(
         @Forgery fakeOomEvent: ProfilerEvent.RumOomErrorEvent
     ) {
         // Given
-        whenever(mockProfiler.isOomTriggerActive) doReturn false
+        whenever(mockProfiler.isOomTriggerRegistered) doReturn false
         testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
         testedFeature.onInitialize(mockContext)
         testedFeature.pendingTriggerProfiles = mockPendingTriggerProfiles

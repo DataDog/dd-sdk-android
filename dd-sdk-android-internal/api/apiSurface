@@ -9,6 +9,7 @@ object com.datadog.android.internal.FeatureContextKeys
   const val PROFILING_SAMPLE_RATE: String
   const val PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE: String
   const val PROFILING_ANR_ENABLED: String
+  const val PROFILING_OOM_TRIGGER_REGISTERED: String
   const val RUM_SESSION_ID: String
   const val RUM_SESSION_SAMPLE_RATE: String
   const val RUM_SESSION_STATE: String

@@ -11,6 +11,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.profiling.quota.QuotaReason
 import com.datadog.android.rum.utils.forge.Configurator
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -31,6 +32,34 @@ internal class ProfilingFeatureContextTest {
 
     @StringForgery
     lateinit var fakeSessionId: String
+
+    @Test
+    fun `M return the published state W isProfilingOomTriggerRegistered()`(
+        @BoolForgery fakeActive: Boolean
+    ) {
+        // Given
+        val datadogContext = fakeDatadogContext.withProfilingContext(
+            FeatureContextKeys.PROFILING_OOM_TRIGGER_REGISTERED to fakeActive
+        )
+
+        // When
+        val result = datadogContext.isProfilingOomTriggerRegistered()
+
+        // Then
+        assertThat(result).isEqualTo(fakeActive)
+    }
+
+    @Test
+    fun `M return false W isProfilingOomTriggerRegistered() {not published}`() {
+        // Given
+        val datadogContext = fakeDatadogContext.withProfilingContext()
+
+        // When
+        val result = datadogContext.isProfilingOomTriggerRegistered()
+
+        // Then
+        assertThat(result).isFalse()
+    }
 
     @Test
     fun `M return quota reason W resolveProfilingQuotaReason() {reason for current session}`(

@@ -54,6 +54,10 @@ internal class ProfilingManagerTriggerRegistrar(
     private val registered = AtomicBoolean(false)
 
     @Volatile
+    override var isOomTriggerRegistered: Boolean = false
+        private set
+
+    @Volatile
     private var listener: ProfilingTriggerListener? = null
 
     // Testable seam
@@ -135,6 +139,8 @@ internal class ProfilingManagerTriggerRegistrar(
         registeredTriggerTypes = triggers.map { it.triggerType }.toIntArray()
         manager.addProfilingTriggers(triggers)
         manager.registerForAllProfilingResults(executorService, resultCallback)
+        isOomTriggerRegistered = buildSdkVersionProvider.isAtLeastCinnamonBun &&
+            triggers.any { it.triggerType == ProfilingTrigger.TRIGGER_TYPE_OOM }
     }
 
     @RequiresApi(Build.VERSION_CODES.BAKLAVA)
@@ -155,6 +161,7 @@ internal class ProfilingManagerTriggerRegistrar(
         if (!registered.compareAndSet(true, false)) return
 
         manager.removeProfilingTriggersByType(registeredTriggerTypes)
+        isOomTriggerRegistered = false
         manager.unregisterForAllProfilingResults(resultCallback)
         listener = null
     }
