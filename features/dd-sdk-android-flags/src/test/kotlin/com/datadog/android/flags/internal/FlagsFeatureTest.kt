@@ -11,7 +11,10 @@ import android.content.pm.ApplicationInfo
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.ExperimentationOptOutMode
+import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.internal.selection.FlagSelectionError
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
@@ -26,13 +29,16 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
@@ -42,6 +48,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -79,6 +86,73 @@ internal class FlagsFeatureTest {
             sdkCore = mockSdkCore,
             flagsConfiguration = FlagsConfiguration.Builder().build()
         )
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class, names = ["IMMEDIATE", "FUTURE_EXPERIMENTS_ONLY"])
+    fun `M warn outside registration lock W getOrRegisterNewClient() {concurrent mode mismatch}`(
+        requestedMode: ExperimentationOptOutMode
+    ) {
+        // Given
+        val fakeClientName = "concurrent-registration"
+        val mockWinner = mock<DatadogFlagsClient>()
+        whenever(mockWinner.experimentationOptOut) doReturn ExperimentationOptOut(ExperimentationOptOutMode.DISABLED)
+        val factoryEntered = CountDownLatch(1)
+        val releaseFactory = CountDownLatch(1)
+        val contenderStarted = CountDownLatch(1)
+        val warningEntered = CountDownLatch(1)
+        val releaseWarning = CountDownLatch(1)
+        val executor = Executors.newFixedThreadPool(3)
+        doAnswer {
+            warningEntered.countDown()
+            check(releaseWarning.await(5, TimeUnit.SECONDS))
+            null
+        }.whenever(
+            mockInternalLogger
+        ).log(any(), eq(InternalLogger.Target.USER), any(), anyOrNull(), any(), anyOrNull())
+
+        try {
+            val winner = executor.submit<FlagsClient> {
+                testedFeature.getOrRegisterNewClient(fakeClientName, ExperimentationOptOutMode.DISABLED) {
+                    factoryEntered.countDown()
+                    check(releaseFactory.await(5, TimeUnit.SECONDS))
+                    mockWinner
+                }
+            }
+            check(factoryEntered.await(5, TimeUnit.SECONDS))
+
+            // When
+            val contender = executor.submit<FlagsClient> {
+                contenderStarted.countDown()
+                testedFeature.getOrRegisterNewClient(fakeClientName, requestedMode) {
+                    error("The losing registration must not create a client")
+                }
+            }
+            check(contenderStarted.await(5, TimeUnit.SECONDS))
+            releaseFactory.countDown()
+
+            // Then
+            assertThat(warningEntered.await(2, TimeUnit.SECONDS)).isTrue()
+            assertThat(
+                executor.submit<FlagsClient?> { testedFeature.getClient(fakeClientName) }
+                    .get(2, TimeUnit.SECONDS)
+            ).isSameAs(mockWinner)
+            releaseWarning.countDown()
+            assertThat(winner.get(2, TimeUnit.SECONDS)).isSameAs(mockWinner)
+            assertThat(contender.get(2, TimeUnit.SECONDS)).isSameAs(mockWinner)
+            mockInternalLogger.verifyLog(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                "[Datadog Flags] Attempted to create a FlagsClient named '$fakeClientName' " +
+                    "with experimentation opt-out mode $requestedMode, but one already exists with mode DISABLED. " +
+                    "The existing client will be used. Use a separate client name for each mode."
+            )
+        } finally {
+            releaseFactory.countDown()
+            releaseWarning.countDown()
+            executor.shutdownNow()
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue()
+        }
     }
 
     // region Lifecycle Methods

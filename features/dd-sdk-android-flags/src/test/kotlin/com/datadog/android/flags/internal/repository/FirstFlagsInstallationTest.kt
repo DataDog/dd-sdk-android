@@ -35,6 +35,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 @ExtendWith(ForgeExtension::class)
+@Suppress("DEPRECATION") // These tests retain coverage for the deprecated repository helpers.
 internal class FirstFlagsInstallationTest {
     @StringForgery
     lateinit var fakeNetworkKey: String

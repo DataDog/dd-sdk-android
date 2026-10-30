@@ -160,8 +160,10 @@ data class FlagsConfiguration internal constructor(
          * the ready state. It does not change the HTTP client's timeout. The assignment operation continues after
          * this timeout and can update the client to [com.datadog.android.flags.model.FlagsClientState.Ready].
          *
-         * The timeout applies to the first [FlagsClient.setEvaluationContext] call only. That call consumes the
-         * timeout even if the operation fails or never starts. Later calls, including retries, have no timer.
+         * The timeout applies to the first [FlagsClient.setEvaluationContext] call that starts an assignment
+         * operation. That call consumes the timeout even if dispatch fails. An invalid experimentation opt-out
+         * timestamp does not consume it. Later calls, including retries, have no timer.
+         * Completing the first operation cancels its timer, even if a newer context is still loading.
          *
          * When the timeout expires, the client becomes
          * [com.datadog.android.flags.model.FlagsClientState.Stale] if matching cached assignments are available.

@@ -11,6 +11,7 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
@@ -22,15 +23,16 @@ internal class FlagsPersistenceManager(
     instanceName: String,
     private val flagSelection: CanonicalFlagSelection?,
     private val internalLogger: InternalLogger,
+    experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
     onStateLoaded: (FlagsStateEntry?) -> Unit
 ) {
     private val serializer = FlagsStateSerializer(internalLogger)
     private val deserializer = FlagsStateDeserializer(internalLogger)
 
-    // SDK versions without flag selection read only the unselected key and ignore the flagSelection field,
-    // so selected state uses its own key and is never read by them as a full configuration.
-    private val unselectedStateKey = "$FLAGS_STATE_KEY_PREFIX-$instanceName"
-    private val selectedStateKey = "$FLAGS_SELECTION_STATE_KEY_PREFIX-$instanceName"
+    // SDK versions without flag selection read only the unselected key for their opt-out mode and ignore the
+    // flagSelection field, so selected state uses its own key and is never read by them as a full configuration.
+    private val unselectedStateKey = stateKey(instanceName, experimentationOptOutMode, selected = false)
+    private val selectedStateKey = stateKey(instanceName, experimentationOptOutMode, selected = true)
     private val flagsStateKey: String = if (flagSelection == null) unselectedStateKey else selectedStateKey
 
     init {
@@ -85,7 +87,14 @@ internal class FlagsPersistenceManager(
     }
 
     companion object {
-        private const val FLAGS_STATE_KEY_PREFIX = "flags-state"
-        private const val FLAGS_SELECTION_STATE_KEY_PREFIX = "flags-selection-state"
+        internal fun stateKey(instanceName: String, mode: ExperimentationOptOutMode, selected: Boolean): String {
+            val selection = if (selected) "selection-" else ""
+            val modePart = when (mode) {
+                ExperimentationOptOutMode.DISABLED -> ""
+                ExperimentationOptOutMode.IMMEDIATE -> "immediate-v1-"
+                ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY -> "future-v1-"
+            }
+            return "flags-$selection${modePart}state-$instanceName"
+        }
     }
 }

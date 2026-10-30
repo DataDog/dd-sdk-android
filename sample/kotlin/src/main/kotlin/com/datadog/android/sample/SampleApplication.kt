@@ -29,7 +29,6 @@ import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.ndk.NdkCrashReports
 import com.datadog.android.okhttp.configureDatadogInstrumentation
-import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.Profiling
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.rum.ExperimentalRumApi
@@ -187,7 +186,6 @@ class SampleApplication : Application() {
         GlobalRumMonitor.get().debug = true
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            @OptIn(ExperimentalProfilingApi::class)
             Profiling.enable(
                 ProfilingConfiguration.Builder()
                     .setApplicationLaunchSampleRate(100f)
@@ -295,9 +293,8 @@ class SampleApplication : Application() {
                             GlobalRumMonitor.get().addError(
                                 "OpenFeature provider error",
                                 RumErrorSource.SOURCE,
-                                null,
+                                event.error,
                                 mapOf(
-                                    "error" to event.error.toString(),
                                     "component" to "openfeature-provider"
                                 )
                             )

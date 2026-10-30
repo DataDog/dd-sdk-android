@@ -61,7 +61,6 @@ dependencies {
 
     implementation(platform(libs.androidXComposeBom))
     implementation(libs.bundles.androidXCompose)
-    implementation(libs.androidXComposeMaterial)
 
     testImplementation(project(":tools:unit")) {
         attributes {

@@ -62,6 +62,7 @@ import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
@@ -439,15 +440,19 @@ internal class DatadogCore(
     }
 
     override fun getDatadogContext(withFeatureContexts: Set<String>): DatadogContext? {
+        return getDatadogContextFuture(withFeatureContexts)
+            ?.getSafe("getDatadogContext", internalLogger)
+    }
+
+    override fun getDatadogContextFuture(withFeatureContexts: Set<String>): Future<DatadogContext?>? {
         return coreFeature.contextExecutorService
             .submitSafe(
-                "getDatadogContext",
+                "getDatadogContextFuture",
                 internalLogger,
                 Callable {
                     with(contextProvider) { if (this is NoOpContextProvider) null else getContext(withFeatureContexts) }
                 }
             )
-            ?.getSafe("getDatadogContext", internalLogger)
     }
 
     override val remoteConfiguration: RemoteConfiguration?

@@ -46,6 +46,7 @@ import org.mockito.quality.Strictness
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
+@Suppress("DEPRECATION") // These tests retain coverage for the deprecated repository helpers.
 internal class DefaultFlagsRepositoryObfuscationTest {
     private lateinit var testedRepository: DefaultFlagsRepository
     private lateinit var encoding: FlagKeyObfuscation

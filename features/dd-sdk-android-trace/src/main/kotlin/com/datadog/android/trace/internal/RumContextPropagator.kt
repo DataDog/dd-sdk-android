@@ -9,7 +9,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.api.feature.getContextFuture
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.rum.rumContext
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.log.LogAttributes
@@ -36,8 +36,9 @@ class RumContextPropagator(private val sdkCoreProvider: () -> FeatureSdkCore?) {
         get() = sdkCore?.internalLogger
 
     private fun injectRumContext(builder: DatadogSpanBuilder) {
-        sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
-            ?.getContextFuture(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME))
+        val core = sdkCore as? InternalSdkCore ?: return
+        if (core.getFeature(Feature.RUM_FEATURE_NAME) == null) return
+        core.getDatadogContextFuture(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME))
             ?.let { lazyContext -> builder.withTag(DATADOG_INITIAL_CONTEXT, lazyContext) }
     }
 

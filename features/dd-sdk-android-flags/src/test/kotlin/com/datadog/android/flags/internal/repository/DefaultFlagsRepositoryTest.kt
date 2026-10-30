@@ -11,6 +11,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.model.PrecomputedFlag
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -58,6 +60,7 @@ import java.util.concurrent.atomic.AtomicReference
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
+@Suppress("DEPRECATION") // These tests retain coverage for the deprecated repository helpers.
 internal class DefaultFlagsRepositoryTest {
 
     @Mock
@@ -652,6 +655,62 @@ internal class DefaultFlagsRepositoryTest {
             deserializer = any()
         )
         verify(mockDataStore).removeValue(eq("flags-selection-state-$fakeInstanceName"), anyOrNull())
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "DISABLED,false,flags-state,flags-selection-state",
+        "DISABLED,true,flags-selection-state,flags-state",
+        "IMMEDIATE,false,flags-immediate-v1-state,flags-selection-immediate-v1-state",
+        "IMMEDIATE,true,flags-selection-immediate-v1-state,flags-immediate-v1-state",
+        "FUTURE_EXPERIMENTS_ONLY,false,flags-future-v1-state,flags-selection-future-v1-state",
+        "FUTURE_EXPERIMENTS_ONLY,true,flags-selection-future-v1-state,flags-future-v1-state"
+    )
+    fun `M use the opt-out mode key for the selection W init and setFlagsAndContext()`(
+        mode: ExperimentationOptOutMode,
+        selected: Boolean,
+        expectedKeyPrefix: String,
+        siblingKeyPrefix: String,
+        @StringForgery(regex = "fake-[a-z]{4,8}") fakeInstanceName: String,
+        forge: Forge
+    ) {
+        // Given
+        val expectedKey = "$expectedKeyPrefix-$fakeInstanceName"
+        val siblingKey = "$siblingKeyPrefix-$fakeInstanceName"
+        testedRepository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            instanceName = fakeInstanceName,
+            dataStore = mockDataStore,
+            flagSelection = if (selected) CanonicalFlagSelection(listOf("mobile"), emptyList()) else null,
+            experimentationOptOutMode = mode
+        )
+
+        // When
+        testedRepository.setFlagsAndContext(forge.getForgery(), emptyMap())
+
+        // Then
+        verify(mockDataStore).value<FlagsStateEntry>(
+            key = eq(expectedKey),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        verify(mockDataStore).removeValue(eq(siblingKey), anyOrNull())
+        verify(mockDataStore).setValue<FlagsStateEntry>(
+            key = eq(expectedKey),
+            data = any(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
+        // Builds without flag selection read only the unselected key of their mode.
+        verify(mockDataStore, never()).setValue<FlagsStateEntry>(
+            key = eq(siblingKey),
+            data = any(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
     }
 
     @Test
