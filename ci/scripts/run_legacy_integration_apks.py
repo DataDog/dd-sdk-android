@@ -30,7 +30,8 @@ def instrumentation_run(
         app_apk_directory="instrumented/integration/build/outputs/apk/debug",
         test_apk_directory="instrumented/integration/build/outputs/apk/androidTest/debug",
         instrumentation_package="com.datadog.android.sdk.integration.test",
-        arguments=arguments,
+        arguments=(*arguments, "-e", "captureFailureDiagnostics", "true"),
+        diagnostics_package="com.datadog.android.sdk.integration",
         include_package=include_package,
         exclude_packages=exclude_packages,
     )

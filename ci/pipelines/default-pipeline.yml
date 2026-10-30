@@ -337,6 +337,7 @@ test-pyramid:api-coverage:
     paths:
       - instrumentation-output*.txt
       - emulator-*.log
+      - diagnostics-*/
     reports:
       junit: instrumentation-results*.xml
 

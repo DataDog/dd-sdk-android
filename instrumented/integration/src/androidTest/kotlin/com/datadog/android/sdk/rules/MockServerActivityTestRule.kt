@@ -18,12 +18,14 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.okhttp.RecordingDispatcher
+import com.datadog.android.sdk.utils.InstrumentationFailureDiagnostics
 import com.datadog.android.sdk.utils.addForgeSeed
 import com.datadog.android.sdk.utils.addTrackingConsent
 import com.datadog.android.sdk.utils.overrideProcessImportance
 import fr.xgouchet.elmyr.Forge
 import leakcanary.LeakCanary
 import okhttp3.mockwebserver.MockWebServer
+import org.junit.AssumptionViolatedException
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import shark.AndroidReferenceMatchers
@@ -111,7 +113,19 @@ internal open class MockServerActivityTestRule<T : Activity>(
     // region TestRule
 
     override fun apply(base: Statement, description: Description): Statement {
-        val original = super.apply(base, description)
+        val diagnosticStatement = object : Statement() {
+            override fun evaluate() {
+                try {
+                    base.evaluate()
+                } catch (t: Throwable) {
+                    if (t !is AssumptionViolatedException) {
+                        InstrumentationFailureDiagnostics.capture(description, t)
+                    }
+                    throw t
+                }
+            }
+        }
+        val original = super.apply(diagnosticStatement, description)
         return object : Statement() {
             override fun evaluate() {
                 try {

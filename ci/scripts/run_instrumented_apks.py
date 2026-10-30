@@ -16,7 +16,9 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
+from threading import Thread
 from typing import IO, List, Optional, Sequence, Tuple
 
 from instrumentation_to_junit import convert_stream
@@ -42,6 +44,7 @@ class InstrumentationRun:
     arguments: Tuple[str, ...] = ()
     include_package: Optional[str] = None
     exclude_packages: Optional[str] = None
+    diagnostics_package: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -245,18 +248,34 @@ def launch_emulator(
     tools: AndroidSdkTools,
     plan: EmulatorPlan,
     dry_run_only: bool,
-) -> Tuple[Optional[subprocess.Popen], Optional[IO[bytes]]]:
+) -> Tuple[Optional[subprocess.Popen], Optional[IO[bytes]], Optional[Thread]]:
     command = emulator_launch_command(tools, plan)
     if dry_run_only:
         print_command(command)
-        return None, None
+        return None, None, None
     log = Path(f"emulator-{plan.configuration.label}.log").open("wb")
     process = subprocess.Popen(
         command,
-        stdout=log,
+        stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        bufsize=1,
     )
-    return process, log
+
+    def timestamp_output() -> None:
+        if process.stdout is None:
+            return
+        with process.stdout:
+            for line in process.stdout:
+                timestamp = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+                log.write(f"{timestamp} {line}".encode("utf-8"))
+                log.flush()
+
+    reader = Thread(target=timestamp_output, daemon=True)
+    reader.start()
+    return process, log, reader
 
 
 def print_command(command: Sequence[object]) -> None:
@@ -455,13 +474,58 @@ def run_tests(
     if dry_run_only:
         print(f"  Run {run.label}:")
     install_apks(run, adb, serial, dry_run_only)
-    return execute_instrumentation(
-        run,
-        emulator_label,
-        adb,
-        serial,
-        dry_run_only,
+    device_directory = (
+        f"/sdcard/Android/data/{run.diagnostics_package}/files/ci-diagnostics"
+        if run.diagnostics_package else None
     )
+    if device_directory and not dry_run_only:
+        diagnostic_command(adb, serial, ["shell", "rm", "-rf", device_directory])
+    try:
+        return execute_instrumentation(
+            run,
+            emulator_label,
+            adb,
+            serial,
+            dry_run_only,
+        )
+    finally:
+        if device_directory and not dry_run_only:
+            # Device-side capture precedes activity teardown; pulling can wait until the run ends.
+            result = diagnostic_command(adb, serial, ["shell", "test", "-d", device_directory])
+            if result is not None and result.returncode == 0:
+                directory = Path(f"diagnostics-{emulator_label}") / run.label
+                directory.mkdir(parents=True, exist_ok=True)
+                diagnostic_command(adb, serial, ["pull", device_directory, str(directory)])
+
+
+def diagnostic_command(
+    adb: Path,
+    serial: str,
+    arguments: Sequence[str],
+) -> Optional[subprocess.CompletedProcess]:
+    try:
+        result = subprocess.run(
+            [adb, "-s", serial, *arguments],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if result.returncode != 0 and arguments[:2] != ["shell", "test"]:
+            print(f"Diagnostic command failed for {serial}: {result.stderr}", file=sys.stderr)
+        return result
+    except (OSError, subprocess.TimeoutExpired) as error:
+        print(f"Diagnostic command failed for {serial}: {error}", file=sys.stderr)
+        return None
+
+
+def stop_logcat(process: subprocess.Popen) -> None:
+    process.terminate()
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()
 
 
 def run_on_emulator(
@@ -472,15 +536,35 @@ def run_on_emulator(
 ) -> int:
     if not dry_run_only:
         wait_for_boot(adb, serial)
-    exit_code = 0
-    for run in configuration.runs:
-        if run_tests(run, configuration.label, adb, serial, dry_run_only) != 0:
-            print(
-                f"Instrumentation run {configuration.label}/{run.label} failed",
-                file=sys.stderr,
+    logcat = None
+    logcat_output = None
+    if not dry_run_only:
+        directory = Path(f"diagnostics-{configuration.label}")
+        directory.mkdir(parents=True, exist_ok=True)
+        logcat_output = (directory / "logcat.txt").open("wb")
+        try:
+            logcat = subprocess.Popen(
+                [adb, "-s", serial, "logcat", "-b", "all", "-v", "threadtime"],
+                stdout=logcat_output,
+                stderr=subprocess.STDOUT,
             )
-            exit_code = 1
-    return exit_code
+        except OSError as error:
+            print(f"Could not start logcat for {serial}: {error}", file=sys.stderr)
+    try:
+        exit_code = 0
+        for run in configuration.runs:
+            if run_tests(run, configuration.label, adb, serial, dry_run_only) != 0:
+                print(
+                    f"Instrumentation run {configuration.label}/{run.label} failed",
+                    file=sys.stderr,
+                )
+                exit_code = 1
+        return exit_code
+    finally:
+        if logcat is not None:
+            stop_logcat(logcat)
+        if logcat_output is not None:
+            logcat_output.close()
 
 
 def run_instrumented_apks(
@@ -502,6 +586,7 @@ def run_instrumented_apks(
 
     emulator_processes: List[subprocess.Popen] = []
     emulator_logs: List[IO[bytes]] = []
+    emulator_log_readers: List[Thread] = []
     emulator_serials: List[str] = []
 
     def cleanup() -> None:
@@ -519,6 +604,13 @@ def run_instrumented_apks(
         for process in emulator_processes:
             if process.poll() is None:
                 process.terminate()
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+        for reader in emulator_log_readers:
+            reader.join()
         for log in emulator_logs:
             log.close()
 
@@ -531,11 +623,12 @@ def run_instrumented_apks(
 
         for plan in plans:
             create_avd(tools, plan, dry_run_only)
-            process, log = launch_emulator(tools, plan, dry_run_only)
-            if process is not None and log is not None:
+            process, log, reader = launch_emulator(tools, plan, dry_run_only)
+            if process is not None and log is not None and reader is not None:
                 emulator_serials.append(plan.serial)
                 emulator_processes.append(process)
                 emulator_logs.append(log)
+                emulator_log_readers.append(reader)
 
         worker_count = 1 if dry_run_only else len(configurations)
         with ThreadPoolExecutor(max_workers=worker_count) as executor:

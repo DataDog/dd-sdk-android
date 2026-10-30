@@ -1,0 +1,97 @@
+# Select with CI_PIPELINE_KEY=test. Build the diagnostic APKs once, then run
+# five independent copies of the latest-API job, each with its usual three shards.
+default:
+  interruptible: true
+
+stages:
+  - build
+  - test-pyramid
+
+.snippets:
+  source-secrets-macos:
+    - vault login -method=aws -no-print
+    - export DD_ANDROID_SECRETS_PATH_PREFIX="kv/aws/arn:aws:iam::486234852809:role/ci-dd-sdk-android/"
+    - source ./ci/scripts/vault_config.sh
+    - source ./ci/scripts/get-secret.sh
+
+  setup-dd-ci-cli:
+    - npm install -g @datadog/datadog-ci
+    - export DATADOG_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)
+
+  setup-macos-instrumented-runner:
+    - !reference [ .snippets, source-secrets-macos ]
+    - !reference [ .snippets, setup-dd-ci-cli ]
+
+  setup-gradle:
+    - export GRADLE_USER_HOME="cache/"
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - |
+      gradle_jvm_args=(
+        "-Xmx4096m"
+        "-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG"
+      )
+
+      gradle_options=(
+        "-Dorg.gradle.jvmargs=${gradle_jvm_args[*]}"
+        "-Dorg.gradle.logging.stacktrace=all"
+      )
+
+      printf -v configured_gradle_options ' %q' "${gradle_options[@]}"
+      export GRADLE_OPTS="${GRADLE_OPTS:-}$configured_gradle_options"
+
+test:build-instrumented-apks:
+  stage: build
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  timeout: 1h
+  variables:
+    KUBERNETES_MEMORY_REQUEST: 32Gi
+    KUBERNETES_MEMORY_LIMIT: 32Gi
+    KUBERNETES_CPU_REQUEST: 20
+    KUBERNETES_CPU_LIMIT: 20
+    CACHE_FALLBACK_KEY: "develop"
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/wrapper/
+      - cache/notifications/
+    policy: pull
+  before_script:
+    - !reference [ .snippets, setup-gradle ]
+  script:
+    - >-
+      ./gradlew
+      -Puse-api21-java-backport
+      -Puse-desugaring
+      :instrumented:integration:assembleDebug
+      :instrumented:integration:assembleDebugAndroidTest
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - "instrumented/integration/build/outputs/apk/debug/*.apk"
+      - "instrumented/integration/build/outputs/apk/androidTest/debug/*.apk"
+
+test-pyramid:legacy-integration-instrumented-latest-api:
+  stage: test-pyramid
+  tags: [ "macos:sonoma", "specific:true" ]
+  parallel: 5
+  retry: 0
+  needs:
+    - job: test:build-instrumented-apks
+      artifacts: true
+  timeout: 1h
+  before_script:
+    - !reference [ .snippets, setup-macos-instrumented-runner ]
+  script:
+    - python3 ci/scripts/run_legacy_integration_apks.py --api-level 37
+  artifacts:
+    name: "latest-api-$CI_PIPELINE_ID-$CI_NODE_INDEX"
+    when: always
+    expire_in: 1 week
+    paths:
+      - instrumentation-output*.txt
+      - emulator-*.log
+      - diagnostics-*/
+    reports:
+      junit: instrumentation-results*.xml
