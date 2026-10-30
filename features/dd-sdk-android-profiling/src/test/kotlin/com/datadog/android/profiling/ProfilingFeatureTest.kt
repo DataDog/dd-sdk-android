@@ -21,7 +21,6 @@ import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.internal.profiling.ProfilerEvent
-import com.datadog.android.internal.profiling.ProfilingAnomalyDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.profiling.quota.QuotaReason
 import com.datadog.android.internal.rum.RumContext
@@ -212,8 +211,7 @@ internal class ProfilingFeatureTest {
         applicationLaunchSampleRate = 100f,
         continuousSampleRate = 100f,
         anrTriggerEnabled = true,
-        oomTriggerEnabled = true,
-        anomalyTriggerEnabled = true
+        oomTriggerEnabled = true
     )
 
     private val fakeAnrTriggerOnlyConfiguration = ProfilingConfiguration(
@@ -221,8 +219,7 @@ internal class ProfilingFeatureTest {
         applicationLaunchSampleRate = 0f,
         continuousSampleRate = 0f,
         anrTriggerEnabled = true,
-        oomTriggerEnabled = false,
-        anomalyTriggerEnabled = false
+        oomTriggerEnabled = false
     )
 
     @BeforeEach
@@ -449,8 +446,7 @@ internal class ProfilingFeatureTest {
                 applicationLaunchSampleRate = 100f,
                 continuousSampleRate = 0f,
                 anrTriggerEnabled = true,
-                oomTriggerEnabled = true,
-                anomalyTriggerEnabled = true
+                oomTriggerEnabled = true
             ),
             mockProfiler
         )
@@ -530,8 +526,7 @@ internal class ProfilingFeatureTest {
                 applicationLaunchSampleRate = 100f,
                 continuousSampleRate = fakeContinuousRate,
                 anrTriggerEnabled = true,
-                oomTriggerEnabled = true,
-                anomalyTriggerEnabled = true
+                oomTriggerEnabled = true
             ),
             mockProfiler
         )
@@ -560,14 +555,12 @@ internal class ProfilingFeatureTest {
     @Test
     fun `M propagate trigger enabled flags W onInitialize`(
         @BoolForgery fakeAnrTriggerEnabled: Boolean,
-        @BoolForgery fakeOomTriggerEnabled: Boolean,
-        @BoolForgery fakeAnomalyTriggerEnabled: Boolean
+        @BoolForgery fakeOomTriggerEnabled: Boolean
     ) {
         // Given
         val config = fakeConfiguration.copy(
             anrTriggerEnabled = fakeAnrTriggerEnabled,
-            oomTriggerEnabled = fakeOomTriggerEnabled,
-            anomalyTriggerEnabled = fakeAnomalyTriggerEnabled
+            oomTriggerEnabled = fakeOomTriggerEnabled
         )
         testedFeature = ProfilingFeature(mockSdkCore, config, mockProfiler)
 
@@ -577,8 +570,7 @@ internal class ProfilingFeatureTest {
         // Then
         verify(mockProfiler).setEnabledTriggers(
             fakeAnrTriggerEnabled,
-            fakeOomTriggerEnabled,
-            fakeAnomalyTriggerEnabled
+            fakeOomTriggerEnabled
         )
     }
 
@@ -1086,8 +1078,7 @@ internal class ProfilingFeatureTest {
                 applicationLaunchSampleRate = 100f,
                 continuousSampleRate = 0f,
                 anrTriggerEnabled = true,
-                oomTriggerEnabled = true,
-                anomalyTriggerEnabled = true
+                oomTriggerEnabled = true
             ),
             mockProfiler
         )
@@ -1179,8 +1170,7 @@ internal class ProfilingFeatureTest {
                 applicationLaunchSampleRate = 100f,
                 continuousSampleRate = 0f,
                 anrTriggerEnabled = true,
-                oomTriggerEnabled = true,
-                anomalyTriggerEnabled = true
+                oomTriggerEnabled = true
             ),
             mockProfiler
         )
@@ -1206,8 +1196,7 @@ internal class ProfilingFeatureTest {
                 applicationLaunchSampleRate = 100f,
                 continuousSampleRate = 0f,
                 anrTriggerEnabled = true,
-                oomTriggerEnabled = true,
-                anomalyTriggerEnabled = true
+                oomTriggerEnabled = true
             ),
             mockProfiler
         )
@@ -1235,8 +1224,7 @@ internal class ProfilingFeatureTest {
                 applicationLaunchSampleRate = 100f,
                 continuousSampleRate = 0f,
                 anrTriggerEnabled = true,
-                oomTriggerEnabled = true,
-                anomalyTriggerEnabled = true
+                oomTriggerEnabled = true
             ),
             mockProfiler
         )
@@ -1936,21 +1924,6 @@ internal class ProfilingFeatureTest {
     }
 
     @Test
-    fun `M forward anomaly event to RUM W onMemoryAnomalyDetected()`(
-        @Forgery fakeResult: PerfettoResult
-    ) {
-        // Given
-        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        testedFeature.onInitialize(mockContext)
-
-        // When
-        testedFeature.onMemoryAnomalyDetected(fakeResult)
-
-        // Then
-        verify(mockRumFeatureScope).sendEvent(ProfilingAnomalyDetectedEvent(fakeResult.start))
-    }
-
-    @Test
     fun `M not stop Profiling W receive illegal event`(@StringForgery fakeIllegalValue: String) {
         // When
         testedFeature.onReceive(fakeIllegalValue)
@@ -2510,69 +2483,6 @@ internal class ProfilingFeatureTest {
     // dispatchRumSession defaults the session state to TRACKED, so any UUID dispatched
     // through it is treated as a sampled-in RUM session.
     private fun sampledInSessionId(): String = UUID.randomUUID().toString()
-
-    @Test
-    fun `M write heap histogram W onMemoryAnomalyDetected then RumAnomalyErrorEvent {matched pair}`(
-        @Forgery fakePerfettoResult: PerfettoResult,
-        @Forgery fakeAnomalyEvent: ProfilerEvent.RumAnomalyErrorEvent,
-        @LongForgery(min = 1_000L, max = 1_000_000L) fakeCaptureMs: Long
-    ) {
-        // Given
-        val fakeAnomalyResult = fakePerfettoResult.asHeapHistogram(ProfilingStartReason.MEMORY_ANOMALY, fakeCaptureMs)
-        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        testedFeature.onInitialize(mockContext)
-        testedFeature.dataWriter = mockDataWriter
-        testedFeature.dispatchRumSession(fakeAnomalyEvent.rumContext.sessionId, 100f)
-        testedFeature.simulateQuotaAllowed()
-        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(fakeCaptureMs)
-
-        // When
-        testedFeature.onMemoryAnomalyDetected(fakeAnomalyResult)
-        testedFeature.onReceive(fakeAnomalyEvent)
-
-        // Then
-        verify(mockRumFeatureScope).sendEvent(ProfilingAnomalyDetectedEvent(fakeCaptureMs))
-        val resultCaptor = argumentCaptor<PerfettoResult>()
-        verify(mockDataWriter).writeTriggerProfile(
-            resultCaptor.capture(),
-            eq(fakeAnomalyEvent.id),
-            eq(fakeAnomalyEvent.rumContext)
-        )
-        assertThat(resultCaptor.firstValue.start).isEqualTo(fakeCaptureMs)
-        assertThat(resultCaptor.firstValue.end).isEqualTo(fakeCaptureMs)
-        assertThat(resultCaptor.firstValue.startReason).isEqualTo(ProfilingStartReason.MEMORY_ANOMALY)
-        assertThat(resultCaptor.firstValue.resultFilePath).isEqualTo(fakeAnomalyResult.resultFilePath)
-    }
-
-    @Test
-    fun `M delete trigger profile file W onMemoryAnomalyDetected then RumAnomalyErrorEvent {quota denied}`(
-        @Forgery fakePerfettoResult: PerfettoResult,
-        @Forgery fakeAnomalyEvent: ProfilerEvent.RumAnomalyErrorEvent,
-        @LongForgery(min = 1_000L, max = 1_000_000L) fakeCaptureMs: Long,
-        @StringForgery fakeFileName: String,
-        @StringForgery fakeTraceContent: String,
-        @TempDir fakeTempDir: File
-    ) {
-        // Given
-        val traceFile = File(fakeTempDir, fakeFileName).apply { writeText(fakeTraceContent) }
-        val fakeAnomalyResult = fakePerfettoResult
-            .asHeapHistogram(ProfilingStartReason.MEMORY_ANOMALY, fakeCaptureMs)
-            .copy(resultFilePath = traceFile.absolutePath)
-        testedFeature = ProfilingFeature(mockSdkCore, fakeAllSampledConfiguration, mockProfiler)
-        testedFeature.onInitialize(mockContext)
-        testedFeature.dataWriter = mockDataWriter
-        testedFeature.dispatchRumSession(fakeAnomalyEvent.rumContext.sessionId, 100f)
-        testedFeature.simulateQuotaResult(QuotaResult.QUOTA_EXCEEDED)
-        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(fakeCaptureMs)
-        testedFeature.onMemoryAnomalyDetected(fakeAnomalyResult)
-
-        // When
-        testedFeature.onReceive(fakeAnomalyEvent)
-
-        // Then
-        assertThat(traceFile.exists()).isFalse
-        verify(mockDataWriter, never()).writeTriggerProfile(any(), any(), any())
-    }
 
     @Test
     fun `M persist pending profile W RumOomErrorEvent then onOutOfMemoryDetected {matched pair}`(

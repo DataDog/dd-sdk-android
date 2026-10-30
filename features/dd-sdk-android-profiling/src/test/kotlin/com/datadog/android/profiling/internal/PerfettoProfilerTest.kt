@@ -1198,17 +1198,6 @@ internal class PerfettoProfilerTest {
     }
 
     @Test
-    fun `M dispatch anomaly histogram to registered callback W triggerListener fires`(
-        @Forgery fakeResult: PerfettoResult
-    ) {
-        // When
-        testedProfiler.triggerListener.onMemoryAnomalyDetected(fakeResult)
-
-        // Then
-        verify(mockProfilerCallback).onMemoryAnomalyDetected(fakeResult)
-    }
-
-    @Test
     fun `M propagate logger to triggerRegistrar W internalLogger setter`() {
         // Given
         val anotherLogger = mock<InternalLogger>()
@@ -1239,15 +1228,13 @@ internal class PerfettoProfilerTest {
         // When
         testedProfiler.setEnabledTriggers(
             anrTriggerEnabled = false,
-            oomTriggerEnabled = true,
-            anomalyTriggerEnabled = false
+            oomTriggerEnabled = true
         )
 
         // Then
         verify(mockRegistrar).setEnabledTriggers(
             anrTriggerEnabled = false,
-            oomTriggerEnabled = true,
-            anomalyTriggerEnabled = false
+            oomTriggerEnabled = true
         )
     }
 
@@ -1258,8 +1245,7 @@ internal class PerfettoProfilerTest {
         reset(mockRegistrar)
         testedProfiler.setEnabledTriggers(
             anrTriggerEnabled = false,
-            oomTriggerEnabled = true,
-            anomalyTriggerEnabled = false
+            oomTriggerEnabled = true
         )
 
         // When
@@ -1274,8 +1260,7 @@ internal class PerfettoProfilerTest {
         // Given
         testedProfiler.setEnabledTriggers(
             anrTriggerEnabled = false,
-            oomTriggerEnabled = true,
-            anomalyTriggerEnabled = false
+            oomTriggerEnabled = true
         )
 
         // When

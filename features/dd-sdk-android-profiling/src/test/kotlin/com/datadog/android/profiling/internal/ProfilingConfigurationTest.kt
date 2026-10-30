@@ -30,7 +30,6 @@ internal class ProfilingConfigurationTest {
         assertThat(config.applicationLaunchSampleRate).isEqualTo(15f)
         assertThat(config.anrTriggerEnabled).isTrue()
         assertThat(config.oomTriggerEnabled).isTrue()
-        assertThat(config.anomalyTriggerEnabled).isTrue()
     }
 
     @Test
@@ -95,11 +94,10 @@ internal class ProfilingConfigurationTest {
     }
 
     @Test
-    fun `M preserve OOM and anomaly trigger flags W data class copy()`() {
+    fun `M preserve OOM trigger flag W data class copy()`() {
         // Given
         val original = ProfilingConfiguration.Builder()
             .enableOutOfMemoryTrigger(false)
-            .enableAnomalyTrigger(false)
             .build()
 
         // When
@@ -107,6 +105,5 @@ internal class ProfilingConfigurationTest {
 
         // Then
         assertThat(copied.oomTriggerEnabled).isFalse()
-        assertThat(copied.anomalyTriggerEnabled).isFalse()
     }
 }

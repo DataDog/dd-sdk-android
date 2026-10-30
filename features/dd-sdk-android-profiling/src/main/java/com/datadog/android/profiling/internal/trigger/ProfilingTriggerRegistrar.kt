@@ -14,13 +14,12 @@ internal interface ProfilingTriggerRegistrar {
     var internalLogger: InternalLogger?
 
     /**
-     * Sets which trigger types (ANR, out of memory, memory anomaly) should be registered.
+     * Sets which trigger types (ANR, out of memory) should be registered.
      * Trigger types not supported by the device API level are ignored.
      */
     fun setEnabledTriggers(
         anrTriggerEnabled: Boolean,
-        oomTriggerEnabled: Boolean,
-        anomalyTriggerEnabled: Boolean
+        oomTriggerEnabled: Boolean
     )
 
     fun register(appContext: Context, listener: ProfilingTriggerListener)

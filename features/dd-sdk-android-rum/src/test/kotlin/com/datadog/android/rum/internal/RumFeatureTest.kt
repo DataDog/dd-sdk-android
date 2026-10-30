@@ -22,7 +22,6 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
-import com.datadog.android.internal.profiling.ProfilingAnomalyDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -1442,27 +1441,6 @@ internal class RumFeatureTest {
         assertThat(mainDump.state).isEqualTo(eventWithNoOtherThreads.anrThreadState.asString())
         assertThat(mainDump.stack).isEqualTo(throwable.loggableStackTrace())
         assertThat(mainDump.crashed).isFalse
-    }
-
-    @Test
-    fun `M call addError W onReceive(ProfilingAnomalyDetectedEvent)`(
-        @Forgery fakeEvent: ProfilingAnomalyDetectedEvent
-    ) {
-        // When
-        testedFeature.onReceive(fakeEvent)
-
-        // Then
-        val attributesCaptor = argumentCaptor<Map<String, Any?>>()
-        verify(mockRumMonitor).addError(
-            eq(RumFeature.MEMORY_ANOMALY_MESSAGE),
-            eq(RumErrorSource.SOURCE),
-            isNull(),
-            attributesCaptor.capture()
-        )
-        assertThat(attributesCaptor.firstValue[RumAttributes.INTERNAL_TIMESTAMP])
-            .isEqualTo(fakeEvent.detectedAtMs)
-        assertThat(attributesCaptor.firstValue[RumAttributes.INTERNAL_PROFILING_ANOMALY])
-            .isEqualTo(true)
     }
 
     // endregion

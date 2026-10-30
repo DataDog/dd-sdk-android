@@ -758,8 +758,6 @@ internal open class RumViewScope(
         val isFatal = errorCustomAttributes.remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean == true ||
             event.isFatal
         val errorFingerprint = errorCustomAttributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
-        val isProfilingAnomaly =
-            errorCustomAttributes.remove(RumAttributes.INTERNAL_PROFILING_ANOMALY) as? Boolean == true
         val isTriggeredByProfiling =
             errorCustomAttributes.remove(RumAttributes.INTERNAL_TRIGGERED_BY_PROFILING) as? Boolean == true
         // if a cross-platform crash was already reported, do not send its native version
@@ -837,11 +835,7 @@ internal open class RumViewScope(
                     fingerprint = errorFingerprint,
                     type = errorType,
                     sourceType = event.sourceType.toSchemaSourceType(),
-                    category = if (isProfilingAnomaly) {
-                        ErrorEvent.Category.MEMORY_WARNING
-                    } else {
-                        ErrorEvent.Category.tryFrom(event)
-                    },
+                    category = ErrorEvent.Category.tryFrom(event),
                     threads = event.threads.map {
                         ErrorEvent.Thread(
                             name = it.name,
@@ -956,19 +950,6 @@ internal open class RumViewScope(
                             // the next launch) can dedupe against an ANR the in-process watchdog/profiling
                             // trigger already reported. The storage key keeps the legacy "fatal" name.
                             sdkCore.writeLastFatalAnrSent(event.eventTime.timestamp)
-                        } else if (isProfilingAnomaly) {
-                            sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-                                ProfilerEvent.RumAnomalyErrorEvent(
-                                    id = errorId,
-                                    timestamp = event.eventTime.timestamp + serverTimeOffsetInMs,
-                                    rumContext = ProfilingRumContext(
-                                        applicationId = rumContext.applicationId,
-                                        sessionId = rumContext.sessionId,
-                                        viewId = rumContext.viewId,
-                                        viewName = rumContext.viewName
-                                    )
-                                )
-                            )
                         }
                     }
                 }

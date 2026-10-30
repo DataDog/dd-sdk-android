@@ -252,7 +252,7 @@ internal class PendingTriggerProfilesTest {
 
     // endregion
 
-    // region OOM/Anomaly (same buffer as ANR: deletes the result file in place)
+    // region OOM (same buffer as ANR: deletes the result file in place)
 
     @Test
     fun `M invoke onMatch W setRumGatingEvent {profiling result then OOM signal}`() {
@@ -269,25 +269,6 @@ internal class PendingTriggerProfilesTest {
         assertThat(matched).hasSize(1)
         assertThat(matched.first().first.resultFilePath).isEqualTo(path)
         assertThat((matched.first().second as ProfilerEvent.RumOomErrorEvent).id).isEqualTo("err-1")
-    }
-
-    @Test
-    fun `M invoke onMatch W setProfilingResult {anomaly signal then profiling result}`() {
-        // Given
-        val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
-        val buffer = testedHeapHistogramBuffer(onMatch = { c, s -> matched.add(c to s) })
-        buffer.setRumGatingEvent(anomalyErrorEvent(now))
-        val path = "/tmp/hist.proto"
-
-        // When
-        buffer.setProfilingResult(
-            perfettoResult(now + 500L, path, startReason = ProfilingStartReason.MEMORY_ANOMALY)
-        )
-
-        // Then
-        assertThat(matched).hasSize(1)
-        assertThat(matched.first().first.resultFilePath).isEqualTo(path)
-        assertThat((matched.first().second as ProfilerEvent.RumAnomalyErrorEvent).id).isEqualTo("err-1")
     }
 
     @Test
@@ -319,23 +300,7 @@ internal class PendingTriggerProfilesTest {
     }
 
     @Test
-    fun `M not invoke onMatch W setRumGatingEvent {trigger type mismatch, OOM vs anomaly}`() {
-        // Given
-        val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
-        val buffer = testedHeapHistogramBuffer(onMatch = { c, s -> matched.add(c to s) })
-        buffer.setProfilingResult(
-            perfettoResult(now, "/tmp/hist.proto", startReason = ProfilingStartReason.OUT_OF_MEMORY)
-        )
-
-        // When — ANOMALY signal vs OOM profiling result: trigger types disagree
-        buffer.setRumGatingEvent(anomalyErrorEvent(now + 500L))
-
-        // Then — nothing matches, and both sides remain pending
-        assertThat(matched).isEmpty()
-    }
-
-    @Test
-    fun `M reject non-OOM non-Anomaly gating event W setRumGatingEvent {RumAnrEvent}`() {
+    fun `M reject non-OOM gating event W setRumGatingEvent {RumAnrEvent}`() {
         // Given
         val matched = mutableListOf<Pair<PerfettoResult, ProfilerEvent>>()
         val buffer = testedHeapHistogramBuffer(onMatch = { c, s -> matched.add(c to s) })
@@ -553,15 +518,6 @@ internal class PendingTriggerProfilesTest {
         timestamp: Long,
         rumErrorId: String = "err-1"
     ): ProfilerEvent.RumOomErrorEvent = ProfilerEvent.RumOomErrorEvent(
-        id = rumErrorId,
-        timestamp = timestamp,
-        rumContext = ProfilingRumContext("app", "sess", null, null)
-    )
-
-    private fun anomalyErrorEvent(
-        timestamp: Long,
-        rumErrorId: String = "err-1"
-    ): ProfilerEvent.RumAnomalyErrorEvent = ProfilerEvent.RumAnomalyErrorEvent(
         id = rumErrorId,
         timestamp = timestamp,
         rumContext = ProfilingRumContext("app", "sess", null, null)
