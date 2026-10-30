@@ -604,7 +604,7 @@ notify:dogfood-app:
   stage: notify
   when: on_success
   script:
-    - export GITHUB_TOKEN=$(dd-octo-sts token --scope DataDog/datadog-android --policy all.gitlab.pr)
+    - export GITHUB_TOKEN=$(dd-octo-sts token --scope ddoghq/datadog-android --policy all.gitlab.pr)
     - pip3 install GitPython requests
     - python3 ./ci/scripts/dogfood.py -v $CI_COMMIT_TAG -t app
 
