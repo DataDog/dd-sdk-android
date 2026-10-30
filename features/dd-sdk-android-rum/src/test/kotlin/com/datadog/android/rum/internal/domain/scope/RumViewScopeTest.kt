@@ -4448,9 +4448,20 @@ internal class RumViewScopeTest {
         val mockStore = stubPendingOomErrorStore()
         whenever(mockStore.tryHold(any())) doReturn true
         val datadogContext = fakeDatadogContext.withOomTriggerActive()
+        var isInsideWriteScope = false
+        val trackingWriteScope: EventWriteScope = {
+            isInsideWriteScope = true
+            mockEventWriteScope(it)
+            isInsideWriteScope = false
+        }
+        val sentInsideWriteScope = mutableListOf<Boolean>()
+        whenever(mockProfilingFeatureScope.sendEvent(any())) doAnswer {
+            sentInsideWriteScope.add(isInsideWriteScope)
+            Unit
+        }
 
         // When
-        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(fakeEvent, datadogContext, trackingWriteScope, mockWriter)
 
         // Then
         val heldCaptor = argumentCaptor<ErrorEvent>()
@@ -4459,6 +4470,7 @@ internal class RumViewScopeTest {
         assertThat(heldCaptor.firstValue.error.isCrash).isTrue
         verify(mockWriter, never()).write(eq(mockEventBatchWriter), isA<ErrorEvent>(), any())
         verify(mockWriter).write(eq(mockEventBatchWriter), isA<ViewEvent>(), eq(EventType.CRASH))
+        assertThat(sentInsideWriteScope).containsOnly(false)
         argumentCaptor<ProfilerEvent.RumOomErrorEvent> {
             verify(mockProfilingFeatureScope).sendEvent(capture())
             assertThat(firstValue.id).isNotEmpty()
