@@ -275,24 +275,6 @@ class FlagsEvaluationTest {
             .contains("Flag assignment server returned error ($fakeStatusCode)")
     }
 
-    @Test
-    fun `M keep the previous flags W setEvaluationContext() {second fetch fails}`(
-        @StringForgery fakeOtherTargetingKey: String,
-        @BoolForgery fakeValue: Boolean
-    ) {
-        // Given
-        stubAssignments(mapOf(fakeFlagKey to assignment("boolean", fakeValue)))
-        val client = enableFlagsAndBuildClient()
-        client.setEvaluationContext(EvaluationContext(fakeTargetingKey))
-        stubSdkCore.stubNetworkResponses { null }
-
-        // When
-        client.setEvaluationContext(EvaluationContext(fakeOtherTargetingKey))
-
-        // Then
-        assertThat(client.resolveBooleanValue(fakeFlagKey, !fakeValue)).isEqualTo(fakeValue)
-    }
-
     // endregion
 
     // region Persistence

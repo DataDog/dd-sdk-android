@@ -27,6 +27,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientEvent
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -35,6 +36,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
@@ -341,6 +343,55 @@ internal class DatadogFlagsClientTest {
     }
 
     // region resolveBooleanValue()
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M isolate listener exceptions W onFirstFlags()`(completeBeforeRegistration: Boolean) {
+        // Given
+        val latch = FirstFlagsLatch()
+        whenever(mockFlagsRepository.firstFlags) doReturn latch
+        val fakeKeys = listOf(fakeDefaultValue)
+        val failure = IllegalStateException(fakeJsonKey)
+        val events = mutableListOf<FlagsClientEvent>()
+        if (completeBeforeRegistration) latch.complete(fakeKeys)
+
+        // When
+        testedClient.onFirstFlags { throw failure }
+        testedClient.onFirstFlags { events.add(it) }
+        if (!completeBeforeRegistration) {
+            latch.complete(fakeKeys)
+        }
+
+        // Then
+        assertThat(events.map { it.flagsChanged }).containsExactly(fakeKeys)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            "First flags callback failed",
+            throwable = failure
+        )
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M propagate listener errors W onFirstFlags() + complete()`(completeBeforeRegistration: Boolean) {
+        // Given
+        val latch = FirstFlagsLatch()
+        whenever(mockFlagsRepository.firstFlags) doReturn latch
+        val fakeKeys = listOf(fakeDefaultValue)
+        val fakeError = AssertionError(fakeJsonKey)
+        if (completeBeforeRegistration) latch.complete(fakeKeys)
+
+        // When
+        val thrown = assertThrows<AssertionError> {
+            testedClient.onFirstFlags { throw fakeError }
+            if (!completeBeforeRegistration) latch.complete(fakeKeys)
+        }
+
+        // Then
+        assertThat(thrown).isSameAs(fakeError)
+        verifyNoInteractions(mockInternalLogger)
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])

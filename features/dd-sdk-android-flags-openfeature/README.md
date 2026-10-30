@@ -112,7 +112,7 @@ Only boolean `true` suppresses new evaluation events, counts, and automatic RUM 
 
 Update the decision through `OpenFeatureAPI.setEvaluationContext`. The attribute remains available for targeting and exposure reporting. The provider converts it to a string for targeting, like other attributes. Attribute changes use the normal assignment refresh path.
 
-Opting out suppresses new evaluation reporting immediately. Opting the same subject back in also applies immediately. Switching to another subject does not re-enable reporting for an opted-out subject whose assignments remain active during a pending or failed refresh. Suppression does not change flag values or exposure logging. Targeting rules can still change assignments, and normal exposure deduplication applies.
+Opting out suppresses new evaluation reporting immediately. Opting the same subject back in also applies immediately. While a context refresh is pending, retained assignments keep their subject’s telemetry suppression. If a refresh fails for a different context, the client clears the previous assignments and returns caller defaults. Evaluation reporting then uses the requested subject’s policy. Suppression does not change flag values or exposure logging. Targeting rules can still change assignments, and normal exposure deduplication applies.
 
 Customer hooks, manual annotations, and unrelated telemetry remain unchanged. This control does not remove previously recorded events or existing RUM annotations. Exposure events can still contain subject data.
 
