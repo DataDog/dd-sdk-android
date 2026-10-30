@@ -256,6 +256,35 @@ internal class FlagsContextTest {
         assertThat(provider.getBooleanEvaluation(fakeFlagKey, !fakeValue, null).value).isEqualTo(fakeValue)
     }
 
+    @ParameterizedTest
+    @EnumSource(FetchFailure::class)
+    fun `M recover empty cached configuration W completeReads() {fetch failed}`(
+        failure: FetchFailure,
+        forge: Forge
+    ) = runBlocking<Unit> {
+        // Given
+        stubAssignments(emptyMap())
+        testedClient.setEvaluationContext(fakeContext)
+        fakeDataStore.deferReads = true
+        restartSdkCore(forge)
+        buildClient()
+        stubFailure(failure)
+        testedClient.setEvaluationContext(fakeContext)
+        val provider = testedClient.asOpenFeatureProvider()
+        val events = async(Dispatchers.Unconfined) { provider.observe().take(2).toList() }
+
+        // When
+        fakeDataStore.completeReads()
+
+        // Then
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        assertThat(testedClient.resolve(fakeFlagKey, fakeValue).errorCode).isEqualTo(ErrorCode.FLAG_NOT_FOUND)
+        assertThat(firstFlags).containsExactly(emptyList())
+        val observed = withTimeout(5_000) { events.await() }
+        assertThat(observed.first()).isInstanceOf(OpenFeatureProviderEvents.ProviderError::class.java)
+        assertThat(observed.last()).isInstanceOf(OpenFeatureProviderEvents.ProviderStale::class.java)
+    }
+
     @Test
     fun `M retain first cache keys W completeReads() {stale listener installs another context}`(
         @StringForgery fakeOtherTargetingKey: String,

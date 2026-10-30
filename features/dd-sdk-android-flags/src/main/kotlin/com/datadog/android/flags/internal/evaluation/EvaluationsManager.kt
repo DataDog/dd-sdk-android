@@ -264,6 +264,7 @@ internal class EvaluationsManager(
         synchronized(initializationTerminalLock) {
             val result = takeCompletion(initializationCompletion, callback)
             val current = experimentationOptOut.ifCurrent(request) {
+                if (sequence != fetchSequence.get()) return@ifCurrent
                 flagsRepository.clearFlagsIfContextChanged(request.context)
                 // Cache loading can finish while the failed request is being handled.
                 if (matchingCachedAssignments || flagsRepository.hasLoadedFlagsForContext(request.context)) {

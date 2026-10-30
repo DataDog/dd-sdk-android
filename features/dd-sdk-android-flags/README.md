@@ -233,6 +233,7 @@ client.setEvaluationContext(context)
 
 If the fetch fails or its response is invalid, assignments from another context become unavailable. Matching assignments remain available.
 If matching cached assignments finish loading after a failure or initialization timeout, the client recovers to `Stale`.
+This includes valid cached configurations with no flags. An older request failure does not replace a newer request’s state or assignments.
 This also applies when another context succeeded while the startup cache read was pending.
 Cache recovery does not repeat an `onFirstFlags` notification that was already delivered.
 

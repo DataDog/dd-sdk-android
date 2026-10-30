@@ -213,7 +213,7 @@ internal class DefaultFlagsRepository(
 
     override fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean {
         val state = readableState
-        return state?.context == context && state.flags.isNotEmpty()
+        return state?.context == context && !state.isTombstone
     }
 
     override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>? {
