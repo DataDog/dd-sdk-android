@@ -2010,6 +2010,31 @@ internal class EvaluationsManagerTest {
         verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
     }
 
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class, names = ["IMMEDIATE", "FUTURE_EXPERIMENTS_ONLY"])
+    fun `M not log the ignored reason W updateEvaluationsForContext() { ignored reason, superseded request }`(
+        mode: ExperimentationOptOutMode,
+        forge: Forge
+    ) {
+        // Given
+        val tasks = mutableListOf<Runnable>()
+        val testedManager = queuedManager(mode, tasks)
+        val first = EvaluationContext(forge.anAlphabeticalString())
+        val firstCallback = mock<EvaluationContextCallback>()
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(eq(first), any(), any())) doReturn
+            PrecomputedAssignmentsResponse("response", "too_many_values")
+        whenever(mockPrecomputeMapper.map(any(), anyOrNull())) doReturn PrecomputedAssignments(emptyMap(), null)
+        testedManager.updateEvaluationsForContext(first, firstCallback)
+        testedManager.updateEvaluationsForContext(EvaluationContext(forge.anAlphabeticalString()))
+
+        // When
+        tasks[0].run()
+
+        // Then
+        verify(firstCallback).onFailure(isA<FlagsContextSupersededException>())
+        assertThat(capturedLogMessages()).noneMatch { "flagSelection" in it || "Flag selection" in it }
+    }
+
     @Test
     fun `M not log a flag selection message W updateEvaluationsForContext() { no ignored reason }`() {
         // Given

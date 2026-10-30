@@ -209,8 +209,13 @@ internal class EvaluationsManager(
                 }
                     ?.takeIf { it.obfuscation == null || supportsObfuscation }
                 if (assignments != null) {
-                    response.flagSelectionIgnoredReason?.let { internalLogger.logIgnoredFlagSelection(it) }
-                    installFlags(request, assignments, initializationCompletion, callback)
+                    installFlags(
+                        request,
+                        assignments,
+                        response.flagSelectionIgnoredReason,
+                        initializationCompletion,
+                        callback
+                    )
                 } else {
                     handleRequestFailure(
                         request,
@@ -268,11 +273,12 @@ internal class EvaluationsManager(
     private fun installFlags(
         request: ExperimentationOptOut.Request,
         assignments: PrecomputedAssignments,
+        flagSelectionIgnoredReason: String?,
         initializationCompletion: InitializationCompletion?,
         callback: EvaluationContextCallback?
     ) {
         val context = request.context
-        synchronized(initializationTerminalLock) {
+        val installed = synchronized(initializationTerminalLock) {
             val installed = experimentationOptOut.ifCurrent(request) {
                 val installation = flagsRepository.installFlagsAndContext(
                     context,
@@ -294,8 +300,13 @@ internal class EvaluationsManager(
                     FlagsContextSupersededException(SUPERSEDED_MESSAGE)
                 )
             }
+            installed
         }
         effects.drain()
+        // A superseded response is not installed, so its ignored reason would describe flags that never loaded.
+        if (installed) {
+            flagSelectionIgnoredReason?.let { internalLogger.logIgnoredFlagSelection(it) }
+        }
         internalLogger.log(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.MAINTAINER,
