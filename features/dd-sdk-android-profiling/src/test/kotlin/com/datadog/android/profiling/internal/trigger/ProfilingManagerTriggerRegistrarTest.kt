@@ -304,6 +304,53 @@ internal class ProfilingManagerTriggerRegistrarTest {
     }
 
     @Test
+    fun `M report OOM trigger registered W register() {OOM trigger included}`() {
+        // When
+        testedRegistrar.register(mockContext, mockListener)
+
+        // Then
+        assertThat(testedRegistrar.isOomTriggerRegistered).isTrue()
+    }
+
+    @Test
+    fun `M report OOM trigger not registered W register() {OOM trigger not included}`() {
+        // Given
+        testedRegistrar.triggersFactory = {
+            listOf(mock<ProfilingTrigger> { on { triggerType } doReturn ProfilingTrigger.TRIGGER_TYPE_ANR })
+        }
+
+        // When
+        testedRegistrar.register(mockContext, mockListener)
+
+        // Then
+        assertThat(testedRegistrar.isOomTriggerRegistered).isFalse()
+    }
+
+    @Test
+    fun `M report OOM trigger not registered W register() {ProfilingManager service unavailable}`() {
+        // Given
+        whenever(mockContext.getSystemService(ProfilingManager::class.java)).doReturn(null)
+
+        // When
+        testedRegistrar.register(mockContext, mockListener)
+
+        // Then
+        assertThat(testedRegistrar.isOomTriggerRegistered).isFalse()
+    }
+
+    @Test
+    fun `M report OOM trigger not registered W unregister() {after OOM trigger registered}`() {
+        // Given
+        testedRegistrar.register(mockContext, mockListener)
+
+        // When
+        testedRegistrar.unregister(mockContext)
+
+        // Then
+        assertThat(testedRegistrar.isOomTriggerRegistered).isFalse()
+    }
+
+    @Test
     fun `M skip system call W unregister() {not registered}`() {
         // When
         testedRegistrar.unregister(mockContext)

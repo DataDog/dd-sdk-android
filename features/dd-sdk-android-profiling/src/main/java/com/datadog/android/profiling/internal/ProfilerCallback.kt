@@ -17,4 +17,6 @@ internal interface ProfilerCallback {
     fun onAnrDetected(event: ProfilingAnrDetectedEvent, result: PerfettoResult)
 
     fun onOutOfMemoryDetected(result: PerfettoResult)
+
+    fun onOomTriggerRegisteredChanged(isRegistered: Boolean)
 }
