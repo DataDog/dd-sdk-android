@@ -703,7 +703,6 @@ internal class DefaultFlagsRepositoryTest {
             callback = anyOrNull(),
             serializer = any()
         )
-        // Builds without flag selection read only the unselected key of their mode.
         verify(mockDataStore, never()).setValue<FlagsStateEntry>(
             key = eq(siblingKey),
             data = any(),
