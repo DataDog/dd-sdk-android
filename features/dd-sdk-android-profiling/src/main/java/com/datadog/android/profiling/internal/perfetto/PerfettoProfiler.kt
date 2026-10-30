@@ -50,9 +50,9 @@ import kotlin.random.Random
  * @param profilingTelemetry shared telemetry helper that buffers metric events until a logger is
  * available and dispatches them through the unified `[Mobile Metric] Profiling Session` envelope.
  * @param buildSdkVersionProvider Build.VERSION.SDK_INT provider used to gate trigger
- * registration by API level (ANR on Baklava+, OOM/Anomaly on CinnamonBun+).
+ * registration by API level (ANR on Baklava+, OOM on CinnamonBun+).
  * @param triggerRegistrar registrar that owns the system profiling-trigger lifecycle
- * (ANR / OOM / Anomaly). The profiler passes its internal listener to it at register time;
+ * (ANR / OOM). The profiler passes its internal listener to it at register time;
  * the listener captures the profiler's `callback` so the registered SDK instance receives
  * the detection.
  * @param stackSampleDetector detector of application launch and continuous traces without stack samples, which
@@ -128,10 +128,6 @@ internal class PerfettoProfiler(
 
         override fun onOutOfMemoryDetected(result: PerfettoResult) {
             callback?.onOutOfMemoryDetected(result)
-        }
-
-        override fun onMemoryAnomalyDetected(result: PerfettoResult) {
-            callback?.onMemoryAnomalyDetected(result)
         }
     }
 
@@ -333,13 +329,11 @@ internal class PerfettoProfiler(
 
     override fun setEnabledTriggers(
         anrTriggerEnabled: Boolean,
-        oomTriggerEnabled: Boolean,
-        anomalyTriggerEnabled: Boolean
+        oomTriggerEnabled: Boolean
     ) {
         triggerRegistrar.setEnabledTriggers(
             anrTriggerEnabled,
-            oomTriggerEnabled,
-            anomalyTriggerEnabled
+            oomTriggerEnabled
         )
     }
 

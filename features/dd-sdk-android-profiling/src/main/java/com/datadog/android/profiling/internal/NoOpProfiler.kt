@@ -46,8 +46,7 @@ internal class NoOpProfiler : Profiler {
 
     override fun setEnabledTriggers(
         anrTriggerEnabled: Boolean,
-        oomTriggerEnabled: Boolean,
-        anomalyTriggerEnabled: Boolean
+        oomTriggerEnabled: Boolean
     ) = Unit
 
     override fun setTriggersEnabled(appContext: Context, enabled: Boolean) = Unit

@@ -16,7 +16,6 @@ data class com.datadog.android.profiling.ProfilingConfiguration
     fun useCustomEndpoint(String): Builder
     fun enableAnrTrigger(Boolean): Builder
     fun enableOutOfMemoryTrigger(Boolean): Builder
-    fun enableAnomalyTrigger(Boolean): Builder
     fun build(): ProfilingConfiguration
   companion object 
     val DEFAULT: ProfilingConfiguration

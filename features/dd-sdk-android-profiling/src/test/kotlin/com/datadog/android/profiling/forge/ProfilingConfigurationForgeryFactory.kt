@@ -20,8 +20,7 @@ class ProfilingConfigurationForgeryFactory :
                 aStringMatching("http(s?)://[a-z]+\\.com/\\w+")
             },
             anrTriggerEnabled = forge.aBool(),
-            oomTriggerEnabled = forge.aBool(),
-            anomalyTriggerEnabled = forge.aBool()
+            oomTriggerEnabled = forge.aBool()
         )
     }
 }

@@ -39,7 +39,6 @@ import com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
-import com.datadog.android.internal.profiling.ProfilingAnomalyDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingThreadDump
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -521,7 +520,6 @@ internal class RumFeature(
             is InternalTelemetryEvent -> handleTelemetryEvent(event)
             is RumFlagEvaluationMessage -> handleFlagEvaluationEvent(event)
             is ProfilingAnrDetectedEvent -> handleProfilingAnrDetectedEvent(event)
-            is ProfilingAnomalyDetectedEvent -> handleProfilingAnomalyDetectedEvent(event)
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -559,18 +557,6 @@ internal class RumFeature(
                 RumAttributes.INTERNAL_TIMESTAMP to event.detectedAtMs,
                 RumAttributes.INTERNAL_ALL_THREADS to allThreads,
                 RumAttributes.INTERNAL_TRIGGERED_BY_PROFILING to true
-            )
-        )
-    }
-
-    private fun handleProfilingAnomalyDetectedEvent(event: ProfilingAnomalyDetectedEvent) {
-        GlobalRumMonitor.get(sdkCore).addError(
-            MEMORY_ANOMALY_MESSAGE,
-            RumErrorSource.SOURCE,
-            null,
-            mapOf(
-                RumAttributes.INTERNAL_TIMESTAMP to event.detectedAtMs,
-                RumAttributes.INTERNAL_PROFILING_ANOMALY to true
             )
         )
     }
@@ -992,7 +978,6 @@ internal class RumFeature(
         internal const val WEB_VIEW_INGESTED_NOTIFICATION_MESSAGE_TYPE = "web_view_ingested_notification"
         internal const val TELEMETRY_SESSION_REPLAY_SKIP_FRAME = "sr_skipped_frame"
         internal const val FLUSH_AND_STOP_MONITOR_MESSAGE_TYPE = "flush_and_stop_monitor"
-        internal const val MEMORY_ANOMALY_MESSAGE = "Memory Anomaly"
 
         internal val RUM_TTL_24H = TimeUnit.HOURS.toMillis(24)
         internal const val ALL_IN_SAMPLE_RATE: Float = 100f

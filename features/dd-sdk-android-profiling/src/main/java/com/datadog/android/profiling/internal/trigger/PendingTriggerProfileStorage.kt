@@ -10,7 +10,6 @@ import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.internal.profiling.ProfilerEvent
-import com.datadog.android.internal.profiling.ProfilerEvent.RumAnomalyErrorEvent
 import com.datadog.android.internal.profiling.ProfilerEvent.RumAnrEvent
 import com.datadog.android.internal.profiling.ProfilerEvent.RumOomErrorEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
@@ -252,14 +251,12 @@ internal class PendingTriggerProfileStorage(
     private fun ProfilerEvent.triggerType(): ProfilingStartReason? = when (this) {
         is RumAnrEvent -> ProfilingStartReason.ANR
         is RumOomErrorEvent -> ProfilingStartReason.OUT_OF_MEMORY
-        is RumAnomalyErrorEvent -> ProfilingStartReason.MEMORY_ANOMALY
         else -> null
     }
 
     private fun ProfilerEvent.timestampMs(): Long = when (this) {
         is RumAnrEvent -> startMs
         is RumOomErrorEvent -> timestamp
-        is RumAnomalyErrorEvent -> timestamp
         else -> 0L
     }
 

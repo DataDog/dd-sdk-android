@@ -724,7 +724,7 @@ internal class ProfilingDataWriterTest {
         // When
         testedDataWriterTest.writeTriggerProfile(
             perfettoResult = fakePerfettoResult.copy(
-                startReason = ProfilingStartReason.MEMORY_ANOMALY,
+                startReason = ProfilingStartReason.OUT_OF_MEMORY,
                 resultFilePath = profileFile.absolutePath,
                 profileTypes = listOf(ProfileType.HEAP_HISTOGRAM)
             ),

@@ -68,9 +68,6 @@ internal class ProfilingManagerTriggerRegistrar(
     @Volatile
     private var oomTriggerEnabled: Boolean = true
 
-    @Volatile
-    private var anomalyTriggerEnabled: Boolean = true
-
     @RequiresApi(Build.VERSION_CODES.BAKLAVA)
     @Volatile
     private var registeredTriggerTypes: IntArray = intArrayOf(ProfilingTrigger.TRIGGER_TYPE_ANR)
@@ -79,7 +76,7 @@ internal class ProfilingManagerTriggerRegistrar(
     @Suppress("UnsafeThirdPartyFunctionCall")
     private fun buildDefaultTriggers(): List<ProfilingTrigger> {
         // Each trigger type is registered separately based on the ProfilingConfiguration, so
-        // users can opt in/out of individual trigger types (e.g. enable OOM but not anomaly).
+        // users can opt in/out of individual trigger types (e.g. enable ANR but not OOM).
         val triggers = mutableListOf<ProfilingTrigger>()
         if (anrTriggerEnabled) {
             triggers.add(ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR).build())
@@ -90,23 +87,16 @@ internal class ProfilingManagerTriggerRegistrar(
                     ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_OOM).build()
                 )
             }
-            if (anomalyTriggerEnabled) {
-                triggers.add(
-                    ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANOMALY).build()
-                )
-            }
         }
         return triggers
     }
 
     override fun setEnabledTriggers(
         anrTriggerEnabled: Boolean,
-        oomTriggerEnabled: Boolean,
-        anomalyTriggerEnabled: Boolean
+        oomTriggerEnabled: Boolean
     ) {
         this.anrTriggerEnabled = anrTriggerEnabled
         this.oomTriggerEnabled = oomTriggerEnabled
-        this.anomalyTriggerEnabled = anomalyTriggerEnabled
     }
 
     @RequiresApi(Build.VERSION_CODES.BAKLAVA)
@@ -173,8 +163,7 @@ internal class ProfilingManagerTriggerRegistrar(
     private fun handleResult(result: ProfilingResult) {
         val triggerType = result.triggerType
         if (triggerType != ProfilingTrigger.TRIGGER_TYPE_ANR &&
-            triggerType != ProfilingTrigger.TRIGGER_TYPE_OOM &&
-            triggerType != ProfilingTrigger.TRIGGER_TYPE_ANOMALY
+            triggerType != ProfilingTrigger.TRIGGER_TYPE_OOM
         ) {
             return
         }
@@ -244,20 +233,6 @@ internal class ProfilingManagerTriggerRegistrar(
                     PerfettoResult(
                         start = detectedAtMs,
                         startReason = ProfilingStartReason.OUT_OF_MEMORY,
-                        end = detectedAtMs,
-                        resultFilePath = resultPath,
-                        profileTypes = listOf(ProfileType.HEAP_HISTOGRAM),
-                        bootNtpOffsetNs = timeProvider.bootNtpOffsetNs()
-                    )
-                )
-
-            ProfilingTrigger.TRIGGER_TYPE_ANOMALY ->
-                // TODO RUM-18223: filter in only memory anomaly result by tag
-                listener.onMemoryAnomalyDetected(
-                    PerfettoResult(
-                        start = detectedAtMs,
-                        startReason = ProfilingStartReason.MEMORY_ANOMALY,
-                        // end is same as start in point-in-time profile
                         end = detectedAtMs,
                         resultFilePath = resultPath,
                         profileTypes = listOf(ProfileType.HEAP_HISTOGRAM),

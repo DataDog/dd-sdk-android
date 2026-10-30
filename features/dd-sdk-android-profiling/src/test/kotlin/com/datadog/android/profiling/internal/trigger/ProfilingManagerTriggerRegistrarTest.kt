@@ -101,11 +101,8 @@ internal class ProfilingManagerTriggerRegistrarTest {
         val mockOomTrigger = mock<ProfilingTrigger> {
             on { triggerType } doReturn ProfilingTrigger.TRIGGER_TYPE_OOM
         }
-        val mockAnomalyTrigger = mock<ProfilingTrigger> {
-            on { triggerType } doReturn ProfilingTrigger.TRIGGER_TYPE_ANOMALY
-        }
         testedRegistrar.triggersFactory = {
-            listOf(mockAnrTrigger, mockOomTrigger, mockAnomalyTrigger)
+            listOf(mockAnrTrigger, mockOomTrigger)
         }
         testedRegistrar.threadDumper = ThreadDumper(
             mainThreadProvider = { Thread.currentThread() }
@@ -123,8 +120,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
         verify(mockService).addProfilingTriggers(triggersCaptor.capture())
         assertThat(triggersCaptor.firstValue.map { it.triggerType }).containsExactly(
             ProfilingTrigger.TRIGGER_TYPE_ANR,
-            ProfilingTrigger.TRIGGER_TYPE_OOM,
-            ProfilingTrigger.TRIGGER_TYPE_ANOMALY
+            ProfilingTrigger.TRIGGER_TYPE_OOM
         )
         verify(mockService).registerForAllProfilingResults(
             eq(mockExecutorService),
@@ -302,8 +298,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
         verify(mockService).removeProfilingTriggersByType(triggerTypesCaptor.capture())
         assertThat(triggerTypesCaptor.firstValue).containsExactly(
             ProfilingTrigger.TRIGGER_TYPE_ANR,
-            ProfilingTrigger.TRIGGER_TYPE_OOM,
-            ProfilingTrigger.TRIGGER_TYPE_ANOMALY
+            ProfilingTrigger.TRIGGER_TYPE_OOM
         )
         verify(mockService).unregisterForAllProfilingResults(any())
     }
@@ -644,101 +639,6 @@ internal class ProfilingManagerTriggerRegistrarTest {
     }
 
     @Test
-    fun `M forward anomaly histogram W trigger fires {ANOMALY success, delay below threshold}`(
-        @TempDir tempDir: File,
-        @LongForgery(min = 0L, max = 1_000L) fakeDelayMs: Long
-    ) {
-        // Given
-        val tmpFile = File(tempDir, "heap.hprof").apply { writeText("histogram") }
-        val creationTimeMs = Files.readAttributes(
-            Paths.get(tmpFile.absolutePath),
-            BasicFileAttributes::class.java
-        ).creationTime().toMillis()
-        val fakeNow = creationTimeMs + fakeDelayMs
-        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(fakeNow)
-        testedRegistrar.register(mockContext, mockListener)
-        val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
-        verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
-        val anomalyResult = mock<ProfilingResult> {
-            on { triggerType } doReturn ProfilingTrigger.TRIGGER_TYPE_ANOMALY
-            on { errorCode } doReturn ProfilingResult.ERROR_NONE
-            on { errorMessage } doReturn null
-            on { resultFilePath } doReturn tmpFile.absolutePath
-        }
-        val expectedFileSize = tmpFile.length()
-
-        // When
-        triggerCallbackCaptor.firstValue.accept(anomalyResult)
-
-        // Then
-        val resultCaptor = argumentCaptor<PerfettoResult>()
-        verify(mockListener).onMemoryAnomalyDetected(resultCaptor.capture())
-        assertThat(resultCaptor.firstValue.start).isEqualTo(fakeNow)
-        assertThat(resultCaptor.firstValue.end).isEqualTo(fakeNow)
-        assertThat(resultCaptor.firstValue.startReason).isEqualTo(ProfilingStartReason.MEMORY_ANOMALY)
-        assertThat(resultCaptor.firstValue.resultFilePath).isEqualTo(tmpFile.absolutePath)
-        assertThat(tmpFile.exists()).isTrue // registrar keeps the histogram file; the listener owns its lifetime
-        verify(mockProfilingTelemetry).report(
-            ProfilingTelemetryEvent.TriggerResult(
-                triggerType = ProfilingTrigger.TRIGGER_TYPE_ANOMALY,
-                errorCode = ProfilingResult.ERROR_NONE,
-                errorMessage = null,
-                fileSize = expectedFileSize,
-                callbackDelayMs = fakeDelayMs,
-                droppedAsStale = false
-            )
-        )
-    }
-
-    @Test
-    fun `M forward anomaly histogram W trigger fires {ANOMALY success, delay above threshold}`(
-        @TempDir tempDir: File,
-        @LongForgery(min = 1_001L, max = 60_000L) fakeDelayMs: Long
-    ) {
-        // Given — the staleness cutoff only applies to ANR (live thread dump); Anomaly's trace
-        // file is captured at the actual trigger time, so a delayed callback must still forward.
-        val tmpFile = File(tempDir, "heap.hprof").apply { writeText("histogram") }
-        val creationTimeMs = Files.readAttributes(
-            Paths.get(tmpFile.absolutePath),
-            BasicFileAttributes::class.java
-        ).creationTime().toMillis()
-        val fakeNow = creationTimeMs + fakeDelayMs
-        whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(fakeNow)
-        testedRegistrar.register(mockContext, mockListener)
-        val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
-        verify(mockService).registerForAllProfilingResults(any(), triggerCallbackCaptor.capture())
-        val anomalyResult = mock<ProfilingResult> {
-            on { triggerType } doReturn ProfilingTrigger.TRIGGER_TYPE_ANOMALY
-            on { errorCode } doReturn ProfilingResult.ERROR_NONE
-            on { errorMessage } doReturn null
-            on { resultFilePath } doReturn tmpFile.absolutePath
-        }
-        val expectedFileSize = tmpFile.length()
-
-        // When
-        triggerCallbackCaptor.firstValue.accept(anomalyResult)
-
-        // Then
-        val resultCaptor = argumentCaptor<PerfettoResult>()
-        verify(mockListener).onMemoryAnomalyDetected(resultCaptor.capture())
-        assertThat(resultCaptor.firstValue.start).isEqualTo(fakeNow)
-        assertThat(resultCaptor.firstValue.end).isEqualTo(fakeNow)
-        assertThat(resultCaptor.firstValue.startReason).isEqualTo(ProfilingStartReason.MEMORY_ANOMALY)
-        assertThat(resultCaptor.firstValue.resultFilePath).isEqualTo(tmpFile.absolutePath)
-        assertThat(tmpFile.exists()).isTrue // registrar keeps the histogram file; the listener owns its lifetime
-        verify(mockProfilingTelemetry).report(
-            ProfilingTelemetryEvent.TriggerResult(
-                triggerType = ProfilingTrigger.TRIGGER_TYPE_ANOMALY,
-                errorCode = ProfilingResult.ERROR_NONE,
-                errorMessage = null,
-                fileSize = expectedFileSize,
-                callbackDelayMs = fakeDelayMs,
-                droppedAsStale = false
-            )
-        )
-    }
-
-    @Test
     fun `M not invoke listener W trigger callback fires {histogram error}`(
         @IntForgery(min = 1, max = 8) fakeErrorCode: Int,
         @StringForgery fakeErrorMessage: String,
@@ -760,7 +660,6 @@ internal class ProfilingManagerTriggerRegistrarTest {
 
         // Then
         verify(mockListener, never()).onOutOfMemoryDetected(any())
-        verify(mockListener, never()).onMemoryAnomalyDetected(any())
         verify(mockProfilingTelemetry).report(
             ProfilingTelemetryEvent.TriggerResult(
                 triggerType = ProfilingTrigger.TRIGGER_TYPE_OOM,

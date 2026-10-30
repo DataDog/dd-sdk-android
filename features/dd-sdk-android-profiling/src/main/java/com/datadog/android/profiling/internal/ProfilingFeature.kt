@@ -22,7 +22,6 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.internal.profiling.ProfilerEvent
-import com.datadog.android.internal.profiling.ProfilingAnomalyDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
 import com.datadog.android.internal.rum.RumContext
@@ -133,8 +132,7 @@ internal class ProfilingFeature(
             this.internalLogger = sdkCore.internalLogger
             setEnabledTriggers(
                 configuration.anrTriggerEnabled,
-                configuration.oomTriggerEnabled,
-                configuration.anomalyTriggerEnabled
+                configuration.oomTriggerEnabled
             )
             registerProfilingCallback(appContext, this@ProfilingFeature)
             registerProfilerStatusListener(this@ProfilingFeature)
@@ -252,10 +250,6 @@ internal class ProfilingFeature(
                 }
             }
 
-            is ProfilerEvent.RumAnomalyErrorEvent -> {
-                pendingTriggerProfiles.setRumGatingEvent(event)
-            }
-
             else -> sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
@@ -295,13 +289,6 @@ internal class ProfilingFeature(
     override fun onOutOfMemoryDetected(result: PerfettoResult) {
         // RUM already generates its own OOM error event, so the profiling feature
         // does not forward a separate OOM event.
-        pendingTriggerProfiles.setProfilingResult(result)
-    }
-
-    override fun onMemoryAnomalyDetected(result: PerfettoResult) {
-        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(
-            ProfilingAnomalyDetectedEvent(result.start)
-        )
         pendingTriggerProfiles.setProfilingResult(result)
     }
 
@@ -482,10 +469,6 @@ internal class ProfilingFeature(
                 override fun onMatch(result: PerfettoResult, event: ProfilerEvent) {
                     when (event) {
                         is ProfilerEvent.RumAnrEvent -> onTriggerProfileMatched(
-                            TriggerProfile(result, event.id, event.rumContext)
-                        )
-
-                        is ProfilerEvent.RumAnomalyErrorEvent -> onTriggerProfileMatched(
                             TriggerProfile(result, event.id, event.rumContext)
                         )
 
