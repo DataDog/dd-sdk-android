@@ -18,6 +18,7 @@ import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
 import com.datadog.android.flags.internal.EvaluationsFeature
 import com.datadog.android.flags.internal.FlagsFeature
+import com.datadog.android.flags.internal.FlagsStateHolder
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.LogWithPolicy
 import com.datadog.android.flags.internal.NoOpFlagsClient
@@ -31,7 +32,6 @@ import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
-import com.datadog.android.internal.utils.DDCoreStateHolder
 import org.json.JSONObject
 
 /**
@@ -468,7 +468,7 @@ interface FlagsClient {
             val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
 
             val flagStateManager = FlagsStateManager(
-                stateHolder = DDCoreStateHolder.create(
+                stateHolder = FlagsStateHolder.create(
                     initialState = FlagsClientState.NotReady,
                     onStateChanged = FlagsStateListener::onStateChanged
                 )

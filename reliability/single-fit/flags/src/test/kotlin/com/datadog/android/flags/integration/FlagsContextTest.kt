@@ -12,6 +12,7 @@ import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.integration.FlagsClientTest.Companion.createStubSdkCore
 import com.datadog.android.flags.integration.tests.elmyr.FlagsIntegrationForgeConfigurator
 import com.datadog.android.flags.integration.tests.utils.DeferredDataStore
@@ -220,6 +221,83 @@ internal class FlagsContextTest {
             assertThat(observedEvents.first()).isInstanceOf(OpenFeatureProviderEvents.ProviderError::class.java)
         }
         assertThat(provider.getBooleanEvaluation(fakeFlagKey, !fakeValue, null).value).isEqualTo(fakeValue)
+    }
+
+    @ParameterizedTest
+    @EnumSource(FetchFailure::class)
+    fun `M recover matching cache W setEvaluationContext() + completeReads() {another context succeeded}`(
+        failure: FetchFailure,
+        @StringForgery fakeOtherTargetingKey: String,
+        forge: Forge
+    ) = runBlocking<Unit> {
+        // Given
+        restartWithPendingCache(forge)
+        stubAssignments(mapOf(fakeFlagKey to fakeAssignment.copy(variationValue = !fakeValue)))
+        testedClient.setEvaluationContext(EvaluationContext(fakeOtherTargetingKey))
+        val provider = testedClient.asOpenFeatureProvider()
+        val events = async(Dispatchers.Unconfined) {
+            provider.observe().take(3).toList()
+        }
+        stubFailure(failure)
+
+        // When
+        testedClient.setEvaluationContext(fakeContext)
+        fakeDataStore.completeReads()
+
+        // Then
+        assertThat(testedClient.resolveBooleanValue(fakeFlagKey, !fakeValue)).isEqualTo(fakeValue)
+        assertThat(testedClient.resolve(fakeFlagKey, !fakeValue).reason).isEqualTo(ResolutionReason.CACHED)
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        assertThat(firstFlags).containsExactly(listOf(fakeFlagKey))
+        val observedEvents = withTimeout(5_000) { events.await() }
+        assertThat(observedEvents.last()).isInstanceOf(OpenFeatureProviderEvents.ProviderStale::class.java)
+        assertThat(observedEvents[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderReady::class.java)
+        assertThat(observedEvents[1]).isInstanceOf(OpenFeatureProviderEvents.ProviderError::class.java)
+        assertThat(provider.getBooleanEvaluation(fakeFlagKey, !fakeValue, null).value).isEqualTo(fakeValue)
+    }
+
+    @Test
+    fun `M retain first cache keys W completeReads() {stale listener installs another context}`(
+        @StringForgery fakeOtherTargetingKey: String,
+        @StringForgery fakeOtherFlagKey: String,
+        forge: Forge
+    ) {
+        // Given
+        restartWithPendingCache(forge)
+        stubFailure(FetchFailure.NETWORK)
+        testedClient.setEvaluationContext(fakeContext)
+        testedClient.state.addListener(object : FlagsStateListener {
+            override fun onStateChanged(newState: FlagsClientState) {
+                if (newState == FlagsClientState.Stale) {
+                    stubAssignments(mapOf(fakeOtherFlagKey to fakeAssignment))
+                    testedClient.setEvaluationContext(EvaluationContext(fakeOtherTargetingKey))
+                }
+            }
+        })
+
+        // When
+        fakeDataStore.completeReads()
+
+        // Then
+        assertThat(firstFlags).containsExactly(listOf(fakeFlagKey))
+        assertThat(testedClient.resolveBooleanValue(fakeOtherFlagKey, !fakeValue)).isEqualTo(fakeValue)
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+    }
+
+    @Test
+    fun `M retain network flags W completeReads() {matching context already succeeded}`(forge: Forge) {
+        // Given
+        restartWithPendingCache(forge)
+        stubAssignments(mapOf(fakeFlagKey to fakeAssignment.copy(variationValue = !fakeValue)))
+        testedClient.setEvaluationContext(fakeContext)
+
+        // When
+        fakeDataStore.completeReads()
+
+        // Then
+        assertThat(testedClient.resolveBooleanValue(fakeFlagKey, fakeValue)).isEqualTo(!fakeValue)
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        assertThat(firstFlags).containsExactly(listOf(fakeFlagKey))
     }
 
     @ParameterizedTest

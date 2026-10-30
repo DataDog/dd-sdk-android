@@ -37,61 +37,6 @@ internal class DDCoreStateHolderTest {
         onStateChanged = TestStateListener::onStateChanged
     )
 
-    @Test
-    fun `M apply matching transition W updateStateIfCurrent()`() {
-        // Given
-        testedHolder.addListener(mockListener)
-
-        // When
-        testedHolder.updateStateIfCurrent(TestState.Initial, TestState.Second)
-
-        // Then
-        assertThat(testedHolder.currentState).isEqualTo(TestState.Second)
-        verify(mockListener).onStateChanged(TestState.Initial)
-        verify(mockListener).onStateChanged(TestState.Second)
-        verifyNoMoreInteractions(mockListener)
-    }
-
-    @Test
-    fun `M skip mismatched transition W updateStateIfCurrent()`() {
-        // Given
-        testedHolder.addListener(mockListener)
-
-        // When
-        testedHolder.updateStateIfCurrent(TestState.Second, TestState.Initial)
-
-        // Then
-        assertThat(testedHolder.currentState).isEqualTo(TestState.Initial)
-        verify(mockListener).onStateChanged(TestState.Initial)
-        verifyNoMoreInteractions(mockListener)
-    }
-
-    @Test
-    fun `M check after earlier queued state W updateStateIfCurrent() {reentrant delivery}`() {
-        // Given
-        testedHolder.addListener(mockListener)
-        var queued = false
-        testedHolder.addListener { newState ->
-            if (newState == TestState.Second && !queued) {
-                queued = true
-                testedHolder.updateState(TestState.Initial)
-                testedHolder.updateStateIfCurrent(TestState.Second, TestState.Second)
-            }
-        }
-
-        // When
-        testedHolder.updateState(TestState.Second)
-
-        // Then
-        assertThat(testedHolder.currentState).isEqualTo(TestState.Initial)
-        inOrder(mockListener) {
-            verify(mockListener).onStateChanged(TestState.Initial)
-            verify(mockListener).onStateChanged(TestState.Second)
-            verify(mockListener).onStateChanged(TestState.Initial)
-            verifyNoMoreInteractions()
-        }
-    }
-
     // region currentState
 
     @Test

@@ -17,6 +17,7 @@ import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags.internal.FlagsStateHolder
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedAssignments
@@ -35,7 +36,6 @@ import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
-import com.datadog.android.internal.utils.DDCoreStateHolder
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -135,6 +135,7 @@ internal class EvaluationsManagerTest {
     fun setUp() {
         whenever(mockSdkCore.timeProvider).thenReturn(mock())
         whenever(mockFlagsRepository.firstFlags).thenReturn(FirstFlagsLatch())
+        whenever(mockFlagsRepository.cachedFlagsLoaded).thenReturn(FirstFlagsLatch())
         evaluationsManager = EvaluationsManager(
             sdkCore = mockSdkCore,
             executorService = mockExecutorService,
@@ -718,7 +719,7 @@ internal class EvaluationsManagerTest {
         val context = EvaluationContext(fakeTargetingKey, emptyMap())
         var timeoutAction: (() -> Unit)? = null
         val stateManager = FlagsStateManager(
-            DDCoreStateHolder.create(
+            FlagsStateHolder.create(
                 initialState = FlagsClientState.NotReady,
                 onStateChanged = FlagsStateListener::onStateChanged
             )
@@ -771,7 +772,7 @@ internal class EvaluationsManagerTest {
         var timeoutAction: (() -> Unit)? = null
         var stateAtTimeoutCallback: FlagsClientState? = null
         val stateManager = FlagsStateManager(
-            DDCoreStateHolder.create(
+            FlagsStateHolder.create(
                 initialState = FlagsClientState.NotReady,
                 onStateChanged = FlagsStateListener::onStateChanged
             )
@@ -833,7 +834,7 @@ internal class EvaluationsManagerTest {
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val stateManager = FlagsStateManager(
-            DDCoreStateHolder.create(
+            FlagsStateHolder.create(
                 initialState = FlagsClientState.NotReady,
                 onStateChanged = FlagsStateListener::onStateChanged
             )
@@ -926,7 +927,7 @@ internal class EvaluationsManagerTest {
         var timeoutAction: (() -> Unit)? = null
         whenever(mockExecutorService.execute(any())).thenAnswer { null }
         val stateManager = FlagsStateManager(
-            DDCoreStateHolder.create(
+            FlagsStateHolder.create(
                 initialState = FlagsClientState.NotReady,
                 onStateChanged = FlagsStateListener::onStateChanged
             )
@@ -1209,7 +1210,7 @@ internal class EvaluationsManagerTest {
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
         val stateManager = FlagsStateManager(
-            DDCoreStateHolder.create(
+            FlagsStateHolder.create(
                 initialState = FlagsClientState.NotReady,
                 onStateChanged = FlagsStateListener::onStateChanged
             )
@@ -1245,7 +1246,7 @@ internal class EvaluationsManagerTest {
         val mockCallback = mock<EvaluationContextCallback>()
         whenever(mockExecutorService.execute(any())).thenAnswer { null }
         val stateManager = FlagsStateManager(
-            DDCoreStateHolder.create(
+            FlagsStateHolder.create(
                 initialState = FlagsClientState.NotReady,
                 onStateChanged = FlagsStateListener::onStateChanged
             )
@@ -1295,7 +1296,7 @@ internal class EvaluationsManagerTest {
     fun `M have state READY when callback invoked W updateEvaluationsForContext() { success }`() {
         // Given
         val realStateManager = FlagsStateManager(
-            DDCoreStateHolder.create(
+            FlagsStateHolder.create(
                 initialState = FlagsClientState.NotReady,
                 onStateChanged = FlagsStateListener::onStateChanged
             )
@@ -1353,7 +1354,7 @@ internal class EvaluationsManagerTest {
         whenever(mockSdkCore.timeProvider).thenReturn(mock())
         val repository = DefaultFlagsRepository(mockSdkCore, "late-success", mock(), persistenceLoadTimeoutMs = 1)
         val state = FlagsStateManager(
-            DDCoreStateHolder.create(FlagsClientState.NotReady, FlagsStateListener::onStateChanged)
+            FlagsStateHolder.create(FlagsClientState.NotReady, FlagsStateListener::onStateChanged)
         )
         val work = ArrayDeque<Runnable>()
         doAnswer {
@@ -1420,7 +1421,7 @@ internal class EvaluationsManagerTest {
             .setValue<FlagsStateEntry>(any(), any(), any(), anyOrNull(), any())
         val repository = DefaultFlagsRepository(mockSdkCore, "throwing", store, persistenceLoadTimeoutMs = 1)
         val state = FlagsStateManager(
-            DDCoreStateHolder.create(FlagsClientState.NotReady, FlagsStateListener::onStateChanged)
+            FlagsStateHolder.create(FlagsClientState.NotReady, FlagsStateListener::onStateChanged)
         )
         val work = ArrayDeque<Runnable>()
         doAnswer {
@@ -1502,7 +1503,7 @@ internal class EvaluationsManagerTest {
         manager.updateEvaluationsForContext(context)
         whenever(mockFlagsRepository.hasLoadedFlagsForContext(context)).thenReturn(true)
         var delivery: Runnable? = null
-        mockFlagsRepository.firstFlags.complete(listOf(fakeAttributeKey)) { delivery = it }
+        mockFlagsRepository.cachedFlagsLoaded.complete(listOf(fakeAttributeKey)) { delivery = it }
         whenever(mockExecutorService.execute(any())).thenAnswer { null }
         val nextContext = if (sameContext) context else context.copy(targetingKey = fakeAttributeKey)
 
@@ -1530,7 +1531,7 @@ internal class EvaluationsManagerTest {
                 if (newState is FlagsClientState.Error) {
                     manager.updateEvaluationsForContext(context)
                     whenever(mockFlagsRepository.hasLoadedFlagsForContext(context)).thenReturn(true)
-                    mockFlagsRepository.firstFlags.complete(listOf(fakeAttributeKey))
+                    mockFlagsRepository.cachedFlagsLoaded.complete(listOf(fakeAttributeKey))
                 }
             }
         })
@@ -1553,7 +1554,7 @@ internal class EvaluationsManagerTest {
         manager.updateEvaluationsForContext(context)
         whenever(mockFlagsRepository.hasLoadedFlagsForContext(context)).thenReturn(true)
         var delivery: Runnable? = null
-        mockFlagsRepository.firstFlags.complete(listOf(fakeAttributeKey)) { delivery = it }
+        mockFlagsRepository.cachedFlagsLoaded.complete(listOf(fakeAttributeKey)) { delivery = it }
         whenever(mockAssignmentsDownloader.readPrecomputedFlags(eq(context), eq(fakeDatadogContext), any()))
             .thenReturn(EMPTY_FLAGS_RESPONSE_JSON)
         whenever(mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON)).thenReturn(PrecomputedAssignments(emptyMap()))
@@ -1585,7 +1586,7 @@ internal class EvaluationsManagerTest {
         whenever(mockFlagsRepository.hasLoadedFlagsForContext(context)).thenReturn(usableCache)
 
         // When
-        mockFlagsRepository.firstFlags.complete(if (usableCache) listOf(fakeAttributeKey) else emptyList())
+        mockFlagsRepository.cachedFlagsLoaded.complete(if (usableCache) listOf(fakeAttributeKey) else emptyList())
 
         // Then
         assertThat(timedOutState).isInstanceOf(FlagsClientState.Error::class.java)
@@ -1608,14 +1609,14 @@ internal class EvaluationsManagerTest {
         }
 
         // When
-        mockFlagsRepository.firstFlags.complete(listOf(fakeAttributeKey))
+        mockFlagsRepository.cachedFlagsLoaded.complete(listOf(fakeAttributeKey))
 
         // Then
         assertThat(state.getCurrentState()).isEqualTo(FlagsClientState.Reconciling)
     }
 
     private fun createStateManager(): FlagsStateManager = FlagsStateManager(
-        DDCoreStateHolder.create(
+        FlagsStateHolder.create(
             initialState = FlagsClientState.NotReady,
             onStateChanged = FlagsStateListener::onStateChanged
         )

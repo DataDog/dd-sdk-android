@@ -107,7 +107,7 @@ internal class EvaluationsManager(
     private var cacheRecovery: Pair<Long, EvaluationContext>? = null
 
     init {
-        flagsRepository.firstFlags.whenComplete {
+        flagsRepository.cachedFlagsLoaded.whenComplete {
             synchronized(initializationTerminalLock) {
                 val recovery = cacheRecovery ?: return@synchronized
                 val error = flagStateManager.getCurrentState() as? FlagsClientState.Error

@@ -9,7 +9,6 @@ package com.datadog.android.flags.internal
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.FlagsClientState
-import com.datadog.android.internal.utils.DDCoreStateHolder
 
 /**
  * Manages state transitions and notifications for a [com.datadog.android.flags.FlagsClient].
@@ -28,7 +27,7 @@ import com.datadog.android.internal.utils.DDCoreStateHolder
  * @param stateHolder the underlying state holder, taking care of the listeners and the locking.
  */
 internal class FlagsStateManager(
-    private val stateHolder: DDCoreStateHolder<FlagsClientState, FlagsStateListener>
+    private val stateHolder: FlagsStateHolder<FlagsClientState, FlagsStateListener>
 ) : StateObservable {
 
     /**

@@ -32,7 +32,8 @@ internal class DefaultFlagsRepository(
         val context: EvaluationContext,
         val flags: Map<String, PrecomputedFlag>,
         val obfuscation: FlagKeyObfuscation?,
-        val hasAcceptedConfiguration: Boolean = true
+        val hasAcceptedConfiguration: Boolean = true,
+        val isTombstone: Boolean = false
     ) {
         operator fun get(key: String): PrecomputedFlag? =
             if (obfuscation == null) flags[key] else obfuscation.encode(key)?.let { flags[it] }
@@ -47,6 +48,7 @@ internal class DefaultFlagsRepository(
     private val persistenceLoadedLatch = CountDownLatch(1)
 
     override val firstFlags = FirstFlagsLatch()
+    override val cachedFlagsLoaded = FirstFlagsLatch()
 
     private val persistenceManager = FlagsPersistenceManager(
         dataStore = dataStore,
@@ -65,7 +67,13 @@ internal class DefaultFlagsRepository(
             persistenceLoadedLatch.countDown()
         }
         if (cachedState != null && persistedState != null) {
-            publishFirstFlags(cachedState, persistedState.flags.keys)
+            try {
+                if (cachedState.obfuscation == null || obfuscationSupported) {
+                    cachedFlagsLoaded.complete(persistedState.flags.keys)
+                }
+            } finally {
+                publishFirstFlags(cachedState, persistedState.flags.keys)
+            }
         }
     }
 
@@ -133,7 +141,8 @@ internal class DefaultFlagsRepository(
                 emptyMap(),
                 obfuscation = null,
                 hasAcceptedConfiguration = currentState?.hasAcceptedConfiguration == true &&
-                    (currentState.obfuscation == null || obfuscationSupported)
+                    (currentState.obfuscation == null || obfuscationSupported),
+                isTombstone = true
             )
         } while (!atomicState.compareAndSet(currentState, clearedState))
     }
@@ -201,7 +210,7 @@ internal class DefaultFlagsRepository(
         do {
             val currentState = atomicState.get()
             if (currentState != null &&
-                (currentState.hasAcceptedConfiguration || currentState.context != persistedState.context)
+                (!currentState.isTombstone || currentState.context != persistedState.context)
             ) {
                 return false
             }
