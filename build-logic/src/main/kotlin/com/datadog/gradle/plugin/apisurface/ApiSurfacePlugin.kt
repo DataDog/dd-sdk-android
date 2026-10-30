@@ -67,8 +67,7 @@ class ApiSurfacePlugin : Plugin<Project> {
 
         target.tasks
             .register<CheckCompilerMetaTask>(TASK_CHECK_COMPILER_METADATA) {
-                this.metadataInfoFile.set(compilerMetaFile)
-                dependsOn(TASK_GEN_COMPILER_METADATA)
+                this.metadataInfoFile.set(generateCompilerMetaTask.flatMap { it.metadataInfoFile })
             }
 
         target.taskConfig<KotlinCompilationTask<KotlinJvmCompilerOptions>> {
