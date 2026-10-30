@@ -930,17 +930,14 @@ internal open class RumViewScope(
         }
 
         if (pendingOomErrorStore != null) {
-            var isHeld = false
-            writeScope { batchWriter ->
-                val errorEvent = buildErrorEvent()
-                isHeld = pendingOomErrorStore.tryHold(errorEvent)
-                if (!isHeld) {
-                    // No gating event for an error written right away: no profile can be attached to it.
-                    writer.write(batchWriter, errorEvent, eventType)
-                }
+            // The slot only needs the data store: held and signalled outside any write scope.
+            val errorEvent = buildErrorEvent()
+            if (pendingOomErrorStore.tryHold(errorEvent)) {
+                sendRumOomErrorEvent(errorId, event, rumContext)
+            } else {
+                // No gating event for an error written right away: no profile can be attached to it.
+                writeScope { batchWriter -> writer.write(batchWriter, errorEvent, eventType) }
             }
-            // Sent outside the write scope: never dispatch to another feature under the write lock.
-            if (isHeld) sendRumOomErrorEvent(errorId, event, rumContext)
         } else {
             sdkCore.newRumEventWriteOperation(writeScope, writer, eventType, buildErrorEvent)
                 .apply {

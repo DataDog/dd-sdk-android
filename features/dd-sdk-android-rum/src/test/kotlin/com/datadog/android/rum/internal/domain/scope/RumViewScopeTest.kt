@@ -4448,12 +4448,10 @@ internal class RumViewScopeTest {
         val mockStore = stubPendingOomErrorStore()
         whenever(mockStore.tryHold(any())) doReturn true
         val datadogContext = fakeDatadogContext.withOomTriggerActive()
+        // Queued and run later, like the real asynchronous write scope.
         var isInsideWriteScope = false
-        val trackingWriteScope: EventWriteScope = {
-            isInsideWriteScope = true
-            mockEventWriteScope(it)
-            isInsideWriteScope = false
-        }
+        val queuedWrites = mutableListOf<(EventBatchWriter) -> Unit>()
+        val queuedWriteScope: EventWriteScope = { queuedWrites.add(it) }
         val sentInsideWriteScope = mutableListOf<Boolean>()
         whenever(mockProfilingFeatureScope.sendEvent(any())) doAnswer {
             sentInsideWriteScope.add(isInsideWriteScope)
@@ -4461,7 +4459,13 @@ internal class RumViewScopeTest {
         }
 
         // When
-        testedScope.handleEvent(fakeEvent, datadogContext, trackingWriteScope, mockWriter)
+        testedScope.handleEvent(fakeEvent, datadogContext, queuedWriteScope, mockWriter)
+        assertThat(sentInsideWriteScope).containsExactly(false)
+        queuedWrites.forEach {
+            isInsideWriteScope = true
+            it(mockEventBatchWriter)
+            isInsideWriteScope = false
+        }
 
         // Then
         val heldCaptor = argumentCaptor<ErrorEvent>()
@@ -4470,7 +4474,7 @@ internal class RumViewScopeTest {
         assertThat(heldCaptor.firstValue.error.isCrash).isTrue
         verify(mockWriter, never()).write(eq(mockEventBatchWriter), isA<ErrorEvent>(), any())
         verify(mockWriter).write(eq(mockEventBatchWriter), isA<ViewEvent>(), eq(EventType.CRASH))
-        assertThat(sentInsideWriteScope).containsOnly(false)
+        assertThat(sentInsideWriteScope).containsExactly(false)
         argumentCaptor<ProfilerEvent.RumOomErrorEvent> {
             verify(mockProfilingFeatureScope).sendEvent(capture())
             assertThat(firstValue.id).isNotEmpty()
