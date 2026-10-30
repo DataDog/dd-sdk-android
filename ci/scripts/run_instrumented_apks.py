@@ -188,6 +188,8 @@ def emulator_launch_command(tools: AndroidSdkTools, plan: EmulatorPlan) -> List[
         plan.avd_name,
         "-port",
         str(plan.port),
+        "-cores",
+        "2",
         "-grpc-use-jwt",
         "-no-snapstorage",
         "-no-audio",
