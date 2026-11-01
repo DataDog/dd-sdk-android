@@ -100,9 +100,13 @@
 # Optional invalidation checks for the measured plain-text paragraph cache.
 -keep,allowoptimization class androidx.compose.foundation.text.modifiers.TextStringSimpleNode {
     *** _layoutCache;
+    java.lang.String text;
+    androidx.compose.ui.text.TextStyle style;
+    *** textSubstitution;
     *** semanticsTextLayoutResult;
 }
 -keep,allowoptimization class androidx.compose.foundation.text.modifiers.ParagraphLayoutCache {
+    java.lang.String text;
     *** paragraph;
     *** paragraphIntrinsics;
     long prevConstraints;
@@ -159,4 +163,9 @@
 }
 -keepclassmembers class androidx.compose.foundation.text.TextFieldState {
     *** getLayoutCoordinates*();
+}
+
+# AndroidParagraph exposes its intrinsics' paint through a computed getter, not a backing field.
+-keepclassmembers class androidx.compose.ui.text.AndroidParagraph {
+    *** getTextPaint*(...);
 }

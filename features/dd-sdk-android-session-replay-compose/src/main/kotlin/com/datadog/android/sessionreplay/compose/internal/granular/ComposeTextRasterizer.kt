@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.toSize
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.compose.internal.utils.ComposeTextCaptureCache
 import com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOffset
+import com.datadog.android.sessionreplay.compose.internal.utils.MeasuredComposeText
 import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -41,9 +42,9 @@ internal fun interface ComposeTextRasterizer {
 }
 
 internal class DefaultComposeTextRasterizer(
-    private val semanticsUtils: SemanticsUtils = SemanticsUtils()
+    private val semanticsUtils: SemanticsUtils = SemanticsUtils(),
+    private val measuredTextState: ComposeTextCaptureCache = ComposeTextCaptureCache()
 ) : ComposeTextRasterizer {
-    private val measuredTextState = ComposeTextCaptureCache()
     private val bitmapCache = ComposeTextBitmapCache()
     private val reflectionUtils = ReflectionUtils()
 
@@ -61,6 +62,10 @@ internal class DefaultComposeTextRasterizer(
         val modifier = modifiers.firstOrNull { reflectionUtils.isTextStringSimpleElement(it.modifier) }?.modifier
         val paint = ComposeTextBitmapCache.Paint(modifier, text.color.toLong(), sourceText)
         bitmapCache.get(node.id, state, paint)?.let { return RasterizedComposeText(it, bounds) }
+        val measured = state?.measured
+        if (measured != null && measured.matches(sourceText, text.color)) {
+            return rasterizeMeasured(node.id, state, paint, measured, bounds)
+        }
         val results = mutableListOf<TextLayoutResult>()
         action.invoke(results)
         val layout = results.firstOrNull() ?: return null
@@ -89,6 +94,28 @@ internal class DefaultComposeTextRasterizer(
             val captured = RasterizedComposeText(pixels, bounds)
             completed = true
             captured
+        } finally {
+            if (!completed) pixels.recycle()
+        }
+    }
+
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Guard bounded recorder-owned output.
+    private fun rasterizeMeasured(
+        nodeId: Int,
+        state: ComposeTextCaptureCache.State,
+        paint: ComposeTextBitmapCache.Paint,
+        measured: MeasuredComposeText,
+        bounds: GlobalBounds
+    ): RasterizedComposeText? {
+        val size = measured.size
+        if (size.width <= 0 || size.height <= 0 || size.width.toLong() * size.height > MAX_TEXT_PIXELS) return null
+        val pixels = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888)
+        var completed = false
+        return try {
+            measured.draw(Canvas(pixels.asImageBitmap()))
+            bitmapCache.put(nodeId, state, paint, measured.style, pixels)
+            completed = true
+            RasterizedComposeText(pixels, bounds)
         } finally {
             if (!completed) pixels.recycle()
         }

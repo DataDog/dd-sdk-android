@@ -8,8 +8,11 @@ package com.datadog.android.sessionreplay.compose.internal.utils
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.text.Paragraph
 import androidx.compose.ui.text.ParagraphIntrinsics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.IntSize
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
 import com.datadog.android.sessionreplay.compose.internal.reflection.getClassSafe
@@ -24,7 +27,12 @@ import java.lang.ref.WeakReference
  * asynchronous fonts use the normal semantics action instead. Used only by the composition pipeline.
  */
 internal class ComposeTextCaptureCache {
-    class State(val paragraph: Any, val constraints: Long, val size: Long)
+    class State(
+        val paragraph: Any,
+        val constraints: Long,
+        val size: Long,
+        val measured: MeasuredComposeText? = null
+    )
     private data class Entry(
         val paragraph: WeakReference<Any>,
         val modifier: WeakReference<Modifier>,
@@ -46,17 +54,40 @@ internal class ComposeTextCaptureCache {
             if (current == null) return null
             if (simpleNode?.isInstance(current) == true) {
                 if (semanticsAction?.getSafe(current) !== action) return null
+                if (substitution?.getSafe(current) != null) return null
                 val cache = layoutCache?.getSafe(current) ?: return null
                 val currentParagraph = paragraph?.getSafe(cache) ?: return null
                 val currentIntrinsics = intrinsics?.getSafe(cache) as? ParagraphIntrinsics ?: return null
                 if (currentIntrinsics.hasStaleResolvedFonts) return null
                 val currentConstraints = constraints?.getSafe(cache) as? Long ?: return null
                 val currentSize = size?.getSafe(cache) as? Long ?: return null
-                return State(currentParagraph, currentConstraints, currentSize)
+                return State(
+                    currentParagraph,
+                    currentConstraints,
+                    currentSize,
+                    measuredText(current, cache, currentParagraph, currentSize)
+                )
             }
             current = ComposeReflection.ChildFieldOfModifierNode?.getSafe(current)
         }
         return null
+    }
+
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Guard measured inputs and copied size.
+    private fun measuredText(node: Any?, cache: Any, paragraph: Any, size: Long): MeasuredComposeText? {
+        if (substitution == null || substitution.getSafe(node) != null) return null
+        val text = sourceText?.getSafe(node) as? String ?: return null
+        if (cachedText?.getSafe(cache) != text) return null
+        val style = sourceStyle?.getSafe(node) as? TextStyle ?: return null
+        val measuredParagraph = paragraph as? Paragraph ?: return null
+        val paint = MeasuredComposeText.readPaint(measuredParagraph) ?: return null
+        return MeasuredComposeText(
+            measuredParagraph,
+            text,
+            style,
+            IntSize((size shr Int.SIZE_BITS).toInt(), size.toInt()),
+            paint
+        )
     }
 
     @Suppress("ReturnCount") // Reclaimed weak references invalidate the entry immediately.
@@ -105,9 +136,13 @@ internal class ComposeTextCaptureCache {
         const val MAX_ENTRY_CHARACTERS = 16_384
         const val MAX_CACHED_CHARACTERS = 131_072
         private val simpleNode = getClassSafe("androidx.compose.foundation.text.modifiers.TextStringSimpleNode", false)
+        private val sourceText = simpleNode?.getDeclaredFieldSafe("text", false)
+        private val sourceStyle = simpleNode?.getDeclaredFieldSafe("style", false)
+        private val substitution = simpleNode?.getDeclaredFieldSafe("textSubstitution", false)
         private val layoutCache = simpleNode?.getDeclaredFieldSafe("_layoutCache", false)
         private val semanticsAction = simpleNode?.getDeclaredFieldSafe("semanticsTextLayoutResult", false)
         private val cacheClass = getClassSafe("androidx.compose.foundation.text.modifiers.ParagraphLayoutCache", false)
+        private val cachedText = cacheClass?.getDeclaredFieldSafe("text", false)
         private val paragraph = cacheClass?.getDeclaredFieldSafe("paragraph", false)
         private val intrinsics = cacheClass?.getDeclaredFieldSafe("paragraphIntrinsics", false)
         private val constraints = cacheClass?.getDeclaredFieldSafe("prevConstraints", false)
