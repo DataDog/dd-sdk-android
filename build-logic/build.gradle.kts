@@ -84,23 +84,9 @@ ktlint {
     }
 }
 
-tasks {
-    val copyTestRes = register<Copy>("copyTestRes") {
-        from("$projectDir/src/test/kotlin/com/example/model")
-        into("$projectDir/src/test/resources/output")
-    }
-
-    val deleteTestRes = register<Delete>("deleteTestRes") {
-        delete("$projectDir/src/test/resources/output/")
-    }
-
-    named("processTestResources") {
-        dependsOn(copyTestRes)
-    }
-
-    named("test") {
-        dependsOn(copyTestRes)
-        finalizedBy(deleteTestRes)
+tasks.named<Copy>("processTestResources") {
+    from(layout.projectDirectory.dir("src/test/kotlin/com/example/model")) {
+        into("output")
     }
 }
 
