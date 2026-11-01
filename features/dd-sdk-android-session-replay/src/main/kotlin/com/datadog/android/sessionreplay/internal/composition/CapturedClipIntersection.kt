@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.internal.sessionreplay.composition.CapturedClip
 import kotlin.math.max
 
 /** Both clips are offsets into the same wireframe; retain the tighter restriction on each edge. */

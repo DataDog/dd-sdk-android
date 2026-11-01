@@ -7,8 +7,8 @@
 package com.datadog.android.sessionreplay.internal.composition.mapper
 
 import android.webkit.WebView
-import com.datadog.android.sessionreplay.internal.composition.CapturedBounds
-import com.datadog.android.sessionreplay.internal.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.internal.composition.toCaptured
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver

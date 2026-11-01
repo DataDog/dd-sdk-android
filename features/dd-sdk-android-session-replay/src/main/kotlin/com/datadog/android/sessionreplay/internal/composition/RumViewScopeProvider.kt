@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 
 /** The current RUM view's identity scope and time offset, or null when there is no active view. */

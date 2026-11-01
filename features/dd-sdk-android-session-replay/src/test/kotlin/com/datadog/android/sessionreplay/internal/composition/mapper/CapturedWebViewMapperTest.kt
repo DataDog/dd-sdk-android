@@ -7,10 +7,10 @@
 package com.datadog.android.sessionreplay.internal.composition.mapper
 
 import android.webkit.WebView
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.internal.composition.DefaultCapturedIdentityFactory
-import com.datadog.android.sessionreplay.internal.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver

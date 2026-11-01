@@ -8,10 +8,10 @@ package com.datadog.android.sessionreplay.internal.composition.mapper
 
 import android.view.View
 import androidx.annotation.UiThread
-import com.datadog.android.sessionreplay.internal.composition.CapturedBounds
-import com.datadog.android.sessionreplay.internal.composition.CapturedIdentity
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.internal.composition.CapturedIdentityFactory
-import com.datadog.android.sessionreplay.internal.composition.CapturedWireframe
 
 /**
  * Deliberately narrower than the legacy `MappingContext`: no privacy/image-helper fields, since

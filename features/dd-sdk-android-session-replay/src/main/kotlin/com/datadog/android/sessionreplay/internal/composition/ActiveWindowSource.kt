@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.composition
 import android.graphics.Rect
 import android.view.View
 import androidx.annotation.UiThread
+import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.TouchPrivacy
 import java.lang.ref.WeakReference
 
