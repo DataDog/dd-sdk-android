@@ -15,6 +15,7 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.work.DisableCachingByDefault
 
+/** Updates the tracked snapshot separately so apiCheck can compare it before it is overwritten. */
 @DisableCachingByDefault(because = "Copies the generated API into the tracked API file")
 abstract class DumpJvmApiTask : DefaultTask() {
     @get:InputFile

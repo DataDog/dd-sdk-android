@@ -71,7 +71,7 @@ This project hosts the following modules:
     - `tools/unit`: a utility library with code to help writing unit tests;
   - `sample/***`: a few sample applications showcasing how to use the library features in production code;
     - `sample/kotlin`: a sample mobile application;
-  - `sample/sqldelight`: the SQLDelight 1.x sample database, generated in a JVM module;
+    - `sample/kotlin/sqldelight`: the SQLDelight 1.x sample database, generated in a JVM module;
     - `sample/vendor-lib`: a sample Android library, to showcase vendors using Datadog in a host app also using Datadog;
     - `sample/wear`: a sample Wear OS application;
     - `sample/automotive`: a sample Automotive OS application;

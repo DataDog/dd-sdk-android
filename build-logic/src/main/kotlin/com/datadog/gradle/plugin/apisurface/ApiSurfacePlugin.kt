@@ -24,7 +24,7 @@ import java.nio.file.Paths
 class ApiSurfacePlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
-        target.configureBuiltInKotlinApiValidation()
+        target.configureBinaryCompatibilityApiValidation()
         val srcDir = target.layout.projectDirectory
             .dir(Paths.get("src", "main").toString())
         val apiDir = target.layout.projectDirectory
@@ -47,7 +47,7 @@ class ApiSurfacePlugin : Plugin<Project> {
                 this.kotlinSurfaceFile.set(generateApiSurfaceTask.flatMap { it.surfaceFile })
                 if (target.plugins.hasPlugin(GEN_JAVA_API_LAYOUT_PLUGIN)) {
                     this.javaSurfaceFile.set(javaSurfaceFile)
-                    dependsOn(target.tasks.matching { it.name == TASK_GEN_JAVA_API_SURFACE })
+                    dependsOn(target.tasks.named { it == TASK_GEN_JAVA_API_SURFACE })
                 } else {
                     logger.info(
                         "No Java API layout plugin found, skipping API surface" +
@@ -77,7 +77,7 @@ class ApiSurfacePlugin : Plugin<Project> {
             }
             // Generate the binary API snapshot before the source API snapshot.
             if (target.plugins.hasPlugin(GEN_JAVA_API_LAYOUT_PLUGIN)) {
-                val apiDumpTasks = target.tasks.matching { it.name == TASK_GEN_JAVA_API_SURFACE }
+                val apiDumpTasks = target.tasks.named { it == TASK_GEN_JAVA_API_SURFACE }
                 val isCi = target.providers.environmentVariable("CI")
                     .map { it.toBoolean() }
                     .orElse(false)

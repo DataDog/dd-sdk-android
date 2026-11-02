@@ -17,7 +17,7 @@ Example of a minimal sample app configuration file:
 ## SQLDelight sample database
 
 The Kotlin app exercises the SDK's SQLDelight 1.x integration. Its schema lives in
-`sample/sqldelight/src/main/sqldelight` and is generated in a JVM module because the
+`sample/kotlin/sqldelight/src/main/sqldelight` and is generated in a JVM module because the
 SQLDelight 1.x Gradle plugin does not support AGP's built-in Kotlin. Android modules
 keep built-in Kotlin and the new DSL enabled, and the app consumes the generated
 database classes through a project dependency.

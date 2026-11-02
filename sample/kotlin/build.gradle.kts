@@ -191,7 +191,7 @@ dependencies {
 
     // Sample modules
     implementation(project(":sample:vendor-lib"))
-    implementation(project(":sample:sqldelight"))
+    implementation(project(":sample:kotlin:sqldelight"))
 
     implementation(libs.kotlinRuntime)
 

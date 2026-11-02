@@ -17,8 +17,8 @@ import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool
 
-/** BCV 0.18.1 only discovers the standalone Kotlin Android plugin. */
-internal fun Project.configureBuiltInKotlinApiValidation() {
+/** Binary Compatibility Validator 0.18.1 only discovers the standalone Kotlin Android plugin. */
+internal fun Project.configureBinaryCompatibilityApiValidation() {
     val projectName = name
     pluginManager.withPlugin("binary-compatibility-validator") {
         pluginManager.withPlugin("com.android.library") {
