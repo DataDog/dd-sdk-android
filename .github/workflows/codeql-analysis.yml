@@ -51,9 +51,9 @@ jobs:
       with:
         cache-provider: basic
 
-    # Manually build the java bytecode
+    # CodeQL must observe compilation; restoring task outputs from cache skips extraction.
     - name: Execute Gradle build
-      run: ./gradlew assembleLibrariesRelease
+      run: ./gradlew assembleLibrariesRelease --no-build-cache --rerun-tasks --no-daemon
 
     # Perform the analysis
     - name: Perform CodeQL Analysis
