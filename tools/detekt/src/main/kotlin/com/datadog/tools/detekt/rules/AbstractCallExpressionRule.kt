@@ -13,7 +13,7 @@ import dev.detekt.api.RequiresAnalysisApi
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.analysis.api.resolution.KaFunctionCall
-import org.jetbrains.kotlin.analysis.api.resolution.KaSimpleFunctionCall
+import org.jetbrains.kotlin.analysis.api.resolution.KaImplicitInvokeCall
 import org.jetbrains.kotlin.analysis.api.resolution.successfulFunctionCallOrNull
 import org.jetbrains.kotlin.analysis.api.signatures.KaVariableSignature
 import org.jetbrains.kotlin.analysis.api.symbols.KaConstructorSymbol
@@ -86,9 +86,9 @@ abstract class AbstractCallExpressionRule(
         val returnType = fqTypeName(expressionType, treatGenericAsSuper, includeTypeArguments)
 
         // Calling a value with a function type (e.g. `callback()`) is an implicit call to its `invoke` function
-        val isImplicitInvoke = (call as? KaSimpleFunctionCall)?.isImplicitInvoke == true
+        val isImplicitInvoke = call is KaImplicitInvokeCall
         val receiverType = if (isImplicitInvoke) {
-            call.partiallyAppliedSymbol.dispatchReceiver?.type
+            call.dispatchReceiver?.type
                 ?.let {
                     fqTypeName(
                         it.lowerBoundIfFlexible().withNullability(false),
@@ -100,7 +100,7 @@ abstract class AbstractCallExpressionRule(
             receiverTypeName(expression, call, treatGenericAsSuper, includeTypeArguments)
         }
 
-        val symbol = call.partiallyAppliedSymbol.signature.symbol
+        val symbol = call.signature.symbol
         // Calls to a typealias constructor (e.g. `HashMap()`) are reported as functions in the typealias' package
         val typeAlias = (expressionType as? KaClassType)?.abbreviation
         val containingPackage = if (symbol is KaConstructorSymbol) {
@@ -133,7 +133,7 @@ abstract class AbstractCallExpressionRule(
         call: KaFunctionCall<*>,
         containerFqName: String
     ): List<String> {
-        return call.partiallyAppliedSymbol.signature.valueParameters
+        return call.signature.valueParameters
             .map { parameterType(it, containerFqName) }
     }
 

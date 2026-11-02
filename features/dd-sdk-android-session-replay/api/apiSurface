@@ -454,7 +454,6 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
       fun fromJson(kotlin.String): Alignment
       fun fromJsonObject(com.google.gson.JsonObject): Alignment
   enum Source
-    constructor(kotlin.String)
     - ANDROID
     - IOS
     - FLUTTER
@@ -466,7 +465,6 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): Source
   enum PointerEventType
-    constructor(kotlin.String)
     - DOWN
     - UP
     - MOVE
@@ -474,7 +472,6 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): PointerEventType
   enum PointerType
-    constructor(kotlin.String)
     - MOUSE
     - TOUCH
     - PEN
@@ -482,7 +479,6 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): PointerType
   enum TruncationMode
-    constructor(kotlin.String)
     - CLIP
     - HEAD
     - TAIL
@@ -491,7 +487,6 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): TruncationMode
   enum Horizontal
-    constructor(kotlin.String)
     - LEFT
     - RIGHT
     - CENTER
@@ -499,7 +494,6 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): Horizontal
   enum Vertical
-    constructor(kotlin.String)
     - TOP
     - BOTTOM
     - CENTER

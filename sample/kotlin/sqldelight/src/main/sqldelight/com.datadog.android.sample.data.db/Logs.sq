@@ -12,6 +12,4 @@ purgeLogs:
 DELETE FROM logs WHERE logs.ttl < ?;
 
 insertLog:
-INSERT INTO logs (_id, message, timestamp, ttl) VALUES (?,?,?,?)
-ON CONFLICT(_id) DO
-UPDATE SET message=excluded.message,timestamp=excluded.timestamp,ttl=excluded.ttl;
+INSERT OR REPLACE INTO logs (_id, message, timestamp, ttl) VALUES (?,?,?,?);
