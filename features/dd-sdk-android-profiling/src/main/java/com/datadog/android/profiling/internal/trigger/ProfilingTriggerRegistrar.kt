@@ -14,6 +14,11 @@ internal interface ProfilingTriggerRegistrar {
     var internalLogger: InternalLogger?
 
     /**
+     * Whether the out of memory trigger is currently registered with the system.
+     */
+    val isOomTriggerRegistered: Boolean
+
+    /**
      * Sets which trigger types (ANR, out of memory) should be registered.
      * Trigger types not supported by the device API level are ignored.
      */

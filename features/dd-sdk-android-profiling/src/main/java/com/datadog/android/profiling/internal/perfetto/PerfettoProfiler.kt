@@ -105,10 +105,8 @@ internal class PerfettoProfiler(
     @Volatile
     private var profilingSamplingRateHz: Int = PROFILING_SAMPLING_RATE_APP_LAUNCH
 
-    // TODO RUM-18151: also gate on triggerRegistrar.isRegistered so this reflects whether the
-    // registration is currently active, not just whether the platform supports it.
-    override val isOomTriggerActive: Boolean
-        get() = buildSdkVersionProvider.isAtLeastCinnamonBun
+    override val isOomTriggerRegistered: Boolean
+        get() = triggerRegistrar.isOomTriggerRegistered
 
     @Volatile
     override var internalLogger: InternalLogger? = null
@@ -284,12 +282,18 @@ internal class PerfettoProfiler(
 
     override fun setTriggersEnabled(appContext: Context, enabled: Boolean) {
         synchronized(this) {
+            val wasOomTriggerRegistered = triggerRegistrar.isOomTriggerRegistered
             if (buildSdkVersionProvider.isAtLeastBaklava) {
                 if (enabled) {
                     triggerRegistrar.register(appContext, triggerListener)
                 } else {
                     triggerRegistrar.unregister(appContext)
                 }
+            }
+            val isOomTriggerRegistered = triggerRegistrar.isOomTriggerRegistered
+            // Notified under the lock so that consecutive changes are delivered in order.
+            if (isOomTriggerRegistered != wasOomTriggerRegistered) {
+                callback?.onOomTriggerRegisteredChanged(isOomTriggerRegistered)
             }
         }
     }

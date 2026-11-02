@@ -19,6 +19,13 @@ internal fun DatadogContext.isProfilerRunning(): Boolean =
         ?.get(FeatureContextKeys.PROFILER_IS_RUNNING) == true
 
 /**
+ * Whether the OOM system trigger is registered, as published by the profiling feature.
+ */
+internal fun DatadogContext.isProfilingOomTriggerRegistered(): Boolean =
+    featuresContext[Feature.PROFILING_FEATURE_NAME]
+        ?.get(FeatureContextKeys.PROFILING_OOM_TRIGGER_REGISTERED) == true
+
+/**
  * Returns the profiling quota-denied reason only when it applies to [currentSessionId].
  *
  * The profiling feature stamps each quota decision with the session id it was made for. A reason

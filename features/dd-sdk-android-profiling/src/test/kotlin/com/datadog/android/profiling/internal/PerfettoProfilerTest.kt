@@ -43,6 +43,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -445,6 +447,18 @@ internal class PerfettoProfilerTest {
 
         // Then
         assertThat(testedProfiler.isRunning()).isFalse
+    }
+
+    @Test
+    fun `M reflect the OOM trigger registration W isOomTriggerRegistered`(@BoolForgery fakeRegistered: Boolean) {
+        // Given
+        whenever(mockRegistrar.isOomTriggerRegistered) doReturn fakeRegistered
+
+        // When
+        val isOomTriggerRegistered = testedProfiler.isOomTriggerRegistered
+
+        // Then
+        assertThat(isOomTriggerRegistered).isEqualTo(fakeRegistered)
     }
 
     @Test
@@ -1160,6 +1174,44 @@ internal class PerfettoProfilerTest {
 
         // Then
         verify(mockRegistrar).unregister(mockContext)
+    }
+
+    @Test
+    fun `M notify OOM trigger registered W setTriggersEnabled {enabled=true, registration succeeds}`() {
+        // Given
+        whenever(mockRegistrar.isOomTriggerRegistered).doReturn(false, true)
+
+        // When
+        testedProfiler.setTriggersEnabled(mockContext, true)
+
+        // Then
+        verify(mockProfilerCallback).onOomTriggerRegisteredChanged(true)
+    }
+
+    @Test
+    fun `M notify OOM trigger not registered W setTriggersEnabled {enabled=false, was registered}`() {
+        // Given
+        whenever(mockRegistrar.isOomTriggerRegistered).doReturn(true, false)
+
+        // When
+        testedProfiler.setTriggersEnabled(mockContext, false)
+
+        // Then
+        verify(mockProfilerCallback).onOomTriggerRegisteredChanged(false)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M not notify W setTriggersEnabled {OOM trigger registration unchanged}`(isRegistered: Boolean) {
+        // Given
+        whenever(mockRegistrar.isOomTriggerRegistered) doReturn isRegistered
+
+        // When
+        testedProfiler.setTriggersEnabled(mockContext, true)
+        testedProfiler.setTriggersEnabled(mockContext, false)
+
+        // Then
+        verify(mockProfilerCallback, never()).onOomTriggerRegisteredChanged(any())
     }
 
     @Test

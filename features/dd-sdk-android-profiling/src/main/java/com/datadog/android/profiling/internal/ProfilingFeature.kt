@@ -245,7 +245,7 @@ internal class ProfilingFeature(
             is ProfilerEvent.RumOomErrorEvent -> {
                 // No trigger result can arrive to match this event while the OOM trigger is
                 // inactive: persisting it would leave it stranded until it expires.
-                if (profiler.isOomTriggerActive) {
+                if (profiler.isOomTriggerRegistered) {
                     pendingTriggerProfiles.setRumGatingEvent(event)
                 }
             }
@@ -284,6 +284,12 @@ internal class ProfilingFeature(
     override fun onAnrDetected(event: ProfilingAnrDetectedEvent, result: PerfettoResult) {
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(event)
         pendingTriggerProfiles.setProfilingResult(result)
+    }
+
+    override fun onOomTriggerRegisteredChanged(isRegistered: Boolean) {
+        sdkCore.updateFeatureContext(Feature.PROFILING_FEATURE_NAME) { context ->
+            context[FeatureContextKeys.PROFILING_OOM_TRIGGER_REGISTERED] = isRegistered
+        }
     }
 
     override fun onOutOfMemoryDetected(result: PerfettoResult) {
