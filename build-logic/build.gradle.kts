@@ -20,6 +20,7 @@ dependencies {
     compileOnly(libs.dokkaGradlePlugin)
     compileOnly(libs.detektGradlePlugin)
     compileOnly(libs.ktlintGradlePlugin)
+    compileOnly(libs.binaryCompatibilityValidator)
 
     // Kotlin PSI, used by the API surface generator to parse sources. Kept off the plugin runtime
     // classpath on purpose: KGP warns (and misbehaves) when a second `kotlin-compiler-embeddable`
@@ -83,23 +84,9 @@ ktlint {
     }
 }
 
-tasks {
-    val copyTestRes = register<Copy>("copyTestRes") {
-        from("$projectDir/src/test/kotlin/com/example/model")
-        into("$projectDir/src/test/resources/output")
-    }
-
-    val deleteTestRes = register<Delete>("deleteTestRes") {
-        delete("$projectDir/src/test/resources/output/")
-    }
-
-    named("processTestResources") {
-        dependsOn(copyTestRes)
-    }
-
-    named("test") {
-        dependsOn(copyTestRes)
-        finalizedBy(deleteTestRes)
+tasks.named<Copy>("processTestResources") {
+    from(layout.projectDirectory.dir("src/test/kotlin/com/example/model")) {
+        into("output")
     }
 }
 

@@ -6,6 +6,8 @@
 
 package com.datadog.gradle.plugin.apisurface
 
+import org.jetbrains.kotlin.CoreEnvironmentDeprecation
+import org.jetbrains.kotlin.cli.create
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
@@ -49,6 +51,7 @@ import java.io.File
  * Note that types are rendered the way they are written in the source, with only the file's
  * own import list applied — no symbol resolution happens, and none is wanted: the surface
  * file records the API as it is declared.
+ * Enum constructors are excluded because they are private even without an explicit modifier.
  */
 class KotlinFileVisitor {
 
@@ -150,6 +153,7 @@ class KotlinFileVisitor {
     }
 
     private fun visitPrimaryConstructor(constructor: KtPrimaryConstructor, level: Int) {
+        if (constructor.getContainingClassOrObject().isEnum()) return
         if (constructor.isInternal() || constructor.isPrivate()) return
 
         description.append(INDENT.repeat(level))
@@ -159,6 +163,7 @@ class KotlinFileVisitor {
     }
 
     private fun visitSecondaryConstructor(constructor: KtSecondaryConstructor, level: Int) {
+        if (constructor.getContainingClassOrObject().isEnum()) return
         if (constructor.isInternal() || constructor.isPrivate()) return
 
         description.append(INDENT.repeat(level))
@@ -486,10 +491,13 @@ class KotlinFileVisitor {
          * singleton, so it is built once and kept for the life of the JVM. It holds no
          * per-file state: every parsed file becomes garbage as soon as we are done with it.
          */
+        // Kotlin marks this environment factory as deprecated compiler infrastructure.
+        // We only use its project to initialize PSI parsing; no semantic analysis is performed.
+        @OptIn(CoreEnvironmentDeprecation::class)
         private val PSI_FACTORY: KtPsiFactory by lazy {
             val environment = KotlinCoreEnvironment.createForProduction(
                 Disposer.newDisposable("KotlinFileVisitor"),
-                CompilerConfiguration(),
+                CompilerConfiguration.create(),
                 EnvironmentConfigFiles.JVM_CONFIG_FILES
             )
             KtPsiFactory(environment.project, markGenerated = false)

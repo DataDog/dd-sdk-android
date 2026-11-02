@@ -11,18 +11,15 @@ import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
+    // Apply ktlint before AGP: built-in Kotlin otherwise causes duplicate ktlint tasks.
+    id("ktlint")
+
     // Build
     id("com.android.application")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    kotlin("android")
     id("datadogBuildConfig")
     alias(libs.plugins.datadogGradlePlugin)
 }
 
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.tv.sample"
     compileSdk = AndroidConfig.TARGET_SDK
@@ -55,13 +52,13 @@ android {
     }
 
     sourceSets.named("main") {
-        java.srcDir("src/main/kotlin")
+        java.directories += "src/main/kotlin"
     }
     sourceSets.named("test") {
-        java.srcDir("src/test/kotlin")
+        java.directories += "src/test/kotlin"
     }
     sourceSets.named("androidTest") {
-        java.srcDir("src/androidTest/kotlin")
+        java.directories += "src/androidTest/kotlin"
     }
 }
 

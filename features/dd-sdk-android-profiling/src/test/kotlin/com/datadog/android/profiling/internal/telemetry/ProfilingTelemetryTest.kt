@@ -96,11 +96,9 @@ internal class ProfilingTelemetryTest {
                 ProfilingTelemetry.KEY_APP_START_INFO to null,
                 ProfilingTelemetry.KEY_NO_STACK_SAMPLES to fakeHasNoStackSamples
             ),
-            ProfilingTelemetry.KEY_PROFILING_CONFIG to mapOf(
-                // toInt here is needed because otherwise compiler may treat them as Long, in this case verify -> eq
-                // below may fail since 5120 != 5120L
-                ProfilingTelemetry.KEY_BUFFER_SIZE to 5120.toInt(),
-                ProfilingTelemetry.KEY_SAMPLING_FREQUENCY to 201.toInt(),
+            ProfilingTelemetry.KEY_PROFILING_CONFIG to mapOf<String, Any>(
+                ProfilingTelemetry.KEY_BUFFER_SIZE to 5120,
+                ProfilingTelemetry.KEY_SAMPLING_FREQUENCY to 201,
                 ProfilingTelemetry.KEY_PROFILING_PACKAGE_VERSION_CODE to fakeProfilingPackageVersionCode
             )
         )
