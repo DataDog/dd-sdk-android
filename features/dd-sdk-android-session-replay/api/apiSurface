@@ -88,6 +88,17 @@ class com.datadog.android.sessionreplay._SessionReplayInternalProxy
 class com.datadog.android.sessionreplay.internal.TouchPrivacyManager
   constructor(com.datadog.android.sessionreplay.TouchPrivacy)
   fun addTouchOverrideArea(android.graphics.Rect, com.datadog.android.sessionreplay.TouchPrivacy)
+interface com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposer
+  fun canDecompose(android.view.View): Boolean
+  fun decompose(android.view.View, CompositionHostDecomposeRequest): CompositionHostDecomposeResult?
+class com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposeRequest
+  constructor(com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, Float, com.datadog.android.internal.sessionreplay.composition.CapturedBounds?, (android.view.View, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity) -> CompositionNativeSubtree?)
+class com.datadog.android.sessionreplay.internal.composition.CompositionNativeSubtree
+  constructor(com.datadog.android.internal.sessionreplay.composition.CapturedLayer, List<com.datadog.android.internal.sessionreplay.composition.CapturedLayer>, List<com.datadog.android.internal.sessionreplay.composition.CapturedWireframe>)
+class com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposeResult
+  constructor(List<com.datadog.android.internal.sessionreplay.composition.CapturedChild>, List<com.datadog.android.internal.sessionreplay.composition.CapturedLayer>, List<com.datadog.android.internal.sessionreplay.composition.CapturedWireframe>)
+interface com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposerProvider : com.datadog.android.sessionreplay.ExtensionSupport
+  fun getCompositionHostDecomposer(): CompositionHostDecomposer?
 interface com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
   fun obfuscate(String): String
   companion object 

@@ -31,6 +31,7 @@ internal fun SessionReplayConfiguration.applyRemoteConfiguration(
         touchPrivacy = sr.touchPrivacy?.toSdkPrivacy() ?: touchPrivacy
     ).also {
         it.adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled
+        it.compositionHostDecomposer = compositionHostDecomposer
     }
 }
 

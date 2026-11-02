@@ -40,6 +40,7 @@ class SessionReplayConfigurationForgeryFactory : ForgeryFactory<SessionReplayCon
             compositionTreeRecordingEnabled = forge.aBool()
         ).also {
             it.adaptiveCaptureSchedulingEnabled = forge.aBool()
+            it.compositionHostDecomposer = forge.aNullable { mock() }
         }
     }
 }

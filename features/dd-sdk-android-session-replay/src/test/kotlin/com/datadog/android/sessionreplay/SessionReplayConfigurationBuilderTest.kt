@@ -10,10 +10,13 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.DUPLICATE_COMPOSITION_HOST_DECOMPOSER_DETECTED
 import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.DUPLICATE_EXTENSION_DETECTED
 import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.DUPLICATE_MAPPER_DETECTED
 import com.datadog.android.sessionreplay.SessionReplayConfiguration.Builder.Companion.SAMPLE_IN_ALL_SESSIONS
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposer
+import com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposerProvider
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -25,6 +28,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -35,6 +39,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
@@ -80,6 +86,7 @@ internal class SessionReplayConfigurationBuilderTest {
         assertThat(sessionReplayConfiguration.adaptiveCaptureSchedulingEnabled).isFalse()
         assertThat(sessionReplayConfiguration.heatmapsEnabled).isFalse()
         assertThat(sessionReplayConfiguration.compositionTreeRecordingEnabled).isFalse()
+        assertThat(sessionReplayConfiguration.compositionHostDecomposer).isNull()
     }
 
     @Test
@@ -443,6 +450,93 @@ internal class SessionReplayConfigurationBuilderTest {
             target = InternalLogger.Target.MAINTAINER,
             level = InternalLogger.Level.WARN,
             message = expected
+        )
+    }
+
+    @Test
+    fun `M skip composition hook W build() { legacy pipeline }`(
+        @Mock mockExtension: CompositionHostDecomposerProvider
+    ) {
+        // Given
+        testedBuilder.addExtensionSupport(mockExtension)
+
+        // When
+        val config = assertDoesNotThrow<SessionReplayConfiguration> { testedBuilder.build() }
+
+        // Then
+        assertThat(config.compositionHostDecomposer).isNull()
+        verify(mockExtension, never()).getCompositionHostDecomposer()
+    }
+
+    @Test
+    @OptIn(ExperimentalSessionReplayApi::class)
+    fun `M use it W addExtensionSupport() and build() { composition host decomposer }`(
+        @Mock mockExtension: CompositionHostDecomposerProvider,
+        @Mock mockDecomposer: CompositionHostDecomposer
+    ) {
+        // Given
+        testedBuilder.setCompositionTreeRecordingEnabled(true)
+        whenever(mockExtension.getCompositionHostDecomposer()).thenReturn(mockDecomposer)
+
+        // When
+        testedBuilder.addExtensionSupport(mockExtension)
+        val config = testedBuilder.build()
+
+        // Then
+        assertThat(config.compositionHostDecomposer).isSameAs(mockDecomposer)
+    }
+
+    @Test
+    @OptIn(ExperimentalSessionReplayApi::class)
+    fun `M take first value W addExtensionSupport() and build() { duplicate composition host decomposers }`(
+        @Mock mockFirstExtension: CompositionHostDecomposerProvider,
+        @Mock mockSecondExtension: CompositionHostDecomposerProvider,
+        @Mock mockFirstDecomposer: CompositionHostDecomposer,
+        @Mock mockSecondDecomposer: CompositionHostDecomposer
+    ) {
+        // Given
+        testedBuilder.setCompositionTreeRecordingEnabled(true)
+        whenever(mockFirstExtension.name()).thenReturn("firstExtension")
+        whenever(mockSecondExtension.name()).thenReturn("secondExtension")
+        whenever(mockFirstExtension.getCompositionHostDecomposer()).thenReturn(mockFirstDecomposer)
+        whenever(mockSecondExtension.getCompositionHostDecomposer()).thenReturn(mockSecondDecomposer)
+
+        // When
+        testedBuilder.addExtensionSupport(mockFirstExtension)
+        testedBuilder.addExtensionSupport(mockSecondExtension)
+        val config = testedBuilder.build()
+
+        // Then
+        assertThat(config.compositionHostDecomposer).isSameAs(mockFirstDecomposer)
+    }
+
+    @Test
+    @OptIn(ExperimentalSessionReplayApi::class)
+    fun `M warn W addExtensionSupport() and build() { duplicate composition host decomposers }`(
+        @Mock mockFirstExtension: CompositionHostDecomposerProvider,
+        @Mock mockSecondExtension: CompositionHostDecomposerProvider,
+        @Mock mockFirstDecomposer: CompositionHostDecomposer,
+        @Mock mockSecondDecomposer: CompositionHostDecomposer,
+        @Mock mockLogger: InternalLogger
+    ) {
+        // Given
+        testedBuilder = SessionReplayConfiguration.Builder(100f, mockLogger)
+        testedBuilder.setCompositionTreeRecordingEnabled(true)
+        whenever(mockFirstExtension.name()).thenReturn("firstExtension")
+        whenever(mockSecondExtension.name()).thenReturn("secondExtension")
+        whenever(mockFirstExtension.getCompositionHostDecomposer()).thenReturn(mockFirstDecomposer)
+        whenever(mockSecondExtension.getCompositionHostDecomposer()).thenReturn(mockSecondDecomposer)
+
+        // When
+        testedBuilder.addExtensionSupport(mockFirstExtension)
+        testedBuilder.addExtensionSupport(mockSecondExtension)
+        testedBuilder.build()
+
+        // Then
+        mockLogger.verifyLog(
+            target = InternalLogger.Target.MAINTAINER,
+            level = InternalLogger.Level.WARN,
+            message = DUPLICATE_COMPOSITION_HOST_DECOMPOSER_DETECTED
         )
     }
 

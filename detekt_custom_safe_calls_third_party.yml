@@ -743,6 +743,7 @@ datadog:
       - "kotlin.collections.MutableSet.firstOrNull()"
       - "kotlin.collections.MutableSet.firstOrNull(kotlin.Function1)"
       - "kotlin.collections.MutableSet.flatMap(kotlin.Function1)"
+      - "kotlin.collections.MutableSet.mapNotNull(kotlin.Function1)"
       - "kotlin.collections.MutableSet.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableSet.elementAtOrNull(kotlin.Int)"
       - "kotlin.collections.MutableSet.indexOf(kotlin.String)"

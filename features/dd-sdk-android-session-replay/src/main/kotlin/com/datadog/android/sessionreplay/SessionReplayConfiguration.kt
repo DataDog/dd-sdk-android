@@ -9,6 +9,8 @@ package com.datadog.android.sessionreplay
 import android.view.View
 import androidx.annotation.FloatRange
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposer
+import com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposerProvider
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -36,9 +38,10 @@ data class SessionReplayConfiguration internal constructor(
     internal val compositionTreeRecordingEnabled: Boolean
 ) {
 
-    // Keep this internal option out of the constructor to preserve the generated copy API.
-    // Generated copy() does not carry this property; SDK configuration copies must preserve it explicitly.
+    // Keep SDK-internal options out of the constructor to preserve the generated copy API.
+    // Generated copy() does not carry these properties; SDK configuration copies must preserve them explicitly.
     internal var adaptiveCaptureSchedulingEnabled: Boolean = false
+    internal var compositionHostDecomposer: CompositionHostDecomposer? = null
 
     /**
      * A Builder class for a [SessionReplayConfiguration].
@@ -305,6 +308,7 @@ data class SessionReplayConfiguration internal constructor(
                 compositionTreeRecordingEnabled = compositionTreeRecordingEnabled
             ).also {
                 it.adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled
+                it.compositionHostDecomposer = compositionHostDecomposer()
             }
         }
 
@@ -330,11 +334,29 @@ data class SessionReplayConfiguration internal constructor(
         private fun optionsSelectorDetectors(): List<OptionSelectorDetector> =
             extensionSupportSet.flatMap { it.getOptionSelectorDetectors() }.toList()
 
+        private fun compositionHostDecomposer(): CompositionHostDecomposer? {
+            if (!compositionTreeRecordingEnabled) return null
+
+            val decomposers = extensionSupportSet.mapNotNull {
+                (it as? CompositionHostDecomposerProvider)?.getCompositionHostDecomposer()
+            }
+            if (decomposers.size > 1) {
+                logger.log(
+                    target = InternalLogger.Target.MAINTAINER,
+                    level = InternalLogger.Level.WARN,
+                    messageBuilder = { DUPLICATE_COMPOSITION_HOST_DECOMPOSER_DETECTED }
+                )
+            }
+            return decomposers.firstOrNull()
+        }
+
         internal companion object {
             internal const val SAMPLE_IN_ALL_SESSIONS = 100.0f
             internal const val DUPLICATE_EXTENSION_DETECTED =
                 "Attempting to add support twice for the same extension %s. The duplicate will be ignored."
             internal const val DUPLICATE_MAPPER_DETECTED = "Duplicate mapper for %s. The duplicate will be ignored."
+            internal const val DUPLICATE_COMPOSITION_HOST_DECOMPOSER_DETECTED =
+                "Multiple extensions provide a CompositionHostDecomposer. Only the first one will be used."
         }
     }
 }
