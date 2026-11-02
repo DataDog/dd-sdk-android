@@ -469,7 +469,7 @@ interface FlagsClient {
             }
             val flagsRepository = signing?.let {
                 SigningFlagsRepository(
-                    { scope -> ordinaryRepository("$name-signing-v3-observe-$scope") },
+                    { scope -> ordinaryRepository("$name-signing-v1-observe-$scope") },
                     it,
                     deliverFirstFlags
                 )

@@ -62,8 +62,14 @@ The `FlagsConfiguration.Builder` supports the following options:
 
 #### Response signing (experimental draft)
 
+The first public response-signing protocol is v1. The SDK advertises
+`response-signing-v1`, sends signature version `1`, and verifies the
+`datadog.feature-flags.precomputed-assignments.v1` transcript. Earlier POC v1/v2
+and draft v3 labels are not supported public versions; public v1 rejects their proofs.
+X.509 v3 certificate encoding is unchanged.
+
 Response signing is disabled by default. During a browser-first pilot, Android can
-observe the same v3 response proofs with an explicitly provisioned public trust anchor:
+observe the same public v1 response proofs with an explicitly provisioned public trust anchor:
 
 ```kotlin
 val flagsConfig = FlagsConfiguration.Builder()

@@ -24,7 +24,7 @@ internal fun signingCheck(condition: Boolean) {
 }
 
 @Suppress("ThrowingInternalException") // Every signing entrypoint catches this bounded validation failure.
-internal fun signingFailure(): Nothing = throw IllegalArgumentException("Invalid response signing v3 input")
+internal fun signingFailure(): Nothing = throw IllegalArgumentException("Invalid response signing v1 input")
 
 internal fun ByteArray.signingBytes(): ByteString = try {
     toByteString()

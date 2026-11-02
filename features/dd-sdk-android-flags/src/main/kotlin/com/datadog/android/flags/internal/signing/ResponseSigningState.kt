@@ -74,7 +74,7 @@ internal class ResponseSigningState(
         capabilities.add(ResponseSigningVerifier.CAPABILITY)
         val request = original.newBuilder()
             .header("x-dd-feature-flags-capabilities", capabilities.sorted().joinToString(","))
-            .header(ResponseSigningVerifier.PREFIX + "signature-version", "3")
+            .header(ResponseSigningVerifier.PREFIX + "signature-version", "1")
             .header(ResponseSigningVerifier.PREFIX + "request-nonce", nonce.signingBytes().hex())
             .build()
         signingCheck(original.header("dd-application-id") == identity.applicationId)
@@ -104,7 +104,7 @@ internal class ResponseSigningState(
         logger.log(
             InternalLogger.Level.INFO,
             InternalLogger.Target.TELEMETRY,
-            { if (verified) "Flag response signing v3: verified" else "Flag response signing v3: unverified" },
+            { if (verified) "Flag response signing v1: verified" else "Flag response signing v1: unverified" },
             onlyOnce = true
         )
     }

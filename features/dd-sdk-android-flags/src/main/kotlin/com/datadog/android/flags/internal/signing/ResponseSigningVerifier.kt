@@ -38,7 +38,7 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
         now: Long
     ): VerifiedResponse {
         signingCheck(status == 200 && body.size <= MAX_RESPONSE_BYTES)
-        signingCheck(single(headers, PREFIX + "signature-version") == "3")
+        signingCheck(single(headers, PREFIX + "signature-version") == "1")
         val leafBytes = base64(single(headers, PREFIX + "signing-certificate"), 4096)
         val intermediateBytes = base64(single(headers, PREFIX + "signing-intermediate"), 4096)
         signingCheck(single(headers, PREFIX + "certificate-id") == leafBytes.signingBytes().sha256().hex())
@@ -150,7 +150,7 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
     companion object {
         const val PREFIX = "x-datadog-feature-flags-"
         private const val NONCE_HEADER = PREFIX + "request-nonce"
-        const val CAPABILITY = "response-signing-v3"
+        const val CAPABILITY = "response-signing-v1"
         const val MAX_RESPONSE_BYTES = 2 * 1024 * 1024
         private const val AUTHORITY_KEY_ID = "551d23"
         private const val SUBJECT_KEY_ID = "551d0e"
@@ -190,7 +190,7 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
                     request.method == "POST" && url.isHttps && url.username.isEmpty() && url.password.isEmpty() &&
                         url.fragment == null
                 )
-                signingCheck(single(request.headers, PREFIX + "signature-version") == "3")
+                signingCheck(single(request.headers, PREFIX + "signature-version") == "1")
                 signingCheck(nonce.matches(Regex("[0-9a-f]{32}")))
                 val capabilities = single(request.headers, "x-dd-feature-flags-capabilities")
                 signingCheck(CAPABILITY in capabilities.split(',').map { it.trim() })
@@ -202,7 +202,7 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
                 signingFailure()
             }
             signingCheck(!validateSigning || body.size <= MAX_REQUEST_BYTES)
-            val result = Buffer().writeUtf8("datadog.feature-flags.precomputed-assignments.v3").writeByte(0)
+            val result = Buffer().writeUtf8("datadog.feature-flags.precomputed-assignments.v1").writeByte(0)
             val host = if (url.host.contains(':')) "[${url.host}]" else url.host
             val authority = host + if (url.port == 443) "" else ":${url.port}"
             listOf(

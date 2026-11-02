@@ -22,7 +22,7 @@ internal class ResponseSigningVerifierTest {
     fun `M match frozen independent vectors W verify()`(): List<DynamicTest> {
         val corpus = resource("corpus.json")
         val cases = corpus.getAsJsonArray("cases")
-        check(cases.size() == 43)
+        check(cases.size() == 46)
         check(cases.count { it.asJsonObject["expected_accept"].asBoolean } == 6)
         return cases.map { entry ->
             val vector = entry.asJsonObject
@@ -76,6 +76,6 @@ internal class ResponseSigningVerifierTest {
     private fun bytes(value: String): ByteArray = checkNotNull(value.decodeBase64()).toByteArray()
 
     private fun resource(name: String): JsonObject = checkNotNull(javaClass.classLoader)
-        .getResourceAsStream("response-signing-v3/$name").let { checkNotNull(it) }
+        .getResourceAsStream("response-signing-v1/$name").let { checkNotNull(it) }
         .bufferedReader().use { JsonParser.parseReader(it).asJsonObject }
 }

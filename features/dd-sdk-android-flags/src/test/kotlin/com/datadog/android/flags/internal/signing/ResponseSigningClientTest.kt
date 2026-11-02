@@ -119,7 +119,7 @@ internal class ResponseSigningClientTest {
         assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
         assertThat(requests).hasSize(1)
         assertThat(requests.single().header(ResponseSigningVerifier.PREFIX + "signature-version"))
-            .isEqualTo(if (mode == ResponseSigningMode.OFF) null else "3")
+            .isEqualTo(if (mode == ResponseSigningMode.OFF) null else "1")
         if (mode == ResponseSigningMode.REQUIRED) verifyNoInteractions(mockStore)
     }
 
@@ -530,7 +530,7 @@ internal class ResponseSigningClientTest {
         val intermediate = bytes(credential["intermediate_der_base64"].asString)
         val output = ByteArrayOutputStream()
         val transcript = DataOutputStream(output)
-        transcript.write("datadog.feature-flags.precomputed-assignments.v3\u0000".toByteArray())
+        transcript.write("datadog.feature-flags.precomputed-assignments.v1\u0000".toByteArray())
         fun lp(bytes: ByteArray) { transcript.writeInt(bytes.size); transcript.write(bytes) }
         val url = request.url
         listOf(request.method, url.scheme, url.host, url.encodedPath, url.encodedQuery?.let { "?$it" } ?: "")
@@ -562,7 +562,7 @@ internal class ResponseSigningClientTest {
             initSign(key); update(output.toByteArray())
         }.sign()
         return Headers.Builder()
-            .add(ResponseSigningVerifier.PREFIX + "signature-version", "3")
+            .add(ResponseSigningVerifier.PREFIX + "signature-version", "1")
             .add(ResponseSigningVerifier.PREFIX + "signing-certificate", credential["certificate_der_base64"].asString)
             .add(
                 ResponseSigningVerifier.PREFIX + "signing-intermediate",
@@ -577,6 +577,6 @@ internal class ResponseSigningClientTest {
     private fun sha(bytes: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(bytes)
     private fun bytes(value: String): ByteArray = checkNotNull(value.decodeBase64()).toByteArray()
     private fun resource(): JsonObject = checkNotNull(javaClass.classLoader)
-        .getResourceAsStream("response-signing-v3/corpus.json").let { checkNotNull(it) }.bufferedReader()
+        .getResourceAsStream("response-signing-v1/corpus.json").let { checkNotNull(it) }.bufferedReader()
         .use { JsonParser.parseReader(it).asJsonObject }
 }
