@@ -7,24 +7,24 @@
 package com.datadog.benchmark.sample.utils.recycler
 
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.hannesdorfmann.adapterdelegates4.ListDelegationAdapter
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.distinctUntilChanged
 
-internal fun <T : BaseRecyclerViewItem, A : ListDelegationAdapter<List<T>>> trackRecyclerViewVisibleItems(
+internal fun <T : Any> trackRecyclerViewVisibleItems(
     recyclerView: RecyclerView,
     layoutManager: LinearLayoutManager,
-    adapter: A
+    adapter: ListAdapter<T, *>
 ): Flow<List<T>> {
     fun getVisibleItems(): List<T> {
         val firstVisibleItem = layoutManager.findFirstVisibleItemPosition()
         val lastVisibleItem = layoutManager.findLastVisibleItemPosition()
 
         val result = (firstVisibleItem..lastVisibleItem).mapNotNull { itemIndex ->
-            adapter.items?.getOrNull(itemIndex)
+            adapter.currentList.getOrNull(itemIndex)
         }
 
         return result
@@ -45,5 +45,5 @@ internal fun <T : BaseRecyclerViewItem, A : ListDelegationAdapter<List<T>>> trac
         awaitClose {
             recyclerView.removeOnScrollListener(scrollListener)
         }
-    }.distinctUntilChangedBy { items -> items.map { it.key } }
+    }.distinctUntilChanged()
 }

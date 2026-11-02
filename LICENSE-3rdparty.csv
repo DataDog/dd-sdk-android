@@ -67,7 +67,6 @@ import,com.google.android.gms,Apache-2.0,Copyright 2018 The Android Open Source 
 import,com.google.android.material,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,com.google.code.gson,Apache-2.0,Copyright 2008 Google Inc
 import,com.google.guava,Apache-2.0,Copyright 2009 The Guava Authors
-import,com.hannesdorfmann,Apache-2.0,Copyright (c) 2015 Hannes Dorfmann.
 import,com.jakewharton.timber,Apache-2.0,Copyright 2013 Jake Wharton
 import,com.launchdarkly,Apache-2.0,"Copyright 2016 Catamorphic, Co."
 import,com.lyft.kronos,Apache-2.0,Copyright (C) 2018 Lyft Inc.
