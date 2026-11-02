@@ -185,19 +185,20 @@ tasks.register("instrumentTestAll") {
 }
 
 tasks.register("listAllPublishedArtifactIds") {
+    val artifactIds = providers.provider {
+        rootProject.subprojects.flatMap { subproject ->
+            subproject.extensions
+                .findByType<PublishingExtension>()
+                ?.publications
+                ?.filterIsInstance<MavenPublication>()
+                ?.map { it.artifactId }
+                .orEmpty()
+        }
+    }
+
+    inputs.property("artifactIds", artifactIds)
+
     doLast {
-        val artifactIds = rootProject.subprojects.flatMap { subproject ->
-            val publishing = subproject.extensions.findByType<PublishingExtension>()
-            publishing?.publications?.mapNotNull { publication ->
-                if (publication is MavenPublication) {
-                    publication.artifactId
-                } else {
-                    null
-                }
-            }.orEmpty()
-        }
-        artifactIds.forEach {
-            println(it)
-        }
+        artifactIds.get().forEach { println(it) }
     }
 }
