@@ -34,10 +34,14 @@ internal class NodeFlattener(private val wireframeUtils: WireframeUtils = Wirefr
     }
 
     private fun filterOutInvalidWireframes(wireframes: List<MobileSegment.Wireframe>): List<MobileSegment.Wireframe> {
-        // The local list is complete before filtering, so its tail views remain valid.
-        return wireframes.filterIndexed { index, wireframe ->
+        // Resolve after clipping and keep this cache local to the pass: wireframe IDs are reused between snapshots.
+        val resolvedWireframes = wireframes.map { wireframeUtils.resolveWireframe(it) }
+        return resolvedWireframes.filterIndexed { index, wireframe ->
             wireframeUtils.checkWireframeIsValid(wireframe) &&
-                !wireframeUtils.checkWireframeIsCovered(wireframe, wireframes.subList(index + 1, wireframes.size))
-        }
+                !wireframeUtils.checkWireframeIsCovered(
+                    wireframe,
+                    resolvedWireframes.subList(index + 1, resolvedWireframes.size)
+                )
+        }.map { it.wireframe }
     }
 }
