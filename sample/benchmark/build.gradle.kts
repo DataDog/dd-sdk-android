@@ -90,7 +90,7 @@ dependencies {
     implementation(libs.kotlinRuntime)
 
     // Android dependencies
-    implementation(libs.adapterDelegatesViewBinding)
+    implementation(libs.androidXRecyclerView)
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
     implementation(libs.androidXConstraintLayout)
@@ -127,6 +127,7 @@ dependencies {
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.systemStubsJupiter)
     testImplementation(libs.ktorClientMock)
+    testImplementation(libs.coroutinesTest)
 }
 
 datadogBuild {
