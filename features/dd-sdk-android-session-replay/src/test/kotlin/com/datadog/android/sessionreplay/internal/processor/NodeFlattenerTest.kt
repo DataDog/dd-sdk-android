@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -165,6 +167,80 @@ internal class NodeFlattenerTest {
         assertThat(wireframes).containsExactly(fakeBottomWireframe, fakeHiddenEmbeddedContent)
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = [0, 1, 2, 1000])
+    fun `M keep disjoint wireframes in order W flattenNode() { tail boundaries }`(
+        wireframeCount: Int,
+        forge: Forge
+    ) {
+        // Given
+        val fakeWireframe = forge.anOpaqueWireframe()
+        val fakeWireframes = List(wireframeCount) { index ->
+            fakeWireframe.copy(
+                id = fakeWireframe.id + index,
+                x = fakeWireframe.x + index * fakeWireframe.width
+            )
+        }
+        val fakeNode = Node(wireframes = fakeWireframes)
+        testedNodeFlattener = NodeFlattener()
+
+        // When
+        val wireframes = testedNodeFlattener.flattenNode(fakeNode)
+
+        // Then
+        assertThat(wireframes).containsExactlyElementsOf(fakeWireframes)
+    }
+
+    @Test
+    fun `M only remove wireframes covered by later wireframes W flattenNode()`(forge: Forge) {
+        // Given
+        val fakeCoveredWireframe = forge.anOpaqueWireframe()
+        val fakeCoveringWireframe = fakeCoveredWireframe.copy(id = fakeCoveredWireframe.id + 1)
+        val fakeUncoveredWireframe = fakeCoveredWireframe.copy(
+            id = fakeCoveredWireframe.id + 2,
+            x = fakeCoveredWireframe.x + fakeCoveredWireframe.width
+        )
+        val fakeBackground = fakeCoveredWireframe.copy(
+            id = fakeCoveredWireframe.id + 3,
+            width = fakeCoveredWireframe.width * 2
+        )
+        val fakeNode = Node(
+            wireframes = listOf(fakeBackground),
+            children = listOf(
+                Node(wireframes = listOf(fakeCoveredWireframe, fakeCoveringWireframe)),
+                Node(wireframes = listOf(fakeUncoveredWireframe))
+            )
+        )
+        testedNodeFlattener = NodeFlattener()
+
+        // When
+        val wireframes = testedNodeFlattener.flattenNode(fakeNode)
+
+        // Then
+        assertThat(wireframes).containsExactly(fakeBackground, fakeCoveringWireframe, fakeUncoveredWireframe)
+    }
+
+    @Test
+    fun `M keep tail views valid W flattenNode() { source list changes during coverage }`(forge: Forge) {
+        // Given
+        val fakeCoveredWireframe = forge.anOpaqueWireframe()
+        val fakeCoveringWireframe = fakeCoveredWireframe.copy(id = fakeCoveredWireframe.id + 1)
+        val fakeSourceWireframes = mutableListOf(fakeCoveredWireframe, fakeCoveringWireframe)
+        val fakeNode = Node(wireframes = fakeSourceWireframes)
+        val realWireframeUtils = WireframeUtils()
+        whenever(mockWireframeUtils.checkWireframeIsCovered(any(), any())).thenAnswer { invocation ->
+            fakeSourceWireframes.clear()
+            realWireframeUtils.checkWireframeIsCovered(invocation.getArgument(0), invocation.getArgument(1))
+        }
+
+        // When
+        val wireframes = testedNodeFlattener.flattenNode(fakeNode)
+
+        // Then
+        assertThat(fakeSourceWireframes).isEmpty()
+        assertThat(wireframes).containsExactly(fakeCoveringWireframe)
+    }
+
     @Test
     fun `M not have ConcurrentModificationException W modifying nodes concurrently`(forge: Forge) {
         // Given
@@ -281,6 +357,20 @@ internal class NodeFlattenerTest {
     // endregion
 
     // region Internals
+
+    private fun Forge.anOpaqueWireframe(): MobileSegment.Wireframe.ShapeWireframe {
+        return getForgery<MobileSegment.Wireframe.ShapeWireframe>().copy(
+            x = aPositiveInt().toLong(),
+            y = aPositiveInt().toLong(),
+            width = aPositiveInt(strict = true).toLong(),
+            height = aPositiveInt(strict = true).toLong(),
+            clip = null,
+            shapeStyle = getForgery<MobileSegment.ShapeStyle>().copy(
+                backgroundColor = aStringMatching("#[0-9a-f]{6}ff"),
+                opacity = 1f
+            )
+        )
+    }
 
     private fun generateFlattenNodeFromList(list: List<MobileSegment.Wireframe>): Node {
         return Node(

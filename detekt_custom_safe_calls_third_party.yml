@@ -116,6 +116,7 @@ datadog:
       # endregion
       # region Java Collections
       - "java.util.ArrayList.add(com.datadog.android.rum.internal.timeseries.DataPoint)"
+      - "java.util.ArrayList.add(com.datadog.android.sessionreplay.model.MobileSegment.Wireframe)"
       - "java.util.ArrayList.clear()"
       - "java.util.ArrayList.forEach(kotlin.Function1)"
       - "java.util.ArrayList.toList()"
@@ -473,6 +474,7 @@ datadog:
       - "kotlin.collections.ArrayDeque.addLast(kotlin.Function0)"
       - "kotlin.collections.ArrayDeque.constructor()"
       - "kotlin.collections.ArrayDeque.removeFirstOrNull()"
+      - "kotlin.collections.ArrayList()"
       - "kotlin.collections.ArrayList(kotlin.Int)"
       - "kotlin.collections.ArrayList(kotlin.collections.MutableCollection?)"
       - "kotlin.collections.buildMap(kotlin.Function1)"

@@ -8,14 +8,13 @@ package com.datadog.android.sessionreplay.internal.processor
 
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.model.MobileSegment
-import java.util.LinkedList
 import java.util.Stack
 
 internal class NodeFlattener(private val wireframeUtils: WireframeUtils = WireframeUtils()) {
 
     internal fun flattenNode(root: Node): List<MobileSegment.Wireframe> {
         val stack = Stack<Node>()
-        val list = LinkedList<MobileSegment.Wireframe>()
+        val list = ArrayList<MobileSegment.Wireframe>()
         stack.push(root)
         while (stack.isNotEmpty()) {
             val node = stack.pop()
@@ -35,9 +34,10 @@ internal class NodeFlattener(private val wireframeUtils: WireframeUtils = Wirefr
     }
 
     private fun filterOutInvalidWireframes(wireframes: List<MobileSegment.Wireframe>): List<MobileSegment.Wireframe> {
+        // The local list is complete before filtering, so its tail views remain valid.
         return wireframes.filterIndexed { index, wireframe ->
             wireframeUtils.checkWireframeIsValid(wireframe) &&
-                !wireframeUtils.checkWireframeIsCovered(wireframe, wireframes.drop(index + 1))
+                !wireframeUtils.checkWireframeIsCovered(wireframe, wireframes.subList(index + 1, wireframes.size))
         }
     }
 }
