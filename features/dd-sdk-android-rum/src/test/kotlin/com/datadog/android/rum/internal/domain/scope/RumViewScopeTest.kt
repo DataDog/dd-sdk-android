@@ -9894,7 +9894,7 @@ internal class RumViewScopeTest {
                 eventTime = Time(
                     timestamp = fakeEventTime.timestamp,
                     nanoTime =
-                    fakeEventTime.nanoTime + fakeViewDurationNs
+                        fakeEventTime.nanoTime + fakeViewDurationNs
                 )
             ),
             fakeDatadogContext,
@@ -9914,7 +9914,7 @@ internal class RumViewScopeTest {
                 eventTime = Time(
                     timestamp = fakeEventTime.timestamp,
                     nanoTime =
-                    fakeEventTime.nanoTime + fakeViewDurationNs
+                        fakeEventTime.nanoTime + fakeViewDurationNs
                 )
             ),
             fakeDatadogContext,
@@ -10066,7 +10066,7 @@ internal class RumViewScopeTest {
             eventTime = Time(
                 timestamp = fakeEventTime.timestamp,
                 nanoTime =
-                fakeEventTime.nanoTime + expectedDuration
+                    fakeEventTime.nanoTime + expectedDuration
             )
         )
         testedScope = newRumViewScope()

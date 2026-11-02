@@ -149,12 +149,12 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(
                 firstPartyHostsWithHeaderTypes =
-                hosts.associateWith {
-                    setOf(
-                        TracingHeaderType.DATADOG,
-                        TracingHeaderType.TRACECONTEXT
-                    )
-                }
+                    hosts.associateWith {
+                        setOf(
+                            TracingHeaderType.DATADOG,
+                            TracingHeaderType.TRACECONTEXT
+                        )
+                    }
             )
         )
         assertThat(config.additionalConfig).isEmpty()
@@ -202,13 +202,13 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(
                 firstPartyHostsWithHeaderTypes =
-                hosts.associate {
-                    @Suppress("DEPRECATION")
-                    URL(it).host to setOf(
-                        TracingHeaderType.DATADOG,
-                        TracingHeaderType.TRACECONTEXT
-                    )
-                }
+                    hosts.associate {
+                        @Suppress("DEPRECATION")
+                        URL(it).host to setOf(
+                            TracingHeaderType.DATADOG,
+                            TracingHeaderType.TRACECONTEXT
+                        )
+                    }
             )
         )
         assertThat(config.crashReportsEnabled).isTrue

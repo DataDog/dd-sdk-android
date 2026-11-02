@@ -69,7 +69,7 @@ kspTesting = "0.12.1"
 # Tools
 detekt = "2.0.0-alpha.6"
 dokka = "2.2.0"
-ktlint = "1.5.0"
+ktlint = "1.8.0"
 ktlintGradlePlugin = "14.2.0"
 unmock = "0.11.0"
 robolectric = "4.4_r1-robolectric-r2"
