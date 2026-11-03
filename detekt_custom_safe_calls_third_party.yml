@@ -654,6 +654,7 @@ datadog:
       - "kotlin.collections.MutableList.isNullOrEmpty()"
       - "kotlin.collections.MutableList.iterator()"
       - "kotlin.collections.MutableList.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
+      - "kotlin.collections.MutableList.lastOrNull(kotlin.Function1)"
       - "kotlin.collections.MutableList.map(kotlin.Function1)"
       - "kotlin.collections.MutableList.mapNotNullTo(kotlin.collections.MutableSet, kotlin.Function1)"
       - "kotlin.collections.MutableList.none(kotlin.Function1)"

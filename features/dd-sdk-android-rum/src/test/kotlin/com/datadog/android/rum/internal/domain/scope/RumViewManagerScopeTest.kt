@@ -1039,23 +1039,69 @@ internal class RumViewManagerScopeTest {
     // endregion
 
     @Test
-    fun `M renew all the child scopes W renewViewScopes`(forge: Forge) {
+    fun `M keep only renewed active view W renewViewScopes() {stopped view with pending resource}`(
+        forge: Forge
+    ) {
         // Given
-        repeat(forge.aSmallInt()) {
-            testedScope.handleEvent(
-                forge.startViewEvent(fakeEventTime),
-                fakeDatadogContext,
-                mockEventWriteScope,
-                mockWriter
-            )
-        }
+        testedScope.handleEvent(
+            forge.startViewEvent(fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        testedScope.handleEvent(forge.startResourceEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            forge.startViewEvent(fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        assertThat(testedScope.childrenScopes).hasSize(2)
+        assertThat(testedScope.childrenScopes[0].isActive()).isFalse()
+        assertThat(testedScope.childrenScopes[1].isActive()).isTrue()
+        val activeView = testedScope.childrenScopes[1]
 
         // When
-        val oldScopes = testedScope.childrenScopes.toList()
         testedScope.renewViewScopes(fakeEventTime)
 
         // Then
-        assertThat(testedScope.childrenScopes).isNotEqualTo(oldScopes)
+        assertThat(testedScope.childrenScopes).hasSize(1)
+        val renewedView = testedScope.childrenScopes.single()
+        assertThat(renewedView.isActive()).isTrue()
+        assertThat(renewedView.key).isEqualTo(activeView.key)
+        assertThat(renewedView).isNotSameAs(activeView)
+    }
+
+    @Test
+    fun `M leave no child scope W renewViewScopes() {no active view}`(forge: Forge) {
+        // Given
+        testedScope.handleEvent(
+            forge.startViewEvent(fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        testedScope.handleEvent(forge.startResourceEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            forge.startViewEvent(fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        testedScope.handleEvent(
+            RumRawEvent.StopView(testedScope.childrenScopes.last().key, emptyMap(), fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        assertThat(testedScope.childrenScopes).isNotEmpty()
+        assertThat(testedScope.childrenScopes).noneMatch { it.isActive() }
+
+        // When
+        testedScope.renewViewScopes(fakeEventTime)
+
+        // Then
+        assertThat(testedScope.childrenScopes).isEmpty()
     }
 
     // region Active view
