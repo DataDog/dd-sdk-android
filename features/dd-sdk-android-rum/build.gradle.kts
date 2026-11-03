@@ -95,14 +95,6 @@ dependencies {
     // Test Fixtures
     testFixturesImplementation(testFixtures(project(":dd-sdk-android-core")))
     testFixturesImplementation(testFixtures(project(":dd-sdk-android-internal")))
-    testFixturesImplementation(project(":tools:unit")) {
-        attributes {
-            attribute(
-                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
-                objects.named("jvm")
-            )
-        }
-    }
     testFixturesImplementation(libs.kotlinRuntime)
     testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.okHttp)
