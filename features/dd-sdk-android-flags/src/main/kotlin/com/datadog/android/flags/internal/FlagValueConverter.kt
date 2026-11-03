@@ -53,7 +53,18 @@ internal object FlagValueConverter {
             val result: T? = when (targetType) {
                 Boolean::class -> variationValue.lowercase(Locale.US).toBooleanStrictOrNull() as? T
                 String::class -> variationValue as T
-                Int::class -> variationValue.toIntOrNull() as? T
+                Int::class -> {
+                    val number = variationValue.toBigDecimalOrNull()
+                    val integer = try {
+                        number?.intValueExact()
+                    } catch (_: ArithmeticException) {
+                        null
+                    }
+                    if (integer == null && number != null) {
+                        throw TypeMismatchException("Flag value cannot be represented as an Int")
+                    }
+                    integer as? T
+                }
                 Double::class -> variationValue.toDoubleOrNull() as? T
                 Map::class -> variationValue.toMap() as? T
                 JSONObject::class -> {
@@ -90,8 +101,7 @@ internal object FlagValueConverter {
         String::class -> variationType == VariationType.STRING.value
         Int::class -> variationType == VariationType.INTEGER.value || variationType == VariationType.NUMBER.value
         Double::class ->
-            variationType == VariationType.NUMBER.value || variationType == VariationType.FLOAT.value ||
-                variationType == VariationType.INTEGER.value
+            variationType == VariationType.NUMBER.value || variationType == VariationType.FLOAT.value
         JSONObject::class -> variationType == VariationType.OBJECT.value
         Map::class -> variationType == VariationType.OBJECT.value
         else -> {

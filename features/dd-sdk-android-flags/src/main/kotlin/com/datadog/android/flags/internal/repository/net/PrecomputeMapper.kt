@@ -14,6 +14,7 @@ import com.datadog.android.flags.internal.model.AssignmentsResponse
 import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.serialization.FlagsJson
+import com.datadog.android.flags.internal.serialization.UnsupportedVariationTypeException
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
@@ -41,7 +42,13 @@ internal class PrecomputeMapper(
             val flags = attributes.flags.additionalProperties
             if (obfuscation != null) FlagsJson.validateKeys(flags.keys.iterator())
             PrecomputedAssignments(
-                flags.mapValues { FlagsJson.readAssignment(FlagsJson.objectValue(it.value)) },
+                flags.mapNotNull { (key, value) ->
+                    try {
+                        key to FlagsJson.readAssignment(FlagsJson.objectValue(value))
+                    } catch (_: UnsupportedVariationTypeException) {
+                        null
+                    }
+                }.toMap(),
                 obfuscation
             )
         } else {
