@@ -270,6 +270,8 @@ val maxRetries = client.resolveIntValue("max-retry-count", 3)
 val discountPercentage = client.resolveDoubleValue("discount-rate", 0.0)
 ```
 
+Any numeric flag can be read with either method. `resolveIntValue` returns the value only when it is a whole number within `Int` range, such as `5` or `5.0`. Otherwise it returns the default value: `resolve()` reports `PARSE_ERROR` when the value can't be parsed, and `TYPE_MISMATCH` for a parsed value that is fractional or outside `Int` range, such as `1.2`.
+
 **Structured flags**
 ```kotlin
 val defaultConfig = JSONObject("""{"timeout": 30, "retries": 3}""")
