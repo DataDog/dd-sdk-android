@@ -58,6 +58,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedTruncation
 import com.datadog.android.internal.sessionreplay.composition.CapturedVerticalAlignment
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
+import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
@@ -1786,8 +1787,9 @@ private fun roundedRectPath(
 /**
  * `graphicsLayer`'s `colorFilter` is a public [ColorFilter], but at this module's compiled-against
  * Compose UI version it has no public subtypes or introspection of its own - this bridges to the
- * real platform [android.graphics.ColorFilter] instead, which *does* have a public, stable,
- * long-standing introspectable subtype ([android.graphics.ColorMatrixColorFilter.getColorMatrix]).
+ * real platform [android.graphics.ColorFilter] instead. Its
+ * [android.graphics.ColorMatrixColorFilter.getColorMatrix] accessor requires API 26; older devices
+ * skip color-matrix extraction.
  * A platform `BlendModeColorFilter`/`PorterDuffColorFilter` (tint) or
  * [android.graphics.LightingColorFilter] has no [CapturedModifier] equivalent and resolves to null.
  * Deliberately not unit-testable: `unitTests.isReturnDefaultValues = true` makes every real
@@ -1799,10 +1801,12 @@ private fun roundedRectPath(
  * is fully unit-tested on its own, with plain [FloatArray] inputs.
  */
 private fun platformColorMatrixValues(colorFilter: ColorFilter?): FloatArray? {
-    val platformFilter = colorFilter?.asAndroidColorFilter() as? AndroidColorMatrixColorFilter ?: return null
-    val matrix = AndroidColorMatrix()
-    platformFilter.getColorMatrix(matrix)
-    return matrix.getArray()
+    if (!BuildSdkVersionProvider.DEFAULT.isAtLeastO) return null
+    return (colorFilter?.asAndroidColorFilter() as? AndroidColorMatrixColorFilter)?.let { platformFilter ->
+        val matrix = AndroidColorMatrix()
+        platformFilter.getColorMatrix(matrix)
+        matrix.getArray()
+    }
 }
 
 private const val COLOR_MATRIX_SIZE = 20
