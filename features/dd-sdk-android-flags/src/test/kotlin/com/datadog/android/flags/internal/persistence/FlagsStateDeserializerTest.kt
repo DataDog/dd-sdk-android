@@ -12,6 +12,7 @@ import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -356,6 +357,33 @@ internal class FlagsStateDeserializerTest {
         assertThat(result.evaluationContext.attributes["valid_string"]).isEqualTo(validString)
         assertThat(result.evaluationContext.attributes["valid_number"]).isEqualTo(validNumber)
         assertThat(result.evaluationContext.attributes["valid_boolean"]).isEqualTo(validBoolean)
+    }
+
+    @Test
+    fun `M return no flag selection W deserialize() { state persisted without a flag selection }`(forge: Forge) {
+        // Given
+        val json = buildStateJson(forge.anAlphabeticalString(), JSONObject().put("flag1", buildFlagJson()))
+
+        // When
+        val result = testedDeserializer.deserialize(json)
+
+        // Then
+        checkNotNull(result)
+        assertThat(result.flagSelection).isNull()
+    }
+
+    @Test
+    fun `M return null W deserialize() { malformed flag selection }`(forge: Forge) {
+        // Given
+        val json = JSONObject(buildStateJson(forge.anAlphabeticalString(), JSONObject()))
+            .put("flagSelection", JSONObject().put("tags", JSONArray()))
+            .toString()
+
+        // When
+        val result = testedDeserializer.deserialize(json)
+
+        // Then
+        assertThat(result).isNull()
     }
 
     @ParameterizedTest
