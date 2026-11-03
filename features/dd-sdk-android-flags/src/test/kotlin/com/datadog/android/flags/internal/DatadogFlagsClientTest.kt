@@ -205,6 +205,7 @@ internal class DatadogFlagsClientTest {
                 featureSdkCore = mockFeatureSdkCore,
                 instanceName = fakeJsonKey,
                 dataStore = mock(),
+                flagSelection = null,
                 persistenceLoadTimeoutMs = 0
             )
         )
