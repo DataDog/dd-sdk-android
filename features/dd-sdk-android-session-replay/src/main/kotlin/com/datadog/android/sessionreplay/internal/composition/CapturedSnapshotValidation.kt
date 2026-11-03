@@ -106,7 +106,7 @@ internal class CapturedSnapshotValidation(
         if (layer.identity.scope != snapshot.scope) {
             failures += validationFailure(CaptureValidationErrorCode.WRONG_IDENTITY_SCOPE, layer.identity)
         }
-        if (layer.identity.kind != layer.kind.identityKind || layer.identity.wireframeKind != null) {
+        if (!layer.hasMatchingIdentityKind || layer.identity.wireframeKind != null) {
             failures += validationFailure(CaptureValidationErrorCode.IDENTITY_KIND_MISMATCH, layer.identity)
         }
         if (layer.bounds.width < 0 || layer.bounds.height < 0) {
@@ -438,6 +438,11 @@ internal class CapturedSnapshotValidation(
     private fun MutableMap<Long, Int>.increment(id: Long) {
         this[id] = (this[id] ?: 0) + 1
     }
+
+    // A Compose AndroidView handoff keeps its semantics-node identity while capturing native content.
+    private val CapturedLayer.hasMatchingIdentityKind: Boolean
+        get() = identity.kind == kind.identityKind ||
+            (kind == CapturedLayerKind.NATIVE_VIEW && identity.kind == CapturedIdentityKind.COMPOSE_NODE)
 
     private val CapturedLayerKind.identityKind: CapturedIdentityKind
         get() = when (this) {

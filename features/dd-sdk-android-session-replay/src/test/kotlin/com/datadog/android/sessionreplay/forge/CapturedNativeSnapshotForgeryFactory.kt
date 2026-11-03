@@ -42,7 +42,8 @@ internal class CapturedNativeWindowForgeryFactory : ForgeryFactory<CapturedNativ
         val children = forge.aList(size = forge.anInt(min = 1, max = 10)) {
             forge.getForgery<CapturedNativeView>().copy(
                 identity = factory.view(root.identity, forge.anAlphabeticalString()),
-                parentIndex = 0
+                parentIndex = 0,
+                kind = CapturedLayerKind.NATIVE_VIEW
             )
         }
         return CapturedNativeWindow(forge.aFloat(min = 0.75f, max = 4f), listOf(root) + children)
