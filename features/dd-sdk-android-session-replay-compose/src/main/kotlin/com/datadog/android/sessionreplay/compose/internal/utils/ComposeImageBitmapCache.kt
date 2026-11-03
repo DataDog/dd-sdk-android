@@ -38,7 +38,11 @@ internal class ComposeImageBitmapCache<K>(
     private val maxEntries = maxEntries.coerceAtLeast(1)
 
     @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Guard bitmap metadata and an owned weak map.
-    fun getOrCreate(source: Bitmap, key: K, create: () -> Bitmap?): Bitmap? {
+    fun getOrCreate(source: Bitmap, key: K, create: () -> Bitmap?): Bitmap? =
+        getOrCreate(source, key, shouldCache = { true }, create = create)
+
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Additional rendering state is checked after drawing.
+    fun getOrCreate(source: Bitmap, key: K, shouldCache: () -> Boolean, create: () -> Bitmap?): Bitmap? {
         if (source.isRecycled || source.width <= 0 || source.height <= 0) return null
         val state = stateOf(source)
         val cached = entries[source]
@@ -47,7 +51,8 @@ internal class ComposeImageBitmapCache<K>(
         }
         val pixels = create() ?: return null
         // An app can update source pixels from another thread. Do not memoize a copy across that change.
-        if (!source.isRecycled && stateOf(source) == state && !pixels.isRecycled) {
+        val sourceUnchanged = !source.isRecycled && stateOf(source) == state
+        if (sourceUnchanged && !pixels.isRecycled && shouldCache()) {
             entries.remove(source)
             if (entries.size >= maxEntries) {
                 val iterator = entries.keys.iterator()

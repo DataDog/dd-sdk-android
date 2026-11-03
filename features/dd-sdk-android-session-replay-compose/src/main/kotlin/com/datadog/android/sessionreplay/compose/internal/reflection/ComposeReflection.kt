@@ -14,6 +14,16 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier.isStatic
 
+internal class VectorPainterStateFields(
+    val vector: Field,
+    val dirty: Field,
+    val mirror: Field,
+    val intrinsic: Field,
+    val cachedTint: Field,
+    val viewport: Field,
+    val previousSize: Field
+)
+
 @Suppress("StringLiteralDuplication")
 internal object ComposeReflection {
     val LayoutNodeClass = getClassSafe("androidx.compose.ui.node.LayoutNode")
@@ -93,12 +103,39 @@ internal object ComposeReflection {
 
     val VectorPainterClass = getClassSafe("androidx.compose.ui.graphics.vector.VectorPainter")
     val VectorField = VectorPainterClass?.getDeclaredFieldSafe("vector")
+    val VectorAutoMirrorField = VectorPainterClass?.getDeclaredFieldSafe("autoMirror\$delegate", isCritical = false)
 
     val BitmapPainterClass = getClassSafe("androidx.compose.ui.graphics.painter.BitmapPainter")
     val ImageField = BitmapPainterClass?.getDeclaredFieldSafe("image")
 
     val VectorComponent = getClassSafe("androidx.compose.ui.graphics.vector.VectorComponent")
     val CacheDrawScopeField = VectorComponent?.getDeclaredFieldSafe("cacheDrawScope")
+    val VectorDirtyField = VectorComponent?.getDeclaredFieldSafe("isDirty", isCritical = false)
+    val VectorIntrinsicFilterField =
+        VectorComponent?.getDeclaredFieldSafe("intrinsicColorFilter\$delegate", isCritical = false)
+    val VectorCachedTintField = VectorComponent?.getDeclaredFieldSafe("tintFilter", isCritical = false)
+    val VectorViewportField = VectorComponent?.getDeclaredFieldSafe("viewportSize\$delegate", isCritical = false)
+    val VectorPreviousDrawSizeField = VectorComponent?.getDeclaredFieldSafe("previousDrawSize", isCritical = false)
+    val VectorStateFields = vectorPainterStateFields()
+
+    // This subclass is optional on older Compose versions; unknown filters keep the uncached path.
+    val BlendModeColorFilterClass =
+        getClassSafe("androidx.compose.ui.graphics.BlendModeColorFilter", isCritical = false)
+    val TintColorField = BlendModeColorFilterClass?.getDeclaredFieldSafe("color", isCritical = false)
+    val TintBlendModeField = BlendModeColorFilterClass?.getDeclaredFieldSafe("blendMode", isCritical = false)
+
+    @Suppress("ReturnCount") // Every optional field is necessary for safe reuse.
+    private fun vectorPainterStateFields(): VectorPainterStateFields? {
+        return VectorPainterStateFields(
+            VectorField ?: return null,
+            VectorDirtyField ?: return null,
+            VectorAutoMirrorField ?: return null,
+            VectorIntrinsicFilterField ?: return null,
+            VectorCachedTintField ?: return null,
+            VectorViewportField ?: return null,
+            VectorPreviousDrawSizeField ?: return null
+        )
+    }
 
     val DrawCacheClass = getClassSafe("androidx.compose.ui.graphics.vector.DrawCache")
     val CachedImageField = DrawCacheClass?.getDeclaredFieldSafe("mCachedImage")

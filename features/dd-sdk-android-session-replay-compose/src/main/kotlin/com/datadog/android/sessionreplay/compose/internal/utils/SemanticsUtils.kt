@@ -13,14 +13,11 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asAndroidColorFilter
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.VectorPainter
@@ -67,6 +64,7 @@ internal class SemanticsUtils(
     private val textCaptureCache: ComposeTextCaptureCache? = null
 ) {
     private val compositionImageCache = ComposeImageBitmapCache<Unit>()
+    private val compositionVectorCache = ComposeVectorPainterBitmapCache(reflectionUtils)
     private val backgroundResolver = BackgroundResolver(
         reflectionUtils,
         { node, offset -> resolveInnerBounds(node, offset) }
@@ -400,21 +398,24 @@ internal class SemanticsUtils(
                 isShared = true
             )
         }
+        if (painter is VectorPainter) {
+            val density = semanticsNode.layoutInfo.density
+            val direction = semanticsNode.layoutInfo.layoutDirection
+            val captured = compositionVectorCache.capture(painter, source, alpha, colorFilter, density, direction) {
+                ComposeVectorPainterRasterizer.render(painter, source, alpha, colorFilter, density, direction)
+            } ?: return null
+            return BitmapInfo(
+                captured.bitmap,
+                contextual,
+                reflectionUtils.getContentScale(semanticsNode),
+                reflectionUtils.getAlignment(semanticsNode),
+                isShared = captured.isShared
+            )
+        }
         val pixels = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
         var completed = false
         try {
-            if (painter is VectorPainter) {
-                CanvasDrawScope().draw(
-                    semanticsNode.layoutInfo.density,
-                    semanticsNode.layoutInfo.layoutDirection,
-                    Canvas(pixels.asImageBitmap()),
-                    Size(source.width.toFloat(), source.height.toFloat())
-                ) {
-                    with(painter) { draw(size, alpha, colorFilter) }
-                }
-            } else {
-                if (!drawBitmapSource(source, pixels, alpha, colorFilter)) return null
-            }
+            if (!drawBitmapSource(source, pixels, alpha, colorFilter)) return null
             completed = true
             return BitmapInfo(
                 pixels,

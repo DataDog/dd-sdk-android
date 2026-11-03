@@ -66,6 +66,9 @@
 -keep class androidx.compose.ui.graphics.vector.VectorComponent {
      <fields>;
 }
+-keep class androidx.compose.ui.graphics.BlendModeColorFilter {
+     <fields>;
+}
 -keep class androidx.compose.ui.graphics.vector.DrawCache {
      <fields>;
 }

@@ -11,8 +11,10 @@ import android.text.StaticLayout
 import android.view.View
 import android.widget.EdgeEffect
 import androidx.compose.animation.core.AnimationState
+import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -46,6 +48,7 @@ import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeRefl
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterMethodOfAsync3ImagePainter
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterNodeClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.StaticLayoutField
+import com.datadog.android.sessionreplay.compose.internal.reflection.VectorPainterStateFields
 import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
 import java.lang.reflect.Field
 
@@ -170,6 +173,60 @@ internal class ReflectionUtils {
         return mCachedImage?.let {
             BitmapField?.getSafe(it) as? Bitmap
         }
+    }
+
+    /** Only clean, readable renderer state permits reuse; no asynchronous invalidation is required. */
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Optional fields are kept by consumer rules.
+    fun getVectorPainterState(painter: VectorPainter): VectorPainterState? {
+        val fields = ComposeReflection.VectorStateFields ?: return null
+        return try {
+            val vector = fields.vector.get(painter) ?: return null
+            if (fields.dirty.get(vector) != false) return null
+            val geometry = vectorGeometry(painter, vector, fields) ?: return null
+            val paint = vectorPaint(vector, fields) ?: return null
+            if (fields.dirty.get(vector) != false) return null
+            VectorPainterState(geometry.mirror, geometry.viewport, geometry.previousSize, paint.intrinsic, paint.cached)
+        } catch (_: ReflectiveOperationException) {
+            null
+        } catch (_: IllegalArgumentException) {
+            null
+        } catch (_: SecurityException) {
+            null
+        }
+    }
+
+    private data class VectorGeometry(val mirror: Boolean, val viewport: Size, val previousSize: Long)
+    private data class VectorPaint(val intrinsic: VectorPainterTint?, val cached: VectorPainterTint?)
+
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Called inside the guarded reflection read.
+    private fun vectorGeometry(painter: VectorPainter, vector: Any, fields: VectorPainterStateFields): VectorGeometry? {
+        val mirror = (fields.mirror.get(painter) as? State<*>)?.value as? Boolean ?: return null
+        val viewport = (fields.viewport.get(vector) as? State<*>)?.value as? Size ?: return null
+        val finite = viewport.width.isFinite() && viewport.height.isFinite()
+        val positive = viewport.width > 0f && viewport.height > 0f
+        if (!finite || !positive) return null
+        val previousSize = fields.previousSize.get(vector) as? Long ?: return null
+        return VectorGeometry(mirror, viewport, previousSize)
+    }
+
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Preserve valid null filters and reject failed reads.
+    private fun vectorPaint(vector: Any, fields: VectorPainterStateFields): VectorPaint? {
+        val intrinsicState = fields.intrinsic.get(vector) as? State<*> ?: return null
+        val intrinsic = intrinsicState.value
+        val intrinsicTint = (intrinsic as? androidx.compose.ui.graphics.ColorFilter)?.let(::getVectorColorFilterKey)
+        if (intrinsic != null && intrinsicTint == null) return null
+        val cached = fields.cachedTint.get(vector)
+        val cachedTint = (cached as? androidx.compose.ui.graphics.ColorFilter)?.let(::getVectorColorFilterKey)
+        if (cached != null && cachedTint == null) return null
+        return VectorPaint(intrinsicTint, cachedTint)
+    }
+
+    @Suppress("ReturnCount")
+    fun getVectorColorFilterKey(filter: androidx.compose.ui.graphics.ColorFilter): VectorPainterTint? {
+        if (ComposeReflection.BlendModeColorFilterClass?.isInstance(filter) != true) return null
+        val color = ComposeReflection.TintColorField?.getSafe(filter) as? Long ?: return null
+        val mode = ComposeReflection.TintBlendModeField?.getSafe(filter) as? Int ?: return null
+        return VectorPainterTint(color, mode)
     }
 
     fun getBitmapInBitmapPainter(bitmapPainter: BitmapPainter): Bitmap? {

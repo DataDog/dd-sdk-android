@@ -156,4 +156,21 @@ internal class ComposeImageBitmapCacheTest {
         whenever(it.isPremultiplied).thenReturn(true)
         whenever(it.density).thenReturn(320)
     }
+
+    @Test
+    fun `M return valid pixels without caching changed rendering state W getOrCreate`() {
+        // Given
+        val source = sourceBitmap()
+        val unstable: Bitmap = mock()
+        val stable: Bitmap = mock()
+
+        // When
+        val first = testedCache.getOrCreate(source, 1, shouldCache = { false }) { unstable }
+        val second = testedCache.getOrCreate(source, 1) { stable }
+
+        // Then
+        assertThat(first).isSameAs(unstable)
+        assertThat(second).isSameAs(stable)
+        verify(unstable, never()).recycle()
+    }
 }
