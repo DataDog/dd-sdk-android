@@ -9,6 +9,7 @@ package com.datadog.android.flags.openfeature.internal.adapters
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionDetails
+import com.datadog.android.flags.openfeature.internal.exposure.ExposureMetadata
 import dev.openfeature.kotlin.sdk.Builder
 import dev.openfeature.kotlin.sdk.EvaluationMetadata
 import dev.openfeature.kotlin.sdk.ProviderEvaluation
@@ -70,6 +71,20 @@ internal fun Map<String, Any>.toEvaluationMetadata(): EvaluationMetadata {
         }
     }
     return builder.build()
+}
+
+/**
+ * Returns the `HOOK` features in [ResolutionDetails.flagMetadata], keyed by feature key.
+ */
+internal fun ResolutionDetails<*>.hookFeatures(): Map<String, Any> {
+    if (flagMetadata.keys.none { it.startsWith(ExposureMetadata.FEATURE_PREFIX) }) return emptyMap()
+    val features = LinkedHashMap<String, Any>()
+    flagMetadata.forEach { (key, value) ->
+        if (key.startsWith(ExposureMetadata.FEATURE_PREFIX)) {
+            features[key.removePrefix(ExposureMetadata.FEATURE_PREFIX)] = value
+        }
+    }
+    return features
 }
 
 /**

@@ -103,6 +103,28 @@ internal class EvaluationAggregationStatsTest {
     }
 
     @Test
+    fun `M write the features W toEvaluationEvent() { evaluation features }`() {
+        // Given
+        val stats = createStats(fakeEvaluationAggregationKey.copy(features = mapOf("a" to "x", "b" to false)))
+
+        // When
+        val event = stats.toEvaluationEvent(fakeDatadogContext)
+
+        // Then
+        assertThat(event.features?.additionalProperties).containsExactlyEntriesOf(mapOf("a" to "x", "b" to false))
+        assertThat(event.toJson().asJsonObject.getAsJsonObject("features").get("b").asBoolean).isFalse()
+    }
+
+    @Test
+    fun `M write no features W toEvaluationEvent() { no evaluation features }`() {
+        // When
+        val event = createStats().toEvaluationEvent(fakeDatadogContext)
+
+        // Then
+        assertThat(event.toJson().asJsonObject.has("features")).isFalse()
+    }
+
+    @Test
     fun `M set runtime default true W toEvaluationEvent() { null variantKey }`() {
         // Given - null variantKey indicates runtime default was used
         val keyWithoutVariant = fakeEvaluationAggregationKey.copy(variantKey = null, allocationKey = null)

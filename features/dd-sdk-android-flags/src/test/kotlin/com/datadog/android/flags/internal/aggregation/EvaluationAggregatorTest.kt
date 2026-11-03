@@ -135,6 +135,25 @@ internal class EvaluationAggregatorTest {
     }
 
     @Test
+    fun `M create separate entries W record() { different evaluation features }`() {
+        // Given
+        record(features = mapOf("a" to "x", "b" to 1.0))
+        record(features = mapOf("b" to 1.0, "a" to "x"))
+        record(features = mapOf("a" to "y", "b" to 1.0))
+        record()
+
+        // When
+        val result = testedAggregator.drain()
+
+        // Then
+        assertThat(result.map { it.aggregationKey.features to it.count }).containsExactlyInAnyOrder(
+            mapOf("a" to "x", "b" to 1.0) to 2,
+            mapOf("a" to "y", "b" to 1.0) to 1,
+            emptyMap<String, Any>() to 1
+        )
+    }
+
+    @Test
     fun `M create separate entries W record() { different flag keys }`() {
         repeat(5) { index ->
             record(flagKey = "flag-$index")
@@ -349,7 +368,8 @@ internal class EvaluationAggregatorTest {
         context: EvaluationContext = fakeContext,
         variantKey: String? = fakeVariantKey,
         errorCode: String? = null,
-        errorMessage: String? = null
+        errorMessage: String? = null,
+        features: Map<String, Any> = emptyMap()
     ): List<EvaluationAggregationStats> = testedAggregator.record(
         timestamp = timestamp,
         flagKey = flagKey,
@@ -359,7 +379,8 @@ internal class EvaluationAggregatorTest {
         variantKey = variantKey,
         allocationKey = null,
         errorCode = errorCode,
-        errorMessage = errorMessage
+        errorMessage = errorMessage,
+        features = features
     )
 
     private fun runConcurrently(threadCount: Int, action: (Int) -> Unit) {

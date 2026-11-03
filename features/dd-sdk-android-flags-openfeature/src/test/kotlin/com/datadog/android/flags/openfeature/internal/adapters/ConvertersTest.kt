@@ -30,6 +30,59 @@ import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 internal class ConvertersTest {
 
     @Test
+    fun `M return only HOOK features W hookFeatures()`() {
+        // Given
+        val details = ResolutionDetails(
+            value = true,
+            flagMetadata = mapOf(
+                "allocationKey" to "allocation",
+                "__dd_feature.holdout.key" to "holdout-1",
+                "__dd_feature.ratio" to 0.5,
+                "__dd_exposure_feature.exposure" to "e",
+                "__dd_evaluation_feature.evaluation" to "v"
+            )
+        )
+
+        // When
+        val features = details.hookFeatures()
+
+        // Then
+        assertThat(features).containsExactlyEntriesOf(mapOf("holdout.key" to "holdout-1", "ratio" to 0.5))
+    }
+
+    @Test
+    fun `M return no features W hookFeatures() {no HOOK features}`() {
+        // When
+        val features = ResolutionDetails(value = true, flagMetadata = mapOf("allocationKey" to "a")).hookFeatures()
+
+        // Then
+        assertThat(features).isEmpty()
+    }
+
+    @Test
+    fun `M keep feature value types W toProviderEvaluation() {feature metadata}`() {
+        // Given
+        val details = ResolutionDetails(
+            value = true,
+            flagMetadata = mapOf(
+                "__dd_feature.text" to "holdout-1",
+                "__dd_feature.number" to 3.0,
+                "__dd_feature.flag" to false,
+                "__dd_split_serial_id" to 42
+            )
+        )
+
+        // When
+        val metadata = details.toProviderEvaluation().metadata
+
+        // Then
+        assertThat(metadata.getString("__dd_feature.text")).isEqualTo("holdout-1")
+        assertThat(metadata.getDouble("__dd_feature.number")).isEqualTo(3.0)
+        assertThat(metadata.getBoolean("__dd_feature.flag")).isFalse()
+        assertThat(metadata.getInt("__dd_split_serial_id")).isEqualTo(42)
+    }
+
+    @Test
     fun `M preserve invalid typed opt out W toDatadogEvaluationContext()`() {
         // Given
         val key = "dd_experimentation_opt_out_at"
