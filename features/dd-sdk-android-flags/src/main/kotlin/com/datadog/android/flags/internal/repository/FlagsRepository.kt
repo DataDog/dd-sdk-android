@@ -33,11 +33,17 @@ internal interface FlagsRepository {
         onInstalled: () -> Unit = {}
     )
 
+    /** Clears assignments from another context without persisting or publishing a configuration. */
+    fun clearFlagsIfContextChanged(context: EvaluationContext)
+
     /** Waits for initial persistence loading, up to the repository's timeout. Call without holding locks. */
     fun waitForPersistenceLoad()
 
     // Nonblocking snapshot. Missing flags retain their context from the same atomic state read.
     fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>?
+
+    /** Completes when readable startup cache is installed, independently of network acceptance. */
+    val cachedFlagsLoaded: FirstFlagsLatch
     val firstFlags: FirstFlagsLatch
     fun hasFlags(): Boolean
     fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean

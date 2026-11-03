@@ -18,6 +18,7 @@ import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
 import com.datadog.android.flags.internal.EvaluationsFeature
 import com.datadog.android.flags.internal.FlagsFeature
+import com.datadog.android.flags.internal.FlagsStateHolder
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.LogWithPolicy
 import com.datadog.android.flags.internal.NoOpFlagsClient
@@ -34,7 +35,6 @@ import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
-import com.datadog.android.internal.utils.DDCoreStateHolder
 import org.json.JSONObject
 
 /**
@@ -97,6 +97,8 @@ interface FlagsClient {
      * fetching happen asynchronously on a background thread.
      * For the first context, the configured initialization timeout bounds the callback wait.
      * The operation continues after a timeout and can make the client ready later.
+     * If the fetch fails or its response is invalid, assignments from another context become unavailable.
+     * Matching assignments remain available.
      *
      * In enabled experimentation opt-out modes, assignments are unavailable until they match this context,
      * including when the timestamp attribute is absent. Resolutions return defaults with PROVIDER_NOT_READY.
@@ -502,7 +504,7 @@ interface FlagsClient {
             val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger, experimentationOptOutMode)
 
             val flagStateManager = FlagsStateManager(
-                stateHolder = DDCoreStateHolder.create(
+                stateHolder = FlagsStateHolder.create(
                     initialState = FlagsClientState.NotReady,
                     onStateChanged = FlagsStateListener::onStateChanged
                 )

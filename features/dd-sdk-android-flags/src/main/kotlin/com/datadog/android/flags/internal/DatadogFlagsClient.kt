@@ -77,7 +77,7 @@ internal class DatadogFlagsClient(
             try {
                 listener.onEvent(event)
             } catch (
-                // Callbacks must not break other registrations or the delivering thread.
+                // Callback exceptions must not break other registrations or the delivering thread.
                 @Suppress("TooGenericExceptionCaught")
                 exception: Exception
             ) {
