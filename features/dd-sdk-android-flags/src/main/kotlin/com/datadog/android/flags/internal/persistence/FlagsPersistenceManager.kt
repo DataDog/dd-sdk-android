@@ -34,10 +34,11 @@ internal class FlagsPersistenceManager(
     private val unselectedStateKey = stateKey(instanceName, experimentationOptOutMode, selected = false)
     private val selectedStateKey = stateKey(instanceName, experimentationOptOutMode, selected = true)
     private val flagsStateKey: String = if (flagSelection == null) unselectedStateKey else selectedStateKey
+    private val staleStateKey: String = if (flagSelection == null) selectedStateKey else unselectedStateKey
 
     init {
         // One persisted state per instance: changing to or from a selection discards the other key's state.
-        dataStore.removeValue(if (flagSelection == null) selectedStateKey else unselectedStateKey)
+        dataStore.removeValue(staleStateKey)
         loadFlagsState(onStateLoaded)
     }
 

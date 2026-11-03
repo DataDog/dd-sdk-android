@@ -46,8 +46,21 @@ internal enum class FlagSelectionError(val reason: String, val limit: String) {
 }
 
 /**
+ * Reasons the server reports in the `DD-Flag-Selection-Ignored` response header.
+ * The server validates with the same rules as the SDK, so validation failures reuse the [FlagSelectionError] codes.
+ * [TAG_LOAD_FAILED] is reported only by the server, so it is not a [FlagSelectionError].
+ */
+internal enum class ServerIgnoredReason(val reason: String) {
+    MALFORMED_SELECTION(FlagSelectionError.MALFORMED_SELECTION.reason),
+    TOO_MANY_VALUES(FlagSelectionError.TOO_MANY_VALUES.reason),
+    INVALID_KEY_PATTERN(FlagSelectionError.INVALID_KEY_PATTERN.reason),
+    INVALID_TAG(FlagSelectionError.INVALID_TAG.reason),
+    TAG_LOAD_FAILED("tag_load_failed")
+}
+
+/**
  * Sanitizes the `DD-Flag-Selection-Ignored` response header, so a raw header value never reaches logs or telemetry.
- * A known reason is kept, and any other non-empty value becomes [UNKNOWN].
+ * A [ServerIgnoredReason] is kept, and any other non-empty value becomes [UNKNOWN].
  */
 internal object FlagSelectionIgnoredReason {
 
@@ -56,15 +69,10 @@ internal object FlagSelectionIgnoredReason {
     // The longest known reason has 19 characters. The limit bounds the work on an oversized header.
     private const val MAX_LENGTH = 32
 
-    private val KNOWN_REASONS = setOf(
-        FlagSelectionError.MALFORMED_SELECTION.reason,
-        FlagSelectionError.TOO_MANY_VALUES.reason,
-        FlagSelectionError.INVALID_KEY_PATTERN.reason,
-        FlagSelectionError.INVALID_TAG.reason,
-        "tag_load_failed"
-    )
-
-    fun sanitize(value: String): String = if (value.length <= MAX_LENGTH && value in KNOWN_REASONS) value else UNKNOWN
+    fun sanitize(value: String): String {
+        if (value.length > MAX_LENGTH) return UNKNOWN
+        return ServerIgnoredReason.entries.firstOrNull { it.reason == value }?.reason ?: UNKNOWN
+    }
 }
 
 internal sealed interface FlagSelectionResult {

@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal.selection
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 
 internal class FlagSelectionIgnoredReasonTest {
@@ -19,6 +20,13 @@ internal class FlagSelectionIgnoredReasonTest {
     fun `M keep the reason W sanitize() { known reason }`(reason: String) {
         // When / Then
         assertThat(FlagSelectionIgnoredReason.sanitize(reason)).isEqualTo(reason)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ServerIgnoredReason::class)
+    fun `M keep the reason W sanitize() { any server ignored reason }`(reason: ServerIgnoredReason) {
+        // When / Then
+        assertThat(FlagSelectionIgnoredReason.sanitize(reason.reason)).isEqualTo(reason.reason)
     }
 
     @ParameterizedTest

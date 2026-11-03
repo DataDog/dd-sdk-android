@@ -1957,6 +1957,7 @@ internal class EvaluationsManagerTest {
             onlyOnce = true,
             additionalProperties = mapOf("reason" to fakeIgnoredReason)
         )
+        assertThat(capturedLogMessages()).contains("Successfully processed context $fakeTargetingKey with 0 flags")
         verify(mockFlagsRepository).installFlagsAndContext(eq(context), eq(emptyMap()), anyOrNull())
         verify(mockFlagsStateManager).updateState(FlagsClientState.Ready)
     }
@@ -2032,7 +2033,9 @@ internal class EvaluationsManagerTest {
 
         // Then
         verify(firstCallback).onFailure(isA<FlagsContextSupersededException>())
-        assertThat(capturedLogMessages()).noneMatch { "flagSelection" in it || "Flag selection" in it }
+        assertThat(capturedLogMessages()).noneMatch {
+            "flagSelection" in it || "Flag selection" in it || "Successfully processed" in it
+        }
     }
 
     @Test

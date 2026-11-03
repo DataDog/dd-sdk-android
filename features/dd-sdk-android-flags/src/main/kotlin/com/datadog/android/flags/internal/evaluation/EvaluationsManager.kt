@@ -96,6 +96,7 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
  * @param experimentationOptOut validates contexts and prevents superseded installations
  * @param callbackExecutor delivers customer callbacks outside state delivery and network operations
  */
+@Suppress("TooManyFunctions") // Each step of the fetch, install and completion lifecycle is a separate function.
 internal class EvaluationsManager(
     private val sdkCore: FeatureSdkCore,
     private val executorService: ExecutorService,
@@ -279,39 +280,49 @@ internal class EvaluationsManager(
     ) {
         val context = request.context
         val installed = synchronized(initializationTerminalLock) {
-            val installed = experimentationOptOut.ifCurrent(request) {
-                val installation = flagsRepository.installFlagsAndContext(
-                    context,
-                    assignments.flags,
-                    assignments.obfuscation
-                )
-                val result = takeCompletion(initializationCompletion, callback)
-                currentState = FlagsClientState.Ready
-                effects.enqueue {
-                    installation.complete {
-                        effects.notifySafely { flagStateManager.updateState(FlagsClientState.Ready) }
-                        complete(result)
-                    }
-                }
+            val isCurrent = experimentationOptOut.ifCurrent(request) {
+                installCurrentFlags(context, assignments, initializationCompletion, callback)
             }
-            if (!installed) {
+            if (!isCurrent) {
                 enqueueCompletion(
                     takeCompletion(initializationCompletion, callback),
                     FlagsContextSupersededException(SUPERSEDED_MESSAGE)
                 )
             }
-            installed
+            isCurrent
         }
         effects.drain()
         // A superseded response is not installed, so its ignored reason would describe flags that never loaded.
         if (installed) {
             flagSelectionIgnoredReason?.let { internalLogger.logIgnoredFlagSelection(it) }
+            internalLogger.log(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.MAINTAINER,
+                { "Successfully processed context ${context.targetingKey} with ${assignments.flags.size} flags" }
+            )
         }
-        internalLogger.log(
-            InternalLogger.Level.DEBUG,
-            InternalLogger.Target.MAINTAINER,
-            { "Successfully processed context ${context.targetingKey} with ${assignments.flags.size} flags" }
+    }
+
+    // Callers hold initializationTerminalLock; the Ready notification and callback run later from effects.drain().
+    private fun installCurrentFlags(
+        context: EvaluationContext,
+        assignments: PrecomputedAssignments,
+        initializationCompletion: InitializationCompletion?,
+        callback: EvaluationContextCallback?
+    ) {
+        val installation = flagsRepository.installFlagsAndContext(
+            context,
+            assignments.flags,
+            assignments.obfuscation
         )
+        val result = takeCompletion(initializationCompletion, callback)
+        currentState = FlagsClientState.Ready
+        effects.enqueue {
+            installation.complete {
+                effects.notifySafely { flagStateManager.updateState(FlagsClientState.Ready) }
+                complete(result)
+            }
+        }
     }
 
     private fun startInitializationTimeout(
