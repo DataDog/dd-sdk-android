@@ -53,6 +53,25 @@ internal class ResponseSigningVerifierTest {
         }
     }
 
+    @TestFactory
+    fun `M match isolated certificate rules W verify()`(): List<DynamicTest> {
+        val corpus = resource("isolated-certificate-rules.json")
+        val cases = corpus.getAsJsonArray("cases")
+        check(cases.size() == 4)
+        check(cases.count { it.asJsonObject["expected_accept"].asBoolean } == 1)
+        return cases.map { entry ->
+            val vector = entry.asJsonObject
+            DynamicTest.dynamicTest(vector["id"].asString) {
+                // Given
+                val testedVerifier = ResponseSigningVerifier(listOf(corpus["anchor_der_base64"].asString))
+                // When
+                val result = verify(testedVerifier, vector)
+                // Then
+                assertThat(result != null).isEqualTo(vector["expected_accept"].asBoolean)
+            }
+        }
+    }
+
     private fun verify(verifier: ResponseSigningVerifier, vector: JsonObject): VerifiedResponse? {
         val input = vector.getAsJsonObject("request")
         val request = Request.Builder().url(input["url"].asString)
