@@ -1587,7 +1587,7 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M accept number and float but reject int W resolveDoubleValue() { declared types }`(forge: Forge) {
+    fun `M accept number, float and int W resolveDoubleValue() { compatible types }`(forge: Forge) {
         // Given
         val fakeFlagKey1 = forge.anAlphabeticalString()
         val fakeFlagKey2 = forge.anAlphabeticalString()
@@ -1628,7 +1628,7 @@ internal class DatadogFlagsClientTest {
         // Then
         assertThat(result1).isEqualTo(fakeFlagValue)
         assertThat(result2).isEqualTo(fakeFlagValue)
-        assertThat(result3).isEqualTo(fakeDefaultValue)
+        assertThat(result3).isEqualTo(fakeFlagIntValue.toDouble())
     }
 
     @Test

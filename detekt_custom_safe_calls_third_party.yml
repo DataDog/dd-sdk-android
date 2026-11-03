@@ -367,6 +367,7 @@ datadog:
       - "java.lang.StringBuilder.append(kotlin.String?)"
       - "java.lang.StringBuilder.clear()"
       - "java.lang.StringBuilder.constructor()"
+      - "java.math.BigDecimal.compareTo(java.math.BigDecimal?)"
       - "java.math.BigInteger.toHexString()"
       - "java.math.BigInteger.toLong()"
       - "java.nio.ByteBuffer.duplicate()"
@@ -435,6 +436,8 @@ datadog:
       - "kotlin.Result.getOrElse(kotlin.Function1)"
       - "kotlin.Result.map(kotlin.Function1)"
       - "kotlin.Result.onFailure(kotlin.Function1)"
+      - "kotlin.Result.success(kotlin.Double)"
+      - "kotlin.Result.success(kotlin.Int)"
       # endregion
       # region Kotlin Collections
       - "kotlin.Array.all(kotlin.Function1)"
@@ -883,6 +886,7 @@ datadog:
       - "kotlin.Char.isLowSurrogate()"
       - "kotlin.Char.titlecase(java.util.Locale)"
       - "kotlin.CharArray.constructor(kotlin.Int, kotlin.Function1)"
+      - "kotlin.Double.isFinite()"
       - "kotlin.Double.coerceAtMost(kotlin.Double)"
       - "kotlin.Double.coerceIn(kotlin.Double, kotlin.Double)"
       - "kotlin.Double.isNaN()"

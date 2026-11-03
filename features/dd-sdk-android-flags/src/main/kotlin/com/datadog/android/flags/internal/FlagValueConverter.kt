@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal
 
 import com.datadog.android.flags.internal.model.VariationType
 import org.json.JSONObject
+import java.math.BigDecimal
 import java.util.Locale
 import kotlin.reflect.KClass
 
@@ -48,44 +49,72 @@ internal object FlagValueConverter {
             )
         }
 
-        return runCatching {
-            @Suppress("UNCHECKED_CAST")
-            val result: T? = when (targetType) {
-                Boolean::class -> variationValue.lowercase(Locale.US).toBooleanStrictOrNull() as? T
-                String::class -> variationValue as T
-                Int::class -> {
-                    val number = variationValue.toBigDecimalOrNull()
-                    val integer = try {
-                        number?.intValueExact()
-                    } catch (_: ArithmeticException) {
-                        null
+        return when (targetType) {
+            Int::class -> losslessInt(variationValue) as Result<T>
+            Double::class -> losslessDouble(variationValue) as Result<T>
+            else -> runCatching {
+                @Suppress("UNCHECKED_CAST")
+                val result: T? = when (targetType) {
+                    Boolean::class -> variationValue.lowercase(Locale.US).toBooleanStrictOrNull() as? T
+                    String::class -> variationValue as T
+                    Map::class -> variationValue.toMap() as? T
+                    JSONObject::class -> {
+                        @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in runCatching
+                        val json = JSONObject(variationValue)
+                        @Suppress("UNCHECKED_CAST")
+                        json as? T
                     }
-                    if (integer == null && number != null) {
-                        throw TypeMismatchException("Flag value cannot be represented as an Int")
-                    }
-                    integer as? T
-                }
-                Double::class -> variationValue.toDoubleOrNull() as? T
-                Map::class -> variationValue.toMap() as? T
-                JSONObject::class -> {
-                    @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in runCatching
-                    val json = JSONObject(variationValue)
-                    @Suppress("UNCHECKED_CAST")
-                    json as? T
-                }
-                else -> {
-                    // Check if targetType is a Map implementation
-                    // Safe: isAssignableFrom is a standard Java reflection call
-                    @Suppress("UnsafeThirdPartyFunctionCall")
-                    if (Map::class.java.isAssignableFrom(targetType.java)) {
-                        variationValue.toMap() as? T
-                    } else {
-                        null
+                    else -> {
+                        // Check if targetType is a Map implementation
+                        // Safe: isAssignableFrom is a standard Java reflection call
+                        @Suppress("UnsafeThirdPartyFunctionCall")
+                        if (Map::class.java.isAssignableFrom(targetType.java)) {
+                            variationValue.toMap() as? T
+                        } else {
+                            null
+                        }
                     }
                 }
-            }
 
-            result ?: throw IllegalArgumentException("Failed to parse value '$variationValue'")
+                result ?: throw IllegalArgumentException("Failed to parse value '$variationValue'")
+            }
+        }
+    }
+
+    private fun losslessInt(value: String): Result<Int> {
+        val number = value.toBigDecimalOrNull()
+            ?: return Result.failure(IllegalArgumentException("Failed to parse value '$value'"))
+        val integer = try {
+            number.intValueExact()
+        } catch (_: ArithmeticException) {
+            null
+        }
+        return if (integer != null) {
+            Result.success(integer)
+        } else {
+            Result.failure(TypeMismatchException("Flag value cannot be represented as an Int"))
+        }
+    }
+
+    private fun losslessDouble(value: String): Result<Double> {
+        val number = value.toBigDecimalOrNull()
+        val double = value.toDoubleOrNull()
+        if (number == null || double == null) {
+            return Result.failure(IllegalArgumentException("Failed to parse value '$value'"))
+        }
+        // Accept the exact binary value or its standard JSON decimal round trip.
+        val exact = try {
+            double.isFinite() && (
+                number.compareTo(BigDecimal(double)) == 0 ||
+                    number.compareTo(BigDecimal.valueOf(double)) == 0
+                )
+        } catch (_: NumberFormatException) {
+            false
+        }
+        return if (exact) {
+            Result.success(double)
+        } else {
+            Result.failure(TypeMismatchException("Flag value cannot be represented as a Double"))
         }
     }
 
@@ -99,9 +128,9 @@ internal object FlagValueConverter {
     fun isTypeCompatible(variationType: String, targetType: KClass<*>): Boolean = when (targetType) {
         Boolean::class -> variationType == VariationType.BOOLEAN.value
         String::class -> variationType == VariationType.STRING.value
-        Int::class -> variationType == VariationType.INTEGER.value || variationType == VariationType.NUMBER.value
-        Double::class ->
-            variationType == VariationType.NUMBER.value || variationType == VariationType.FLOAT.value
+        Int::class, Double::class ->
+            variationType == VariationType.INTEGER.value ||
+                variationType == VariationType.NUMBER.value || variationType == VariationType.FLOAT.value
         JSONObject::class -> variationType == VariationType.OBJECT.value
         Map::class -> variationType == VariationType.OBJECT.value
         else -> {
