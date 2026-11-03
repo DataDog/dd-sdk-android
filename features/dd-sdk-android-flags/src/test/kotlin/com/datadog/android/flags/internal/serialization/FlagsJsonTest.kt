@@ -6,10 +6,12 @@
 
 package com.datadog.android.flags.internal.serialization
 
+import com.datadog.android.flags.internal.model.SplitFeature
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.catchThrowable
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
@@ -67,7 +69,129 @@ internal class FlagsJsonTest {
         assertThat(exception).isInstanceOf(JsonParseException::class.java)
     }
 
+    @Test
+    fun `M keep each value type W readAssignment() {mixed features}`() {
+        // Given
+        val json = assignment(
+            """[
+                {"key":"text","value":"holdout-1","destinations":["HOOK"]},
+                {"key":"number","value":3,"destinations":["EXPOSURE","EVALUATION"]},
+                {"key":"flag","value":false,"destinations":["HOOK","FUTURE"]}
+            ]"""
+        )
+
+        // When
+        val flag = FlagsJson.readAssignment(json)
+
+        // Then
+        assertThat(flag.features).containsExactly(
+            SplitFeature("text", "holdout-1", listOf("HOOK")),
+            SplitFeature("number", 3.0, listOf("EXPOSURE", "EVALUATION")),
+            SplitFeature("flag", false, listOf("HOOK", "FUTURE"))
+        )
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["null", "{}", "\"features\"", "42", "[]", "[null, 1, \"text\", []]"])
+    fun `M read the assignment without features W readAssignment() {missing or malformed features}`(
+        features: String
+    ) {
+        // Given
+        val json = assignment(features)
+
+        // When
+        val flag = FlagsJson.readAssignment(json)
+
+        // Then
+        assertThat(flag.variationKey).isEqualTo("on")
+        assertThat(flag.features).isEmpty()
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidFeatures")
+    fun `M skip the feature W read() {invalid feature}`(feature: String) {
+        // Given
+        val json = JsonParser.parseString("[$feature, $VALID_FEATURE]")
+
+        // When
+        val features = SplitFeaturesJson.read(json)
+
+        // Then
+        assertThat(features).containsExactly(SplitFeature("valid", "value", listOf("HOOK")))
+    }
+
+    @Test
+    fun `M keep the first valid feature W read() {repeated key}`() {
+        // Given
+        val json = JsonParser.parseString(
+            """[
+                {"key":"holdout.key","value":{},"destinations":["HOOK"]},
+                {"key":"holdout.key","value":"first","destinations":["EXPOSURE"]},
+                {"key":"holdout.key","value":"second","destinations":["HOOK"]}
+            ]"""
+        )
+
+        // When
+        val features = SplitFeaturesJson.read(json)
+
+        // Then
+        assertThat(features).containsExactly(SplitFeature("holdout.key", "first", listOf("EXPOSURE")))
+    }
+
+    @Test
+    fun `M read back the features W writeAssignmentJson() + readAssignment()`() {
+        // Given
+        val flag = FlagsJson.readAssignment(
+            assignment(
+                """[{"key":"a","value":1.5,"destinations":["EVALUATION","FUTURE"]},""" +
+                    """{"key":"b","value":true,"destinations":["HOOK"]}]"""
+            )
+        )
+
+        // When
+        val json = FlagsJson.writeAssignmentJson(flag)
+
+        // Then
+        assertThat(flag.features).hasSize(2)
+        assertThat(FlagsJson.readAssignment(json.asJsonObject).features).isEqualTo(flag.features)
+    }
+
+    @Test
+    fun `M write no features field W writeAssignmentJson() {no features}`() {
+        // Given
+        val flag = FlagsJson.readAssignment(assignment("[]"))
+
+        // When
+        val json = FlagsJson.writeAssignmentJson(flag)
+
+        // Then
+        assertThat(json.asJsonObject.has("features")).isFalse()
+    }
+
+    private fun assignment(features: String) = JsonParser.parseString(
+        """{"variationType":"boolean","variationValue":"true","doLog":true,"allocationKey":"allocation",""" +
+            """"variationKey":"on","extraLogging":{},"reason":"TARGETING_MATCH","features":$features}"""
+    ).asJsonObject
+
     companion object {
+        private const val VALID_FEATURE = """{"key":"valid","value":"value","destinations":["HOOK"]}"""
+
+        @JvmStatic
+        fun invalidFeatures(): List<String> = listOf(
+            """{"value":"value","destinations":["HOOK"]}""",
+            """{"key":"","value":"value","destinations":["HOOK"]}""",
+            """{"key":1,"value":"value","destinations":["HOOK"]}""",
+            """{"key":"valid","destinations":["HOOK"]}""",
+            """{"key":"valid","value":null,"destinations":["HOOK"]}""",
+            """{"key":"valid","value":{},"destinations":["HOOK"]}""",
+            """{"key":"valid","value":[],"destinations":["HOOK"]}""",
+            """{"key":"valid","value":"value"}""",
+            """{"key":"valid","value":"value","destinations":"HOOK"}""",
+            """{"key":"valid","value":"value","destinations":[]}""",
+            """{"key":"valid","value":"value","destinations":["",1,null]}""",
+            "\"not an object\""
+        )
+
         @JvmStatic
         fun invalidMetadata(): List<String> {
             val valid = """{"obfuscated":true,"obfuscation":""" +

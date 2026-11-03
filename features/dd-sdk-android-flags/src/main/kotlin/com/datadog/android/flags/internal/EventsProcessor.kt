@@ -12,5 +12,12 @@ import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface EventsProcessor {
-    fun processEvent(flagKey: String, context: EvaluationContext, data: UnparsedFlag)
+    /**
+     * Records the exposure and writes it when it was not recorded yet.
+     * @return true if the same exposure was already recorded for this subject.
+     */
+    fun processEvent(flagKey: String, context: EvaluationContext, data: UnparsedFlag): Boolean
+
+    /** @return true if the same exposure is recorded for this subject. Records nothing. */
+    fun isRecorded(flagKey: String, context: EvaluationContext, data: UnparsedFlag): Boolean
 }

@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.SplitFeature
 import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
 import fr.xgouchet.elmyr.Forge
@@ -207,6 +208,34 @@ internal class FlagsStateSerializerTest {
         SerializedFlagsStateAssert.assertThatSerializedFlagsState(serialized)
             .hasFlagSerialId("flag1", 0L)
             .hasNoFlagSerialId("flag2")
+    }
+
+    @Test
+    fun `M restore the features W serialize() + deserialize() { flag carries features }`(forge: Forge) {
+        // Given
+        val key = forge.anAlphabeticalString()
+        val features = listOf(
+            SplitFeature("holdout.key", forge.anAlphabeticalString(), listOf("HOOK")),
+            SplitFeature("number", forge.aDouble(), listOf("EXPOSURE", "FUTURE")),
+            SplitFeature("flag", forge.aBool(), listOf("EVALUATION"))
+        )
+        val flag = PrecomputedFlag(
+            "boolean",
+            "true",
+            true,
+            forge.anAlphabeticalString(),
+            forge.anAlphabeticalString(),
+            JSONObject(),
+            "TARGETING_MATCH",
+            features = features
+        )
+        val state = FlagsStateEntry(EvaluationContext(forge.anAlphabeticalString()), mapOf(key to flag), fakeTimestamp)
+
+        // When
+        val restored = FlagsStateDeserializer(mockInternalLogger).deserialize(testedSerializer.serialize(state))
+
+        // Then
+        assertThat(checkNotNull(restored).flags[key]?.features).isEqualTo(features)
     }
 
     @Test

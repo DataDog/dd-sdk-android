@@ -116,6 +116,7 @@ public final class com/datadog/android/flags/_FlagsInternalProxy {
 	public final fun getFlagAssignmentsSnapshot (Lcom/datadog/android/flags/model/EvaluationContext;)Ljava/util/Map;
 	public final fun isEvaluationTelemetryOptOutParameterEnabled ()Z
 	public final fun isExperimentationOptOutEnabled ()Z
+	public final fun resolveDeferringExposure (Ljava/lang/String;Ljava/lang/Object;)Lcom/datadog/android/flags/_FlagsInternalProxy$DeferredExposureResolution;
 	public final fun setEvaluationContext (Lcom/datadog/android/flags/model/EvaluationContext;Lcom/datadog/android/flags/EvaluationContextCallback;Z)V
 	public final fun trackFlagEvaluationEvent (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/String;)V
 	public final fun trackFlagEvaluationEvent (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/String;ZLjava/lang/String;)V
@@ -123,6 +124,12 @@ public final class com/datadog/android/flags/_FlagsInternalProxy {
 	public final fun trackFlagRumEvaluation (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/flags/model/EvaluationContext;)V
 	public final fun trackFlagSnapshotEvaluation (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;)V
 	public final fun trackFlagSnapshotEvaluation (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/String;)V
+}
+
+public final class com/datadog/android/flags/_FlagsInternalProxy$DeferredExposureResolution {
+	public fun <init> (Lcom/datadog/android/flags/model/ResolutionDetails;Lkotlin/jvm/functions/Function0;)V
+	public final fun getDetails ()Lcom/datadog/android/flags/model/ResolutionDetails;
+	public final fun getRecordExposure ()Lkotlin/jvm/functions/Function0;
 }
 
 public final class com/datadog/android/flags/model/ErrorCode : java/lang/Enum {

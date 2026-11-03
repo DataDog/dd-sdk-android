@@ -26,6 +26,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
+import org.mockito.Mockito.mockingDetails
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -70,6 +71,51 @@ internal class PrecomputeMapperTest {
     fun `set up`() {
         testedMapper = PrecomputeMapper(mockInternalLogger)
     }
+
+    @Test
+    fun `M keep features and warn once per unknown destination W map() {split features}`() {
+        // Given
+        val features = """[{"key":"a","value":"x","destinations":["HOOK","FUTURE"]},""" +
+            """{"key":"b","value":1,"destinations":["FUTURE","OTHER"]},{"key":"c","value":{}}]"""
+        val response = """{"data":{"attributes":{"flags":{"first":${assignmentJson(features)},""" +
+            """"second":${assignmentJson(features)}}}}}"""
+
+        // When
+        val result = checkNotNull(testedMapper.map(response))
+
+        // Then
+        assertThat(result.flags.values.map { it.features.map { feature -> feature.key } })
+            .containsOnly(listOf("a", "b"))
+        assertThat(loggedMessages()).containsExactlyInAnyOrder(
+            "Ignoring unknown feature destination FUTURE",
+            "Ignoring unknown feature destination OTHER"
+        )
+    }
+
+    @Test
+    fun `M stop warning W map() {more unknown destinations than the warning cap}`() {
+        // Given
+        val destinations = (0..64).joinToString(",") { "\"FUTURE_$it\"" }
+        val response = """{"data":{"attributes":{"flags":{"flag":""" +
+            """${assignmentJson("""[{"key":"a","value":"x","destinations":[$destinations]}]""")}}}}}"""
+
+        // When
+        testedMapper.map(response)
+
+        // Then
+        assertThat(loggedMessages()).hasSize(64)
+            .contains("Ignoring unknown feature destination FUTURE_63")
+            .doesNotContain("Ignoring unknown feature destination FUTURE_64")
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun loggedMessages(): List<String> = mockingDetails(mockInternalLogger).invocations
+        .filter { it.arguments[0] == InternalLogger.Level.WARN }
+        .map { (it.arguments[2] as () -> String)() }
+
+    private fun assignmentJson(features: String) =
+        """{"variationType":"boolean","variationValue":true,"doLog":true,"allocationKey":"allocation",""" +
+            """"variationKey":"on","extraLogging":{},"reason":"TARGETING_MATCH","features":$features}"""
 
     // region Valid JSON Parsing
 

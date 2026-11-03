@@ -22,7 +22,7 @@ import org.json.JSONObject
 import java.util.concurrent.ExecutorService
 
 /** Real Flags and RUM features using the shared single-FIT transport, storage, and event fixtures. */
-internal class FlagsTelemetryTestFixture(forge: Forge) : AutoCloseable {
+internal class FlagsTelemetryTestFixture(forge: Forge, private val trackExposures: Boolean = true) : AutoCloseable {
     val stubCore = createStubSdkCore(forge)
     var pauseAssignments = false
     private val pendingAssignments = ArrayDeque<Runnable>()
@@ -54,6 +54,7 @@ internal class FlagsTelemetryTestFixture(forge: Forge) : AutoCloseable {
             FlagsConfiguration.Builder()
                 .useCustomFlagEndpoint("https://flags.example.test/assignments")
                 .initializationTimeout(0)
+                .trackExposures(trackExposures)
                 .build(),
             core
         )
@@ -72,6 +73,11 @@ internal class FlagsTelemetryTestFixture(forge: Forge) : AutoCloseable {
                 "future-reason" to assignment("boolean", true).copy(doLog = false, reason = "FUTURE_REASON")
             )
         )
+        stubCore.stubNetworkResponses { httpResponse(it, body = body) }
+    }
+
+    fun assignments(assignments: Map<String, FakeAssignment>) {
+        val body = precomputedAssignmentsBody(assignments)
         stubCore.stubNetworkResponses { httpResponse(it, body = body) }
     }
 

@@ -38,6 +38,7 @@ internal object FlagsJson {
         // Existing readers ignore null and nonnumeric serial IDs.
         val serialId = json.get("serialId")
         if (serialId?.isJsonPrimitive != true || !serialId.asJsonPrimitive.isNumber) json.remove("serialId")
+        val features = SplitFeaturesJson.read(json.get(FEATURES))
 
         val assignment = Assignment.fromJsonObject(json)
 
@@ -51,8 +52,16 @@ internal object FlagsJson {
             variationKey = assignment.variationKey,
             extraLogging = extraLogging,
             reason = assignment.reason,
-            serialId = assignment.serialId
+            serialId = assignment.serialId,
+            features = features
         )
+    }
+
+    /** Writes [flag] in the response format, so that [readAssignment] reads it back. */
+    fun writeAssignmentJson(flag: PrecomputedFlag): JsonElement {
+        val json = writeAssignment(flag).toJson()
+        if (flag.features.isNotEmpty() && json is JsonObject) json.add(FEATURES, SplitFeaturesJson.write(flag.features))
+        return json
     }
 
     fun writeAssignment(flag: PrecomputedFlag): Assignment = Assignment(
@@ -131,4 +140,5 @@ internal object FlagsJson {
     private val STRING_FIELDS = listOf("variationType", "variationValue", "allocationKey", "variationKey", "reason")
     private const val DIGEST_HEX_LENGTH = 64
     private const val OBSERVE_FULL_EVALUATION_DATA = "observeFullEvaluationData"
+    private const val FEATURES = "features"
 }

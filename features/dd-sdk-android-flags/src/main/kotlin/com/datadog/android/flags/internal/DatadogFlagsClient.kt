@@ -14,12 +14,15 @@ import com.datadog.android.flags.FlagsClientEventListener
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsSubscription
 import com.datadog.android.flags.StateObservable
+import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.internal.aggregation.EvaluationPrivacy
 import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKey
 import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKeyCache
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.SplitFeature
+import com.datadog.android.flags.internal.model.forDestination
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
@@ -255,20 +258,64 @@ internal class DatadogFlagsClient(
                 createSuccessResolution(resolution.flag, resolution.value, resolution.observeFullEvaluationData)
             }
 
-            is InternalResolution.Error -> {
-                trackErrorResolution(resolution)
-                createErrorResolution(
-                    flagKey = flagKey,
-                    defaultValue = resolution.defaultValue,
-                    errorCode = resolution.errorCode,
-                    errorMessage = resolution.errorMessage,
-                    observeFullEvaluationData = resolution.observeFullEvaluationData
-                )
-            }
+            is InternalResolution.Error -> errorResolution(resolution)
         }
     }
 
     // endregion
+
+    /**
+     * Resolves like [resolve], but leaves the exposure to the caller, which records it with
+     * [_FlagsInternalProxy.DeferredExposureResolution.recordExposure] once the evaluation has succeeded.
+     * The exposure verdict in the metadata is provisional until then.
+     */
+    internal fun <T : Any> resolveDeferringExposure(
+        flagKey: String,
+        defaultValue: T
+    ): _FlagsInternalProxy.DeferredExposureResolution<T> {
+        val resolution = when (val result = readAndParseAssignment(flagKey, defaultValue)) {
+            is InternalResolution.Success -> result
+            is InternalResolution.Error -> return _FlagsInternalProxy.DeferredExposureResolution(
+                errorResolution(result),
+                null
+            )
+        }
+        val flag = resolution.flag
+        val context = resolution.context
+        trackEvaluationTelemetry(
+            flagKey,
+            flag,
+            context,
+            resolution.telemetryOptedOut,
+            resolution.observeFullEvaluationData,
+            context.targetingKey,
+            resolution.telemetryTargetingKey
+        )
+        val details = createSuccessResolution(flag, resolution.value, resolution.observeFullEvaluationData)
+        return if (flag.doLog && isCurrentResolutionContext(context)) {
+            val metadata = details.flagMetadata.toMutableMap()
+            metadata[METADATA_DO_LOG] = true
+            flag.serialId?.takeIf { it in Int.MIN_VALUE..Int.MAX_VALUE }
+                ?.let { metadata[METADATA_SPLIT_SERIAL_ID] = it.toInt() }
+            metadata[METADATA_EXPOSURE_CACHE_HIT] = exposureProcessor.isRecorded(flagKey, context, flag)
+            _FlagsInternalProxy.DeferredExposureResolution(details.copy(flagMetadata = metadata)) {
+                exposureProcessor.processEvent(flagKey, context, flag)
+            }
+        } else {
+            _FlagsInternalProxy.DeferredExposureResolution(details, null)
+        }
+    }
+
+    private fun <T : Any> errorResolution(resolution: InternalResolution.Error<T>): ResolutionDetails<T> {
+        trackErrorResolution(resolution)
+        return createErrorResolution(
+            flagKey = resolution.flagKey,
+            defaultValue = resolution.defaultValue,
+            errorCode = resolution.errorCode,
+            errorMessage = resolution.errorMessage,
+            observeFullEvaluationData = resolution.observeFullEvaluationData
+        )
+    }
 
     // region Private Implementation
 
@@ -286,14 +333,6 @@ internal class DatadogFlagsClient(
     private fun <T : Any> resolveValue(flagKey: String, defaultValue: T): T =
         resolveTracked(readAndParseAssignment(flagKey, defaultValue))
 
-    private fun writeExposureEvent(name: String, data: UnparsedFlag, context: EvaluationContext) {
-        exposureProcessor.processEvent(
-            flagKey = name,
-            context = context,
-            data = data
-        )
-    }
-
     private fun writeEvaluationEvent(
         flagKey: String,
         context: EvaluationContext?,
@@ -303,7 +342,8 @@ internal class DatadogFlagsClient(
         errorMessage: String?,
         observeFullEvaluationData: Boolean,
         telemetryTargetingKey: String? = context?.targetingKey,
-        preparedTargetingKey: EvaluationTargetingKey? = null
+        preparedTargetingKey: EvaluationTargetingKey? = null,
+        flag: UnparsedFlag? = null
     ) {
         evaluationsFeature?.processEvaluation(
             flagKey = flagKey,
@@ -317,7 +357,9 @@ internal class DatadogFlagsClient(
             preparedTargetingKey = preparedTargetingKey ?: replayTargetingKeyCache.get(
                 telemetryTargetingKey,
                 observeFullEvaluationData
-            )
+            ),
+            features = (flag as? PrecomputedFlag)?.features?.forDestination(SplitFeature.DESTINATION_EVALUATION)
+                ?: emptyMap()
         )
     }
 
@@ -526,7 +568,7 @@ internal class DatadogFlagsClient(
      * Typed resolution layer that handles side effects for convenience methods.
      *
      * This helper method acts as a middle layer to the public API, handling:
-     * - Exposure event tracking on successful resolution (via [writeExposureEvent])
+     * - Exposure event tracking on successful resolution (via [trackFlagExposure])
      * - Type mismatch warning logs for developer feedback (via [InternalLogger])
      * - Returning the typed value on success or the default value on error
      *
@@ -589,6 +631,11 @@ internal class DatadogFlagsClient(
             metadata["allocationKey"] = precomputedFlag.allocationKey
         }
         metadata[OBSERVE_FULL_EVALUATION_DATA_METADATA_KEY] = observeFullEvaluationData
+        precomputedFlag.features.forEach { feature ->
+            feature.destinations.forEach { destination ->
+                FEATURE_METADATA_PREFIXES[destination]?.let { metadata[it + feature.key] = feature.value }
+            }
+        }
         return metadata
     }
 
@@ -646,7 +693,26 @@ internal class DatadogFlagsClient(
         preparedTargetingKey: EvaluationTargetingKey? = null
     ) {
         trackFlagExposure(flagKey, flag, context)
+        trackEvaluationTelemetry(
+            flagKey,
+            flag,
+            context,
+            telemetryOptedOut,
+            observeFullEvaluationData,
+            telemetryTargetingKey,
+            preparedTargetingKey
+        )
+    }
 
+    private fun trackEvaluationTelemetry(
+        flagKey: String,
+        flag: UnparsedFlag,
+        context: EvaluationContext,
+        telemetryOptedOut: Boolean,
+        observeFullEvaluationData: Boolean,
+        telemetryTargetingKey: String?,
+        preparedTargetingKey: EvaluationTargetingKey?
+    ) {
         if (telemetryOptedOut) {
             return
         }
@@ -666,7 +732,8 @@ internal class DatadogFlagsClient(
                 errorMessage = null,
                 observeFullEvaluationData = observeFullEvaluationData,
                 telemetryTargetingKey = telemetryTargetingKey,
-                preparedTargetingKey = preparedTargetingKey
+                preparedTargetingKey = preparedTargetingKey,
+                flag = flag
             )
         }
     }
@@ -753,11 +820,10 @@ internal class DatadogFlagsClient(
         )
     }
 
+    /** Records the exposure, and sends it unless exposure tracking is off. */
     internal fun trackFlagExposure(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
         if (!isCurrentResolutionContext(context)) return
-        if (flagsConfiguration.trackExposures && flag.doLog) {
-            writeExposureEvent(flagKey, flag, context)
-        }
+        if (flag.doLog) exposureProcessor.processEvent(flagKey, context, flag)
     }
 
     internal fun trackFlagEvaluationEvent(
@@ -785,7 +851,8 @@ internal class DatadogFlagsClient(
             errorCode = sanitizedErrorCode,
             errorMessage = sanitizedErrorCode,
             observeFullEvaluationData = observeFullEvaluationData,
-            telemetryTargetingKey = telemetryTargetingKey
+            telemetryTargetingKey = telemetryTargetingKey,
+            flag = flag.takeIf { sanitizedErrorCode == null }
         )
     }
 
@@ -806,5 +873,15 @@ internal class DatadogFlagsClient(
 
     private companion object {
         const val OBSERVE_FULL_EVALUATION_DATA_METADATA_KEY = "__dd_observe_full_evaluation_data"
+        const val METADATA_DO_LOG = "__dd_do_log"
+        const val METADATA_SPLIT_SERIAL_ID = "__dd_split_serial_id"
+        const val METADATA_EXPOSURE_CACHE_HIT = "__dd_exposure_cache_hit"
+
+        // Only the HOOK prefix is a public contract.
+        val FEATURE_METADATA_PREFIXES = mapOf(
+            SplitFeature.DESTINATION_HOOK to "__dd_feature.",
+            SplitFeature.DESTINATION_EXPOSURE to "__dd_exposure_feature.",
+            SplitFeature.DESTINATION_EVALUATION to "__dd_evaluation_feature."
+        )
     }
 }

@@ -17,6 +17,7 @@ package com.datadog.android.flags.internal.aggregation
  * - RUM view name (or null when RUM is not active or no view available)
  * - error code (ErrorCode enum name for aggregation, e.g., "FLAG_NOT_FOUND")
  * - full evaluation data consent mode
+ * - features of the selected split routed to evaluation events
  *
  * Context aggregation is reserved for future use and not implemented.
  */
@@ -27,5 +28,6 @@ internal data class EvaluationAggregationKey(
     val targetingKey: String?,
     val viewName: String?,
     val errorCode: String?,
-    val observeFullEvaluationData: Boolean = false
+    val observeFullEvaluationData: Boolean = false,
+    val features: Map<String, Any> = emptyMap()
 )
