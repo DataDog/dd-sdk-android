@@ -44,12 +44,18 @@ internal class PathUtils(
             ?: bitmapWrapper.createBitmap(desiredWidth, desiredHeight, Bitmap.Config.ARGB_8888)
             ?: return null
 
-        return drawPathOntoBitmap(
-            bitmap = mutableBitmap,
-            scaledPath = scaledPath,
-            strokeWidth = strokeWidth,
-            checkmarkColor = checkmarkColor
-        )
+        return try {
+            drawPathOntoBitmap(
+                bitmap = mutableBitmap,
+                scaledPath = scaledPath,
+                strokeWidth = strokeWidth,
+                checkmarkColor = checkmarkColor
+            )
+        } catch (e: OutOfMemoryError) {
+            mutableBitmap.recycle()
+            @Suppress("ThrowingInternalException") // The capture owner handles OOM after owned pixels are released.
+            throw e
+        }
     }
 
     private fun drawPathToBitmap(
@@ -117,10 +123,13 @@ internal class PathUtils(
     ): Bitmap? {
         val canvas = canvasWrapper.createCanvas(bitmap) ?: return null
 
-        // draw the checkmark
-        drawPathToBitmap(checkmarkColor, scaledPath, strokeWidth, canvas)
-
-        return bitmap
+        try {
+            drawPathToBitmap(checkmarkColor, scaledPath, strokeWidth, canvas)
+            return bitmap
+        } finally {
+            @Suppress("UnsafeThirdPartyFunctionCall") // This canvas is software-backed and null detaches its target.
+            canvas.setBitmap(null)
+        }
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // handling IllegalArgumentException
