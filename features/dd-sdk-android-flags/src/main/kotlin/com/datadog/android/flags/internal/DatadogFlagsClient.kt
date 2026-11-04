@@ -382,10 +382,9 @@ internal class DatadogFlagsClient(
         val snapshot = flagsRepository.getEvaluationSnapshot(flagKey)
         val policy = experimentationOptOut.resolutionContext(snapshot?.context)
         val context = if (experimentationOptOut.enabled) policy.context else snapshot?.context
-        // A rejected or pending request must not inherit a previous configuration's consent or identity.
-        val observeFullEvaluationData = policy.errorCode == null && snapshot?.observeFullEvaluationData == true
+        val observeFullEvaluationData = snapshot?.observeFullEvaluationData == true
         val telemetryTargetingKey = if (policy.errorCode != null) {
-            requestedTargetingKeyCache.get(context?.targetingKey, false)
+            requestedTargetingKeyCache.get(context?.targetingKey, observeFullEvaluationData)
         } else {
             snapshot?.telemetryTargetingKey ?: EvaluationTargetingKey.MISSING
         }

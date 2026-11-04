@@ -35,7 +35,8 @@ consent before shutdown flush, stable error/default counts, context omission, or
 inputs, offline cache restoration, failed refresh, retry payloads, missing/empty/malformed targeting
 keys in both consent modes, valid Unicode including surrogate pairs, object-result metadata, tracking
 disable, retained native snapshots, and pending/invalid requested-subject errors in both
-experimentation opt-out modes without inheriting a previous subject's consent. `FlagsBridgePrivacyTest` exercises both evaluation-only
+experimentation opt-out modes using the latest accepted response's consent, with protection enabled
+before any accepted response. `FlagsBridgePrivacyTest` exercises both evaluation-only
 bridge overloads with retained consent, successful and default/error evaluations, unknown error
 codes, distinct omitted and empty telemetry keys, and no exposure or RUM side effects. The bridge
 fixtures use `doLog=true` to prove that evaluation-only hooks do not trigger exposure logging.

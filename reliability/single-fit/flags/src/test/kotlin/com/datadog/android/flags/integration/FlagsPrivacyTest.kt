@@ -416,15 +416,19 @@ internal class FlagsPrivacyTest {
 
     @ParameterizedTest
     @MethodSource("requestedSubjectErrors")
-    fun `M protect requested subject errors W setEvaluationContext + resolve + stop`(
+    fun `M respect response consent for requested subject errors W setEvaluationContext + resolve + stop`(
         fakeMode: ExperimentationOptOutMode,
         fakeOpenFeature: Boolean,
-        fakeInvalid: Boolean
+        fakeInvalid: Boolean,
+        fakeConsent: Boolean?
     ) {
         // Given
-        stubAssignments(true)
         val client = buildClient(experimentationOptOutMode = fakeMode)
-        client.setEvaluationContext(EvaluationContext(CONTEXT_CANARY))
+        if (fakeConsent != null) {
+            stubAssignments(fakeConsent)
+            client.setEvaluationContext(EvaluationContext(CONTEXT_CANARY))
+        }
+        val expectedConsent = fakeConsent == true
         val provider = client.asOpenFeatureProvider()
         val attributes = if (fakeInvalid) mapOf("dd_experimentation_opt_out_at" to "invalid") else emptyMap()
         val expectedError = if (fakeInvalid) "INVALID_CONTEXT" else "PROVIDER_NOT_READY"
@@ -437,12 +441,12 @@ internal class FlagsPrivacyTest {
                 val result = provider.getBooleanEvaluation("flag-0", false, null)
                 assertThat(result.value).isFalse()
                 assertThat(result.errorCode?.name).isEqualTo(expectedError)
-                assertThat(result.metadata.getBoolean("__dd_observe_full_evaluation_data")).isFalse()
+                assertThat(result.metadata.getBoolean("__dd_observe_full_evaluation_data")).isEqualTo(expectedConsent)
             } else {
                 val result = client.resolve("flag-0", false)
                 assertThat(result.value).isFalse()
                 assertThat(result.errorCode?.name).isEqualTo(expectedError)
-                assertThat(result.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", false)
+                assertThat(result.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", expectedConsent)
             }
         }
         stubSdkCore.stopFeatures()
@@ -450,11 +454,12 @@ internal class FlagsPrivacyTest {
         val event = JSONObject(wire)
 
         // Then
-        assertThat(event.getString("targeting_key")).isEqualTo(HASHED_KEY)
+        assertThat(event.getString("targeting_key")).isEqualTo(if (expectedConsent) TARGETING_KEY else HASHED_KEY)
         assertThat(event.getInt("evaluation_count")).isEqualTo(2)
         assertThat(event.getJSONObject("error").getString("message")).isEqualTo(expectedError)
         assertThat(event.getJSONObject("context").has("evaluation")).isFalse()
-        assertThat(wire).doesNotContain(TARGETING_KEY, CONTEXT_CANARY)
+        assertThat(wire).doesNotContain(CONTEXT_CANARY)
+        if (!expectedConsent) assertThat(wire).doesNotContain(TARGETING_KEY)
     }
 
     private fun buildClient(
@@ -514,7 +519,9 @@ internal class FlagsPrivacyTest {
             ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY
         ).flatMap { mode ->
             listOf(false, true).flatMap { openFeature ->
-                listOf(false, true).map { invalid -> Arguments.of(mode, openFeature, invalid) }
+                listOf(false, true).flatMap { invalid ->
+                    listOf(null, false, true).map { consent -> Arguments.of(mode, openFeature, invalid, consent) }
+                }
             }
         }
 

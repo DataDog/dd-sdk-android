@@ -240,14 +240,23 @@ internal class DatadogFlagsClientTest {
 
     @ParameterizedTest
     @CsvSource(
-        "IMMEDIATE,invalid",
-        "IMMEDIATE,2026-10-21T12:00:00Z",
-        "FUTURE_EXPERIMENTS_ONLY,invalid",
-        "FUTURE_EXPERIMENTS_ONLY,2026-10-21T12:00:00Z"
+        "IMMEDIATE,invalid,false",
+        "IMMEDIATE,invalid,true",
+        "IMMEDIATE,invalid,",
+        "IMMEDIATE,2026-10-21T12:00:00Z,false",
+        "IMMEDIATE,2026-10-21T12:00:00Z,true",
+        "IMMEDIATE,2026-10-21T12:00:00Z,",
+        "FUTURE_EXPERIMENTS_ONLY,invalid,false",
+        "FUTURE_EXPERIMENTS_ONLY,invalid,true",
+        "FUTURE_EXPERIMENTS_ONLY,invalid,",
+        "FUTURE_EXPERIMENTS_ONLY,2026-10-21T12:00:00Z,false",
+        "FUTURE_EXPERIMENTS_ONLY,2026-10-21T12:00:00Z,true",
+        "FUTURE_EXPERIMENTS_ONLY,2026-10-21T12:00:00Z,"
     )
-    fun `M protect attempted subject and reuse identity W resolve() { current assignments unavailable }`(
+    fun `M respect response consent and reuse requested identity W resolve() { current assignments unavailable }`(
         mode: ExperimentationOptOutMode,
         optOutAt: String,
+        fakeConsent: Boolean?,
         forge: Forge
     ) {
         // Given
@@ -259,7 +268,8 @@ internal class DatadogFlagsClientTest {
         val policy = ExperimentationOptOut(mode)
         policy.prepare(fakeRequestedContext)
         whenever(mockFlagsRepository.getEvaluationSnapshot(fakeJsonKey)) doReturn
-            FlagEvaluationSnapshot(null, fakePreviousContext, true)
+            fakeConsent?.let { FlagEvaluationSnapshot(null, fakePreviousContext, it) }
+        val expectedConsent = fakeConsent == true
         val mockEvaluationsFeature = mock<EvaluationsFeature>()
         testedClient = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
@@ -282,7 +292,7 @@ internal class DatadogFlagsClientTest {
         // Then
         results.forEach {
             assertThat(it.errorCode).isEqualTo(expectedError)
-            assertThat(it.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", false)
+            assertThat(it.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", expectedConsent)
         }
         val contextCaptor = argumentCaptor<EvaluationContext>()
         val identityCaptor = argumentCaptor<EvaluationTargetingKey>()
@@ -293,13 +303,18 @@ internal class DatadogFlagsClientTest {
             isNull(),
             eq(expectedError.name),
             anyOrNull(),
-            eq(false),
+            eq(expectedConsent),
             eq(fakeRequestedContext.targetingKey),
             identityCaptor.capture()
         )
         assertThat(contextCaptor.allValues).containsExactly(fakeRequestedContext, fakeRequestedContext)
-        assertThat(identityCaptor.firstValue.value)
-            .isEqualTo("sha256_b4698f9b6d186781fa8dc59e533578fa2d8379a46b1cf6db85cda6aa9c99e51b")
+        assertThat(identityCaptor.firstValue.value).isEqualTo(
+            if (expectedConsent) {
+                fakeRequestedContext.targetingKey
+            } else {
+                "sha256_b4698f9b6d186781fa8dc59e533578fa2d8379a46b1cf6db85cda6aa9c99e51b"
+            }
+        )
         assertThat(identityCaptor.firstValue).isSameAs(identityCaptor.lastValue)
         verify(mockFlagsRepository, never()).getEvaluationContext()
         verifyNoInteractions(mockProcessor, mockRumEvaluationLogger)

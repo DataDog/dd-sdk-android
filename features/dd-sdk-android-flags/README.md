@@ -429,9 +429,9 @@ assignment response's `data.attributes.observeFullEvaluationData` enables raw ta
 Absent, false, null, or malformed consent values keep protection enabled without rejecting the
 assignments. Consent is cached with the assignments and changes on normal configuration refresh.
 Evaluations queued before a refresh retain the consent of the configuration they used.
-With experimentation opt-out enabled, errors for a pending or invalid requested context use
-protected telemetry for that requested subject until matching assignments are available. They do
-not inherit consent or the targeting key from a previous configuration.
+Experimentation opt-out does not change this consent setting. Errors for a pending or invalid
+requested context use consent from the latest accepted assignments response and the requested
+subject's targeting key. Before any accepted configuration is available, protection defaults to enabled.
 
 Protected nonempty targeting keys are SHA-256 hashes of the exact UTF-8 text, prefixed with
 `sha256_`. Empty keys remain empty; missing keys and malformed Unicode are omitted without losing
