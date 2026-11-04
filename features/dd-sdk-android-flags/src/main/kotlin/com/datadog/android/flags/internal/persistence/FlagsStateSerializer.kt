@@ -34,7 +34,8 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
             lastUpdateTimestamp = model.lastUpdateTimestamp,
             observeFullEvaluationData = model.observeFullEvaluationData,
             obfuscated = true.takeIf { model.obfuscation != null },
-            obfuscation = model.obfuscation?.let { FlagsState.Obfuscation(FlagKeyObfuscation.SCHEME, it.salt) }
+            obfuscation = model.obfuscation?.let { FlagsState.Obfuscation(FlagKeyObfuscation.SCHEME, it.salt) },
+            flagSelection = model.flagSelection?.let { FlagsState.FlagSelection(it.tags, it.keyPatterns) }
         ).toJson().toString()
         json.escapeUnpairedSurrogates()
     } catch (e: JsonParseException) {

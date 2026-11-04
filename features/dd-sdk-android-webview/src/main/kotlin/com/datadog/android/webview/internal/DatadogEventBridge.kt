@@ -12,8 +12,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.sampling.DeterministicSampler
-import com.datadog.android.internal.FeatureContextKeys
-import com.datadog.android.internal.rum.RumSessionConstants
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.sampling.DeterministicSampling
 import com.datadog.android.internal.sampling.SessionSamplingIdProvider
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
@@ -96,12 +95,11 @@ internal class DatadogEventBridge(
      */
     @JavascriptInterface
     fun getIsTraceSampled(): String {
-        val rumContext = webViewRumFeature?.cachedRumContext.orEmpty()
+        val rumContext = webViewRumFeature?.cachedRumContext
         val tracingContext = webViewRumFeature?.cachedTracingContext.orEmpty()
 
-        val sessionId = (rumContext[SESSION_ID_KEY] as? String)
-            ?.takeIf { rumContext[SESSION_STATE_KEY] == TRACKED_STATE }
-        val sessionSampleRate = (rumContext[SESSION_SAMPLE_RATE_KEY] as? Number)?.toFloat()
+        val sessionId = rumContext?.takeIf { it.sessionState == RumSessionState.TRACKED }?.sessionId
+        val sessionSampleRate = rumContext?.sessionSampleRate
         val traceSampleRate = (tracingContext[TRACE_SAMPLE_RATE_KEY] as? Number)?.toFloat()
 
         if (sessionId == null || sessionSampleRate == null || traceSampleRate == null) {
@@ -122,10 +120,6 @@ internal class DatadogEventBridge(
     companion object {
         internal const val WEB_VIEW_TRACKING_FEATURE_NAME = "WebView"
 
-        private const val SESSION_ID_KEY = FeatureContextKeys.RUM_SESSION_ID
-        private const val SESSION_STATE_KEY = FeatureContextKeys.RUM_SESSION_STATE
-        private const val SESSION_SAMPLE_RATE_KEY = FeatureContextKeys.RUM_SESSION_SAMPLE_RATE
-        private const val TRACKED_STATE = RumSessionConstants.TRACKED_SESSION_STATE
         private const val TRACE_SAMPLE_RATE_KEY = "okhttp_interceptor_sample_rate"
 
         private const val TRUE_STRING = "true"

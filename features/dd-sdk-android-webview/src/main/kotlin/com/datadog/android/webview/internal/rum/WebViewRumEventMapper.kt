@@ -8,8 +8,8 @@ package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.internal.utils.DdTagsUtils
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.webview.internal.rum.domain.NativeRumViewsCache
-import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 

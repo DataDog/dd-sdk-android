@@ -20,6 +20,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
 import java.io.File
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
 
 /**
  * FOR INTERNAL USAGE ONLY. THIS INTERFACE CONTENT MAY CHANGE WITHOUT NOTICE.
@@ -162,6 +163,18 @@ interface InternalSdkCore : FeatureSdkCore {
      */
     @InternalApi
     fun getDatadogContext(withFeatureContexts: Set<String> = emptySet()): DatadogContext?
+
+    /**
+     * Reads the current [DatadogContext] asynchronously.
+     * @param withFeatureContexts Feature contexts ([DatadogContext.featuresContext] property) to include
+     * in the [DatadogContext] provided. The value should be the feature names as declared by [Feature.name].
+     * Default is empty, meaning that no feature contexts will be included.
+     * @return a future holding the [DatadogContext] in the state it has at the moment of the call
+     * (or null if the SDK isn't initialized), or null if the read couldn't be scheduled.
+     */
+    @AnyThread
+    @InternalApi
+    fun getDatadogContextFuture(withFeatureContexts: Set<String> = emptySet()): Future<DatadogContext?>?
 
     /**
      * Flushes all currently pending tasks on the context thread and executes them synchronously on the calling thread

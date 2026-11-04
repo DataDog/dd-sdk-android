@@ -11,6 +11,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.internal.rum.rumContext
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource
 import com.datadog.android.sessionreplay.internal.processor.asBinaryMetadata
 
@@ -39,5 +40,5 @@ internal class SessionReplayResourcesWriter(
     }
 
     private val DatadogContext.rumApplicationId: String
-        get() = (featuresContext[Feature.RUM_FEATURE_NAME]?.get("application_id") as? String).orEmpty()
+        get() = featuresContext[Feature.RUM_FEATURE_NAME]?.rumContext()?.applicationId.orEmpty()
 }

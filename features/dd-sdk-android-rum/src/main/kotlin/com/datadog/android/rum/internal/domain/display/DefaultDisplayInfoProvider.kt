@@ -25,7 +25,7 @@ internal class DefaultDisplayInfoProvider(
         internalLogger = internalLogger
     ),
     private val contentResolver: ContentResolver = applicationContext.contentResolver,
-    private val handler: Handler = Handler(Looper.getMainLooper())
+    handler: Handler = Handler(Looper.getMainLooper())
 ) : InfoProvider<DisplayInfo> {
 
     @Volatile

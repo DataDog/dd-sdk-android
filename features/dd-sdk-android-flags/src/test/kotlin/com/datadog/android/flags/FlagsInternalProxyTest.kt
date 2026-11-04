@@ -15,6 +15,7 @@ import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.RumEvaluationLogger
 import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKey
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.EvaluationContext
@@ -398,7 +399,8 @@ internal class FlagsInternalProxyTest {
             exposureProcessor = mockExposureProcessor,
             evaluationsFeature = evaluationsFeature,
             flagStateManager = mockFlagsStateManager,
-            evaluationTelemetryOptOutParameterEnabled = false
+            evaluationTelemetryOptOutParameterEnabled = false,
+            experimentationOptOut = ExperimentationOptOut()
         )
     )
 }

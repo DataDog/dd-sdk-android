@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.internal.serialization.FlagsJson
 import com.datadog.android.flags.model.EvaluationContext
 import com.google.gson.JsonElement
@@ -49,7 +50,8 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
                 flags = flags,
                 lastUpdateTimestamp = state.lastUpdateTimestamp,
                 obfuscation = obfuscation,
-                observeFullEvaluationData = state.observeFullEvaluationData == true
+                observeFullEvaluationData = state.observeFullEvaluationData == true,
+                flagSelection = state.flagSelection?.let { CanonicalFlagSelection(it.tags, it.keyPatterns) }
             )
         }
     } catch (e: JsonParseException) {

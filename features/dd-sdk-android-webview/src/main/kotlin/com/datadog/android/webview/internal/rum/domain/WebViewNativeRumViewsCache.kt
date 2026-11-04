@@ -6,6 +6,8 @@
 
 package com.datadog.android.webview.internal.rum.domain
 
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.rumContext
 import com.datadog.android.internal.time.TimeProvider
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
@@ -42,9 +44,10 @@ internal class WebViewNativeRumViewsCache(
 
     @Synchronized
     override fun addToCache(event: Map<String, Any?>) {
-        val activeViewId = event[VIEW_ID_KEY] as? String
-        val eventTimestamp = event[VIEW_TIMESTAMP_KEY] as? Long
-        val hasReplay = event[VIEW_HAS_REPLAY_KEY] as? Boolean ?: false
+        val rumContext = event.rumContext()
+        val activeViewId = rumContext?.viewId
+        val eventTimestamp = rumContext?.viewTimestamp
+        val hasReplay = rumContext?.hasReplay ?: false
 
         if (activeViewId != null &&
             activeViewId != RumContext.NULL_UUID &&
@@ -109,9 +112,6 @@ internal class WebViewNativeRumViewsCache(
     )
 
     companion object {
-        internal const val VIEW_ID_KEY = "view_id"
-        internal const val VIEW_TIMESTAMP_KEY = "view_timestamp"
-        internal const val VIEW_HAS_REPLAY_KEY = "view_has_replay"
         internal val DATA_PURGE_TTL_LIMIT_IN_MS = TimeUnit.HOURS.toMillis(2)
         internal const val DATA_CACHE_ENTRIES_LIMIT = 30
     }

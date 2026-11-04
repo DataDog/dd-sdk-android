@@ -6,7 +6,6 @@
 @file:Suppress("StringLiteralDuplication")
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.registerSubModuleAggregationTask
 import com.datadog.gradle.utils.CLONE_RUM_EVENTS_FORMAT_SCHEMAS_TASK_NAME
 import com.datadog.gradle.utils.GENERATE_JSON_MODELS_TASK_NAME
@@ -26,38 +25,12 @@ plugins {
     alias(libs.plugins.kotlinxSerializationPlugin) apply false
     alias(libs.plugins.koverPlugin) apply false
     alias(libs.plugins.androidLibraryPlugin) apply false
-    alias(libs.plugins.kotlinAndroidPlugin) apply false
     alias(libs.plugins.dokkaGradlePlugin) apply false
     alias(libs.plugins.detektGradlePlugin) apply false
+    alias(libs.plugins.unmockGradlePlugin) apply false
 }
 
 version = AndroidConfig.VERSION.name
-
-buildscript {
-    repositories {
-        // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
-        // Inlined here because `buildscript {}` is resolved before the `build-logic`
-        // convention plugins are on the classpath.
-        listOf("gradlePluginProxy", "mavenRepositoryProxy")
-            .mapNotNull { providers.gradleProperty(it).orNull?.takeIf { url -> url.isNotBlank() } }
-            .forEach { url -> maven { setUrl(url) } }
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
-
-    dependencies {
-        classpath(libs.unmockGradlePlugin)
-    }
-}
-
-allprojects {
-    repositories.depotProxied(providers) {
-        google()
-        mavenCentral()
-        maven { setUrl("https://jitpack.io") }
-    }
-}
 
 nexusPublishing {
     this.repositories {
@@ -212,19 +185,20 @@ tasks.register("instrumentTestAll") {
 }
 
 tasks.register("listAllPublishedArtifactIds") {
+    val artifactIds = providers.provider {
+        rootProject.subprojects.flatMap { subproject ->
+            subproject.extensions
+                .findByType<PublishingExtension>()
+                ?.publications
+                ?.filterIsInstance<MavenPublication>()
+                ?.map { it.artifactId }
+                .orEmpty()
+        }
+    }
+
+    inputs.property("artifactIds", artifactIds)
+
     doLast {
-        val artifactIds = rootProject.subprojects.flatMap { subproject ->
-            val publishing = subproject.extensions.findByType<PublishingExtension>()
-            publishing?.publications?.mapNotNull { publication ->
-                if (publication is MavenPublication) {
-                    publication.artifactId
-                } else {
-                    null
-                }
-            }.orEmpty()
-        }
-        artifactIds.forEach {
-            println(it)
-        }
+        artifactIds.get().forEach { println(it) }
     }
 }

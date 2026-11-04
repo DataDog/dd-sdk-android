@@ -7,9 +7,7 @@
 package com.datadog.benchmark.sample.ui.rumauto.screens.locationdetails
 
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
@@ -17,17 +15,17 @@ import androidx.recyclerview.widget.GridLayoutManager
 import com.datadog.benchmark.sample.activities.scenarios.benchmarkActivityComponent
 import com.datadog.benchmark.sample.navigation.args
 import com.datadog.benchmark.sample.network.rickandmorty.models.Location
-import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.CharacterItem
+import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.CharacterAdapter
 import com.datadog.benchmark.sample.ui.rumauto.screens.locationdetails.di.DaggerRumAutoLocationDetailsComponent
 import com.datadog.benchmark.sample.ui.rumauto.screens.locationdetails.di.RumAutoLocationDetailsComponent
 import com.datadog.benchmark.sample.utils.componentHolderViewModel
-import com.datadog.benchmark.sample.utils.recycler.applyNewItems
+import com.datadog.sample.benchmark.R
 import com.datadog.sample.benchmark.databinding.FragmentRumAutoLocationDetailsBinding
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
-internal class RumAutoLocationDetailsFragment : Fragment() {
+internal class RumAutoLocationDetailsFragment : Fragment(R.layout.fragment_rum_auto_location_details) {
 
     private val location: Location by args()
 
@@ -42,13 +40,15 @@ internal class RumAutoLocationDetailsFragment : Fragment() {
     @Inject
     lateinit var viewModel: RumAutoLocationDetailsViewModel
 
-    @Inject
-    lateinit var adapter: RumAutoLocationDetailsAdapter
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         component.inject(this)
 
-        val binding = FragmentRumAutoLocationDetailsBinding.inflate(inflater, container, false)
+        val binding = FragmentRumAutoLocationDetailsBinding.bind(view)
+
+        val adapter = CharacterAdapter {
+            viewModel.dispatch(RumAutoLocationDetailsAction.OnCharacterClicked(it))
+        }
 
         @Suppress("MagicNumber")
         binding.locationDetailsRecycler.layoutManager = GridLayoutManager(requireContext(), 3)
@@ -65,17 +65,10 @@ internal class RumAutoLocationDetailsFragment : Fragment() {
                     .residentsLoadingTask
                     .optionalResult
                     ?.optionalResult
-                    ?.map {
-                        CharacterItem(
-                            character = it,
-                            key = it.id.toString()
-                        )
-                    } ?: emptyList()
+                    ?: emptyList()
 
-                adapter.applyNewItems(characters)
+                adapter.submitList(characters)
             }
-            .launchIn(lifecycleScope)
-
-        return binding.root
+            .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 }

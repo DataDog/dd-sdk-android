@@ -55,6 +55,7 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import com.datadog.android.okhttp.TraceContext as DeprecatedTraceContext
+import java.lang.Long as JavaLong
 
 /**
  * Provides automatic trace integration for [OkHttpClient] by way of the [Interceptor] system.
@@ -295,6 +296,22 @@ internal constructor(
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 { "Failed to update intercepted OkHttp request" },
                 e
+            )
+            request
+        } catch (e: ArrayIndexOutOfBoundsException) {
+            // RUM-13985: Long.getChars can compute an out-of-range digit index on some devices.
+            // JavaLong.toHexString formats with bit shifts, so it doesn't go through that division.
+            val spanContext = span.context()
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { ERROR_TRACING_HEADERS_INJECTION },
+                e,
+                onlyOnce = true,
+                additionalProperties = mapOf(
+                    SPAN_ID_HEX_ATTRIBUTE to JavaLong.toHexString(spanContext.spanId),
+                    TRACE_ID_HEX_ATTRIBUTE to spanContext.traceId.toHexString()
+                )
             )
             request
         }
@@ -986,6 +1003,10 @@ internal constructor(
             "StackOverflowError detected in TracedRequestListener. " +
                 "This is likely caused by retrying the same request within the " +
                 "onRequestIntercepted callback, leading to infinite recursion."
+        internal const val ERROR_TRACING_HEADERS_INJECTION =
+            "Failed to inject tracing headers into intercepted OkHttp request"
+        internal const val SPAN_ID_HEX_ATTRIBUTE = "span_id_hex"
+        internal const val TRACE_ID_HEX_ATTRIBUTE = "trace_id_hex"
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
         internal const val ALL_IN_SAMPLE_RATE: Double = 100.0

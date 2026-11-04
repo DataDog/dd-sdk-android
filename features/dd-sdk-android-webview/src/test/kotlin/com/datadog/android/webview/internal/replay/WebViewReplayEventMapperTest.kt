@@ -7,9 +7,9 @@
 package com.datadog.android.webview.internal.replay
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.webview.internal.rum.TimestampOffsetProvider
-import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.Forge
@@ -159,7 +159,7 @@ internal class WebViewReplayEventMapperTest {
         assertThat(mappedWrappedEvent.get(WebViewReplayEventMapper.TIMESTAMP_KEY).asLong)
             .isEqualTo(fakeTimestamp + fakeServerTimeOffset)
         assertThat(mappedWrappedEvent.get(WebViewReplayEventMapper.SLOT_ID_KEY).asString)
-            .isEqualTo(fakeWebViewId.toString())
+            .isEqualTo(fakeWebViewId)
         assertThat(result.get(WebViewReplayEventMapper.ENRICHED_RECORD_APPLICATION_ID_KEY).asString)
             .isEqualTo(fakeRumContext.applicationId)
         assertThat(result.get(WebViewReplayEventMapper.ENRICHED_RECORD_SESSION_ID_KEY).asString)

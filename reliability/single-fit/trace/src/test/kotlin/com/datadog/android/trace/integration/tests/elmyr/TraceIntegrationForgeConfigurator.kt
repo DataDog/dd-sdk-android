@@ -6,6 +6,7 @@
 
 package com.datadog.android.trace.integration.tests.elmyr
 
+import com.datadog.android.internal.tests.elmyr.RumContextForgeryFactory
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -16,5 +17,6 @@ class TraceIntegrationForgeConfigurator : BaseConfigurator() {
         super.configure(forge)
         forge.useJvmFactories()
         forge.useCoreFactories()
+        forge.addFactory(RumContextForgeryFactory())
     }
 }

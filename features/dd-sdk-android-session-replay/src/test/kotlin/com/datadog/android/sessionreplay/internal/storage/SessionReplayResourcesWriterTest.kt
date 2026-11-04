@@ -14,9 +14,11 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource
 import com.datadog.android.sessionreplay.internal.processor.asBinaryMetadata
+import com.datadog.android.utils.withRumContext
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -34,7 +36,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -61,9 +62,6 @@ internal class SessionReplayResourcesWriterTest {
     lateinit var fakeEnrichedResource: EnrichedResource
 
     @Forgery
-    lateinit var fakeRumApplicationId: UUID
-
-    @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
     @BeforeEach
@@ -80,7 +78,7 @@ internal class SessionReplayResourcesWriterTest {
     }
 
     @Test
-    fun `M write the resource W write()`() {
+    fun `M write the resource W write()`(@Forgery fakeRumContext: RumContext) {
         // Given
         whenever(mockEventWriteScope.invoke(any())) doAnswer {
             val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
@@ -90,18 +88,13 @@ internal class SessionReplayResourcesWriterTest {
             val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
             callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
-        fakeDatadogContext = fakeDatadogContext.copy(
-            featuresContext = fakeDatadogContext.featuresContext
-                .toMutableMap().apply {
-                    put(Feature.RUM_FEATURE_NAME, mapOf("application_id" to fakeRumApplicationId.toString()))
-                }
-        )
+        fakeDatadogContext = fakeDatadogContext.withRumContext(fakeRumContext)
 
         // When
         testedWriter.write(fakeEnrichedResource)
 
         // Then
-        val metadataBytearray = fakeEnrichedResource.asBinaryMetadata(fakeRumApplicationId.toString())
+        val metadataBytearray = fakeEnrichedResource.asBinaryMetadata(fakeRumContext.applicationId)
         verify(mockEventBatchWriter).write(
             event = RawBatchEvent(data = fakeEnrichedResource.resource, metadata = metadataBytearray),
             batchMetadata = null,

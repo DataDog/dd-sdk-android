@@ -8,7 +8,7 @@ package com.datadog.android.flags.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.api.feature.Feature
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -18,6 +18,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
+import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
 import okhttp3.Request
@@ -29,6 +30,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -43,7 +46,6 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.IOException
 import java.net.UnknownHostException
-import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -65,22 +67,18 @@ internal class PrecomputedAssignmentsDownloaderTest {
     @Mock
     lateinit var mockCall: Call
 
+    @Forgery
+    lateinit var fakeDiagnostics: Diagnostics
+
     private lateinit var testedDownloader: PrecomputedAssignmentsDownloader
 
     @Forgery
     private lateinit var fakeDatadogContext: DatadogContext
 
-    @Forgery
-    private lateinit var fakeRumApplicationId: UUID
     private lateinit var fakeEvaluationContext: EvaluationContext
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeDatadogContext = fakeDatadogContext.copy(
-            featuresContext = fakeDatadogContext.featuresContext +
-                mapOf(Feature.RUM_FEATURE_NAME to mapOf("application_id" to fakeRumApplicationId.toString()))
-        )
-
         fakeEvaluationContext = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
             attributes = mapOf("plan" to "premium")
@@ -106,22 +104,124 @@ internal class PrecomputedAssignmentsDownloaderTest {
             .build()
         val fakeResponse = createSuccessfulResponse(fakeResponseBody, fakeUrl)
 
-        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
             .doReturn(fakeRequest)
         whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
         whenever(mockCall.execute()).doReturn(fakeResponse)
 
         // When
-        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
 
         // Then
-        assertThat(result).isEqualTo(fakeResponseBody)
-        verify(mockRequestFactory).create(fakeEvaluationContext, fakeDatadogContext)
+        assertThat(result).isEqualTo(PrecomputedAssignmentsResponse(fakeResponseBody, null))
+        verify(mockRequestFactory).create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = ["malformed_selection", "too_many_values", "invalid_key_pattern", "invalid_tag", "tag_load_failed"]
+    )
+    fun `M return the known reason W readPrecomputedFlags() { selection sent, ignored header }`(
+        fakeIgnoredReason: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeResponseBody = forge.anAlphabeticalString()
+        val fakeUrl = "https://${forge.anAlphabeticalString()}.com/precompute"
+        stubSuccessfulCall(fakeResponseBody, fakeUrl, ignoredReason = fakeIgnoredReason)
+        whenever(mockRequestFactory.sendsFlagSelection) doReturn true
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
+
+        // Then
+        assertThat(result).isEqualTo(PrecomputedAssignmentsResponse(fakeResponseBody, fakeIgnoredReason))
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["Some Future-Reason", "Too_Many_Values", "too_many_values\u0001", "too_many_values\u00E9"])
+    fun `M return the fallback reason W readPrecomputedFlags() { selection sent, unknown ignored header }`(
+        fakeIgnoredReason: String,
+        @StringForgery fakeResponseBody: String,
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        val fakeResponse = createSuccessfulResponse(fakeResponseBody, fakeUrl)
+            .newBuilder()
+            .headers(Headers.Builder().addUnsafeNonAscii("DD-Flag-Selection-Ignored", fakeIgnoredReason).build())
+            .build()
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
+            .doReturn(fakeRequest)
+        whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
+        whenever(mockCall.execute()).doReturn(fakeResponse)
+        whenever(mockRequestFactory.sendsFlagSelection) doReturn true
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
+
+        // Then
+        assertThat(result).isEqualTo(PrecomputedAssignmentsResponse(fakeResponseBody, "unknown"))
+    }
+
+    @Test
+    fun `M return the ignored reason W readPrecomputedFlags() { selection sent, lowercase header name }`(
+        @StringForgery fakeResponseBody: String,
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        stubSuccessfulCall(
+            fakeResponseBody,
+            fakeUrl,
+            ignoredReason = "too_many_values",
+            headerName = "dd-flag-selection-ignored"
+        )
+        whenever(mockRequestFactory.sendsFlagSelection) doReturn true
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
+
+        // Then
+        assertThat(result).isEqualTo(PrecomputedAssignmentsResponse(fakeResponseBody, "too_many_values"))
+    }
+
+    @Test
+    fun `M return no ignored reason W readPrecomputedFlags() { selection sent, empty ignored header }`(
+        @StringForgery fakeResponseBody: String,
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        stubSuccessfulCall(fakeResponseBody, fakeUrl, ignoredReason = "")
+        whenever(mockRequestFactory.sendsFlagSelection) doReturn true
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
+
+        // Then
+        assertThat(result).isEqualTo(PrecomputedAssignmentsResponse(fakeResponseBody, null))
+    }
+
+    @Test
+    fun `M return no ignored reason W readPrecomputedFlags() { no selection sent, ignored header }`(
+        @StringForgery fakeResponseBody: String,
+        @StringForgery(regex = "[a-z_]+") fakeIgnoredReason: String,
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        stubSuccessfulCall(fakeResponseBody, fakeUrl, ignoredReason = fakeIgnoredReason)
+        whenever(mockRequestFactory.sendsFlagSelection) doReturn false
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
+
+        // Then
+        assertThat(result).isEqualTo(PrecomputedAssignmentsResponse(fakeResponseBody, null))
     }
 
     @Test
     fun `M call factory with correct parameters W readPrecomputedFlags()`(
         @StringForgery fakeResponseBody: String,
+        @Forgery fakeDiagnostics: Diagnostics,
         @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
     ) {
         // Given
@@ -130,16 +230,16 @@ internal class PrecomputedAssignmentsDownloaderTest {
             .build()
         val fakeResponse = createSuccessfulResponse(fakeResponseBody, fakeUrl)
 
-        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
             .doReturn(fakeRequest)
         whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
         whenever(mockCall.execute()).doReturn(fakeResponse)
 
         // When
-        testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+        testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
 
         // Then
-        verify(mockRequestFactory).create(fakeEvaluationContext, fakeDatadogContext)
+        verify(mockRequestFactory).create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
     }
 
     // endregion
@@ -149,11 +249,11 @@ internal class PrecomputedAssignmentsDownloaderTest {
     @Test
     fun `M return null W readPrecomputedFlags() { factory returns null }`() {
         // Given
-        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
             .doReturn(null)
 
         // When
-        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         assertThat(result).isNull()
@@ -174,13 +274,13 @@ internal class PrecomputedAssignmentsDownloaderTest {
             .build()
         val exception = UnknownHostException(fakeExceptionMessage)
 
-        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
             .doReturn(fakeRequest)
         whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
         whenever(mockCall.execute()).doThrow(exception)
 
         // When
-        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         assertThat(result).isNull()
@@ -208,13 +308,13 @@ internal class PrecomputedAssignmentsDownloaderTest {
             .build()
         val exception = IOException(fakeExceptionMessage)
 
-        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
             .doReturn(fakeRequest)
         whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
         whenever(mockCall.execute()).doThrow(exception)
 
         // When
-        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         assertThat(result).isNull()
@@ -242,13 +342,13 @@ internal class PrecomputedAssignmentsDownloaderTest {
             .build()
         val exception = SecurityException(fakeExceptionMessage)
 
-        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
             .doReturn(fakeRequest)
         whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
         whenever(mockCall.execute()).doThrow(exception)
 
         // When
-        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         assertThat(result).isNull()
@@ -276,13 +376,13 @@ internal class PrecomputedAssignmentsDownloaderTest {
             .build()
         val exception = RuntimeException(fakeExceptionMessage)
 
-        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
             .doReturn(fakeRequest)
         whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
         whenever(mockCall.execute()).doThrow(exception)
 
         // When
-        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         assertThat(result).isNull()
@@ -313,13 +413,13 @@ internal class PrecomputedAssignmentsDownloaderTest {
             .build()
         val fakeResponse = createUnsuccessfulResponse(404, fakeUrl)
 
-        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
             .doReturn(fakeRequest)
         whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
         whenever(mockCall.execute()).doReturn(fakeResponse)
 
         // When
-        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         assertThat(result).isNull()
@@ -358,13 +458,13 @@ internal class PrecomputedAssignmentsDownloaderTest {
             .build()
         val fakeResponse = createSuccessfulResponseWithNullBody(fakeUrl)
 
-        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
             .doReturn(fakeRequest)
         whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
         whenever(mockCall.execute()).doReturn(fakeResponse)
 
         // When
-        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         assertThat(result).isNull()
@@ -386,13 +486,13 @@ internal class PrecomputedAssignmentsDownloaderTest {
             on { body } doReturn fakeResponseBody
         }
 
-        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext))
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
             .doReturn(fakeRequest)
         whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
         whenever(mockCall.execute()).doReturn(fakeResponse)
 
         // When
-        testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext)
+        testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
 
         // Then
         verify(fakeResponseBody).close()
@@ -401,6 +501,23 @@ internal class PrecomputedAssignmentsDownloaderTest {
     // endregion
 
     // region Helper methods
+
+    private fun stubSuccessfulCall(
+        body: String,
+        url: String,
+        ignoredReason: String,
+        headerName: String = "DD-Flag-Selection-Ignored"
+    ) {
+        val fakeRequest = Request.Builder().url(url).build()
+        val fakeResponse = createSuccessfulResponse(body, url)
+            .newBuilder()
+            .header(headerName, ignoredReason)
+            .build()
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
+            .doReturn(fakeRequest)
+        whenever(mockCallFactory.newCall(fakeRequest)) doReturn mockCall
+        whenever(mockCall.execute()) doReturn fakeResponse
+    }
 
     private fun createSuccessfulResponse(body: String, url: String): Response = Response.Builder()
         .request(Request.Builder().url(url).build())

@@ -17,5 +17,6 @@ internal enum class RumErrorSourceType {
     FLUTTER,
     NDK,
     NDK_IL2CPP,
-    MAUI
+    MAUI,
+    UNREAL
 }

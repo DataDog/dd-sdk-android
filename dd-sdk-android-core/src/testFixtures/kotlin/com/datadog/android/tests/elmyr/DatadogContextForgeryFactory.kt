@@ -8,6 +8,7 @@ package com.datadog.android.tests.elmyr
 
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.internal.tests.elmyr.exhaustiveAttributes
 import com.datadog.android.privacy.TrackingConsent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory

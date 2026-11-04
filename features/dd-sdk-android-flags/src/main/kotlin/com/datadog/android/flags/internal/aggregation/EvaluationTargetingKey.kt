@@ -17,7 +17,7 @@ internal data class EvaluationTargetingKey private constructor(val value: String
     }
 }
 
-/** One entry per client for bridge replay identities that are independent of the installed state. */
+/** One cached identity for evaluations that are independent of the installed state. */
 internal class EvaluationTargetingKeyCache {
     @Volatile
     private var entry: Entry? = null

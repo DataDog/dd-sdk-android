@@ -34,7 +34,8 @@ sha256sum /tmp/flags-artifacts/*.aar
 consent before shutdown flush, stable error/default counts, context omission, original assignment
 inputs, offline cache restoration, failed refresh, retry payloads, missing/empty/malformed targeting
 keys in both consent modes, valid Unicode including surrogate pairs, object-result metadata, tracking
-disable, and retained native snapshots. `FlagsBridgePrivacyTest` exercises both evaluation-only
+disable, retained native snapshots, and pending/invalid requested-subject errors in both
+experimentation opt-out modes without inheriting a previous subject's consent. `FlagsBridgePrivacyTest` exercises both evaluation-only
 bridge overloads with retained consent, successful and default/error evaluations, unknown error
 codes, distinct omitted and empty telemetry keys, and no exposure or RUM side effects. The bridge
 fixtures use `doLog=true` to prove that evaluation-only hooks do not trigger exposure logging.
@@ -62,11 +63,29 @@ With a booted emulator or connected device:
 ANDROID_SERIAL=emulator-5554 ./gradlew :reliability:single-fit:flags:connectedReleaseAndroidTest
 ```
 
-The existing `test-pyramid:core-it-{min,median,latest}-api` CI jobs also run this suite on Android
-API 23, 28 and 37 emulators. Each job builds and copies the native/provider release AARs, logs their
-SHA-256 hashes and supplies them through `-PflagsArtifactDirectory` to the device suite. They upload
-the instrumentation results from
-`reliability/single-fit/flags/build/outputs/androidTest-results/connected/release/`.
+CI builds the native/provider release AARs once on Linux in `test:build-instrumented-apks`,
+then builds the privacy test APK using those copied AARs through `-PflagsArtifactDirectory`.
+The job retains both AARs and the APK as artifacts, with their SHA-256 hashes recorded in
+`build/flags-device-artifacts/SHA256SUMS`.
+The macOS `test-pyramid:core-it-and-ndk` job verifies those hashes and uses
+`ci/scripts/run_core_it_and_ndk_apks.py` to run the prebuilt APK on Android API 23, 28 and 37.
+The three emulators run concurrently; each runs core integration and Flags privacy tests, and
+API 37 also runs NDK tests. No Gradle build runs on the emulator host.
+The runner uploads `instrumentation-results-api-{23,28,37}-flags-privacy.xml` and retains the
+corresponding `instrumentation-output-api-{23,28,37}-flags-privacy.txt` logs.
+
+To run just the prebuilt privacy APK on an already booted device, first build and copy the AARs
+as above, then:
+
+```sh
+./gradlew :reliability:single-fit:flags:assembleReleaseAndroidTest \
+  -PflagsArtifactDirectory=/tmp/flags-artifacts
+adb -s emulator-5554 install -r -t \
+  reliability/single-fit/flags/build/outputs/apk/androidTest/release/flags-release-androidTest.apk
+adb -s emulator-5554 shell am instrument -w -r \
+  com.datadog.android.flags.integration.test/androidx.test.runner.AndroidJUnitRunner
+```
+
 The tests use synthetic credentials and a local server; no live Datadog org is needed. They verify
 actual Android HTTP uploads, but do not claim live backend acceptance or process-kill recovery.
 

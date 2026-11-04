@@ -16,6 +16,8 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.NoOpDataWriter
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.rumContext
 import com.datadog.android.webview.internal.rum.domain.NativeRumViewsCache
 import com.datadog.android.webview.internal.rum.domain.WebViewNativeRumViewsCache
 import com.datadog.android.webview.internal.storage.WebViewDataWriter
@@ -34,7 +36,7 @@ internal class WebViewRumFeature(
     internal val initialized = AtomicBoolean(false)
 
     @Volatile
-    internal var cachedRumContext: Map<String, Any?> = emptyMap()
+    internal var cachedRumContext: RumContext? = null
 
     @Volatile
     internal var cachedTracingContext: Map<String, Any?> = emptyMap()
@@ -53,7 +55,7 @@ internal class WebViewRumFeature(
         when (featureName) {
             Feature.RUM_FEATURE_NAME -> {
                 nativeRumViewsCache.addToCache(context)
-                cachedRumContext = context
+                cachedRumContext = context.rumContext()
             }
             Feature.TRACING_FEATURE_NAME -> cachedTracingContext = context
         }
@@ -66,7 +68,7 @@ internal class WebViewRumFeature(
         sdkCore.removeContextUpdateReceiver(this)
         dataWriter = NoOpDataWriter()
         initialized.set(false)
-        cachedRumContext = emptyMap()
+        cachedRumContext = null
         cachedTracingContext = emptyMap()
     }
 

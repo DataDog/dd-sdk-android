@@ -10,6 +10,7 @@ import com.datadog.android.sqldelight.internal.TransactionWithSpanAndWithReturnI
 import com.datadog.android.sqldelight.internal.TransactionWithSpanAndWithoutReturnImpl
 import com.datadog.android.sqldelight.internal.withinSpan
 import com.datadog.android.trace.GlobalDatadogTracer
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.squareup.sqldelight.Transacter
 import com.squareup.sqldelight.Transacter.Transaction
 
@@ -18,7 +19,7 @@ import com.squareup.sqldelight.Transacter.Transaction
  * A span will be created around the transaction code and sent to Datadog.
  *
  * @param T the type of the wrapped SQL [Transacter]
- * @param operationName the name of the [Span] created around the coroutine code.
+ * @param operationName the name of the [DatadogSpan] created around the transaction code.
  * @param noEnclosing in case we want the currently opened transaction to be automatically closed
  * @param body the code to be executed inside the transaction
  * @throws IllegalStateException if [noEnclosing] is true and there is already an active
@@ -44,7 +45,7 @@ fun <T : Transacter> T.transactionTraced(
  *
  * @param T the type of the wrapped SQL [Transacter]
  * @param R the type of the data returned by the SQL transaction
- * @param operationName the name of the [Span] created around the coroutine code.
+ * @param operationName the name of the [DatadogSpan] created around the transaction code.
  * @param noEnclosing in case we want the currently opened transaction to be automatically closed
  * @param body the code to be executed inside the transaction
  * @throws IllegalStateException if [noEnclosing] is true and there is already an active

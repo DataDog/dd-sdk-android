@@ -9,8 +9,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.api.feature.getContextFuture
-import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.internal.rum.rumContext
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.api.span.DatadogSpan
@@ -36,8 +36,9 @@ class RumContextPropagator(private val sdkCoreProvider: () -> FeatureSdkCore?) {
         get() = sdkCore?.internalLogger
 
     private fun injectRumContext(builder: DatadogSpanBuilder) {
-        sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
-            ?.getContextFuture(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME))
+        val core = sdkCore as? InternalSdkCore ?: return
+        if (core.getFeature(Feature.RUM_FEATURE_NAME) == null) return
+        core.getDatadogContextFuture(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME))
             ?.let { lazyContext -> builder.withTag(DATADOG_INITIAL_CONTEXT, lazyContext) }
     }
 
@@ -57,15 +58,15 @@ class RumContextPropagator(private val sdkCoreProvider: () -> FeatureSdkCore?) {
             if (datadogContext != null) {
                 val rumContext = datadogContext
                     .featuresContext[Feature.RUM_FEATURE_NAME]
-                    .orEmpty()
+                    ?.rumContext()
 
-                instance.setTag(LogAttributes.RUM_APPLICATION_ID, rumContext["application_id"])
-                instance.setTag(LogAttributes.RUM_SESSION_ID, rumContext[FeatureContextKeys.RUM_SESSION_ID])
-                instance.setTag(LogAttributes.RUM_VIEW_ID, rumContext["view_id"])
-                instance.setTag(LogAttributes.RUM_ACTION_ID, rumContext["action_id"])
+                instance.setTag(LogAttributes.RUM_APPLICATION_ID, rumContext?.applicationId)
+                instance.setTag(LogAttributes.RUM_SESSION_ID, rumContext?.sessionId)
+                instance.setTag(LogAttributes.RUM_VIEW_ID, rumContext?.viewId)
+                instance.setTag(LogAttributes.RUM_ACTION_ID, rumContext?.actionId)
                 instance.setTag(
                     LogAttributes.RUM_SESSION_SAMPLE_RATE,
-                    rumContext[FeatureContextKeys.RUM_SESSION_SAMPLE_RATE]
+                    rumContext?.sessionSampleRate
                 )
                 instance.setTag(HttpCodec.RUM_KEY_USER_ID, datadogContext.userInfo.id)
                 instance.setTag(HttpCodec.RUM_KEY_ACCOUNT_ID, datadogContext.accountInfo?.id)

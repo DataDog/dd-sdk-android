@@ -1397,8 +1397,7 @@ internal class DatadogCoreTest {
 
     @Test
     fun `M allow concurrent access to features W access features when modifying their collection`(
-        @StringForgery fakeFeature: String,
-        forge: Forge
+        @StringForgery fakeFeature: String
     ) {
         // Given
         val mockFeature = mock<SdkFeature>()
@@ -1415,7 +1414,7 @@ internal class DatadogCoreTest {
                 latch.await()
                 assertDoesNotThrow {
                     repeat(100) {
-                        testedCore.features += forge.anAlphabeticalString() to mock()
+                        testedCore.features += "$fakeFeature-$it" to mock()
                     }
                 }
             }
@@ -1447,6 +1446,7 @@ internal class DatadogCoreTest {
                 .cause(errorCollector.first())
                 .buildAndThrow()
         }
+        assertThat(testedCore.features[fakeFeature]).isSameAs(mockFeature)
     }
 
     @Test

@@ -15,6 +15,8 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.internal.rum.RumContext
+import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -25,7 +27,6 @@ import com.datadog.android.utils.forge.aRumEventAsJson
 import com.datadog.android.utils.verifyLog
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.replay.WebViewReplayEventConsumer
-import com.datadog.android.webview.internal.rum.domain.RumContext
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
@@ -118,7 +119,7 @@ internal class WebViewRumEventConsumerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeRumContext = fakeRumContext.copy(sessionState = "TRACKED")
+        fakeRumContext = fakeRumContext.copy(sessionState = RumSessionState.TRACKED)
         fakeTags = if (forge.aBool()) {
             forge.aMap {
                 forge.anAlphabeticalString() to forge.anAlphaNumericalString()

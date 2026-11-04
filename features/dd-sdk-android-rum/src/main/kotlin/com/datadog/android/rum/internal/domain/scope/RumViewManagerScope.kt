@@ -162,11 +162,9 @@ internal class RumViewManagerScope(
     // region Internal
 
     internal fun renewViewScopes(eventTime: Time) {
-        val newChildScope = childrenScopes.map { rumViewScope ->
-            rumViewScope.renew(eventTime)
-        }
+        val renewedView = childrenScopes.lastOrNull { it.isActive() }?.renew(eventTime)
         childrenScopes.clear()
-        childrenScopes.addAll(newChildScope)
+        renewedView?.let { childrenScopes.add(it) }
     }
 
     private fun isViewManagerComplete(): Boolean {

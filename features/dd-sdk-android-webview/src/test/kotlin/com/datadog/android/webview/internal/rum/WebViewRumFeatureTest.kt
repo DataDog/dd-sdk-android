@@ -11,9 +11,12 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.NoOpDataWriter
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.webview.internal.rum.domain.NativeRumViewsCache
 import com.datadog.android.webview.internal.storage.WebViewDataWriter
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -113,15 +116,15 @@ internal class WebViewRumFeatureTest {
     }
 
     @Test
-    fun `M cache rum context W onContextUpdate { RUM }`() {
+    fun `M cache rum context W onContextUpdate { RUM }`(@Forgery fakeRumContext: RumContext) {
         // Given
-        val fakeContext = mapOf<String, Any?>("session_id" to "fake-id")
+        val fakeContext = mapOf(FeatureContextKeys.RUM_CONTEXT to fakeRumContext)
 
         // When
         testedFeature.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
 
         // Then
-        assertThat(testedFeature.cachedRumContext).isSameAs(fakeContext)
+        assertThat(testedFeature.cachedRumContext).isSameAs(fakeRumContext)
     }
 
     @Test
@@ -147,21 +150,26 @@ internal class WebViewRumFeatureTest {
 
         // Then
         verifyNoInteractions(mockNativeRumViewsCache)
-        assertThat(testedFeature.cachedRumContext).isEmpty()
+        assertThat(testedFeature.cachedRumContext).isNull()
         assertThat(testedFeature.cachedTracingContext).isEmpty()
     }
 
     @Test
-    fun `M clear cached contexts W onStop()`() {
+    fun `M clear cached contexts W onStop()`(@Forgery fakeRumContext: RumContext) {
         // Given
-        testedFeature.onContextUpdate(Feature.RUM_FEATURE_NAME, mapOf("session_id" to "fake-id"))
+        testedFeature.onContextUpdate(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to fakeRumContext
+            )
+        )
         testedFeature.onContextUpdate(Feature.TRACING_FEATURE_NAME, mapOf("okhttp_interceptor_sample_rate" to 50f))
 
         // When
         testedFeature.onStop()
 
         // Then
-        assertThat(testedFeature.cachedRumContext).isEmpty()
+        assertThat(testedFeature.cachedRumContext).isNull()
         assertThat(testedFeature.cachedTracingContext).isEmpty()
     }
 }

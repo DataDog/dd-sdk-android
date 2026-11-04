@@ -48,6 +48,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.AutoClose
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -76,6 +77,7 @@ import java.util.concurrent.atomic.AtomicLong
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CustomInterceptorPreservationTest {
 
+    @AutoClose
     private lateinit var stubSdkCore: StubSDKCore
     private lateinit var mockServer: MockWebServer
     private lateinit var rumMonitor: RumMonitor

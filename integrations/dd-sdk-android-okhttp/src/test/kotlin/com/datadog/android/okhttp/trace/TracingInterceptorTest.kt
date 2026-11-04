@@ -20,8 +20,8 @@ import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
 import com.datadog.android.okhttp.trace.TracingInterceptor.Companion.OKHTTP_INTERCEPTOR_HEADER_TYPES
 import com.datadog.android.okhttp.trace.TracingInterceptor.Companion.OKHTTP_INTERCEPTOR_SAMPLE_RATE
 import com.datadog.android.okhttp.utils.assertj.HeadersAssert.Companion.assertThat
+import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
 import com.datadog.android.tests.elmyr.anOkHttpResponse
 import com.datadog.android.trace.DeterministicTraceSampler
 import com.datadog.android.trace.TraceContextInjection
@@ -851,6 +851,39 @@ internal open class TracingInterceptorTest {
             verify(mockChain).proceed(capture())
             assertThat(firstValue.headers.size).isZero()
         }
+    }
+
+    @Test
+    fun `M proceed without tracing headers and report ids W intercept() {ArrayIndexOutOfBoundsException}`(
+        @StringForgery message: String
+    ) {
+        // Given
+        fakeUrl = forgeUrlWithQueryParams(forge.anElementFrom(fakeLocalHosts.keys))
+        fakeRequest = forgeRequest()
+        stubChain(mockChain)
+        val fakeException = ArrayIndexOutOfBoundsException(message)
+        mockPropagation.wheneverInjectThenThrow(fakeException)
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers.size).isZero()
+        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            TracingInterceptor.ERROR_TRACING_HEADERS_INJECTION,
+            fakeException,
+            onlyOnce = true,
+            additionalProperties = mapOf(
+                TracingInterceptor.SPAN_ID_HEX_ATTRIBUTE to fakeSpanId.toULong().toString(16),
+                TracingInterceptor.TRACE_ID_HEX_ATTRIBUTE to fakeTraceIdAsString
+            )
+        )
     }
 
     @Test

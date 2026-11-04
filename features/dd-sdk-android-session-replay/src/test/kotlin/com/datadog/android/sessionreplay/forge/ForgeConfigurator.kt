@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.forge
 
+import com.datadog.android.internal.tests.elmyr.RumContextForgeryFactory
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -19,6 +20,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
 
         // Core
         forge.useCoreFactories()
+        forge.addFactory(RumContextForgeryFactory())
 
         // Session Replay
         forge.addFactory(NodeForgeryFactory())

@@ -8,10 +8,10 @@ package com.datadog.android.okhttp
 
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
-import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.internal.FeatureContextKeys
+import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.sampling.DeterministicSampling
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
 import com.datadog.android.rum.ExperimentalRumApi
@@ -22,10 +22,10 @@ import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants.PrioritySampling
-import com.datadog.tools.unit.completedFutureMock
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.getStaticValue
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.OkHttpClient
@@ -36,14 +36,13 @@ import okhttp3.mockwebserver.RecordedRequest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.AutoClose
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
 
 /**
@@ -67,8 +66,12 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 class TraceCrossProductSamplingTest {
 
+    @AutoClose
     private lateinit var stubSdkCore: StubSDKCore
     private lateinit var mockServer: MockWebServer
+
+    @Forgery
+    private lateinit var fakeRumContext: RumContext
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -279,31 +282,17 @@ class TraceCrossProductSamplingTest {
 
     /**
      * Registers a stubbed RUM feature on [stubSdkCore] with the given session identifier and
-     * sample rate. Uses [SdkFeatureMock] so that `RumContextPropagator` can pull a non-null
-     * `Future<DatadogContext?>` from it.
+     * sample rate.
      */
     private fun stubRumSessionContext(sessionIdToken: Long, sessionSampleRate: Float) {
         val sessionId = sessionIdToFakeUuid(sessionIdToken)
-        val rumContext = mapOf<String, Any?>(
-            "application_id" to FAKE_APPLICATION_ID,
-            "session_id" to sessionId,
-            "view_id" to FAKE_VIEW_ID,
-            "action_id" to null,
-            "session_sample_rate" to sessionSampleRate
-        )
-        val datadogContext: DatadogContext = stubSdkCore.getDatadogContext().let { context ->
-            context.copy(
-                featuresContext = context.featuresContext.toMutableMap().apply {
-                    put(Feature.RUM_FEATURE_NAME, rumContext)
-                }
+        stubSdkCore.stubFeature(Feature.RUM_FEATURE_NAME)
+        stubSdkCore.stubFeatureContext(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    fakeRumContext.copy(sessionId = sessionId, sessionSampleRate = sessionSampleRate)
             )
-        }
-        val rumFeature = mock<Feature> {
-            on { name } doReturn Feature.RUM_FEATURE_NAME
-        }
-        stubSdkCore.stubFeatureScope(
-            rumFeature,
-            SdkFeatureMock.create(completedFutureMock(datadogContext))
         )
     }
 
@@ -453,9 +442,6 @@ class TraceCrossProductSamplingTest {
         private const val DATADOG_SAMPLING_PRIORITY_HEADER = "x-datadog-sampling-priority"
         private const val DATADOG_TRACE_ID_HEADER = "x-datadog-trace-id"
         private const val DATADOG_SPAN_ID_HEADER = "x-datadog-parent-id"
-
-        private const val FAKE_APPLICATION_ID = "00000000-0000-0000-0000-000000000001"
-        private const val FAKE_VIEW_ID = "00000000-0000-0000-0000-000000000002"
 
         /** Token whose Knuth hash sits at ~0.36% of the 64-bit space (sampled at any rate > ~0.5%). */
         private const val LOW_HASH_TOKEN: Long = 1129L

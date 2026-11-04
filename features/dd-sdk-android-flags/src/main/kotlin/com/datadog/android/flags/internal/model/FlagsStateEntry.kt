@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.internal.model
 
+import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
 
 internal data class FlagsStateEntry(
@@ -13,5 +14,6 @@ internal data class FlagsStateEntry(
     val flags: Map<String, PrecomputedFlag>,
     val lastUpdateTimestamp: Long,
     val observeFullEvaluationData: Boolean = false,
-    val obfuscation: FlagKeyObfuscation? = null
+    val obfuscation: FlagKeyObfuscation? = null,
+    val flagSelection: CanonicalFlagSelection? = null
 )

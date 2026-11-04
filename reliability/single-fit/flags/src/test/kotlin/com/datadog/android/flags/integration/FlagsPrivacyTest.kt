@@ -11,6 +11,7 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
@@ -413,7 +414,53 @@ internal class FlagsPrivacyTest {
         assertThat(event.getJSONObject("error").getString("message")).isEqualTo("FLAG_NOT_FOUND")
     }
 
-    private fun buildClient(trackEvaluations: Boolean = true): FlagsClient {
+    @ParameterizedTest
+    @MethodSource("requestedSubjectErrors")
+    fun `M protect requested subject errors W setEvaluationContext + resolve + stop`(
+        fakeMode: ExperimentationOptOutMode,
+        fakeOpenFeature: Boolean,
+        fakeInvalid: Boolean
+    ) {
+        // Given
+        stubAssignments(true)
+        val client = buildClient(experimentationOptOutMode = fakeMode)
+        client.setEvaluationContext(EvaluationContext(CONTEXT_CANARY))
+        val provider = client.asOpenFeatureProvider()
+        val attributes = if (fakeInvalid) mapOf("dd_experimentation_opt_out_at" to "invalid") else emptyMap()
+        val expectedError = if (fakeInvalid) "INVALID_CONTEXT" else "PROVIDER_NOT_READY"
+        stubSdkCore.stubNetworkResponses { null }
+
+        // When
+        client.setEvaluationContext(EvaluationContext(TARGETING_KEY, attributes))
+        repeat(2) {
+            if (fakeOpenFeature) {
+                val result = provider.getBooleanEvaluation("flag-0", false, null)
+                assertThat(result.value).isFalse()
+                assertThat(result.errorCode?.name).isEqualTo(expectedError)
+                assertThat(result.metadata.getBoolean("__dd_observe_full_evaluation_data")).isFalse()
+            } else {
+                val result = client.resolve("flag-0", false)
+                assertThat(result.value).isFalse()
+                assertThat(result.errorCode?.name).isEqualTo(expectedError)
+                assertThat(result.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", false)
+            }
+        }
+        stubSdkCore.stopFeatures()
+        val wire = wireBody()
+        val event = JSONObject(wire)
+
+        // Then
+        assertThat(event.getString("targeting_key")).isEqualTo(HASHED_KEY)
+        assertThat(event.getInt("evaluation_count")).isEqualTo(2)
+        assertThat(event.getJSONObject("error").getString("message")).isEqualTo(expectedError)
+        assertThat(event.getJSONObject("context").has("evaluation")).isFalse()
+        assertThat(wire).doesNotContain(TARGETING_KEY, CONTEXT_CANARY)
+    }
+
+    private fun buildClient(
+        trackEvaluations: Boolean = true,
+        experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED
+    ): FlagsClient {
         Flags.enable(
             FlagsConfiguration.Builder()
                 .useCustomFlagEndpoint("https://flags.example.test/precompute-assignments")
@@ -422,7 +469,7 @@ internal class FlagsPrivacyTest {
                 .build(),
             stubSdkCore
         )
-        return FlagsClient.Builder(sdkCore = stubSdkCore).build()
+        return FlagsClient.Builder(sdkCore = stubSdkCore).experimentationOptOutMode(experimentationOptOutMode).build()
     }
 
     private fun stubAssignments(consent: Any?) {
@@ -460,6 +507,16 @@ internal class FlagsPrivacyTest {
         const val HASHED_KEY = "sha256_b4698f9b6d186781fa8dc59e533578fa2d8379a46b1cf6db85cda6aa9c99e51b"
         const val CONTEXT_CANARY = "private-context-canary@example.com"
         const val ERROR_CANARY = "private-error-canary@example.com"
+
+        @JvmStatic
+        fun requestedSubjectErrors(): List<Arguments> = listOf(
+            ExperimentationOptOutMode.IMMEDIATE,
+            ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY
+        ).flatMap { mode ->
+            listOf(false, true).flatMap { openFeature ->
+                listOf(false, true).map { invalid -> Arguments.of(mode, openFeature, invalid) }
+            }
+        }
 
         @JvmStatic
         fun malformedKeysAndConsent(): List<Arguments> = listOf(false, true).flatMap { consent ->

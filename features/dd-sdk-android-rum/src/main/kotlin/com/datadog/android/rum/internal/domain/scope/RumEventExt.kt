@@ -121,6 +121,7 @@ internal fun RumErrorSourceType.toSchemaSourceType(): ErrorEvent.SourceType {
         RumErrorSourceType.NDK -> ErrorEvent.SourceType.NDK
         RumErrorSourceType.NDK_IL2CPP -> ErrorEvent.SourceType.NDK_IL2CPP
         RumErrorSourceType.MAUI -> ErrorEvent.SourceType.MAUI
+        RumErrorSourceType.UNREAL -> ErrorEvent.SourceType.UNREAL
     }
 }
 
