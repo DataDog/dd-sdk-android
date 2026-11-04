@@ -136,11 +136,15 @@ internal object FlagValueConverter {
      * which [convert] reports as a parse error. So does a value that is not a plain Int and is longer than
      * [MAX_DECIMAL_LENGTH] characters.
      */
+    @Throws(TypeMismatchException::class)
     private fun parseLosslessInt(variationValue: String, variationType: String): Int? = variationValue.toIntOrNull()
         ?: variationValue.takeIf { it.length <= MAX_DECIMAL_LENGTH }
             ?.toBigDecimalOrNull()
             ?.let { requireLosslessInt(it, variationValue, variationType) }
 
+    // Compare with the Int bounds instead of calling BigDecimal.intValueExact(): on Android 9, intValueExact()
+    // expands the power of ten, so a short value such as `1e10000000` takes seconds.
+    @Throws(TypeMismatchException::class)
     private fun requireLosslessInt(decimal: BigDecimal, variationValue: String, variationType: String): Int {
         val problem = when {
             isFractional(decimal) -> "fractional value '$variationValue'"
@@ -161,6 +165,7 @@ internal object FlagValueConverter {
      * a value whose parsed Double is 2^53 or more in magnitude, when the value is longer than [MAX_DECIMAL_LENGTH]
      * characters or [BigDecimal] can't parse it.
      */
+    @Throws(TypeMismatchException::class)
     private fun parseLosslessDouble(variationValue: String, variationType: String): Double? =
         variationValue.toDoubleOrNull()?.let { double ->
             if (double > -EXACT_DOUBLE_LIMIT && double < EXACT_DOUBLE_LIMIT) {
@@ -172,6 +177,7 @@ internal object FlagValueConverter {
             }
         }
 
+    @Throws(TypeMismatchException::class)
     private fun requireLosslessDouble(
         decimal: BigDecimal,
         double: Double,
