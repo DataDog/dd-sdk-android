@@ -778,7 +778,8 @@ internal class DatadogFlagsClientTest {
         "float, 1e3, 1000",
         "number, 0e5, 0",
         "number, 10e-1, 1",
-        "number, 1.5e1, 15"
+        "number, 1.5e1, 15",
+        "number, 5.00000000000000000000000000000000000000000000000000000000000000, 5"
     )
     fun `M return value W resolve() { numeric flag, whole value, Int default }`(
         fakeVariationType: String,
@@ -899,6 +900,7 @@ internal class DatadogFlagsClientTest {
         "number, 1e-2147483648",
         "number, 1e2147483649",
         "number, 10000000000000000000000000000000000000000000000000000000000000000.0",
+        "number, 5.000000000000000000000000000000000000000000000000000000000000000",
         "float, NaN"
     )
     fun `M return default with PARSE_ERROR W resolve() { malformed numeric value, Int default }`(

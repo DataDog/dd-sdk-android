@@ -152,7 +152,7 @@ internal object FlagValueConverter {
     /**
      * A value with a scale of 0 or less is whole. Check the scale first: it also prevents
      * [BigDecimal.stripTrailingZeros] from overflowing the scale for a value such as `100e2147483647`.
-     * Zero is whole at any scale: AOSP libcore before Android 10 returns a zero such as `0.0` unchanged from
+     * Zero is whole at any scale: some older Android versions return a zero such as `0.0` unchanged from
      * [BigDecimal.stripTrailingZeros].
      */
     private fun isFractional(decimal: BigDecimal): Boolean {
