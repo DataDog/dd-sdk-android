@@ -19,6 +19,8 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 internal class ViewUtilsInternal {
 
+    private val protectionViewMatcher = AndroidXProtectionViewMatcher()
+
     private val systemViewIds by lazy {
         setOf(android.R.id.navigationBarBackground, android.R.id.statusBarBackground)
     }
@@ -29,7 +31,8 @@ internal class ViewUtilsInternal {
 
     @SuppressLint("RestrictedApi") // ActionBarContextView is public, but has @RestrictTo(LIBRARY_GROUP_PREFIX)
     internal fun isSystemNoise(view: View): Boolean {
-        return view.id in systemViewIds || view is ViewStub || view is ActionBarContextView
+        return view.id in systemViewIds || view is ViewStub || view is ActionBarContextView ||
+            protectionViewMatcher.isEmptyProtectionView(view)
     }
 
     internal fun isOnSecondaryDisplay(view: View): Boolean {
