@@ -120,6 +120,8 @@ internal class ResponseSigningClientTest {
         assertThat(requests).hasSize(1)
         assertThat(requests.single().header(ResponseSigningVerifier.PREFIX + "signature-version"))
             .isEqualTo(if (mode == ResponseSigningMode.OFF) null else "1")
+        assertThat(requests.single().header("X-stream"))
+            .isEqualTo(if (mode == ResponseSigningMode.OFF) null else "false")
         if (mode == ResponseSigningMode.REQUIRED) verifyNoInteractions(mockStore)
     }
 

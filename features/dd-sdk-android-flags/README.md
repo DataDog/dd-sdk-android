@@ -62,6 +62,9 @@ The `FlagsConfiguration.Builder` supports the following options:
 
 #### Response signing (experimental draft)
 
+Signing-enabled requests set `X-stream: false` because whole-body proofs require buffered delivery.
+Both observe and required modes apply this override. Signing-off requests keep their ordinary transport selection.
+
 The first public response-signing protocol is v1. The SDK advertises
 `response-signing-v1`, sends signature version `1`, and verifies the
 `datadog.feature-flags.precomputed-assignments.v1` transcript. Earlier POC v1/v2
