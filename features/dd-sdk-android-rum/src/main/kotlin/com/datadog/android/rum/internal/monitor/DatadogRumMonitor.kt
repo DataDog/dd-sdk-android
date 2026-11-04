@@ -968,7 +968,10 @@ internal class DatadogRumMonitor(
         if (event is RumRawEvent.AddError && event.isFatal) {
             val handled = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
                 ?.withWriteContextSync(
-                    withFeatureContexts = setOf(Feature.SESSION_REPLAY_FEATURE_NAME)
+                    withFeatureContexts = setOf(
+                        Feature.SESSION_REPLAY_FEATURE_NAME,
+                        Feature.PROFILING_FEATURE_NAME
+                    )
                 ) { datadogContext, eventWriteScope ->
                     synchronized(rootScope) {
                         @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread

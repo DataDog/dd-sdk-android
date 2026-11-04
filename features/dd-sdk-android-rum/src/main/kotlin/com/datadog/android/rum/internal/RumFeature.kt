@@ -39,6 +39,7 @@ import com.datadog.android.heatmaps.HeatmapIdentifierRegistryProvider
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingThreadDump
 import com.datadog.android.internal.system.BuildSdkVersionProvider
@@ -60,6 +61,7 @@ import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.PendingOomErrorStore
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
@@ -165,6 +167,7 @@ internal class RumFeature(
 ) : StorageBackedFeature, FeatureEventReceiver, HeatmapIdentifierRegistryProvider {
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
+    internal val pendingOomErrorStore = PendingOomErrorStore(sdkCore, handler) { dataWriter }
     internal val initialized = AtomicBoolean(false)
 
     internal var sampleRate: Float = 0f
@@ -424,6 +427,7 @@ internal class RumFeature(
 
     override fun onStop() {
         sdkCore.removeEventReceiver(name)
+        pendingOomErrorStore.stop()
 
         rumContextUpdateReceivers.forEach {
             sdkCore.removeContextUpdateReceiver(it)
@@ -520,6 +524,12 @@ internal class RumFeature(
             is InternalTelemetryEvent -> handleTelemetryEvent(event)
             is RumFlagEvaluationMessage -> handleFlagEvaluationEvent(event)
             is ProfilingAnrDetectedEvent -> handleProfilingAnrDetectedEvent(event)
+            // Off the sender's thread: the profiling feature may send these from its own executors.
+            is ProfilerEvent.OomProfileWriteResult -> onContextThread {
+                pendingOomErrorStore.onOomProfileWriteResult(event.rumErrorId, event.isWritten)
+            }
+
+            is ProfilerEvent.OomProfilingReady -> onContextThread { pendingOomErrorStore.onProfilingReady() }
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -533,6 +543,10 @@ internal class RumFeature(
     // endregion
 
     // region Internal
+    private fun onContextThread(block: () -> Unit) {
+        sdkCore.getFeature(name)?.withContext { block() }
+    }
+
     private fun handleFlagEvaluationEvent(event: RumFlagEvaluationMessage) {
         (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addFeatureFlagEvaluation(
             name = event.flagKey,

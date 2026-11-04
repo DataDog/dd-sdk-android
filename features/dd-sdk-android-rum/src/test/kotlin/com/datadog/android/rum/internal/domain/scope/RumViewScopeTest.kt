@@ -30,6 +30,7 @@ import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.rum.RumViewType
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -45,9 +46,11 @@ import com.datadog.android.rum.assertj.VitalOperationStepEventAssert.Companion.a
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.PendingOomErrorStore
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
@@ -4373,11 +4376,36 @@ internal class RumViewScopeTest {
             eventTime = fakeEventTime
         )
         val expectedTimestamp = resolveExpectedTimestamp(fakeEvent.eventTime.timestamp)
+        val mockStore = stubPendingOomErrorStore()
+        whenever(mockStore.tryHold(any())) doReturn true
+        val datadogContext = fakeDatadogContext.withOomTriggerActive()
+        // Queued and run later, like the real asynchronous write scope.
+        var isInsideWriteScope = false
+        val queuedWrites = mutableListOf<(EventBatchWriter) -> Unit>()
+        val queuedWriteScope: EventWriteScope = { queuedWrites.add(it) }
+        val sentInsideWriteScope = mutableListOf<Boolean>()
+        whenever(mockProfilingFeatureScope.sendEvent(any())) doAnswer {
+            sentInsideWriteScope.add(isInsideWriteScope)
+            Unit
+        }
 
         // When
-        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(fakeEvent, datadogContext, queuedWriteScope, mockWriter)
+        assertThat(sentInsideWriteScope).containsExactly(false)
+        queuedWrites.forEach {
+            isInsideWriteScope = true
+            it(mockEventBatchWriter)
+            isInsideWriteScope = false
+        }
 
-        // Then — best-effort signal sent immediately (fatal crash has no onSuccess callback)
+        // Then
+        val heldCaptor = argumentCaptor<ErrorEvent>()
+        verify(mockStore).tryHold(heldCaptor.capture())
+        assertThat(heldCaptor.firstValue.dd.profiling).isNull()
+        assertThat(heldCaptor.firstValue.error.isCrash).isTrue
+        verify(mockWriter, never()).write(eq(mockEventBatchWriter), isA<ErrorEvent>(), any())
+        verify(mockWriter).write(eq(mockEventBatchWriter), isA<ViewEvent>(), eq(EventType.CRASH))
+        assertThat(sentInsideWriteScope).containsExactly(false)
         argumentCaptor<ProfilerEvent.RumOomErrorEvent> {
             verify(mockProfilingFeatureScope).sendEvent(capture())
             assertThat(firstValue.id).isNotEmpty()
@@ -4391,6 +4419,75 @@ internal class RumViewScopeTest {
                 )
             )
         }
+    }
+
+    @Test
+    fun `M write right away without gating event W handleEvent(AddError) {fatal OOM, store can't hold}`(
+        @Forgery fakeSource: RumErrorSource,
+        @StringForgery fakeStacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.AddError(
+            "OutOfMemoryError",
+            fakeSource,
+            OutOfMemoryError(),
+            fakeStacktrace,
+            isFatal = true,
+            threads = emptyList(),
+            attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys),
+            eventTime = fakeEventTime
+        )
+        val mockStore = stubPendingOomErrorStore()
+        whenever(mockStore.tryHold(any())) doReturn false
+
+        // When
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext.withOomTriggerActive(), mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
+            assertThat(firstValue as ErrorEvent).hasNoProfiling()
+        }
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumOomErrorEvent>())
+    }
+
+    @ParameterizedTest
+    @EnumSource(TrackingConsent::class, names = ["PENDING", "NOT_GRANTED"])
+    fun `M write right away and not hold W handleEvent(AddError) {fatal OOM, consent not granted}`(
+        trackingConsent: TrackingConsent,
+        @Forgery fakeSource: RumErrorSource,
+        @StringForgery fakeStacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.AddError(
+            "OutOfMemoryError",
+            fakeSource,
+            OutOfMemoryError(),
+            fakeStacktrace,
+            isFatal = true,
+            threads = emptyList(),
+            attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys),
+            eventTime = fakeEventTime
+        )
+        // A store that would accept the hold.
+        val mockStore = stubPendingOomErrorStore()
+        whenever(mockStore.tryHold(any())) doReturn true
+        val datadogContext = fakeDatadogContext.withOomTriggerActive().copy(trackingConsent = trackingConsent)
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
+            assertThat(firstValue as ErrorEvent).hasNoProfiling()
+        }
+        verify(mockStore, never()).tryHold(any())
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumOomErrorEvent>())
     }
 
     @Test
@@ -6606,6 +6703,158 @@ internal class RumViewScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(firstValue).hasNoProfiling()
         }
+    }
+
+    @Test
+    fun `M include quotaReason in ErrorEvent W handleEvent(AddError) {fatal OOM, OOM trigger active, quota denied}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        // QUOTA_OK isn't a denial: such an error can be held.
+        val fakeQuotaReason = forge.aValueFrom(QuotaReason::class.java, exclude = listOf(QuotaReason.QUOTA_OK))
+        val throwable = OutOfMemoryError()
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = true,
+            threads = emptyList(),
+            attributes = attributes,
+            eventTime = fakeEventTime
+        )
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        FeatureContextKeys.PROFILING_OOM_TRIGGER_REGISTERED to true,
+                        FeatureContextKeys.PROFILING_QUOTA_REASON to fakeQuotaReason,
+                        FeatureContextKeys.PROFILING_QUOTA_SESSION_ID to fakeParentContext.sessionId
+                    )
+                )
+            }
+        )
+
+        // A store that would accept the hold.
+        val mockStore = stubPendingOomErrorStore()
+        whenever(mockStore.tryHold(any())) doReturn true
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
+            val errorEvent = firstValue as ErrorEvent
+            assertThat(errorEvent.dd.profiling?.status).isEqualTo(ErrorEvent.ProfilingStatus.STOPPED)
+            assertThat(errorEvent.dd.profiling?.quotaReason).isEqualTo(fakeQuotaReason.toErrorQuotaReason())
+        }
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumOomErrorEvent>())
+        verify(mockStore, never()).tryHold(any())
+    }
+
+    @Test
+    fun `M not set profiling status in ErrorEvent W handleEvent(AddError) {fatal OOM, OOM trigger inactive}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = OutOfMemoryError()
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = true,
+            threads = emptyList(),
+            attributes = attributes,
+            eventTime = fakeEventTime
+        )
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                // The profile of a running profiler is lost with the process: only the OOM trigger counts.
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        FeatureContextKeys.PROFILER_IS_RUNNING to true,
+                        FeatureContextKeys.PROFILING_OOM_TRIGGER_REGISTERED to false
+                    )
+                )
+            }
+        )
+
+        // A store that would accept the hold.
+        val mockStore = stubPendingOomErrorStore()
+        whenever(mockStore.tryHold(any())) doReturn true
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
+            assertThat(firstValue as ErrorEvent).hasNoProfiling()
+        }
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumOomErrorEvent>())
+        verify(mockStore, never()).tryHold(any())
+    }
+
+    @Test
+    fun `M not set profiling status in ErrorEvent W handleEvent(AddError) {fatal non-OOM, OOM trigger active}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = RuntimeException("not an OOM")
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            isFatal = true,
+            threads = emptyList(),
+            attributes = attributes,
+            eventTime = fakeEventTime
+        )
+        val datadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    Feature.PROFILING_FEATURE_NAME,
+                    mapOf(
+                        FeatureContextKeys.PROFILER_IS_RUNNING to true,
+                        FeatureContextKeys.PROFILING_OOM_TRIGGER_REGISTERED to true
+                    )
+                )
+            }
+        )
+
+        // A store that would accept the hold.
+        val mockStore = stubPendingOomErrorStore()
+        whenever(mockStore.tryHold(any())) doReturn true
+
+        // When
+        testedScope.handleEvent(fakeEvent, datadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
+            assertThat(firstValue as ErrorEvent).hasNoProfiling()
+        }
+        verify(mockStore, never()).tryHold(any())
     }
 
     @Test
@@ -11182,6 +11431,23 @@ internal class RumViewScopeTest {
     )
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)
+
+    private fun stubPendingOomErrorStore(): PendingOomErrorStore {
+        val mockStore = mock<PendingOomErrorStore>()
+        val mockRumFeature = mock<RumFeature>()
+        whenever(mockRumFeature.pendingOomErrorStore) doReturn mockStore
+        val mockRumScope = mock<FeatureScope>()
+        whenever(mockRumScope.unwrap<RumFeature>()) doReturn mockRumFeature
+        whenever(rumMonitorConfiguration.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
+        return mockStore
+    }
+
+    private fun DatadogContext.withOomTriggerActive(): DatadogContext = copy(
+        trackingConsent = TrackingConsent.GRANTED,
+        featuresContext = featuresContext.toMutableMap().apply {
+            put(Feature.PROFILING_FEATURE_NAME, mapOf(FeatureContextKeys.PROFILING_OOM_TRIGGER_REGISTERED to true))
+        }
+    )
 
     companion object {
         private const val MAX_DURATION_VALUE_NS = 10_000_000_000L
