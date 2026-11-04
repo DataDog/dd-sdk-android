@@ -17,10 +17,13 @@ import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.internal.time.DefaultTimeProvider
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.internal.utils.PathUtils
 import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
+import java.lang.ref.WeakReference
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.ThreadPoolExecutor
@@ -44,9 +47,15 @@ internal class ResourceResolver(
     ),
     private val resourceItemCreationHandler: ResourceItemCreationHandler = ResourceItemCreationHandler(
         recordedDataQueueHandler = recordedDataQueueHandler
-    )
+    ),
+    private val drawableReferenceFactory: (Drawable) -> WeakReference<Drawable> = {
+        @Suppress("UnsafeThirdPartyFunctionCall") // Drawable input is non-null and retained weakly while queued.
+        WeakReference(it)
+    },
+    timeProvider: TimeProvider = DefaultTimeProvider()
 ) {
 
+    private val pendingResources = PendingResourceRequests(logger, timeProvider)
     internal fun registerCallbacks() {
         applicationContext.registerComponentCallbacks(alpha8ResourceCache)
     }
@@ -78,43 +87,45 @@ internal class ResourceResolver(
         resourceResolverCallback: ResourceResolverCallback
     ) {
         threadPoolExecutor.executeSafe(RESOURCE_RESOLVER_ALIAS, logger) {
-            val key =
-                customResourceIdCacheKey
-                    ?: path.let {
-                        pathUtils.generateKeyForPath(it)
-                    }
+            processResource(resourceResolverCallback) {
+                val key =
+                    customResourceIdCacheKey
+                        ?: path.let {
+                            pathUtils.generateKeyForPath(it)
+                        }
 
-            val resourceId = tryToGetResourceFromCache(
-                drawable = null,
-                customResourceIdCacheKey = key
-            )
+                val resourceId = tryToGetResourceFromCache(
+                    drawable = null,
+                    customResourceIdCacheKey = key
+                )
 
-            if (resourceId != null) {
-                // if we got here it means we saw the bitmap before,
-                // so we don't need to send the resource again
-                resourceResolverCallback.onSuccess(resourceId)
-                return@executeSafe
+                if (resourceId != null) {
+                    // if we got here it means we saw the bitmap before,
+                    // so we don't need to send the resource again
+                    resourceResolverCallback.onSuccess(resourceId)
+                    return@processResource
+                }
+
+                val bitmap = pathUtils.convertPathToBitmap(
+                    checkPath = path,
+                    checkmarkColor = strokeColor,
+                    desiredWidth = desiredWidth,
+                    desiredHeight = desiredHeight,
+                    strokeWidth = strokeWidth
+                )
+
+                if (bitmap == null) {
+                    resourceResolverCallback.onFailure()
+                    return@processResource
+                }
+
+                compressAndCacheBitmap(
+                    drawable = null,
+                    bitmap = bitmap,
+                    customResourceIdCacheKey = customResourceIdCacheKey,
+                    resolveResourceCallback = createResolveResourceCallback(resourceResolverCallback)
+                )
             }
-
-            val bitmap = pathUtils.convertPathToBitmap(
-                checkPath = path,
-                checkmarkColor = strokeColor,
-                desiredWidth = desiredWidth,
-                desiredHeight = desiredHeight,
-                strokeWidth = strokeWidth
-            )
-
-            if (bitmap == null) {
-                resourceResolverCallback.onFailure()
-                return@executeSafe
-            }
-
-            compressAndCacheBitmap(
-                drawable = null,
-                bitmap = bitmap,
-                customResourceIdCacheKey = customResourceIdCacheKey,
-                resolveResourceCallback = createResolveResourceCallback(resourceResolverCallback)
-            )
         }
     }
 
@@ -131,36 +142,77 @@ internal class ResourceResolver(
         resourceResolverCallback: ResourceResolverCallback
     ) {
         bitmapCachesManager.registerCallbacks(applicationContext)
-        val cached = tryToGetResourceFromCache(
-            drawable = originalDrawable,
-            customResourceIdCacheKey = customResourceIdCacheKey
-        )
-        if (cached != null) {
-            resourceResolverCallback.onSuccess(cached)
+
+        val resourceId =
+            tryToGetResourceFromCache(drawable = originalDrawable, customResourceIdCacheKey = customResourceIdCacheKey)
+
+        if (resourceId != null) {
+            // if we got here it means we saw the bitmap before,
+            // so we don't need to send the resource again
+            resourceResolverCallback.onSuccess(resourceId)
             return
         }
-        ResourceProcessingTask(
-            onCancelled = { resourceResolverCallback.onFailure() },
-            onFailure = { resourceResolverCallback.onFailure() },
-            action = {
-                @Suppress("ThreadSafety") // Copying, drawing and encoding run together on the drawing worker.
-                resolveDrawable(
-                    resources = resources,
-                    originalDrawable = originalDrawable,
-                    drawableCopier = drawableCopier,
-                    drawableWidth = drawableWidth,
-                    drawableHeight = drawableHeight,
-                    displayMetrics = displayMetrics,
-                    customResourceIdCacheKey = customResourceIdCacheKey,
-                    resourceResolverCallback = resourceResolverCallback
-                )
-            }
-        ).execute(drawableExecutor, logger)
+
+        if (!pendingResources.canAllocate) {
+            resourceResolverCallback.onFailure()
+            return
+        }
+        val sourceBitmap = (originalDrawable as? BitmapDrawable)?.bitmap
+        val validSourceBitmap = if (sourceBitmap != null && !sourceBitmap.isRecycled) sourceBitmap else null
+        // Conservatively account for a bitmap source and the pixels allocated while processing it.
+        val sourceBytes = validSourceBitmap?.allocationByteCount?.toLong() ?: 0L
+        val byteCount = sourceBytes + maxOf(
+            estimateDrawableByteCount(drawableWidth, drawableHeight),
+            validSourceBitmap?.let { estimateBitmapDrawableByteCount(it) } ?: 0L
+        )
+        val requestKey = customResourceIdCacheKey ?: generateKey(originalDrawable)
+            ?: System.identityHashCode(originalDrawable).toString()
+        pendingResources.resolve(requestKey, byteCount, resourceResolverCallback) { request ->
+            val drawableReference = drawableReferenceFactory(originalDrawable)
+            ResourceProcessingTask(
+                request.cancellation,
+                onCancelled = { request.onFailure() },
+                onFailure = { request.onFailure() },
+                action = {
+                    @Suppress("ThreadSafety") // This action runs on the drawing executor.
+                    processResource(request) {
+                        val capturedDrawable = drawableReference.get()
+                        if (capturedDrawable == null) {
+                            request.onFailure()
+                        } else {
+                            resolveDrawable(
+                                resources = resources,
+                                originalDrawable = capturedDrawable,
+                                drawableCopier = drawableCopier,
+                                drawableWidth = drawableWidth,
+                                drawableHeight = drawableHeight,
+                                displayMetrics = displayMetrics,
+                                customResourceIdCacheKey = customResourceIdCacheKey,
+                                resourceResolverCallback = request
+                            )
+                        }
+                    }
+                }
+            ).execute(drawableExecutor, logger)
+        }
     }
 
     // endregion
 
     // region private
+
+    @WorkerThread
+    private inline fun processResource(callback: ResourceResolverCallback, process: () -> Unit) {
+        if (!pendingResources.canAllocate) {
+            callback.onFailure()
+            return
+        }
+        try {
+            process()
+        } catch (e: OutOfMemoryError) {
+            pendingResources.onOutOfMemory(e, callback)
+        }
+    }
 
     @WorkerThread
     private fun resolveDrawable(
@@ -173,9 +225,14 @@ internal class ResourceResolver(
         customResourceIdCacheKey: String?,
         resourceResolverCallback: ResourceResolverCallback
     ) {
+        val cachedResourceId = tryToGetResourceFromCache(originalDrawable, customResourceIdCacheKey)
+        if (cachedResourceId != null) {
+            resourceResolverCallback.onSuccess(cachedResourceId)
+            return
+        }
         // Copy on the worker: MaterialShapeDrawable must not reuse its main-thread path provider.
         val copiedDrawable = copyDrawable(drawableCopier, originalDrawable, resources)
-        if (copiedDrawable == null) {
+        if (copiedDrawable == null || resourceResolverCallback.cancellation?.isCancelled == true) {
             resourceResolverCallback.onFailure()
             return
         }
@@ -204,6 +261,9 @@ internal class ResourceResolver(
         resources: Resources
     ): Drawable? = try {
         drawableCopier.copy(originalDrawable, resources)
+    } catch (e: OutOfMemoryError) {
+        @Suppress("ThrowingInternalException") // The capture owner stops the request and pauses allocations.
+        throw e
     } catch (e: Throwable) {
         // DrawableCopier can be supplied by the application.
         logger.log(
@@ -217,6 +277,9 @@ internal class ResourceResolver(
     }
 
     private fun createResolveResourceCallback(callback: ResourceResolverCallback) = object : ResolveResourceCallback {
+        override val cancellation: ResourceCancellation?
+            get() = callback.cancellation
+
         override fun onResolved(resourceId: String, resourceData: ByteArray) {
             // A running encode can finish after cancellation; publish its resource before reusing its cached ID.
             resourceItemCreationHandler.queueItem(resourceId, resourceData)
@@ -224,6 +287,29 @@ internal class ResourceResolver(
         }
 
         override fun onFailed() = callback.onFailure()
+    }
+
+    private fun estimateBitmapDrawableByteCount(bitmap: Bitmap): Long {
+        if (bitmap.width <= 0 || bitmap.height <= 0) return 0L
+        val pixels = bitmap.width.toLong() * bitmap.height
+        // Scaling preserves the source config, so wide-color pixels can cost more than ARGB_8888.
+        val bytesPerPixel = ((bitmap.allocationByteCount.toLong() + pixels - 1) / pixels)
+            .coerceAtLeast(ARGB_BYTES_PER_PIXEL.toLong())
+        val targetPixels = minOf(
+            pixels,
+            DrawableUtils.MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT / ARGB_BYTES_PER_PIXEL.toLong()
+        )
+        return targetPixels * bytesPerPixel
+    }
+
+    private fun estimateDrawableByteCount(width: Int, height: Int): Long {
+        if (width <= 0 || height <= 0) return 0L
+        val pixels = width.toLong() * height
+        return minOf(
+            pixels,
+            DrawableUtils.MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT / ARGB_BYTES_PER_PIXEL.toLong()
+        ) *
+            ARGB_BYTES_PER_PIXEL
     }
 
     @WorkerThread
@@ -330,6 +416,9 @@ internal class ResourceResolver(
             drawableHeight = drawableHeight,
             displayMetrics = displayMetrics,
             bitmapCreationCallback = object : BitmapCreationCallback {
+                override val cancellation: ResourceCancellation?
+                    get() = resolveResourceCallback.cancellation
+
                 @WorkerThread
                 override fun onReady(bitmap: Bitmap) {
                     compressAndCacheBitmap(
@@ -355,10 +444,21 @@ internal class ResourceResolver(
         customResourceIdCacheKey: String?,
         resolveResourceCallback: ResolveResourceCallback
     ) {
+        var compressionCompleted = false
         val compressedBitmapBytes = try {
-            webPImageCompression.compressBitmap(bitmap)
+            val bytes = if (resolveResourceCallback.cancellation?.isCancelled == true) {
+                byteArrayOf()
+            } else {
+                webPImageCompression.compressBitmap(bitmap)
+            }
+            compressionCompleted = true
+            bytes
         } finally {
-            bitmapCachesManager.putInBitmapPool(bitmap)
+            if (compressionCompleted) {
+                bitmapCachesManager.putInBitmapPool(bitmap)
+            } else {
+                bitmap.recycle()
+            }
         }
 
         // failed to compress bitmap
@@ -472,7 +572,11 @@ internal class ResourceResolver(
             ?: return false
 
         val compressedBitmapBytes = try {
-            webPImageCompression.compressBitmap(scaledBitmap)
+            if (resolveResourceCallback.cancellation?.isCancelled == true) {
+                byteArrayOf()
+            } else {
+                webPImageCompression.compressBitmap(scaledBitmap)
+            }
         } finally {
             if (scaledBitmap !== bitmapFromDrawable) scaledBitmap.recycle()
         }
@@ -517,6 +621,9 @@ internal class ResourceResolver(
     // endregion
 
     internal interface BitmapCreationCallback {
+        val cancellation: ResourceCancellation?
+            get() = null
+
         @WorkerThread
         fun onReady(bitmap: Bitmap)
 
@@ -530,6 +637,7 @@ internal class ResourceResolver(
         private const val THREAD_POOL_MAX_KEEP_ALIVE_MS = 5000L
         private const val CORE_DEFAULT_POOL_SIZE = 1
         private const val MAX_THREAD_COUNT = 10
+        private const val ARGB_BYTES_PER_PIXEL = 4
         private const val RESOURCE_RESOLVER_ALIAS = "resolveResourceId"
 
         @Suppress("UnsafeThirdPartyFunctionCall") // all parameters are non-negative and queue is not null

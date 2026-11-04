@@ -12,7 +12,6 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
-import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
@@ -100,6 +99,7 @@ internal class DrawableUtils(
         var isReady = false
         var allocationFailed = false
         try {
+            if (bitmapCreationCallback.cancellation?.isCancelled == true) return
             val canvas = canvasWrapper.createCanvas(bitmap) ?: return
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
             drawable.setBounds(0, 0, canvas.width, canvas.height)
@@ -202,7 +202,6 @@ internal class DrawableUtils(
             )
 
     internal companion object {
-        @VisibleForTesting
         internal const val MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT = 10 * 1024 * 1024 // 10mb
         private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
         internal const val FAILED_TO_CREATE_SCALED_BITMAP_ERROR =
