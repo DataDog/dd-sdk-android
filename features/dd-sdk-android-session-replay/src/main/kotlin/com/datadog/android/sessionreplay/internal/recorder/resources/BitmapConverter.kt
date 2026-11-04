@@ -12,6 +12,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
 
 internal interface BitmapConverter {
     @WorkerThread
@@ -36,12 +37,15 @@ internal class Alpha8BitmapConverter(
             return null
         }
 
-        // Safe: width/height validated > 0 above, config is non-null constant.
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        val argbBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+        val argbBitmap = BitmapWrapper(logger).createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+            ?: return null
 
         return try {
             drawAlpha8ToArgb(argbBitmap, bitmap)
+        } catch (e: OutOfMemoryError) {
+            argbBitmap.recycle()
+            @Suppress("ThrowingInternalException") // The capture owner handles OOM after owned pixels are released.
+            throw e
         } catch (e: IllegalStateException) {
             argbBitmap.recycle()
             logger.log(

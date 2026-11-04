@@ -22,15 +22,17 @@ internal class WebPImageCompression(
 
     @WorkerThread
     override fun compressBitmap(bitmap: Bitmap): ByteArray {
-        // preallocate stream size
-        val byteArrayOutputStream = ByteArrayOutputStream(bitmap.allocationByteCount)
         val imageFormat = getImageCompressionFormat()
 
-        @Suppress("SwallowedException")
-        try {
+        return try {
+            val byteArrayOutputStream = ByteArrayOutputStream()
             // stream is not null and image quality is between 0 and 100
             @Suppress("UnsafeThirdPartyFunctionCall")
-            bitmap.compress(imageFormat, IMAGE_QUALITY, byteArrayOutputStream)
+            if (bitmap.compress(imageFormat, IMAGE_QUALITY, byteArrayOutputStream)) {
+                byteArrayOutputStream.toByteArray()
+            } else {
+                EMPTY_BYTEARRAY
+            }
         } catch (e: IllegalStateException) {
             // probably if the bitmap was recycled while we were working on it
             logger.log(
@@ -40,10 +42,8 @@ internal class WebPImageCompression(
                 e
             )
 
-            return EMPTY_BYTEARRAY
+            EMPTY_BYTEARRAY
         }
-
-        return byteArrayOutputStream.toByteArray()
     }
 
     private fun getImageCompressionFormat(): Bitmap.CompressFormat =
