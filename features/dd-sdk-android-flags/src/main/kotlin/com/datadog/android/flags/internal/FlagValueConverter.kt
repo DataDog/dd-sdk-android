@@ -32,7 +32,7 @@ internal object FlagValueConverter {
     private val INT_MIN = BigDecimal(Int.MIN_VALUE)
     private val INT_MAX = BigDecimal(Int.MAX_VALUE)
 
-    // The longest decimal value that Int reads, and Double reads at or above 2^53, parse with BigDecimal.
+    // The longest decimal value that numeric reads parse with BigDecimal.
     // This bounds the BigDecimal work on each read.
     private const val MAX_DECIMAL_LENGTH = 64
 
