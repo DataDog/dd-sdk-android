@@ -5,6 +5,7 @@
  */
 
 import com.datadog.gradle.config.taskConfig
+import org.gradle.api.component.AdhocComponentWithVariants
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -40,6 +41,10 @@ plugins {
 }
 
 android {
+    testFixtures {
+        enable = true
+    }
+
     namespace = "com.datadog.android.sessionreplay.compose"
 
     defaultConfig {
@@ -82,6 +87,11 @@ dependencies {
     }
     testImplementation(libs.coilCompose)
     unmock(libs.robolectric)
+
+    testFixturesImplementation(libs.kotlinRuntime)
+    testFixturesImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testFixturesImplementation(platform(libs.androidXComposeBom))
+    testFixturesImplementation(libs.androidXComposeUi)
 }
 
 unMock {
@@ -103,5 +113,15 @@ taskConfig<KotlinCompile> {
         // This integration intentionally accesses Kotlin-internal Compose APIs via INVISIBLE_*
         // suppressions, which KGP 2.2 reports with the ERROR_SUPPRESSION diagnostic.
         freeCompilerArgs.add("-Xwarning-level=ERROR_SUPPRESSION:disabled")
+    }
+}
+
+// Keep the image-capture fixtures local to this build.
+afterEvaluate {
+    val releaseComponent = components["release"] as AdhocComponentWithVariants
+    listOf("Api", "Runtime").forEach { usage ->
+        releaseComponent.withVariantsFromConfiguration(
+            configurations["releaseTestFixturesVariantRelease${usage}Publication"]
+        ) { skip() }
     }
 }

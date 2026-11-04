@@ -124,6 +124,7 @@ dependencies {
     androidTestImplementation(project(":dd-sdk-android-internal"))
     androidTestImplementation(project(":integrations:dd-sdk-android-compose"))
     androidTestImplementation(testFixtures(project(":features:dd-sdk-android-session-replay")))
+    androidTestImplementation(testFixtures(project(":features:dd-sdk-android-session-replay-compose")))
     androidTestImplementation(libs.androidXComposeMaterial)
     androidTestImplementation(libs.androidXComposeUiTestJUnit4)
     debugImplementation(platform(libs.androidXComposeBom))

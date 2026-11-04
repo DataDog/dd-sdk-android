@@ -9,6 +9,8 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 import android.graphics.Bitmap
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
+import java.lang.ref.WeakReference
+import java.util.WeakHashMap
 import java.util.concurrent.ExecutorService
 
 /** Shares unchanged images and owns only the snapshots accepted by the recorder's budget. */
@@ -18,14 +20,22 @@ internal class BitmapResourceResolver(
     private val pending: PendingResourceRequests,
     private val resolveBitmap: (Bitmap) -> String?
 ) {
+    private val lock = Any()
+    private val completed = WeakHashMap<Bitmap, CompletedResource>()
+
     @MainThread
     fun resolve(bitmap: Bitmap, callback: ResourceResolverCallback) {
         if (!isValid(bitmap) || callback.cancellation?.isCancelled == true) {
             callback.onFailure()
             return
         }
-        val version = BitmapVersion(bitmap.width, bitmap.height, bitmap.config)
-        resolveUncached(bitmap, version, callback)
+        val version = BitmapVersion(bitmap.generationId, bitmap.width, bitmap.height, bitmap.config)
+        val cached = synchronized(lock) { completed[bitmap]?.takeIf { it.version == version } }
+        if (cached != null) {
+            callback.onSuccess(cached.resourceId)
+        } else {
+            resolveUncached(bitmap, version, callback)
+        }
     }
 
     private fun isValid(bitmap: Bitmap): Boolean = !bitmap.isRecycled && bitmap.width > 0 && bitmap.height > 0
@@ -47,18 +57,19 @@ internal class BitmapResourceResolver(
         } else {
             0L
         }
-        pending.resolve(Any(), pixels * ARGB_BYTES_PER_PIXEL + alphaBytes, callback) { request ->
+        val key = BitmapRequestKey(bitmap, version)
+        pending.resolve(key, pixels * ARGB_BYTES_PER_PIXEL + alphaBytes, callback) { request ->
             if (request.cancellation.isCancelled) {
                 request.onFailure()
             } else {
-                copyAndSchedule(bitmap, version, request)
+                copyAndSchedule(bitmap, key, request)
             }
         }
     }
 
     @MainThread
-    private fun copyAndSchedule(bitmap: Bitmap, version: BitmapVersion, callback: ResourceResolverCallback) {
-        val config = if (version.config == Bitmap.Config.ALPHA_8) {
+    private fun copyAndSchedule(bitmap: Bitmap, key: BitmapRequestKey, callback: ResourceResolverCallback) {
+        val config = if (key.version.config == Bitmap.Config.ALPHA_8) {
             Bitmap.Config.ALPHA_8
         } else {
             Bitmap.Config.ARGB_8888
@@ -80,7 +91,7 @@ internal class BitmapResourceResolver(
                 callback.onFailure()
             },
             onFailure = { callback.onFailure() },
-            action = { process(snapshot, callback) }
+            action = { process(snapshot, key, callback) }
         ).execute(executorService, logger)
     }
 
@@ -102,11 +113,11 @@ internal class BitmapResourceResolver(
         )
     }
 
-    private fun process(bitmap: Bitmap, callback: ResourceResolverCallback) {
+    private fun process(bitmap: Bitmap, key: BitmapRequestKey, callback: ResourceResolverCallback) {
         try {
             val resourceId = try {
                 if (pending.canAllocate) {
-                    resolveBitmap(bitmap)
+                    resolveBitmap(bitmap)?.also { cache(key, it) }
                 } else {
                     null
                 }
@@ -123,13 +134,45 @@ internal class BitmapResourceResolver(
         }
     }
 
+    private fun cache(key: BitmapRequestKey, resourceId: String) = synchronized(lock) {
+        val source = key.source.get() ?: return@synchronized
+        if (completed.size >= MAX_CACHED_RESOURCES && completed[source] == null) {
+            val iterator = completed.keys.iterator()
+            if (iterator.hasNext()) {
+                @Suppress("UnsafeThirdPartyFunctionCall") // hasNext retains the key; lock excludes mutations.
+                iterator.next()
+                @Suppress("UnsafeThirdPartyFunctionCall") // Mutable map iterator; next was just called.
+                iterator.remove()
+            }
+        }
+        completed[source] = CompletedResource(key.version, resourceId)
+    }
+
     private data class BitmapVersion(
+        val generationId: Int,
         val width: Int,
         val height: Int,
         val config: Bitmap.Config?
     )
 
+    private class BitmapRequestKey(bitmap: Bitmap, val version: BitmapVersion) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // The source is non-null and is retained weakly.
+        val source = WeakReference(bitmap)
+        private val sourceHash = System.identityHashCode(bitmap)
+
+        override fun hashCode(): Int = 31 * sourceHash + version.hashCode()
+
+        override fun equals(other: Any?): Boolean = this === other ||
+            (
+                other is BitmapRequestKey && version == other.version &&
+                    source.get()?.let { it === other.source.get() } == true
+                )
+    }
+
+    private class CompletedResource(val version: BitmapVersion, val resourceId: String)
+
     internal companion object {
         private const val ARGB_BYTES_PER_PIXEL = 4
+        internal const val MAX_CACHED_RESOURCES = 256
     }
 }
