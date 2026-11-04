@@ -26,6 +26,7 @@ import dev.openfeature.kotlin.sdk.OpenFeatureAPI
 import dev.openfeature.kotlin.sdk.Value
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import okhttp3.HttpUrl
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -42,6 +43,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import java.net.InetAddress
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
@@ -82,7 +84,7 @@ internal class FlagsPrivacyInstrumentedTest(private val useOpenFeature: Boolean)
                 else -> MockResponse().setResponseCode(404)
             }
         }
-        server.start()
+        server.start(InetAddress.getByAddress(byteArrayOf(127, 0, 0, 1)), 0)
     }
 
     @After
@@ -288,9 +290,9 @@ internal class FlagsPrivacyInstrumentedTest(private val useOpenFeature: Boolean)
         ) as FeatureSdkCore
         Flags.enable(
             FlagsConfiguration.Builder()
-                .useCustomFlagEndpoint(server.url("/assignments").toString())
-                .useCustomEvaluationEndpoint(server.url("/evaluations").toString())
-                .useCustomExposureEndpoint(server.url("/exposures").toString())
+                .useCustomFlagEndpoint(serverUrl("/assignments"))
+                .useCustomEvaluationEndpoint(serverUrl("/evaluations"))
+                .useCustomExposureEndpoint(serverUrl("/exposures"))
                 .evaluationFlushInterval(flushIntervalMs)
                 .initializationTimeout(WAIT_MS)
                 .trackEvaluations(trackEvaluations)
@@ -361,6 +363,14 @@ internal class FlagsPrivacyInstrumentedTest(private val useOpenFeature: Boolean)
     } else {
         request.body.readUtf8()
     }
+
+    private fun serverUrl(path: String): String = HttpUrl.Builder()
+        .scheme("http")
+        .host("127.0.0.1")
+        .port(server.port)
+        .encodedPath(path)
+        .build()
+        .toString()
 
     companion object {
         private const val WAIT_MS = 60_000L

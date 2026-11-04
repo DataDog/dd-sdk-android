@@ -87,6 +87,9 @@ adb -s emulator-5554 shell am instrument -w -r \
   com.datadog.android.flags.integration.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
+Core and Flags privacy test servers bind to numeric IPv4 loopback and use numeric endpoint URLs
+to avoid intermittent `localhost` resolution failures on the API 37 emulator.
+
 The tests use synthetic credentials and a local server; no live Datadog org is needed. They verify
 actual Android HTTP uploads, but do not claim live backend acceptance or process-kill recovery.
 
