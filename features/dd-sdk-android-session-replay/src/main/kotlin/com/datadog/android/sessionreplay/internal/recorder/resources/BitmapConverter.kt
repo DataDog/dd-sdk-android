@@ -12,6 +12,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
 
 internal interface BitmapConverter {
     @WorkerThread
@@ -36,12 +37,15 @@ internal class Alpha8BitmapConverter(
             return null
         }
 
-        // Safe: width/height validated > 0 above, config is non-null constant.
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        val argbBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+        val argbBitmap = BitmapWrapper(logger).createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+            ?: return null
 
         return try {
             drawAlpha8ToArgb(argbBitmap, bitmap)
+        } catch (e: OutOfMemoryError) {
+            argbBitmap.recycle()
+            @Suppress("ThrowingInternalException") // The capture owner handles OOM after owned pixels are released.
+            throw e
         } catch (e: IllegalStateException) {
             argbBitmap.recycle()
             logger.log(
@@ -58,17 +62,22 @@ internal class Alpha8BitmapConverter(
         // Safe: destination was just created by createBitmap, guaranteed mutable and not recycled
         @Suppress("UnsafeThirdPartyFunctionCall")
         val canvas = Canvas(destination)
-        canvas.drawColor(Color.BLACK)
+        try {
+            canvas.drawColor(Color.BLACK)
 
-        val paint = Paint()
-        paint.color = Color.WHITE
+            val paint = Paint()
+            paint.color = Color.WHITE
 
-        // Safe: source validated at method entry. If recycled by another thread,
-        // IllegalStateException is caught by caller.
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        canvas.drawBitmap(source, 0f, 0f, paint)
+            // Safe: source validated at method entry. If recycled by another thread,
+            // IllegalStateException is caught by caller.
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            canvas.drawBitmap(source, 0f, 0f, paint)
 
-        return destination
+            return destination
+        } finally {
+            @Suppress("UnsafeThirdPartyFunctionCall") // This canvas is software-backed and null detaches its target.
+            canvas.setBitmap(null)
+        }
     }
 
     private companion object {
