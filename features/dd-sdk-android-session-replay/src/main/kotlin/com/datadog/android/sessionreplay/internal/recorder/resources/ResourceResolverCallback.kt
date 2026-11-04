@@ -7,6 +7,9 @@
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
 internal interface ResourceResolverCallback {
+    val cancellation: ResourceCancellation?
+        get() = null
+
     fun onSuccess(resourceId: String)
 
     fun onFailure()

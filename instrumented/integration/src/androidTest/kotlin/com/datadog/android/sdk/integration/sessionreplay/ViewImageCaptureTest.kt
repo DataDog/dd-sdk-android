@@ -74,6 +74,32 @@ internal class ViewImageCaptureTest {
     }
 
     @Test
+    fun shareUnchangedDrawableWhileDrawingIsBlocked() {
+        // Given
+        val fakeFixture = CaptureFixture()
+        val fakeDraws = AtomicInteger()
+        val fakeDrawable = CountingDrawable(fakeDraws)
+        val fakeRelease = fakeFixture.blockDrawing()
+        val fakeBefore = Debug.getNativeHeapAllocatedSize()
+        var fakeBlocked = fakeBefore
+
+        // When
+        try {
+            repeat(CAPTURE_COUNT) { fakeFixture.capture(fakeDrawable) }
+            fakeFixture.awaitRequestsQueued()
+            fakeBlocked = Debug.getNativeHeapAllocatedSize()
+        } finally {
+            fakeFixture.finish(fakeRelease)
+        }
+
+        // Then
+        assertThat(fakeFixture.completed.get()).isEqualTo(CAPTURE_COUNT)
+        assertThat(fakeDraws.get()).isEqualTo(1)
+        assertThat(fakeBlocked - fakeBefore).isLessThan(16 * MIB)
+        fakeFixture.assertRecordedImage()
+    }
+
+    @Test
     fun preserveApplicationBitmapWhenScalingDrawable() {
         // Given
         val fakeFixture = CaptureFixture()
