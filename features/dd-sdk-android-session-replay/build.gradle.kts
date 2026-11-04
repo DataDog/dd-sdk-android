@@ -8,6 +8,7 @@
 import com.datadog.gradle.utils.cloneRumEventsFormat
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
 import com.datadog.gradle.utils.createRumEventsFormatCloneTask
+import org.gradle.api.component.AdhocComponentWithVariants
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -42,6 +43,10 @@ plugins {
 }
 
 android {
+    testFixtures {
+        enable = true
+    }
+
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")
     }
@@ -50,6 +55,9 @@ android {
 }
 
 dependencies {
+    testFixturesImplementation(libs.kotlinRuntime)
+    testFixturesImplementation(testFixtures(project(":dd-sdk-android-core")))
+
     api(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
     implementation(libs.okHttp)
@@ -131,4 +139,14 @@ datadogBuild {
         "The Session Replay feature to use with the Datadog monitoring " +
             "library for Android applications."
     )
+}
+
+// Keep the image-capture fixtures local to this build.
+afterEvaluate {
+    val releaseComponent = components["release"] as AdhocComponentWithVariants
+    listOf("Api", "Runtime").forEach { usage ->
+        releaseComponent.withVariantsFromConfiguration(
+            configurations["releaseTestFixturesVariantRelease${usage}Publication"]
+        ) { skip() }
+    }
 }

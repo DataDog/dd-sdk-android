@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.utils
 
 import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
@@ -15,18 +16,15 @@ import android.util.DisplayMetrics
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
-import java.util.concurrent.ExecutorService
 import kotlin.math.sqrt
 
 internal class DrawableUtils(
     private val internalLogger: InternalLogger,
     private val bitmapCachesManager: BitmapCachesManager,
-    private val executorService: ExecutorService,
     private val bitmapWrapper: BitmapWrapper = BitmapWrapper(internalLogger),
     private val canvasWrapper: CanvasWrapper = CanvasWrapper(internalLogger)
 ) {
@@ -47,21 +45,15 @@ internal class DrawableUtils(
         bitmapCreationCallback: ResourceResolver.BitmapCreationCallback
     ) {
         createScaledBitmap(
-            drawableWidth,
-            drawableHeight,
-            requestedSizeInBytes,
-            displayMetrics,
-            config,
+            drawableWidth = drawableWidth,
+            drawableHeight = drawableHeight,
+            requestedSizeInBytes = requestedSizeInBytes,
+            displayMetrics = displayMetrics,
+            config = config,
             resizeBitmapCallback = object : ResizeBitmapCallback {
                 @WorkerThread
                 override fun onSuccess(bitmap: Bitmap) {
-                    executorService.executeSafe("drawOnCanvas", internalLogger) {
-                        drawOnCanvas(
-                            bitmap,
-                            drawable,
-                            bitmapCreationCallback
-                        )
-                    }
+                    drawOnCanvas(bitmap, drawable, bitmapCreationCallback)
                 }
 
                 @WorkerThread
@@ -69,7 +61,8 @@ internal class DrawableUtils(
                     internalLogger.log(
                         InternalLogger.Level.ERROR,
                         InternalLogger.Target.MAINTAINER,
-                        { FAILED_TO_CREATE_SCALED_BITMAP_ERROR }
+                        { FAILED_TO_CREATE_SCALED_BITMAP_ERROR },
+                        onlyOnce = true
                     )
                     bitmapCreationCallback.onFailure()
                 }
@@ -105,38 +98,45 @@ internal class DrawableUtils(
         drawable: Drawable,
         bitmapCreationCallback: ResourceResolver.BitmapCreationCallback
     ) {
-        val canvas = canvasWrapper.createCanvas(bitmap)
-
-        if (canvas == null) {
-            bitmapCreationCallback.onFailure()
-        } else {
-            // erase the canvas
-            // needed because overdrawing an already used bitmap causes unusual visual artifacts
+        var isReady = false
+        var allocationFailed = false
+        var canvas: Canvas? = null
+        try {
+            canvas = canvasWrapper.createCanvas(bitmap) ?: return
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
-
             drawable.setBounds(0, 0, canvas.width, canvas.height)
-
-            try {
-                drawable.draw(canvas)
-            } catch (e: RuntimeException) {
-                logDrawableDrawException(drawable, e)
+            drawable.draw(canvas)
+            isReady = true
+        } catch (e: OutOfMemoryError) {
+            allocationFailed = true
+            @Suppress("ThrowingInternalException") // The capture owner handles OOM after owned pixels are released.
+            throw e
+        } catch (e: Throwable) {
+            // Custom drawables can throw from bounds changes as well as drawing.
+            logDrawableCaptureFailure(drawable, e)
+        } finally {
+            @Suppress("UnsafeThirdPartyFunctionCall") // This canvas is software-backed and null detaches its target.
+            canvas?.setBitmap(null)
+            if (allocationFailed) {
+                bitmap.recycle()
+            } else if (!isReady) {
+                bitmapCachesManager.putInBitmapPool(bitmap)
                 bitmapCreationCallback.onFailure()
-                return
             }
-
-            bitmapCreationCallback.onReady(bitmap)
         }
+        if (isReady) bitmapCreationCallback.onReady(bitmap)
     }
 
-    private fun logDrawableDrawException(
+    private fun logDrawableCaptureFailure(
         drawable: Drawable,
-        runtimeException: RuntimeException
+        throwable: Throwable
     ) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
-            { "$DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION ${drawable.resolveClassName()}" },
-            runtimeException
+            { "$DRAWABLE_CAPTURE_FAILED ${drawable.resolveClassName()}" },
+            throwable,
+            onlyOnce = true
         )
     }
 
@@ -171,9 +171,9 @@ internal class DrawableUtils(
     ): Pair<Int, Int> {
         var width = drawableWidth
         var height = drawableHeight
-        val sizeAfterCreation = width * height * ARGB_8888_PIXEL_SIZE_BYTES
+        val pixelCount = width.toLong() * height
 
-        if (sizeAfterCreation > requestedSizeInBytes) {
+        if (pixelCount > requestedSizeInBytes / ARGB_8888_PIXEL_SIZE_BYTES) {
             val bitmapRatio = width.toDouble() / height.toDouble()
             val totalMaxPixels = (requestedSizeInBytes / ARGB_8888_PIXEL_SIZE_BYTES).toDouble()
             val maxSize = sqrt(totalMaxPixels).toInt()
@@ -187,7 +187,7 @@ internal class DrawableUtils(
             }
         }
 
-        return Pair(width, height)
+        return Pair(width.coerceAtLeast(1), height.coerceAtLeast(1))
     }
 
     @Suppress("ReturnCount")
@@ -211,7 +211,7 @@ internal class DrawableUtils(
         private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
         internal const val FAILED_TO_CREATE_SCALED_BITMAP_ERROR =
             "Failed to create a scaled bitmap from the drawable"
-        internal const val DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION =
-            "Drawable.draw call finished with an exception. Drawable type is"
+        internal const val DRAWABLE_CAPTURE_FAILED =
+            "Unable to record drawable. Drawable type is"
     }
 }
