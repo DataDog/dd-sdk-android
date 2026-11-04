@@ -56,6 +56,13 @@ internal class ResourceResolver(
 ) {
 
     private val pendingResources = PendingResourceRequests(logger, timeProvider)
+    private val bitmapResourceResolver = BitmapResourceResolver(
+        executorService = threadPoolExecutor,
+        logger = logger,
+        pending = pendingResources,
+        resolveBitmap = ::getResourceIdFromBitmap
+    )
+
     internal fun registerCallbacks() {
         applicationContext.registerComponentCallbacks(alpha8ResourceCache)
     }
@@ -71,9 +78,7 @@ internal class ResourceResolver(
         bitmap: Bitmap,
         resourceResolverCallback: ResourceResolverCallback
     ) {
-        threadPoolExecutor.executeSafe(RESOURCE_RESOLVER_ALIAS, logger) {
-            getResourceIdFromBitmap(bitmap, resourceResolverCallback)
-        }
+        bitmapResourceResolver.resolve(bitmap, resourceResolverCallback)
     }
 
     @MainThread
@@ -347,29 +352,6 @@ internal class ResourceResolver(
         }
     }
 
-    @WorkerThread
-    private fun resolveBitmapHash(
-        compressedBitmapBytes: ByteArray,
-        resolveResourceCallback: ResolveResourceCallback
-    ) {
-        // failed to get image data
-        if (compressedBitmapBytes.isEmpty()) {
-            // we are already logging the failure in webpImageCompression
-            resolveResourceCallback.onFailed()
-            return
-        }
-
-        val resourceId = md5HashGenerator.generate(compressedBitmapBytes)
-
-        // failed to resolve bitmap identifier
-        if (resourceId == null) {
-            // logging md5 generation failures inside md5HashGenerator
-            resolveResourceCallback.onFailed()
-            return
-        }
-        resolveResourceCallback.onResolved(resourceId, compressedBitmapBytes)
-    }
-
     @Suppress("ReturnCount")
     @WorkerThread
     private fun resolveResourceHash(
@@ -476,88 +458,40 @@ internal class ResourceResolver(
     }
 
     @WorkerThread
-    private fun getResourceIdFromBitmap(bitmap: Bitmap, resourceResolverCallback: ResourceResolverCallback) {
+    private fun getResourceIdFromBitmap(bitmap: Bitmap): String? =
         if (bitmap.config == Bitmap.Config.ALPHA_8) {
-            getResourceIdFromAlpha8Bitmap(bitmap, resourceResolverCallback)
+            getResourceIdFromAlpha8Bitmap(bitmap)
         } else {
-            getResourceIdFromRegularBitmap(bitmap, resourceResolverCallback)
+            compressBitmapResource(bitmap)
         }
-    }
 
     @WorkerThread
     @Suppress("ReturnCount")
-    private fun getResourceIdFromAlpha8Bitmap(
-        bitmap: Bitmap,
-        resourceResolverCallback: ResourceResolverCallback
-    ) {
-        // Generate cache key once and reuse for both lookup and storage
+    private fun getResourceIdFromAlpha8Bitmap(bitmap: Bitmap): String? {
         val cacheKey = alpha8ResourceCache.generateKey(bitmap)
-
         if (cacheKey != null) {
-            val cachedResourceId = alpha8ResourceCache.get(cacheKey)
-            if (cachedResourceId != null) {
-                resourceResolverCallback.onSuccess(cachedResourceId)
-                return
-            }
+            alpha8ResourceCache.get(cacheKey)?.let { return it }
         }
-
-        val convertedBitmap = alpha8BitmapConverter.convertAlpha8BitmapToArgb8888(bitmap)
-        if (convertedBitmap == null) {
-            resourceResolverCallback.onFailure()
-            return
+        val convertedBitmap = alpha8BitmapConverter.convertAlpha8BitmapToArgb8888(bitmap) ?: return null
+        val resourceId = try {
+            compressBitmapResource(convertedBitmap)
+        } finally {
+            convertedBitmap.recycle()
         }
-
-        val compressedBitmapBytes = webPImageCompression.compressBitmap(convertedBitmap)
-        convertedBitmap.recycle()
-
-        if (compressedBitmapBytes.isEmpty()) {
-            resourceResolverCallback.onFailure()
-            return
-        }
-
-        resolveBitmapHash(
-            compressedBitmapBytes = compressedBitmapBytes,
-            resolveResourceCallback = object : ResolveResourceCallback {
-                override fun onResolved(resourceId: String, resourceData: ByteArray) {
-                    if (cacheKey != null) {
-                        alpha8ResourceCache.put(cacheKey, resourceId)
-                    }
-                    resourceItemCreationHandler.queueItem(resourceId, resourceData)
-                    resourceResolverCallback.onSuccess(resourceId)
-                }
-
-                override fun onFailed() {
-                    resourceResolverCallback.onFailure()
-                }
-            }
-        )
+        if (cacheKey != null && resourceId != null) alpha8ResourceCache.put(cacheKey, resourceId)
+        return resourceId
     }
 
     @WorkerThread
-    private fun getResourceIdFromRegularBitmap(
-        bitmap: Bitmap,
-        resourceResolverCallback: ResourceResolverCallback
-    ) {
+    private fun compressBitmapResource(bitmap: Bitmap): String? {
         val compressedBitmapBytes = webPImageCompression.compressBitmap(bitmap)
-
-        if (compressedBitmapBytes.isEmpty()) {
-            resourceResolverCallback.onFailure()
-            return
-        }
-
-        resolveBitmapHash(
-            compressedBitmapBytes = compressedBitmapBytes,
-            resolveResourceCallback = object : ResolveResourceCallback {
-                override fun onResolved(resourceId: String, resourceData: ByteArray) {
-                    resourceItemCreationHandler.queueItem(resourceId, resourceData)
-                    resourceResolverCallback.onSuccess(resourceId)
-                }
-
-                override fun onFailed() {
-                    resourceResolverCallback.onFailure()
-                }
+        return if (compressedBitmapBytes.isEmpty()) {
+            null
+        } else {
+            md5HashGenerator.generate(compressedBitmapBytes)?.also { resourceId ->
+                resourceItemCreationHandler.queueItem(resourceId, compressedBitmapBytes)
             }
-        )
+        }
     }
 
     @WorkerThread
