@@ -824,11 +824,7 @@ internal class GranularComposeDecomposer(
             val bounds = CapturedBounds(layoutBounds.x, layoutBounds.y, layoutBounds.width, layoutBounds.height)
             // Resolve the same painter and scaling metadata as the existing Compose image mapper.
             // This is a source bitmap, never a screenshot of this node or its descendants.
-            val image = if (privacy.image == ImagePrivacy.MASK_ALL) {
-                null
-            } else {
-                semanticsUtils.resolveCompositionPainter(node, internalLogger)
-            }
+            val image = resolveSourceImage(node, privacy, modifiers, painterBounds)
 
             val bitmap = image?.bitmap
             val contextualMasked = privacy.image == ImagePrivacy.MASK_LARGE_ONLY && image?.isContextualImage == true
@@ -838,20 +834,22 @@ internal class GranularComposeDecomposer(
                     image,
                     request.screenDensity
                 )
-                val clipped = clipSourceImage(node, modifiers, image, scaled.bounds, painterBounds)
+                val clipped = if (image.sourceResourceId == null) {
+                    clipSourceImage(node, modifiers, image, scaled.bounds, painterBounds)
+                } else {
+                    null
+                }
                 // The clip is also retained in the composition tree. Baking it into this permitted
                 // source image preserves the same pixels in players consuming only flat wireframes.
                 val pixelBounds = if (clipped != null) painterBounds else scaled.bounds
                 if (clipped != null && clipped !== bitmap) image.recycleIfOwned()
                 val pixelId = request.identityFactory.imageWireframe(identity)
-                request.pendingPixelCaptureSink.register(
-                    PendingPixelCapture(pixelId, identity, clipped ?: bitmap, isSourceImage = true)
-                )
+                val resource = sourceImageResource(image, clipped ?: bitmap, pixelId, identity)
                 CapturedWireframe.Pixel(
                     pixelId,
                     CapturedBounds(pixelBounds.x, pixelBounds.y, pixelBounds.width, pixelBounds.height),
                     imageClip(pixelBounds, visibleBounds, painterBounds),
-                    resource = PixelResource.Unresolved
+                    resource = resource
                 )
             } else {
                 image?.recycleIfOwned()
@@ -873,6 +871,48 @@ internal class GranularComposeDecomposer(
                 contentStart,
                 visibleBounds
             )
+        }
+
+        private fun sourceImageResource(
+            image: BitmapInfo,
+            pixels: Bitmap,
+            pixelIdentity: CapturedIdentity,
+            ownerIdentity: CapturedIdentity
+        ): PixelResource {
+            val resourceId = image.sourceResourceId
+            if (resourceId != null) return PixelResource.Resolved(resourceId, "image/webp")
+            request.pendingPixelCaptureSink.register(
+                PendingPixelCapture(pixelIdentity, ownerIdentity, pixels, isSourceImage = true)
+            )
+            return PixelResource.Unresolved
+        }
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // isFinite only examines the copied radius value.
+        private fun resolveSourceImage(
+            node: SemanticsNode,
+            privacy: NodePrivacy,
+            modifiers: List<ModifierInfo>,
+            painterBounds: GlobalBounds
+        ): BitmapInfo? {
+            return if (privacy.image == ImagePrivacy.MASK_ALL) {
+                null
+            } else {
+                val resources = request.sourceImageResources
+                if (resources == null) {
+                    semanticsUtils.resolveCompositionPainter(node, internalLogger)
+                } else {
+                    semanticsUtils.resolveCompositionPainter(node, internalLogger, resources) { contextual ->
+                        val contextualMasked = privacy.image == ImagePrivacy.MASK_LARGE_ONLY && contextual
+                        !contextualMasked && resolveSimpleClipRadius(
+                            node,
+                            CapturedBounds(painterBounds.x, painterBounds.y, painterBounds.width, painterBounds.height),
+                            modifiers,
+                            windowOffset,
+                            image = true
+                        ).let { radius -> radius == null || !radius.isFinite() || radius <= 0f }
+                    }
+                }
+            }
         }
 
         private fun clipSourceImage(

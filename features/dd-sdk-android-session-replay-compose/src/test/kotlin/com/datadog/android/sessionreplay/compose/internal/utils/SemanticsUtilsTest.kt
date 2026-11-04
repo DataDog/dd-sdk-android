@@ -57,6 +57,7 @@ import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.Text
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.COLOR_UNSPECIFIED
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.composition.CompositionSourceImageResources
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -1685,6 +1686,107 @@ internal class SemanticsUtilsTest {
         verify(source).copy(Bitmap.Config.ARGB_8888, false)
         verify(source, never()).recycle()
         verify(frozen, never()).recycle()
+    }
+
+    @Test
+    fun `M reuse resolved image resources while refreshing placement W resolveCompositionPainter`() {
+        // Given
+        val painter: BitmapPainter = mock()
+        val source: Bitmap = mock()
+        val resources: CompositionSourceImageResources = mock()
+        whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn painter
+        whenever(mockReflectionUtils.getBitmapInBitmapPainter(painter)) doReturn source
+        whenever(mockReflectionUtils.getImageAlpha(mockSemanticsNode)) doReturn 1f
+        whenever(source.width) doReturn 120
+        whenever(source.height) doReturn 80
+        whenever(source.config) doReturn Bitmap.Config.HARDWARE
+        whenever(resources.findResourceId(source)) doReturn "existing-image"
+        whenever(mockReflectionUtils.getContentScale(mockSemanticsNode)) doReturn ContentScale.Crop
+        whenever(mockReflectionUtils.getAlignment(mockSemanticsNode)) doReturn Alignment.BottomEnd
+
+        // When
+        val image = testedSemanticsUtils.resolveCompositionPainter(
+            mockSemanticsNode,
+            mockInternalLogger,
+            resources
+        ) { true }!!
+
+        // Then
+        assertThat(image.bitmap).isSameAs(source)
+        assertThat(image.sourceResourceId).isEqualTo("existing-image")
+        assertThat(image.contentScale).isEqualTo(ContentScale.Crop)
+        assertThat(image.alignment).isEqualTo(Alignment.BottomEnd)
+        assertThat(image.isShared).isTrue()
+        verify(source, never()).copy(any(), any())
+        verify(resources, never()).registerSourceCopy(any(), any())
+        image.recycleIfOwned()
+        verify(source, never()).recycle()
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = [false, true])
+    fun `M retain source copy fallback when reuse is unavailable W resolveCompositionPainter`(allowed: Boolean) {
+        // Given
+        val painter: BitmapPainter = mock()
+        val source: Bitmap = mock()
+        val frozen: Bitmap = mock()
+        val resources: CompositionSourceImageResources = mock()
+        whenever(mockReflectionUtils.getLocalImagePainter(mockSemanticsNode)) doReturn painter
+        whenever(mockReflectionUtils.getBitmapInBitmapPainter(painter)) doReturn source
+        whenever(mockReflectionUtils.getImageAlpha(mockSemanticsNode)) doReturn 1f
+        whenever(source.width) doReturn 120
+        whenever(source.height) doReturn 80
+        whenever(source.config) doReturn Bitmap.Config.HARDWARE
+        whenever(source.copy(Bitmap.Config.ARGB_8888, false)) doReturn frozen
+
+        // When
+        val image = testedSemanticsUtils.resolveCompositionPainter(
+            mockSemanticsNode,
+            mockInternalLogger,
+            resources
+        ) { allowed }!!
+
+        // Then
+        assertThat(image.bitmap).isSameAs(frozen)
+        assertThat(image.sourceResourceId).isNull()
+        verify(source).copy(Bitmap.Config.ARGB_8888, false)
+        if (allowed) {
+            verify(resources).findResourceId(source)
+            verify(resources).registerSourceCopy(source, frozen)
+        } else {
+            verify(resources, never()).findResourceId(any())
+            verify(resources, never()).registerSourceCopy(any(), any())
+        }
+    }
+
+    @Test
+    fun `M evaluate contextual image policy before resource lookup W resolveCompositionPainter`() {
+        // Given
+        val painter: BitmapPainter = mock()
+        val source: Bitmap = mock()
+        val frozen: Bitmap = mock()
+        val resources: CompositionSourceImageResources = mock()
+        whenever(mockReflectionUtils.getAsyncImagePainter(mockSemanticsNode)) doReturn painter
+        whenever(mockReflectionUtils.getBitmapInBitmapPainter(painter)) doReturn source
+        whenever(mockReflectionUtils.getImageAlpha(mockSemanticsNode)) doReturn 1f
+        whenever(source.width) doReturn 120
+        whenever(source.height) doReturn 80
+        whenever(source.config) doReturn Bitmap.Config.HARDWARE
+        whenever(source.copy(Bitmap.Config.ARGB_8888, false)) doReturn frozen
+        var contextual: Boolean? = null
+
+        // When
+        val image = testedSemanticsUtils.resolveCompositionPainter(
+            mockSemanticsNode,
+            mockInternalLogger,
+            resources
+        ) { contextual = it; !it }!!
+
+        // Then
+        assertThat(contextual).isTrue()
+        assertThat(image.sourceResourceId).isNull()
+        verify(resources, never()).findResourceId(any())
+        verify(resources, never()).registerSourceCopy(any(), any())
     }
 
     @Test

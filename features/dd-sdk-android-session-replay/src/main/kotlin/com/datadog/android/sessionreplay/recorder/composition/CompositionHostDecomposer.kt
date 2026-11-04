@@ -122,6 +122,9 @@ class CompositionHostDecomposeRequest @JvmOverloads constructor(
      */
     var unclassifiedPixelCaptureUnavailableLabel: String? = null
 
+    /** Current pipeline's source-image resource lookup; absent preserves ordinary source capture. */
+    var sourceImageResources: CompositionSourceImageResources? = null
+
     /** Preserves callers that do not supply a copied host clip. */
     @JvmOverloads
     constructor(

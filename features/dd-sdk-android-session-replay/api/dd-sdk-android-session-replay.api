@@ -2163,8 +2163,10 @@ public final class com/datadog/android/sessionreplay/recorder/composition/Compos
 	public final fun getPixelCapturePlaceholderLabelForPrivacy ()Lkotlin/jvm/functions/Function2;
 	public final fun getScreenDensity ()F
 	public final fun getShouldContinue ()Lkotlin/jvm/functions/Function0;
+	public final fun getSourceImageResources ()Lcom/datadog/android/sessionreplay/recorder/composition/CompositionSourceImageResources;
 	public final fun getTextAndInputPrivacy ()Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
 	public final fun getUnclassifiedPixelCaptureUnavailableLabel ()Ljava/lang/String;
+	public final fun setSourceImageResources (Lcom/datadog/android/sessionreplay/recorder/composition/CompositionSourceImageResources;)V
 	public final fun setUnclassifiedPixelCaptureUnavailableLabel (Ljava/lang/String;)V
 }
 
@@ -2196,6 +2198,11 @@ public final class com/datadog/android/sessionreplay/recorder/composition/Compos
 	public final fun getResolve ()Lkotlin/jvm/functions/Function0;
 	public final fun getRootLayer ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayer;
 	public final fun getWireframes ()Ljava/util/List;
+}
+
+public abstract interface class com/datadog/android/sessionreplay/recorder/composition/CompositionSourceImageResources {
+	public abstract fun findResourceId (Landroid/graphics/Bitmap;)Ljava/lang/String;
+	public abstract fun registerSourceCopy (Landroid/graphics/Bitmap;Landroid/graphics/Bitmap;)V
 }
 
 public abstract class com/datadog/android/sessionreplay/recorder/mapper/BaseAsyncBackgroundWireframeMapper : com/datadog/android/sessionreplay/recorder/mapper/BaseWireframeMapper {

@@ -18,6 +18,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapSignatureGenerator
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultBitmapSignatureGenerator
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolverCallback
@@ -30,6 +31,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -49,6 +52,122 @@ import java.util.concurrent.TimeUnit
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class PixelFallbackSnapshotProcessorTest {
+
+    private fun prepareSource(processor: PixelFallbackSnapshotProcessor, pixels: Bitmap): Bitmap {
+        val source: Bitmap = mock()
+        whenever(source.width).thenReturn(120)
+        whenever(source.height).thenReturn(80)
+        whenever(source.config).thenReturn(Bitmap.Config.ARGB_8888)
+        whenever(source.generationId).thenReturn(1)
+        whenever(pixels.width).thenReturn(120)
+        whenever(pixels.height).thenReturn(80)
+        whenever(pixels.config).thenReturn(Bitmap.Config.ARGB_8888)
+        assertThat(processor.sourceImageResources.findResourceId(source)).isNull()
+        processor.sourceImageResources.registerSourceCopy(source, pixels)
+        return source
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["source", "textFree", "textOnly", "generic"])
+    fun `M publish only resolved source resources W process`(kind: String) {
+        // Given
+        val fixture = Fixture("source-resource")
+        val signature: BitmapSignatureGenerator = mock()
+        whenever(signature.generateSignature(any())).thenReturn(42L)
+        val processor = PixelFallbackSnapshotProcessor(
+            mockResourceResolver,
+            null,
+            immediateMainThreadExecutor,
+            bitmapSignatureGenerator = signature
+        )
+        val source = prepareSource(processor, fixture.bitmap)
+        whenever(mockResourceResolver.resolveResourceIdFromBitmap(any(), any())) doAnswer {
+            it.getArgument<ResourceResolverCallback>(1).onSuccess("source-resource")
+            Unit
+        }
+        val pending = PendingPixelCapture(
+            fixture.pixelIdentity,
+            fixture.ownerIdentity,
+            fixture.bitmap,
+            isSourceImage = kind == "source",
+            isTextFree = kind == "textFree",
+            isTextOnly = kind == "textOnly"
+        )
+
+        // When
+        processor.process(
+            SnapshotProcessingRequest(generationContext(), fixture.snapshot, listOf(pending), fixture.identityFactory)
+        ) {}
+
+        // Then
+        assertThat(processor.sourceImageResources.findResourceId(source))
+            .isEqualTo(if (kind == "source") "source-resource" else null)
+    }
+
+    @Test
+    fun `M avoid publishing a failed source resource W process`() {
+        // Given
+        val fixture = Fixture("source-failure")
+        val signature: BitmapSignatureGenerator = mock()
+        whenever(signature.generateSignature(any())).thenReturn(42L)
+        val processor = PixelFallbackSnapshotProcessor(
+            mockResourceResolver,
+            null,
+            immediateMainThreadExecutor,
+            bitmapSignatureGenerator = signature
+        )
+        val source = prepareSource(processor, fixture.bitmap)
+        whenever(mockResourceResolver.resolveResourceIdFromBitmap(any(), any())) doAnswer {
+            it.getArgument<ResourceResolverCallback>(1).onFailure()
+            Unit
+        }
+
+        // When
+        processor.process(
+            SnapshotProcessingRequest(
+                generationContext(),
+                fixture.snapshot,
+                listOf(fixture.pending.copy(isSourceImage = true)),
+                fixture.identityFactory
+            )
+        ) {}
+
+        // Then
+        assertThat(processor.sourceImageResources.findResourceId(source)).isNull()
+    }
+
+    @Test
+    fun `M publish new source aliases from authoritative raw cache hits W process`() {
+        // Given
+        val fixture = Fixture("source-hit")
+        val signature: BitmapSignatureGenerator = mock()
+        whenever(signature.generateSignature(any())).thenReturn(42L)
+        val processor = PixelFallbackSnapshotProcessor(
+            mockResourceResolver,
+            null,
+            immediateMainThreadExecutor,
+            bitmapSignatureGenerator = signature
+        )
+        whenever(mockResourceResolver.resolveResourceIdFromBitmap(any(), any())) doAnswer {
+            it.getArgument<ResourceResolverCallback>(1).onSuccess("existing-resource")
+            Unit
+        }
+        val request = SnapshotProcessingRequest(
+            generationContext(),
+            fixture.snapshot,
+            listOf(fixture.pending.copy(isSourceImage = true)),
+            fixture.identityFactory
+        )
+        processor.process(request) {}
+        val otherSource = prepareSource(processor, fixture.bitmap)
+
+        // When
+        processor.process(request.copy(generation = generationContext())) {}
+
+        // Then
+        assertThat(processor.sourceImageResources.findResourceId(otherSource)).isEqualTo("existing-resource")
+        verify(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
+    }
 
     private val mockResourceResolver: ResourceResolver = mock()
     private val immediateMainThreadExecutor = CaptureMainThreadExecutor { task ->

@@ -55,6 +55,7 @@ import com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptur
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
 import com.datadog.android.sessionreplay.recorder.composition.CompositionNativeSubtree
+import com.datadog.android.sessionreplay.recorder.composition.CompositionSourceImageResources
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -372,6 +373,118 @@ internal class GranularComposeDecomposerTest {
     }
 
     @Test
+    fun `M reuse raw source resources through rectangular image clips W decompose`() {
+        // Given - Compose Image installs clipToBounds, whose equivalent corner radius is zero.
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        val source: Bitmap = mock()
+        val resources: CompositionSourceImageResources = mock()
+        val shape: Shape = mock()
+        val clipInfo: ModifierInfo = mock()
+        val painterInfo: ModifierInfo = mock()
+        val clip = mockGraphicsLayerModifier(mapOf("clip" to true, "shape" to shape))
+        val painter: Modifier = mock()
+        whenever(clipInfo.modifier).thenReturn(clip)
+        whenever(painterInfo.modifier).thenReturn(painter)
+        whenever(node.layoutInfo.getModifierInfo()).thenReturn(listOf(clipInfo, painterInfo))
+        whenever(node.layoutInfo.density).thenReturn(Density(1f))
+        whenever(mockReflectionUtils.isImagePainterModifier(painter)).thenReturn(true)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(mockSemanticsUtils.isImage(node)).thenReturn(true)
+        val viewport = GlobalBounds(0, 0, 160, 160)
+        whenever(mockSemanticsUtils.resolveUnclippedBounds(eq(node), any())).thenReturn(viewport)
+        whenever(mockSemanticsUtils.resolveModifierBounds(eq(node), eq(clipInfo), any())).thenReturn(viewport)
+        whenever(mockSemanticsUtils.resolveCornerRadius(eq(shape), any(), any())).thenReturn(0f)
+        whenever(source.width).thenReturn(200)
+        whenever(source.height).thenReturn(100)
+        whenever(mockSemanticsUtils.resolveCompositionPainter(eq(node), any(), eq(resources), any())) doAnswer {
+            val allowed = it.getArgument<(Boolean) -> Boolean>(3)
+            assertThat(allowed(false)).isTrue()
+            BitmapInfo(source, false, isShared = true, sourceResourceId = "raw-resource")
+        }
+        val captures = mutableListOf<PendingPixelCapture>()
+
+        // When
+        val result = testedDecomposer.decompose(
+            mockView,
+            realRequest(pendingPixelCaptureSink = PendingPixelCaptureSink(captures::add))
+                .apply { sourceImageResources = resources }
+        )!!
+
+        // Then
+        val pixel = result.wireframes.single() as CapturedWireframe.Pixel
+        assertThat(pixel.resource).isEqualTo(PixelResource.Resolved("raw-resource", "image/webp"))
+        assertThat(captures).isEmpty()
+        verify(source, never()).copy(any(), any())
+    }
+
+    @Test
+    fun `M rebuild geometry for resolved source images without pending pixels W decompose`() {
+        // Given
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        val source: Bitmap = mock()
+        val resources: CompositionSourceImageResources = mock()
+        whenever(source.width).thenReturn(200)
+        whenever(source.height).thenReturn(100)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(mockSemanticsUtils.isImage(node)).thenReturn(true)
+        whenever(mockSemanticsUtils.resolveCompositionPainter(eq(node), any(), eq(resources), any()))
+            .thenReturn(BitmapInfo(source, false, ContentScale.Crop, isShared = true, sourceResourceId = "resolved"))
+        whenever(mockSemanticsUtils.resolveUnclippedBounds(eq(node), any()))
+            .thenReturn(GlobalBounds(0, 0, 224, 224))
+        whenever(mockSemanticsUtils.resolvePainterBounds(eq(node), any(), any()))
+            .thenReturn(GlobalBounds(32, 32, 160, 160))
+        whenever(mockSemanticsUtils.resolveVisibleBounds(eq(node), any()))
+            .thenReturn(GlobalBounds(0, 64, 224, 160))
+        val captures = mutableListOf<PendingPixelCapture>()
+        val request = realRequest(pendingPixelCaptureSink = PendingPixelCaptureSink(captures::add))
+            .apply { sourceImageResources = resources }
+
+        // When
+        val pixel = testedDecomposer.decompose(mockView, request)!!.wireframes.single() as CapturedWireframe.Pixel
+
+        // Then
+        assertThat(pixel.resource).isEqualTo(PixelResource.Resolved("resolved", "image/webp"))
+        assertThat(pixel.bounds).isEqualTo(CapturedBounds(-48, 32, 320, 160))
+        assertThat(pixel.clip).isEqualTo(CapturedClip(top = 32, right = 80, left = 80))
+        assertThat(captures).isEmpty()
+        verify(source, never()).recycle()
+        verify(source, never()).copy(any(), any())
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M apply image privacy before reuse W decompose`(maskAll: Boolean) {
+        // Given
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        val resources: CompositionSourceImageResources = mock()
+        val source: Bitmap = mock()
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(mockSemanticsUtils.isImage(node)).thenReturn(true)
+        whenever(mockSemanticsUtils.resolveCompositionPainter(eq(node), any(), eq(resources), any())) doAnswer {
+            val allowed = it.getArgument<(Boolean) -> Boolean>(3)
+            assertThat(allowed(true)).isFalse()
+            BitmapInfo(source, true, isShared = true)
+        }
+        val captures = mutableListOf<PendingPixelCapture>()
+        val request = realRequest(
+            imagePrivacy = if (maskAll) ImagePrivacy.MASK_ALL else ImagePrivacy.MASK_LARGE_ONLY,
+            pendingPixelCaptureSink = PendingPixelCaptureSink(captures::add)
+        ).apply { sourceImageResources = resources }
+
+        // When
+        val image = testedDecomposer.decompose(mockView, request)!!.wireframes.single()
+
+        // Then
+        assertThat(image).isInstanceOf(CapturedWireframe.PrivacyPlaceholder::class.java)
+        assertThat(captures).isEmpty()
+        verifyNoInteractions(resources)
+        if (maskAll) verify(mockSemanticsUtils, never()).resolveCompositionPainter(any(), any(), any(), any())
+    }
+
+    @Test
     fun `M capture a permitted source image W decompose() { no OCR extension }`() {
         // Given
         val node = mockLeafNode()
@@ -434,8 +547,12 @@ internal class GranularComposeDecomposerTest {
         whenever(mockSemanticsUtils.isImage(node)).thenReturn(true)
         whenever(bitmap.width).thenReturn(200)
         whenever(bitmap.height).thenReturn(100)
-        whenever(mockSemanticsUtils.resolveCompositionPainter(eq(node), any()))
-            .thenReturn(BitmapInfo(bitmap, false, ContentScale.Crop, isShared = shared))
+        val resources: CompositionSourceImageResources = mock()
+        whenever(mockSemanticsUtils.resolveCompositionPainter(eq(node), any(), eq(resources), any())) doAnswer {
+            val allowed = it.getArgument<(Boolean) -> Boolean>(3)
+            assertThat(allowed(false)).isEqualTo(!sameBounds)
+            BitmapInfo(bitmap, false, ContentScale.Crop, isShared = shared)
+        }
         val viewport = GlobalBounds(32, 32, 160, 160)
         whenever(mockSemanticsUtils.resolveUnclippedBounds(eq(node), any())).thenReturn(viewport)
         whenever(mockSemanticsUtils.resolveVisibleBounds(eq(node), any())).thenReturn(viewport)
@@ -467,7 +584,7 @@ internal class GranularComposeDecomposerTest {
                 realRequest(
                     imagePrivacy = if (masked) ImagePrivacy.MASK_ALL else ImagePrivacy.MASK_NONE,
                     pendingPixelCaptureSink = PendingPixelCaptureSink(captures::add)
-                )
+                ).apply { sourceImageResources = resources }
             )!!
         }
         if (fails) {

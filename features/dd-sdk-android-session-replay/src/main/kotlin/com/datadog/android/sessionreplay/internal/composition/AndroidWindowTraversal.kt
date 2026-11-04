@@ -51,6 +51,7 @@ import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDec
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
 import com.datadog.android.sessionreplay.recorder.composition.CompositionNativeSubtree
+import com.datadog.android.sessionreplay.recorder.composition.CompositionSourceImageResources
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
@@ -95,7 +96,8 @@ internal class AndroidWindowTraversal(
     private val heatmapResolver: HeatmapIdentifierResolver? = null,
     private val embeddedContentMapper: CapturedEmbeddedContentMapper? = null,
     private val optionSelectorDetector: OptionSelectorDetector = DefaultOptionSelectorDetector(),
-    private val unclassifiedPixelCaptureUnavailableLabel: String? = null
+    private val unclassifiedPixelCaptureUnavailableLabel: String? = null,
+    private val sourceImageResources: CompositionSourceImageResources? = null
 ) {
     private val occlusionDetector = ViewOcclusionDetector(drawableToColorMapper, viewUtilsInternal, internalLogger)
 
@@ -536,10 +538,7 @@ internal class AndroidWindowTraversal(
         },
         shouldContinue = context::shouldContinue,
         pixelCapturePlaceholderLabelFor = { bounds ->
-            PixelCaptureEligibility.placeholderLabelFor(
-                mappingContext.imagePrivacy,
-                GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
-            )
+            PixelCaptureEligibility.placeholderLabelFor(mappingContext.imagePrivacy, bounds.toGlobalBounds())
         },
         pendingPixelCaptureSink = PendingPixelCaptureSink { handoffState.pendingPixelCaptures.add(it) },
         imagePrivacy = mappingContext.imagePrivacy,
@@ -555,13 +554,13 @@ internal class AndroidWindowTraversal(
             )
         },
         pixelCapturePlaceholderLabelForPrivacy = { imagePrivacy, bounds ->
-            PixelCaptureEligibility.placeholderLabelFor(
-                imagePrivacy,
-                GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height)
-            )
+            PixelCaptureEligibility.placeholderLabelFor(imagePrivacy, bounds.toGlobalBounds())
         },
         hasOptionSelectorParent = mappingContext.hasOptionSelectorParent
-    ).also { it.unclassifiedPixelCaptureUnavailableLabel = unclassifiedPixelCaptureUnavailableLabel }
+    ).also {
+        it.unclassifiedPixelCaptureUnavailableLabel = unclassifiedPixelCaptureUnavailableLabel
+        it.sourceImageResources = sourceImageResources
+    }
 
     /** Copies native interop now; construction waits for mapper jobs on the worker. */
     @UiThread
@@ -1122,3 +1121,5 @@ private fun captureTouchOnlyCustomMapper(
         )
     )
 }
+
+private fun CapturedBounds.toGlobalBounds(): GlobalBounds = GlobalBounds(x, y, width, height)

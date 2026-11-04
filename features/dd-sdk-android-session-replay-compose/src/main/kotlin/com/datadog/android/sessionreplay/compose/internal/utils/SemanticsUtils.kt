@@ -7,8 +7,6 @@
 package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
-import android.graphics.Paint
-import android.graphics.Rect
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.Modifier
@@ -17,7 +15,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.asAndroidColorFilter
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.VectorPainter
@@ -52,10 +49,8 @@ import com.datadog.android.sessionreplay.compose.internal.isLeafNode
 import com.datadog.android.sessionreplay.compose.internal.isPositionedAtOrigin
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.recorder.composition.CompositionSourceImageResources
 import com.datadog.android.sessionreplay.utils.GlobalBounds
-import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
-import kotlin.math.roundToInt
-import android.graphics.Canvas as AndroidCanvas
 
 @Suppress("TooManyFunctions")
 internal class SemanticsUtils(
@@ -63,7 +58,7 @@ internal class SemanticsUtils(
     private val sampler: RateBasedSampler<Unit> = RateBasedSampler(BITMAP_TELEMETRY_SAMPLE_RATE),
     private val textCaptureCache: ComposeTextCaptureCache? = null
 ) {
-    private val compositionImageCache = ComposeImageBitmapCache<Unit>()
+    private val compositionSourceImageCapture = ComposeSourceImageCapture()
     private val compositionVectorCache = ComposeVectorPainterBitmapCache(reflectionUtils)
     private val backgroundResolver = BackgroundResolver(
         reflectionUtils,
@@ -371,10 +366,17 @@ internal class SemanticsUtils(
     /** Composition captures painter output, including alpha and tint, rather than the vector's
      * internal ALPHA_8 coverage cache. Only this permitted source image is drawn, never the host.
      */
-    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall")
     internal fun resolveCompositionPainter(
         semanticsNode: SemanticsNode,
         internalLogger: InternalLogger
+    ): BitmapInfo? = resolveCompositionPainter(semanticsNode, internalLogger, null) { true }
+
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall")
+    internal fun resolveCompositionPainter(
+        semanticsNode: SemanticsNode,
+        internalLogger: InternalLogger,
+        sourceImageResources: CompositionSourceImageResources?,
+        canReuseSource: (isContextualImage: Boolean) -> Boolean
     ): BitmapInfo? {
         val (painter, contextual) = resolvePainter(semanticsNode)
         if (painter == null) return null
@@ -385,17 +387,17 @@ internal class SemanticsUtils(
         val colorFilter = reflectionUtils.getImageColorFilter(semanticsNode)
         val alpha = reflectionUtils.getImageAlpha(semanticsNode).coerceIn(0f, 1f)
         if (canCopyPainterSource(painter, source, alpha, colorFilter)) {
-            // Own a frozen software copy without also allocating and drawing an identical second
-            // bitmap. The tinted/transparent and vector paths still render their painter output.
-            val frozen = compositionImageCache.getOrCreate(source, Unit) {
-                source.copy(Bitmap.Config.ARGB_8888, false)
-            } ?: return null
+            val resources = sourceImageResources?.takeIf { painter is BitmapPainter && canReuseSource(contextual) }
+            val resourceId = resources?.findResourceId(source)
+            val bitmap = if (resourceId != null) source else compositionSourceImageCapture.copy(source) ?: return null
+            if (resourceId == null) resources?.registerSourceCopy(source, bitmap)
             return BitmapInfo(
-                frozen,
+                bitmap,
                 contextual,
                 reflectionUtils.getContentScale(semanticsNode),
                 reflectionUtils.getAlignment(semanticsNode),
-                isShared = true
+                isShared = true,
+                sourceResourceId = resourceId
             )
         }
         if (painter is VectorPainter) {
@@ -412,48 +414,13 @@ internal class SemanticsUtils(
                 isShared = captured.isShared
             )
         }
-        val pixels = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
-        var completed = false
-        try {
-            if (!drawBitmapSource(source, pixels, alpha, colorFilter)) return null
-            completed = true
-            return BitmapInfo(
-                pixels,
-                contextual,
-                reflectionUtils.getContentScale(semanticsNode),
-                reflectionUtils.getAlignment(semanticsNode)
-            )
-        } finally {
-            if (!completed) pixels.recycle()
-        }
-    }
-
-    @Suppress("UnsafeThirdPartyFunctionCall") // Supported software copy; the temporary source is always recycled.
-    private fun drawBitmapSource(
-        source: Bitmap,
-        pixels: Bitmap,
-        alpha: Float,
-        colorFilter: androidx.compose.ui.graphics.ColorFilter?
-    ): Boolean {
-        // ALPHA_8 is directly drawable as a transparent mask; hardware images need a software copy.
-        val software = if (source.config ==
-            Bitmap.Config.ALPHA_8
-        ) {
-            source
-        } else {
-            source.copy(Bitmap.Config.ARGB_8888, false)
-        }
-        if (software == null) return false
-        try {
-            val paint = Paint().apply {
-                this.alpha = (alpha * OPAQUE_ALPHA_VALUE).roundToInt()
-                this.colorFilter = colorFilter?.asAndroidColorFilter()
-            }
-            AndroidCanvas(pixels).drawBitmap(software, null, Rect(0, 0, pixels.width, pixels.height), paint)
-            return true
-        } finally {
-            if (software !== source) software.recycle()
-        }
+        val pixels = compositionSourceImageCapture.render(source, alpha, colorFilter) ?: return null
+        return BitmapInfo(
+            pixels,
+            contextual,
+            reflectionUtils.getContentScale(semanticsNode),
+            reflectionUtils.getAlignment(semanticsNode)
+        )
     }
 
     private fun resolvePainter(semanticsNode: SemanticsNode): Pair<Painter?, Boolean> {

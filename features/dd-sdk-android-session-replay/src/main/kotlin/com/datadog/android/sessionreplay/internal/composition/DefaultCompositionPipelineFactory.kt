@@ -135,6 +135,13 @@ internal class DefaultCompositionPipelineFactory(
             executorService = sdkCore.createScheduledExecutorService(EXPIRY_EXECUTOR_NAME),
             internalLogger = internalLogger
         )
+        val pixelProcessor = PixelFallbackSnapshotProcessor(
+            resourceResolverBundle.resourceResolver,
+            textDetector,
+            mainThreadExecutor,
+            taskScheduler = sharedScheduler,
+            recaptureTrigger = RecaptureTrigger { orchestrator.requestCapture() }
+        )
         orchestrator = SnapshotCaptureOrchestrator(
             producer = snapshotProducerFactory?.invoke(windowSource, rumContextProvider)
                 ?: defaultSnapshotProducer(
@@ -142,7 +149,8 @@ internal class DefaultCompositionPipelineFactory(
                     rumContextProvider,
                     heatmapResolver,
                     embeddedContentSlotRegistry,
-                    resourceResolverBundle.resourceResolver
+                    resourceResolverBundle.resourceResolver,
+                    pixelProcessor.sourceImageResources
                 ),
             processor = ChainedCapturedSnapshotProcessor(
                 ExecutorCapturedSnapshotProcessor(
@@ -150,13 +158,7 @@ internal class DefaultCompositionPipelineFactory(
                     internalLogger,
                     recaptureTrigger = RecaptureTrigger { orchestrator.requestCapture() }
                 ),
-                PixelFallbackSnapshotProcessor(
-                    resourceResolverBundle.resourceResolver,
-                    textDetector,
-                    mainThreadExecutor,
-                    taskScheduler = sharedScheduler,
-                    recaptureTrigger = RecaptureTrigger { orchestrator.requestCapture() }
-                )
+                pixelProcessor
             ),
             consumer = completionQueue,
             timeProvider = CaptureTimeProvider { sdkCore.timeProvider.getDeviceElapsedTimeNanos() },
@@ -193,7 +195,8 @@ internal class DefaultCompositionPipelineFactory(
             completionQueue = completionQueue,
             constructionExecutor = constructionExecutor,
             resourceResolver = resourceResolverBundle.resourceResolver,
-            resourceDataQueueHandler = resourceResolverBundle.dataQueueHandler
+            resourceDataQueueHandler = resourceResolverBundle.dataQueueHandler,
+            sourceImageResources = pixelProcessor.sourceImageResources
         )
     }
 
@@ -202,7 +205,8 @@ internal class DefaultCompositionPipelineFactory(
         rumContextProvider: RumContextProvider,
         heatmapResolver: HeatmapIdentifierResolver?,
         embeddedContentSlotRegistry: EmbeddedContentSlotRegistry,
-        resourceResolver: ResourceResolver
+        resourceResolver: ResourceResolver,
+        sourceImageResources: DefaultCompositionSourceImageResources
     ): CapturedSnapshotProducer {
         val embeddedContentMapper = CapturedEmbeddedContentMapper(
             embeddedContentSlotRegistry,
@@ -225,6 +229,7 @@ internal class DefaultCompositionPipelineFactory(
                 heatmapResolver = heatmapResolver,
                 embeddedContentMapper = embeddedContentMapper,
                 optionSelectorDetector = optionSelectorDetector(),
+                sourceImageResources = sourceImageResources,
                 unclassifiedPixelCaptureUnavailableLabel = if (textDetector == null) {
                     PixelCaptureEligibility.MASK_ALL_CONTENT_LABEL
                 } else {

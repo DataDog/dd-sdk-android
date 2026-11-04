@@ -71,6 +71,7 @@ internal class PixelFallbackSnapshotProcessor(
     // Privacy-resolved source images and glyphs must not share cache entries with OCR-masked captures.
     @Suppress("UnsafeThirdPartyFunctionCall") // Positive, bounded cache size.
     private val rawContentCache = LruCache<Long, String>(MAX_RESOLVED_CONTENT_CACHE_SIZE)
+    val sourceImageResources = DefaultCompositionSourceImageResources(rawContentCache)
     private val lateRecaptureRequested = AtomicBoolean(false)
 
     // Owned atomic reference releases the input on completion or cancellation.
@@ -241,11 +242,15 @@ internal class PixelFallbackSnapshotProcessor(
         val signature = bitmapSignatureGenerator.generateSignature(capture.bitmap)
         val cached = signature?.let { rawContentCache.get(it) }
         if (cached != null) {
+            if (capture.isSourceImage) {
+                sourceImageResources.onSourceResolved(capture.bitmap, signature)
+            }
             onResolved(PixelOutcome.Resolved(cached))
         } else {
             resolveBitmap(capture.bitmap, identityFactory, capture.ownerIdentity) { outcome ->
                 if (signature != null && outcome is PixelOutcome.Resolved) {
                     rawContentCache.put(signature, outcome.resourceId)
+                    if (capture.isSourceImage) sourceImageResources.onSourceResolved(capture.bitmap, signature)
                 }
                 onResolved(outcome)
             }
