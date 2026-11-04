@@ -63,6 +63,8 @@ interface ImageWireframeHelper {
 
     /**
      * Creates an image wireframe based on a given bitmap.
+     * The caller retains ownership of the bitmap. The recorder copies pixels when needed
+     * and does not recycle the supplied bitmap.
      * @param id the unique id for the wireframe.
      * @param globalBounds the global bounds of the bitmap.
      * @param bitmap the bitmap to capture.
