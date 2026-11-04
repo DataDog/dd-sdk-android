@@ -32,6 +32,9 @@ internal object FlagValueConverter {
     private val INT_MIN = BigDecimal(Int.MIN_VALUE)
     private val INT_MAX = BigDecimal(Int.MAX_VALUE)
 
+    // The longest decimal value that Int reads parse. This bounds the BigDecimal work on each read.
+    private const val MAX_DECIMAL_LENGTH = 64
+
     /**
      * Converts a flag's string value to the expected type.
      *
@@ -58,7 +61,7 @@ internal object FlagValueConverter {
             val result: T? = when (targetType) {
                 Boolean::class -> variationValue.lowercase(Locale.US).toBooleanStrictOrNull() as? T
                 String::class -> variationValue as T
-                Int::class -> numberToInt(variationValue, variationType) as? T
+                Int::class -> parseLosslessInt(variationValue, variationType) as? T
                 Double::class -> variationValue.toDoubleOrNull() as? T
                 Map::class -> variationValue.toMap() as? T
                 JSONObject::class -> {
@@ -125,12 +128,15 @@ internal object FlagValueConverter {
     /**
      * Int reads are lossless: a whole value within Int range, such as `5` or `5.0`, reads as Int whatever the
      * numeric type. A fractional or out-of-range value is a type mismatch. A value that can't be parsed returns null,
-     * which [convert] reports as a parse error.
+     * which [convert] reports as a parse error. So does a value that is not a plain Int and is longer than
+     * [MAX_DECIMAL_LENGTH] characters.
      */
-    private fun numberToInt(variationValue: String, variationType: String): Int? = variationValue.toIntOrNull()
-        ?: variationValue.toBigDecimalOrNull()?.let { decimalToInt(it, variationValue, variationType) }
+    private fun parseLosslessInt(variationValue: String, variationType: String): Int? = variationValue.toIntOrNull()
+        ?: variationValue.takeIf { it.length <= MAX_DECIMAL_LENGTH }
+            ?.toBigDecimalOrNull()
+            ?.let { requireLosslessInt(it, variationValue, variationType) }
 
-    private fun decimalToInt(decimal: BigDecimal, variationValue: String, variationType: String): Int {
+    private fun requireLosslessInt(decimal: BigDecimal, variationValue: String, variationType: String): Int {
         val problem = when {
             isFractional(decimal) -> "fractional value '$variationValue'"
             decimal < INT_MIN || decimal > INT_MAX -> "value '$variationValue' outside Int range"
@@ -146,8 +152,8 @@ internal object FlagValueConverter {
     /**
      * A value with a scale of 0 or less is whole. Check the scale first: it also prevents
      * [BigDecimal.stripTrailingZeros] from overflowing the scale for a value such as `100e2147483647`.
-     * Zero is whole at any scale: on Android 9 and lower, [BigDecimal.stripTrailingZeros] returns a zero
-     * such as `0.0` unchanged.
+     * Zero is whole at any scale: AOSP libcore before Android 10 returns a zero such as `0.0` unchanged from
+     * [BigDecimal.stripTrailingZeros].
      */
     private fun isFractional(decimal: BigDecimal): Boolean {
         if (decimal.scale() <= 0 || decimal.signum() == 0) return false

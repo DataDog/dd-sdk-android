@@ -270,7 +270,7 @@ val maxRetries = client.resolveIntValue("max-retry-count", 3)
 val discountPercentage = client.resolveDoubleValue("discount-rate", 0.0)
 ```
 
-Any numeric flag can be read with either method. `resolveIntValue` returns the value only when it is a whole number within `Int` range, such as `5` or `5.0`. Otherwise it returns the default value: `resolve()` reports `PARSE_ERROR` when the value can't be parsed, and `TYPE_MISMATCH` for a parsed value that is fractional or outside `Int` range, such as `1.2`.
+Any numeric flag can be read with either method. `resolveIntValue` returns the value only when it is a whole number within `Int` range, such as `5` or `5.0`. Otherwise it returns the default value: `resolve()` reports `PARSE_ERROR` when the value can't be parsed or is a decimal value longer than 64 characters, and `TYPE_MISMATCH` when the value is fractional, such as `1.2`, or outside `Int` range, such as `2147483648`.
 
 **Structured flags**
 ```kotlin
@@ -329,7 +329,7 @@ if (result.errorCode != null) {
 ##### Error codes
 - `FLAG_NOT_FOUND` - The flag could not be found
 - `PARSE_ERROR` - Error parsing the flag value
-- `TYPE_MISMATCH` - The flag type doesn't match the expected type
+- `TYPE_MISMATCH` - The type of the flag value doesn't match the expected type, such as a fractional value read with `resolveIntValue`
 - `TARGETING_KEY_MISSING` - No targeting key was provided
 - `INVALID_CONTEXT` - The evaluation context is invalid
 - `PROVIDER_NOT_READY` - The provider is not yet ready

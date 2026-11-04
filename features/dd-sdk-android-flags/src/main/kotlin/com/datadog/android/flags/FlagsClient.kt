@@ -139,8 +139,9 @@ interface FlagsClient {
     /**
      * Resolves an integer flag value.
      *
-     * A numeric flag also resolves when its value is a whole number within [Int] range, such as `5.0`. A fractional
-     * value, such as `1.2`, returns the default value.
+     * Any numeric flag resolves when its value is a whole number within [Int] range, such as `5` or `5.0`. A fractional
+     * value, such as `1.2`, a value outside [Int] range, or a decimal value longer than 64 characters returns the
+     * default value.
      *
      * @param flagKey The unique identifier of the flag to resolve.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.

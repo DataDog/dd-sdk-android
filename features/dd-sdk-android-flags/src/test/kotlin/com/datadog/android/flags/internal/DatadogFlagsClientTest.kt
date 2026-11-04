@@ -27,6 +27,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientEvent
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -774,7 +775,10 @@ internal class DatadogFlagsClientTest {
         "integer, 7, 7",
         "integer, 5.0, 5",
         "float, 5, 5",
-        "float, 1e3, 1000"
+        "float, 1e3, 1000",
+        "number, 0e5, 0",
+        "number, 10e-1, 1",
+        "number, 1.5e1, 15"
     )
     fun `M return value W resolve() { numeric flag, whole value, Int default }`(
         fakeVariationType: String,
@@ -820,7 +824,8 @@ internal class DatadogFlagsClientTest {
         val fakeDefaultValue = forge.anInt()
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = fakeVariationType,
-            variationValue = fakeVariationValue
+            variationValue = fakeVariationValue,
+            doLog = true
         )
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
             Pair(fakeFlag, fakeDefaultContext)
@@ -846,6 +851,7 @@ internal class DatadogFlagsClientTest {
         "number, -2147483649",
         "number, -1e20",
         "number, 100e2147483647",
+        "number, 1e2147483648",
         "integer, 2147483648",
         "float, 2147483648.0"
     )
@@ -859,7 +865,8 @@ internal class DatadogFlagsClientTest {
         val fakeDefaultValue = forge.anInt()
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = fakeVariationType,
-            variationValue = fakeVariationValue
+            variationValue = fakeVariationValue,
+            doLog = true
         )
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
             Pair(fakeFlag, fakeDefaultContext)
@@ -874,13 +881,25 @@ internal class DatadogFlagsClientTest {
             "Flag '$fakeFlagKey': Flag has type '$fakeVariationType' with value " +
                 "'$fakeVariationValue' outside Int range but Int was requested"
         )
+        verifyNoInteractions(mockProcessor)
     }
 
     @ParameterizedTest
     @CsvSource(
         "number, not-a-number",
         "integer, not-a-number",
-        "float, not-a-number"
+        "float, not-a-number",
+        "number, ''",
+        "number, ' 5'",
+        "number, NaN",
+        "number, Infinity",
+        "number, 5f",
+        "number, 0x10",
+        "number, 1e99999999999",
+        "number, 1e-2147483648",
+        "number, 1e2147483649",
+        "number, 10000000000000000000000000000000000000000000000000000000000000000.0",
+        "float, NaN"
     )
     fun `M return default with PARSE_ERROR W resolve() { malformed numeric value, Int default }`(
         fakeVariationType: String,
@@ -892,7 +911,8 @@ internal class DatadogFlagsClientTest {
         val fakeDefaultValue = forge.anInt()
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = fakeVariationType,
-            variationValue = fakeVariationValue
+            variationValue = fakeVariationValue,
+            doLog = true
         )
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
             Pair(fakeFlag, fakeDefaultContext)
@@ -905,6 +925,35 @@ internal class DatadogFlagsClientTest {
         assertThat(result.errorCode).isEqualTo(ErrorCode.PARSE_ERROR)
         assertThat(result.errorMessage)
             .isEqualTo("Flag '$fakeFlagKey': Failed to parse value '$fakeVariationValue' as Int")
+        verifyNoInteractions(mockProcessor)
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["boolean", "string", "object"])
+    fun `M return default with TYPE_MISMATCH W resolve() { non-numeric flag, Int default }`(
+        fakeVariationType: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anInt(min = 6)
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = fakeVariationType,
+            variationValue = "5",
+            doLog = true
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeDefaultContext)
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeDefaultValue)
+        assertThat(result.errorCode).isEqualTo(ErrorCode.TYPE_MISMATCH)
+        assertThat(result.errorMessage)
+            .isEqualTo("Flag '$fakeFlagKey': Flag has type '$fakeVariationType' but Int was requested")
+        verifyNoInteractions(mockProcessor)
     }
 
     // endregion
@@ -942,15 +991,26 @@ internal class DatadogFlagsClientTest {
         verifyNoInteractions(mockRumEvaluationLogger)
     }
 
-    @Test
-    fun `M return value W resolve() { number flag, JSON integer value, Double default }`(forge: Forge) {
+    @ParameterizedTest
+    @CsvSource(
+        "number, 5, 5.0",
+        "number, 1.5, 1.5",
+        "integer, 7, 7.0",
+        "integer, 5.0, 5.0",
+        "float, 5, 5.0"
+    )
+    fun `M return value W resolve() { numeric flag, Double default }`(
+        fakeVariationType: String,
+        fakeVariationValue: String,
+        expectedValue: Double,
+        forge: Forge
+    ) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeFlagValue = forge.anInt()
-        val fakeDefaultValue = forge.aDouble()
+        val fakeDefaultValue = forge.aDouble(min = 100.0)
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.NUMBER.value,
-            variationValue = fakeFlagValue.toString()
+            variationType = fakeVariationType,
+            variationValue = fakeVariationValue
         )
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
             Pair(fakeFlag, fakeDefaultContext)
@@ -959,8 +1019,36 @@ internal class DatadogFlagsClientTest {
         val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
 
         // Then
-        assertThat(result.value).isEqualTo(fakeFlagValue.toDouble())
+        assertThat(result.value).isEqualTo(expectedValue)
         assertThat(result.errorCode).isNull()
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["boolean", "string", "object"])
+    fun `M return default with TYPE_MISMATCH W resolve() { non-numeric flag, Double default }`(
+        fakeVariationType: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aDouble(min = 6.0)
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = fakeVariationType,
+            variationValue = "5",
+            doLog = true
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            Pair(fakeFlag, fakeDefaultContext)
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeDefaultValue)
+        assertThat(result.errorCode).isEqualTo(ErrorCode.TYPE_MISMATCH)
+        assertThat(result.errorMessage)
+            .isEqualTo("Flag '$fakeFlagKey': Flag has type '$fakeVariationType' but Double was requested")
+        verifyNoInteractions(mockProcessor)
     }
 
     // endregion
@@ -1800,28 +1888,29 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M return default value W resolveIntValue() { value exceeds Int MAX_VALUE }`(forge: Forge) {
+    fun `M log warning and return default W resolveIntValue() { number flag, fractional value }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.anInt()
-        // Value that's too large for Int
-        val oversizedValue = Int.MAX_VALUE.toLong() + 1L
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.INTEGER.value,
-            variationValue = oversizedValue.toString()
-        )
-        val fakeContext = EvaluationContext(
-            targetingKey = forge.anAlphabeticalString(),
-            attributes = emptyMap()
+            variationType = VariationType.NUMBER.value,
+            variationValue = "1.2",
+            doLog = true
         )
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
-            Pair(fakeFlag, fakeContext)
+            Pair(fakeFlag, fakeDefaultContext)
 
         // When
         val result = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
+        verifyNoInteractions(mockProcessor)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            "Flag '$fakeFlagKey': Flag has type 'number' with fractional value '1.2' but Int was requested"
+        )
     }
 
     // endregion
