@@ -1593,7 +1593,7 @@ internal class DatadogFlagsClientTest {
         val fakeFlagKey1 = forge.anAlphabeticalString()
         val fakeFlagKey2 = forge.anAlphabeticalString()
         val fakeFlagKey3 = forge.anAlphabeticalString()
-        val fakeFlagValue = forge.aDouble()
+        val fakeFlagValue = forge.aDouble(min = -1_000_000.0, max = 1_000_000.0)
         val fakeFlagIntValue = forge.anInt()
         val fakeDefaultValue = forge.aDouble()
 

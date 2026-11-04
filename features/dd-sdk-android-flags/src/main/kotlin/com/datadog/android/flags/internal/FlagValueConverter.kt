@@ -102,13 +102,15 @@ internal object FlagValueConverter {
         if (number == null || double == null) {
             return Result.failure(IllegalArgumentException("Failed to parse value '$value'"))
         }
-        // Accept the exact binary value or its standard JSON decimal round trip.
+        // Fractional values round normally; original whole values must stay exact.
+        @Suppress("UnsafeThirdPartyFunctionCall") // BigDecimal arithmetic failures are handled below.
         val exact = try {
-            double.isFinite() && (
-                number.compareTo(BigDecimal(double)) == 0 ||
-                    number.compareTo(BigDecimal.valueOf(double)) == 0
-                )
+            double.isFinite() &&
+                (double != 0.0 || number.signum() == 0) &&
+                (number.stripTrailingZeros().scale() > 0 || number.compareTo(BigDecimal(double)) == 0)
         } catch (_: NumberFormatException) {
+            false
+        } catch (_: ArithmeticException) {
             false
         }
         return if (exact) {
