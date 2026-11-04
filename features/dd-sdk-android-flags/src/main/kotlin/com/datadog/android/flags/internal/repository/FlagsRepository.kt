@@ -12,7 +12,6 @@ import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
 
 internal interface FlagsRepository {
-    fun getPrecomputedFlag(key: String): PrecomputedFlag?
     fun getEvaluationContext(): EvaluationContext?
 
     /** Installs memory only. The caller must complete storage and notifications outside its locks. */
@@ -22,19 +21,6 @@ internal interface FlagsRepository {
         obfuscation: FlagKeyObfuscation? = null,
         observeFullEvaluationData: Boolean = false
     ): FlagsInstallation
-
-    /**
-     * Runs [onInstalled] after attempting storage submission, including when submission fails.
-     * For the first installation, it runs before publishing the first-flags result to listeners.
-     */
-    @Deprecated("Use installFlagsAndContext instead")
-    fun setFlagsAndContext(
-        context: EvaluationContext,
-        flags: Map<String, PrecomputedFlag>,
-        obfuscation: FlagKeyObfuscation? = null,
-        observeFullEvaluationData: Boolean = false,
-        onInstalled: () -> Unit = {}
-    )
 
     /** Waits for initial persistence loading, up to the repository's timeout. Call without holding locks. */
     fun waitForPersistenceLoad()
@@ -49,13 +35,16 @@ internal interface FlagsRepository {
     /** True when the installed configuration is for [context], including a valid configuration with zero flags. */
     fun hasConfigurationForContext(context: EvaluationContext): Boolean
 
-    @Deprecated("Use getAssignmentsSnapshot instead")
-    fun getFlagsSnapshot(): Map<String, PrecomputedFlag>
+    /** Nonblocking snapshot; readable encoded assignments expose their context but no original flag keys. */
     fun getAssignmentsSnapshot(): FlagsAssignmentsSnapshot?
 }
 
 internal data class FlagsAssignmentsSnapshot(val flags: Map<String, PrecomputedFlag>, val context: EvaluationContext)
 
 internal fun interface FlagsInstallation {
+    /**
+     * Runs [onInstalled] after attempting storage submission, including when submission fails.
+     * For the first installation, it runs before publishing the first-flags result to listeners.
+     */
     fun complete(onInstalled: () -> Unit)
 }
