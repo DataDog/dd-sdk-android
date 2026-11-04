@@ -399,6 +399,7 @@ internal class ResourceResolverTest {
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             webPImageCompression = mockWebPImageCompression,
             drawableUtils = mockDrawableUtils,
+            drawableExecutor = mockExecutorService,
             logger = mockLogger,
             pathUtils = mockPathUtils,
             md5HashGenerator = mockMD5HashGenerator,
@@ -409,6 +410,7 @@ internal class ResourceResolverTest {
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             webPImageCompression = mockWebPImageCompression,
             drawableUtils = mockDrawableUtils,
+            drawableExecutor = mockExecutorService,
             logger = mockLogger,
             pathUtils = mockPathUtils,
             md5HashGenerator = mockMD5HashGenerator,
@@ -617,20 +619,11 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M cache bitmap W resolveResourceIdFromDrawable() { BitmapDrawable width was resized }`(
-        @Mock mockResizedBitmap: Bitmap,
-        @StringForgery fakeString: String
+    fun `M recycle owned pixels W resolveResourceIdFromDrawable { scaled BitmapDrawable }`(
+        @Mock mockResizedBitmap: Bitmap
     ) {
         // Given
-        val fakeByteArray = fakeString.toByteArray()
-        assertThat(fakeByteArray).isNotEmpty()
-
-        whenever(mockBitmap.isRecycled).thenReturn(false)
-        whenever(mockResizedBitmap.width).thenReturn(fakeBitmapWidth - 1)
-        whenever(mockResizedBitmap.height).thenReturn(fakeBitmapHeight)
-
-        whenever(mockWebPImageCompression.compressBitmap(mockResizedBitmap)).thenReturn(fakeByteArray)
-        whenever(mockDrawableUtils.createScaledBitmap(any(), anyOrNull())).thenReturn(mockResizedBitmap)
+        whenever(mockDrawableUtils.createScaledBitmap(mockBitmap)).thenReturn(mockResizedBitmap)
 
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
@@ -639,47 +632,16 @@ internal class ResourceResolverTest {
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockBitmapDrawable,
             drawableCopier = mockDrawableCopier,
-            drawableWidth = mockDrawable.intrinsicWidth,
-            drawableHeight = mockDrawable.intrinsicHeight,
+            drawableWidth = fakeBitmapWidth,
+            drawableHeight = fakeBitmapHeight,
             customResourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
-        verify(mockBitmapCachesManager).putInBitmapPool(any())
-    }
-
-    @Test
-    fun `M cache bitmap W resolveResourceIdFromDrawable() { BitmapDrawable height was resized }`(
-        @Mock mockResizedBitmap: Bitmap,
-        @StringForgery fakeString: String
-    ) {
-        // Given
-        val fakeByteArray = fakeString.toByteArray()
-        assertThat(fakeByteArray).isNotEmpty()
-
-        whenever(mockBitmap.isRecycled).thenReturn(false)
-        whenever(mockResizedBitmap.width).thenReturn(fakeBitmapWidth)
-        whenever(mockResizedBitmap.height).thenReturn(fakeBitmapHeight - 1)
-
-        whenever(mockWebPImageCompression.compressBitmap(mockResizedBitmap)).thenReturn(fakeByteArray)
-        whenever(mockDrawableUtils.createScaledBitmap(any(), anyOrNull())).thenReturn(mockResizedBitmap)
-
-        // When
-        testedResourceResolver.resolveResourceIdFromDrawable(
-            resources = mockResources,
-            applicationContext = mockApplicationContext,
-            displayMetrics = mockDisplayMetrics,
-            originalDrawable = mockBitmapDrawable,
-            drawableCopier = mockDrawableCopier,
-            drawableWidth = mockDrawable.intrinsicWidth,
-            drawableHeight = mockDrawable.intrinsicHeight,
-            customResourceIdCacheKey = null,
-            resourceResolverCallback = mockSerializerCallback
-        )
-
-        // Then
-        verify(mockBitmapCachesManager).putInBitmapPool(any())
+        verify(mockResizedBitmap).recycle()
+        verify(mockBitmap, never()).recycle()
+        verify(mockBitmapCachesManager, never()).putInBitmapPool(any())
     }
 
     @Test
@@ -1034,12 +996,15 @@ internal class ResourceResolverTest {
         verify(mockBitmapCachesManager).putInResourceCache(fakeCacheKey, fakeResourceId)
     }
 
-    private fun createResourceResolver(): ResourceResolver = ResourceResolver(
+    private fun createResourceResolver(
+        resourceExecutor: ExecutorService = mockExecutorService
+    ): ResourceResolver = ResourceResolver(
         applicationContext = mockApplicationContext,
         logger = mockLogger,
         pathUtils = mockPathUtils,
-        threadPoolExecutor = mockExecutorService,
+        threadPoolExecutor = resourceExecutor,
         drawableUtils = mockDrawableUtils,
+        drawableExecutor = mockExecutorService,
         webPImageCompression = mockWebPImageCompression,
         md5HashGenerator = mockMD5HashGenerator,
         recordedDataQueueHandler = mockRecordedDataQueueHandler,
@@ -1107,14 +1072,10 @@ internal class ResourceResolverTest {
     @Test
     fun `M only copy the drawable in work thread W resolveResourceIdFromDrawable`() {
         // Given
-        whenever(
-            mockExecutorService.execute(
-                any()
-            )
-        ).then {
-            // do nothing to simulate that work thread doesn't execute the task.
-            mock<Future<Boolean>>()
-        }
+        val mockResourceExecutor = mock<ExecutorService>()
+        testedResourceResolver = createResourceResolver(resourceExecutor = mockResourceExecutor)
+        val fakeTasks = mutableListOf<Runnable>()
+        whenever(mockExecutorService.execute(any())).thenAnswer { fakeTasks.add(it.getArgument(0)); null }
 
         // When
         testedResourceResolver.resolveResourceIdFromDrawable(
@@ -1123,37 +1084,17 @@ internal class ResourceResolverTest {
             displayMetrics = mockDisplayMetrics,
             originalDrawable = mockDrawable,
             drawableCopier = mockDrawableCopier,
-            drawableWidth = mockDrawable.intrinsicWidth,
-            drawableHeight = mockDrawable.intrinsicHeight,
+            drawableWidth = fakeBitmapWidth,
+            drawableHeight = fakeBitmapHeight,
             customResourceIdCacheKey = null,
             resourceResolverCallback = mockSerializerCallback
         )
 
         // Then
-        verifyNoInteractions(mockDrawableCopier)
-
-        // Given
-        whenever(
-            mockExecutorService.execute(
-                any()
-            )
-        ).then {
-            (it.arguments[0] as Runnable).run()
-            mock<Future<Boolean>>()
-        }
+        verifyNoInteractions(mockDrawableCopier, mockDrawableUtils, mockResourceExecutor)
 
         // When
-        testedResourceResolver.resolveResourceIdFromDrawable(
-            resources = mockResources,
-            applicationContext = mockApplicationContext,
-            displayMetrics = mockDisplayMetrics,
-            originalDrawable = mockDrawable,
-            drawableCopier = mockDrawableCopier,
-            drawableWidth = mockDrawable.intrinsicWidth,
-            drawableHeight = mockDrawable.intrinsicHeight,
-            customResourceIdCacheKey = null,
-            resourceResolverCallback = mockSerializerCallback
-        )
+        fakeTasks.single().run()
 
         // Then
         verify(mockDrawableCopier).copy(mockDrawable, mockResources)

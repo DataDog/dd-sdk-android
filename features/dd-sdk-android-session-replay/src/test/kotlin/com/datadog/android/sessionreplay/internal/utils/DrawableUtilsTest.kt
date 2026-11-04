@@ -19,7 +19,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
-import com.datadog.android.sessionreplay.internal.utils.DrawableUtils.Companion.DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION
+import com.datadog.android.sessionreplay.internal.utils.DrawableUtils.Companion.DRAWABLE_CAPTURE_FAILED
 import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
 import com.datadog.android.utils.verifyLog
@@ -29,9 +29,11 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -39,13 +41,14 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.ExecutorService
 import java.util.stream.Stream
 
 @Extensions(
@@ -86,9 +89,6 @@ internal class DrawableUtilsTest {
     private lateinit var mockConfig: Bitmap.Config
 
     @Mock
-    private lateinit var mockExecutorService: ExecutorService
-
-    @Mock
     private lateinit var mockBitmapCreationCallback: ResourceResolver.BitmapCreationCallback
 
     @Mock
@@ -116,18 +116,54 @@ internal class DrawableUtilsTest {
         whenever(mockBitmap.config).thenReturn(mockConfig)
         whenever(mockBitmapCachesManager.getBitmapByProperties(any(), any(), any())).thenReturn(null)
 
-        whenever(mockExecutorService.execute(any())) doAnswer {
-            val runnable = it.getArgument<Runnable>(0)
-            runnable.run()
-        }
-
         testedDrawableUtils = DrawableUtils(
             bitmapWrapper = mockBitmapWrapper,
             canvasWrapper = mockCanvasWrapper,
             bitmapCachesManager = mockBitmapCachesManager,
-            executorService = mockExecutorService,
             internalLogger = mockLogger
         )
+    }
+
+    @ParameterizedTest
+    @EnumSource(DrawFailureStage::class)
+    fun `M release pixels and propagate failure W createBitmapOfApproxSizeFromDrawable { drawing setup fails }`(
+        stage: DrawFailureStage
+    ) {
+        // Given
+        val fakeFailure = OutOfMemoryError()
+        when (stage) {
+            DrawFailureStage.CANVAS -> whenever(mockCanvasWrapper.createCanvas(mockBitmap)).thenThrow(fakeFailure)
+            DrawFailureStage.CLEAR -> whenever(mockCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR))
+                .thenThrow(fakeFailure)
+            DrawFailureStage.BOUNDS -> whenever(mockDrawable.setBounds(any(), any(), any(), any()))
+                .thenThrow(fakeFailure)
+            DrawFailureStage.DRAW -> whenever(mockDrawable.draw(mockCanvas)).thenThrow(fakeFailure)
+        }
+
+        // When
+        val actualFailure = assertThrows<OutOfMemoryError> {
+            testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+                drawable = mockDrawable,
+                drawableWidth = 512,
+                drawableHeight = 512,
+                displayMetrics = mockDisplayMetrics,
+                bitmapCreationCallback = mockBitmapCreationCallback
+            )
+        }
+
+        // Then
+        assertThat(actualFailure).isSameAs(fakeFailure)
+        if (stage == DrawFailureStage.CANVAS) {
+            verify(mockBitmap).recycle()
+        } else {
+            inOrder(mockCanvas, mockBitmap) {
+                verify(mockCanvas).setBitmap(null)
+                verify(mockBitmap).recycle()
+            }
+        }
+        verify(mockBitmapCreationCallback, never()).onFailure()
+        verify(mockBitmapCreationCallback, never()).onReady(any())
+        verifyNoInteractions(mockLogger)
     }
 
     // region createBitmap
@@ -264,7 +300,10 @@ internal class DrawableUtilsTest {
         )
 
         // Then
-        verify(mockBitmapCreationCallback).onReady(mockBitmapFromPool)
+        inOrder(mockCanvas, mockBitmapCreationCallback) {
+            verify(mockCanvas).setBitmap(null)
+            verify(mockBitmapCreationCallback).onReady(mockBitmapFromPool)
+        }
     }
 
     @Test
@@ -418,13 +457,17 @@ internal class DrawableUtilsTest {
         )
 
         // Then
-        verify(mockBitmapCreationCallback).onFailure()
+        inOrder(mockCanvas, mockBitmapCreationCallback) {
+            verify(mockCanvas).setBitmap(null)
+            verify(mockBitmapCreationCallback).onFailure()
+        }
 
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
-            { it == "$DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION ${mockDrawable.javaClass.canonicalName}" },
-            exceptionType
+            { it == "$DRAWABLE_CAPTURE_FAILED ${mockDrawable.javaClass.canonicalName}" },
+            exceptionType,
+            onlyOnce = true
         )
     }
 
@@ -446,6 +489,8 @@ internal class DrawableUtilsTest {
         // Then
         verify(mockCanvas).drawColor(eq(Color.TRANSPARENT), eq(PorterDuff.Mode.CLEAR))
     }
+
+    internal enum class DrawFailureStage { CANVAS, CLEAR, BOUNDS, DRAW }
 
     companion object {
         @JvmStatic

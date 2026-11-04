@@ -24,13 +24,19 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -135,6 +141,48 @@ internal class PathUtilsTest {
         assertThat(result).isNull()
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M release pixels before propagating allocation failure W convertPathToBitmap`(
+        failDuringDrawing: Boolean,
+        @IntForgery fakeWidth: Int,
+        @IntForgery fakeHeight: Int,
+        @IntForgery fakeStrokeWidth: Int
+    ) {
+        // Given
+        val fakeFailure = OutOfMemoryError()
+        whenever(mockBitmapWrapper.createBitmap(any(), any(), any(), anyOrNull())).thenReturn(mockBitmap)
+        if (failDuringDrawing) {
+            whenever(mockCanvasWrapper.createCanvas(mockBitmap)).thenReturn(mockCanvas)
+            whenever(mockCanvas.drawPath(any(), any())).thenThrow(fakeFailure)
+        } else {
+            whenever(mockCanvasWrapper.createCanvas(mockBitmap)).thenThrow(fakeFailure)
+        }
+
+        // When
+        val actualFailure = assertThrows<OutOfMemoryError> {
+            testedUtils.convertPathToBitmap(
+                mockPath,
+                fakeCheckmarkColor.toInt(),
+                fakeWidth,
+                fakeHeight,
+                fakeStrokeWidth
+            )
+        }
+
+        // Then
+        assertThat(actualFailure).isSameAs(fakeFailure)
+        if (failDuringDrawing) {
+            inOrder(mockCanvas, mockBitmap) {
+                verify(mockCanvas).setBitmap(null)
+                verify(mockBitmap).recycle()
+            }
+        } else {
+            verify(mockBitmap).recycle()
+        }
+        verifyNoInteractions(mockLogger)
+    }
+
     @Test
     fun `M return bitmap W convertPathToBitmap() { success }`(
         @IntForgery fakeWidth: Int,
@@ -159,6 +207,7 @@ internal class PathUtilsTest {
 
         // Then
         assertThat(result).isEqualTo(mockBitmap)
+        verify(mockCanvas).setBitmap(null)
     }
 
     @Test

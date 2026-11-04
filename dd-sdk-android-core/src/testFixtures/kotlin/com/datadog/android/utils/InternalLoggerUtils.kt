@@ -9,6 +9,7 @@
 package com.datadog.android.utils
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.NoOpInternalLogger
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.utils.assertj.InternalApiUsageEventAssert
 import org.assertj.core.api.Assertions.assertThat
@@ -19,6 +20,8 @@ import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.verification.VerificationMode
+
+fun createNoOpInternalLogger(): InternalLogger = NoOpInternalLogger()
 
 fun InternalLogger.verifyLog(
     level: InternalLogger.Level,
