@@ -129,6 +129,7 @@ internal class GranularComposeDecomposer(
 ) : CompositionHostDecomposer {
     private val placementClipResolver = ComposePlacementClipResolver()
     private val imageMapper = ImageSemanticsNodeMapper(colorStringFormatter, semanticsUtils)
+    private val clipPaths = ComposeClipPathCache()
 
     // Only runtime linkage failures indicate an unsupported Compose binary. Ordinary bugs and
     // fatal VM errors must not permanently disable the process-wide compatibility gate.
@@ -244,7 +245,7 @@ internal class GranularComposeDecomposer(
         if (radius > 0f) {
             val clamped = radius.toDouble().coerceAtMost(minOf(bounds.width, bounds.height) / 2.0)
             return CapturedModifier.Clip(
-                path = roundedRectPath(bounds.width, bounds.height, clamped, offsetX, offsetY)
+                path = clipPaths.rounded(bounds.width, bounds.height, clamped, offsetX, offsetY)
             )
         }
         val outline = shape.createOutline(
@@ -257,7 +258,7 @@ internal class GranularComposeDecomposer(
         val top = rect.top / density.density + offsetY
         val right = rect.right / density.density + offsetX
         val bottom = rect.bottom / density.density + offsetY
-        return CapturedModifier.Clip("M $left,$top L $right,$top L $right,$bottom L $left,$bottom Z")
+        return CapturedModifier.Clip(clipPaths.rectangle(left, top, right, bottom))
     }
 
     /**
@@ -1804,39 +1805,6 @@ private fun hostRelativeBoundsPx(node: SemanticsNode, useLayoutCoordinates: Bool
         boundsInRoot.right.roundToInt(),
         boundsInRoot.bottom.roundToInt()
     )
-}
-
-/**
- * A closed SVG path for a [width]x[height] rectangle with all four corners rounded by [radius] -
- * the same uniform-radius-from-`topStart` simplification [SemanticsUtils.resolveCornerRadius]
- * already applies for a single wireframe's own corner radius, reused here for a clip path covering
- * a whole layer. Coordinates are local to the layer's own rectangle, per
- * [CapturedModifier.Clip]'s wire contract. [radius] is expected to already be clamped to at most
- * half of the shorter side by the caller.
- */
-private fun roundedRectPath(
-    width: Long,
-    height: Long,
-    radius: Double,
-    x: Double = 0.0,
-    y: Double = 0.0
-): String {
-    if (x == 0.0 && y == 0.0) {
-        val w = width.toDouble()
-        val h = height.toDouble()
-        return "M $radius,0 " +
-            "L ${w - radius},0 A $radius,$radius 0 0 1 $w,$radius " +
-            "L $w,${h - radius} A $radius,$radius 0 0 1 ${w - radius},$h " +
-            "L $radius,$h A $radius,$radius 0 0 1 0,${h - radius} " +
-            "L 0,$radius A $radius,$radius 0 0 1 $radius,0 Z"
-    }
-    val right = x + width
-    val bottom = y + height
-    return "M ${x + radius},$y " +
-        "L ${right - radius},$y A $radius,$radius 0 0 1 $right,${y + radius} " +
-        "L $right,${bottom - radius} A $radius,$radius 0 0 1 ${right - radius},$bottom " +
-        "L ${x + radius},$bottom A $radius,$radius 0 0 1 $x,${bottom - radius} " +
-        "L $x,${y + radius} A $radius,$radius 0 0 1 ${x + radius},$y Z"
 }
 
 /**

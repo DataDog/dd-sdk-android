@@ -2434,6 +2434,65 @@ internal class GranularComposeDecomposerTest {
     }
 
     @Test
+    fun `M read a changed outline W decompose() { same shape object and bounds }`() {
+        // Given
+        val firstOutline = androidx.compose.ui.graphics.Outline.Rectangle(
+            androidx.compose.ui.geometry.Rect(0f, 0f, 100f, 50f)
+        )
+        val changedOutline = androidx.compose.ui.graphics.Outline.Rectangle(
+            androidx.compose.ui.geometry.Rect(10f, 5f, 90f, 45f)
+        )
+        var outlineCalls = 0
+        val fakeShape = object : Shape {
+            override fun createOutline(
+                size: androidx.compose.ui.geometry.Size,
+                layoutDirection: LayoutDirection,
+                density: Density
+            ): androidx.compose.ui.graphics.Outline {
+                outlineCalls++
+                return if (outlineCalls == 2) changedOutline else firstOutline
+            }
+        }
+        val node = mockClippableNode(clipEnabled = true, shape = fakeShape)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        fun capturedPath() = testedDecomposer.decompose(mockView, realRequest())!!.nodes
+            .flatMap { it.modifiers }.filterIsInstance<CapturedModifier.Clip>().single().path
+
+        // When
+        val first = capturedPath()
+        val changed = capturedPath()
+        val restored = capturedPath()
+
+        // Then
+        assertThat(first).isEqualTo("M 0.0,0.0 L 100.0,0.0 L 100.0,50.0 L 0.0,50.0 Z")
+        assertThat(changed).isEqualTo("M 10.0,5.0 L 90.0,5.0 L 90.0,45.0 L 10.0,45.0 Z")
+        assertThat(restored).isSameAs(first)
+        assertThat(outlineCalls).isEqualTo(3)
+    }
+
+    @Test
+    fun `M read a changed radius W decompose() { same shape object and bounds }`() {
+        // Given
+        val fakeShape: Shape = mock()
+        val node = mockClippableNode(clipEnabled = true, shape = fakeShape)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(mockSemanticsUtils.resolveCornerRadius(eq(fakeShape), any(), any())).thenReturn(10f)
+        fun capturedPath() = testedDecomposer.decompose(mockView, realRequest())!!.nodes
+            .flatMap { it.modifiers }.filterIsInstance<CapturedModifier.Clip>().single().path
+        val first = capturedPath()
+
+        // When
+        whenever(mockSemanticsUtils.resolveCornerRadius(eq(fakeShape), any(), any())).thenReturn(12f)
+        val changed = capturedPath()
+
+        // Then
+        assertThat(changed).startsWith("M 12.0,0 L 88.0,0 A 12.0,12.0")
+        assertThat(changed).isNotEqualTo(first)
+    }
+
+    @Test
     fun `M not emit a Clip modifier W decompose() { graphicsLayer shape set but clip disabled }`() {
         // Given: a shape without clip=true is only used for the shadow outline, not to actually
         // clip content - emitting a Clip modifier here would be wrong, not just unnecessary.
