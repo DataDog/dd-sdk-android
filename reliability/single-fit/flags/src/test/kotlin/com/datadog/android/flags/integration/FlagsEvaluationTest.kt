@@ -127,6 +127,7 @@ class FlagsEvaluationTest {
                 "string" to assignment("string", fakeString),
                 "int" to assignment("integer", fakeInt),
                 "double" to assignment("number", fakeDouble),
+                "float" to assignment("float", fakeInt),
                 "object" to assignment("object", JSONObject().put(fakeStructureKey, fakeStructureValue))
             )
         )
@@ -141,6 +142,8 @@ class FlagsEvaluationTest {
         assertThat(client.resolveStringValue("string", "")).isEqualTo(fakeString)
         assertThat(client.resolveIntValue("int", fakeInt.inv())).isEqualTo(fakeInt)
         assertThat(client.resolveDoubleValue("double", fakeDouble + 1)).isEqualTo(fakeDouble)
+        assertThat(client.resolveIntValue("float", fakeInt.inv())).isEqualTo(fakeInt)
+        assertThat(client.resolveDoubleValue("int", fakeInt.inv().toDouble())).isEqualTo(fakeInt.toDouble())
         assertThat(client.resolveStructureValue("object", JSONObject()).getString(fakeStructureKey))
             .isEqualTo(fakeStructureValue)
         assertThat(client.resolveStructureValue("object", emptyMap()))

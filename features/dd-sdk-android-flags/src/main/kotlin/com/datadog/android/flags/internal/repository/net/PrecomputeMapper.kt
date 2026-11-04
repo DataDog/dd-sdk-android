@@ -46,6 +46,7 @@ internal class PrecomputeMapper(
                     try {
                         key to FlagsJson.readAssignment(FlagsJson.objectValue(value))
                     } catch (_: UnsupportedVariationTypeException) {
+                        warnUnsupportedType()
                         null
                     }
                 }.toMap(),
@@ -85,6 +86,15 @@ internal class PrecomputeMapper(
         )
 
         null
+    }
+
+    private fun warnUnsupportedType() {
+        internalLogger.log(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.USER,
+            messageBuilder = { "Ignored a flag with an unsupported variationType in the precomputed response." },
+            onlyOnce = true
+        )
     }
 
     private fun acknowledgesOptOut(options: JsonObject?, request: ExperimentationOptOut.Request?): Boolean {

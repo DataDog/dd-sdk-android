@@ -29,6 +29,13 @@ internal class TypeMismatchException(message: String) : Exception(message)
  */
 internal object FlagValueConverter {
 
+    private val INT_MIN = BigDecimal(Int.MIN_VALUE)
+    private val INT_MAX = BigDecimal(Int.MAX_VALUE)
+
+    // The longest decimal value that Int reads, and Double reads at or above 2^53, parse with BigDecimal.
+    // This bounds the BigDecimal work on each read.
+    private const val MAX_DECIMAL_LENGTH = 64
+
     /**
      * Converts a flag's string value to the expected type.
      *
@@ -37,7 +44,9 @@ internal object FlagValueConverter {
      * @param variationType The type specified in the flag metadata
      * @param targetType The target type class to convert to
      * @return Result containing the converted value on success,
-     *         or a Failure with TypeMismatchException if types are incompatible,
+     *         or a Failure with TypeMismatchException if types are incompatible
+     *         or a numeric value can't be read as Int without loss,
+     *         or a Double read overflows, underflows, or loses whole-number precision,
      *         or a Failure with the parse exception if conversion failed
      */
     @Suppress("UNCHECKED_CAST")
@@ -49,74 +58,33 @@ internal object FlagValueConverter {
             )
         }
 
-        return when (targetType) {
-            Int::class -> losslessInt(variationValue) as Result<T>
-            Double::class -> losslessDouble(variationValue) as Result<T>
-            else -> runCatching {
-                @Suppress("UNCHECKED_CAST")
-                val result: T? = when (targetType) {
-                    Boolean::class -> variationValue.lowercase(Locale.US).toBooleanStrictOrNull() as? T
-                    String::class -> variationValue as T
-                    Map::class -> variationValue.toMap() as? T
-                    JSONObject::class -> {
-                        @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in runCatching
-                        val json = JSONObject(variationValue)
-                        @Suppress("UNCHECKED_CAST")
-                        json as? T
-                    }
-                    else -> {
-                        // Check if targetType is a Map implementation
-                        // Safe: isAssignableFrom is a standard Java reflection call
-                        @Suppress("UnsafeThirdPartyFunctionCall")
-                        if (Map::class.java.isAssignableFrom(targetType.java)) {
-                            variationValue.toMap() as? T
-                        } else {
-                            null
-                        }
+        return runCatching {
+            @Suppress("UNCHECKED_CAST")
+            val result: T? = when (targetType) {
+                Boolean::class -> variationValue.lowercase(Locale.US).toBooleanStrictOrNull() as? T
+                String::class -> variationValue as T
+                Int::class -> parseLosslessInt(variationValue, variationType) as? T
+                Double::class -> parseLosslessDouble(variationValue, variationType) as? T
+                Map::class -> variationValue.toMap() as? T
+                JSONObject::class -> {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in runCatching
+                    val json = JSONObject(variationValue)
+                    @Suppress("UNCHECKED_CAST")
+                    json as? T
+                }
+                else -> {
+                    // Check if targetType is a Map implementation
+                    // Safe: isAssignableFrom is a standard Java reflection call
+                    @Suppress("UnsafeThirdPartyFunctionCall")
+                    if (Map::class.java.isAssignableFrom(targetType.java)) {
+                        variationValue.toMap() as? T
+                    } else {
+                        null
                     }
                 }
-
-                result ?: throw IllegalArgumentException("Failed to parse value '$variationValue'")
             }
-        }
-    }
 
-    private fun losslessInt(value: String): Result<Int> {
-        val number = value.toBigDecimalOrNull()
-            ?: return Result.failure(IllegalArgumentException("Failed to parse value '$value'"))
-        val integer = try {
-            number.intValueExact()
-        } catch (_: ArithmeticException) {
-            null
-        }
-        return if (integer != null) {
-            Result.success(integer)
-        } else {
-            Result.failure(TypeMismatchException("Flag value cannot be represented as an Int"))
-        }
-    }
-
-    private fun losslessDouble(value: String): Result<Double> {
-        val number = value.toBigDecimalOrNull()
-        val double = value.toDoubleOrNull()
-        if (number == null || double == null) {
-            return Result.failure(IllegalArgumentException("Failed to parse value '$value'"))
-        }
-        // Fractional values round normally; original whole values must stay exact.
-        @Suppress("UnsafeThirdPartyFunctionCall") // BigDecimal arithmetic failures are handled below.
-        val exact = try {
-            double.isFinite() &&
-                (double != 0.0 || number.signum() == 0) &&
-                (number.stripTrailingZeros().scale() > 0 || number.compareTo(BigDecimal(double)) == 0)
-        } catch (_: NumberFormatException) {
-            false
-        } catch (_: ArithmeticException) {
-            false
-        }
-        return if (exact) {
-            Result.success(double)
-        } else {
-            Result.failure(TypeMismatchException("Flag value cannot be represented as a Double"))
+            result ?: throw IllegalArgumentException("Failed to parse value '$variationValue'")
         }
     }
 
@@ -130,9 +98,7 @@ internal object FlagValueConverter {
     fun isTypeCompatible(variationType: String, targetType: KClass<*>): Boolean = when (targetType) {
         Boolean::class -> variationType == VariationType.BOOLEAN.value
         String::class -> variationType == VariationType.STRING.value
-        Int::class, Double::class ->
-            variationType == VariationType.INTEGER.value ||
-                variationType == VariationType.NUMBER.value || variationType == VariationType.FLOAT.value
+        Int::class, Double::class -> isNumeric(variationType)
         JSONObject::class -> variationType == VariationType.OBJECT.value
         Map::class -> variationType == VariationType.OBJECT.value
         else -> {
@@ -155,5 +121,83 @@ internal object FlagValueConverter {
         JSONObject::class -> "JSONObject"
         Map::class -> "Map"
         else -> targetType.simpleName ?: "Unknown"
+    }
+
+    private fun isNumeric(variationType: String): Boolean = variationType == VariationType.INTEGER.value ||
+        variationType == VariationType.NUMBER.value ||
+        variationType == VariationType.FLOAT.value
+
+    /**
+     * Int reads are lossless: a whole value within Int range, such as `5` or `5.0`, reads as Int whatever the
+     * numeric type. A fractional or out-of-range value is a type mismatch. A value that can't be parsed returns null,
+     * which [convert] reports as a parse error. So does a value that is not a plain Int and is longer than
+     * [MAX_DECIMAL_LENGTH] characters.
+     */
+    private fun parseLosslessInt(variationValue: String, variationType: String): Int? = variationValue.toIntOrNull()
+        ?: variationValue.takeIf { it.length <= MAX_DECIMAL_LENGTH }
+            ?.toBigDecimalOrNull()
+            ?.let { requireLosslessInt(it, variationValue, variationType) }
+
+    private fun requireLosslessInt(decimal: BigDecimal, variationValue: String, variationType: String): Int {
+        val problem = when {
+            isFractional(decimal) -> "fractional value '$variationValue'"
+            decimal < INT_MIN || decimal > INT_MAX -> "value '$variationValue' outside Int range"
+            else -> null
+        }
+        if (problem != null) {
+            @Suppress("ThrowingInternalException") // Caught by runCatching in convert()
+            throw TypeMismatchException("Flag has type '$variationType' with $problem but Int was requested")
+        }
+        return decimal.toInt()
+    }
+
+    /**
+     * Fractional values round to the nearest finite Double; original whole values must remain exact.
+     * Overflow and nonzero underflow are type mismatches. Decimal parsing is bounded on each read.
+     */
+    private fun parseLosslessDouble(variationValue: String, variationType: String): Double? =
+        variationValue.takeIf { it.length <= MAX_DECIMAL_LENGTH }
+            ?.toBigDecimalOrNull()
+            ?.let { decimal ->
+                variationValue.toDoubleOrNull()?.let { double ->
+                    requireLosslessDouble(decimal, double, variationValue, variationType)
+                }
+            }
+
+    private fun requireLosslessDouble(
+        decimal: BigDecimal,
+        double: Double,
+        variationValue: String,
+        variationType: String
+    ): Double {
+        val underflows = double == 0.0 && decimal.signum() != 0
+        val losesIntegerPrecision = !isFractional(decimal) && !isExactDouble(decimal, double)
+        if (!double.isFinite() || underflows || losesIntegerPrecision) {
+            @Suppress("ThrowingInternalException") // Caught by runCatching in convert()
+            throw TypeMismatchException(
+                "Flag has type '$variationType' with value '$variationValue' that Double can't represent " +
+                    "but Double was requested"
+            )
+        }
+        return double
+    }
+
+    private fun isExactDouble(decimal: BigDecimal, double: Double): Boolean = try {
+        decimal.compareTo(BigDecimal(double)) == 0
+    } catch (_: NumberFormatException) {
+        false
+    }
+
+    /**
+     * A value with a scale of 0 or less is whole. Check the scale first: it also prevents
+     * [BigDecimal.stripTrailingZeros] from overflowing the scale for a value such as `100e2147483647`.
+     * Zero is whole at any scale: some older Android versions return a zero such as `0.0` unchanged from
+     * [BigDecimal.stripTrailingZeros].
+     */
+    private fun isFractional(decimal: BigDecimal): Boolean {
+        if (decimal.scale() <= 0 || decimal.signum() == 0) return false
+        @Suppress("UnsafeThirdPartyFunctionCall") // Safe: the scale is positive, so it can't overflow
+        val stripped = decimal.stripTrailingZeros()
+        return stripped.scale() > 0
     }
 }

@@ -290,6 +290,8 @@ val maxRetries = client.resolveIntValue("max-retry-count", 3)
 val discountPercentage = client.resolveDoubleValue("discount-rate", 0.0)
 ```
 
+Any numeric flag can be read with either method. `resolveIntValue` returns the value only when it is a whole number within `Int` range, such as `5` or `5.0`. Otherwise, it returns the default value: `resolve()`, reports `TYPE_MISMATCH` when the value is fractional, such as `1.2`, or outside `Int` range, such as `2147483648`, and `PARSE_ERROR` when the value can't be parsed. To bound parsing work, a value longer than 64 characters is not parsed unless it is a plain integer within `Int` range, so it reports `PARSE_ERROR`. `resolveDoubleValue` returns a fractional value as the nearest `Double`, such as `1.2`. It returns a whole value only when the `Double` has exactly that value, or prints as that value, such as `1e300`. Otherwise, `resolve()` reports `TYPE_MISMATCH`, such as  for `9007199254740993`. `NaN` and `Infinity` report `PARSE_ERROR`. The same applies to a value longer than 64 characters whose `Double` is 2^53 or more in magnitude.
+
 **Structured flags**
 ```kotlin
 val defaultConfig = JSONObject("""{"timeout": 30, "retries": 3}""")
@@ -347,7 +349,7 @@ if (result.errorCode != null) {
 ##### Error codes
 - `FLAG_NOT_FOUND` - The flag could not be found
 - `PARSE_ERROR` - Error parsing the flag value
-- `TYPE_MISMATCH` - The flag type doesn't match the expected type
+- `TYPE_MISMATCH` - The flag value's type doesn't match the expected type, such as a fractional value read with `resolveIntValue`
 - `TARGETING_KEY_MISSING` - No targeting key was provided
 - `INVALID_CONTEXT` - The evaluation context is invalid
 - `PROVIDER_NOT_READY` - The provider is not yet ready
@@ -465,11 +467,8 @@ Adding a case requires an upstream fixture change and snapshot refresh. It requi
 Missing or empty fixtures fail the suite. Shared `_include` and `_skip` fields describe API applicability.
 Do not add local exclusions to hide failures.
 
-Numeric getters use lossless conversion regardless of the `integer`, `float`, or `number` wire label.
-Integer getters accept whole values within their native range. Double getters reject integer values that lose precision.
-Fractional Integer reads, range overflow, and inexact conversions return `TYPE_MISMATCH`.
-React Native exposes one Number getter. Its tests exclude cases that require a separate Integer getter or native integer precision.
-The service keeps sending `number`. This work adds no numeric capability.
+Numeric behavior follows the [shared numeric contract](https://github.com/DataDog/ffe-system-test-data/blob/main/precomputed-assignments/README.md#mobile-conformance-and-numeric-types).
+The native context API requires a string targeting key. Fixtures with `targetingKey: null` must declare this platform in `_skip` upstream; the runner reports an actionable fixture error if an applicable case violates that requirement.
 
 Upstream CI requires a generated obfuscated companion for each applicable plain fixture. It rejects missing, stale, or orphaned companions. Edit the plain case upstream and regenerate; do not maintain two sets of expectations. Dedicated malformed-encoding cases and fixed digest vectors remain separate.
 

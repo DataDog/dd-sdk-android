@@ -47,6 +47,11 @@ internal class CanonicalPrecomputedTest {
         // Given
         val fixture = read(path).asJsonObject
         assumeTrue(applies(fixture), "Canonical platform exclusion: $path")
+        val context = fixture.getAsJsonObject("context")
+        val targetingKey = context["targetingKey"]
+        require(targetingKey != null && targetingKey.isJsonPrimitive && targetingKey.asJsonPrimitive.isString) {
+            "$path: Android requires a string targetingKey; null-context fixtures must exclude android upstream"
+        }
         var core = createStubSdkCore(forge)
         val store = core.stubDataStore(Feature.FLAGS_FEATURE_NAME)
         core.stubNetworkResponses { httpResponse(it, body = fixture["response"].toString()) }
@@ -55,12 +60,11 @@ internal class CanonicalPrecomputedTest {
             core
         )
         var client = FlagsClient.Builder(sdkCore = core).build()
-        val context = fixture.getAsJsonObject("context")
         val attributes = context.getAsJsonObject("attributes").entrySet().associate { it.key to it.value.asString }
 
         // When
         try {
-            client.setEvaluationContext(EvaluationContext(context["targetingKey"].asString, attributes))
+            client.setEvaluationContext(EvaluationContext(targetingKey.asString, attributes))
 
             // Then
             assertThat(core.requestsSent()).hasSize(1)
