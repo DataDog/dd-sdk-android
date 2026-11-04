@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.async
 
 import com.datadog.android.sessionreplay.internal.processor.RecordedQueuedItemContext
 import com.datadog.android.sessionreplay.internal.recorder.Node
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceCancellation
 import com.datadog.android.sessionreplay.recorder.SystemInformation
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -16,6 +17,8 @@ internal class SnapshotRecordedDataQueueItem(
     internal val systemInformation: SystemInformation,
     creationTimestampInNs: Long
 ) : RecordedDataQueueItem(recordedQueuedItemContext, creationTimestampInNs) {
+    internal val resourceCancellation = ResourceCancellation()
+
     @Volatile internal var nodes = emptyList<Node>()
 
     @Volatile internal var isFinishedTraversal = false

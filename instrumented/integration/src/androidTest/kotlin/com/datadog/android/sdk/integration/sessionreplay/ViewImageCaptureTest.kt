@@ -23,6 +23,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.recorder.resources.DefaultDrawableCopier
+import com.datadog.android.sessionreplay.testing.CancellableImageCaptureCallback
 import com.datadog.android.sessionreplay.testing.createImageWireframeHelper
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ImageWireframeHelper
@@ -97,6 +98,28 @@ internal class ViewImageCaptureTest {
         assertThat(fakeDraws.get()).isEqualTo(1)
         assertThat(fakeBlocked - fakeBefore).isLessThan(16 * MIB)
         fakeFixture.assertRecordedImage()
+    }
+
+    @Test
+    fun discardDrawableWorkBeforeAllocation() {
+        // Given
+        val fakeFixture = CaptureFixture()
+        val fakeDraws = AtomicInteger()
+        val fakeRelease = fakeFixture.blockDrawing()
+        val fakeCallback = CancellableImageCaptureCallback { fakeFixture.completed.incrementAndGet() }
+
+        // When
+        try {
+            fakeFixture.capture(CountingDrawable(fakeDraws), fakeCallback.callback)
+            fakeFixture.awaitRequestsQueued()
+            fakeCallback.cancel()
+
+            // Then
+            assertThat(fakeFixture.completed.get()).isEqualTo(1)
+        } finally {
+            fakeFixture.finish(fakeRelease)
+        }
+        assertThat(fakeDraws.get()).isZero()
     }
 
     @Test

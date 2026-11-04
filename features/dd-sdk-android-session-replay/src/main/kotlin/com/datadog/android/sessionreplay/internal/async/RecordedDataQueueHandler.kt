@@ -36,10 +36,12 @@ internal class RecordedDataQueueHandler(
     private val telemetrySampleRate: Float = TELEMETRY_SAMPLE_RATE_PERCENT,
     private val sampler: RateBasedSampler<Unit> = RateBasedSampler(telemetrySampleRate)
 ) : DataQueueHandler {
+    private val admissionLock = Any()
+    private var isStopped = false
 
-    @Synchronized
     override fun clearAndStopProcessingQueue() {
-        recordedDataQueue.clear()
+        val discarded = stopAndDrainQueue()
+        discarded.forEach { discard(it) }
         executorService.shutdown()
     }
 
@@ -60,9 +62,7 @@ internal class RecordedDataQueueHandler(
             mimeType = mimeType
         )
 
-        insertIntoRecordedDataQueue(item)
-
-        return item
+        return if (insertIntoRecordedDataQueue(item)) item else null
     }
 
     @MainThread
@@ -78,9 +78,7 @@ internal class RecordedDataQueueHandler(
             touchData = pointerInteractions
         )
 
-        insertIntoRecordedDataQueue(item)
-
-        return item
+        return if (insertIntoRecordedDataQueue(item)) item else null
     }
 
     @MainThread
@@ -94,9 +92,12 @@ internal class RecordedDataQueueHandler(
             creationTimestampInNs = timeProvider.getDeviceElapsedTimeNanos()
         )
 
-        insertIntoRecordedDataQueue(item)
-
-        return item
+        return if (insertIntoRecordedDataQueue(item)) {
+            item
+        } else {
+            item.resourceCancellation.cancel()
+            null
+        }
     }
 
     /**
@@ -138,12 +139,12 @@ internal class RecordedDataQueueHandler(
                     if (sampler.sample(Unit)) {
                         logInvalidQueueItemException(nextItem)
                     }
-                    recordedDataQueue.poll()
+                    discard(recordedDataQueue.poll())
                 } else if (nextItemAgeInNs > MAX_DELAY_NS) {
                     if (sampler.sample(Unit)) {
                         logExpiredItemException(nextItemAgeInNs)
                     }
-                    recordedDataQueue.poll()
+                    discard(recordedDataQueue.poll())
                 } else if (nextItem.isReady()) {
                     processItem(recordedDataQueue.poll())
                 } else {
@@ -151,6 +152,10 @@ internal class RecordedDataQueueHandler(
                 }
             }
         }
+    }
+
+    private fun discard(item: RecordedDataQueueItem?) {
+        (item as? SnapshotRecordedDataQueueItem)?.resourceCancellation?.cancel()
     }
 
     @WorkerThread
@@ -182,16 +187,29 @@ internal class RecordedDataQueueHandler(
         processor.processTouchEventsRecords(item)
     }
 
-    private fun insertIntoRecordedDataQueue(recordedDataQueueItem: RecordedDataQueueItem) {
+    @Synchronized
+    private fun stopAndDrainQueue(): List<RecordedDataQueueItem> = synchronized(admissionLock) {
+        isStopped = true
+        @Suppress("UnsafeThirdPartyFunctionCall") // SDK-owned concurrent queue; consumers are serialized.
+        recordedDataQueue.toList().also { recordedDataQueue.clear() }
+    }
+
+    private fun insertIntoRecordedDataQueue(recordedDataQueueItem: RecordedDataQueueItem): Boolean {
         @Suppress("TooGenericExceptionCaught")
-        try {
-            recordedDataQueue.offer(recordedDataQueueItem)
+        return try {
+            // Keep admission separate from the processing monitor so capture never waits for serialization or I/O.
+            synchronized(admissionLock) {
+                !isStopped && recordedDataQueue.offer(recordedDataQueueItem)
+            }
         } catch (e: IllegalArgumentException) {
             logAddToQueueException(e)
+            false
         } catch (e: ClassCastException) {
             logAddToQueueException(e)
+            false
         } catch (e: NullPointerException) {
             logAddToQueueException(e)
+            false
         }
     }
 

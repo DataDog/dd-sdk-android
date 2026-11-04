@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.testing
 
 import android.content.Context
+import com.datadog.android.sessionreplay.internal.async.CancellableAsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.async.SnapshotRecordedDataQueueItem
@@ -17,6 +18,7 @@ import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapPool
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
 import com.datadog.android.sessionreplay.internal.recorder.resources.ImageTypeResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.MD5HashGenerator
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceCancellation
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceDrawableKeyGenerator
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesLRUCache
@@ -58,6 +60,17 @@ fun createImageWireframeHelper(
         ViewUtilsInternal(),
         ImageTypeResolver()
     )
+}
+
+class CancellableImageCaptureCallback(onFinished: () -> Unit) {
+    private val cancellationSignal = ResourceCancellation()
+    val callback: AsyncJobStatusCallback = object : CancellableAsyncJobStatusCallback {
+        override val cancellation = cancellationSignal
+        override fun jobStarted() = Unit
+        override fun jobFinished() = onFinished()
+    }
+
+    fun cancel() = cancellationSignal.cancel()
 }
 
 private class CapturedResources(private val onResource: (ByteArray) -> Unit) : DataQueueHandler {

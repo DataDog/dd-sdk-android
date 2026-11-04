@@ -40,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
@@ -581,6 +582,88 @@ internal class RecordedDataQueueHandlerTest {
         spyExecutorService.awaitTermination(1, TimeUnit.SECONDS)
 
         assertThat(testedHandler.recordedDataQueue.size).isEqualTo(2)
+    }
+
+    @Test
+    fun `M cancel concurrent insertion W clearAndStopProcessingQueue { snapshot inserted after copy }`() {
+        // Given
+        val fakeConcurrentQueue = spy(fakeRecordedDataQueue)
+        val testedConcurrentHandler = RecordedDataQueueHandler(
+            processor = mockProcessor,
+            rumContextDataHandler = mockRumContextDataHandler,
+            executorService = spyExecutorService,
+            internalLogger = mockInternalLogger,
+            recordedDataQueue = fakeConcurrentQueue,
+            timeProvider = mockTimeProvider,
+            telemetrySampleRate = 1f,
+            sampler = mockRateBasedSampler
+        )
+        var fakeInsertedSnapshot: SnapshotRecordedDataQueueItem? = null
+        doAnswer { invocation ->
+            fakeInsertedSnapshot = testedConcurrentHandler.addSnapshotItem(mockSystemInformation)
+            invocation.callRealMethod()
+        }.whenever(fakeConcurrentQueue).clear()
+
+        // When
+        testedConcurrentHandler.clearAndStopProcessingQueue()
+
+        // Then
+        assertThat(testedConcurrentHandler.recordedDataQueue).isEmpty()
+        assertThat(fakeInsertedSnapshot).isNull()
+    }
+
+    @Test
+    fun `M reject new records W clearAndStopProcessingQueue { admission already closed }`() {
+        // Given
+        testedHandler.clearAndStopProcessingQueue()
+
+        // When
+        val fakeSnapshot = testedHandler.addSnapshotItem(mockSystemInformation)
+        val fakeTouch = testedHandler.addTouchEventItem(fakeTouchData)
+        val fakeResource = testedHandler.addResourceItem(fakeIdentifier.toString(), byteArrayOf(1))
+
+        // Then
+        assertThat(fakeSnapshot).isNull()
+        assertThat(fakeTouch).isNull()
+        assertThat(fakeResource).isNull()
+        assertThat(testedHandler.recordedDataQueue).isEmpty()
+    }
+
+    @Test
+    fun `M cancel image work W clearAndStopProcessingQueue { pending snapshot }`() {
+        // Given
+        val fakeItem = checkNotNull(testedHandler.addSnapshotItem(mockSystemInformation))
+        var fakeCancelled = false
+        fakeItem.resourceCancellation.register { fakeCancelled = true }
+
+        // When
+        testedHandler.clearAndStopProcessingQueue()
+
+        // Then
+        assertThat(fakeCancelled).isTrue()
+        assertThat(testedHandler.recordedDataQueue).isEmpty()
+    }
+
+    @Test
+    fun `M cancel image work W tryToConsumeItems { expired snapshot }`() {
+        // Given
+        val fakeItem = SnapshotRecordedDataQueueItem(
+            fakeRecordedQueuedItemContext,
+            mockSystemInformation,
+            fakeCurrentTimeNs - RecordedDataQueueHandler.MAX_DELAY_NS - 1
+        )
+        val fakeCancelled = CountDownLatch(1)
+        fakeItem.resourceCancellation.register { fakeCancelled.countDown() }
+        testedHandler.recordedDataQueue.offer(fakeItem)
+
+        // When
+        testedHandler.tryToConsumeItems()
+
+        // Then
+        assertThat(fakeCancelled.await(5, TimeUnit.SECONDS)).isTrue()
+        spyExecutorService.shutdown()
+        assertThat(spyExecutorService.awaitTermination(5, TimeUnit.SECONDS)).isTrue()
+        assertThat(testedHandler.recordedDataQueue).isEmpty()
     }
 
     @Test

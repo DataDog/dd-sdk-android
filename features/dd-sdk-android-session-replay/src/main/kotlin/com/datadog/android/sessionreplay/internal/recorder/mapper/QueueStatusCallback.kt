@@ -6,12 +6,16 @@
 
 package com.datadog.android.sessionreplay.internal.recorder.mapper
 
+import com.datadog.android.sessionreplay.internal.async.CancellableAsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
-import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceCancellation
 
 internal class QueueStatusCallback(
     private val recordedDataQueueRefs: RecordedDataQueueRefs
-) : AsyncJobStatusCallback {
+) : CancellableAsyncJobStatusCallback {
+
+    override val cancellation: ResourceCancellation?
+        get() = recordedDataQueueRefs.recordedDataQueueItem?.resourceCancellation
 
     override fun jobStarted() {
         recordedDataQueueRefs.incrementPendingJobs()
