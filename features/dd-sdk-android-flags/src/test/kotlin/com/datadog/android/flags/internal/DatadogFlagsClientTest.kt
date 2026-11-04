@@ -779,7 +779,8 @@ internal class DatadogFlagsClientTest {
         "number, 0e5, 0",
         "number, 10e-1, 1",
         "number, 1.5e1, 15",
-        "number, 5.00000000000000000000000000000000000000000000000000000000000000, 5"
+        "number, 5.00000000000000000000000000000000000000000000000000000000000000, 5",
+        "number, 00000000000000000000000000000000000000000000000000000000000000005, 5"
     )
     fun `M return value W resolve() { numeric flag, whole value, Int default }`(
         fakeVariationType: String,
