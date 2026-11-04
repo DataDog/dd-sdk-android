@@ -148,12 +148,6 @@ internal object ComposeReflection {
         "coil3.compose.AsyncImagePainter",
         isCritical = false
     )
-    val PainterMethodOfAsync3ImagePainter =
-        AsyncImagePainter3Class?.getDeclaredMethodSafe(
-            "getPainter",
-            isCritical = false
-        )
-
     // End region of Coil3
 
     // Region of MultiParagraph text

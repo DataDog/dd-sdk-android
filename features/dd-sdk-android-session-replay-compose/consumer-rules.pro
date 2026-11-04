@@ -41,9 +41,7 @@
 -keep class coil3.compose.internal.ContentPainterNode{
     <fields>;
 }
--keep class coil3.compose.AsyncImagePainter{
-    <methods>;
-}
+-keepnames class coil3.compose.AsyncImagePainter
 
 -keep class androidx.compose.ui.semantics.SemanticsNode {
      <fields>;
@@ -90,3 +88,7 @@
 -keep class androidx.compose.ui.text.android.TextLayout{
     <fields>;
 }
+
+# Coil is optional. Public Coil APIs are called only after checking that its classes exist.
+-dontwarn coil3.compose.AsyncImagePainter
+-dontwarn coil3.compose.AsyncImagePainter$State

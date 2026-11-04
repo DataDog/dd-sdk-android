@@ -27,6 +27,7 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsOwner
 import androidx.compose.ui.text.MultiParagraph
+import coil3.compose.AsyncImagePainter
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.AlignmentField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.AsyncImagePainterClass
@@ -49,7 +50,6 @@ import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeRefl
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfContentPainterElement
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfContentPainterModifier
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfPainterNode
-import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterMethodOfAsync3ImagePainter
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterNodeClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.StaticLayoutField
 import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
@@ -82,7 +82,8 @@ internal class ReflectionUtils {
     }
 
     fun isAsyncImagePainter(painter: Painter): Boolean {
-        return ComposeReflection.AsyncImagePainterClass?.isInstance(painter) == true
+        return ComposeReflection.AsyncImagePainterClass?.isInstance(painter) == true ||
+            ComposeReflection.AsyncImagePainter3Class?.isInstance(painter) == true
     }
 
     fun isDrawBehindElementClass(modifier: Modifier): Boolean {
@@ -198,9 +199,8 @@ internal class ReflectionUtils {
             }
             currentNode = ChildFieldOfModifierNode?.getSafe(currentNode) as? Modifier.Node
         }
-        val asyncImagePainter = PainterFieldOfPainterNode?.getSafe(painterNode)
-        val painter = asyncImagePainter?.let { PainterMethodOfAsync3ImagePainter?.invoke(it) }
-        return painter as? Painter
+        val asyncImagePainter = PainterFieldOfPainterNode?.getSafe(painterNode) as? AsyncImagePainter
+        return asyncImagePainter?.state?.value?.painter
     }
 
     fun getLocalImagePainter(semanticsNode: SemanticsNode): Painter? {
@@ -242,7 +242,11 @@ internal class ReflectionUtils {
     }
 
     fun getNestedPainter(painter: Painter): Painter? {
-        return PainterFieldOfAsyncImagePainter?.getSafe(painter) as? Painter
+        return if (ComposeReflection.AsyncImagePainter3Class?.isInstance(painter) == true) {
+            (painter as AsyncImagePainter).state.value.painter
+        } else {
+            PainterFieldOfAsyncImagePainter?.getSafe(painter) as? Painter
+        }
     }
 
     fun getMultiParagraphCapturedText(multiParagraph: MultiParagraph): String? {
