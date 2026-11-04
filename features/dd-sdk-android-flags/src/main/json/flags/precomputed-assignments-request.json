@@ -68,6 +68,28 @@
                 "targeting_key",
                 "targeting_attributes"
               ]
+            },
+            "flag_selection": {
+              "description": "Canonical flag selection. Sent only when the application configures a valid selection.",
+              "type": "object",
+              "properties": {
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "key_patterns": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "tags",
+                "key_patterns"
+              ]
             }
           },
           "required": [

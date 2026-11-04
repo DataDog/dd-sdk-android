@@ -22,6 +22,14 @@
         "salt": { "type": "string" }
       },
       "required": ["scheme", "salt"]
+    },
+    "flagSelection": {
+      "type": "object",
+      "properties": {
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "keyPatterns": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["tags", "keyPatterns"]
     }
   },
   "required": ["evaluationContext", "lastUpdateTimestamp"]

@@ -93,6 +93,26 @@ val flagsConfig = FlagsConfiguration.Builder()
     .build()
 ```
 
+#### Load only selected flags
+
+To load only the flags that your app uses, set a flag selection. The SDK sends it with the flag request, and the server returns only the flags that have any of the tags or whose key matches any of the key patterns:
+
+```kotlin
+val flagsConfig = FlagsConfiguration.Builder()
+    .flagSelection(
+        tags = listOf("mobile"),
+        keyPatterns = listOf("checkout-*")
+    )
+    .build()
+```
+
+- Tags match exactly and are case-sensitive. A key pattern matches the whole flag key, and only `*` is a wildcard.
+- Each list accepts at most 31 values, and each value is at most 200 UTF-8 bytes. The SDK does not send a selection that is over a limit. It logs an error and loads the full flag configuration.
+- When the server applies the selection, evaluating a flag outside it returns the default value with `ErrorCode.FLAG_NOT_FOUND`.
+- The flag selection is fixed when the Flags feature is enabled and applies to every `FlagsClient`. Flags cached under a different selection are not loaded at startup; until the next successful fetch, a client starts without cached flags.
+- If the server ignores a selection, the SDK loads the full flag configuration and logs an error with the reason. A reason that the SDK does not know is reported as `unknown`.
+- With a custom flag endpoint, the proxy must forward the `DD-Flag-Selection-Ignored` response header. Otherwise, the SDK cannot report a selection that the server ignored.
+
 ## Use the Feature Flags SDK
 
 ### Create a Flags client
@@ -270,7 +290,7 @@ val maxRetries = client.resolveIntValue("max-retry-count", 3)
 val discountPercentage = client.resolveDoubleValue("discount-rate", 0.0)
 ```
 
-Any numeric flag can be read with either method. `resolveIntValue` returns the value only when it is a whole number within `Int` range, such as `5` or `5.0`. Otherwise, it returns the default value: `resolve()`, reports `TYPE_MISMATCH` when the value is fractional, such as `1.2`, or outside `Int` range, such as `2147483648`, and `PARSE_ERROR` when the value can't be parsed. To bound parsing work, a value longer than 64 characters is not parsed unless it is a plain integer within `Int` range, so it reports `PARSE_ERROR`. `resolveDoubleValue` returns a fractional value as the nearest `Double`, such as `1.2`. It returns a whole value only when the `Double` has exactly that value, or prints as that value, such as `1e300`. Otherwise, `resolve()` reports `TYPE_MISMATCH`, such as  for `9007199254740993`. `NaN` and `Infinity` report `PARSE_ERROR`. The same applies to a value longer than 64 characters whose `Double` is 2^53 or more in magnitude.
+Any numeric flag can be read with either method. `resolveIntValue` accepts whole original values within `Int` range, such as `5` or `5.0`. Fractional or out-of-range values return the default with `TYPE_MISMATCH`. `resolveDoubleValue` rounds fractional values to the nearest finite `Double`, such as `1.20000000000000001` to `1.2`; whole values must be represented exactly. `9007199254740993` and `1e300` therefore return `TYPE_MISMATCH`, as do overflow and nonzero underflow. Malformed numeric text, including `NaN` and `Infinity`, reports `PARSE_ERROR`. Decimal parsing is bounded to 64 characters per value; longer values report `PARSE_ERROR`. These rules apply to `integer`, `float`, and `number` flags, including cached assignments.
 
 **Structured flags**
 ```kotlin
@@ -434,3 +454,49 @@ For more information on Feature Flags in Datadog, see the [official Feature Flag
 
 [1]: https://docs.datadoghq.com/real_user_monitoring/application_monitoring/android/setup
 [2]: https://docs.datadoghq.com/getting_started/feature_flags/
+
+## Shared precomputed response tests
+
+The Flags module uses the JSON contract from [ffe-system-test-data](https://github.com/DataDog/ffe-system-test-data/tree/main/precomputed-assignments).
+This keeps response behavior consistent across mobile SDKs. The snapshot is test data only.
+It adds no runtime dependency and requires no Git submodule.
+
+The generated snapshot is at `reliability/single-fit/flags/src/test/resources/precomputed`. `SOURCE.json` records the source commit and file digests.
+The runner discovers all nested JSON cases through the generated index.
+Adding a case requires an upstream fixture change and snapshot refresh. It requires no runner or filename-list change.
+Missing or empty fixtures fail the suite. Shared `_include` and `_skip` fields describe API applicability.
+Do not add local exclusions to hide failures.
+
+Numeric behavior follows the [shared numeric contract](https://github.com/DataDog/ffe-system-test-data/blob/main/precomputed-assignments/README.md#mobile-conformance-and-numeric-types).
+The native context API requires a string targeting key. Fixtures with `targetingKey: null` must declare this platform in `_skip` upstream; the runner reports an actionable fixture error if an applicable case violates that requirement.
+
+Upstream CI requires a generated obfuscated companion for each applicable plain fixture. It rejects missing, stale, or orphaned companions. Edit the plain case upstream and regenerate; do not maintain two sets of expectations. Dedicated malformed-encoding cases and fixed digest vectors remain separate.
+
+Cases cover values, defaults, errors, reasons, variants, emission gates, duplicate evaluations, and numeric boundaries.
+Obfuscation cases cover fixed digests, salts, Unicode, whitespace, malformed metadata, and plaintext event identity.
+The suite uses the feature integration harness. Each valid fixture also runs after cache restoration without networking. It checks public getters, response rejection, and real exposure and evaluation records.
+
+Run from the repository root:
+
+```sh
+python3 ci/sync-precomputed-fixtures.py --verify
+./gradlew :reliability:single-fit:flags:testDebugUnitTest --tests '*CanonicalPrecomputedTest*'
+```
+
+Refresh the snapshot from a reviewed upstream commit:
+
+```sh
+python3 ci/sync-precomputed-fixtures.py --ref <full-upstream-sha>
+python3 ci/sync-precomputed-fixtures.py --check
+```
+
+The importer copies committed bytes, regenerates the index, and removes deleted cases.
+It preserves Unity asset GUIDs where applicable. Do not edit imported JSON or its checksums.
+Use `--source <local-checkout> --ref <commit>` to test an upstream fixture branch before publication.
+`--verify` checks local integrity without networking. `--check` also compares the recorded upstream commit.
+
+The weekly `Precomputed flag fixtures` workflow opens a draft update PR when fixture content changes.
+It uses a short-lived token restricted to the default branch and this workflow.
+It waits when an update PR is already open. Normal SDK CI must pass before merge.
+Merge the upstream fixture contract before merging its consumer PRs.
+The update workflow never merges or publishes an SDK release.

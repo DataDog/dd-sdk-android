@@ -206,6 +206,7 @@ internal class DatadogFlagsClientTest {
                 featureSdkCore = mockFeatureSdkCore,
                 instanceName = fakeJsonKey,
                 dataStore = mock(),
+                flagSelection = null,
                 persistenceLoadTimeoutMs = 0
             )
         )
@@ -853,7 +854,7 @@ internal class DatadogFlagsClientTest {
         "number, -2147483649",
         "number, -1e20",
         "number, 100e2147483647",
-        "number, 1e2147483648",
+        "number, 1e300",
         "integer, 2147483648",
         "float, 2147483648.0"
     )
@@ -1004,7 +1005,6 @@ internal class DatadogFlagsClientTest {
         "number, 9007199254740992, 9007199254740992.0",
         "number, -9223372036854775808, -9223372036854775808.0",
         "float, 18446744073709551616, 18446744073709551616.0",
-        "number, 1e300, 1e300",
         "number, 1.20000000000000001, 1.2",
         "float, 9007199254740993.5, 9007199254740994.0"
     )
@@ -1039,7 +1039,8 @@ internal class DatadogFlagsClientTest {
         "number, 9223372036854775807",
         "number, 9007199254740993.0",
         "number, 1e400",
-        "number, 1e2147483648",
+        "number, 1e300",
+        "number, 1e-400",
         "integer, 9007199254740993",
         "float, 9007199254740993"
     )
@@ -1066,8 +1067,8 @@ internal class DatadogFlagsClientTest {
         assertThat(result.value).isEqualTo(fakeDefaultValue)
         assertThat(result.errorCode).isEqualTo(ErrorCode.TYPE_MISMATCH)
         assertThat(result.errorMessage).isEqualTo(
-            "Flag '$fakeFlagKey': Flag has type '$fakeVariationType' with whole value " +
-                "'$fakeVariationValue' that Double can't hold exactly but Double was requested"
+            "Flag '$fakeFlagKey': Flag has type '$fakeVariationType' with value " +
+                "'$fakeVariationValue' that Double can't represent but Double was requested"
         )
         verifyNoInteractions(mockProcessor)
     }
@@ -1934,7 +1935,7 @@ internal class DatadogFlagsClientTest {
         val fakeFlagKey1 = forge.anAlphabeticalString()
         val fakeFlagKey2 = forge.anAlphabeticalString()
         val fakeFlagKey3 = forge.anAlphabeticalString()
-        val fakeFlagValue = forge.aDouble()
+        val fakeFlagValue = forge.aDouble(min = -1_000_000.0, max = 1_000_000.0)
         val fakeFlagIntValue = forge.anInt()
         val fakeDefaultValue = forge.aDouble()
 

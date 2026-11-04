@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.repository.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.DoubleForgery
@@ -69,6 +70,26 @@ internal class PrecomputeMapperTest {
     @BeforeEach
     fun `set up`() {
         testedMapper = PrecomputeMapper(mockInternalLogger)
+    }
+
+    @Test
+    fun `M warn once and preserve valid flags W map() {unsupported variation type}`() {
+        // Given
+        val unknown = buildFlagJson("future-type", true)
+        val valid = buildFlagJson(VariationType.BOOLEAN.value, true)
+        val json = buildValidJson(mapOf("unknown" to unknown, fakeFlagKey to valid))
+
+        // When
+        val result = testedMapper.map(json)
+
+        // Then
+        assertThat(result?.flags?.keys).containsExactly(fakeFlagKey)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            "Ignored a flag with an unsupported variationType in the precomputed response.",
+            onlyOnce = true
+        )
     }
 
     // region Valid JSON Parsing
