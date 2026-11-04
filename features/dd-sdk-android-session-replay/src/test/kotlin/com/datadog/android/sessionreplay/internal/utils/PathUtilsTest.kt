@@ -24,6 +24,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -31,6 +32,8 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -133,6 +136,34 @@ internal class PathUtilsTest {
 
         // Then
         assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M release pixels before propagating allocation failure W convertPathToBitmap`(
+        @IntForgery fakeWidth: Int,
+        @IntForgery fakeHeight: Int,
+        @IntForgery fakeStrokeWidth: Int
+    ) {
+        // Given
+        val fakeFailure = OutOfMemoryError()
+        whenever(mockBitmapWrapper.createBitmap(any(), any(), any(), anyOrNull())).thenReturn(mockBitmap)
+        whenever(mockCanvasWrapper.createCanvas(mockBitmap)).thenThrow(fakeFailure)
+
+        // When
+        val actualFailure = assertThrows<OutOfMemoryError> {
+            testedUtils.convertPathToBitmap(
+                mockPath,
+                fakeCheckmarkColor.toInt(),
+                fakeWidth,
+                fakeHeight,
+                fakeStrokeWidth
+            )
+        }
+
+        // Then
+        assertThat(actualFailure).isSameAs(fakeFailure)
+        verify(mockBitmap).recycle()
+        verifyNoInteractions(mockLogger)
     }
 
     @Test
