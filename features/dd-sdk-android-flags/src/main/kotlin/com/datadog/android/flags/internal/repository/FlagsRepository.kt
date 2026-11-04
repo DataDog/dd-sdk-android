@@ -35,16 +35,11 @@ internal interface FlagsRepository {
     /** True when the installed configuration is for [context], including a valid configuration with zero flags. */
     fun hasConfigurationForContext(context: EvaluationContext): Boolean
 
-    /** Nonblocking snapshot; readable encoded assignments expose their context but no original flag keys. */
     fun getAssignmentsSnapshot(): FlagsAssignmentsSnapshot?
 }
 
 internal data class FlagsAssignmentsSnapshot(val flags: Map<String, PrecomputedFlag>, val context: EvaluationContext)
 
 internal fun interface FlagsInstallation {
-    /**
-     * Runs [onInstalled] after attempting storage submission, including when submission fails.
-     * For the first installation, it runs before publishing the first-flags result to listeners.
-     */
     fun complete(onInstalled: () -> Unit)
 }

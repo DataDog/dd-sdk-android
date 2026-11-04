@@ -139,7 +139,6 @@ internal class DefaultFlagsRepositoryTest {
         )
     }
 
-
     @Test
     fun `M return snapshot without waiting W getEvaluationSnapshot() {persistence pending}`(forge: Forge) {
         // Given
@@ -190,7 +189,12 @@ internal class DefaultFlagsRepositoryTest {
     @ValueSource(booleans = [false, true])
     fun `M reuse telemetry identity across flags W getEvaluationSnapshot()`(fakeConsent: Boolean, forge: Forge) {
         // Given
-        testedRepository.installFlagsAndContext(testContext, multipleFlagsMap, observeFullEvaluationData = fakeConsent).complete {}
+        testedRepository.installFlagsAndContext(
+            testContext,
+            multipleFlagsMap,
+            observeFullEvaluationData = fakeConsent
+        ).complete {
+        }
         val fakeMissingKey = forge.anAlphabeticalString() + multipleFlagsMap.keys.joinToString()
 
         // When
@@ -217,13 +221,28 @@ internal class DefaultFlagsRepositoryTest {
         // Given
         val fakeKey = multipleFlagsMap.keys.first()
         val fakeNextContext = testContext.copy(targetingKey = testContext.targetingKey + forge.anAlphabeticalString())
-        testedRepository.installFlagsAndContext(testContext, multipleFlagsMap, observeFullEvaluationData = fakeConsent).complete {}
+        testedRepository.installFlagsAndContext(
+            testContext,
+            multipleFlagsMap,
+            observeFullEvaluationData = fakeConsent
+        ).complete {
+        }
         val initial = checkNotNull(testedRepository.getEvaluationSnapshot(fakeKey))
 
         // When
-        testedRepository.installFlagsAndContext(testContext, multipleFlagsMap, observeFullEvaluationData = !fakeConsent).complete {}
+        testedRepository.installFlagsAndContext(
+            testContext,
+            multipleFlagsMap,
+            observeFullEvaluationData = !fakeConsent
+        ).complete {
+        }
         val consentChanged = checkNotNull(testedRepository.getEvaluationSnapshot(fakeKey))
-        testedRepository.installFlagsAndContext(fakeNextContext, multipleFlagsMap, observeFullEvaluationData = !fakeConsent).complete {}
+        testedRepository.installFlagsAndContext(
+            fakeNextContext,
+            multipleFlagsMap,
+            observeFullEvaluationData = !fakeConsent
+        ).complete {
+        }
         val contextChanged = checkNotNull(testedRepository.getEvaluationSnapshot(fakeKey))
 
         // Then
@@ -310,9 +329,6 @@ internal class DefaultFlagsRepositoryTest {
         readThread.join(TimeUnit.SECONDS.toMillis(1))
         assertThat(result.get()).isFalse()
     }
-
-
-
 
     @Test
     fun `M mark restored assignments cached W initial disk read completes`(forge: Forge) {
@@ -703,7 +719,12 @@ internal class DefaultFlagsRepositoryTest {
         preparePersistenceLoad(forge, flagSelection)
 
         // When
-        testedRepository.installFlagsAndContext(forge.getForgery(), emptyMap(), observeFullEvaluationData = fakeConsent).complete {}
+        testedRepository.installFlagsAndContext(
+            forge.getForgery(),
+            emptyMap(),
+            observeFullEvaluationData = fakeConsent
+        ).complete {
+        }
 
         // Then
         val entry = argumentCaptor<FlagsStateEntry>()
@@ -894,5 +915,4 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     // endregion
-
 }
