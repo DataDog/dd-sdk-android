@@ -28,6 +28,7 @@ import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreMan
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
+import com.datadog.android.sessionreplay.recorder.privacy.TextDetector
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -37,6 +38,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.Mockito.mockConstruction
 import org.mockito.Mockito.mockStatic
@@ -74,6 +77,38 @@ internal class CompositionPipelineFactoryTest {
         whenever(mockSdkCore.timeProvider).thenReturn(mock())
         whenever(mockSdkCore.createSingleThreadExecutorService(any())).thenReturn(mock())
         whenever(mockSdkCore.createScheduledExecutorService(any())).thenReturn(mock())
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M configure mixed pixel preflight W create { detector availability }`(fakeDetectorAvailable: Boolean) {
+        // Given
+        val stubDetector: TextDetector? = if (fakeDetectorAvailable) mock() else null
+        var capturedLabel: String? = null
+        mockConstruction(AndroidWindowTraversal::class.java) { _, context ->
+            capturedLabel = context.arguments()[17] as? String
+        }.use { traversals ->
+            val testedFactory = createFactory(
+                dynamicOptimizationEnabled = false,
+                snapshotProducerFactory = null,
+                textDetector = stubDetector
+            )
+
+            // When
+            testedFactory.create(
+                mock<ResourceDataStoreManager>(),
+                mock<ResourcesWriter>(),
+                mock<RecordWriter>(),
+                mock<RumContextProvider>(),
+                mockApplication,
+                mock<EmbeddedContentSlotRegistry>(),
+                null
+            )
+
+            // Then
+            assertThat(traversals.constructed()).hasSize(1)
+            assertThat(capturedLabel).isEqualTo(if (fakeDetectorAvailable) null else "Image")
+        }
     }
 
     @Test
@@ -351,10 +386,11 @@ internal class CompositionPipelineFactoryTest {
 
     private fun createFactory(
         dynamicOptimizationEnabled: Boolean,
-        snapshotProducerFactory: (ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer = { _, _ ->
+        snapshotProducerFactory: ((ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer)? = { _, _ ->
             NoOpCapturedSnapshotProducer()
         },
-        recordingTimeBankFactory: () -> TimeBank = { mock() }
+        recordingTimeBankFactory: () -> TimeBank = { mock() },
+        textDetector: TextDetector? = null
     ) = DefaultCompositionPipelineFactory(
         sdkCore = mockSdkCore,
         internalCallback = mockInternalCallback,
@@ -363,6 +399,7 @@ internal class CompositionPipelineFactoryTest {
         textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
         dynamicOptimizationEnabled = dynamicOptimizationEnabled,
         snapshotProducerFactory = snapshotProducerFactory,
-        recordingTimeBankFactory = recordingTimeBankFactory
+        recordingTimeBankFactory = recordingTimeBankFactory,
+        textDetector = textDetector
     )
 }

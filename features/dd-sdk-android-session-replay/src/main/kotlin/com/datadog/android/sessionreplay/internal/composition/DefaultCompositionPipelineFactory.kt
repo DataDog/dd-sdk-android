@@ -32,6 +32,7 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedVie
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedWebViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.LegacyCapturedViewMapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.PixelCaptureEligibility
 import com.datadog.android.sessionreplay.internal.embedded.EmbeddedContentSlotRegistry
 import com.datadog.android.sessionreplay.internal.recorder.ComposedOptionSelectorDetector
 import com.datadog.android.sessionreplay.internal.recorder.DefaultOptionSelectorDetector
@@ -223,7 +224,12 @@ internal class DefaultCompositionPipelineFactory(
                 rootTextAndInputPrivacy = textAndInputPrivacy,
                 heatmapResolver = heatmapResolver,
                 embeddedContentMapper = embeddedContentMapper,
-                optionSelectorDetector = optionSelectorDetector()
+                optionSelectorDetector = optionSelectorDetector(),
+                unclassifiedPixelCaptureUnavailableLabel = if (textDetector == null) {
+                    PixelCaptureEligibility.MASK_ALL_CONTENT_LABEL
+                } else {
+                    null
+                }
             ),
             touchPrivacyManager = touchPrivacyManager,
             embeddedContentMapper = embeddedContentMapper

@@ -94,7 +94,8 @@ internal class AndroidWindowTraversal(
     private val foregroundCapture: ViewForegroundCapture = ViewForegroundCapture(internalLogger),
     private val heatmapResolver: HeatmapIdentifierResolver? = null,
     private val embeddedContentMapper: CapturedEmbeddedContentMapper? = null,
-    private val optionSelectorDetector: OptionSelectorDetector = DefaultOptionSelectorDetector()
+    private val optionSelectorDetector: OptionSelectorDetector = DefaultOptionSelectorDetector(),
+    private val unclassifiedPixelCaptureUnavailableLabel: String? = null
 ) {
     private val occlusionDetector = ViewOcclusionDetector(drawableToColorMapper, viewUtilsInternal, internalLogger)
 
@@ -148,7 +149,7 @@ internal class AndroidWindowTraversal(
                         it,
                         stack,
                         resolveEffectivePrivacy(it, item.inheritedPrivacy, internalLogger),
-                        item.hasOptionSelectorParent || isOptionSelector(it)
+                        item.hasOptionSelectorParent || it.isOptionSelector(optionSelectorDetector, internalLogger)
                     )
                 }
             } else {
@@ -278,7 +279,7 @@ internal class AndroidWindowTraversal(
             stack,
             state,
             heatmapIdentity?.viewPath ?: item.nodePath,
-            item.hasOptionSelectorParent || isOptionSelector(view)
+            item.hasOptionSelectorParent || view.isOptionSelector(optionSelectorDetector, internalLogger)
         )
     }
 
@@ -301,7 +302,7 @@ internal class AndroidWindowTraversal(
         shouldContinue = generation::shouldContinue,
         pendingMappingSink = { state.pendingMappings.add(it) },
         hasOptionSelectorParent = item.hasOptionSelectorParent,
-        isOptionSelector = { isOptionSelector(it) },
+        isOptionSelector = { it.isOptionSelector(optionSelectorDetector, internalLogger) },
         customTouchPrivacySink = state::collectCustomTouchPrivacy
     )
 
@@ -560,7 +561,7 @@ internal class AndroidWindowTraversal(
             )
         },
         hasOptionSelectorParent = mappingContext.hasOptionSelectorParent
-    )
+    ).also { it.unclassifiedPixelCaptureUnavailableLabel = unclassifiedPixelCaptureUnavailableLabel }
 
     /** Copies native interop now; construction waits for mapper jobs on the worker. */
     @UiThread
@@ -721,11 +722,11 @@ internal class AndroidWindowTraversal(
             )
         }
     }
-
-    @UiThread
-    private fun isOptionSelector(view: View): Boolean =
-        view is ViewGroup && optionSelectorDetector.isOptionSelectorSafely(view, internalLogger)
 }
+
+@UiThread
+private fun View.isOptionSelector(detector: OptionSelectorDetector, logger: InternalLogger): Boolean =
+    this is ViewGroup && detector.isOptionSelectorSafely(this, logger)
 
 /** Explicit view clips apply to the view and its whole subtree, regardless of clipChildren. */
 @UiThread

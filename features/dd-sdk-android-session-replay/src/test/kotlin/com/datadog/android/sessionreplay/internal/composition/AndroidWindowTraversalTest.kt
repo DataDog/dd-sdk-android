@@ -174,7 +174,8 @@ internal class AndroidWindowTraversalTest {
         pixelCapture: ViewPixelCapture = ViewPixelCapture(mock()),
         rootImagePrivacy: ImagePrivacy = ImagePrivacy.MASK_ALL,
         heatmapResolver: HeatmapIdentifierResolver? = null,
-        embeddedContentMapper: CapturedEmbeddedContentMapper? = null
+        embeddedContentMapper: CapturedEmbeddedContentMapper? = null,
+        unclassifiedPixelCaptureUnavailableLabel: String? = null
     ) = AndroidWindowTraversal(
         mapperRegistry = CapturedViewMapperRegistry(typedMappers, fallback, mock()),
         internalLogger = mock(),
@@ -187,7 +188,8 @@ internal class AndroidWindowTraversalTest {
         pixelCapture = pixelCapture,
         rootImagePrivacy = rootImagePrivacy,
         heatmapResolver = heatmapResolver,
-        embeddedContentMapper = embeddedContentMapper
+        embeddedContentMapper = embeddedContentMapper,
+        unclassifiedPixelCaptureUnavailableLabel = unclassifiedPixelCaptureUnavailableLabel
     )
 
     @ParameterizedTest
@@ -1189,6 +1191,38 @@ internal class AndroidWindowTraversalTest {
         assertThat(shouldContinue.invoke()).isTrue()
         fakeContext.expire()
         assertThat(shouldContinue.invoke()).isFalse()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M forward mixed pixel availability W traverseWindow { Compose host }`(fakeUnavailable: Boolean) {
+        // Given
+        val root = mockViewGroup(GlobalBounds(0, 0, 300, 300))
+        val host = mockView(GlobalBounds(0, 0, 300, 300))
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(host)
+        val fakeLabel = if (fakeUnavailable) "Image" else null
+        var capturedRequest: CompositionHostDecomposeRequest? = null
+        val stubDecomposer = object : CompositionHostDecomposer {
+            override fun canDecompose(view: View) = view === host
+            override fun decompose(
+                view: View,
+                request: CompositionHostDecomposeRequest
+            ): CompositionHostDecomposeResult {
+                capturedRequest = request
+                return CompositionHostDecomposeResult(emptyList(), emptyList(), emptyList())
+            }
+        }
+
+        // When
+        traversal(
+            composeHostDecomposer = stubDecomposer,
+            isComposeHost = { it === host },
+            unclassifiedPixelCaptureUnavailableLabel = fakeLabel
+        ).traverseWindow(root, identityFactory.window("window"), identityFactory, fakeContext)
+
+        // Then
+        assertThat(checkNotNull(capturedRequest).unclassifiedPixelCaptureUnavailableLabel).isEqualTo(fakeLabel)
     }
 
     @Test

@@ -25,6 +25,24 @@ import org.mockito.kotlin.whenever
 
 internal class ComposePixelCapturePaddingTest {
     @ParameterizedTest
+    @CsvSource("0,0", "1,16", "2,16", "10,20", "14,28", "15,30", "16,16", "100,100")
+    fun `M compute the same visible footprint without pixels W geometry`(fakeHeight: Long, fakePaddedHeight: Long) {
+        // Given
+        val bounds = CapturedBounds(16, 194, 379, fakeHeight)
+        mockStatic(Bitmap::class.java).use { bitmaps ->
+            // When
+            val result = ComposePixelCapturePadding.geometry(bounds)
+
+            // Then
+            assertThat(result.bounds).isEqualTo(bounds.copy(height = fakePaddedHeight))
+            assertThat(result.clip).isEqualTo(
+                if (fakePaddedHeight > fakeHeight) CapturedClip(bottom = fakePaddedHeight - fakeHeight) else null
+            )
+            bitmaps.verifyNoInteractions()
+        }
+    }
+
+    @ParameterizedTest
     @CsvSource("2,5,16,40", "10,27,20,54", "14,37,28,74", "1,3,16,48")
     fun `M preserve visible pixels and scale W pad { short capture }`(
         heightDp: Long,

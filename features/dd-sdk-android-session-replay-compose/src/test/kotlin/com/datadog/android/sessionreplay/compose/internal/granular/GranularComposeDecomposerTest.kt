@@ -102,8 +102,11 @@ internal class GranularComposeDecomposerTest {
     private lateinit var testedDecomposer: GranularComposeDecomposer
     private val mockView: View = mock()
 
-    @Test
-    fun `M preserve custom font pixels W decompose() { visible static text and masked images }`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M preserve custom font pixels W decompose() { visible static text and masked images }`(
+        fakeUnavailable: Boolean
+    ) {
         // Given
         val node = mockLeafNode()
         val root = mockRoot(listOf(node))
@@ -126,7 +129,8 @@ internal class GranularComposeDecomposerTest {
             mockView,
             realRequest(
                 imagePrivacy = ImagePrivacy.MASK_ALL,
-                pendingPixelCaptureSink = PendingPixelCaptureSink { registered += it }
+                pendingPixelCaptureSink = PendingPixelCaptureSink { registered += it },
+                unavailableLabel = if (fakeUnavailable) "Image" else null
             )
         )!!
 
@@ -605,8 +609,9 @@ internal class GranularComposeDecomposerTest {
             .containsExactlyElementsOf(result.wireframes.map { it.identity })
     }
 
-    @Test
-    fun `M retain ownership of rendered painter pixels W decompose()`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M retain ownership of rendered painter pixels W decompose()`(fakeUnavailable: Boolean) {
         // Given
         val node = mockLeafNode()
         val bitmap: Bitmap = mock()
@@ -621,7 +626,10 @@ internal class GranularComposeDecomposerTest {
         // When
         testedDecomposer.decompose(
             mockView,
-            realRequest(pendingPixelCaptureSink = PendingPixelCaptureSink(captures::add))
+            realRequest(
+                pendingPixelCaptureSink = PendingPixelCaptureSink(captures::add),
+                unavailableLabel = if (fakeUnavailable) "Image" else null
+            )
         )
 
         // Then
@@ -1196,7 +1204,8 @@ internal class GranularComposeDecomposerTest {
         pendingPixelCaptureSink: PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp,
         textPrivacy: TextAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
         imagePrivacy: ImagePrivacy = ImagePrivacy.MASK_NONE,
-        screenDensity: Float = 1f
+        screenDensity: Float = 1f,
+        unavailableLabel: String? = null
     ): CompositionHostDecomposeRequest {
         val identityFactory = FakeCompositionIdentityFactory()
         return CompositionHostDecomposeRequest(
@@ -1210,7 +1219,7 @@ internal class GranularComposeDecomposerTest {
             pendingPixelCaptureSink = pendingPixelCaptureSink,
             textAndInputPrivacy = textPrivacy,
             imagePrivacy = imagePrivacy
-        )
+        ).apply { unclassifiedPixelCaptureUnavailableLabel = unavailableLabel }
     }
 
     @Test
@@ -1719,6 +1728,132 @@ internal class GranularComposeDecomposerTest {
         whenever(node.layoutInfo.getModifierInfo()).thenReturn(listOf(modifierInfo))
         whenever(node.children).thenReturn(listOf(childNode))
         return node
+    }
+
+    @ParameterizedTest
+    @CsvSource("5,2,16", "27,10,20", "48,18,18")
+    fun `M preserve placeholder geometry without drawing W decompose { mixed pixels unavailable }`(
+        fakeHeightPx: Int,
+        fakeHeightDp: Long,
+        fakePaddedHeight: Long
+    ) {
+        // Given
+        val node = mockDrawingEffectNode()
+        whenever(node.boundsInRoot).thenReturn(
+            androidx.compose.ui.geometry.Rect(42f, 508f, 1038f, (508 + fakeHeightPx).toFloat())
+        )
+        whenever(mockView.width).thenReturn(1080)
+        whenever(mockView.height).thenReturn(2640)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        val stubRasterizer = FakeComposeHostCaptureRasterizer()
+        val fakeCaptures = mutableListOf<PendingPixelCapture>()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = stubRasterizer
+        )
+        mockStatic(Bitmap::class.java).use { bitmaps ->
+            // When
+            val result = testedDecomposer.decompose(
+                mockView,
+                realRequest(
+                    screenDensity = 2.625f,
+                    unavailableLabel = "Image",
+                    pendingPixelCaptureSink = PendingPixelCaptureSink(fakeCaptures::add)
+                )
+            )!!
+
+            // Then
+            val placeholder = result.wireframes.single() as CapturedWireframe.PrivacyPlaceholder
+            assertThat(placeholder.label).isEqualTo("Image")
+            assertThat(placeholder.identity.wireframeKind).isEqualTo(CapturedWireframeKind.PLACEHOLDER)
+            assertThat(placeholder.bounds).isEqualTo(CapturedBounds(16, 194, 379, fakePaddedHeight))
+            assertThat(placeholder.clip).isEqualTo(
+                if (fakePaddedHeight > fakeHeightDp) CapturedClip(bottom = fakePaddedHeight - fakeHeightDp) else null
+            )
+            assertThat(result.nodes.single().bounds).isEqualTo(CapturedBounds(16, 194, 379, fakeHeightDp))
+            assertThat(result.nodes.single().children.single().identity).isEqualTo(placeholder.identity)
+            assertThat(stubRasterizer.callCount).isZero()
+            assertThat(fakeCaptures).isEmpty()
+            bitmaps.verifyNoInteractions()
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M retain unavailable content fallback W decompose { empty or outside host }`(fakeOutside: Boolean) {
+        // Given
+        val node = mockLeafNode()
+        whenever(node.boundsInRoot).thenReturn(
+            if (fakeOutside) {
+                androidx.compose.ui.geometry.Rect(1081f, 0f, 1100f, 10f)
+            } else {
+                androidx.compose.ui.geometry.Rect(0f, 0f, 10f, 10f)
+            }
+        )
+        whenever(mockView.width).thenReturn(if (fakeOutside) 1080 else 0)
+        whenever(mockView.height).thenReturn(if (fakeOutside) 2640 else 0)
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        val stubRasterizer = FakeComposeHostCaptureRasterizer()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = stubRasterizer
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest(unavailableLabel = "Image"))!!
+
+        // Then
+        val placeholder = result.wireframes.single() as CapturedWireframe.PrivacyPlaceholder
+        assertThat(placeholder.label).isEqualTo("Content")
+        assertThat(placeholder.clip).isNull()
+        assertThat(stubRasterizer.callCount).isZero()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M retain privacy decisions W decompose { mixed pixels unavailable and protected sibling }`(
+        fakeOverlap: Boolean
+    ) {
+        // Given
+        val drawing = mockLeafNode()
+        val protected = mockLeafNode()
+        val protectedX = if (fakeOverlap) 0L else 20L
+        whenever(mockSemanticsUtils.resolveInnerBounds(eq(protected), any()))
+            .thenReturn(GlobalBounds(protectedX, 0, 20, 10))
+        whenever(protected.boundsInRoot).thenReturn(
+            androidx.compose.ui.geometry.Rect(protectedX.toFloat(), 0f, (protectedX + 20).toFloat(), 10f)
+        )
+        whenever(mockView.width).thenReturn(1080)
+        whenever(mockView.height).thenReturn(2640)
+        val root = mockRoot(listOf(drawing, protected))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        val stubRasterizer = FakeComposeHostCaptureRasterizer()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            hostRasterizer = stubRasterizer
+        )
+
+        // When
+        val result = testedDecomposer.decompose(
+            mockView,
+            realRequest(
+                unavailableLabel = "Image",
+                pixelCapturePlaceholderLabelFor = { if (it.width == 20L) "Private" else null }
+            )
+        )!!
+
+        // Then
+        assertThat(result.wireframes.filterIsInstance<CapturedWireframe.PrivacyPlaceholder>().map { it.label })
+            .containsExactlyInAnyOrder("Private", if (fakeOverlap) "Content" else "Image")
+        assertThat(stubRasterizer.callCount).isZero()
     }
 
     @Test

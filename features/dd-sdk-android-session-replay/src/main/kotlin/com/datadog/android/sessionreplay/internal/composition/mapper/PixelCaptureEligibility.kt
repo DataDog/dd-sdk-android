@@ -67,5 +67,5 @@ internal object PixelCaptureEligibility {
 
     private const val MAX_CAPTURABLE_AREA_IN_SCREENS = 8L
     private const val MASK_CONTEXTUAL_CONTENT_LABEL = "Content Image"
-    private const val MASK_ALL_CONTENT_LABEL = "Image"
+    const val MASK_ALL_CONTENT_LABEL = "Image"
 }

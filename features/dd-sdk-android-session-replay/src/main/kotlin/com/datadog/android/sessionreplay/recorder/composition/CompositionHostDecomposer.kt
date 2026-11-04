@@ -114,6 +114,14 @@ class CompositionHostDecomposeRequest @JvmOverloads constructor(
     val pixelCapturePlaceholderLabelForPrivacy: ((ImagePrivacy, CapturedBounds) -> String?)? = null,
     val hasOptionSelectorParent: Boolean = false
 ) {
+    /**
+     * A label for generic mixed pixels that cannot be resolved, for example without a text detector.
+     * The native caller sets this before synchronous decomposition. Source images, glyph-only pixels
+     * and proved text-free drawing retain their own capture paths. Null preserves ordinary capture.
+     * This is outside the constructor to preserve already-compiled constructor call sites.
+     */
+    var unclassifiedPixelCaptureUnavailableLabel: String? = null
+
     /** Preserves callers that do not supply a copied host clip. */
     @JvmOverloads
     constructor(

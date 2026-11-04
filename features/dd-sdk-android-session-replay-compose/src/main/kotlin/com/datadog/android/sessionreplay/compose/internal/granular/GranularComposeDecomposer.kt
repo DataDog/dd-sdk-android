@@ -1260,7 +1260,8 @@ internal class GranularComposeDecomposer(
             if (pendingCaptures.isEmpty()) return true
             val eligible = pendingCaptures.filter { canRasterize(it) }
             if (!request.shouldContinue()) return false
-            val bitmaps = if (eligible.isEmpty()) {
+            val unavailableLabel = request.unclassifiedPixelCaptureUnavailableLabel
+            val bitmaps = if (eligible.isEmpty() || unavailableLabel != null) {
                 emptyList()
             } else {
                 hostRasterizer.captureRegions(hostView, eligible.map { it.hostBoundsPx }, request.shouldContinue)
@@ -1271,7 +1272,14 @@ internal class GranularComposeDecomposer(
                 // Eligible captures retain their original order and object identity.
                 val isEligible = eligible.getOrNull(eligibleIndex) === pending
                 val crop = if (isEligible) bitmaps.getOrNull(eligibleIndex++) else null
-                val wireframe = resolveOneCapture(pending, crop)
+                val earlyLabel = if (unavailableLabel != null && isEligible &&
+                    ComposePixelCaptureGeometry.intersectsHost(pending.hostBoundsPx, hostView.width, hostView.height)
+                ) {
+                    unavailableLabel
+                } else {
+                    null
+                }
+                val wireframe = resolveOneCapture(pending, crop, earlyLabel)
                 wireframes += wireframe
                 nodes += CapturedLayer(
                     identity = pending.nodeIdentity,
@@ -1283,7 +1291,11 @@ internal class GranularComposeDecomposer(
             return true
         }
 
-        private fun resolveOneCapture(pending: PendingCapture, cropped: Bitmap?): CapturedWireframe {
+        private fun resolveOneCapture(
+            pending: PendingCapture,
+            cropped: Bitmap?,
+            unavailableLabel: String?
+        ): CapturedWireframe {
             if (cropped != null) {
                 val padded = ComposePixelCapturePadding.pad(cropped, pending.bounds)
                 if (padded.bitmap !== cropped) cropped.recycle()
@@ -1302,10 +1314,13 @@ internal class GranularComposeDecomposer(
                     resource = PixelResource.Unresolved
                 )
             }
-            val placeholderLabel = captureLabel(pending.privacy, pending.bounds) ?: CAPTURE_UNAVAILABLE_LABEL
+            val geometry = unavailableLabel?.let { ComposePixelCapturePadding.geometry(pending.bounds) }
+            val placeholderLabel = unavailableLabel ?: captureLabel(pending.privacy, pending.bounds)
+                ?: CAPTURE_UNAVAILABLE_LABEL
             return CapturedWireframe.PrivacyPlaceholder(
                 identity = request.identityFactory.placeholderWireframe(pending.nodeIdentity),
-                bounds = pending.bounds,
+                bounds = geometry?.bounds ?: pending.bounds,
+                clip = geometry?.clip,
                 label = placeholderLabel
             )
         }
@@ -1937,7 +1952,9 @@ internal class DefaultComposeHostCaptureRasterizer(
 
     @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Owned regions; skip bitmap work after expiry.
     override fun captureRegions(hostView: View, regions: List<Rect>, shouldContinue: () -> Boolean): List<Bitmap?> {
-        if (!shouldContinue() || regions.none { intersectsHost(it, hostView.width, hostView.height) }) {
+        if (!shouldContinue() ||
+            regions.none { ComposePixelCaptureGeometry.intersectsHost(it, hostView.width, hostView.height) }
+        ) {
             return regions.map { null }
         }
         val hostBitmap = rasterize(hostView) ?: return regions.map { null }
@@ -1957,10 +1974,6 @@ internal class DefaultComposeHostCaptureRasterizer(
             release(hostBitmap)
         }
     }
-
-    private fun intersectsHost(region: Rect, width: Int, height: Int): Boolean =
-        width > 0 && height > 0 && region.left.coerceIn(0, width) < region.right.coerceIn(0, width) &&
-            region.top.coerceIn(0, height) < region.bottom.coerceIn(0, height)
 
     @Suppress("TooGenericExceptionCaught")
     private fun rasterize(view: View): Bitmap? {
