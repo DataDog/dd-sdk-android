@@ -242,8 +242,11 @@ kotlinXmlBuilder = { module = "org.redundent:kotlin-xml-builder", version.ref = 
 sqlDelight = { module = "com.squareup.sqldelight:android-driver", version.ref = "sqlDelight" }
 coil = { module = "io.coil-kt:coil", version.ref = "coil" }
 coilCompose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
+coilComposeBase = { module = "io.coil-kt:coil-compose-base", version.ref = "coilCompose" }
 coil3 = { module = "io.coil-kt.coil3:coil", version.ref = "coil3" }
+coil3Core = { module = "io.coil-kt.coil3:coil-core", version.ref = "coil3" }
 coil3Compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil3" }
+coil3ComposeCore = { module = "io.coil-kt.coil3:coil-compose-core", version.ref = "coil3" }
 coil3NetworkOkHttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil3" }
 
 frescoCore = { module = "com.facebook.fresco:fresco", version.ref = "fresco" }

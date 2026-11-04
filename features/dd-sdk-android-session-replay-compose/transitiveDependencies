@@ -44,6 +44,8 @@ androidx.savedstate:savedstate-ktx:1.2.1                        :    3 Kb
 androidx.savedstate:savedstate:1.2.1                            :   19 Kb
 androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
 com.google.code.gson:gson:2.10.1                                :  276 Kb
+io.coil-kt.coil3:coil-compose-core-android:3.0.4                :  117 Kb
+io.coil-kt:coil-compose-base:2.1.0                              :   98 Kb
 org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0                   :  963 b 
 org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0                   :  968 b 
 org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
