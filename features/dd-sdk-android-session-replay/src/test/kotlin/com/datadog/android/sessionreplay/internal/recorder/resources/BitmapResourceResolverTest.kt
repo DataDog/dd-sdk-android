@@ -66,6 +66,61 @@ internal class BitmapResourceResolverTest {
     }
 
     @Test
+    fun `M share pending work W resolve { same source and version }`(forge: Forge) {
+        // Given
+        val (stubSource, mockCopy) = forgeBitmap(forge)
+        val mockSecondCallback = mock<ResourceResolverCallback>()
+
+        // When
+        testedResolver.resolve(stubSource, mockCallback)
+        testedResolver.resolve(stubSource, mockSecondCallback)
+        fakeTasks.single().run()
+
+        // Then
+        verify(stubSource).copy(Bitmap.Config.ARGB_8888, false)
+        assertThat(fakeProcessedBitmaps).containsExactly(mockCopy)
+        verify(mockCallback).onSuccess(fakeResourceId)
+        verify(mockSecondCallback).onSuccess(fakeResourceId)
+        verify(mockCopy).recycle()
+        verify(stubSource, never()).recycle()
+    }
+
+    @Test
+    fun `M reuse resource without copying W resolve { completed source }`(forge: Forge) {
+        // Given
+        val (stubSource, mockCopy) = forgeBitmap(forge)
+        testedResolver.resolve(stubSource, mockCallback)
+        fakeTasks.removeAt(0).run()
+
+        // When
+        testedResolver.resolve(stubSource, mockCallback)
+
+        // Then
+        assertThat(fakeTasks).isEmpty()
+        assertThat(fakeProcessedBitmaps).containsExactly(mockCopy)
+        verify(stubSource).copy(Bitmap.Config.ARGB_8888, false)
+        verify(mockCallback, times(2)).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M capture changed pixels W resolve { generation changes }`(forge: Forge) {
+        // Given
+        val (stubSource, mockCopy) = forgeBitmap(forge)
+        testedResolver.resolve(stubSource, mockCallback)
+        fakeTasks.removeAt(0).run()
+        val fakeNextGeneration = stubSource.generationId + 1
+        whenever(stubSource.generationId) doReturn fakeNextGeneration
+
+        // When
+        testedResolver.resolve(stubSource, mockCallback)
+        fakeTasks.single().run()
+
+        // Then
+        verify(stubSource, times(2)).copy(Bitmap.Config.ARGB_8888, false)
+        assertThat(fakeProcessedBitmaps).containsExactly(mockCopy, mockCopy)
+    }
+
+    @Test
     fun `M reject before copying W resolve { bitmap exceeds byte budget }`(forge: Forge) {
         // Given
         val (stubSource, mockCopy) = forgeBitmap(forge)
@@ -115,6 +170,23 @@ internal class BitmapResourceResolverTest {
         // Then
         assertThat(fakeTasks).hasSize(PendingResourceRequests.MAX_PENDING_REQUESTS)
         verify(fakeBitmaps.last().first, never()).copy(any(), any())
+        verify(mockCallback).onFailure()
+    }
+
+    @Test
+    fun `M bound waiting snapshots W resolve { duplicate work stays blocked }`(forge: Forge) {
+        // Given
+        val (stubSource, mockCopy) = forgeBitmap(forge)
+
+        // When
+        repeat(PendingResourceRequests.MAX_CALLBACKS_PER_RESOURCE + 1) {
+            testedResolver.resolve(stubSource, mockCallback)
+        }
+        fakeTasks.single().run()
+
+        // Then
+        assertThat(fakeProcessedBitmaps).containsExactly(mockCopy)
+        verify(mockCallback, times(PendingResourceRequests.MAX_CALLBACKS_PER_RESOURCE)).onSuccess(fakeResourceId)
         verify(mockCallback).onFailure()
     }
 
@@ -292,6 +364,7 @@ internal class BitmapResourceResolverTest {
                 throw OutOfMemoryError()
             }
         testedResolver.resolve(stubFirstSource, mockCallback)
+        testedResolver.resolve(stubFirstSource, mockCallback)
         testedResolver.resolve(stubSecondSource, mockCallback)
 
         // When
@@ -301,9 +374,28 @@ internal class BitmapResourceResolverTest {
         assertThat(fakeAttempts).isEqualTo(1)
         verify(mockFirstCopy).recycle()
         verify(mockSecondCopy).recycle()
-        verify(mockCallback, times(2)).onFailure()
+        verify(mockCallback, times(3)).onFailure()
         verify(stubFirstSource, never()).recycle()
         verify(stubSecondSource, never()).recycle()
+    }
+
+    @Test
+    fun `M reuse completed resource during backoff W resolve`(forge: Forge) {
+        // Given
+        val (stubCachedSource, _) = forgeBitmap(forge)
+        val (stubFailingSource, _) = forgeBitmap(forge)
+        testedResolver.resolve(stubCachedSource, mockCallback)
+        fakeTasks.removeAt(0).run()
+        whenever(stubFailingSource.copy(Bitmap.Config.ARGB_8888, false)).thenThrow(OutOfMemoryError())
+        testedResolver.resolve(stubFailingSource, mockCallback)
+
+        // When
+        testedResolver.resolve(stubCachedSource, mockCallback)
+
+        // Then
+        verify(mockCallback, times(2)).onSuccess(fakeResourceId)
+        verify(stubCachedSource).copy(Bitmap.Config.ARGB_8888, false)
+        assertThat(fakeTasks).isEmpty()
     }
 
     private fun createResolver() = BitmapResourceResolver(
