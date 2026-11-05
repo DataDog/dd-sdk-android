@@ -79,27 +79,41 @@ internal class CapturedSnapshotValidation(
     }
 
     private fun validateIdentityDefinitions(identities: List<CapturedIdentity>) {
-        identities.filter { it.scope != snapshot.scope }.forEach {
-            failures += validationFailure(CaptureValidationErrorCode.WRONG_IDENTITY_SCOPE, it)
-        }
-        identities.groupBy(CapturedIdentity::wireId).values.forEach { matchingWireIds ->
-            if (matchingWireIds.size > 1) {
-                matchingWireIds.firstOrNull()?.let {
-                    failures += validationFailure(CaptureValidationErrorCode.DUPLICATE_IDENTITY, it)
-                }
+        for (identity in identities) {
+            if (identity.scope != snapshot.scope) {
+                failures += validationFailure(CaptureValidationErrorCode.WRONG_IDENTITY_SCOPE, identity)
             }
         }
-        identities.groupBy {
+        validateDuplicateIdentityKeys(identities, CapturedIdentity::wireId)
+        validateDuplicateIdentityKeys(identities) {
             IdentityDefinitionKey(it.scope, it.kind, it.wireframeKind, it.namespace, it.localId)
         }
-            .values
-            .forEach { matchingIdentities ->
-                if (matchingIdentities.size > 1) {
-                    matchingIdentities.firstOrNull()?.let {
-                        failures += validationFailure(CaptureValidationErrorCode.DUPLICATE_IDENTITY, it)
-                    }
-                }
+    }
+
+    // Maps and non-null keys are owned captured values, with no calls into live UI objects.
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    private inline fun <K : Any> validateDuplicateIdentityKeys(
+        identities: List<CapturedIdentity>,
+        keyOf: (CapturedIdentity) -> K
+    ) {
+        val latestByKey = linkedMapOf<K, CapturedIdentity>()
+        val firstDuplicates = mutableMapOf<K, CapturedIdentity>()
+        for (identity in identities) {
+            val key = keyOf(identity)
+            // One insertion avoids both a per-key grouping list and repeated key hashing.
+            val previous = latestByKey.put(key, identity)
+            if (previous != null && key !in firstDuplicates) {
+                firstDuplicates[key] = previous
             }
+        }
+        if (firstDuplicates.isEmpty()) return
+
+        // Replacing a value preserves the key's first encounter order. Report the first identity,
+        // even if another group became a duplicate earlier or this key appeared more than twice.
+        for (key in latestByKey.keys) {
+            val first = firstDuplicates[key] ?: continue
+            failures += validationFailure(CaptureValidationErrorCode.DUPLICATE_IDENTITY, first)
+        }
     }
 
     private fun validateLayer(layer: CapturedLayer) {
