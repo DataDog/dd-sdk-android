@@ -93,7 +93,9 @@ private class WindowCoverage(maxBounds: Int, maxFragments: Int) {
             if (!replayCovered) replay.add(replayRectangle)
         }
         // Origin and size normalize independently. Coverage must hold in both representations.
-        return pixelsCovered && replayCovered && view.viewData.isOcclusionBounded
+        // The host layer clips final composition output, including effects from native handoffs.
+        val bounded = view.composition != null || view.viewData.isOcclusionBounded
+        return pixelsCovered && replayCovered && bounded
     }
 }
 

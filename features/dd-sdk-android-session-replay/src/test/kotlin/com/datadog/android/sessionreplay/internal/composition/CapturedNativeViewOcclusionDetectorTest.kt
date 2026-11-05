@@ -11,6 +11,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -38,6 +39,8 @@ import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.atomic.AtomicLong
 
@@ -432,6 +435,135 @@ internal class CapturedNativeViewOcclusionDetectorTest {
         if (result[1]) assertThat(fakeFullyCovered).isTrue()
     }
 
+    @ParameterizedTest
+    @CsvSource(
+        "100, true, true, NONE, false",
+        "50, true, false, NONE, false",
+        "100, false, false, NONE, false",
+        "100, true, true, OPACITY, false",
+        "100, true, true, SHADOW, false",
+        "100, true, true, BLUR, false",
+        "100, true, true, SHADOW, true",
+        "100, true, true, BLUR, true",
+        "50, true, false, SHADOW, false",
+        "50, true, false, BLUR, false",
+        "50, true, false, SHADOW, true",
+        "50, true, false, BLUR, true"
+    )
+    fun `M cull fully covered compositions after host clipping W buildWindow`(
+        fakeCoverWidth: Long,
+        fakeGeometryReliable: Boolean,
+        fakeCovered: Boolean,
+        fakeEffect: CompositionEffect,
+        fakeNestedEffect: Boolean
+    ) {
+        // Given
+        val fakeRoot = view("root", -1, GlobalBounds(0, 0, 200, 200))
+        val fakeHostIdentity = fakeFactory.composeHost(fakeWindow, "host")
+        val fakeNodeIdentity = fakeFactory.composeNode(fakeHostIdentity, "node")
+        val fakeInteropIdentity = fakeFactory.composeNode(fakeHostIdentity, "interop")
+        val fakeShapeIdentity = fakeFactory.shapeWireframe(fakeNodeIdentity)
+        val fakeModifiers = when (fakeEffect) {
+            CompositionEffect.NONE -> emptyList()
+            CompositionEffect.OPACITY -> listOf(CapturedModifier.Opacity(0.5))
+            CompositionEffect.SHADOW -> listOf(CapturedModifier.Shadow("#000000FF", 10.0, 0.0, 5.0))
+            CompositionEffect.BLUR -> listOf(CapturedModifier.GaussianBlur(5.0))
+        }
+        val fakeNode = CapturedLayer(
+            fakeNodeIdentity,
+            CapturedLayerKind.COMPOSE_NODE,
+            CapturedBounds(0, 0, 100, 100),
+            listOf(CapturedChild.Wireframe(fakeShapeIdentity)),
+            modifiers = if (fakeNestedEffect) emptyList() else fakeModifiers
+        )
+        val fakeNative = view("native", -1).copy(
+            identity = fakeInteropIdentity,
+            kind = CapturedLayerKind.NATIVE_VIEW
+        )
+        val fakeInteropWireframe = CapturedWireframe.Shape(
+            fakeFactory.shapeWireframe(fakeInteropIdentity),
+            fakeNative.bounds
+        )
+        whenever(fakeNative.viewData.map(any()))
+            .thenReturn(CapturedViewMapperResult.Wireframes(fakeInteropWireframe))
+        val fakeNativeViews = mutableListOf(fakeNative)
+        if (fakeNestedEffect) {
+            val fakeNestedHost = fakeFactory.composeHost(fakeWindow, "nested-host")
+            val fakeNestedNode = fakeFactory.composeNode(fakeNestedHost, "nested-node")
+            val fakeNestedShape = fakeFactory.shapeWireframe(fakeNestedNode)
+            fakeNativeViews += view("nested-host", 0).copy(
+                identity = fakeNestedHost,
+                kind = CapturedLayerKind.COMPOSE_HOST,
+                viewData = CapturedViewData.Mapped(CapturedViewMapperResult.None),
+                composition = CapturedComposition(
+                    CompositionHostDecomposeResult(
+                        listOf(CapturedChild.Layer(fakeNestedNode)),
+                        listOf(
+                            CapturedLayer(
+                                fakeNestedNode,
+                                CapturedLayerKind.COMPOSE_NODE,
+                                fakeNode.bounds,
+                                listOf(CapturedChild.Wireframe(fakeNestedShape)),
+                                fakeModifiers
+                            )
+                        ),
+                        listOf(CapturedWireframe.Shape(fakeNestedShape, fakeNode.bounds))
+                    ),
+                    emptyList()
+                )
+            )
+        }
+        val fakeHost = view("host", 1).copy(
+            identity = fakeHostIdentity,
+            kind = CapturedLayerKind.COMPOSE_HOST,
+            viewData = CapturedViewData.Mapped(CapturedViewMapperResult.None),
+            isGeometryReliable = fakeGeometryReliable,
+            composition = CapturedComposition(
+                CompositionHostDecomposeResult(
+                    listOf(CapturedChild.Layer(fakeNodeIdentity), CapturedChild.Layer(fakeInteropIdentity)),
+                    listOf(fakeNode),
+                    listOf(CapturedWireframe.Shape(fakeShapeIdentity, fakeNode.bounds))
+                ),
+                listOf(CapturedNativeWindow(1f, fakeNativeViews))
+            )
+        )
+        val fakeViews = listOf(
+            fakeRoot,
+            view("back", 0),
+            fakeHost,
+            view("front", 0),
+            view("cover", 3, GlobalBounds(0, 0, fakeCoverWidth, 100), opaque = true)
+        )
+        val testedBuilder = CapturedNativeSnapshotBuilder()
+
+        // When
+        val result = testedBuilder.buildWindow(CapturedNativeWindow(1f, fakeViews), fakeContext)
+
+        // Then
+        val window = checkNotNull(result)
+        val identities = window.wireframes.map { it.identity }
+        val hostLayer = window.layers.single { it.identity == fakeHostIdentity }
+        assertThat(hostLayer.modifiers).containsExactly(CapturedModifier.Clip("M0 0 H100 V100 H0 Z"))
+        if (fakeCovered) {
+            assertThat(identities).doesNotContain(fakeShapeIdentity, fakeInteropWireframe.identity)
+            assertThat(window.layers.map { it.identity }).doesNotContain(fakeNodeIdentity, fakeInteropIdentity)
+            verifyNoInteractions(fakeNative.viewData)
+        } else {
+            assertThat(identities).contains(fakeShapeIdentity, fakeInteropWireframe.identity)
+            verify(fakeNative.viewData).map(isA())
+            val effectLayer = if (fakeNestedEffect) {
+                val nestedHost = fakeFactory.composeHost(fakeWindow, "nested-host")
+                assertThat(window.layers.single { it.identity == nestedHost }.modifiers)
+                    .containsExactly(CapturedModifier.Clip("M0 0 H100 V100 H0 Z"))
+                fakeFactory.composeNode(nestedHost, "nested-node")
+            } else {
+                fakeNodeIdentity
+            }
+            assertThat(window.layers.single { it.identity == effectLayer }.modifiers).isEqualTo(fakeModifiers)
+        }
+        assertThat(DefaultCapturedTreeValidator().validate(snapshot(window))).isEqualTo(CaptureValidationResult.Valid)
+    }
+
     private fun view(
         fakeId: String,
         fakeParent: Int,
@@ -481,4 +613,10 @@ internal class CapturedNativeViewOcclusionDetectorTest {
         fakeWindow.layers,
         fakeWindow.wireframes
     )
+    internal enum class CompositionEffect {
+        NONE,
+        OPACITY,
+        SHADOW,
+        BLUR
+    }
 }

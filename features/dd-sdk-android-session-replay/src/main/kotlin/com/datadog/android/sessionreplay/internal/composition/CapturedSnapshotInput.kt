@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -41,5 +42,19 @@ internal data class CapturedNativeView(
     val pixelBounds: GlobalBounds? = null,
     val pixelClip: GlobalBounds? = null,
     val pixelChildPaddingClip: GlobalBounds? = null,
-    val isGeometryReliable: Boolean = false
+    val isGeometryReliable: Boolean = false,
+    val kind: CapturedLayerKind = if (parentIndex < 0) CapturedLayerKind.WINDOW_ROOT else CapturedLayerKind.NATIVE_VIEW,
+    val composition: CapturedComposition? = null
+)
+
+/**
+ * Deferred input owned by the processing executor; no live Views are retained.
+ *
+ * @param result Composition-owned layer and wireframe definitions. Native handoff roots appear
+ * only as child references; their definitions must not be included in these result collections.
+ * @param nativeSubtrees Copied native handoffs, whose definitions the worker constructs and adds once.
+ */
+internal class CapturedComposition(
+    val result: CompositionHostDecomposeResult,
+    val nativeSubtrees: List<CapturedNativeWindow>
 )

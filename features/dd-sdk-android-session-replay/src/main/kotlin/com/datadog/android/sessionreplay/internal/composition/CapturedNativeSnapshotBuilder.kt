@@ -56,8 +56,15 @@ internal class CapturedNativeSnapshotBuilder(
         )
     }
 
-    @Suppress("ReturnCount") // Expiry discards all work.
-    fun buildWindow(window: CapturedNativeWindow, generation: CaptureGenerationContext): CapturedWindow? {
+    fun buildWindow(window: CapturedNativeWindow, generation: CaptureGenerationContext): CapturedWindow? =
+        buildWindow(window, generation, handoffDepth = 0)
+
+    @Suppress("ReturnCount") // Expiry or excessive interop nesting discards all work.
+    private fun buildWindow(
+        window: CapturedNativeWindow,
+        generation: CaptureGenerationContext,
+        handoffDepth: Int
+    ): CapturedWindow? {
         val layers = mutableListOf<CapturedLayer>()
         val wireframes = mutableListOf<CapturedWireframe>()
 
@@ -79,10 +86,24 @@ internal class CapturedNativeSnapshotBuilder(
             val inheritedClip = if (view.clipToBounds) parentClip.intersectWith(view.bounds) else parentClip
             val clip = inheritedClip.intersectOptional(view.explicitClip)
             val children = mutableListOf<CapturedChild>()
+            val childClip = clip.intersectOptional(view.childPaddingClip)
             if (!occluded.isOccluded(index)) {
                 addWireframes(view, window.screenDensity, identityFactory, clip, children, wireframes)
+                val composition = view.composition
+                if (composition != null) {
+                    // Compose leaf culling relies on this unconditional intersection with copied host bounds.
+                    val compositionAdded = addComposition(
+                        composition = composition,
+                        clip = childClip.intersectWith(view.bounds),
+                        children = children,
+                        layers = layers,
+                        wireframes = wireframes,
+                        generation = generation,
+                        handoffDepth = handoffDepth
+                    )
+                    if (!compositionAdded) return null
+                }
             }
-            val childClip = clip.intersectOptional(view.childPaddingClip)
             @Suppress("UnsafeThirdPartyFunctionCall") // Unbounded worker-owned deque.
             stack.addLast(PendingLayer(index, view, children, childClip))
         }
@@ -93,6 +114,37 @@ internal class CapturedNativeSnapshotBuilder(
         if (!generation.isActive()) return null
         @Suppress("UnsafeThirdPartyFunctionCall") // Non-empty input contributes at least its root layer.
         return CapturedWindow(layers.last(), layers, wireframes)
+    }
+
+    @Suppress("ReturnCount") // Expiry or excessive interop nesting discards all work.
+    private fun addComposition(
+        composition: CapturedComposition,
+        clip: ClipBounds,
+        children: MutableList<CapturedChild>,
+        layers: MutableList<CapturedLayer>,
+        wireframes: MutableList<CapturedWireframe>,
+        generation: CaptureGenerationContext,
+        handoffDepth: Int
+    ): Boolean {
+        for (layer in composition.result.nodes) {
+            if (!generation.isActive()) return false
+            layers += layer
+        }
+        for (wireframe in composition.result.wireframes) {
+            if (!generation.isActive()) return false
+            wireframes += wireframe.withClip(clip.clip(wireframe.bounds))
+        }
+        for (subtree in composition.nativeSubtrees) {
+            if (handoffDepth >= MAX_NATIVE_HANDOFF_DEPTH) return false
+            val built = buildWindow(subtree, generation, handoffDepth + 1) ?: return false
+            layers += built.layers
+            for (wireframe in built.wireframes) {
+                if (!generation.isActive()) return false
+                wireframes += wireframe.withClip(clip.clip(wireframe.bounds))
+            }
+        }
+        children += composition.result.rootChildren
+        return true
     }
 
     private fun addWireframes(
@@ -118,10 +170,15 @@ internal class CapturedNativeSnapshotBuilder(
         val view = pending.view
 
         @Suppress("UnsafeThirdPartyFunctionCall") // listOf wraps a non-null copied opacity.
-        val modifiers = if (view.alpha == 1.0) emptyList() else listOf(CapturedModifier.Opacity(view.alpha))
+        val opacity = if (view.alpha == 1.0) emptyList() else listOf(CapturedModifier.Opacity(view.alpha))
+        val modifiers = if (view.composition == null) {
+            opacity
+        } else {
+            opacity + pending.childClip.intersectWith(view.bounds).toLayerClip(view.bounds)
+        }
         val layer = CapturedLayer(
             identity = view.identity,
-            kind = if (view.parentIndex < 0) CapturedLayerKind.WINDOW_ROOT else CapturedLayerKind.NATIVE_VIEW,
+            kind = view.kind,
             bounds = view.bounds,
             children = pending.children,
             modifiers = modifiers
@@ -132,6 +189,11 @@ internal class CapturedNativeSnapshotBuilder(
         parent?.children?.add(CapturedChild.Layer(layer.identity))
     }
 
+    private companion object {
+        // Interop alternation recurses even though each native window uses an iterative walk.
+        const val MAX_NATIVE_HANDOFF_DEPTH = 64
+    }
+
     private data class PendingLayer(
         val index: Int,
         val view: CapturedNativeView,
@@ -140,12 +202,24 @@ internal class CapturedNativeSnapshotBuilder(
     )
 }
 
-private fun CapturedWireframe.withClip(clip: CapturedClip?): CapturedWireframe = when (this) {
-    is CapturedWireframe.Shape -> copy(clip = clip)
-    is CapturedWireframe.Text -> copy(clip = clip)
-    is CapturedWireframe.WebView -> copy(clip = clip)
-    is CapturedWireframe.Pixel -> copy(clip = clip)
-    is CapturedWireframe.PrivacyPlaceholder -> copy(clip = clip)
+private fun CapturedWireframe.withClip(clip: CapturedClip?): CapturedWireframe {
+    val combinedClip = when {
+        clip == null -> this.clip
+        this.clip == null -> clip
+        else -> CapturedClip(
+            top = max(this.clip?.top ?: 0, clip.top ?: 0).takeIf { it > 0 },
+            bottom = max(this.clip?.bottom ?: 0, clip.bottom ?: 0).takeIf { it > 0 },
+            left = max(this.clip?.left ?: 0, clip.left ?: 0).takeIf { it > 0 },
+            right = max(this.clip?.right ?: 0, clip.right ?: 0).takeIf { it > 0 }
+        )
+    }
+    return when (this) {
+        is CapturedWireframe.Shape -> copy(clip = combinedClip)
+        is CapturedWireframe.Text -> copy(clip = combinedClip)
+        is CapturedWireframe.WebView -> copy(clip = combinedClip)
+        is CapturedWireframe.Pixel -> copy(clip = combinedClip)
+        is CapturedWireframe.PrivacyPlaceholder -> copy(clip = combinedClip)
+    }
 }
 
 /**
@@ -174,6 +248,15 @@ private class ClipBounds private constructor(
         } else {
             ClipBounds(left, top, right, bottom)
         }
+    }
+
+    fun toLayerClip(bounds: CapturedBounds): CapturedModifier.Clip {
+        val localLeft = left - bounds.x
+        val localTop = top - bounds.y
+        // Inverted intersections must stay empty rather than becoming reversed, filled rectangles.
+        val localRight = max(localLeft, right - bounds.x)
+        val localBottom = max(localTop, bottom - bounds.y)
+        return CapturedModifier.Clip("M$localLeft $localTop H$localRight V$localBottom H$localLeft Z")
     }
 
     fun clip(bounds: CapturedBounds): CapturedClip? {
