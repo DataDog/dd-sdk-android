@@ -199,13 +199,6 @@ public abstract interface class com/datadog/android/sessionreplay/internal/compo
 	public abstract fun getCompositionHostDecomposer ()Lcom/datadog/android/sessionreplay/internal/composition/CompositionHostDecomposer;
 }
 
-public final class com/datadog/android/sessionreplay/internal/composition/CompositionNativeSubtree {
-	public fun <init> (Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayer;Ljava/util/List;Ljava/util/List;)V
-	public final fun getLayers ()Ljava/util/List;
-	public final fun getRootLayer ()Lcom/datadog/android/internal/sessionreplay/composition/CapturedLayer;
-	public final fun getWireframes ()Ljava/util/List;
-}
-
 public abstract interface class com/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator {
 	public static final field Companion Lcom/datadog/android/sessionreplay/internal/recorder/obfuscator/StringObfuscator$Companion;
 	public abstract fun obfuscate (Ljava/lang/String;)Ljava/lang/String;
