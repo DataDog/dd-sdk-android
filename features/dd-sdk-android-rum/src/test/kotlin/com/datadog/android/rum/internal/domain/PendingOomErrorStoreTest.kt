@@ -21,8 +21,10 @@ import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.rum.internal.utils.WriteOperation
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -43,6 +45,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -82,6 +85,9 @@ internal class PendingOomErrorStoreTest {
     @Mock
     lateinit var mockBatchWriter: EventBatchWriter
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Forgery
     lateinit var fakeEvent: ErrorEvent
 
@@ -97,7 +103,7 @@ internal class PendingOomErrorStoreTest {
     @BeforeEach
     fun `set up`(@StringForgery fakeErrorId: String) {
         fakeEvent = fakeEvent.copy(error = fakeEvent.error.copy(id = fakeErrorId))
-        whenever(mockSdkCore.internalLogger) doReturn mock<InternalLogger>()
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
         whenever(mockSdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)) doReturn mockProfilingScope
         val writeScope: EventWriteScope = { it(mockBatchWriter) }
@@ -294,6 +300,27 @@ internal class PendingOomErrorStoreTest {
 
         // Then
         assertThat(result).isTrue
+    }
+
+    @Test
+    fun `M log and not throw W onOomProfileWriteResult() {writer throws}`(
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        val fakeException = IllegalStateException(fakeMessage)
+        whenever(mockWriter.write(any(), any(), any())) doThrow fakeException
+        load(fakeEvent)
+
+        // When
+        testedStore.onOomProfileWriteResult(errorId, true)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            WriteOperation.WRITE_OPERATION_FAILED_ERROR,
+            fakeException
+        )
     }
 
     // endregion

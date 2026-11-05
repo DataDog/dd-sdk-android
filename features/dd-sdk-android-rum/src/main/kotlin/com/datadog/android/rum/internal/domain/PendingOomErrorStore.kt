@@ -20,6 +20,7 @@ import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.rum.internal.utils.WriteOperation
 import com.datadog.android.rum.model.ErrorEvent
 import com.google.gson.JsonParseException
 import java.util.concurrent.TimeUnit
@@ -83,6 +84,7 @@ internal class PendingOomErrorStore(
         val older = synchronized(lock) {
             val store = dataStore
             if (!isLoaded || store == null) return false
+            // TODO RUM-19677: Apply the RUM error event mapper before persisting the held error. Today the unredacted error sits on disk until it is released and mapped on the next launch.
             store.setValue(KEY, event, VERSION, holdCallback(event), ErrorEventSerializer())
             heldError.also {
                 heldError = event
@@ -155,7 +157,18 @@ internal class PendingOomErrorStore(
     private fun write(event: ErrorEvent, status: ErrorEvent.ProfilingStatus?) {
         val toWrite = event.copy(dd = event.dd.copy(profiling = status?.let { ErrorEvent.Profiling(status = it) }))
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext { _, writeScope ->
-            writeScope { batchWriter -> dataWriterProvider().write(batchWriter, toWrite, EventType.CRASH) }
+            writeScope { batchWriter ->
+                try {
+                    dataWriterProvider().write(batchWriter, toWrite, EventType.CRASH)
+                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                    sdkCore.internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                        { WriteOperation.WRITE_OPERATION_FAILED_ERROR },
+                        e
+                    )
+                }
+            }
         }
     }
 
