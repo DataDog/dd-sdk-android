@@ -193,6 +193,11 @@ sealed class com.datadog.android.internal.profiling.ProfilerEvent
     constructor(String, Long, Long, ProfilingRumContext)
   data class RumOomErrorEvent : ProfilerEvent
     constructor(String, Long, ProfilingRumContext)
+  data class RumHeldOomErrorEvent : ProfilerEvent
+    constructor(String)
+  object OomProfilingReady : ProfilerEvent
+  data class OomProfileWriteResult : ProfilerEvent
+    constructor(String, Boolean)
   data class RumLongTaskEvent : ProfilerEvent
     constructor(String, Long, Long, ProfilingRumContext)
   data class RumVitalEvent : ProfilerEvent

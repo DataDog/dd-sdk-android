@@ -22,11 +22,13 @@ import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingRumContext
+import com.datadog.android.internal.profiling.quota.QuotaReason
 import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.rum.RumViewType
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumPerformanceMetric
@@ -34,6 +36,7 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.configuration.ViewEventWriteConfig
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.FeaturesContextResolver
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
@@ -53,6 +56,7 @@ import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetr
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.profiling.isProfilerRunning
+import com.datadog.android.rum.internal.profiling.isProfilingOomTriggerRegistered
 import com.datadog.android.rum.internal.profiling.resolveProfilingQuotaReason
 import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toLongTask
@@ -782,25 +786,25 @@ internal open class RumViewScope(
         )
 
         val errorId = UUID.randomUUID().toString()
+        val isFatalOom = isFatal && event.throwable is OutOfMemoryError
+        val oomQuotaReason = if (isFatalOom) datadogContext.resolveProfilingQuotaReason(sessionId) else null
         // region profiling
-        var profilingStatus: ErrorEvent.Profiling? = null
-        // Fatal ANR comes from last session, in this case we don't attach it to Profiling Event.
-        // TODO RUM-15344: address non-fatal ANR over Android API 30
-        if (!isFatal) {
-            profilingStatus = if (isTriggeredByProfiling) {
-                resolveErrorProfilingStatus(datadogContext)
-                    ?: ErrorEvent.Profiling(
-                        status = ErrorEvent.ProfilingStatus.RUNNING
-                    )
-            } else if (event.throwable is ANRException) {
-                resolveErrorProfilingStatus(datadogContext)
-            } else {
-                null
-            }
+        val profilingStatus = when {
+            isFatalOom -> resolveOomErrorProfilingStatus(oomQuotaReason)
+            // Fatal ANR comes from last session, in this case we don't attach it to Profiling Event.
+            // TODO RUM-15344: address non-fatal ANR over Android API 30
+            isFatal -> null
+            isTriggeredByProfiling -> resolveErrorProfilingStatus(datadogContext)
+                ?: ErrorEvent.Profiling(
+                    status = ErrorEvent.ProfilingStatus.RUNNING
+                )
+
+            event.throwable is ANRException -> resolveErrorProfilingStatus(datadogContext)
+            else -> null
         }
         // end region
 
-        sdkCore.newRumEventWriteOperation(writeScope, writer, eventType) {
+        val buildErrorEvent: () -> ErrorEvent = {
             val user = datadogContext.userInfo
             val syntheticsTestId = rumContext.syntheticsTestId
             val syntheticsResultId = rumContext.syntheticsResultId
@@ -921,62 +925,68 @@ internal open class RumViewScope(
                 ddtags = DdTagsUtils.toDdTagsString(datadogContext)
             )
         }
-            .apply {
-                if (!isFatal) {
-                    // if fatal, then we don't have time for the notification, app is crashing
-                    onError { it.eventDropped(rumContext.viewId.orEmpty(), StorageEvent.Error()) }
-                    onSuccess {
-                        it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Error())
-                        if (event.throwable is ANRException) {
-                            val anrDurationMs = ANRDetectorRunnable.ANR_THRESHOLD_MS
-                            val anrStartMs = event.eventTime.timestamp + serverTimeOffsetInMs - anrDurationMs
-                            val anrDurationNs = TimeUnit.MILLISECONDS.toNanos(anrDurationMs)
-                            sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-                                ProfilerEvent.RumAnrEvent(
-                                    id = errorId,
-                                    startMs = anrStartMs,
-                                    durationNs = anrDurationNs,
-                                    rumContext = ProfilingRumContext(
-                                        applicationId = rumContext.applicationId,
-                                        sessionId = rumContext.sessionId,
-                                        viewId = rumContext.viewId,
-                                        viewName = rumContext.viewName
+
+        // A fatal OOM is held until the outcome of its OOM profile is known, when one may follow.
+        // The stored error ignores consent changes: only an error captured with consent is held.
+        val mayGetOomProfile = isFatalOom &&
+            datadogContext.trackingConsent == TrackingConsent.GRANTED &&
+            datadogContext.isProfilingOomTriggerRegistered() &&
+            (oomQuotaReason == null || oomQuotaReason == QuotaReason.QUOTA_OK)
+        val pendingOomErrorStore = if (mayGetOomProfile) {
+            sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.unwrap<RumFeature>()?.pendingOomErrorStore
+        } else {
+            null
+        }
+
+        // Storing the error only needs the data store: held and signalled outside any write scope. An error
+        // that can't be held is written as any other, with no gating event, so no profile is attached.
+        val heldErrorEvent = pendingOomErrorStore?.let { store ->
+            buildErrorEvent().takeIf { store.tryHold(it) }
+        }
+        if (heldErrorEvent != null) {
+            sendRumOomErrorEvent(errorId, event, rumContext)
+        } else {
+            sdkCore.newRumEventWriteOperation(writeScope, writer, eventType, buildErrorEvent)
+                .apply {
+                    if (!isFatal) {
+                        // if fatal, then we don't have time for the notification, app is crashing
+                        onError { it.eventDropped(rumContext.viewId.orEmpty(), StorageEvent.Error()) }
+                        onSuccess {
+                            it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Error())
+                            if (event.throwable is ANRException) {
+                                val anrDurationMs = ANRDetectorRunnable.ANR_THRESHOLD_MS
+                                val anrStartMs = event.eventTime.timestamp + serverTimeOffsetInMs - anrDurationMs
+                                val anrDurationNs = TimeUnit.MILLISECONDS.toNanos(anrDurationMs)
+                                sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+                                    ProfilerEvent.RumAnrEvent(
+                                        id = errorId,
+                                        startMs = anrStartMs,
+                                        durationNs = anrDurationNs,
+                                        rumContext = ProfilingRumContext(
+                                            applicationId = rumContext.applicationId,
+                                            sessionId = rumContext.sessionId,
+                                            viewId = rumContext.viewId,
+                                            viewName = rumContext.viewName
+                                        )
                                     )
                                 )
-                            )
-                            // Intentionally writing through `writeLastFatalAnrSent` even though this is a
-                            // non-fatal ANR: both pipelines share the same persisted timestamp so that the
-                            // fatal-ANR replay path (DatadogLateCrashReporter, via ApplicationExitInfo on
-                            // the next launch) can dedupe against an ANR the in-process watchdog/profiling
-                            // trigger already reported. The storage key keeps the legacy "fatal" name.
-                            sdkCore.writeLastFatalAnrSent(event.eventTime.timestamp)
+                                // Intentionally writing through `writeLastFatalAnrSent` even though this is a
+                                // non-fatal ANR: both pipelines share the same persisted timestamp so that the
+                                // fatal-ANR replay path (DatadogLateCrashReporter, via ApplicationExitInfo on
+                                // the next launch) can dedupe against an ANR the in-process watchdog/profiling
+                                // trigger already reported. The storage key keeps the legacy "fatal" name.
+                                sdkCore.writeLastFatalAnrSent(event.eventTime.timestamp)
+                            }
                         }
                     }
                 }
-            }
-            .submit()
+                .submit()
+        }
 
         if (isFatal) {
             errorCount++
             crashCount++
             sendViewUpdate(event, datadogContext, writeScope, writer, eventType)
-            // Best-effort signal: for fatal crashes there is no onSuccess callback
-            // (the app is crashing), so we send the signal immediately after
-            // submitting the write.
-            if (event.throwable is OutOfMemoryError) {
-                sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
-                    ProfilerEvent.RumOomErrorEvent(
-                        id = errorId,
-                        timestamp = event.eventTime.timestamp + serverTimeOffsetInMs,
-                        rumContext = ProfilingRumContext(
-                            applicationId = rumContext.applicationId,
-                            sessionId = rumContext.sessionId,
-                            viewId = rumContext.viewId,
-                            viewName = rumContext.viewName
-                        )
-                    )
-                )
-            }
         } else {
             pendingErrorCount++
         }
@@ -1809,6 +1819,31 @@ internal open class RumViewScope(
             )
 
             else -> null
+        }
+    }
+
+    private fun sendRumOomErrorEvent(errorId: String, event: RumRawEvent.AddError, rumContext: RumContext) {
+        sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)?.sendEvent(
+            ProfilerEvent.RumOomErrorEvent(
+                id = errorId,
+                timestamp = event.eventTime.timestamp + serverTimeOffsetInMs,
+                rumContext = ProfilingRumContext(
+                    applicationId = rumContext.applicationId,
+                    sessionId = rumContext.sessionId,
+                    viewId = rumContext.viewId,
+                    viewName = rumContext.viewName
+                )
+            )
+        )
+    }
+
+    /**
+     * The OOM profile is captured by the OS trigger, not by a running profiler, and the profiling
+     * feature drops it when the session's quota is denied.
+     */
+    private fun resolveOomErrorProfilingStatus(quotaReason: QuotaReason?): ErrorEvent.Profiling? {
+        return quotaReason?.takeIf { it != QuotaReason.QUOTA_OK }?.let {
+            ErrorEvent.Profiling(status = ErrorEvent.ProfilingStatus.STOPPED, quotaReason = it.toErrorQuotaReason())
         }
     }
 

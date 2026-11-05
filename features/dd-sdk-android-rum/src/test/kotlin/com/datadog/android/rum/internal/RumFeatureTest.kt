@@ -15,13 +15,16 @@ import android.content.Context
 import android.content.res.Resources
 import android.os.Handler
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
+import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
+import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -1969,6 +1972,23 @@ internal class RumFeatureTest {
     }
 
     @Test
+    fun `M handle OOM profile messages off the sender's thread W onReceive()`(
+        @StringForgery fakeErrorId: String
+    ) {
+        // Given
+        val mockRumScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.onReceive(ProfilerEvent.OomProfileWriteResult(fakeErrorId, true))
+        testedFeature.onReceive(ProfilerEvent.OomProfilingReady)
+
+        // Then
+        verify(mockRumScope, times(2)).withContext(any(), any())
+    }
+
+    @Test
     fun `M destroy startup detector directly W onStop() {on main thread}`() {
         // Given
         val mockHandler: Handler = mock()
@@ -1988,7 +2008,9 @@ internal class RumFeatureTest {
 
         // Then
         verify(mockDetector).destroy()
-        verifyNoInteractions(mockHandler)
+        // Only the held OOM error timeout is cancelled.
+        verify(mockHandler).removeCallbacks(any())
+        verifyNoMoreInteractions(mockHandler)
     }
 
     @Test
