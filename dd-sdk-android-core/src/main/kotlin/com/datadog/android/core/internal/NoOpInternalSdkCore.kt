@@ -26,6 +26,7 @@ import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
 import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Request
@@ -361,7 +362,7 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
             return NoOpCall(originalRequest)
         }
 
-        override fun enqueue(responseCallback: okhttp3.Callback) = Unit
+        override fun enqueue(responseCallback: Callback) = Unit
 
         @Suppress("UnsafeThirdPartyFunctionCall") // All required fields are set, won't throw
         override fun execute(): Response {

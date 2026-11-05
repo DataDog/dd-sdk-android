@@ -10,11 +10,18 @@ import com.android.build.api.dsl.LibraryExtension
 import com.datadog.gradle.utils.Version
 import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPom
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.authentication.aws.AwsImAuthentication
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.findByType
+import org.gradle.kotlin.dsl.register
 import org.gradle.plugins.signing.SigningExtension
+
+private const val ORGANIZATION_NAME = "Datadog"
+private const val ORGANIZATION_URL = "https://www.datadoghq.com/"
+private const val PROJECT_URL = "https://github.com/DataDog/dd-sdk-android/"
+private const val SCM_CONNECTION = "scm:git:git@github.com:Datadog/dd-sdk-android.git"
 
 object MavenConfig {
     const val GROUP_ID = "com.datadoghq"
@@ -43,6 +50,7 @@ internal fun Project.publishingConfig(
         }
     }
 
+    // Android creates the release component during project evaluation.
     afterEvaluate {
         val publishingExtension = extensions.findByType(PublishingExtension::class)
         val signingExtension = extensions.findByType(SigningExtension::class)
@@ -51,69 +59,75 @@ internal fun Project.publishingConfig(
             return@afterEvaluate
         }
 
-        publishingExtension.apply {
-            publications.create<MavenPublication>(MavenConfig.PUBLICATION) {
-                from(components.getByName("release"))
+        val publication = publishingExtension.publications.create<MavenPublication>(MavenConfig.PUBLICATION) {
+            from(components.getByName(MavenConfig.PUBLICATION))
 
-                groupId = MavenConfig.GROUP_ID
-                artifactId = customArtifactId
-                version = AndroidConfig.VERSION.name
+            groupId = MavenConfig.GROUP_ID
+            artifactId = customArtifactId
+            version = AndroidConfig.VERSION.name
 
-                pom {
-                    name.set(projectName)
-                    description.set(projectDescription)
-                    url.set("https://github.com/DataDog/dd-sdk-android/")
-
-                    licenses {
-                        license {
-                            name.set("Apache-2.0")
-                            url.set("https://www.apache.org/licenses/LICENSE-2.0")
-                        }
-                    }
-
-                    organization {
-                        name.set("Datadog")
-                        url.set("https://www.datadoghq.com/")
-                    }
-
-                    developers {
-                        developer {
-                            name.set("Datadog")
-                            email.set("info@datadoghq.com")
-                            organization.set("Datadog")
-                            organizationUrl.set("https://www.datadoghq.com/")
-                        }
-                    }
-
-                    scm {
-                        url.set("https://github.com/DataDog/dd-sdk-android/")
-                        connection.set("scm:git:git@github.com:Datadog/dd-sdk-android.git")
-                        developerConnection.set("scm:git:git@github.com:Datadog/dd-sdk-android.git")
-                    }
-                }
-            }
-
-            // Dogfood builds go to binaries.ddbuild.io (internal only), using the CI runner's IAM role.
-            // Only registered for dogfood versions, so other builds can't be uploaded there.
-            if (AndroidConfig.VERSION.type is Version.Type.Dogfood) {
-                repositories {
-                    maven {
-                        name = MavenConfig.DOGFOOD_REPOSITORY
-                        url = uri(MavenConfig.DOGFOOD_REPOSITORY_URL)
-                        authentication {
-                            create<AwsImAuthentication>("awsIm")
-                        }
-                    }
-                }
+            pom {
+                configureMetadata(projectName, projectDescription)
             }
         }
 
-        signingExtension.apply {
-            val privateKey = System.getenv("GPG_PRIVATE_KEY")
-            val password = System.getenv("GPG_PASSWORD")
-            isRequired = !hasProperty("dd-skip-signing")
-            useInMemoryPgpKeys(privateKey, password)
-            sign(publishingExtension.publications.getByName(MavenConfig.PUBLICATION))
+        // Only dogfood versions register the internal repository, so other builds can't be uploaded there.
+        if (AndroidConfig.VERSION.type is Version.Type.Dogfood) {
+            publishingExtension.configureDogfoodRepository()
+        }
+
+        signingExtension.configureSigning(publication, signingRequired = !hasProperty("dd-skip-signing"))
+    }
+}
+
+private fun MavenPom.configureMetadata(projectName: String, projectDescription: String) {
+    name.set(projectName)
+    description.set(projectDescription)
+    url.set(PROJECT_URL)
+
+    licenses {
+        license {
+            name.set("Apache-2.0")
+            url.set("https://www.apache.org/licenses/LICENSE-2.0")
         }
     }
+
+    organization {
+        name.set(ORGANIZATION_NAME)
+        url.set(ORGANIZATION_URL)
+    }
+
+    developers {
+        developer {
+            name.set(ORGANIZATION_NAME)
+            email.set("info@datadoghq.com")
+            organization.set(ORGANIZATION_NAME)
+            organizationUrl.set(ORGANIZATION_URL)
+        }
+    }
+
+    scm {
+        url.set(PROJECT_URL)
+        connection.set(SCM_CONNECTION)
+        developerConnection.set(SCM_CONNECTION)
+    }
+}
+
+private fun PublishingExtension.configureDogfoodRepository() {
+    // Dogfood builds go to binaries.ddbuild.io (internal only), using the CI runner's IAM role.
+    repositories.maven {
+        name = MavenConfig.DOGFOOD_REPOSITORY
+        setUrl(MavenConfig.DOGFOOD_REPOSITORY_URL)
+        authentication {
+            register<AwsImAuthentication>("awsIm")
+        }
+    }
+}
+
+private fun SigningExtension.configureSigning(publication: MavenPublication, signingRequired: Boolean) {
+    val privateKey = System.getenv("GPG_PRIVATE_KEY")
+    val password = System.getenv("GPG_PASSWORD")
+    isRequired = signingRequired
+    useInMemoryPgpKeys(privateKey, password)
+    sign(publication)
 }

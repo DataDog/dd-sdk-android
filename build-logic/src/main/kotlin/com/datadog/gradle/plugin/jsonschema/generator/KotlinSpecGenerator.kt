@@ -23,9 +23,9 @@ abstract class KotlinSpecGenerator<I : Any, O : Any>(
 ) {
 
     /**
-     * Generates a KotlinPoet Spec based on the provided Json information
+     * Generates a KotlinPoet Spec based on the provided JSON information
+     * @param definition the definition read from a JSON Schema file
      * @param rootTypeName the name of the root type (matching the name of the file)
-     * @param definition the definition read from a Json Schema file
      */
     abstract fun generate(definition: I, rootTypeName: String): O
 

@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
@@ -23,9 +24,10 @@ internal fun <T, I> LastItemTracker(
     allItems: List<T>,
     itemId: (T) -> I,
     lazyListState: LazyListState,
-    onEndReached: () -> Unit
+    onEndReached: () -> Unit,
+    defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
-    LaunchedEffect(allItems) {
+    LaunchedEffect(allItems, defaultDispatcher) {
         val lastItemChanges = snapshotFlow {
             val lastItem = lazyListState
                 .layoutInfo
@@ -41,7 +43,7 @@ internal fun <T, I> LastItemTracker(
         lastItemChanges
             .distinctUntilChangedBy { it.first }
             .debounce(500.milliseconds)
-            .flowOn(Dispatchers.Default)
+            .flowOn(defaultDispatcher)
             .collect { (indexOfLastVisible, lastIndex) ->
                 if (indexOfLastVisible == lastIndex) {
                     onEndReached()

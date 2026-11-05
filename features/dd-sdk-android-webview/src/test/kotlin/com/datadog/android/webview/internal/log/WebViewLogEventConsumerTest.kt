@@ -478,7 +478,7 @@ internal class WebViewLogEventConsumerTest {
                 Arguments.of(fakeJsonObject2, NumberFormatException::class.java),
                 Arguments.of(fakeJsonObject3, UnsupportedOperationException::class.java),
                 Arguments.of(fakeJsonObject4, UnsupportedOperationException::class.java),
-                Arguments.of(fakeJsonObject5, java.lang.IllegalStateException::class.java)
+                Arguments.of(fakeJsonObject5, IllegalStateException::class.java)
             ).stream()
         }
     }

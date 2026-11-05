@@ -20,6 +20,7 @@ import com.datadog.benchmark.sample.activities.scenarios.SessionReplayScenarioAc
 import com.datadog.benchmark.sample.benchmarkAppComponent
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.config.SyntheticsScenario
+import dagger.Lazy
 import okhttp3.OkHttpClient
 import javax.inject.Inject
 
@@ -32,7 +33,7 @@ internal class LaunchActivity : BaseBenchmarkActivity() {
     internal lateinit var benchmarkFeaturesInitializer: DatadogFeaturesInitializer
 
     @Inject
-    internal lateinit var okHttpClient: dagger.Lazy<OkHttpClient>
+    internal lateinit var okHttpClient: Lazy<OkHttpClient>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

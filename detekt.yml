@@ -16,6 +16,7 @@ console-reports:
 
 comments:
   active: true
+  excludes: ['**/build/**']
   AbsentOrWrongFileLicense:
     active: true
     licenseTemplate: |
@@ -41,18 +42,20 @@ comments:
     excludes:
       - '**/test/**'
       - '**/build/generated/**'
-      - '**/dd-sdk-android/tools/**'
-      - '**/dd-sdk-android/sample/**'
-      - '**/dd-sdk-android/reliability/**'
-      - '**/dd-sdk-android/instrumented/**'
+      - '**/tools/**'
+      - '**/sample/**'
+      - '**/reliability/**'
+      - '**/instrumented/**'
+      - '**/build-logic/**'
     endOfSentenceFormat: '([.?!][ \t\n\r\f<])|([.?!:]$)'
   KDocReferencesNonPublicProperty:
     active: true
     excludes:
-      - '**/dd-sdk-android/tools/**'
-      - '**/dd-sdk-android/sample/**'
-      - '**/dd-sdk-android/reliability/**'
-      - '**/dd-sdk-android/instrumented/**'
+      - '**/tools/**'
+      - '**/sample/**'
+      - '**/reliability/**'
+      - '**/instrumented/**'
+      - '**/build-logic/**'
   OutdatedDocumentation:
     active: true
     matchTypeParameters: true
@@ -71,10 +74,11 @@ comments:
       - '**/testFixtures/**'
       - '**/androidTest/**'
       - '**/build/generated/**'
-      - '**/dd-sdk-android/tools/**'
-      - '**/dd-sdk-android/sample/**'
-      - '**/dd-sdk-android/reliability/**'
-      - '**/dd-sdk-android/instrumented/**'
+      - '**/tools/**'
+      - '**/sample/**'
+      - '**/reliability/**'
+      - '**/instrumented/**'
+      - '**/build-logic/**'
     searchInNestedClass: true
     searchInInnerClass: true
     searchInInnerObject: true
@@ -87,10 +91,11 @@ comments:
       - '**/testFixtures/**'
       - '**/androidTest/**'
       - '**/build/generated/**'
-      - '**/dd-sdk-android/tools/**'
-      - '**/dd-sdk-android/sample/**'
-      - '**/dd-sdk-android/reliability/**'
-      - '**/dd-sdk-android/instrumented/**'
+      - '**/tools/**'
+      - '**/sample/**'
+      - '**/reliability/**'
+      - '**/instrumented/**'
+      - '**/build-logic/**'
     searchProtectedFunction: true
   UndocumentedPublicProperty:
     active: true
@@ -99,10 +104,11 @@ comments:
       - '**/testFixtures/**'
       - '**/androidTest/**'
       - '**/build/generated/**'
-      - '**/dd-sdk-android/tools/**'
-      - '**/dd-sdk-android/sample/**'
-      - '**/dd-sdk-android/reliability/**'
-      - '**/dd-sdk-android/instrumented/**'
+      - '**/tools/**'
+      - '**/sample/**'
+      - '**/reliability/**'
+      - '**/instrumented/**'
+      - '**/build-logic/**'
     searchProtectedProperty: true
 
 complexity:
@@ -762,6 +768,12 @@ style:
     active: false
   UnnecessaryFilter:
     active: true
+  UnnecessaryFullyQualifiedName:
+    active: true
+    ignoredFullyQualifiedNames:
+      # Android lint requires fully qualified framework resource references.
+      - 'android.R'
+      - 'android.R.*'
   UnnecessaryInheritance:
     active: true
   UnnecessaryInnerClass:
@@ -833,60 +845,3 @@ style:
   WildcardImport:
     active: true
     excludeImports: []
-
-datadog:
-  active: true
-  excludes:
-    - '**/build/**'
-    - '**/build-logic/**'
-    - '**/test/**'
-    - '**/testDebug/**'
-    - '**/testRelease/**'
-    - '**/androidTest/**'
-    - '**/testFixtures/**'
-    - '**/*.kts'
-    - '**/instrumented/**'
-    - '**/reliability/**'
-    - '**/sample/**'
-    - '**/tools/**'
-  CheckInternal:
-    active: true
-  InvalidStringFormat:
-    active: true
-  PackageNameVisibility:
-    active: true
-    withBreakingChanges: true
-    ignoredAnnotations:
-      - "com.datadog.android.lint.InternalApi"
-  PreferTimeProvider:
-    active: true
-    allowedFiles:
-      - '.*TimeProvider.*'
-      - '.*Time\.kt'
-      - '.*DdRumContentProvider.*'
-  RequireInternal:
-    active: true
-  ThreadSafety:
-    active: true
-    workerThreadSwitchingCalls:
-      - "com.datadog.android.core.internal.utils.submitSafe"
-      - "com.datadog.android.core.internal.utils.executeSafe"
-      - "com.datadog.android.core.internal.utils.scheduleSafe"
-      - "com.datadog.android.api.feature.FeatureScope.withWriteContext"
-      - "com.datadog.android.api.feature.EventWriteScope.invoke"
-    mainThreadSwitchingCalls:
-      - "android.widget.LinearLayout.post"
-  ThrowingInternalException:
-    active: true
-  TodoWithoutTask:
-    active: true
-    deprecatedPrefixes:
-      - "RUMM"
-      - "REPLAY"
-  UnsafeThirdPartyFunctionCall:
-    active: true
-    internalPackagePrefix: 'com.datadog'
-    treatUnknownFunctionAsThrowing: true
-
-datadog-test-pyramid:
-  active: false

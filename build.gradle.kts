@@ -9,6 +9,7 @@ import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.registerSubModuleAggregationTask
 import com.datadog.gradle.utils.CLONE_RUM_EVENTS_FORMAT_SCHEMAS_TASK_NAME
 import com.datadog.gradle.utils.GENERATE_JSON_MODELS_TASK_NAME
+import dev.detekt.gradle.Detekt
 
 plugins {
     `maven-publish`
@@ -26,7 +27,7 @@ plugins {
     alias(libs.plugins.koverPlugin) apply false
     alias(libs.plugins.androidLibraryPlugin) apply false
     alias(libs.plugins.dokkaGradlePlugin) apply false
-    alias(libs.plugins.detektGradlePlugin) apply false
+    alias(libs.plugins.detektGradlePlugin)
     alias(libs.plugins.unmockGradlePlugin) apply false
 }
 
@@ -132,6 +133,28 @@ tasks.register("ktlintFormatAll") {
     description = "Runs code formatting with ktlint for both main and included (`:build-logic`) builds."
     dependsOn(allprojects.mapNotNull { it.tasks.named { it == "ktlintFormat" } })
     dependsOn(gradle.includedBuild("build-logic").task(":ktlintFormat"))
+}
+
+val detektScripts = tasks.register<Detekt>("detektScripts") {
+    group = "verification"
+    description = "Checks Kotlin build scripts without type resolution."
+    config.setFrom(file("detekt.yml"))
+    setSource(rootDir)
+    include("**/*.kts")
+    exclude("**/build/**", "**/.gradle/**", "**/.gradle-user-home/**", "**/cache/**")
+}
+
+tasks.named<Detekt>("detekt") {
+    isEnabled = false
+    dependsOn(detektScripts)
+    dependsOn(subprojects.map { it.tasks.named { it == "detekt" } })
+    dependsOn(gradle.includedBuild("build-logic").task(":detekt"))
+}
+
+tasks.register("detektAll") {
+    group = "verification"
+    description = "Checks all Kotlin modules, build logic, and Kotlin build scripts."
+    dependsOn(tasks.named("detekt"))
 }
 
 registerSubModuleAggregationTask(

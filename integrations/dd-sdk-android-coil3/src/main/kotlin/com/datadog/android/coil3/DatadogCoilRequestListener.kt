@@ -6,6 +6,7 @@
 
 package com.datadog.android.coil3
 
+import android.net.Uri
 import coil3.request.ErrorResult
 import coil3.request.ImageRequest
 import com.datadog.android.Datadog
@@ -52,7 +53,7 @@ constructor(
             is String -> {
                 mapOf(REQUEST_PATH_TAG to data)
             }
-            is android.net.Uri -> {
+            is Uri -> {
                 mapOf(REQUEST_PATH_TAG to data.path)
             }
             is HttpUrl -> {

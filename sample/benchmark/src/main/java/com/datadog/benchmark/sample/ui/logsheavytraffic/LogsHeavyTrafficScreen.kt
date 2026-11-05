@@ -25,6 +25,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
@@ -33,11 +34,12 @@ import kotlinx.coroutines.flow.flowOn
 internal fun LogsHeavyTrafficScreen(
     modifier: Modifier,
     imageUrls: List<String>,
-    dispatch: (LogsHeavyTrafficScreenAction) -> Unit
+    dispatch: (LogsHeavyTrafficScreenAction) -> Unit,
+    defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     val lazyListState = rememberLazyListState()
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(defaultDispatcher) {
         val visibleItemChanges = snapshotFlow {
             lazyListState
                 .layoutInfo
@@ -48,7 +50,7 @@ internal fun LogsHeavyTrafficScreen(
 
         visibleItemChanges
             .distinctUntilChanged()
-            .flowOn(Dispatchers.Default)
+            .flowOn(defaultDispatcher)
             .collect { dispatch(LogsHeavyTrafficScreenAction.VisibleItemsChanged(it)) }
     }
 

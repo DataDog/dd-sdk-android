@@ -55,14 +55,14 @@ internal class EpisodeRecyclerView private constructor() {
 
         lateinit var episode: Episode
 
-        val textView = itemView.findViewById<TextView>(R.id.title)
+        val textView: TextView = itemView.findViewById(R.id.title)
 
         init {
             itemView.setOnClickListener {
                 updateEpisodeHighlight(true)
                 onEpisodeSelected(episode, 0)
             }
-            itemView.setOnFocusChangeListener { view, b ->
+            itemView.setOnFocusChangeListener { _, b ->
                 updateEpisodeHighlight(b)
                 onEpisodeSelected(episode, 0)
             }

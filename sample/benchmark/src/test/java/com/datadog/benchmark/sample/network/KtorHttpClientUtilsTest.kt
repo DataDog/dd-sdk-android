@@ -6,6 +6,8 @@
 
 package com.datadog.benchmark.sample.network
 
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -16,15 +18,21 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 
-class KtorHttpClientUtilsTest {
+@ExtendWith(ForgeExtension::class)
+internal class KtorHttpClientUtilsTest {
     @Test
     fun `M return deserialized body W safeGet() { server returns 200 and proper json }`() {
         // Given
@@ -103,6 +111,26 @@ class KtorHttpClientUtilsTest {
 
         // Then
         assertInstanceOf(KtorHttpResponse.UnknownException::class.java, response)
+    }
+
+    @Test
+    fun `M propagate cancellation W safeGet() {request cancelled}`(
+        @StringForgery fakeMessage: String
+    ) = runTest {
+        // Given
+        val fakeException = CancellationException(fakeMessage)
+        val mockEngine = MockEngine { throw fakeException }
+        createClient(mockEngine).use { client ->
+            val url = URLBuilder("").build()
+
+            // When
+            val exception = assertThrows<CancellationException> {
+                client.safeGet<ResponseData>(url)
+            }
+
+            // Then
+            assertThat(exception).hasMessage(fakeMessage)
+        }
     }
 
     private fun createClient(engine: MockEngine): HttpClient {

@@ -87,9 +87,9 @@ abstract class GenerateTransitiveDependenciesTask : DefaultTask() {
                 size >= 2 * KB -> "${size / KB} Kb"
                 else -> "$size b "
             }
-            return rawSize.padStart(8)
+            return rawSize.padStart(HUMAN_READABLE_SIZE_WIDTH)
         } else {
-            return "$size b ".padStart(16)
+            return "$size b ".padStart(RAW_SIZE_WIDTH)
         }
     }
 
@@ -97,6 +97,8 @@ abstract class GenerateTransitiveDependenciesTask : DefaultTask() {
 
     companion object {
         private const val PADDING = 64
+        private const val HUMAN_READABLE_SIZE_WIDTH = 8
+        private const val RAW_SIZE_WIDTH = 16
         private const val KB = 1024
         private const val MB = 1024 * 1024
 

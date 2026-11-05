@@ -6,6 +6,7 @@
 
 package com.datadog.benchmark.sample.ui.profiling.workload
 
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -15,13 +16,14 @@ import kotlin.math.sqrt
 @Suppress("MagicNumber")
 internal class DispatchWorkload(
     private val periodMs: Long = 10L,
-    private val parallelism: Int = 4
+    private val parallelism: Int = 4,
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : Workload {
     override fun start(scope: CoroutineScope) {
         scope.launch {
             while (true) {
                 repeat(parallelism) {
-                    launch(Dispatchers.Default) {
+                    launch(defaultDispatcher) {
                         var x = 0.0
                         for (i in 0 until 500) x += sqrt(i.toDouble())
                         blackHole(x)

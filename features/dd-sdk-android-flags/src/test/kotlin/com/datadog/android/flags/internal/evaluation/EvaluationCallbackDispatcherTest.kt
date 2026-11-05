@@ -11,6 +11,7 @@ import com.datadog.android.utils.verifyLog
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -130,7 +131,7 @@ internal class EvaluationCallbackDispatcherTest {
         var delivered = 0
 
         // When
-        org.junit.jupiter.api.assertDoesNotThrow {
+        assertDoesNotThrow {
             testedDispatcher.execute { delivered++ }
         }
         doAnswer { pending.addLast(it.getArgument(0)); null }.whenever(mockWorker).execute(any())

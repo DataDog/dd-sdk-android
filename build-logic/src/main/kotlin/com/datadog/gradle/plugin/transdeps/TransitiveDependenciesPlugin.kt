@@ -21,9 +21,11 @@ class TransitiveDependenciesPlugin : Plugin<Project> {
             .register<GenerateTransitiveDependenciesTask>(TASK_GEN_TRANSITIVE_DEPS) {
                 dependenciesFile.set(target.layout.projectDirectory.file(FILE_NAME))
                 resolvedArtifacts.from(
-                    target.configurations.named("releaseCompileClasspath").map {
-                        it.incoming.artifactView {
-                            componentFilter { it !is ProjectComponentIdentifier }
+                    target.configurations.named("releaseCompileClasspath").map { configuration ->
+                        configuration.incoming.artifactView {
+                            componentFilter { componentId ->
+                                componentId !is ProjectComponentIdentifier
+                            }
                         }.files
                     }
                 )

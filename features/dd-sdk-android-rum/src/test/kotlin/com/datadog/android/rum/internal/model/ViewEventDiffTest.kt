@@ -14,6 +14,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.MapEntry
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -430,7 +431,7 @@ internal class ViewEventDiffTest {
 
         // Then — only the new flag is returned, not the unchanged one
         assertThat(result.featureFlags?.additionalProperties).containsOnly(
-            org.assertj.core.data.MapEntry.entry("flag_b", false)
+            MapEntry.entry("flag_b", false)
         )
     }
 
@@ -451,7 +452,7 @@ internal class ViewEventDiffTest {
 
         // Then
         assertThat(result.featureFlags?.additionalProperties).containsOnly(
-            org.assertj.core.data.MapEntry.entry("flag_a", true)
+            MapEntry.entry("flag_a", true)
         )
     }
 
@@ -470,7 +471,7 @@ internal class ViewEventDiffTest {
 
         // Then
         assertThat(result.featureFlags?.additionalProperties).containsOnly(
-            org.assertj.core.data.MapEntry.entry("flag_a", true)
+            MapEntry.entry("flag_a", true)
         )
     }
 

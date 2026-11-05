@@ -44,6 +44,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Locale
 
 /**
  * Integration test for cross-product trace sampling rebasing.
@@ -356,7 +357,7 @@ class TraceCrossProductSamplingTest {
      * `SpanSamplingIdProvider.provideId` parses that segment as the sampling key.
      */
     private fun sessionIdToFakeUuid(token: Long): String =
-        "00000000-0000-0000-0000-${"%012x".format(token)}"
+        "00000000-0000-0000-0000-${"%012x".format(Locale.US, token)}"
 
     /**
      * Drives [SAMPLES_PER_CASE] requests through a [DatadogInterceptor] at [traceRate], each

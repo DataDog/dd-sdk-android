@@ -52,7 +52,7 @@ import java.util.concurrent.TimeUnit
  * (e.g. `GlobalRumMonitor`) hold on this instance. Annotate test fields with
  * [org.junit.jupiter.api.AutoClose] to close it after each test.
  */
-@Suppress("UnsafeThirdPartyFunctionCall")
+@Suppress("UnsafeThirdPartyFunctionCall", "TooManyFunctions")
 class StubSDKCore(
     private val forge: Forge,
     // Default mocks are stub-only, so they don't record every invocation: those would reference the

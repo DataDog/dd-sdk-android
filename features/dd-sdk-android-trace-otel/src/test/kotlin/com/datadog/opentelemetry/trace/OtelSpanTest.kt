@@ -40,6 +40,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.quality.Strictness
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -190,7 +191,7 @@ internal class OtelSpanTest {
         @StringForgery fakeEventName: String
     ) {
         // When
-        testedSpan.addEvent(fakeEventName, Attributes.empty(), 2_000L, java.util.concurrent.TimeUnit.SECONDS)
+        testedSpan.addEvent(fakeEventName, Attributes.empty(), 2_000L, TimeUnit.SECONDS)
 
         // Then
         verify(mockAgentSpan).logAttributes(
@@ -209,7 +210,7 @@ internal class OtelSpanTest {
         testedSpan.end()
 
         // When
-        testedSpan.addEvent(fakeEventName, Attributes.empty(), 1000L, java.util.concurrent.TimeUnit.MILLISECONDS)
+        testedSpan.addEvent(fakeEventName, Attributes.empty(), 1000L, TimeUnit.MILLISECONDS)
 
         // Then
         verify(mockAgentSpan, never()).logAttributes(any())
