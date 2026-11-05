@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.internal.repository
 
+import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
@@ -19,7 +20,8 @@ internal class NoOpFlagsRepository : FlagsRepository {
     override fun installFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
-        obfuscation: FlagKeyObfuscation?
+        obfuscation: FlagKeyObfuscation?,
+        observeFullEvaluationData: Boolean
     ) = FlagsInstallation { onInstalled -> onInstalled() }
 
     @Deprecated("Use installFlagsAndContext instead")
@@ -27,6 +29,7 @@ internal class NoOpFlagsRepository : FlagsRepository {
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
         obfuscation: FlagKeyObfuscation?,
+        observeFullEvaluationData: Boolean,
         onInstalled: () -> Unit
     ) {
         onInstalled()
@@ -34,7 +37,7 @@ internal class NoOpFlagsRepository : FlagsRepository {
 
     override fun waitForPersistenceLoad() = Unit
 
-    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>? = null
+    override fun getEvaluationSnapshot(key: String): FlagEvaluationSnapshot? = null
 
     override val firstFlags = FirstFlagsLatch()
 

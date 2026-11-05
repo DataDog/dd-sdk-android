@@ -313,7 +313,8 @@ internal class EvaluationsManager(
         val installation = flagsRepository.installFlagsAndContext(
             context,
             assignments.flags,
-            assignments.obfuscation
+            assignments.obfuscation,
+            assignments.observeFullEvaluationData
         )
         val result = takeCompletion(initializationCompletion, callback)
         currentState = FlagsClientState.Ready
