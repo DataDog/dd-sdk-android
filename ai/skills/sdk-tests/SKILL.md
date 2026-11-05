@@ -61,10 +61,6 @@ Test classes are `internal`.
 
 ## Naming convention
 
-**Do not use `region` comments in tests.**
-
-**No inline comments in test bodies** — the only allowed comments are the `// Given`, `// When`, `// Then`, and `// When / Then` block markers. Do not add any other explanatory, descriptive, or section comments inside a test method.
-
 Backtick names follow the **M…W…** pattern:
 - **M** = "Must" (expected outcome)
 - **W** = "When" (action / condition)
@@ -149,6 +145,10 @@ lateinit var mockInternalLogger: InternalLogger
 - Mock vars → `mock` prefix: `mockSdkCore`, `mockLogger`, `mockBuilder`
 - Fake-data vars → `fake` prefix: `fakeRequestInfo`, `fakeUrl`, `fakeName`
 
+### Imports
+
+Import Mockito/AssertJ symbols; never write fully qualified names inline (e.g. `org.mockito.kotlin.times(…)`, `org.mockito.kotlin.any()`).
+
 ### Setup (mockito-kotlin DSL)
 
 ```kotlin
@@ -197,7 +197,9 @@ Use `verify(mock, never()).method(...)` only when you need to assert that a *spe
 
 ### Prefer specific matchers over `any()` in `verify`
 
-Use `eq()` / `isA()` when the expected value is known. Reserve `any()` for `never()` checks.
+Use `eq()` / `isA()` when the expected value is known. Use `any()` only when the argument is genuinely irrelevant or can't be asserted (e.g. in `never()` checks); don't add a captor just to avoid it.
+
+Omit defaults: no `times(1)`, and no `eq()` when every matcher would be `eq` (pass the values directly). Use `never()` instead of `times(0)`.
 
 ```kotlin
 // Good
@@ -209,6 +211,21 @@ verify(mockInstrumentation, never()).onResponseSucceeded(any(), any())
 verify(mockInstrumentation).onResponseSucceeded(any(), capture())
 ```
 
+### Use `argumentCaptor`, never `argThat`
+
+Capture the argument with `argumentCaptor` and assert individual fields. Never use `argThat { … }`: a failing `argThat` gives only a generic mismatch message.
+
+```kotlin
+// Good
+argumentCaptor<RumEvent> {
+    verify(mockWriter).write(capture())
+    assertThat(firstValue.name).isEqualTo(fakeName)
+}
+
+// Bad
+verify(mockWriter).write(argThat { name == fakeName })
+```
+
 ### Logger verification — always use `verifyLog` / `verifyApiUsage`
 
 **Never call `verify(mockInternalLogger).log(...)` directly.** Use the `InternalLoggerUtils` extensions:
@@ -216,7 +233,7 @@ verify(mockInstrumentation).onResponseSucceeded(any(), capture())
 - Core (shared via testFixtures): `dd-sdk-android-core/src/testFixtures/kotlin/com/datadog/android/utils/InternalLoggerUtils.kt`
 - Per-module copies, e.g. `integrations/dd-sdk-android-cronet/src/test/kotlin/com/datadog/android/api/InternalLoggerUtils.kt`
 
-Use whichever copy is already imported in the test module.
+Use whichever copy is already imported in the test module. Always assert the message, not only level and target.
 
 #### `verifyLog`
 
@@ -350,6 +367,8 @@ assertThat(result).isSameAs(expected)
 assertThat(result).isEqualTo(expected)
 assertThat(result).isInstanceOf(NoOpAdvancedRumMonitor::class.java)
 ```
+
+Use the most specific assertion: `isTrue()` / `isFalse()`, not `isEqualTo(true)`; `isEqualTo(list)` when order is deterministic, not `containsExactlyInAnyOrder…`.
 
 ### Nullability checks
 
