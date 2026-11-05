@@ -19,12 +19,15 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
+import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.utils.WriteOperation
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
+import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -469,14 +472,98 @@ internal class PendingOomErrorStoreTest {
     // endregion
 
     @Test
-    fun `M keep event W serialize then deserialize`() {
+    fun `M keep id, date and attributes W serialize then deserialize`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeValue: String,
+        @StringForgery fakeKnownValue: String
+    ) {
+        // Given
+        val knownAttribute = RumEventSerializer.knownAttributes.first()
+        val event = fakeEvent.copy(
+            context = ErrorEvent.Context(mutableMapOf(fakeKey to fakeValue, knownAttribute to fakeKnownValue))
+        )
+
         // When
-        val serialized = PendingOomErrorStore.ErrorEventSerializer().serialize(fakeEvent)
-        val result = PendingOomErrorStore.ErrorEventDeserializer().deserialize(serialized)
+        val serialized = PendingOomErrorStore.ErrorEventSerializer(mockInternalLogger).serialize(event)
+        val result = PendingOomErrorStore.ErrorEventDeserializer().deserialize(checkNotNull(serialized))
 
         // Then
-        assertThat(result?.error?.id).isEqualTo(errorId)
-        assertThat(result?.view?.id).isEqualTo(fakeEvent.view.id)
+        checkNotNull(result)
+        assertThat(result.error.id).isEqualTo(errorId)
+        assertThat(result.date).isEqualTo(event.date)
+        assertThat(result.view.id).isEqualTo(event.view.id)
+        assertThat(result.context?.additionalProperties)
+            .containsEntry(fakeKey, JsonPrimitive(fakeValue))
+            .containsEntry(knownAttribute, JsonPrimitive(fakeKnownValue))
+    }
+
+    @Test
+    fun `M omit the attribute W serialize() {attribute toString throws}`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        val throwingValue = object {
+            override fun toString(): String = error(fakeMessage)
+        }
+        val event = fakeEvent.copy(context = ErrorEvent.Context(mutableMapOf(fakeKey to throwingValue)))
+
+        // When
+        val serialized = PendingOomErrorStore.ErrorEventSerializer(mockInternalLogger).serialize(event)
+
+        // Then
+        checkNotNull(serialized)
+        assertThat(ErrorEvent.fromJson(serialized).context?.additionalProperties.orEmpty()).doesNotContainKey(fakeKey)
+    }
+
+    @Test
+    fun `M return null and log W serialize() {serialization fails}`(
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        val fakeException = IllegalStateException(fakeMessage)
+        val mockDelegate = mock<Serializer<Any>>()
+        whenever(mockDelegate.serialize(any())) doThrow fakeException
+
+        // When
+        val serialized = PendingOomErrorStore.ErrorEventSerializer(
+            mockInternalLogger,
+            mockDelegate
+        ).serialize(fakeEvent)
+
+        // Then
+        assertThat(serialized).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            PendingOomErrorStore.LOG_SERIALIZATION_FAILED,
+            fakeException
+        )
+    }
+
+    @Test
+    fun `M return null and log W serialize() {serialization runs out of memory}`(
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        val fakeError = OutOfMemoryError(fakeMessage)
+        val mockDelegate = mock<Serializer<Any>>()
+        whenever(mockDelegate.serialize(any())) doThrow fakeError
+
+        // When
+        val serialized = PendingOomErrorStore.ErrorEventSerializer(
+            mockInternalLogger,
+            mockDelegate
+        ).serialize(fakeEvent)
+
+        // Then
+        assertThat(serialized).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            PendingOomErrorStore.LOG_SERIALIZATION_FAILED,
+            fakeError
+        )
     }
 
     @Test

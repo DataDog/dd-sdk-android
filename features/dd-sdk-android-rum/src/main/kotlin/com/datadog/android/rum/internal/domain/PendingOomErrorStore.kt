@@ -20,9 +20,12 @@ import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.internal.profiling.ProfilerEvent
+import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.utils.WriteOperation
 import com.datadog.android.rum.model.ErrorEvent
+import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
+import com.google.gson.JsonParser
 import java.util.concurrent.TimeUnit
 
 /**
@@ -85,7 +88,7 @@ internal class PendingOomErrorStore(
             val store = dataStore
             if (!isLoaded || store == null) return false
             // TODO RUM-19677: Apply the RUM error event mapper before persisting the held error. Today the unredacted error sits on disk until it is released and mapped on the next launch.
-            store.setValue(KEY, event, VERSION, holdCallback(event), ErrorEventSerializer())
+            store.setValue(KEY, event, VERSION, holdCallback(event), ErrorEventSerializer(sdkCore.internalLogger))
             heldError.also {
                 heldError = event
             }
@@ -181,15 +184,43 @@ internal class PendingOomErrorStore(
         sdkCore.internalLogger.log(InternalLogger.Level.DEBUG, InternalLogger.Target.USER, { message })
     }
 
-    internal class ErrorEventSerializer : Serializer<ErrorEvent> {
-        override fun serialize(model: ErrorEvent): String = model.toJson().toString()
+    /** Same attribute sanitization and safe mapping as the RUM event serializer. */
+    internal class ErrorEventSerializer(
+        private val internalLogger: InternalLogger,
+        private val delegate: Serializer<Any> = RumEventSerializer(internalLogger)
+    ) : Serializer<ErrorEvent> {
+
+        override fun serialize(model: ErrorEvent): String? {
+            return try {
+                delegate.serialize(model)
+            } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+                // Throwable: customer attribute toString() runs here, and an OOM can happen under memory pressure.
+                // The data store reports a null value as a failed write: the error is written right away.
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                    { LOG_SERIALIZATION_FAILED },
+                    e
+                )
+                null
+            }
+        }
     }
 
     internal class ErrorEventDeserializer : Deserializer<String, ErrorEvent> {
         @Suppress("SwallowedException")
         override fun deserialize(model: String): ErrorEvent? {
             return try {
-                ErrorEvent.fromJson(model)
+                val json = JsonParser.parseString(model).asJsonObject
+                // The serializer moved the known context attributes to the top level.
+                val moved = RumEventSerializer.knownAttributes.filter { json.has(it) }
+                if (moved.isNotEmpty()) {
+                    val context =
+                        json.getAsJsonObject(RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX)
+                            ?: JsonObject().also { json.add(RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX, it) }
+                    moved.forEach { context.add(it, json.remove(it)) }
+                }
+                ErrorEvent.fromJsonObject(json)
             } catch (e: JsonParseException) {
                 // Left half-written by a process death, or by another SDK version.
                 null
@@ -204,6 +235,8 @@ internal class PendingOomErrorStore(
         internal const val VERSION = 1
         internal val TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1)
         internal const val LOG_HELD = "Fatal OOM error held until the outcome of its OOM profile is known."
+        internal const val LOG_SERIALIZATION_FAILED =
+            "Fatal OOM error could not be serialized: it is written right away."
         internal const val LOG_TIMED_OUT =
             "Held OOM error written without profiling status: no OOM profile outcome in time."
     }
