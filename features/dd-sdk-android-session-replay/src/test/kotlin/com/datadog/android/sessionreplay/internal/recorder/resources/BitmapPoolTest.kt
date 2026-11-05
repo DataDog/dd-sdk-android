@@ -122,6 +122,20 @@ internal class BitmapPoolTest {
         assertThat(cacheItem).isNull()
     }
 
+    @Test
+    fun `M never return an oversized recycled bitmap W put { larger than pool capacity }`() {
+        // Given
+        whenever(mockBitmap.allocationByteCount).thenReturn(BitmapPool.MAX_CACHE_MEMORY_SIZE_BYTES + 1)
+
+        // When
+        testedCache.put(mockBitmap)
+        val result = testedCache.getBitmapByProperties(width, height, mockConfig)
+
+        // Then
+        assertThat(result).isNull()
+        verify(mockBitmap).recycle()
+    }
+
     // region put
 
     @Test

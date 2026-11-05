@@ -170,18 +170,7 @@ internal class SemanticsUtils(
         val contentScale = reflectionUtils.getContentScale(semanticsNode)
         val alignment = reflectionUtils.getAlignment(semanticsNode)
 
-        // ALPHA_8 bitmaps cannot be copied to ARGB_8888 directly (copy returns null),
-        // but they are handled separately downstream via Alpha8BitmapConverter.
-        // Hardware bitmaps MUST be copied because Bitmap.compress() throws
-        // IllegalStateException on hardware bitmaps.
-        val finalBitmap = if (bitmap?.config == Bitmap.Config.ALPHA_8) {
-            bitmap
-        } else {
-            @Suppress("UnsafeThirdPartyFunctionCall") // isMutable is always false
-            bitmap?.copy(Bitmap.Config.ARGB_8888, false)
-        }
-
-        return finalBitmap?.let {
+        return bitmap?.let {
             BitmapInfo(
                 bitmap = it,
                 isContextualImage = isContextualImage,
@@ -459,6 +448,7 @@ internal class SemanticsUtils(
     }
 
     internal companion object {
+
         internal enum class OnDrawFieldType {
             FILL_COLOR,
             CHECKMARK_COLOR,

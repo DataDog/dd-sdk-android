@@ -67,6 +67,12 @@ internal class BitmapPool(
             return
         }
 
+        // LruCache would evict this bitmap before the size index can be updated.
+        if (value.allocationByteCount > cache.maxSize()) {
+            value.recycle()
+            return
+        }
+
         val key = bitmapPoolHelper.generateKey(value)
 
         val bitmapExistsInPool = bitmapPoolHelper.safeCall {

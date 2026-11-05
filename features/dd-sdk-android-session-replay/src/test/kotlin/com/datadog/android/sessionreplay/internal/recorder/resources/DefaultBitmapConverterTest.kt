@@ -7,17 +7,25 @@
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import com.datadog.android.api.InternalLogger
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
+import org.mockito.Mockito.mockConstruction
+import org.mockito.Mockito.mockStatic
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -45,6 +53,33 @@ internal class DefaultBitmapConverterTest {
     @BeforeEach
     fun setup() {
         testedConverter = Alpha8BitmapConverter(mockLogger)
+    }
+
+    @Test
+    fun `M release converted pixels before propagating allocation failure W convertAlpha8BitmapToArgb8888`() {
+        // Given
+        val fakeFailure = OutOfMemoryError()
+        val mockConvertedBitmap = mock<Bitmap>()
+        whenever(mockBitmap.width).thenReturn(fakeWidth)
+        whenever(mockBitmap.height).thenReturn(fakeHeight)
+        mockStatic(Bitmap::class.java).use { mockPlatform ->
+            mockPlatform.`when`<Bitmap> {
+                Bitmap.createBitmap(fakeWidth, fakeHeight, Bitmap.Config.ARGB_8888)
+            }.thenReturn(mockConvertedBitmap)
+            mockConstruction(Canvas::class.java) { canvas, _ ->
+                whenever(canvas.drawColor(any())).thenThrow(fakeFailure)
+            }.use {
+                // When
+                val actualFailure = assertThrows<OutOfMemoryError> {
+                    testedConverter.convertAlpha8BitmapToArgb8888(mockBitmap)
+                }
+
+                // Then
+                assertThat(actualFailure).isSameAs(fakeFailure)
+                verify(mockConvertedBitmap).recycle()
+                verifyNoInteractions(mockLogger)
+            }
+        }
     }
 
     @Test

@@ -18,6 +18,7 @@ import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.internal.async.CancellableAsyncJobStatusCallback
 import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -112,6 +113,9 @@ internal class DefaultImageWireframeHelper(
             desiredHeight = targetHeight,
             customResourceIdCacheKey = customResourceIdCacheKey,
             resourceResolverCallback = object : ResourceResolverCallback {
+                override val cancellation: ResourceCancellation?
+                    get() = (asyncJobStatusCallback as? CancellableAsyncJobStatusCallback)?.cancellation
+
                 override fun onSuccess(resourceId: String) {
                     populateResourceIdInWireframe(resourceId, imageWireframe)
                     asyncJobStatusCallback.jobFinished()
@@ -174,6 +178,9 @@ internal class DefaultImageWireframeHelper(
         resourceResolver.resolveResourceIdFromBitmap(
             bitmap = bitmap,
             resourceResolverCallback = object : ResourceResolverCallback {
+                override val cancellation: ResourceCancellation?
+                    get() = (asyncJobStatusCallback as? CancellableAsyncJobStatusCallback)?.cancellation
+
                 override fun onSuccess(resourceId: String) {
                     populateResourceIdInWireframe(resourceId, imageWireframe)
                     asyncJobStatusCallback.jobFinished()
@@ -298,6 +305,9 @@ internal class DefaultImageWireframeHelper(
             drawableHeight = height,
             customResourceIdCacheKey = customResourceIdCacheKey,
             resourceResolverCallback = object : ResourceResolverCallback {
+                override val cancellation: ResourceCancellation?
+                    get() = (asyncJobStatusCallback as? CancellableAsyncJobStatusCallback)?.cancellation
+
                 override fun onSuccess(resourceId: String) {
                     populateResourceIdInWireframe(resourceId, imageWireframe)
                     asyncJobStatusCallback.jobFinished()
