@@ -36,7 +36,7 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
 
                 if (hasRumContext) {
                     GlobalRumMonitor.get()
-                        .startView(widgetId, widgetName ?: "DatadogWidget")
+                        .startView(widgetId, widgetName)
                     val clickedTargetName = intent.getStringExtra(WIDGET_CLICKED_TARGET_NAME)
                     if (clickedTargetName != null) {
                         GlobalRumMonitor.get()

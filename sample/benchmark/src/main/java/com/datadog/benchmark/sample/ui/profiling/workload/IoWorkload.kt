@@ -21,6 +21,8 @@ internal class IoWorkload(
     private val payloadBytes: Int = 4 * 1024
 ) : Workload {
     override fun start(scope: CoroutineScope) {
+        // Measure file operations on the standard IO pool.
+        @Suppress("InjectDispatcher")
         scope.launch(Dispatchers.IO) {
             val file = File(cacheDir, "benchmark_workload.tmp")
             val payload = ByteArray(payloadBytes).also { Random.nextBytes(it) }

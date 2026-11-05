@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("MagicNumber")
+
 package com.datadog.gradle.config
 
 import com.android.build.api.dsl.CompileOptions

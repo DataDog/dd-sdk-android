@@ -1142,6 +1142,47 @@ internal class KotlinFileVisitorTest {
         )
     }
 
+    @Test
+    fun `M preserve modifier order W visitFile() {aliased deprecation}`() {
+        // Given
+        tempFile.writeText(
+            """
+            package foo.bar
+            import kotlin.Deprecated as Obsolete
+
+            @Obsolete("Old")
+            open class Parent protected constructor() {
+                @Obsolete("Old")
+                protected open fun update(): Unit {}
+
+                @Obsolete("Old")
+                protected open val value: String = ""
+
+                @Obsolete("Old")
+                protected constructor(value: String) : this()
+            }
+
+            data class Entry(val value: String)
+            sealed class Result
+            """.trimIndent()
+        )
+
+        // When
+        testedVisitor.visitFile(tempFile)
+
+        // Then
+        assertThat(testedVisitor.description.toString()).isEqualTo(
+            "DEPRECATED open class foo.bar.Parent\n" +
+                "  constructor()\n" +
+                "  DEPRECATED protected open fun update(): Unit\n" +
+                "  DEPRECATED protected open val value: String\n" +
+                "  DEPRECATED protected constructor(String)\n" +
+                "data class foo.bar.Entry\n" +
+                "  constructor(String)\n" +
+                "sealed class foo.bar.Result\n"
+        )
+    }
+
     companion object {
         const val FILE_NAME = "file.kt"
     }

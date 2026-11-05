@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.domain
 
+import android.util.Log
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
@@ -1264,7 +1265,7 @@ internal class DatadogLogGeneratorTest {
     fun `M use status CRITICAL W creating the Log { level ASSERT }`() {
         // WHEN
         val log = testedLogGenerator.generateLog(
-            android.util.Log.ASSERT,
+            Log.ASSERT,
             fakeLogMessage,
             fakeThrowable,
             fakeAttributes,
@@ -1284,7 +1285,7 @@ internal class DatadogLogGeneratorTest {
     fun `M use status ERROR W creating the Log { level ERROR }`() {
         // WHEN
         val log = testedLogGenerator.generateLog(
-            android.util.Log.ERROR,
+            Log.ERROR,
             fakeLogMessage,
             fakeThrowable,
             fakeAttributes,
@@ -1324,7 +1325,7 @@ internal class DatadogLogGeneratorTest {
     fun `M use status WARN W creating the Log { level WARN }`() {
         // WHEN
         val log = testedLogGenerator.generateLog(
-            android.util.Log.WARN,
+            Log.WARN,
             fakeLogMessage,
             fakeThrowable,
             fakeAttributes,
@@ -1344,7 +1345,7 @@ internal class DatadogLogGeneratorTest {
     fun `M use status INFO W creating the Log { level INFO }`() {
         // WHEN
         val log = testedLogGenerator.generateLog(
-            android.util.Log.INFO,
+            Log.INFO,
             fakeLogMessage,
             fakeThrowable,
             fakeAttributes,
@@ -1364,7 +1365,7 @@ internal class DatadogLogGeneratorTest {
     fun `M use status DEBUG W creating the Log { level DEBUG }`() {
         // WHEN
         val log = testedLogGenerator.generateLog(
-            android.util.Log.DEBUG,
+            Log.DEBUG,
             fakeLogMessage,
             fakeThrowable,
             fakeAttributes,
@@ -1384,7 +1385,7 @@ internal class DatadogLogGeneratorTest {
     fun `M use status TRACE W creating the Log { level VERBOSE }`() {
         // WHEN
         val log = testedLogGenerator.generateLog(
-            android.util.Log.VERBOSE,
+            Log.VERBOSE,
             fakeLogMessage,
             fakeThrowable,
             fakeAttributes,

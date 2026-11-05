@@ -18,6 +18,7 @@ plugins {
     id("com.android.application")
     alias(libs.plugins.composeCompilerPlugin)
     id("datadogBuildConfig")
+    id("detekt-common")
 }
 
 android {

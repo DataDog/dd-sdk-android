@@ -32,6 +32,7 @@ import dev.openfeature.kotlin.sdk.Value
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -47,7 +48,7 @@ import org.junit.jupiter.params.provider.ValueSource
 
 @ExtendWith(ForgeExtension::class)
 @ForgeConfiguration(FlagsIntegrationForgeConfigurator::class)
-@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 internal class FlagsPrivacyTest {
     private lateinit var stubSdkCore: StubSDKCore
 

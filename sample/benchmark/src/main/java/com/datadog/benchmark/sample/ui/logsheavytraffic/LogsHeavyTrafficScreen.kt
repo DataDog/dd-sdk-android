@@ -46,6 +46,8 @@ internal fun LogsHeavyTrafficScreen(
                 .toSet()
         }
 
+        // Keep list observation on the standard computation pool in this benchmark.
+        @Suppress("InjectDispatcher")
         visibleItemChanges
             .distinctUntilChanged()
             .flowOn(Dispatchers.Default)

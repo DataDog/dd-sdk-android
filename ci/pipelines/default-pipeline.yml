@@ -155,7 +155,7 @@ analysis:ktlint:
 analysis:detekt:
   extends: .verification-gradle-job
   script:
-    - ./gradlew detekt --continue
+    - ./gradlew detektAll --continue
 
 analysis:android-lint:
   extends: .verification-gradle-job

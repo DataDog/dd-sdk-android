@@ -25,11 +25,6 @@ dependencies {
     detektPlugins(project(":tools:detekt"))
 }
 
-// This plugin only uses Detekt as an engine: these modules aren't linted, so keep the root `detekt` task away from them
-tasks.detekt {
-    isEnabled = false
-}
-
 @Suppress("UnstableApiUsage")
 val apiUsageReportElements = configurations.consumable("apiUsageReportElements") {
     attributes {

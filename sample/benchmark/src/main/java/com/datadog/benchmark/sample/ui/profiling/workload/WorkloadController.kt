@@ -19,6 +19,8 @@ internal class WorkloadController {
     @MainThread
     fun start(workload: Workload) {
         if (scope != null) return
+        // Profiling workloads deliberately exercise the standard computation pool.
+        @Suppress("InjectDispatcher")
         val newScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         scope = newScope
         workload.start(newScope)

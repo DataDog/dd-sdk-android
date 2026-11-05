@@ -42,9 +42,9 @@ class ProhibitLeavingStaticMocksExtension : AfterEachCallback {
         val annotationOnMethod =
             context.requiredTestMethod
                 .getAnnotation(ProhibitLeavingStaticMocksIn::class.java)
-        val annotationOnClass =
-            context.requiredTestClass
-                .getAnnotation(ProhibitLeavingStaticMocksIn::class.java)
+        val annotationOnClass = generateSequence(context.requiredTestClass) { it.superclass }.firstNotNullOfOrNull {
+            it.getAnnotation(ProhibitLeavingStaticMocksIn::class.java)
+        }
 
         val scanRoots = mutableListOf<KClass<*>>().apply {
             addAll(annotationOnMethod?.value ?: emptyArray())
@@ -206,7 +206,7 @@ class ProhibitLeavingStaticMocksExtension : AfterEachCallback {
                         property.isAccessible = true
                         // this place is extremely fragile: for lateinit we cannot call getter
                         // if property is not initialized - we get an error. Also, some properties
-                        // don't require instance to get the value and it is not clear how to
+                        // don't require instance to get the value, and it is not clear how to
                         // understand that, thing with javaGetter check is just a quick
                         // solution (but probably not the proper one).
                         if (isLateinit && property.javaField?.get(hostInstance) == null) {

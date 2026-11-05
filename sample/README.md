@@ -28,6 +28,20 @@ Building the app generates the database automatically:
 ./gradlew :sample:kotlin:assembleUs1Debug
 ```
 
+## Benchmark app validation
+
+Run the benchmark app's formatting, static analysis, and unit tests with:
+
+```shell
+./gradlew :sample:benchmark:ktlintFormat
+./gradlew :sample:benchmark:detekt :sample:benchmark:testDebugUnitTest
+```
+
+The profiling workloads and list observers deliberately use `Dispatchers.Default`
+for computation and `Dispatchers.IO` for file operations. These benchmark call sites
+suppress `InjectDispatcher` locally. The HTTP helper propagates coroutine
+cancellation to its caller instead of returning a network error result.
+
 ## Advanced configuration
 
 ### Remote API

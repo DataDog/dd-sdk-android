@@ -31,6 +31,7 @@ internal abstract class TextAndInputPrivacyTestBase<R : Activity> : BaseSessionR
 
     protected fun extractTextWireframesFromRequests(requests: List<HandledRequest>): List<JsonObject> {
         return extractRecordsFromRequests(requests)
+            .asSequence()
             .filter { it.get("type")?.asString == RECORD_TYPE_FULL_SNAPSHOT.toString() }
             .flatMap { record ->
                 val data = record.asJsonObject.get("data")?.asJsonObject
@@ -38,6 +39,7 @@ internal abstract class TextAndInputPrivacyTestBase<R : Activity> : BaseSessionR
             }
             .map { it.asJsonObject }
             .filter { it.get("type")?.asString == WIREFRAME_TYPE_TEXT }
+            .toList()
     }
 
     /**
