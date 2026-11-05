@@ -203,7 +203,8 @@ internal sealed class RumRawEvent {
     internal data class AddLongTask(
         val durationNs: Long,
         val target: String,
-        override val eventTime: Time
+        override val eventTime: Time,
+        val attributes: Map<String, Any?> = emptyMap()
     ) : RumRawEvent()
 
     internal data class SendCustomActionNow(

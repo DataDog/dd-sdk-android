@@ -644,9 +644,9 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun addLongTask(durationNs: Long, target: String) {
+    override fun addLongTask(durationNs: Long, target: String, attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.AddLongTask(durationNs, target, now())
+            RumRawEvent.AddLongTask(durationNs, target, now(), attributes.toMap())
         )
     }
 

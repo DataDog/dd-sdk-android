@@ -1573,6 +1573,7 @@ internal open class RumViewScope(
         insightsCollector.onLongTask(event.durationNs)
         val rumContext = getRumContext()
         val longTaskCustomAttributes = getCustomAttributes().toMutableMap().apply {
+            putAll(event.attributes)
             put(RumAttributes.LONG_TASK_TARGET, event.target)
         }
 
