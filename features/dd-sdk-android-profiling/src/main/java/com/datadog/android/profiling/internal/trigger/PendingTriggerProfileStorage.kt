@@ -29,7 +29,7 @@ internal class PendingTriggerProfileStorage(
     private val executor: ScheduledExecutorService,
     private val timeProvider: TimeProvider,
     private val internalLogger: InternalLogger? = null,
-    internal val callback: Callback
+    private val callback: Callback
 ) : PendingTriggerProfiles {
     private val lock = Any()
 

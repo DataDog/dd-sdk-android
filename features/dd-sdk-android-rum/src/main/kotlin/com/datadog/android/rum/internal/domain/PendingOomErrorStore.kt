@@ -84,7 +84,6 @@ internal class PendingOomErrorStore(
             val store = dataStore
             if (!isLoaded || store == null) return false
             store.setValue(KEY, event, VERSION, holdCallback(event), ErrorEventSerializer())
-            // Any later profile write result for a loaded one is ignored.
             heldError.also {
                 heldError = event
             }

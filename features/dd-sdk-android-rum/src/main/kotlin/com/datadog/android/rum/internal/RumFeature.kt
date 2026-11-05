@@ -524,7 +524,6 @@ internal class RumFeature(
             is InternalTelemetryEvent -> handleTelemetryEvent(event)
             is RumFlagEvaluationMessage -> handleFlagEvaluationEvent(event)
             is ProfilingAnrDetectedEvent -> handleProfilingAnrDetectedEvent(event)
-            // Off the sender's thread: the profiling feature may send these from its own executors.
             is ProfilerEvent.OomProfileWriteResult -> onContextThread {
                 pendingOomErrorStore.onOomProfileWriteResult(event.rumErrorId, event.isWritten)
             }

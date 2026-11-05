@@ -18,8 +18,13 @@ import com.datadog.android.profiling.internal.ProfilingFeature
 import com.datadog.android.profiling.internal.ProfilingStartReason
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.perfetto.ProfileType
+import java.util.concurrent.AbstractExecutorService
+import java.util.concurrent.Callable
+import java.util.concurrent.CancellationException
+import java.util.concurrent.Delayed
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 
 /**
  * Test handle around an internal [ProfilingFeature] for use from integration tests in
@@ -57,7 +62,7 @@ class ProfilingFeatureTestHandle internal constructor(
 
     /**
      * A profiler whose OOM trigger counts as registered while triggers are enabled, and which runs its tasks on the calling
-     * thread. Delayed tasks run on a daemon thread and are irrelevant to the OOM handshake.
+     * thread.
      */
     private class OomTriggerTestProfiler(
         private val delegate: Profiler = NoOpProfiler()
@@ -76,10 +81,58 @@ class ProfilingFeatureTestHandle internal constructor(
             callback?.onOomTriggerRegisteredChanged(enabled)
         }
 
-        override val scheduledExecutorService: ScheduledExecutorService =
-            object : ScheduledThreadPoolExecutor(1, { Thread(it).apply { isDaemon = true } }) {
-                override fun execute(command: Runnable) = command.run()
-            }
+        override val scheduledExecutorService: ScheduledExecutorService = SameThreadScheduledExecutor()
+    }
+
+    /** Runs tasks on the calling thread. Delayed tasks never run: none matters to the OOM handshake. */
+    private class SameThreadScheduledExecutor : AbstractExecutorService(), ScheduledExecutorService {
+        override fun execute(command: Runnable) = command.run()
+
+        override fun schedule(command: Runnable, delay: Long, unit: TimeUnit): ScheduledFuture<*> =
+            NeverRunFuture<Unit>()
+
+        override fun <V : Any?> schedule(callable: Callable<V>, delay: Long, unit: TimeUnit): ScheduledFuture<V> =
+            NeverRunFuture()
+
+        override fun scheduleAtFixedRate(
+            command: Runnable,
+            initialDelay: Long,
+            period: Long,
+            unit: TimeUnit
+        ): ScheduledFuture<*> = NeverRunFuture<Unit>()
+
+        override fun scheduleWithFixedDelay(
+            command: Runnable,
+            initialDelay: Long,
+            delay: Long,
+            unit: TimeUnit
+        ): ScheduledFuture<*> = NeverRunFuture<Unit>()
+
+        override fun shutdown() = Unit
+
+        override fun shutdownNow(): MutableList<Runnable> = mutableListOf()
+
+        override fun isShutdown(): Boolean = false
+
+        override fun isTerminated(): Boolean = false
+
+        override fun awaitTermination(timeout: Long, unit: TimeUnit): Boolean = true
+    }
+
+    private class NeverRunFuture<V> : ScheduledFuture<V> {
+        override fun getDelay(unit: TimeUnit): Long = Long.MAX_VALUE
+
+        override fun compareTo(other: Delayed): Int = 0
+
+        override fun cancel(mayInterruptIfRunning: Boolean): Boolean = true
+
+        override fun isCancelled(): Boolean = false
+
+        override fun isDone(): Boolean = false
+
+        override fun get(): V = throw CancellationException()
+
+        override fun get(timeout: Long, unit: TimeUnit): V = throw CancellationException()
     }
 
     companion object {

@@ -23,10 +23,10 @@ import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -84,7 +84,7 @@ class ProfilingRumHeldOomErrorTest {
         // Given
         val crashed = launch(forge, isProfilingFirst = false)
         val errorId = crashWithOom(crashed)
-        crashed.profiling.deliverOomTriggerResult(traceFile(forge), START_MS, END_MS)
+        crashed.profiling.deliverOomTrace(forge, traceFile(forge))
         assertThat(errorEvents(crashed.core)).isEmpty()
 
         // When
@@ -92,7 +92,7 @@ class ProfilingRumHeldOomErrorTest {
 
         // Then
         assertThat(profileErrorIds(next.core)).containsExactly(errorId)
-        assertThat(errorProfilingStatus(next.core, errorId)).isEqualTo("running")
+        assertThat(errorProfilingStatus(next.core, errorId)).isEqualTo(ErrorEvent.ProfilingStatus.RUNNING)
     }
 
     @Test
@@ -105,11 +105,11 @@ class ProfilingRumHeldOomErrorTest {
 
         // When
         val next = launch(forge, isProfilingFirst = true)
-        next.profiling.deliverOomTriggerResult(traceFile(forge), START_MS, END_MS)
+        next.profiling.deliverOomTrace(forge, traceFile(forge))
 
         // Then
         assertThat(profileErrorIds(next.core)).containsExactly(errorId)
-        assertThat(errorProfilingStatus(next.core, errorId)).isEqualTo("running")
+        assertThat(errorProfilingStatus(next.core, errorId)).isEqualTo(ErrorEvent.ProfilingStatus.RUNNING)
     }
 
     @Test
@@ -118,14 +118,14 @@ class ProfilingRumHeldOomErrorTest {
         val crashed = launch(forge, isProfilingFirst = false)
         val errorId = crashWithOom(crashed)
         val emptyTrace = File(tempDir, forge.anAlphabeticalString()).apply { writeBytes(ByteArray(0)) }
-        crashed.profiling.deliverOomTriggerResult(emptyTrace.absolutePath, START_MS, END_MS)
+        crashed.profiling.deliverOomTrace(forge, emptyTrace.absolutePath)
 
         // When
         val next = launch(forge, isProfilingFirst = true)
 
         // Then
         assertThat(profileErrorIds(next.core)).isEmpty()
-        assertThat(errorProfilingStatus(next.core, errorId)).isEqualTo("stopped")
+        assertThat(errorProfilingStatus(next.core, errorId)).isEqualTo(ErrorEvent.ProfilingStatus.STOPPED)
     }
 
     @Test
@@ -133,7 +133,7 @@ class ProfilingRumHeldOomErrorTest {
         // Given
         val crashed = launch(forge, isProfilingFirst = false)
         val errorId = crashWithOom(crashed)
-        crashed.profiling.deliverOomTriggerResult(traceFile(forge), START_MS, END_MS)
+        crashed.profiling.deliverOomTrace(forge, traceFile(forge))
         launch(forge, isProfilingFirst = false)
 
         // When
@@ -141,7 +141,7 @@ class ProfilingRumHeldOomErrorTest {
 
         // Then
         assertThat(profileErrorIds(third.core)).isEmpty()
-        assertThat(errorEvents(third.core).map { it.errorId() }).doesNotContain(errorId)
+        assertThat(errorEvents(third.core).map { it.error.id }).doesNotContain(errorId)
     }
 
     private class Launch(val core: StubSDKCore, val profiling: ProfilingFeatureTestHandle)
@@ -193,15 +193,19 @@ class ProfilingRumHeldOomErrorTest {
             .absolutePath
     }
 
-    private fun errorEvents(core: StubSDKCore): List<JsonObject> {
+    private fun errorEvents(core: StubSDKCore): List<ErrorEvent> {
         return core.eventsWritten(Feature.RUM_FEATURE_NAME)
-            .map { JsonParser.parseString(it.eventData).asJsonObject }
-            .filter { it.get("type")?.asString == "error" }
+            .filter { JsonParser.parseString(it.eventData).asJsonObject.get("type")?.asString == "error" }
+            .map { ErrorEvent.fromJson(it.eventData) }
     }
 
-    private fun errorProfilingStatus(core: StubSDKCore, errorId: String): String? {
-        val error = errorEvents(core).single { it.errorId() == errorId }
-        return error.getAsJsonObject("_dd")?.getAsJsonObject("profiling")?.get("status")?.asString
+    private fun errorProfilingStatus(core: StubSDKCore, errorId: String): ErrorEvent.ProfilingStatus? {
+        return errorEvents(core).single { it.error.id == errorId }.dd.profiling?.status
+    }
+
+    private fun ProfilingFeatureTestHandle.deliverOomTrace(forge: Forge, resultFilePath: String) {
+        val startMs = forge.aLong(min = 1L, max = 1_000_000_000L)
+        deliverOomTriggerResult(resultFilePath, startMs, startMs + forge.aLong(min = 1L, max = 1_000_000L))
     }
 
     private fun profileErrorIds(core: StubSDKCore): List<String> {
@@ -209,8 +213,6 @@ class ProfilingRumHeldOomErrorTest {
             .map { JsonParser.parseString(it.eventData).asJsonObject }
             .flatMap { it.getAsJsonObject("error")?.getAsJsonArray("id")?.map { id -> id.asString }.orEmpty() }
     }
-
-    private fun JsonObject.errorId(): String? = getAsJsonObject("error")?.get("id")?.asString
 
     private fun mapBackedPreferences(): SharedPreferencesStorage {
         return mock<SharedPreferencesStorage>().also { storage ->
@@ -229,8 +231,6 @@ class ProfilingRumHeldOomErrorTest {
     }
 
     companion object {
-        private const val START_MS = 1_000L
-        private const val END_MS = 2_000L
         private val mainLooper = MainLooperTestConfiguration()
 
         @TestConfigurationsProvider

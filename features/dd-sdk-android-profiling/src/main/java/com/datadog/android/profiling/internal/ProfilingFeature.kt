@@ -491,7 +491,7 @@ internal class ProfilingFeature(
                 }
 
                 override fun onDeferredOomProfileReady() {
-                    // Matched right away instead of waiting for yet another launch to upload it.
+                    // Written once RUM announces its held error, possibly already done.
                     onOomExecutor { writePendingOomProfileOfHeldError() }
                 }
 
@@ -530,29 +530,30 @@ internal class ProfilingFeature(
      * Sends RUM the profile write result of a RUM error held by a previous process, once it is
      * known. The result is "written" only after the profile batch write succeeded.
      */
-    @Suppress("ReturnCount")
     private fun onHeldOomError(rumErrorId: String) {
         // Announced on load and again on [ProfilerEvent.OomProfilingReady]: report once.
         if (heldOomErrorId == rumErrorId) return
         heldOomErrorId = rumErrorId
         val pending = ProfilingStorage.getPendingOomProfile(appContext)
-        if (pending?.rumErrorId == rumErrorId) {
-            writeHeldOomProfile(pending)
-            return
+        val isHeldErrorProfile = pending?.rumErrorId == rumErrorId
+        if (pending != null && !isHeldErrorProfile) dropPendingOomProfile(pending, LOG_PENDING_OOM_PROFILE_NOT_HELD)
+        when {
+            pending != null && isHeldErrorProfile -> writeHeldOomProfile(pending)
+            // The OS may still deliver the trigger result: its match writes the profile.
+            isAwaitingTriggerResult(rumErrorId) -> Unit
+            else -> sendOomProfileWriteResult(rumErrorId, isWritten = false)
         }
-        pending?.let { dropPendingOomProfile(it, LOG_PENDING_OOM_PROFILE_NOT_HELD) }
+    }
+
+    /** Whether the OOM gating event of [rumErrorId] can still be matched; it is removed otherwise. */
+    private fun isAwaitingTriggerResult(rumErrorId: String): Boolean {
         val gatingEvent = ProfilingStorage.getPendingOomGatingEvent(appContext)
-        if (gatingEvent?.rumErrorId == rumErrorId) {
-            val ageMs = sdkCore.timeProvider.getServerTimestampMillis() - gatingEvent.timestampMs
-            if (configuration.oomTriggerEnabled &&
-                ageMs < PendingTriggerProfileStorage.PENDING_OOM_PROFILE_MAX_AGE_MS
-            ) {
-                // The OS may still deliver the trigger result: its match writes the profile.
-                return
-            }
-            ProfilingStorage.removePendingOomGatingEvent(appContext)
-        }
-        sendOomProfileWriteResult(rumErrorId, isWritten = false)
+            ?.takeIf { it.rumErrorId == rumErrorId } ?: return false
+        val ageMs = sdkCore.timeProvider.getServerTimestampMillis() - gatingEvent.timestampMs
+        val isAwaiting = configuration.oomTriggerEnabled &&
+            ageMs < PendingTriggerProfileStorage.PENDING_OOM_PROFILE_MAX_AGE_MS
+        if (!isAwaiting) ProfilingStorage.removePendingOomGatingEvent(appContext)
+        return isAwaiting
     }
 
     private fun writePendingOomProfileOfHeldError() {

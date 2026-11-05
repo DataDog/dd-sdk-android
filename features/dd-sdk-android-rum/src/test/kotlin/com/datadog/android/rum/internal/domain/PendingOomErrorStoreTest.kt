@@ -439,16 +439,6 @@ internal class PendingOomErrorStoreTest {
         writtenEvent()
     }
 
-    private fun deferWriteScopes(): MutableList<() -> Unit> {
-        val deferred = mutableListOf<() -> Unit>()
-        whenever(mockRumScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
-            deferred.add { callback.invoke(mock(), { block -> block(mockBatchWriter) }) }
-            Unit
-        }
-        return deferred
-    }
-
     // endregion
 
     @Test
@@ -469,6 +459,16 @@ internal class PendingOomErrorStoreTest {
 
         // Then
         assertThat(result).isNull()
+    }
+
+    private fun deferWriteScopes(): MutableList<() -> Unit> {
+        val deferred = mutableListOf<() -> Unit>()
+        whenever(mockRumScope.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
+            deferred.add { callback.invoke(mock(), { block -> block(mockBatchWriter) }) }
+            Unit
+        }
+        return deferred
     }
 
     private val errorId: String

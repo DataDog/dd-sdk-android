@@ -786,9 +786,11 @@ internal open class RumViewScope(
         )
 
         val errorId = UUID.randomUUID().toString()
+        val isFatalOom = isFatal && event.throwable is OutOfMemoryError
+        val oomQuotaReason = if (isFatalOom) datadogContext.resolveProfilingQuotaReason(sessionId) else null
         // region profiling
         val profilingStatus = when {
-            isFatal && event.throwable is OutOfMemoryError -> resolveOomErrorProfilingStatus(datadogContext)
+            isFatalOom -> resolveOomErrorProfilingStatus(oomQuotaReason)
             // Fatal ANR comes from last session, in this case we don't attach it to Profiling Event.
             // TODO RUM-15344: address non-fatal ANR over Android API 30
             isFatal -> null
@@ -925,12 +927,12 @@ internal open class RumViewScope(
         }
 
         // A fatal OOM is held until the outcome of its OOM profile is known, when one may follow.
-        val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
         // The stored error ignores consent changes: only an error captured with consent is held.
-        val mayGetOomProfile = datadogContext.trackingConsent == TrackingConsent.GRANTED &&
+        val mayGetOomProfile = isFatalOom &&
+            datadogContext.trackingConsent == TrackingConsent.GRANTED &&
             datadogContext.isProfilingOomTriggerRegistered() &&
-            (quotaReason == null || quotaReason == QuotaReason.QUOTA_OK)
-        val pendingOomErrorStore = if (isFatal && event.throwable is OutOfMemoryError && mayGetOomProfile) {
+            (oomQuotaReason == null || oomQuotaReason == QuotaReason.QUOTA_OK)
+        val pendingOomErrorStore = if (mayGetOomProfile) {
             sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.unwrap<RumFeature>()?.pendingOomErrorStore
         } else {
             null
@@ -1839,15 +1841,9 @@ internal open class RumViewScope(
      * The OOM profile is captured by the OS trigger, not by a running profiler, and the profiling
      * feature drops it when the session's quota is denied.
      */
-    private fun resolveOomErrorProfilingStatus(datadogContext: DatadogContext): ErrorEvent.Profiling? {
-        val quotaReason = datadogContext.resolveProfilingQuotaReason(sessionId)
-        return when {
-            quotaReason != null -> ErrorEvent.Profiling(
-                status = ErrorEvent.ProfilingStatus.STOPPED,
-                quotaReason = quotaReason.toErrorQuotaReason()
-            )
-
-            else -> null
+    private fun resolveOomErrorProfilingStatus(quotaReason: QuotaReason?): ErrorEvent.Profiling? {
+        return quotaReason?.takeIf { it != QuotaReason.QUOTA_OK }?.let {
+            ErrorEvent.Profiling(status = ErrorEvent.ProfilingStatus.STOPPED, quotaReason = it.toErrorQuotaReason())
         }
     }
 
