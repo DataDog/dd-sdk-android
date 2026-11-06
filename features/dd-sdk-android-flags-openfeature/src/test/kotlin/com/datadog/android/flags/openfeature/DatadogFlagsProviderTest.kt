@@ -22,6 +22,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
+import com.datadog.android.flags.openfeature.internal.exposure.ExposureAdmissionHook
 import com.datadog.tools.unit.forge.BaseConfigurator
 import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.OpenFeatureAPI
@@ -189,12 +190,12 @@ internal class DatadogFlagsProviderTest {
     }
 
     @Test
-    fun `M return empty hooks list W hooks()`() {
+    fun `M return the exposure admission hook W hooks()`() {
         // When
         val hooks = provider.hooks
 
         // Then
-        assertThat(hooks).isEmpty()
+        assertThat(hooks).singleElement().isInstanceOf(ExposureAdmissionHook::class.java)
     }
 
     // region Primitive Type Evaluations

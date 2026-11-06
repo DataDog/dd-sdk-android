@@ -305,7 +305,8 @@ internal class DatadogFlagsClientTest {
             anyOrNull(),
             eq(expectedConsent),
             eq(fakeRequestedContext.targetingKey),
-            identityCaptor.capture()
+            identityCaptor.capture(),
+            eq(emptyMap())
         )
         assertThat(contextCaptor.allValues).containsExactly(fakeRequestedContext, fakeRequestedContext)
         assertThat(identityCaptor.firstValue.value).isEqualTo(
@@ -410,7 +411,7 @@ internal class DatadogFlagsClientTest {
         verify(mockEvaluationsFeature, times(4)).processEvaluation(
             keyCaptor.capture(), eq(fakeContext), variantCaptor.capture(), allocationCaptor.capture(),
             errorCaptor.capture(), messageCaptor.capture(), eq(fakeConsent), eq(fakeContext.targetingKey),
-            identityCaptor.capture()
+            identityCaptor.capture(), eq(emptyMap())
         )
         assertThat(keyCaptor.allValues).containsExactly("assigned", "assigned", "invalid", "missing")
         assertThat(variantCaptor.allValues).containsExactly(fakeBooleanFlag.variationKey, null, null, null)
@@ -448,13 +449,13 @@ internal class DatadogFlagsClientTest {
         val bridgeIdentityCaptor = argumentCaptor<EvaluationTargetingKey>()
         verify(mockEvaluationsFeature, times(2)).processEvaluation(
             eq(fakeFlagKey), eq(fakeContext), eq(fakeFlag.variationKey), eq(fakeFlag.allocationKey),
-            isNull(), isNull(), eq(false), eq(fakeContext.targetingKey), bridgeIdentityCaptor.capture()
+            isNull(), isNull(), eq(false), eq(fakeContext.targetingKey), bridgeIdentityCaptor.capture(), eq(emptyMap())
         )
         val missingIdentityCaptor = argumentCaptor<EvaluationTargetingKey>()
         verify(mockEvaluationsFeature).processEvaluation(
             eq(fakeFlagKey), isNull(), isNull(), isNull(), eq("PROVIDER_NOT_READY"),
             eq("Provider not ready - call setEvaluationContext() before resolving flags"),
-            eq(false), isNull(), missingIdentityCaptor.capture()
+            eq(false), isNull(), missingIdentityCaptor.capture(), eq(emptyMap())
         )
         assertThat(missingIdentityCaptor.firstValue.value).isNull()
         assertThat(bridgeIdentityCaptor.firstValue.value)
@@ -1469,7 +1470,8 @@ internal class DatadogFlagsClientTest {
             errorMessage = eq("Flag not found"),
             observeFullEvaluationData = eq(false),
             telemetryTargetingKey = eq(fakeContext.targetingKey),
-            preparedTargetingKey = eq(EvaluationTargetingKey.create(fakeContext.targetingKey, false))
+            preparedTargetingKey = eq(EvaluationTargetingKey.create(fakeContext.targetingKey, false)),
+            features = eq(emptyMap())
         )
     }
 
@@ -2146,7 +2148,7 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M not track exposure to backend W trackFlagSnapshotEvaluation() { trackExposures is false }`(forge: Forge) {
+    fun `M still record exposure W trackFlagSnapshotEvaluation() { trackExposures is false }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeFlagValue = forge.aBool()
@@ -2180,7 +2182,7 @@ internal class DatadogFlagsClientTest {
         testedClient.trackFlagSnapshotEvaluation(fakeFlagKey, fakeFlag, fakeContext)
 
         // Then
-        verifyNoInteractions(mockProcessor)
+        verify(mockProcessor).processEvent(fakeFlagKey, fakeContext, fakeFlag)
         verify(mockRumEvaluationLogger).logEvaluation(
             flagKey = fakeFlagKey,
             value = fakeFlag.variationKey
@@ -2272,7 +2274,8 @@ internal class DatadogFlagsClientTest {
             eq("INVALID_CONTEXT"),
             eq(false),
             eq(fakeRequested.targetingKey),
-            eq(EvaluationTargetingKey.create(fakeRequested.targetingKey, false))
+            eq(EvaluationTargetingKey.create(fakeRequested.targetingKey, false)),
+            eq(emptyMap())
         )
     }
 
@@ -2324,7 +2327,8 @@ internal class DatadogFlagsClientTest {
             isNull(),
             eq(fakeFlag.observeFullEvaluationData),
             eq(fakeContext.targetingKey),
-            eq(EvaluationTargetingKey.create(fakeContext.targetingKey, fakeFlag.observeFullEvaluationData))
+            eq(EvaluationTargetingKey.create(fakeContext.targetingKey, fakeFlag.observeFullEvaluationData)),
+            eq(emptyMap())
         )
         verify(mockRumEvaluationLogger).logEvaluation(fakeKey, fakeFlag.variationKey)
     }
