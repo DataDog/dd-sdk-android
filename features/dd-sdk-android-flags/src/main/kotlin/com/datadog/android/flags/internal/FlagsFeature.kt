@@ -139,8 +139,9 @@ internal class FlagsFeature(
         dataWriter = createDataWriter()
         // With exposure tracking off the cache still records, so evaluations keep correct exposure verdicts.
         processor = ExposureEventsProcessor(
-            writer = if (flagsConfiguration.trackExposures) dataWriter else NoOpRecordWriter(),
-            timeProvider = sdkCore.timeProvider
+            writer = dataWriter,
+            timeProvider = sdkCore.timeProvider,
+            writeEvents = flagsConfiguration.trackExposures
         )
     }
 

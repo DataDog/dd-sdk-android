@@ -893,6 +893,7 @@ datadog:
       - "kotlin.CharArray.constructor(kotlin.Int, kotlin.Function1)"
       - "kotlin.Double.coerceAtMost(kotlin.Double)"
       - "kotlin.Double.coerceIn(kotlin.Double, kotlin.Double)"
+      - "kotlin.Double.isFinite()"
       - "kotlin.Double.isNaN()"
       - "kotlin.Double.pow(kotlin.Int)"
       - "kotlin.Double.pow(kotlin.Double)"

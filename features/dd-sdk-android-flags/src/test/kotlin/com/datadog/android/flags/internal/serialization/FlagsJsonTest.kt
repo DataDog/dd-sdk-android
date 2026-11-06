@@ -185,6 +185,7 @@ internal class FlagsJsonTest {
             """{"key":"valid","value":null,"destinations":["HOOK"]}""",
             """{"key":"valid","value":{},"destinations":["HOOK"]}""",
             """{"key":"valid","value":[],"destinations":["HOOK"]}""",
+            """{"key":"valid","value":1e400,"destinations":["HOOK"]}""",
             """{"key":"valid","value":"value"}""",
             """{"key":"valid","value":"value","destinations":"HOOK"}""",
             """{"key":"valid","value":"value","destinations":[]}""",

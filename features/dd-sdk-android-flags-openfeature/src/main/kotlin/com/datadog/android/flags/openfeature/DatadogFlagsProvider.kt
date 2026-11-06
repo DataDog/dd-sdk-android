@@ -14,7 +14,6 @@ import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.FlagsClientState
-import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.openfeature.internal.adapters.convertToValue
 import com.datadog.android.flags.openfeature.internal.adapters.hookFeatures
 import com.datadog.android.flags.openfeature.internal.adapters.toDatadogEvaluationContext
@@ -93,7 +92,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
 
     private val exposureDecisions = ExposureDecisions()
 
-    override val metadata: ProviderMetadata = DatadogProviderMetadata(PROVIDER_NAME, exposureDecisions)
+    override val metadata: ProviderMetadata = DatadogProviderMetadata(PROVIDER_NAME, exposureDecisions, internalLogger)
 
     override val hooks: List<Hook<*>> = listOf(ExposureAdmissionHook(exposureDecisions))
 
@@ -197,7 +196,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
             errorCode = null,
             errorMessage = null,
             metadata = resolutionDetails.flagMetadata.toEvaluationMetadata()
-        ).also { register(it, resolutionDetails, resolution.recordExposure) }
+        ).also { register(it, resolution) }
     }
 
     override fun shutdown() {
@@ -262,15 +261,19 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     private fun <T : Any> evaluate(key: String, defaultValue: T): ProviderEvaluation<T> {
         val resolution = _FlagsInternalProxy(flagsClient).resolveDeferringExposure(key, defaultValue)
         return resolution.details.toProviderEvaluation()
-            .also { register(it, resolution.details, resolution.recordExposure) }
+            .also { register(it, resolution) }
     }
 
     private fun register(
         evaluation: ProviderEvaluation<*>,
-        details: ResolutionDetails<*>,
-        recordExposure: (() -> Boolean)?
+        resolution: _FlagsInternalProxy.DeferredExposureResolution<*>
     ) {
-        exposureDecisions.register(evaluation.metadata, details.hookFeatures(), recordExposure)
+        exposureDecisions.register(
+            evaluation.metadata,
+            resolution.details.hookFeatures(),
+            resolution.context,
+            resolution.recordExposure
+        )
     }
 
     private suspend fun setEvaluationContext(context: OpenFeatureEvaluationContext?) {

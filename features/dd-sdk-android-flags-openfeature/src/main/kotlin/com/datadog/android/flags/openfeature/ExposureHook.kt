@@ -16,6 +16,7 @@ import dev.openfeature.kotlin.sdk.Hook
 import dev.openfeature.kotlin.sdk.HookContext
 import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.Reason
+import dev.openfeature.kotlin.sdk.Value
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -35,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * later ones at debug level.
  *
  * @param callback receives each evaluation, on the evaluating thread. It must not do I/O.
- * @param internalLogger provides the logger for callback failures.
+ * @param internalLogger provides the logger when the evaluation is not from a Datadog provider.
  */
 class ExposureHook internal constructor(
     private val callback: ExposureCallback,
@@ -54,7 +55,7 @@ class ExposureHook internal constructor(
         val providerMetadata = ctx.providerMetadata as? DatadogProviderMetadata
         if (providerMetadata == null) {
             if (!warnedUnsupportedProvider.getAndSet(true)) {
-                log(InternalLogger.Level.WARN) { UNSUPPORTED_PROVIDER_MESSAGE }
+                log(internalLogger(), InternalLogger.Level.WARN) { UNSUPPORTED_PROVIDER_MESSAGE }
             }
             return
         }
@@ -63,7 +64,7 @@ class ExposureHook internal constructor(
             callback.onEvaluation(createEvaluation(ctx, details, providerMetadata))
         } catch (e: Throwable) {
             val level = if (callbackFailed.getAndSet(true)) InternalLogger.Level.DEBUG else InternalLogger.Level.WARN
-            log(level, e) { CALLBACK_FAILED_MESSAGE }
+            log(providerMetadata.internalLogger, level, e) { CALLBACK_FAILED_MESSAGE }
         }
     }
 
@@ -74,24 +75,21 @@ class ExposureHook internal constructor(
     ): ExposureEvaluation {
         val decisions = providerMetadata.exposureDecisions
         val decision = decisions.find(details)
-        val allocationKey = details.metadata.getString(ExposureMetadata.ALLOCATION_KEY)
         val isExposure = details.errorCode == null &&
             details.reason != Reason.ERROR.name &&
-            details.variant != null &&
-            allocationKey != null &&
-            details.metadata.getBoolean(ExposureMetadata.DO_LOG) == true
-        val cacheHit = if (isExposure) {
-            decisions.complete(details) ?: details.metadata.getBoolean(ExposureMetadata.EXPOSURE_CACHE_HIT)
+            decision?.isExposure == true
+        val cacheHit = if (isExposure) decisions.complete(details) else null
+        val subject = decision?.context
+        val context = if (subject != null) {
+            ImmutableContext(subject.targetingKey, subject.attributes.mapValues { Value.String(it.value) })
         } else {
-            null
+            ctx.ctx?.let { ImmutableContext(it.getTargetingKey(), it.asMap()) }
         }
-        val targetingKey = ctx.ctx?.getTargetingKey()
-        val context = ctx.ctx?.let { ImmutableContext(it.getTargetingKey(), it.asMap()) }
         return ExposureEvaluation(
             flagKey = details.flagKey,
             variant = details.variant,
-            allocationKey = allocationKey,
-            targetingKey = targetingKey?.takeIf { it.isNotEmpty() },
+            allocationKey = details.metadata.getString(ExposureMetadata.ALLOCATION_KEY),
+            targetingKey = (subject?.targetingKey ?: ctx.ctx?.getTargetingKey())?.takeIf { it.isNotEmpty() },
             evaluationContext = context,
             features = decision?.hookFeatures ?: emptyMap(),
             exposure = isExposure,
@@ -99,10 +97,15 @@ class ExposureHook internal constructor(
         )
     }
 
-    private fun log(level: InternalLogger.Level, throwable: Throwable? = null, message: () -> String) {
+    private fun log(
+        logger: InternalLogger,
+        level: InternalLogger.Level,
+        throwable: Throwable? = null,
+        message: () -> String
+    ) {
         @Suppress("TooGenericExceptionCaught") // Logging must not fail the evaluation either.
         try {
-            internalLogger().log(level, InternalLogger.Target.USER, message, throwable)
+            logger.log(level, InternalLogger.Target.USER, message, throwable)
         } catch (ignored: Throwable) {
             // Nothing else can report it.
         }

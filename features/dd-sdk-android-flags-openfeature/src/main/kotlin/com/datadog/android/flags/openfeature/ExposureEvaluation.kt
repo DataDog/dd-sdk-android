@@ -14,8 +14,10 @@ import dev.openfeature.kotlin.sdk.EvaluationContext
  * @property flagKey the flag key.
  * @property variant the selected variant key, or null when the default value was returned.
  * @property allocationKey the key of the selected allocation, or null when none was selected.
- * @property targetingKey the targeting key of the evaluation context, or null if it has none.
- * @property evaluationContext a copy of the evaluation context, or null if none was set.
+ * @property targetingKey the targeting key of [evaluationContext], or null if it has none.
+ * @property evaluationContext for an exposure or a split with features, a copy of the context that the evaluated
+ * assignment was fetched for: it identifies the exposed subject, and its attribute values are strings, as sent to
+ * Datadog. Otherwise a copy of the OpenFeature evaluation context, or null if none was set.
  * @property features the `HOOK` features of the selected split, keyed by feature key, for example
  * `holdout.key`. Each value is a [String], [Double] or [Boolean]. Empty when the split has none.
  */

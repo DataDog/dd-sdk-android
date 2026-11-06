@@ -42,7 +42,7 @@ internal class ExposureDecisionsTest {
     fun `M record once W complete() twice`(@BoolForgery fakeIsRecorded: Boolean) {
         // Given
         val metadata = newMetadata()
-        testedDecisions.register(metadata, emptyMap(), record(fakeIsRecorded))
+        testedDecisions.register(metadata, emptyMap(), null, record(fakeIsRecorded))
 
         // When
         val first = testedDecisions.complete(details(metadata))
@@ -58,7 +58,7 @@ internal class ExposureDecisionsTest {
     fun `M record nothing W complete() {failed evaluation}`() {
         // Given
         val metadata = newMetadata()
-        testedDecisions.register(metadata, emptyMap(), record(false))
+        testedDecisions.register(metadata, emptyMap(), null, record(false))
 
         // When
         val withErrorCode = testedDecisions.complete(details(metadata).copy(errorCode = ErrorCode.GENERAL))
@@ -73,7 +73,7 @@ internal class ExposureDecisionsTest {
     @Test
     fun `M match by identity W complete() {equal metadata of another evaluation}`() {
         // Given
-        testedDecisions.register(newMetadata(), emptyMap(), record(false))
+        testedDecisions.register(newMetadata(), emptyMap(), null, record(false))
 
         // When
         val result = testedDecisions.complete(details(newMetadata()))
@@ -87,7 +87,7 @@ internal class ExposureDecisionsTest {
     fun `M keep the decision on its thread W complete() {other thread}`() {
         // Given
         val metadata = newMetadata()
-        testedDecisions.register(metadata, emptyMap(), record(false))
+        testedDecisions.register(metadata, emptyMap(), null, record(false))
         val executor = Executors.newSingleThreadExecutor()
 
         // When
@@ -106,7 +106,7 @@ internal class ExposureDecisionsTest {
         val metadata = List(17) { newMetadata() }
 
         // When
-        metadata.forEach { testedDecisions.register(it, emptyMap(), record(false)) }
+        metadata.forEach { testedDecisions.register(it, emptyMap(), null, record(false)) }
 
         // Then
         assertThat(testedDecisions.find(details(metadata.first()))).isNull()
@@ -121,7 +121,7 @@ internal class ExposureDecisionsTest {
         val features = mapOf("holdout.key" to "holdout-1")
 
         // When
-        testedDecisions.register(metadata, features, null)
+        testedDecisions.register(metadata, features, null, null)
 
         // Then
         assertThat(checkNotNull(testedDecisions.find(details(metadata))).hookFeatures).isEqualTo(features)
@@ -134,7 +134,7 @@ internal class ExposureDecisionsTest {
         val metadata = newMetadata()
 
         // When
-        testedDecisions.register(metadata, emptyMap(), null)
+        testedDecisions.register(metadata, emptyMap(), null, null)
 
         // Then
         assertThat(testedDecisions.find(details(metadata))).isNull()
