@@ -175,55 +175,7 @@ Before creating, editing, or reviewing test code, load and follow the project `s
 
 ## Unit Tests
 
-Test class boilerplate (JUnit5 + Mockito + Elmyr):
-
-```kotlin
-@Extensions(
-    ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
-)
-@MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
-internal class FooTest {
-    lateinit var testedFoo: Foo       // object under test: prefix "tested"
-    @Mock lateinit var mockBar: Bar   // mock being verified: prefix "mock"
-    @Mock lateinit var stubBaz: Baz   // mock with preset behavior: prefix "stub"
-    // fake data/fixtures: prefix "fake"
-
-    @Test
-    fun `M do something W foo() {some context}`(
-        @StringForgery fakeKey: String,
-        @Forgery fakeConfig: SomeConfig
-    ) {
-        // Given
-        // When
-        // Then
-    }
-}
-```
-
-Test method naming: `` `M <expected behavior> W <method()> {context}` ``
-
-Test rules:
-
-- Always split the body with `// Given`, `// When`, `// Then` comments. A test whose action and assertion are a single expression may use one `// When / Then` marker instead.
-- Use forged values (`@StringForgery`, `@Forgery`, `forge.anXxx()`) for incidental data whose exact value doesn't matter. Randomize values that could clash with defaults. Keep fixed literals when the value defines the tested behavior (boundary values such as a `0f` sample rate, protocol constants).
-- Use `checkNotNull(x)` for smart casts instead of `!!` or `?.`.
-- Use `argumentCaptor` instead of `argThat`, since `argThat` gives a generic failure message. Don't use `any()` when the argument can be asserted. Don't add a captor whose value is never read.
-- Omit `eq()` when all matchers would be `eq`. Omit `times(1)`, which is the default. Prefer `never()` instead of `times(0)`.
-- When verifying a log call, assert the message too, not only level and target.
-- Don't use `Thread.sleep` or `delay`, and avoid real threads in tests, because they make tests flaky. Use a same-thread executor or a fake time provider. Exception: tests whose purpose is concurrency (races, deadlocks) may use real threads, synchronized with latches and bounded waits (`await(timeout)`), never `sleep`.
-- Make sure the test fails if the behavior breaks: after writing it, briefly break the code under test (or invert the assertion) and check that the test goes red.
-- Don't test data class getters or language features. Remove tests already covered by another test. Merge near-duplicate tests with `@ParameterizedTest` or `@EnumSource`.
-- Don't use reflection or static mocks for code we own: they break silently on refactors. Change visibility to `internal` instead.
-- Use `assert*` helpers (AssertJ `assertThat`), never the Kotlin `assert` keyword, which is a no-op without a JVM flag.
-- E2E-style tests belong in `reliability/single-fit`, not in feature module unit tests.
-
-### Elmyr Forge
-
-Each module has a forge configurator (usually `Configurator` or `ForgeConfigurator`, typically under `src/test/.../forge/`) extending `BaseConfigurator` (from `tools/unit`). It registers all `ForgeryFactory` implementations for that module's types. Find the one referenced by `@ForgeConfiguration(...)` in the module's existing tests; don't create a new one. When adding a new data class used in tests, add a `ForgeryFactory` and register it in that configurator.
-
-Shared factories: `forge.useCoreFactories()` (from `dd-sdk-android-core` testFixtures).
+Unit test conventions (class boilerplate, naming, test rules, Elmyr Forge configurators) live in the `sdk-tests` skill.
 
 ## Integration Tests
 
@@ -263,8 +215,7 @@ To inspect the events the SDK emits from the sample app, use the `android-sdk-ev
 
 - Default branch for PRs: **`develop`**
 - Branch name format: `<username>/<ticket>/<short-description>`, e.g. `nogorodnikov/rum-18858/replace-argthat-with-captor`.
-- Commit title format: `<JIRA-KEY>-<number>: <short description>`, e.g. `RUM-18858: Replace argThat matchers with argument captors`. The Jira project varies (`RUM`, `RUMS`, `PANA`, `FFL`, `FFLSDK`, …).
-- Each commit must reference the ticket number in the title. If you don't know the ticket, ask for it; never invent one.
+- Commit messages and PR titles: follow the [`sdk-commit`](ai/skills/sdk-commit/SKILL.md) skill.
 
 # Pull Requests
 
