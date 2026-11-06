@@ -37,7 +37,7 @@ internal class MyClassTest {
 }
 ```
 
-Forge + Mockito (most tests). Use the module's existing forge configurator (see Elmyr Forge in `AGENTS.md`): find it via `@ForgeConfiguration(...)` in the module's tests and register new `ForgeryFactory` implementations there; don't create a new one.
+Forge + Mockito (most tests). Use the module's existing forge configurator (see [`Configurator`](#configurator)): find it via `@ForgeConfiguration(...)` in the module's tests and register new `ForgeryFactory` implementations there; don't create a new one.
 
 ```kotlin
 @Extensions(
@@ -100,6 +100,8 @@ fun `M return info and remove W unregister()`() {
 
 ## Test body — Given / When / Then
 
+Always split the body with `// Given`, `// When`, `// Then` comments. A test whose action and assertion are a single expression may use one `// When / Then` marker instead.
+
 ```kotlin
 @Test
 fun `M return monitor W registerIfAbsent(monitor) + get() {same sdkCore}`() {
@@ -144,6 +146,7 @@ lateinit var mockInternalLogger: InternalLogger
 
 - Mock vars → `mock` prefix: `mockSdkCore`, `mockLogger`, `mockBuilder`
 - Fake-data vars → `fake` prefix: `fakeRequestInfo`, `fakeUrl`, `fakeName`
+- Object under test → `tested` prefix; mocks with preset behavior that aren't verified → `stub` prefix
 
 ### Imports
 
@@ -197,7 +200,7 @@ Use `verify(mock, never()).method(...)` only when you need to assert that a *spe
 
 ### Prefer specific matchers over `any()` in `verify`
 
-Use `eq()` / `isA()` when the expected value is known. Use `any()` only when the argument is genuinely irrelevant or can't be asserted (e.g. in `never()` checks); don't add a captor just to avoid it.
+Use `eq()` / `isA()` when the expected value is known. Use `any()` only when the argument is genuinely irrelevant or can't be asserted (e.g. in `never()` checks); don't add a captor just to avoid it. Never add a captor whose value is never read.
 
 Omit defaults: no `times(1)`, and no `eq()` when every matcher would be `eq` (pass the values directly). Use `never()` instead of `times(0)`.
 
@@ -306,6 +309,8 @@ Available:
 - `@Forgery` — inject a forged instance of any registered type
 - For URL strings use regex `"http(s?)://[a-z]+\\.com/[a-z]+"`
 
+Forge incidental data whose exact value doesn't matter, and randomize values that could clash with defaults. Keep fixed literals when the value defines the tested behavior (boundary values such as a `0f` sample rate, protocol constants).
+
 ### `Forge` in `@BeforeEach`
 
 ```kotlin
@@ -341,7 +346,7 @@ internal class BatchDataForgeryFactory : ForgeryFactory<BatchData> {
 
 ### `Configurator`
 
-Each module has its own `Configurator`:
+Each module has one forge configurator (usually `Configurator` or `ForgeConfigurator`, typically under `src/test/.../forge/`) extending `BaseConfigurator` (from `tools/unit`). It registers all `ForgeryFactory` implementations for that module's types. Find the one referenced by `@ForgeConfiguration(...)` in the module's existing tests; don't create a new one. When adding a new data class used in tests, add a `ForgeryFactory` and register it in that configurator. Shared factories: `forge.useCoreFactories()` (from `dd-sdk-android-core` testFixtures).
 
 ```kotlin
 internal class Configurator : BaseConfigurator() {
@@ -355,6 +360,8 @@ internal class Configurator : BaseConfigurator() {
 Location: `src/test/kotlin/com/datadog/android/*/utils/forge/Configurator.kt`
 
 ## Assertions (AssertJ)
+
+Use AssertJ `assertThat` for value assertions, and never the Kotlin `assert` keyword (a no-op without a JVM flag); the assertion helpers documented below, such as `assertDoesNotThrow`, are the exception.
 
 ```kotlin
 import org.assertj.core.api.Assertions.assertThat
@@ -476,3 +483,9 @@ val value = checkNotNull(maybeNull) { "Expected non-null value" }
 // Bad
 val value = maybeNull!!
 ```
+
+12. **No sleeps or real threads** — no `Thread.sleep`/`delay`; use a same-thread executor or a fake time provider. Exception: tests whose purpose is concurrency (races, deadlocks) may use real threads synchronized with latches and bounded `await(timeout)`, never `sleep`.
+13. **Prove it can fail** — after writing a test, briefly break the code under test (or invert the assertion) and check it goes red.
+14. **No low-value tests** — don't test data class getters or language features; remove tests covered by another test; merge near-duplicates with `@ParameterizedTest` / `@EnumSource`.
+15. **No reflection or static mocks for code we own** — they break silently on refactors; make the member `internal` instead.
+16. **E2E-style tests** belong in `reliability/single-fit`, not in feature module unit tests.
