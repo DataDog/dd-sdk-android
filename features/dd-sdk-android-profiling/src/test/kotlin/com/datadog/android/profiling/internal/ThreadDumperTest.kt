@@ -7,10 +7,13 @@
 package com.datadog.android.profiling.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.profiling.forge.Configurator
 import com.datadog.android.profiling.internal.utils.ThreadDumper
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -20,9 +23,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -43,7 +43,7 @@ internal class ThreadDumperTest {
     ) {
         // Given
         val anrThread = Thread.currentThread()
-        val otherThread = Thread("worker")
+        val otherThread = Thread(forge.anAlphabeticalString())
         val otherStack = forge.aList { getForgery<StackTraceElement>() }.toTypedArray()
         val ignoredStack = forge.aList { getForgery<StackTraceElement>() }.toTypedArray()
         val testedDumper = ThreadDumper(
@@ -65,16 +65,19 @@ internal class ThreadDumperTest {
         assertThat(dump.anrThreadName).isEqualTo(anrThread.name)
         assertThat(dump.anrThreadState).isEqualTo(anrThread.state)
         assertThat(dump.allThreads).hasSize(1)
-        assertThat(dump.allThreads.first().name).isEqualTo("worker")
+        assertThat(dump.allThreads.first().name).isEqualTo(otherThread.name)
+        val expectedStack = otherStack.loggableStackTrace()
+        assertThat(dump.allThreads.single().stack).isEqualTo(expectedStack)
     }
 
     @Test
     fun `M skip threads with empty stack W dump()`(
+        @StringForgery fakeIdleName: String,
         @LongForgery fakeDetectedAtMs: Long
     ) {
         // Given
         val mainThread = Thread.currentThread()
-        val idleThread = Thread("idle")
+        val idleThread = Thread(fakeIdleName)
         val testedDumper = ThreadDumper(
             mainThreadProvider = { Thread.currentThread() },
             allStackTracesProvider = {
@@ -96,14 +99,19 @@ internal class ThreadDumperTest {
     }
 
     @Test
-    fun `M return empty allThreads and log W getAllStackTraces throws`(
+    fun `M log error W dump() {stack capture reports error}`(
+        @StringForgery fakeMessage: String,
+        @StringForgery fakeErrorMessage: String,
         @LongForgery fakeDetectedAtMs: Long
     ) {
         // Given
-        val fakeBoom = RuntimeException("boom")
+        val fakeError = RuntimeException(fakeErrorMessage)
         val testedDumper = ThreadDumper(
             mainThreadProvider = { Thread.currentThread() },
-            allStackTracesProvider = { throw fakeBoom }
+            allStackTracesProvider = { onError ->
+                onError(fakeMessage, fakeError)
+                emptyMap()
+            }
         ).apply { internalLogger = mockInternalLogger }
 
         // When
@@ -111,13 +119,12 @@ internal class ThreadDumperTest {
 
         // Then
         assertThat(dump.allThreads).isEmpty()
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.MAINTAINER),
-            any<() -> String>(),
-            eq(fakeBoom),
-            eq(false),
-            eq(null)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            fakeMessage,
+            fakeError,
+            onlyOnce = true
         )
     }
 }
