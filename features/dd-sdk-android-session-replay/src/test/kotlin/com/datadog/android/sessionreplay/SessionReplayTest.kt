@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.remote.model.RemoteConfiguration
+import com.datadog.android.sessionreplay.SessionReplay.ALREADY_INITIALIZED_IN_CORE_ERROR
 import com.datadog.android.sessionreplay.SessionReplay.IS_ALREADY_REGISTERED_WARNING
 import com.datadog.android.sessionreplay.SessionReplay.UNEXPECTED_SDK_CORE_TYPE
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -36,8 +37,10 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -63,9 +66,11 @@ internal class SessionReplayTest {
     @Test
     fun `M register session replay feature W enable()`(
         @StringForgery fakePackageName: String,
-        @Forgery fakeSessionReplayConfiguration: SessionReplayConfiguration
+        @Forgery fakeSessionReplayConfiguration: SessionReplayConfiguration,
+        @Mock mockInternalLogger: InternalLogger
     ) {
-        // When
+        // Given
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         val fakeSessionReplayConfigurationWithMockRequirement = fakeSessionReplayConfiguration.copy(
             systemRequirementsConfiguration = mockSystemRequirementsConfiguration
         )
@@ -74,12 +79,15 @@ internal class SessionReplayTest {
         ) doAnswer {
             it.getArgument<() -> Unit>(1).invoke()
         }
+
+        // When
         SessionReplay.enable(
             fakeSessionReplayConfigurationWithMockRequirement,
             mockSdkCore
         )
 
         // Then
+        verifyNoInteractions(mockInternalLogger)
         argumentCaptor<SessionReplayFeature> {
             verify(mockSdkCore).registerFeature(capture())
 
@@ -133,10 +141,12 @@ internal class SessionReplayTest {
         @Forgery fakeSessionReplayConfiguration: SessionReplayConfiguration,
         @Mock mockCore1: InternalSdkCore,
         @Mock mockCore2: InternalSdkCore,
-        @Mock mockInternalLogger: InternalLogger
+        @Mock mockInternalLogger: InternalLogger,
+        @StringForgery fakeCoreName: String
     ) {
         // Given
         whenever(mockCore1.isCoreActive()).thenReturn(true)
+        whenever(mockCore1.name).thenReturn(fakeCoreName)
         whenever(mockCore1.internalLogger).thenReturn(mockInternalLogger)
         whenever(mockCore1.remoteConfiguration) doReturn null
         whenever(mockCore2.internalLogger).thenReturn(mockInternalLogger)
@@ -163,8 +173,9 @@ internal class SessionReplayTest {
         // Then
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER),
-            message = IS_ALREADY_REGISTERED_WARNING
+            target = InternalLogger.Target.USER,
+            message = ALREADY_INITIALIZED_IN_CORE_ERROR.format(Locale.US, fakeCoreName),
+            onlyOnce = true
         )
 
         mockInternalLogger.verifyLog(
@@ -173,6 +184,46 @@ internal class SessionReplayTest {
             message = IS_ALREADY_REGISTERED_WARNING
         )
         assertThat(SessionReplay.currentRegisteredCore?.get()).isEqualTo(mockCore1)
+    }
+
+    @Test
+    fun `M log error and register once W enable { session replay enabled twice on same core }`(
+        @Forgery fakeSessionReplayConfiguration: SessionReplayConfiguration,
+        @Mock mockCore: InternalSdkCore,
+        @Mock mockInternalLogger: InternalLogger,
+        @StringForgery fakeCoreName: String
+    ) {
+        // Given
+        whenever(mockCore.isCoreActive()).thenReturn(true)
+        whenever(mockCore.name).thenReturn(fakeCoreName)
+        whenever(mockCore.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockCore.remoteConfiguration) doReturn null
+        val fakeConfiguration = fakeSessionReplayConfiguration.copy(
+            systemRequirementsConfiguration = mockSystemRequirementsConfiguration
+        )
+        whenever(
+            mockSystemRequirementsConfiguration.runIfRequirementsMet(any(), any())
+        ) doAnswer {
+            it.getArgument<() -> Unit>(1).invoke()
+        }
+        SessionReplay.enable(fakeConfiguration, mockCore)
+
+        // When
+        SessionReplay.enable(fakeConfiguration, mockCore)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.USER,
+            message = ALREADY_INITIALIZED_IN_CORE_ERROR.format(Locale.US, fakeCoreName),
+            onlyOnce = true
+        )
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.DEBUG,
+            targets = listOf(InternalLogger.Target.TELEMETRY),
+            message = IS_ALREADY_REGISTERED_WARNING
+        )
+        verify(mockCore).registerFeature(any())
     }
 
     @Test

@@ -17,6 +17,7 @@ import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.applyRemoteConfiguration
 import java.lang.ref.WeakReference
+import java.util.Locale
 
 /**
  * An entry point to Datadog Session Replay feature.
@@ -24,6 +25,10 @@ import java.lang.ref.WeakReference
 object SessionReplay {
 
     @VisibleForTesting internal var currentRegisteredCore: WeakReference<SdkCore>? = null
+
+    internal const val ALREADY_INITIALIZED_IN_CORE_ERROR =
+        "Session Replay is already initialized in the SDK core instance \"%s\" " +
+            "and can only be initialized once. Ignoring the call to enable it."
 
     internal const val IS_ALREADY_REGISTERED_WARNING =
         "Session Replay is already enabled and does not support multiple instances. " +
@@ -81,7 +86,10 @@ object SessionReplay {
                 )
 
                 if (isAlreadyRegistered()) {
-                    logAlreadyRegisteredWarning(sdkCore.internalLogger)
+                    logAlreadyRegisteredWarning(
+                        sdkCore.internalLogger,
+                        currentRegisteredCore?.get()?.name.orEmpty()
+                    )
                 } else {
                     currentRegisteredCore = WeakReference(sdkCore)
                     sdkCore.registerFeature(sessionReplayFeature)
@@ -130,11 +138,12 @@ object SessionReplay {
     private fun isAlreadyRegistered() =
         currentRegisteredCore?.get()?.isCoreActive() == true
 
-    private fun logAlreadyRegisteredWarning(internalLogger: InternalLogger) {
+    private fun logAlreadyRegisteredWarning(internalLogger: InternalLogger, firstCoreName: String) {
         internalLogger.log(
             level = InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER),
-            messageBuilder = { IS_ALREADY_REGISTERED_WARNING }
+            target = InternalLogger.Target.USER,
+            messageBuilder = { ALREADY_INITIALIZED_IN_CORE_ERROR.format(Locale.US, firstCoreName) },
+            onlyOnce = true
         )
 
         internalLogger.log(
