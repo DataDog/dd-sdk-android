@@ -586,6 +586,40 @@ internal class RumViewScopeAttributePropagationTest {
         assertThat(result).isNotNull()
     }
 
+    @Test
+    fun `M send event with event attributes W handleEvent(AddLongTask) on active view`(
+        @LongForgery(0) fakeDuration: Long,
+        @StringForgery fakeTarget: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeEventAttributes = forge.exhaustiveAttributes(excludedKeys = fakeViewAttributes.keys)
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeParentAttributes)
+        expectedAttributes.putAll(fakeViewAttributes)
+        expectedAttributes.putAll(fakeEventAttributes)
+        expectedAttributes.put(RumAttributes.LONG_TASK_TARGET, fakeTarget)
+        testedScope = newRumViewScope(initialAttributes = fakeViewAttributes)
+        val fakeEvent = RumRawEvent.AddLongTask(
+            fakeDuration,
+            fakeTarget,
+            eventTime = fakeEventTime,
+            attributes = fakeEventAttributes
+        )
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<LongTaskEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .containsExactlyContextAttributes(expectedAttributes)
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNotNull()
+    }
+
     // endregion
 
     @Test

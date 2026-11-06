@@ -2007,11 +2007,42 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M snapshot attributes W addLongTask() {input map mutated after call}`(
+        @LongForgery duration: Long,
+        @StringForgery target: String,
+        @StringForgery fakeKey: String,
+        @StringForgery fakeValue: String,
+        @StringForgery fakeMutatedValue: String
+    ) {
+        // Given
+        val fakeLongTaskAttributes = mutableMapOf<String, Any?>(fakeKey to fakeValue)
+
+        // When
+        testedMonitor.addLongTask(duration, target, fakeLongTaskAttributes)
+        fakeLongTaskAttributes[fakeKey] = fakeMutatedValue
+        fakeLongTaskAttributes["$fakeKey-added"] = fakeMutatedValue
+
+        // Then
+        argumentCaptor<RumRawEvent> {
+            verify(mockApplicationScope).handleEvent(
+                capture(),
+                same(fakeDatadogContext),
+                same(mockEventWriteScope),
+                same(mockWriter)
+            )
+            val event = firstValue as RumRawEvent.AddLongTask
+            assertThat(event.attributes).containsExactlyEntriesOf(mapOf(fakeKey to fakeValue))
+        }
+    }
+
+    @Test
     fun `M delegate event to rootScope W addLongTask`(
         @LongForgery duration: Long,
-        @StringForgery target: String
+        @StringForgery target: String,
+        forge: Forge
     ) {
-        testedMonitor.addLongTask(duration, target)
+        val fakeLongTaskAttributes = forge.exhaustiveAttributes()
+        testedMonitor.addLongTask(duration, target, fakeLongTaskAttributes)
 
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
@@ -2023,6 +2054,8 @@ internal class DatadogRumMonitorTest {
 
             val event = firstValue as RumRawEvent.AddLongTask
             assertThat(event.durationNs).isEqualTo(duration)
+            assertThat(event.target).isEqualTo(target)
+            assertThat(event.attributes).isEqualTo(fakeLongTaskAttributes)
         }
         verifyNoMoreInteractions(mockWriter)
     }
