@@ -61,8 +61,7 @@ internal fun identifyRequest(request: Request): String {
         val contentLength = try {
             body.contentLength()
         } catch (@Suppress("SwallowedException") _: java.io.IOException) {
-            // TODO RUM-19010 Use -1 for unknown length after checking request identity compatibility.
-            0
+            -1L
         }
         val contentType = body.contentType()
         // TODO RUM-648 It is possible that if requests are say GZIPed (as an example), or maybe
@@ -98,7 +97,7 @@ internal class OkHttpRequestInfo(
     override fun contentLength(): Long? = try {
         originalRequest.body?.contentLength()
     } catch (@Suppress("SwallowedException") _: IOException) {
-        null
+        UNKNOWN_CONTENT_LENGTH
     }
 
     @WorkerThread
@@ -170,6 +169,7 @@ internal class OkHttpRequestInfo(
 
     internal companion object {
         const val ERROR_PEEK_REQUEST_BODY = "Unable to peek request body."
+        const val UNKNOWN_CONTENT_LENGTH = -1L
     }
 }
 
