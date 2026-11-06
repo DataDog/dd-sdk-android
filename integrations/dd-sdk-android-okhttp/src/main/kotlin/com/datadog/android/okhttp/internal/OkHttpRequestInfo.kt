@@ -61,7 +61,7 @@ internal fun identifyRequest(request: Request): String {
         val contentLength = try {
             body.contentLength()
         } catch (@Suppress("SwallowedException") _: java.io.IOException) {
-            -1L
+            OkHttpRequestInfo.UNKNOWN_CONTENT_LENGTH
         }
         val contentType = body.contentType()
         // TODO RUM-648 It is possible that if requests are say GZIPed (as an example), or maybe
