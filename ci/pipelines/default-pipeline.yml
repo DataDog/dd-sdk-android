@@ -45,7 +45,7 @@ stages:
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - |
       gradle_jvm_args=(
-        "-Xmx4096m"
+        "-Xmx8g"
         "-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG"
       )
 
