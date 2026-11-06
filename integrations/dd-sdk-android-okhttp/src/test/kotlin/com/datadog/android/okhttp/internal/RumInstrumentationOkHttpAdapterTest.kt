@@ -19,10 +19,13 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
 import okhttp3.Interceptor
+import okhttp3.MediaType
 import okhttp3.Protocol
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
+import okio.BufferedSink
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -127,6 +130,41 @@ internal class RumInstrumentationOkHttpAdapterTest {
             any()
         )
         assertThat(response).isSameAs(fakeResponse)
+    }
+
+    @Test
+    fun `M use same resource key on start and stop W intercept() { request body length throws }`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        val throwingBody = object : RequestBody() {
+            override fun contentLength(): Long = throw IOException("")
+            override fun contentType(): MediaType? = null
+            override fun writeTo(sink: BufferedSink) {
+                // no-op
+            }
+        }
+        val throwingRequest = Request.Builder().url(fakeUrl).post(throwingBody).build()
+        whenever(mockChain.request()) doReturn throwingRequest
+        whenever(mockCall.request()) doReturn throwingRequest
+        val fakeRequestBuilder = OkHttpRequestInfoBuilder(throwingRequest.newBuilder(), mockInternalLogger)
+            .addTag(UUID::class.java, fakeUuid)
+        val fakeState = RequestTracingState(requestInfoBuilder = fakeRequestBuilder, isDefaultTracer = false)
+        whenever(mockRegistry.get(mockCall)) doReturn fakeState
+        whenever(mockChain.proceed(any())) doReturn forgeResponse(statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val startCaptor = argumentCaptor<OkHttpRequestInfo>()
+        val stopCaptor = argumentCaptor<OkHttpRequestInfo>()
+        verify(mockRumNetworkInstrumentation).startResource(startCaptor.capture())
+        verify(mockRumNetworkInstrumentation).stopResource(stopCaptor.capture(), any<OkHttpResponseInfo>(), any())
+        val startKey = RumNetworkInstrumentation.buildResourceId(startCaptor.firstValue, false).key
+        val stopKey = RumNetworkInstrumentation.buildResourceId(stopCaptor.firstValue, false).key
+        assertThat(startKey).isEqualTo("POST•$fakeUrl•-1•null")
+        assertThat(stopKey).isEqualTo(startKey)
     }
 
     @Test

@@ -301,15 +301,27 @@ internal class OkHttpRequestResourceIdentifierTest {
     }
 
     @Test
-    fun `M return {GET url} W uniqueId {absent body}`() {
+    fun `M return key with -1 W identifyRequest() {exception thrown for content length}`() {
         // Given
-        val request = Request.Builder().get().url(fakeUrl).build()
+        val throwingRequest = Request.Builder()
+            .post(fakeRequestBody(contentLength = { throw IOException("") }, contentType = null))
+            .url(fakeUrl)
+            .build()
+        val emptyRequest = Request.Builder()
+            .post(ByteArray(0).toRequestBody(null))
+            .url(fakeUrl)
+            .build()
 
         // When
-        val actual = request.uniqueId
+        @Suppress("DEPRECATION")
+        val throwingKey = identifyRequest(throwingRequest)
+
+        @Suppress("DEPRECATION")
+        val emptyKey = identifyRequest(emptyRequest)
 
         // Then
-        assertThat(actual).isEqualTo("GET•$fakeUrl")
+        assertThat(throwingKey).isEqualTo("POST•$fakeUrl•-1•null")
+        assertThat(throwingKey).isNotEqualTo(emptyKey)
     }
 
     @Test
