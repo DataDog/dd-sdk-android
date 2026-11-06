@@ -71,7 +71,8 @@ internal class NdkCrashReportsFeature(
         registerSignalHandler(
             ndkCrashesDirs.absolutePath,
             consentToInt(internalSdkCore.trackingConsent),
-            TimeUnit.NANOSECONDS.toMillis(appStartTimestamp)
+            TimeUnit.NANOSECONDS.toMillis(appStartTimestamp),
+            shouldForwardFaultSignalsFirst(internalSdkCore.source)
         )
     }
 
@@ -132,7 +133,8 @@ internal class NdkCrashReportsFeature(
     private external fun registerSignalHandler(
         storagePath: String,
         consent: Int,
-        appStartTimeMs: Long
+        appStartTimeMs: Long,
+        forwardFaultSignalsFirst: Boolean
     )
 
     private external fun unregisterSignalHandler()
@@ -150,5 +152,11 @@ internal class NdkCrashReportsFeature(
         internal const val TRACKING_CONSENT_PENDING = 0
         internal const val TRACKING_CONSENT_GRANTED = 1
         internal const val TRACKING_CONSENT_NOT_GRANTED = 2
+
+        private const val MAUI_SOURCE = "maui"
+
+        // Mono (.NET) relies on fault signals for managed exceptions, so they are forwarded to it
+        // before being reported.
+        internal fun shouldForwardFaultSignalsFirst(source: String): Boolean = source == MAUI_SOURCE
     }
 }

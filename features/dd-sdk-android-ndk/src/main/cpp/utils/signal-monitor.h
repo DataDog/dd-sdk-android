@@ -21,6 +21,15 @@ extern "C" {
 bool start_monitoring();
 
 /**
+ * Forwards SIGSEGV, SIGBUS and SIGFPE to the previously installed handler first. They are neither
+ * reported nor uninstall the handlers if that handler recovered from them (e.g. Mono turning a
+ * fault into a managed NullReferenceException).
+ * Signal handlers are process-wide while SDK cores are not, so once enabled (the process hosts a
+ * managed runtime), forwarding stays enabled.
+ */
+void enable_forward_fault_signals_first(void);
+
+/**
  * Stop monitoring for fatal exceptions and reinstall previously-installed
  * handlers
  */

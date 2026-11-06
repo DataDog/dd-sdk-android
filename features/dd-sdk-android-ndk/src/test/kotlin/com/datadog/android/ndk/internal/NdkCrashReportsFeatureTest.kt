@@ -11,6 +11,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.unit.setFieldValue
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -49,8 +51,9 @@ class NdkCrashReportsFeatureTest {
     lateinit var tempDir: File
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(@StringForgery fakeSource: String) {
         whenever(mockSdkCore.timeProvider) doReturn mock()
+        whenever(mockSdkCore.source) doReturn fakeSource
         testedFeature = NdkCrashReportsFeature(mockSdkCore)
     }
 
@@ -73,6 +76,30 @@ class NdkCrashReportsFeatureTest {
         assertThat(testedFeature.consentToInt(TrackingConsent.NOT_GRANTED)).isEqualTo(
             NdkCrashReportsFeature.TRACKING_CONSENT_NOT_GRANTED
         )
+    }
+
+    @Test
+    fun `M return true W shouldForwardFaultSignalsFirst() {maui source}`() {
+        // When / Then
+        assertThat(NdkCrashReportsFeature.shouldForwardFaultSignalsFirst("maui")).isTrue()
+    }
+
+    @Test
+    fun `M return false W shouldForwardFaultSignalsFirst() {non maui source}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeSource = forge.anElementFrom(
+            "android",
+            "flutter",
+            "react-native",
+            "unity",
+            "kotlin-multiplatform",
+            forge.anAlphabeticalString()
+        )
+
+        // When / Then
+        assertThat(NdkCrashReportsFeature.shouldForwardFaultSignalsFirst(fakeSource)).isFalse()
     }
 
     @ParameterizedTest

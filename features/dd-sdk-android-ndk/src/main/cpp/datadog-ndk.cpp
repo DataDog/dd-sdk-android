@@ -160,11 +160,15 @@ Java_com_datadog_android_ndk_internal_NdkCrashReportsFeature_registerSignalHandl
         jobject /* this */,
         jstring storage_path,
         jint consent,
-        jlong app_start_time_millis) {
+        jlong app_start_time_millis,
+        jboolean forward_fault_signals_first) {
 
     update_main_context(env, storage_path);
     update_tracking_consent(consent);
     update_app_start_time_millis(app_start_time_millis);
+    if (forward_fault_signals_first == JNI_TRUE) {
+        enable_forward_fault_signals_first();
+    }
     start_monitoring();
 }
 
