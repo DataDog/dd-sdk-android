@@ -4,20 +4,22 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.tests.config
+package com.datadog.android.glide.tests.config
 
 import com.datadog.android.Datadog
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.utils.clearInstances
+import com.datadog.android.utils.registerInstance
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import fr.xgouchet.elmyr.Forge
 
-class DatadogSingletonTestConfiguration :
+internal class DatadogSingletonTestConfiguration :
     MockTestConfiguration<InternalSdkCore>(InternalSdkCore::class.java) {
 
     override fun setUp(forge: Forge) {
         super.setUp(forge)
 
-        Datadog.registry.register(null, mockInstance)
+        Datadog.registerInstance(null, mockInstance)
     }
 
     override fun tearDown(forge: Forge) {
@@ -26,6 +28,6 @@ class DatadogSingletonTestConfiguration :
     }
 
     fun clearRegistry() {
-        Datadog.registry.clear()
+        Datadog.clearInstances()
     }
 }

@@ -63,16 +63,9 @@ dependencies {
         }
     }
     testFixturesImplementation(libs.kotlinRuntime)
+    testFixturesImplementation(libs.gson)
     testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.bundles.testTools)
-    testFixturesImplementation(project(":tools:unit")) {
-        attributes {
-            attribute(
-                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
-                objects.named("jvm")
-            )
-        }
-    }
     unmock(libs.robolectric)
 }
 

@@ -229,7 +229,7 @@ Shared factories: `forge.useCoreFactories()` (from `dd-sdk-android-core` testFix
 
 `instrumented/integration`, `reliability/core-it` and `reliability/with-backend` contain instrumented tests that run on a connected device or emulator.
 
-`reliability/single-fit/*` contains E2E tests that run on the JVM without a device, e.g. `./gradlew :reliability:single-fit:rum:testReleaseUnitTest` (this is what CI runs).
+`reliability/single-fit/*` contains E2E tests that run on the JVM without a device, e.g. `./gradlew :reliability:single-fit:rum:testReleaseUnitTest` (this is what CI runs). The Flags module also has a privacy suite that runs on a connected device or emulator: `./gradlew :reliability:single-fit:flags:connectedReleaseAndroidTest`. Its README documents the exact-AAR option.
 
 ```bash
 ./gradlew instrumentTestAll                                        # all integration tests

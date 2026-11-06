@@ -8,9 +8,9 @@ package com.datadog.android.cronet
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.cronet.internal.DatadogCronetEngine
+import com.datadog.android.cronet.tests.config.DatadogSingletonTestConfiguration
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
-import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
 import com.datadog.android.tests.elmyr.aHostName
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkTracingScope

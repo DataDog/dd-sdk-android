@@ -12,6 +12,7 @@ import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -40,6 +41,38 @@ internal class FlagsStateDeserializerTest {
     @BeforeEach
     fun `set up`() {
         testedDeserializer = FlagsStateDeserializer(mockInternalLogger)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M preserve strict consent W deserialize() {empty plain or encoded cache}`(encoded: Boolean, forge: Forge) {
+        // Given
+        val fakeKey = forge.anAlphabeticalString()
+        val consentValues = listOf(true, false, JSONObject.NULL, "true", 1, JSONObject(), null)
+        val json = JSONObject(buildStateJson(fakeKey, JSONObject()))
+        if (encoded) {
+            json.remove("flags")
+            json.put("encodedFlags", JSONObject())
+            json.put("obfuscated", true)
+            json.put(
+                "obfuscation",
+                JSONObject().put("scheme", "flag-key-sha256-v1")
+                    .put("salt", "000102030405060708090a0b0c0d0e0f")
+            )
+        }
+
+        // When
+        val restored = consentValues.map { consent ->
+            json.put("observeFullEvaluationData", consent)
+            checkNotNull(testedDeserializer.deserialize(json.toString()))
+        }
+
+        // Then
+        assertThat(restored.map { it.observeFullEvaluationData })
+            .containsExactly(true, false, false, false, false, false, false)
+        assertThat(restored.map { it.flags }).allMatch { it.isEmpty() }
+        assertThat(restored.map { it.evaluationContext.targetingKey }).containsOnly(fakeKey)
+        assertThat(restored.map { it.obfuscation != null }).containsOnly(encoded)
     }
 
     @Test
@@ -358,6 +391,33 @@ internal class FlagsStateDeserializerTest {
         assertThat(result.evaluationContext.attributes["valid_boolean"]).isEqualTo(validBoolean)
     }
 
+    @Test
+    fun `M return no flag selection W deserialize() { state persisted without a flag selection }`(forge: Forge) {
+        // Given
+        val json = buildStateJson(forge.anAlphabeticalString(), JSONObject().put("flag1", buildFlagJson()))
+
+        // When
+        val result = testedDeserializer.deserialize(json)
+
+        // Then
+        checkNotNull(result)
+        assertThat(result.flagSelection).isNull()
+    }
+
+    @Test
+    fun `M return null W deserialize() { malformed flag selection }`(forge: Forge) {
+        // Given
+        val json = JSONObject(buildStateJson(forge.anAlphabeticalString(), JSONObject()))
+            .put("flagSelection", JSONObject().put("tags", JSONArray()))
+            .toString()
+
+        // When
+        val result = testedDeserializer.deserialize(json)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
     @ParameterizedTest
     @ValueSource(strings = ["null", "[]", "true", "0", "\"text\""])
     fun `M reject nonobject cache W deserialize() { generated model }`(json: String) {
@@ -428,7 +488,10 @@ internal class FlagsStateDeserializerTest {
         val restored = checkNotNull(testedDeserializer.deserialize(rewritten))
 
         // Then
-        assertThat(JsonParser.parseString(rewritten)).isEqualTo(JsonParser.parseString(legacy))
+        val expected = JsonParser.parseString(legacy).asJsonObject.apply {
+            addProperty("observeFullEvaluationData", false)
+        }
+        assertThat(JsonParser.parseString(rewritten)).isEqualTo(expected)
         assertThat(restored.evaluationContext).isEqualTo(loaded.evaluationContext)
         variants.forEachIndexed { index, variant ->
             assertThat(restored.flags.getValue("flag-$index").variationValue).isEqualTo(variant)

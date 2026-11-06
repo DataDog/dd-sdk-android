@@ -15,6 +15,8 @@ import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
+import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
+import com.datadog.android.flags.internal.selection.FlagSelectionError
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.utils.verifyLog
@@ -26,7 +28,9 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -37,6 +41,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -174,6 +179,91 @@ internal class FlagsFeatureTest {
         assertThat(
             testedFeature.precomputedRequestFactory
         ).isNotNull()
+    }
+
+    @Test
+    fun `M expose the canonical flag selection W constructor { valid selection }`() {
+        // When
+        val feature = FlagsFeature(
+            sdkCore = mockSdkCore,
+            flagsConfiguration = FlagsConfiguration.Builder()
+                .flagSelection(tags = listOf(" web", "mobile", "web"), keyPatterns = listOf("checkout-*"))
+                .build()
+        )
+
+        // Then
+        assertThat(feature.flagSelection)
+            .isEqualTo(CanonicalFlagSelection(tags = listOf("mobile", "web"), keyPatterns = listOf("checkout-*")))
+        assertThat(feature.precomputedRequestFactory.sendsFlagSelection).isTrue()
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("selectionsWithoutValues")
+    fun `M send no selection and log nothing W onInitialize() { no values after canonicalization }`(
+        description: String,
+        tags: List<String>?,
+        keyPatterns: List<String>?
+    ) {
+        // Given
+        val feature = FlagsFeature(
+            sdkCore = mockSdkCore,
+            flagsConfiguration = FlagsConfiguration.Builder()
+                .flagSelection(tags = tags, keyPatterns = keyPatterns)
+                .build()
+        )
+
+        // When
+        feature.onInitialize(mockContext)
+
+        // Then
+        assertThat(feature.flagSelection).describedAs(description).isNull()
+        assertThat(feature.precomputedRequestFactory.sendsFlagSelection).describedAs(description).isFalse()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            { "flagSelection" in it },
+            mode = never()
+        )
+        FlagSelectionError.entries.forEach {
+            mockInternalLogger.verifyLog(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.TELEMETRY,
+                "Flag selection dropped",
+                mode = never(),
+                additionalProperties = mapOf("reason" to it.reason)
+            )
+        }
+    }
+
+    @Test
+    fun `M log the dropped flag selection W onInitialize() { selection over a limit }`() {
+        // Given
+        val feature = FlagsFeature(
+            sdkCore = mockSdkCore,
+            flagsConfiguration = FlagsConfiguration.Builder()
+                .flagSelection(tags = List(32) { "tag-$it" }, keyPatterns = emptyList())
+                .build()
+        )
+
+        // When
+        feature.onInitialize(mockContext)
+
+        // Then
+        assertThat(feature.flagSelection).isNull()
+        assertThat(feature.precomputedRequestFactory.sendsFlagSelection).isFalse()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            "flagSelection was not sent (too_many_values: each list accepts at most 31 values). " +
+                "Loading the full flag configuration."
+        )
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.DEBUG,
+            InternalLogger.Target.TELEMETRY,
+            "Flag selection dropped",
+            onlyOnce = true,
+            additionalProperties = mapOf("reason" to "too_many_values")
+        )
     }
 
     @Test
@@ -468,4 +558,13 @@ internal class FlagsFeatureTest {
     }
 
     // endregion
+
+    companion object {
+        @JvmStatic
+        fun selectionsWithoutValues() = listOf(
+            Arguments.of("empty lists", emptyList<String>(), emptyList<String>()),
+            Arguments.of("whitespace-only values", listOf(" ", "\u3000"), listOf("")),
+            Arguments.of("null lists", null, null)
+        )
+    }
 }

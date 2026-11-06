@@ -12,9 +12,12 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.ExperimentationOptOutMode
+import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKey
+import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.persistence.FlagsPersistenceManager
+import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
 import java.util.concurrent.CountDownLatch
@@ -25,6 +28,7 @@ internal class DefaultFlagsRepository(
     private val featureSdkCore: FeatureSdkCore,
     instanceName: String,
     dataStore: DataStoreHandler,
+    flagSelection: CanonicalFlagSelection?,
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
     private val persistenceLoadTimeoutMs: Long = PERSISTENCE_LOAD_TIMEOUT_MS,
     private val deliverFirstFlags: (Runnable) -> Unit = Runnable::run,
@@ -33,8 +37,11 @@ internal class DefaultFlagsRepository(
     private data class FlagsState(
         val context: EvaluationContext,
         val flags: Map<String, PrecomputedFlag>,
-        val obfuscation: FlagKeyObfuscation?
+        val obfuscation: FlagKeyObfuscation?,
+        val observeFullEvaluationData: Boolean
     ) {
+        val telemetryTargetingKey = EvaluationTargetingKey.create(context.targetingKey, observeFullEvaluationData)
+
         operator fun get(key: String): PrecomputedFlag? =
             if (obfuscation == null) flags[key] else obfuscation.encode(key)?.let { flags[it] }
     }
@@ -52,15 +59,24 @@ internal class DefaultFlagsRepository(
     private val persistenceManager = FlagsPersistenceManager(
         dataStore = dataStore,
         instanceName = instanceName,
+        flagSelection = flagSelection,
         internalLogger = internalLogger,
         experimentationOptOutMode = experimentationOptOutMode
-    ) { persistedState ->
+    ) { loadedState ->
+        // State fetched with a different selection holds a different set of flags.
+        val persistedState = loadedState?.takeIf { it.flagSelection == flagSelection }
         val cachedState = try {
             persistedState?.let {
                 FlagsState(
                     it.evaluationContext,
-                    it.flags.mapValues { (_, flag) -> flag.copy(reason = ResolutionReason.CACHED.name) },
-                    it.obfuscation
+                    it.flags.mapValues { (_, flag) ->
+                        flag.copy(
+                            reason = ResolutionReason.CACHED.name,
+                            observeFullEvaluationData = it.observeFullEvaluationData
+                        )
+                    },
+                    it.obfuscation,
+                    it.observeFullEvaluationData
                 ).takeIf { state -> atomicState.compareAndSet(null, state) }
             }
         } finally {
@@ -76,17 +92,19 @@ internal class DefaultFlagsRepository(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
         obfuscation: FlagKeyObfuscation?,
+        observeFullEvaluationData: Boolean,
         onInstalled: () -> Unit
     ) {
-        installFlagsAndContext(context, flags, obfuscation).complete(onInstalled)
+        installFlagsAndContext(context, flags, obfuscation, observeFullEvaluationData).complete(onInstalled)
     }
 
     override fun installFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
-        obfuscation: FlagKeyObfuscation?
+        obfuscation: FlagKeyObfuscation?,
+        observeFullEvaluationData: Boolean
     ): FlagsInstallation {
-        val newState = FlagsState(context, flags, obfuscation)
+        val newState = FlagsState(context, flags, obfuscation, observeFullEvaluationData)
 
         val previousState = atomicState.getAndSet(newState)
         val firstInstallation = previousState == null ||
@@ -94,7 +112,7 @@ internal class DefaultFlagsRepository(
         persistenceLoadedLatch.countDown()
 
         return FlagsInstallation { onInstalled ->
-            persistFlags(context, flags, obfuscation)
+            persistFlags(context, flags, obfuscation, observeFullEvaluationData)
             try {
                 onInstalled()
             } finally {
@@ -106,7 +124,8 @@ internal class DefaultFlagsRepository(
     private fun persistFlags(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
-        obfuscation: FlagKeyObfuscation?
+        obfuscation: FlagKeyObfuscation?,
+        observeFullEvaluationData: Boolean
     ) {
         try {
             persistenceManager.saveFlagsState(
@@ -125,7 +144,8 @@ internal class DefaultFlagsRepository(
                         )
                     }
                 },
-                obfuscation = obfuscation
+                obfuscation = obfuscation,
+                observeFullEvaluationData = observeFullEvaluationData
             )
         } catch (
             // Storage submission failure must not abort an accepted installation.
@@ -181,20 +201,18 @@ internal class DefaultFlagsRepository(
         return readableState?.context
     }
 
-    override fun hasFlags(): Boolean {
+    override fun hasConfiguration(): Boolean {
         waitForPersistenceLoad()
-        return readableState?.flags?.isNotEmpty() ?: false
+        return readableState != null
     }
 
-    override fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean {
-        val state = readableState
-        return state?.context == context && state.flags.isNotEmpty()
-    }
+    override fun hasConfigurationForContext(context: EvaluationContext): Boolean =
+        readableState?.context == context
 
-    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>? {
+    override fun getEvaluationSnapshot(key: String): FlagEvaluationSnapshot? {
         val state = readableState ?: return null
         val flag = state[key]
-        return flag to state.context
+        return FlagEvaluationSnapshot(flag, state.context, state.observeFullEvaluationData, state.telemetryTargetingKey)
     }
 
     override fun waitForPersistenceLoad() {

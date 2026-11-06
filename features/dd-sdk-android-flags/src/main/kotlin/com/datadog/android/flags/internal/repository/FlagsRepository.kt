@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.internal.repository
 
+import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
@@ -18,7 +19,8 @@ internal interface FlagsRepository {
     fun installFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
-        obfuscation: FlagKeyObfuscation? = null
+        obfuscation: FlagKeyObfuscation? = null,
+        observeFullEvaluationData: Boolean = false
     ): FlagsInstallation
 
     /**
@@ -30,6 +32,7 @@ internal interface FlagsRepository {
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
         obfuscation: FlagKeyObfuscation? = null,
+        observeFullEvaluationData: Boolean = false,
         onInstalled: () -> Unit = {}
     )
 
@@ -37,10 +40,14 @@ internal interface FlagsRepository {
     fun waitForPersistenceLoad()
 
     // Nonblocking snapshot. Missing flags retain their context from the same atomic state read.
-    fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>?
+    fun getEvaluationSnapshot(key: String): FlagEvaluationSnapshot?
     val firstFlags: FirstFlagsLatch
-    fun hasFlags(): Boolean
-    fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean
+
+    /** True once a configuration is installed, including a valid configuration with zero flags. */
+    fun hasConfiguration(): Boolean
+
+    /** True when the installed configuration is for [context], including a valid configuration with zero flags. */
+    fun hasConfigurationForContext(context: EvaluationContext): Boolean
 
     @Deprecated("Use getAssignmentsSnapshot instead")
     fun getFlagsSnapshot(): Map<String, PrecomputedFlag>

@@ -93,6 +93,26 @@ val flagsConfig = FlagsConfiguration.Builder()
     .build()
 ```
 
+#### Load only selected flags
+
+To load only the flags that your app uses, set a flag selection. The SDK sends it with the flag request, and the server returns only the flags that have any of the tags or whose key matches any of the key patterns:
+
+```kotlin
+val flagsConfig = FlagsConfiguration.Builder()
+    .flagSelection(
+        tags = listOf("mobile"),
+        keyPatterns = listOf("checkout-*")
+    )
+    .build()
+```
+
+- Tags match exactly and are case-sensitive. A key pattern matches the whole flag key, and only `*` is a wildcard.
+- Each list accepts at most 31 values, and each value is at most 200 UTF-8 bytes. The SDK does not send a selection that is over a limit. It logs an error and loads the full flag configuration.
+- When the server applies the selection, evaluating a flag outside it returns the default value with `ErrorCode.FLAG_NOT_FOUND`.
+- The flag selection is fixed when the Flags feature is enabled and applies to every `FlagsClient`. Flags cached under a different selection are not loaded at startup; until the next successful fetch, a client starts without cached flags.
+- If the server ignores a selection, the SDK loads the full flag configuration and logs an error with the reason. A reason that the SDK does not know is reported as `unknown`.
+- With a custom flag endpoint, the proxy must forward the `DD-Flag-Selection-Ignored` response header. Otherwise, the SDK cannot report a selection that the server ignored.
+
 ## Use the Feature Flags SDK
 
 ### Create a Flags client
@@ -403,6 +423,27 @@ and `FlagsSubscription.unsubscribe`.
 
 The [Kotlin sample](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/SampleApplication.kt)
 registers an application-lifetime callback, logs keys, and evaluates `"my-flag-key"` with default `false`.
+
+## Evaluation telemetry privacy
+
+Evaluation telemetry protects targeting keys by default. Only a literal boolean `true` in the
+assignment response's `data.attributes.observeFullEvaluationData` enables raw targeting keys.
+Absent, false, null, or malformed consent values keep protection enabled without rejecting the
+assignments. Consent is cached with the assignments and changes on normal configuration refresh.
+Evaluations queued before a refresh retain the consent of the configuration they used.
+Experimentation opt-out does not change this consent setting. Errors for a pending or invalid
+requested context use consent from the latest accepted assignments response and the requested
+subject's targeting key. Before any accepted configuration is available, protection defaults to enabled.
+
+Protected nonempty targeting keys are SHA-256 hashes of the exact UTF-8 text, prefixed with
+`sha256_`. Empty keys remain empty; missing keys and malformed Unicode are omitted without losing
+the evaluation in both consent modes. Valid Unicode is preserved exactly, without normalization.
+Android continues to omit `context.evaluation` in both modes. The consent setting does
+not change evaluation inputs, assignment requests, exposure events, or RUM integration.
+
+Evaluation telemetry error messages contain stable error codes in both consent modes, with
+`GENERAL` for unknown failures. `trackEvaluations(false)` disables this track. Assignment `doLog`
+controls exposures independently.
 
 ## Integration with RUM
 

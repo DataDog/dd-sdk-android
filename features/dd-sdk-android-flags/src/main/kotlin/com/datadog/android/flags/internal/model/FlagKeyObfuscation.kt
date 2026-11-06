@@ -75,8 +75,3 @@ internal data class FlagKeyObfuscation private constructor(val salt: String) {
         }
     }
 }
-
-internal data class PrecomputedAssignments(
-    val flags: Map<String, PrecomputedFlag>,
-    val obfuscation: FlagKeyObfuscation? = null
-)
