@@ -153,7 +153,7 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
         if (client is DatadogFlagsClient) {
             client.resolveDeferringExposure(flagKey, defaultValue)
         } else {
-            DeferredExposureResolution(client.resolve(flagKey, defaultValue), null)
+            DeferredExposureResolution(client.resolve(flagKey, defaultValue), null, null)
         }
 
     /**
@@ -161,11 +161,13 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
      *
      * @param T the type of the flag value.
      * @property details the resolution. Its `__dd_exposure_cache_hit` metadata is provisional.
+     * @property context the evaluation context of the assignments that were read, or null when none were read.
      * @property recordExposure records the exposure, sends it unless exposure tracking is off, and returns
      * whether it was already recorded. Null when the resolution is not an exposure.
      */
     class DeferredExposureResolution<T : Any>(
         val details: ResolutionDetails<T>,
+        val context: EvaluationContext?,
         val recordExposure: (() -> Boolean)?
     )
 }

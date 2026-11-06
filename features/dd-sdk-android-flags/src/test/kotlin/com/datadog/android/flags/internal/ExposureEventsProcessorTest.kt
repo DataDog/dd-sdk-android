@@ -31,6 +31,7 @@ import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.atMost
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
@@ -109,6 +110,22 @@ internal class ExposureEventsProcessorTest {
         assertThat(variantChanged).isFalse()
         assertThat(serialChanged).isFalse()
         verify(mockRecordWriter, times(3)).write(any())
+    }
+
+    @Test
+    fun `M record without building events W processEvent() twice {writeEvents false}`() {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        testedProcessor = ExposureEventsProcessor(mockRecordWriter, mockTimeProvider, writeEvents = false)
+
+        // When
+        val first = testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
+        val second = testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
+
+        // Then
+        assertThat(first).isFalse()
+        assertThat(second).isTrue()
+        verifyNoInteractions(mockRecordWriter, mockTimeProvider)
     }
 
     @Test

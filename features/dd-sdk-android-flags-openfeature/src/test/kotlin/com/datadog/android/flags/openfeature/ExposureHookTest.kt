@@ -43,6 +43,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import com.datadog.android.flags.model.EvaluationContext as DatadogEvaluationContext
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -55,6 +56,9 @@ internal class ExposureHookTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockDefaultLogger: InternalLogger
+
     @StringForgery
     lateinit var fakeFlagKey: String
 
@@ -63,14 +67,15 @@ internal class ExposureHookTest {
 
     private val evaluations = mutableListOf<ExposureEvaluation>()
     private val decisions = ExposureDecisions()
-    private val providerMetadata = DatadogProviderMetadata("Datadog", decisions)
+    private lateinit var providerMetadata: DatadogProviderMetadata
     private lateinit var fakeContext: LiveContext
     private lateinit var testedHook: ExposureHook
 
     @BeforeEach
     fun `set up`() {
         fakeContext = LiveContext(fakeTargetingKey, mutableMapOf("plan" to Value.String("pro")))
-        testedHook = ExposureHook({ evaluations.add(it) }, { mockInternalLogger })
+        providerMetadata = DatadogProviderMetadata("Datadog", decisions, mockInternalLogger)
+        testedHook = ExposureHook({ evaluations.add(it) }, { mockDefaultLogger })
     }
 
     @Test
@@ -125,7 +130,7 @@ internal class ExposureHookTest {
         // Given
         var recorded = false
         val metadata = exposureMetadata(provisionalIsRecorded = false)
-        decisions.register(metadata, emptyMap()) {
+        decisions.register(metadata, emptyMap(), null) {
             recorded = true
             false
         }
@@ -162,6 +167,40 @@ internal class ExposureHookTest {
     }
 
     @Test
+    fun `M report no exposure W finallyAfter() {exposure keys in metadata without a decision}`() {
+        // Given
+        val details = FlagEvaluationDetails<Any>(fakeFlagKey, true, "on", metadata = exposureMetadata(false))
+
+        // When
+        testedHook.finallyAfter(hookContext(), details, emptyMap())
+
+        // Then
+        assertThat(evaluations.single().isExposure()).isFalse()
+        assertThat(evaluations.single().shouldSend()).isFalse()
+    }
+
+    @Test
+    fun `M identify the assignment subject W finallyAfter() {OpenFeature context changed}`(
+        @StringForgery fakeAssignmentKey: String
+    ) {
+        // Given
+        val metadata = exposureMetadata(false)
+        val assignmentContext = DatadogEvaluationContext(fakeAssignmentKey, mapOf("plan" to "pro"))
+        decisions.register(metadata, emptyMap(), assignmentContext) { false }
+        val details = FlagEvaluationDetails<Any>(fakeFlagKey, true, "on", metadata = metadata)
+
+        // When
+        testedHook.finallyAfter(hookContext(), details, emptyMap())
+
+        // Then
+        val evaluation = evaluations.single()
+        assertThat(evaluation.targetingKey).isEqualTo(fakeAssignmentKey)
+        val context = checkNotNull(evaluation.evaluationContext)
+        assertThat(context.getTargetingKey()).isEqualTo(fakeAssignmentKey)
+        assertThat(context.getValue("plan")).isEqualTo(Value.String("pro"))
+    }
+
+    @Test
     fun `M pass a copy of the context W finallyAfter()`() {
         // Given
         val details = exposureDetails(isRecorded = false)
@@ -189,7 +228,7 @@ internal class ExposureHookTest {
         // Then
         assertThat(evaluations).isEmpty()
         val messageCaptor = argumentCaptor<() -> String>()
-        verify(mockInternalLogger).log(
+        verify(mockDefaultLogger).log(
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.USER),
             messageCaptor.capture(),
@@ -207,7 +246,7 @@ internal class ExposureHookTest {
     fun `M log the first failure as a warning and later ones at debug level W finallyAfter() {callback throws}`() {
         // Given
         val failure = IllegalStateException("callback failed")
-        testedHook = ExposureHook({ throw failure }, { mockInternalLogger })
+        testedHook = ExposureHook({ throw failure }, { mockDefaultLogger })
 
         // When
         assertDoesNotThrow {
@@ -237,6 +276,7 @@ internal class ExposureHookTest {
         }
         assertThat(messageCaptor.allValues.map { it() })
             .containsOnly("Exposure callback failed; later failures are logged at debug level.")
+        verifyNoInteractions(mockDefaultLogger)
     }
 
     @Test
@@ -245,7 +285,7 @@ internal class ExposureHookTest {
         whenever(
             mockInternalLogger.log(any(), isA<InternalLogger.Target>(), any(), anyOrNull(), any(), anyOrNull())
         ) doThrow IllegalStateException("logger failed")
-        testedHook = ExposureHook({ throw IllegalStateException("callback failed") }, { mockInternalLogger })
+        testedHook = ExposureHook({ throw IllegalStateException("callback failed") }, { mockDefaultLogger })
 
         // When / Then
         assertDoesNotThrow {
@@ -259,7 +299,7 @@ internal class ExposureHookTest {
         testedHook.finallyAfter(hookContext(), exposureDetails(isRecorded = false), emptyMap())
 
         // Then
-        verifyNoInteractions(mockInternalLogger)
+        verifyNoInteractions(mockInternalLogger, mockDefaultLogger)
     }
 
     private fun exposureDetails(
@@ -268,7 +308,7 @@ internal class ExposureHookTest {
         features: Map<String, Any> = emptyMap()
     ): FlagEvaluationDetails<Any> {
         val metadata = exposureMetadata(provisionalIsRecorded)
-        decisions.register(metadata, features) { isRecorded }
+        decisions.register(metadata, features, null) { isRecorded }
         return FlagEvaluationDetails(fakeFlagKey, true, "on", metadata = metadata)
     }
 

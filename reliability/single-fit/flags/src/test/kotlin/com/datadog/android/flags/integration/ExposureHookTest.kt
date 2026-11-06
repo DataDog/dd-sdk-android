@@ -169,6 +169,23 @@ internal class ExposureHookTest {
         assertThat(context.getValue("plan")).isEqualTo(Value.String("pro"))
     }
 
+    @Test
+    fun `M report the assignment subject W getBooleanValue() {new subject refresh failed}`(forge: Forge) {
+        // Given
+        start(forge)
+        fixture.failAssignments()
+        runBlocking { OpenFeatureAPI.setEvaluationContextAndWait(ImmutableContext("other")) }
+
+        // When
+        OpenFeatureAPI.getClient().getBooleanValue(FLAG, false)
+        fixture.flush()
+
+        // Then
+        assertThat(evaluations.single().targetingKey).isEqualTo(SUBJECT)
+        assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME).single().getAsJsonObject("subject")["id"].asString)
+            .isEqualTo(SUBJECT)
+    }
+
     private fun start(
         forge: Forge,
         trackExposures: Boolean = true,

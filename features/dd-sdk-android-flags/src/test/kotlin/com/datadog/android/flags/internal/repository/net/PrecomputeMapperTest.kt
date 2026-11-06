@@ -73,7 +73,7 @@ internal class PrecomputeMapperTest {
     }
 
     @Test
-    fun `M keep features and warn once per unknown destination W map() {split features}`() {
+    fun `M warn once per response and unknown destination W map() twice {split features}`() {
         // Given
         val features = """[{"key":"a","value":"x","destinations":["HOOK","FUTURE"]},""" +
             """{"key":"b","value":1,"destinations":["FUTURE","OTHER"]},{"key":"c","value":{}}]"""
@@ -82,18 +82,20 @@ internal class PrecomputeMapperTest {
 
         // When
         val result = checkNotNull(testedMapper.map(response))
+        testedMapper.map(response)
 
         // Then
         assertThat(result.flags.values.map { it.features.map { feature -> feature.key } })
             .containsOnly(listOf("a", "b"))
-        assertThat(loggedMessages()).containsExactlyInAnyOrder(
-            "Ignoring unknown feature destination FUTURE",
-            "Ignoring unknown feature destination OTHER"
-        )
+        assertThat(loggedMessages(InternalLogger.Target.MAINTAINER))
+            .containsExactly("Ignoring unknown feature destinations: FUTURE, OTHER")
+        assertThat(loggedMessages(InternalLogger.Target.TELEMETRY))
+            .containsOnly("Ignoring unknown feature destinations")
+        assertThat(telemetryOnlyOnce()).containsOnly(true)
     }
 
     @Test
-    fun `M stop warning W map() {more unknown destinations than the warning cap}`() {
+    fun `M stop listing destinations W map() {more unknown destinations than the warning cap}`() {
         // Given
         val destinations = (0..64).joinToString(",") { "\"FUTURE_$it\"" }
         val response = """{"data":{"attributes":{"flags":{"flag":""" +
@@ -101,17 +103,25 @@ internal class PrecomputeMapperTest {
 
         // When
         testedMapper.map(response)
+        testedMapper.map(response)
 
         // Then
-        assertThat(loggedMessages()).hasSize(64)
-            .contains("Ignoring unknown feature destination FUTURE_63")
-            .doesNotContain("Ignoring unknown feature destination FUTURE_64")
+        val message = loggedMessages(InternalLogger.Target.MAINTAINER).single()
+        assertThat(message.removePrefix("Ignoring unknown feature destinations: ").split(", "))
+            .hasSize(64)
+            .contains("FUTURE_63")
+            .doesNotContain("FUTURE_64")
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun loggedMessages(): List<String> = mockingDetails(mockInternalLogger).invocations
-        .filter { it.arguments[0] == InternalLogger.Level.WARN }
-        .map { (it.arguments[2] as () -> String)() }
+    private fun loggedMessages(target: InternalLogger.Target): List<String> =
+        mockingDetails(mockInternalLogger).invocations
+            .filter { it.arguments[0] == InternalLogger.Level.WARN && it.arguments[1] == target }
+            .map { (it.arguments[2] as () -> String)() }
+
+    private fun telemetryOnlyOnce(): List<Any?> = mockingDetails(mockInternalLogger).invocations
+        .filter { it.arguments[1] == InternalLogger.Target.TELEMETRY }
+        .map { it.arguments[4] }
 
     private fun assignmentJson(features: String) =
         """{"variationType":"boolean","variationValue":true,"doLog":true,"allocationKey":"allocation",""" +

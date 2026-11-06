@@ -277,6 +277,7 @@ internal class DatadogFlagsClient(
             is InternalResolution.Success -> result
             is InternalResolution.Error -> return _FlagsInternalProxy.DeferredExposureResolution(
                 errorResolution(result),
+                null,
                 null
             )
         }
@@ -292,17 +293,18 @@ internal class DatadogFlagsClient(
             resolution.telemetryTargetingKey
         )
         val details = createSuccessResolution(flag, resolution.value, resolution.observeFullEvaluationData)
-        return if (flag.doLog && isCurrentResolutionContext(context)) {
+        val isExposure = flag.doLog && flag.variationKey.isNotBlank() && flag.allocationKey.isNotBlank()
+        return if (isExposure && isCurrentResolutionContext(context)) {
             val metadata = details.flagMetadata.toMutableMap()
             metadata[METADATA_DO_LOG] = true
             flag.serialId?.takeIf { it in Int.MIN_VALUE..Int.MAX_VALUE }
                 ?.let { metadata[METADATA_SPLIT_SERIAL_ID] = it.toInt() }
             metadata[METADATA_EXPOSURE_CACHE_HIT] = exposureProcessor.isRecorded(flagKey, context, flag)
-            _FlagsInternalProxy.DeferredExposureResolution(details.copy(flagMetadata = metadata)) {
+            _FlagsInternalProxy.DeferredExposureResolution(details.copy(flagMetadata = metadata), context) {
                 exposureProcessor.processEvent(flagKey, context, flag)
             }
         } else {
-            _FlagsInternalProxy.DeferredExposureResolution(details, null)
+            _FlagsInternalProxy.DeferredExposureResolution(details, context, null)
         }
     }
 
@@ -624,7 +626,7 @@ internal class DatadogFlagsClient(
         precomputedFlag.extraLogging.keys().forEach { key ->
             val value = precomputedFlag.extraLogging.opt(key)
             when (value) {
-                is String, is Number, is Boolean -> metadata[key] = value
+                is String, is Number, is Boolean -> if (!key.startsWith(RESERVED_METADATA_PREFIX)) metadata[key] = value
             }
         }
         if (precomputedFlag.allocationKey.isNotBlank()) {
@@ -873,6 +875,7 @@ internal class DatadogFlagsClient(
 
     private companion object {
         const val OBSERVE_FULL_EVALUATION_DATA_METADATA_KEY = "__dd_observe_full_evaluation_data"
+        const val RESERVED_METADATA_PREFIX = "__dd_"
         const val METADATA_DO_LOG = "__dd_do_log"
         const val METADATA_SPLIT_SERIAL_ID = "__dd_split_serial_id"
         const val METADATA_EXPOSURE_CACHE_HIT = "__dd_exposure_cache_hit"

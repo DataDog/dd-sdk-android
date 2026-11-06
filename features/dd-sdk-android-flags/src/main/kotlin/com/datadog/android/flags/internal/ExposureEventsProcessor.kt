@@ -16,8 +16,16 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.internal.time.TimeProvider
 
-internal class ExposureEventsProcessor(private val writer: RecordWriter, private val timeProvider: TimeProvider) :
-    EventsProcessor {
+/**
+ * @param writer receives the exposure events to send.
+ * @param timeProvider provides event timestamps.
+ * @param writeEvents false to record exposures in the cache without building or writing events.
+ */
+internal class ExposureEventsProcessor(
+    private val writer: RecordWriter,
+    private val timeProvider: TimeProvider,
+    private val writeEvents: Boolean = true
+) : EventsProcessor {
 
     private data class CacheKey(
         val targetingKey: String,
@@ -40,7 +48,7 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter, private
         synchronized(exposuresSentCache) {
             val isRecorded = exposuresSentCache[cacheKey] == cacheValue
             if (!isRecorded) {
-                writeExposureEvent(buildExposureEvent(flagKey, context, data))
+                if (writeEvents) writeExposureEvent(buildExposureEvent(flagKey, context, data))
                 @Suppress("UnsafeThirdPartyFunctionCall") // safe - non-null key and value
                 exposuresSentCache.put(cacheKey, cacheValue)
             }

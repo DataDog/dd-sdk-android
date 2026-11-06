@@ -35,7 +35,7 @@ internal object SplitFeaturesJson {
             when {
                 it.isString -> it.asString
                 it.isBoolean -> it.asBoolean
-                it.isNumber -> it.asDouble
+                it.isNumber -> it.asDouble.let { number -> if (number.isFinite()) number else null }
                 else -> null
             }
         }

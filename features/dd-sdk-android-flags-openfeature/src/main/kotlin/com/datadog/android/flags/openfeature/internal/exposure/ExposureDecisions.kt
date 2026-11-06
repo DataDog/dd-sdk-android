@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.openfeature.internal.exposure
 
+import com.datadog.android.flags.model.EvaluationContext
 import dev.openfeature.kotlin.sdk.EvaluationMetadata
 import dev.openfeature.kotlin.sdk.FlagEvaluationDetails
 import dev.openfeature.kotlin.sdk.Reason
@@ -18,12 +19,22 @@ import dev.openfeature.kotlin.sdk.Reason
  */
 internal class ExposureDecisions {
 
+    /**
+     * @param metadata the metadata instance that the provider returned for the evaluation.
+     * @param hookFeatures the `HOOK` features of the selected split.
+     * @param context the context of the assignment that was evaluated.
+     * @param recordExposure records the exposure; null when the evaluation is not an exposure.
+     */
     internal class Decision(
         val metadata: EvaluationMetadata,
         val hookFeatures: Map<String, Any>,
+        val context: EvaluationContext?,
         private val recordExposure: (() -> Boolean)?
     ) {
         private var isRecorded: Boolean? = null
+
+        val isExposure: Boolean
+            get() = recordExposure != null
 
         /** Records the exposure on the first call; returns whether it was already recorded, or null. */
         fun complete(): Boolean? {
@@ -36,11 +47,16 @@ internal class ExposureDecisions {
         override fun initialValue(): ArrayDeque<Decision> = ArrayDeque()
     }
 
-    fun register(metadata: EvaluationMetadata, hookFeatures: Map<String, Any>, recordExposure: (() -> Boolean)?) {
+    fun register(
+        metadata: EvaluationMetadata,
+        hookFeatures: Map<String, Any>,
+        context: EvaluationContext?,
+        recordExposure: (() -> Boolean)?
+    ) {
         if (hookFeatures.isEmpty() && recordExposure == null) return
         val queue = decisions.get() ?: return
         if (queue.size == MAX_DECISIONS_PER_THREAD) queue.removeFirstOrNull()
-        queue.addLast(Decision(metadata, hookFeatures, recordExposure))
+        queue.addLast(Decision(metadata, hookFeatures, context, recordExposure))
     }
 
     fun find(details: FlagEvaluationDetails<*>): Decision? =

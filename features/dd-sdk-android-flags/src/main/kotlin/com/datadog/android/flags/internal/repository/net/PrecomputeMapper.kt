@@ -49,9 +49,7 @@ internal class PrecomputeMapper(
                     observeFullEvaluationData = observeFullEvaluationData
                 )
             }
-            assignments.values.forEach { flag ->
-                flag.features.forEach { feature -> feature.destinations.forEach(::warnIfUnknownDestination) }
-            }
+            warnUnknownDestinations(assignments.values)
             PrecomputedAssignments(assignments, obfuscation, observeFullEvaluationData)
         } else {
             internalLogger.log(
@@ -89,18 +87,29 @@ internal class PrecomputeMapper(
         null
     }
 
-    private fun warnIfUnknownDestination(destination: String) {
-        if (destination in SplitFeature.KNOWN_DESTINATIONS) return
-        val isNew = synchronized(warnedDestinations) {
-            warnedDestinations.size < MAX_WARNED_DESTINATIONS && warnedDestinations.add(destination)
+    private fun warnUnknownDestinations(flags: Collection<PrecomputedFlag>) {
+        val unknown = mutableSetOf<String>()
+        flags.forEach { flag ->
+            flag.features.forEach { feature ->
+                feature.destinations.forEach { if (it !in SplitFeature.KNOWN_DESTINATIONS) unknown.add(it) }
+            }
         }
-        if (isNew) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { "Ignoring unknown feature destination $destination" }
-            )
+        if (unknown.isEmpty()) return
+        val newDestinations = synchronized(warnedDestinations) {
+            unknown.filter { warnedDestinations.size < MAX_WARNED_DESTINATIONS && warnedDestinations.add(it) }
         }
+        if (newDestinations.isEmpty()) return
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            { "Ignoring unknown feature destinations: ${newDestinations.joinToString()}" }
+        )
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.TELEMETRY,
+            { "Ignoring unknown feature destinations" },
+            onlyOnce = true
+        )
     }
 
     private fun acknowledgesOptOut(options: JsonObject?, request: ExperimentationOptOut.Request?): Boolean {

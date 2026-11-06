@@ -30,6 +30,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -257,6 +259,56 @@ internal class DatadogFlagsClientExposureTest {
             anyOrNull(),
             eq(emptyMap())
         )
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["variationKey", "allocationKey"])
+    fun `M return no exposure W resolveDeferringExposure() {blank assignment key}`(blankKey: String) {
+        // Given
+        install(
+            if (blankKey == "variationKey") fakeFlag.copy(variationKey = " ") else fakeFlag.copy(allocationKey = "")
+        )
+
+        // When
+        val result = testedClient.resolveDeferringExposure(fakeFlagKey, false)
+
+        // Then
+        assertThat(result.recordExposure as Any?).isNull()
+        verify(mockProcessor, never()).isRecorded(any(), any(), any())
+    }
+
+    @Test
+    fun `M return the assignment context W resolveDeferringExposure()`() {
+        // Given
+        install(fakeFlag)
+
+        // When
+        val result = testedClient.resolveDeferringExposure(fakeFlagKey, false)
+
+        // Then
+        assertThat(result.context).isEqualTo(fakeContext)
+    }
+
+    @Test
+    fun `M drop reserved keys from extra logging W resolve()`() {
+        // Given
+        install(
+            fakeFlag.copy(
+                doLog = false,
+                extraLogging = JSONObject()
+                    .put("__dd_do_log", true)
+                    .put("__dd_exposure_cache_hit", false)
+                    .put("__dd_feature.holdout.key", "forged")
+                    .put("custom", "kept")
+            )
+        )
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, false)
+
+        // Then
+        assertThat(result.flagMetadata).containsEntry("custom", "kept")
+            .doesNotContainKeys("__dd_do_log", "__dd_exposure_cache_hit", "__dd_feature.holdout.key")
     }
 
     @Test

@@ -127,7 +127,8 @@ public final class com/datadog/android/flags/_FlagsInternalProxy {
 }
 
 public final class com/datadog/android/flags/_FlagsInternalProxy$DeferredExposureResolution {
-	public fun <init> (Lcom/datadog/android/flags/model/ResolutionDetails;Lkotlin/jvm/functions/Function0;)V
+	public fun <init> (Lcom/datadog/android/flags/model/ResolutionDetails;Lcom/datadog/android/flags/model/EvaluationContext;Lkotlin/jvm/functions/Function0;)V
+	public final fun getContext ()Lcom/datadog/android/flags/model/EvaluationContext;
 	public final fun getDetails ()Lcom/datadog/android/flags/model/ResolutionDetails;
 	public final fun getRecordExposure ()Lkotlin/jvm/functions/Function0;
 }

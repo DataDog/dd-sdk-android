@@ -6,17 +6,17 @@
 
 package com.datadog.android.flags.openfeature.internal.exposure
 
+import com.datadog.android.api.InternalLogger
 import dev.openfeature.kotlin.sdk.ProviderMetadata
 
 /** Identifies evaluations of a [com.datadog.android.flags.openfeature.DatadogFlagsProvider] in hooks. */
 internal class DatadogProviderMetadata(
     override val name: String,
-    val exposureDecisions: ExposureDecisions
+    val exposureDecisions: ExposureDecisions,
+    val internalLogger: InternalLogger
 ) : ProviderMetadata
 
 internal object ExposureMetadata {
     const val FEATURE_PREFIX = "__dd_feature."
-    const val DO_LOG = "__dd_do_log"
-    const val EXPOSURE_CACHE_HIT = "__dd_exposure_cache_hit"
     const val ALLOCATION_KEY = "allocationKey"
 }
