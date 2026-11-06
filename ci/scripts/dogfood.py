@@ -12,31 +12,26 @@ import os
 from argparse import ArgumentParser, Namespace
 from tempfile import TemporaryDirectory
 from typing import Tuple
-from xmlrpc.client import Boolean
 
 import requests
 from git import Repo
 
 TARGET_APP = "app"
-TARGET_DEMO = "demo"
 TARGET_GRADLE_PLUGIN = "gradle-plugin"
 
 REPOSITORIES = {
     TARGET_APP: "ddoghq/datadog-android",
-    TARGET_DEMO: "DataDog/shopist-android",
     TARGET_GRADLE_PLUGIN: "DataDog/dd-sdk-android-gradle-plugin",
     # Flutter is not needed because it pulls updates instead of being pushed them with the dogfood script.
 }
 
 FILE_PATH = {
     TARGET_APP: os.path.join("gradle", "libs.versions.toml"),
-    TARGET_DEMO: os.path.join("gradle", "libs.versions.toml"),
     TARGET_GRADLE_PLUGIN: os.path.join("gradle", "libs.versions.toml"),
 }
 
 PREFIX = {
     TARGET_APP: "datadog",
-    TARGET_DEMO: "datadogSdk",
     TARGET_GRADLE_PLUGIN: "datadogSdk",
 }
 
@@ -46,7 +41,7 @@ def parse_arguments(args: list) -> Namespace:
 
     parser.add_argument("-v", "--version", required=True, help="the version of the SDK")
     parser.add_argument("-t", "--target", required=True,
-                        choices=[TARGET_APP, TARGET_DEMO, TARGET_GRADLE_PLUGIN],
+                        choices=[TARGET_APP, TARGET_GRADLE_PLUGIN],
                         help="the target repository")
     parser.add_argument("-d", "--dry-run", required=False, dest="dry_run",
                         help="Don't push changes or create a PR.", action="store_true")
