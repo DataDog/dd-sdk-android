@@ -38,6 +38,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
@@ -134,6 +135,31 @@ internal class OkHttpRequestInfoTest {
 
         // Then
         assertThat(result).isEqualTo(fakeContentLength)
+    }
+
+    @Test
+    fun `M return -1 W contentLength() { request body throws }`() {
+        // Given
+        val mockRequestBody = mock<RequestBody> { on { contentLength() } doThrow IOException("") }
+        val mockRequest = mock<Request> { on { body } doReturn mockRequestBody }
+
+        // When
+        val result = OkHttpRequestInfo(mockRequest, mockInternalLogger).contentLength()
+
+        // Then
+        assertThat(result).isEqualTo(-1L)
+    }
+
+    @Test
+    fun `M return null W contentLength() { no request body }`() {
+        // Given
+        val mockRequest = mock<Request> { on { body } doReturn null }
+
+        // When
+        val result = OkHttpRequestInfo(mockRequest, mockInternalLogger).contentLength()
+
+        // Then
+        assertThat(result).isNull()
     }
 
     @Test
