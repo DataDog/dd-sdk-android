@@ -1783,7 +1783,9 @@ internal class EvaluationsManagerTest {
         testedManager.updateEvaluationsForContext(context, mockCallback)
 
         // Then
-        assertThat(checkNotNull(testedRepository.getPrecomputedFlag("flag")).variationValue).isEqualTo("true")
+        assertThat(
+            checkNotNull(testedRepository.getEvaluationSnapshot("flag")?.flag).variationValue
+        ).isEqualTo("true")
         verify(mockCallback).onSuccess()
 
         // Given
@@ -1804,7 +1806,9 @@ internal class EvaluationsManagerTest {
         val failure = argumentCaptor<NetworkRequestFailedException>()
         verify(mockCallback).onFailure(failure.capture())
         assertThat(failure.firstValue.message).isEqualTo("Unable to read the feature flags response.")
-        assertThat(checkNotNull(testedRepository.getPrecomputedFlag("flag")).variationValue).isEqualTo("true")
+        assertThat(
+            checkNotNull(testedRepository.getEvaluationSnapshot("flag")?.flag).variationValue
+        ).isEqualTo("true")
 
         // Given
         val otherContext = EvaluationContext("$fakeTargetingKey-other", emptyMap())
