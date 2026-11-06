@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal
 
 import android.app.Activity
 import android.app.Application
+import android.content.res.Resources
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.rum.GlobalRumMonitor
@@ -109,7 +110,7 @@ internal class RumFeaturePreLaunchStartupTest {
         doNothing().whenever(appContext.mockInstance).registerComponentCallbacks(any())
         doNothing().whenever(appContext.mockInstance).unregisterComponentCallbacks(any())
 
-        val mockResources = mock<android.content.res.Resources>()
+        val mockResources = mock<Resources>()
         whenever(appContext.mockInstance.resources) doReturn mockResources
         whenever(mockResources.configuration) doReturn mock()
 

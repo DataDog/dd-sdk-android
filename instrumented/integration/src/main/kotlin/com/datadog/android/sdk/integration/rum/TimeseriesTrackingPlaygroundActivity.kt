@@ -69,10 +69,10 @@ internal class TimeseriesTrackingPlaygroundActivity : Activity() {
         val inactivityField = RumSessionScope::class.java.getDeclaredField("sessionInactivityNanos")
             .apply { isAccessible = true }
         synchronized(monitor.rootScope) {
-            monitor.rootScope.childScopes.filterIsInstance<RumSessionScope>().forEach {
+            monitor.rootScope.childScopes.toList().forEach {
                 inactivityField.setLong(it, TimeUnit.MILLISECONDS.toNanos(SESSION_INACTIVITY_MS))
             }
-            monitor.sessionExpirationChecker.checkIntervalMs = SESSION_INACTIVITY_MS / 3
+            monitor.sessionExpirationChecker.checkIntervalMs = SESSION_EXPIRATION_CHECK_INTERVAL_MS
         }
     }
 
@@ -83,5 +83,6 @@ internal class TimeseriesTrackingPlaygroundActivity : Activity() {
         // expiry check interval (a third of it) after the last RUM event, or a batch is written while still tracked.
         const val BUFFER_SIZE = 20
         const val SESSION_INACTIVITY_MS = 10_000L
+        private const val SESSION_EXPIRATION_CHECK_INTERVAL_MS = SESSION_INACTIVITY_MS / 3
     }
 }

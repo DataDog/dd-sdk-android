@@ -15,6 +15,7 @@ import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
 import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkServiceImpl
 import dagger.Binds
+import dagger.Lazy
 import dagger.Module
 import dagger.Provides
 import io.ktor.client.HttpClient
@@ -40,7 +41,7 @@ internal interface NetworkModule {
         fun provideOkHttpClient(
             context: Context,
             config: BenchmarkConfig,
-            sdkCore: dagger.Lazy<SdkCore>
+            sdkCore: Lazy<SdkCore>
         ): OkHttpClient {
             return OkHttpClient.Builder().apply {
                 cache(Cache(File(context.cacheDir, "okhttp-cache"), OKHTTP_CACHE_SIZE_BYTES))

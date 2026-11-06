@@ -7,19 +7,22 @@
 package com.datadog.benchmark.sample.ui.profiling.workload
 
 import androidx.annotation.MainThread
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 
-internal class WorkloadController {
+internal class WorkloadController(
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
+) {
 
     private var scope: CoroutineScope? = null
 
     @MainThread
     fun start(workload: Workload) {
         if (scope != null) return
-        val newScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val newScope = CoroutineScope(SupervisorJob() + defaultDispatcher)
         scope = newScope
         workload.start(newScope)
     }

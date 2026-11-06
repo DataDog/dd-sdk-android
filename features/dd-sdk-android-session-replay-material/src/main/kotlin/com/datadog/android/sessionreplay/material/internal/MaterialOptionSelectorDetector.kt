@@ -8,10 +8,11 @@ package com.datadog.android.sessionreplay.material.internal
 
 import android.view.ViewGroup
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
+import com.google.android.material.R as MaterialR
 
 internal class MaterialOptionSelectorDetector : OptionSelectorDetector {
 
     override fun isOptionSelector(view: ViewGroup): Boolean {
-        return view.id == com.google.android.material.R.id.mtrl_picker_header
+        return view.id == MaterialR.id.mtrl_picker_header
     }
 }

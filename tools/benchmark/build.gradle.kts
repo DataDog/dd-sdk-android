@@ -16,6 +16,7 @@ plugins {
     // Build
     id("com.android.library")
     id("datadogBuildConfig")
+    id("detekt-common")
 
     // Publishing
     `maven-publish`

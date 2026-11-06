@@ -219,15 +219,42 @@ same feature from a Java source code.
 
 ### Code quality
 
-Our code uses [Detekt](https://detekt.dev/) static analysis with a shared configuration, slightly
-stricter than the default one. A Detekt check is ran on every PR to ensure that all new code
-follow this rule.
-
-To execute Detekt check, run:
+Our code uses [Detekt](https://detekt.dev/) static analysis on SDK modules, tools,
+samples, reliability tests, instrumented tests, and the separate `build-logic` build.
+CI and `local_ci.sh --analysis` run the complete check:
 
 ```shell
-./gradlew detekt
+./gradlew detektAll
 ```
+
+Detekt source analysis is temporarily disabled for `sample:kotlin` while its
+remaining findings, including legacy API usage, are addressed in
+[RUM-19669](https://datadoghq.atlassian.net/browse/RUM-19669). Its Kotlin build
+scripts remain covered by `detektScripts`. Re-enable its Detekt tasks after the
+cleanup and remove this exception from the coverage documentation.
+
+Use `./gradlew :<module>:detekt` to check one module, or
+`./gradlew :build-logic:detekt` for build tooling. The root `detekt` task also runs
+the complete check for compatibility with existing commands.
+
+Compiled Kotlin sources, tests, and test fixtures use type resolution. Android
+checks cover debug variants and include release variants when a module has
+release-specific Kotlin sources or tests. The regional sample apps (`sample:kotlin`
+and `sample:wear`) select only the `us1` flavor because all regions share sources
+and dependencies. Revisit these exclusions if region-specific sources or dependencies
+are added. Other flavor dimensions retain their existing coverage.
+
+The separate `detektScripts` task checks Kotlin build scripts, including those in
+`gradle/settings-plugin`, without type resolution. Rules that require types, such as
+`UnnecessaryFullyQualifiedName`, cannot run in that script task. Detekt does not
+analyze the Java implementation of the settings plugin.
+
+`detekt.yml` contains shared rules. SDK modules additionally load `detekt-sdk.yml`
+and the custom safe/unsafe-call configurations through `detekt-conventions`.
+Other modules apply `detekt-common`, which avoids a dependency on the SDK's custom
+rule module. Generated build output and the build-logic generator's expected-output
+fixtures are excluded. Source strings and resource fixtures used to test analysis
+tools are test data, not additional source sets.
 
 ### Code style
 

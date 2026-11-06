@@ -66,7 +66,7 @@ class ModelValidationTest {
     @ParameterizedTest
     @MethodSource("data")
     fun `validate model serialization and deserialization`(
-        @Suppress("unused") schemaResourcePath: String,
+        schemaResourcePath: String,
         outputInfo: OutputInfo,
         forge: Forge
     ) {
@@ -84,8 +84,8 @@ class ModelValidationTest {
 
             assertThat(generatedModel)
                 .overridingErrorMessage(
-                    "Deserialized model was not the same " +
-                        "with the serialized for type: [$type] and test iteration: [$it]\n" +
+                    "Deserialized model differs from the original for schema [$schemaResourcePath], " +
+                        "type [$type] and test iteration [$it]\n" +
                         " -  input: $entity \n" +
                         " -   json: $json \n" +
                         " - output: $generatedModel"
@@ -133,12 +133,18 @@ class ModelValidationTest {
     }
 
     private fun compareMapValues(v1: Any?, v2: Any?): Boolean {
-        return if (v1 is JsonElement) {
-            compareJsonElement(v1, v2)
-        } else if (v1 is Map<*, *> && v2 is Map<*, *>) {
-            mapTypeComparator.compare(v1, v2) == 0
-        } else {
-            v2 != v1
+        return when (v1) {
+            is JsonElement -> {
+                compareJsonElement(v1, v2)
+            }
+
+            is Map<*, *> if v2 is Map<*, *> -> {
+                mapTypeComparator.compare(v1, v2) == 0
+            }
+
+            else -> {
+                v2 != v1
+            }
         }
     }
 

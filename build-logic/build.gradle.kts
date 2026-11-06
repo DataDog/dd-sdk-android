@@ -4,9 +4,28 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import dev.detekt.gradle.Detekt
+
 plugins {
     `kotlin-dsl`
     alias(libs.plugins.ktlintGradlePlugin)
+    alias(libs.plugins.detektGradlePlugin)
+}
+
+detekt {
+    config.setFrom(file("../detekt.yml"))
+    basePath = layout.projectDirectory.dir("..")
+}
+
+tasks.withType<Detekt>().configureEach {
+    // These checked-in models are expected generator output; lint the generator and its tests.
+    exclude("**/com/example/model/**")
+}
+
+// The convention plugin is compiled by this build, so configure the same tasks directly here.
+tasks.named<Detekt>("detekt") {
+    isEnabled = false
+    dependsOn(tasks.named { it in setOf("detektMain", "detektTest") })
 }
 
 dependencies {

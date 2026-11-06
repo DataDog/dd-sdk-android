@@ -25,6 +25,7 @@ import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.openfeature.asOpenFeatureProvider
 import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.Value
+import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -167,7 +168,12 @@ internal class FutureExperimentationOptOutTest {
         val context = ImmutableContext("subject", mapOf(ATTRIBUTE to Value.Integer(123)))
 
         // When
-        val failure = runCatching { testedProvider.initialize(context) }.exceptionOrNull()
+        val failure = try {
+            testedProvider.initialize(context)
+            null
+        } catch (error: OpenFeatureError.InvalidContextError) {
+            error
+        }
         val result = testedProvider.getBooleanEvaluation("flag", false, context)
 
         // Then

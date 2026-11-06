@@ -157,7 +157,7 @@ class ProhibitLeavingStaticMocksExtensionTest {
 
     // region fake classes for test
 
-    @Suppress("unused")
+    @Suppress("unused", "UnusedPrivateProperty")
     object MockInObjectClass {
         private const val CONST_VAL = 2022L
         private val NON_CONST_VAL = Any()

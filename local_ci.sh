@@ -88,7 +88,7 @@ if [[ $ANALYSIS == 1 ]]; then
   fi
 
   echo "---- Detekt"
-  ./gradlew detekt --continue
+  ./gradlew detektAll --continue
 
   if [[ $COMPILE == 1 ]]; then
     echo "------ Detekt test pyramid rules"

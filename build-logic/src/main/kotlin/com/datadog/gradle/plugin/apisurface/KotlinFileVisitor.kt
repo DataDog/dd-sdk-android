@@ -11,10 +11,8 @@ import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreApplicationEnvironmentMod
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreProjectEnvironment
 import org.jetbrains.kotlin.cli.jvm.compiler.setupIdeaStandaloneExecution
 import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
-import org.jetbrains.kotlin.com.intellij.psi.PsiComment
-import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.com.intellij.psi.PsiWhiteSpace
 import org.jetbrains.kotlin.idea.KotlinFileType
+import org.jetbrains.kotlin.lexer.KtModifierKeywordToken
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.parsing.KotlinParserDefinition
 import org.jetbrains.kotlin.psi.KtClass
@@ -23,23 +21,17 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtEnumEntry
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtModifierListOwner
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
-import org.jetbrains.kotlin.psi.KtNullableType
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtPrimaryConstructor
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.KtSecondaryConstructor
-import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.KtTypeAlias
-import org.jetbrains.kotlin.psi.KtTypeElement
 import org.jetbrains.kotlin.psi.KtTypeParameter
-import org.jetbrains.kotlin.psi.KtTypeProjection
-import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUserType
 import java.io.File
 
@@ -54,19 +46,20 @@ import java.io.File
  * file records the API as it is declared.
  * Enum constructors are excluded because they are private even without an explicit modifier.
  */
+// Each declaration kind has its own rendering path.
+@Suppress("TooManyFunctions")
 class KotlinFileVisitor {
 
     val description = StringBuilder()
 
     private var pkg: String = ""
-    private val imports = mutableMapOf<String, String>()
+    private var typeRenderer = KotlinTypeRenderer(emptyMap())
 
     // region KotlinFileVisitor
 
     @Suppress("TooGenericExceptionCaught")
     fun visitFile(file: File) {
         val ktFile = PSI_FACTORY.createFile(file.name, file.readText())
-        imports.clear()
         try {
             visitKtFile(ktFile)
         } catch (e: Exception) {
@@ -82,11 +75,14 @@ class KotlinFileVisitor {
         val packageName = ktFile.packageDirective?.qualifiedName.orEmpty()
         pkg = if (packageName.isEmpty()) "" else "$packageName."
 
-        ktFile.importDirectives.forEach { directive ->
-            val imported = directive.importedFqName?.asString() ?: return@forEach
-            val alias = directive.aliasName
-            imports[alias ?: imported.substringAfterLast(".")] = imported
+        val imports = buildMap {
+            ktFile.importDirectives.forEach { directive ->
+                val imported = directive.importedFqName?.asString() ?: return@forEach
+                val alias = directive.aliasName
+                put(alias ?: imported.substringAfterLast("."), imported)
+            }
         }
+        typeRenderer = KotlinTypeRenderer(imports)
 
         ktFile.declarations.forEach { visitDeclaration(it, level = 0) }
     }
@@ -105,22 +101,24 @@ class KotlinFileVisitor {
             is KtNamedFunction -> visitFunctionDeclaration(declaration, level)
             is KtProperty -> visitProperty(declaration, level)
             is KtTypeAlias -> visitTypeAlias(declaration, level)
-            else -> ignoreDeclaration()
+            else -> Unit
         }
     }
 
     private fun visitTypeDeclaration(declaration: KtClassOrObject, level: Int, type: String) {
-        if (declaration.isInternal() || declaration.isPrivate()) return
+        if (declaration.isExcludedFromApi()) return
 
         description.append(INDENT.repeat(level))
 
         // Modifiers
-        if (declaration.isDeprecated()) description.append("DEPRECATED ")
-        if (declaration.isData()) description.append("data ")
-        if (declaration.isSealed()) description.append("sealed ")
-        if (declaration.isProtected()) description.append("protected ")
-        if (declaration.isOpen()) description.append("open ")
-        if (declaration.isAbstract()) description.append("abstract ")
+        appendModifiers(
+            declaration,
+            KtTokens.DATA_KEYWORD,
+            KtTokens.SEALED_KEYWORD,
+            KtTokens.PROTECTED_KEYWORD,
+            KtTokens.OPEN_KEYWORD,
+            KtTokens.ABSTRACT_KEYWORD
+        )
 
         when {
             declaration.isInterface() -> description.append("interface ")
@@ -155,7 +153,7 @@ class KotlinFileVisitor {
 
     private fun visitPrimaryConstructor(constructor: KtPrimaryConstructor, level: Int) {
         if (constructor.getContainingClassOrObject().isEnum()) return
-        if (constructor.isInternal() || constructor.isPrivate()) return
+        if (constructor.isExcludedFromApi()) return
 
         description.append(INDENT.repeat(level))
         description.append("constructor")
@@ -165,13 +163,12 @@ class KotlinFileVisitor {
 
     private fun visitSecondaryConstructor(constructor: KtSecondaryConstructor, level: Int) {
         if (constructor.getContainingClassOrObject().isEnum()) return
-        if (constructor.isInternal() || constructor.isPrivate()) return
+        if (constructor.isExcludedFromApi()) return
 
         description.append(INDENT.repeat(level))
 
         // Modifiers
-        if (constructor.isDeprecated()) description.append("DEPRECATED ")
-        if (constructor.isProtected()) description.append("protected ")
+        appendModifiers(constructor, KtTokens.PROTECTED_KEYWORD)
 
         description.append("constructor")
         visitParameters(constructor.valueParameters)
@@ -179,16 +176,18 @@ class KotlinFileVisitor {
     }
 
     private fun visitFunctionDeclaration(function: KtNamedFunction, level: Int) {
-        if (function.isInternal() || function.isPrivate()) return
+        if (function.isExcludedFromApi()) return
 
         description.append(INDENT.repeat(level))
 
         // Modifiers
-        if (function.isDeprecated()) description.append("DEPRECATED ")
-        if (function.isOverride()) description.append("override ")
-        if (function.isProtected()) description.append("protected ")
-        if (function.isOpen()) description.append("open ")
-        if (function.isAbstract()) description.append("abstract ")
+        appendModifiers(
+            function,
+            KtTokens.OVERRIDE_KEYWORD,
+            KtTokens.PROTECTED_KEYWORD,
+            KtTokens.OPEN_KEYWORD,
+            KtTokens.ABSTRACT_KEYWORD
+        )
 
         description.append("fun ")
 
@@ -200,7 +199,7 @@ class KotlinFileVisitor {
 
         // Receiver
         function.receiverTypeReference?.let {
-            description.append(it.typeName())
+            description.append(typeRenderer.render(it))
             description.append(".")
         }
 
@@ -213,7 +212,7 @@ class KotlinFileVisitor {
         // Return type
         function.typeReference?.let {
             description.append(": ")
-            description.append(it.typeName())
+            description.append(typeRenderer.render(it))
         }
 
         // EOL
@@ -221,17 +220,19 @@ class KotlinFileVisitor {
     }
 
     private fun visitProperty(property: KtProperty, level: Int) {
-        if (property.isInternal() || property.isPrivate()) return
+        if (property.isExcludedFromApi()) return
 
         description.append(INDENT.repeat(level))
 
         // Modifiers
-        if (property.isDeprecated()) description.append("DEPRECATED ")
-        if (property.isOverride()) description.append("override ")
-        if (property.isProtected()) description.append("protected ")
-        if (property.isOpen()) description.append("open ")
-        if (property.isAbstract()) description.append("abstract ")
-        if (property.isConst()) description.append("const ")
+        appendModifiers(
+            property,
+            KtTokens.OVERRIDE_KEYWORD,
+            KtTokens.PROTECTED_KEYWORD,
+            KtTokens.OPEN_KEYWORD,
+            KtTokens.ABSTRACT_KEYWORD,
+            KtTokens.CONST_KEYWORD
+        )
 
         // Property type
         if (property.isVar) {
@@ -249,7 +250,7 @@ class KotlinFileVisitor {
             "Public properties should use an explicit type. " +
                 "Error on property ${property.name}"
         }
-        description.append(propertyType.typeName())
+        description.append(typeRenderer.render(propertyType))
 
         // EOL
         description.append("\n")
@@ -264,7 +265,7 @@ class KotlinFileVisitor {
 
     private fun visitParentTypes(declaration: KtClassOrObject) {
         val parentSpecifiers = declaration.superTypeListEntries
-            .mapNotNull { it.typeReference?.typeName() }
+            .mapNotNull { it.typeReference?.let(typeRenderer::render) }
         if (parentSpecifiers.isNotEmpty()) {
             description.append(" : ")
             description.append(parentSpecifiers.joinToString(", "))
@@ -276,7 +277,7 @@ class KotlinFileVisitor {
         if (typeParameters.isEmpty()) return
         val generics = typeParameters.map { parameter ->
             val name = parameter.name.orEmpty()
-            val bound = parameter.extendsBound?.typeName()
+            val bound = parameter.extendsBound?.let(typeRenderer::render)
             name + (if (bound == null) "" else ": $bound")
         }
         description.append(generics.joinToString(", ", prefix = "<", postfix = ">"))
@@ -289,48 +290,40 @@ class KotlinFileVisitor {
     }
 
     private fun visitTypeAlias(typeAlias: KtTypeAlias, level: Int) {
-        if (typeAlias.isInternal() || typeAlias.isPrivate()) return
+        if (typeAlias.isExcludedFromApi()) return
 
         val name = typeAlias.declaredName()
         val type = typeAlias.getTypeReference()
 
         description.append(INDENT.repeat(level))
-        description.append("typealias $name = ${type?.typeName()}\n")
-    }
-
-    private fun ignoreDeclaration() {
-        // Do Nothing
+        description.append("typealias $name = ${type?.let(typeRenderer::render)}\n")
     }
 
     // endregion
 
     // region Internal/Ext/Modifiers
 
-    private fun KtClassOrObject.isSealed(): Boolean = this is KtClass && isSealed()
-
     private fun KtClassOrObject.isEnum(): Boolean = this is KtClass && isEnum()
 
     private fun KtClassOrObject.isInterface(): Boolean = this is KtClass && isInterface()
 
-    private fun KtModifierListOwner.isProtected(): Boolean = hasModifier(KtTokens.PROTECTED_KEYWORD)
+    private fun appendModifiers(declaration: KtModifierListOwner, vararg modifiers: KtModifierKeywordToken) {
+        if (declaration.isDeprecated()) description.append("DEPRECATED ")
+        modifiers.forEach { modifier ->
+            if (declaration.hasModifier(modifier)) {
+                description.append(modifier.value).append(' ')
+            }
+        }
+    }
 
-    private fun KtModifierListOwner.isPrivate(): Boolean = hasModifier(KtTokens.PRIVATE_KEYWORD)
-
-    private fun KtModifierListOwner.isInternal(): Boolean = hasModifier(KtTokens.INTERNAL_KEYWORD)
-
-    private fun KtModifierListOwner.isOpen(): Boolean = hasModifier(KtTokens.OPEN_KEYWORD)
-
-    private fun KtModifierListOwner.isAbstract(): Boolean = hasModifier(KtTokens.ABSTRACT_KEYWORD)
-
-    private fun KtModifierListOwner.isOverride(): Boolean = hasModifier(KtTokens.OVERRIDE_KEYWORD)
-
-    private fun KtModifierListOwner.isConst(): Boolean = hasModifier(KtTokens.CONST_KEYWORD)
+    private fun KtModifierListOwner.isExcludedFromApi(): Boolean =
+        hasModifier(KtTokens.INTERNAL_KEYWORD) || hasModifier(KtTokens.PRIVATE_KEYWORD)
 
     private fun KtModifierListOwner.isDeprecated(): Boolean {
         val annotations = modifierList?.annotationEntries.orEmpty()
         return annotations.any { entry ->
             val typeElement = entry.typeReference?.typeElement
-            typeElement is KtUserType && typeElement.userTypeName() in DEPRECATED_ANNOTATIONS
+            typeElement is KtUserType && typeRenderer.render(typeElement) in DEPRECATED_ANNOTATIONS
         }
     }
 
@@ -350,137 +343,11 @@ class KotlinFileVisitor {
         else -> null
     }
 
-    private fun KtTypeReference.typeName(): String {
-        val element = typeElement ?: return ""
-        return element.typeElementName()
-    }
-
-    private fun KtTypeElement.typeElementName(): String = when (this) {
-        is KtNullableType -> (innerType?.typeElementName() ?: "") + "?"
-        is KtFunctionType -> lambdaName()
-        is KtUserType -> userTypeName()
-        else -> text
-    }
-
-    /**
-     * Renders a user type the way the surface file records it: the qualifier chain as written,
-     * with only the first segment expanded through the file's imports.
-     */
-    private fun KtUserType.userTypeName(): String {
-        val segments = mutableListOf<KtUserType>()
-        var current: KtUserType? = this
-        while (current != null) {
-            segments.add(0, current)
-            current = current.qualifier
-        }
-
-        return segments.foldIndexed("") { index, aggregate, segment ->
-            val typeName = segment.referencedName.orEmpty()
-            val generics = segment.typeArgumentList?.arguments
-                ?.joinToString(", ", prefix = "<", postfix = ">") { it.projectionName() }
-                ?: ""
-            if (index == 0) {
-                (imports[typeName] ?: typeName) + generics
-            } else {
-                "$aggregate.$typeName$generics"
-            }
-        }
-    }
-
-    private fun KtTypeProjection.projectionName(): String =
-        typeReference?.typeName() ?: "*"
-
-    private fun KtFunctionType.lambdaName(): String {
-        val receiver = receiverTypeReference?.typeName()
-        val params = parameters.joinToString(", ") { it.typeReference?.typeName().orEmpty() }
-        val returns = returnTypeReference?.typeName().orEmpty()
-
-        return if (receiver == null) {
-            "($params) -> $returns"
-        } else {
-            "$receiver.($params) -> $returns"
-        }
-    }
-
     private fun KtParameter.parameterType(): String {
-        val typeName = typeReference?.typeName().orEmpty()
+        val typeName = typeReference?.let(typeRenderer::render).orEmpty()
         val default = defaultValue ?: return typeName
-        return "$typeName = ${default.normalizedText()}"
+        return "$typeName = ${KotlinDefaultValueRenderer.render(default)}"
     }
-
-    /**
-     * The expression rendered from its tokens alone, with all whitespace and comments dropped.
-     *
-     * The surface file records default values so reviewers can see them, but it should only
-     * change when the API does. Rendering the source verbatim lets a reformat, or a comment
-     * added inside a default value, mark the checked-in surface stale, and a default written
-     * across several lines breaks the one-declaration-per-line layout.
-     *
-     * Spacing is therefore derived from the tokens themselves rather than from the trivia
-     * between them: a space goes in only where leaving it out would run two tokens together
-     * into a different one (`to 1` must not become `to1`). That makes the rendering canonical
-     * — `foo(1,2)`, `foo(1, 2)` and `foo(1,/* note */2)` all come out as `foo(1,2)`.
-     *
-     * Tokens are walked rather than the text rewritten, so whitespace *inside* string literals
-     * is left alone.
-     */
-    private fun PsiElement.normalizedText(): String {
-        val builder = StringBuilder()
-        appendTokens(this, builder)
-        return builder.toString()
-    }
-
-    private fun appendTokens(element: PsiElement, builder: StringBuilder) {
-        when {
-            element is PsiComment || element is PsiWhiteSpace -> return
-
-            // A string literal is several tokens (quote, content, quote) but has to stay
-            // exactly as written, spaces included, so it is emitted as one unit.
-            element is KtStringTemplateExpression -> appendToken(element.text, builder)
-
-            element.firstChild == null -> appendToken(element.text, builder)
-
-            else -> {
-                var child = element.firstChild
-                while (child != null) {
-                    appendTokens(child, builder)
-                    child = child.nextSibling
-                }
-            }
-        }
-    }
-
-    private fun appendToken(token: String, builder: StringBuilder) {
-        if (token.isEmpty()) return
-        if (builder.isNotEmpty() && builder.needsSeparatorBefore(token)) {
-            builder.append(" ")
-        }
-        builder.append(token)
-    }
-
-    /**
-     * Whether a space belongs between what has been written so far and [token].
-     *
-     * This looks only at the two tokens, never at the source, which is what keeps the
-     * rendering independent of formatting and comments.
-     */
-    private fun StringBuilder.needsSeparatorBefore(token: String): Boolean {
-        val previous = last()
-        return when {
-            // An empty lambda stays tight: `{}`, never `{ }`.
-            previous == '{' && token == "}" -> false
-            // Lambdas are padded, so `remember{emptyMap()}` and `remember { emptyMap() }`
-            // both render as the latter.
-            previous == '{' || token == "{" || token == "}" -> true
-            // Otherwise a space only where the tokens would otherwise merge into one.
-            else -> previous.isIdentifierChar() && token.first().isIdentifierChar()
-        }
-    }
-
-    /** Quotes count, so `"a" to 1` keeps its spaces instead of collapsing to `"a"to 1`. */
-
-    private fun Char.isIdentifierChar(): Boolean =
-        isLetterOrDigit() || this == '_' || this == '`' || this == '"' || this == '\''
 
     // endregion
 

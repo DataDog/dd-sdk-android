@@ -104,8 +104,7 @@ class NoOpFactorySymbolProcessor(
      * dependencies, and comparing `KSType` instances resolved through different paths is unreliable.
      */
     private fun KSDeclaration.isRequiresOptInMarker(): Boolean {
-        if ((this as? KSClassDeclaration)?.classKind != ClassKind.ANNOTATION_CLASS) return false
-        return annotations.any {
+        return (this as? KSClassDeclaration)?.classKind == ClassKind.ANNOTATION_CLASS && annotations.any {
             it.annotationType.resolve().declaration.qualifiedName?.asString() == REQUIRES_OPT_IN_NAME
         }
     }
@@ -134,7 +133,9 @@ class NoOpFactorySymbolProcessor(
                             .map { it.declaration.containingFile }
                             .plus(declarationSourceFile)
                             .filterNotNull()
-                            .flatMap { it.getAnnotationsByType(Suppress::class).flatMap { it.names.toList() } }
+                            .flatMap { sourceFile ->
+                                sourceFile.getAnnotationsByType(Suppress::class).flatMap { it.names.toList() }
+                            }
                             .toSet()
                             .forEach { addMember("%S", it) }
                     }
@@ -222,7 +223,7 @@ class NoOpFactorySymbolProcessor(
                 logger.warn("Error flushing writer for file ${fileSpec.packageName}.${fileSpec.name}: ${e.message}.")
             }
             logger.logging("✔ Wrote $className")
-        } catch (e: FileAlreadyExistsException) {
+        } catch (_: FileAlreadyExistsException) {
             val fqn = interfaceDeclaration.qualifiedName?.asString()
             if (isCustomName) {
                 logger.error(
@@ -706,17 +707,23 @@ class NoOpFactorySymbolProcessor(
     private fun KSType.returnTypeNameOfFunctionType(
         typeParamResolver: TypeParameterResolver
     ): TypeName? {
-        return if (declaration is KSClassDeclaration) {
-            (toTypeName(typeParamResolver) as ParameterizedTypeName)
-                .typeArguments
-                .first()
-        } else if (declaration is KSTypeAlias) {
-            val refElement = (declaration as KSTypeAlias)
-                .type
-                .element as? KSCallableReference
-            refElement?.returnType?.toTypeName(typeParamResolver)
-        } else {
-            null
+        return when (declaration) {
+            is KSClassDeclaration -> {
+                (toTypeName(typeParamResolver) as ParameterizedTypeName)
+                    .typeArguments
+                    .first()
+            }
+
+            is KSTypeAlias -> {
+                val refElement = (declaration as KSTypeAlias)
+                    .type
+                    .element as? KSCallableReference
+                refElement?.returnType?.toTypeName(typeParamResolver)
+            }
+
+            else -> {
+                null
+            }
         }
     }
 

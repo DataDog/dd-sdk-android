@@ -25,7 +25,10 @@ import java.io.File
 internal class ProfilingScenarioFragment : Fragment() {
 
     private var _binding: FragmentProfilingBinding? = null
-    private val binding get() = _binding!!
+    private val binding
+        get() = checkNotNull(_binding) {
+            "Binding is only available while the fragment's view exists"
+        }
 
     private var controller: WorkloadController? = null
     private var activeWorkload: WorkloadBinding? = null
@@ -91,11 +94,9 @@ internal class ProfilingScenarioFragment : Fragment() {
     }
 
     private fun stopActiveWorkload() {
-        if (activeWorkload != null) {
-            controller?.stop()
-            activeWorkload = null
-            renderButtonStates()
-        }
+        controller?.stop()
+        activeWorkload = null
+        renderButtonStates()
     }
 
     private fun renderButtonStates() {

@@ -79,7 +79,7 @@ class CrossFeatureTest {
                     spanEvents += textBody
                         .split("\n")
                         .map { JsonParser.parseString(it).asJsonObject }
-                        .flatMap { it.getAsJsonArray("spans").map { it.asJsonObject } }
+                        .flatMap { spanBatch -> spanBatch.getAsJsonArray("spans").map { it.asJsonObject } }
                 }
             }
         }
@@ -358,16 +358,6 @@ class CrossFeatureTest {
             return this
         }
 
-        fun hasNoApplicationId(): SpanEventAssert {
-            assertThat(actual.meta.dd.application?.id)
-                .overridingErrorMessage(
-                    "Expected span with operation name = ${actual.name} to not have" +
-                        " RUM Application ID, but was ${actual.meta.dd.application?.id}."
-                )
-                .isNull()
-            return this
-        }
-
         fun hasSessionId(sessionId: String): SpanEventAssert {
             assertThat(actual.meta.dd.session?.id)
                 .overridingErrorMessage(
@@ -375,16 +365,6 @@ class CrossFeatureTest {
                         " RUM Session ID = $sessionId, but was ${actual.meta.dd.session?.id}."
                 )
                 .isEqualTo(sessionId)
-            return this
-        }
-
-        fun hasNoSessionId(): SpanEventAssert {
-            assertThat(actual.meta.dd.session?.id)
-                .overridingErrorMessage(
-                    "Expected span with operation name = ${actual.name} to not have" +
-                        " RUM Session ID, but was ${actual.meta.dd.session?.id}."
-                )
-                .isNull()
             return this
         }
 

@@ -6,6 +6,7 @@
 
 package com.datadog.benchmark.sample.ui.profiling.workload
 
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -18,10 +19,11 @@ import kotlin.random.Random
 internal class IoWorkload(
     private val cacheDir: File,
     private val periodMs: Long = 200L,
-    private val payloadBytes: Int = 4 * 1024
+    private val payloadBytes: Int = 4 * 1024,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Workload {
     override fun start(scope: CoroutineScope) {
-        scope.launch(Dispatchers.IO) {
+        scope.launch(ioDispatcher) {
             val file = File(cacheDir, "benchmark_workload.tmp")
             val payload = ByteArray(payloadBytes).also { Random.nextBytes(it) }
             try {

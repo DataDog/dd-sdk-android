@@ -217,23 +217,26 @@ class ClassJsonElementDeserializerGenerator(
             )
 
             is TypeDefinition.OneOfClass -> addStatement(
-                "%L.add(%T.%L(it))",
+                ADD_DESERIALIZED_ITEM_FORMAT,
                 Identifier.PARAM_COLLECTION,
                 arrayType.items.asKotlinTypeName(rootTypeName),
-                Identifier.FUN_FROM_JSON_ELEMENT
+                Identifier.FUN_FROM_JSON_ELEMENT,
+                "it"
             )
             is TypeDefinition.Class -> addStatement(
-                "%L.add(%T.%L(it.asJsonObject))",
+                ADD_DESERIALIZED_ITEM_FORMAT,
                 Identifier.PARAM_COLLECTION,
                 arrayType.items.asKotlinTypeName(rootTypeName),
-                Identifier.FUN_FROM_JSON_OBJ
+                Identifier.FUN_FROM_JSON_OBJ,
+                "it.asJsonObject"
             )
 
             is TypeDefinition.Enum -> addStatement(
-                "%L.add(%T.%L(it.asString))",
+                ADD_DESERIALIZED_ITEM_FORMAT,
                 Identifier.PARAM_COLLECTION,
                 arrayType.items.asKotlinTypeName(rootTypeName),
-                Identifier.FUN_FROM_JSON
+                Identifier.FUN_FROM_JSON,
+                "it.asString"
             )
 
             else -> error(
@@ -252,9 +255,10 @@ class ClassJsonElementDeserializerGenerator(
         val opt = if (nullable) "?" else ""
         beginControlFlow("$assignee = $getter$opt.asJsonObject$opt.let")
         addStatement(
-            "%T.%L(it)",
+            DESERIALIZER_CALL_FORMAT,
             propertyType.asKotlinTypeName(rootTypeName),
-            Identifier.FUN_FROM_JSON_OBJ
+            Identifier.FUN_FROM_JSON_OBJ,
+            "it"
         )
         endControlFlow()
     }
@@ -270,9 +274,10 @@ class ClassJsonElementDeserializerGenerator(
         beginControlFlow("$assignee = $getter$opt.let")
 
         addStatement(
-            "%T.%L(it)",
+            DESERIALIZER_CALL_FORMAT,
             propertyType.asKotlinTypeName(rootTypeName),
-            Identifier.FUN_FROM_JSON_ELEMENT
+            Identifier.FUN_FROM_JSON_ELEMENT,
+            "it"
         )
         endControlFlow()
     }
@@ -292,30 +297,34 @@ class ClassJsonElementDeserializerGenerator(
                 ClassNameRef.JsonNull
             )
             addStatement(
-                "%T.%L(null)",
+                DESERIALIZER_CALL_FORMAT,
                 propertyType.asKotlinTypeName(rootTypeName),
-                Identifier.FUN_FROM_JSON
+                Identifier.FUN_FROM_JSON,
+                "null"
             )
             nextControlFlow("else")
             addStatement(
-                "%T.%L($elementName.asString)",
+                DESERIALIZER_CALL_FORMAT,
                 propertyType.asKotlinTypeName(rootTypeName),
-                Identifier.FUN_FROM_JSON
+                Identifier.FUN_FROM_JSON,
+                "$elementName.asString"
             )
             endControlFlow()
         } else if (nullable) {
             beginControlFlow("$assignee = $getter?.asString?.let")
             addStatement(
-                "%T.%L(it)",
+                DESERIALIZER_CALL_FORMAT,
                 propertyType.asKotlinTypeName(rootTypeName),
-                Identifier.FUN_FROM_JSON
+                Identifier.FUN_FROM_JSON,
+                "it"
             )
             endControlFlow()
         } else {
             addStatement(
-                "$assignee = %T.%L($getter.asString)",
+                "$assignee = $DESERIALIZER_CALL_FORMAT",
                 propertyType.asKotlinTypeName(rootTypeName),
-                Identifier.FUN_FROM_JSON
+                Identifier.FUN_FROM_JSON,
+                "$getter.asString"
             )
         }
     }
@@ -369,6 +378,7 @@ class ClassJsonElementDeserializerGenerator(
 
     companion object {
         private const val PARSE_ERROR_MSG = "Unable to parse json into type"
+        private const val ADD_DESERIALIZED_ITEM_FORMAT = "%L.add($DESERIALIZER_CALL_FORMAT)"
 
         private val caughtExceptions = arrayOf(
             ClassNameRef.IllegalStateException,

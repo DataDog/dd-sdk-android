@@ -8,9 +8,9 @@ package com.datadog.android.core.stub
 
 import java.util.concurrent.Callable
 import java.util.concurrent.Delayed
+import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.FutureTask
-import java.util.concurrent.RunnableFuture
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -101,11 +101,11 @@ class StubScheduledExecutorService(
     }
 
     override fun schedule(command: Runnable, delay: Long, unit: TimeUnit): ScheduledFuture<*> {
-        return scheduleTask(FutureTask(command, null), delay, unit)
+        return scheduleTask(Executors.callable(command, null), delay, unit)
     }
 
     override fun <V> schedule(callable: Callable<V>, delay: Long, unit: TimeUnit): ScheduledFuture<V> {
-        return scheduleTask(FutureTask(callable), delay, unit)
+        return scheduleTask(callable, delay, unit)
     }
 
     override fun scheduleAtFixedRate(
@@ -143,9 +143,9 @@ class StubScheduledExecutorService(
         return pendingTasks.any { it.getDelay(TimeUnit.MILLISECONDS) <= 0L }
     }
 
-    private fun <V> scheduleTask(futureTask: FutureTask<V>, delay: Long, unit: TimeUnit): ScheduledFuture<V> {
+    private fun <V> scheduleTask(callable: Callable<V>, delay: Long, unit: TimeUnit): ScheduledFuture<V> {
         val delayMs = unit.toMillis(delay)
-        val scheduledTask = ScheduledFutureTask(futureTask, nowProvider() + delayMs, nowProvider)
+        val scheduledTask = ScheduledFutureTask(callable, nowProvider() + delayMs, nowProvider)
         pendingTasks.add(scheduledTask)
         return scheduledTask
     }
@@ -154,27 +154,27 @@ class StubScheduledExecutorService(
     // effect have to trigger it explicitly (e.g. by stopping the feature, which flushes).
     private fun neverTriggeredTask(command: Runnable, initialDelay: Long, unit: TimeUnit): ScheduledFuture<*> {
         return ScheduledFutureTask(
-            FutureTask(command, null),
+            Executors.callable(command, null),
             nowProvider() + unit.toMillis(initialDelay),
             nowProvider
         )
     }
 
     /**
-     * Stubbed version of a [RunnableFuture]+[ScheduledFuture].
+     * A [FutureTask] with a deadline supplied by the stub executor's clock.
      * @param V the type of the task's result
-     * @property delegate the delegate [FutureTask]
+     * @param callable the task to execute
      * @property triggerTimestamp the timestamp at which the task should be triggered
      * @property nowProvider a function that provides the current timestamp in milliseconds
      */
     class ScheduledFutureTask<V>(
-        val delegate: FutureTask<V>,
+        callable: Callable<V>,
         val triggerTimestamp: Long,
         val nowProvider: () -> Long
-    ) : RunnableFuture<V> by delegate, ScheduledFuture<V> {
-        override fun compareTo(other: Delayed?): Int {
+    ) : FutureTask<V>(callable), ScheduledFuture<V> {
+        override fun compareTo(other: Delayed): Int {
             val delay = getDelay(TimeUnit.MILLISECONDS)
-            val otherDelay = other!!.getDelay(TimeUnit.MILLISECONDS)
+            val otherDelay = other.getDelay(TimeUnit.MILLISECONDS)
             return (delay - otherDelay).sign
         }
 

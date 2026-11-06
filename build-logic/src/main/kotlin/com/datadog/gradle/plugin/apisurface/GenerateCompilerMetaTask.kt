@@ -7,6 +7,7 @@
 package com.datadog.gradle.plugin.apisurface
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.JavaVersion
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.InputDirectory
@@ -66,11 +67,11 @@ abstract class GenerateCompilerMetaTask @Inject constructor(
             .first { it.startsWith("major version: ") }
             .removePrefix("major version: ")
             .toInt()
-            .let {
-                // Java 25
-                require(it <= 69) { "Unsupported JVM major version value: $it" }
-                // at least between Java 25 and Java 5 this formula is true
-                it - 44
+            .let { classVersion ->
+                require(classVersion <= JavaVersion.VERSION_25.toClassVersion()) {
+                    "Unsupported JVM major version value: $classVersion"
+                }
+                JavaVersion.forClassVersion(classVersion).majorVersion
             }
 
         metadataInfoFile.get().asFile
