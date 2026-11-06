@@ -23,7 +23,7 @@ from instrumentation_to_junit import convert_stream
 
 
 FIRST_EMULATOR_PORT = 5554
-BOOT_TIMEOUT_SECONDS = 360
+BOOT_TIMEOUT_SECONDS = 120
 ANDROID_ARCH = "arm64-v8a"
 AVD_NAME_PREFIX = "android_emulator"
 ANDROID_API_COMPONENTS = {
@@ -384,6 +384,7 @@ def validate_plans(plans: Sequence[EmulatorPlan]) -> None:
 
 
 def wait_for_boot(adb: Path, serial: str) -> None:
+    """An ADB timeout does not prove that Android failed to boot."""
     deadline = time.monotonic() + BOOT_TIMEOUT_SECONDS
     while time.monotonic() < deadline:
         try:
@@ -394,12 +395,43 @@ def wait_for_boot(adb: Path, serial: str) -> None:
                 text=True,
                 timeout=10,
             )
-            if result.stdout.strip() == "1":
+            if result.returncode == 0 and result.stdout.strip() == "1":
                 return
-        except subprocess.TimeoutExpired:
-            pass
+            probe_error = (
+                f"exit code {result.returncode}; "
+                f"stdout={result.stdout!r}; stderr={result.stderr!r}"
+            )
+        except subprocess.TimeoutExpired as error:
+            probe_error = (
+                f"ADB command timed out after 10 seconds; "
+                f"stdout={error.stdout!r}; stderr={error.stderr!r}"
+            )
+        print(f"{serial}: boot readiness probe: {probe_error}", file=sys.stderr)
         time.sleep(2)
-    raise RuntimeError(f"{serial} did not finish booting")
+
+    try:
+        devices = subprocess.run(
+            [adb, "devices", "-l"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        print(
+            f"{serial}: adb devices -l: exit code {devices.returncode}; "
+            f"stdout={devices.stdout!r}; stderr={devices.stderr!r}",
+            file=sys.stderr,
+        )
+    except subprocess.TimeoutExpired as error:
+        print(
+            f"{serial}: adb devices -l timed out after 10 seconds; "
+            f"stdout={error.stdout!r}; stderr={error.stderr!r}",
+            file=sys.stderr,
+        )
+    raise RuntimeError(
+        f"{serial} did not pass the ADB boot readiness check "
+        f"within {BOOT_TIMEOUT_SECONDS} seconds"
+    )
 
 
 def install_apks(
