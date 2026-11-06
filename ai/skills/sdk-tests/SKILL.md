@@ -100,6 +100,8 @@ fun `M return info and remove W unregister()`() {
 
 ## Test body — Given / When / Then
 
+Always split the body with `// Given`, `// When`, `// Then` comments. A test whose action and assertion are a single expression may use one `// When / Then` marker instead.
+
 ```kotlin
 @Test
 fun `M return monitor W registerIfAbsent(monitor) + get() {same sdkCore}`() {
@@ -198,7 +200,7 @@ Use `verify(mock, never()).method(...)` only when you need to assert that a *spe
 
 ### Prefer specific matchers over `any()` in `verify`
 
-Use `eq()` / `isA()` when the expected value is known. Use `any()` only when the argument is genuinely irrelevant or can't be asserted (e.g. in `never()` checks); don't add a captor just to avoid it.
+Use `eq()` / `isA()` when the expected value is known. Use `any()` only when the argument is genuinely irrelevant or can't be asserted (e.g. in `never()` checks); don't add a captor just to avoid it. Never add a captor whose value is never read.
 
 Omit defaults: no `times(1)`, and no `eq()` when every matcher would be `eq` (pass the values directly). Use `never()` instead of `times(0)`.
 
