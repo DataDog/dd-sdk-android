@@ -85,11 +85,9 @@ object SessionReplay {
                     heatmapsEnabled = effectiveConfiguration.heatmapsEnabled
                 )
 
-                if (isAlreadyRegistered()) {
-                    logAlreadyRegisteredWarning(
-                        sdkCore.internalLogger,
-                        currentRegisteredCore?.get()?.name.orEmpty()
-                    )
+                val registeredCore = currentRegisteredCore?.get()
+                if (registeredCore?.isCoreActive() == true) {
+                    logAlreadyRegisteredWarning(sdkCore.internalLogger, registeredCore.name)
                 } else {
                     currentRegisteredCore = WeakReference(sdkCore)
                     sdkCore.registerFeature(sessionReplayFeature)
@@ -134,9 +132,6 @@ object SessionReplay {
             ?.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)
             ?.unwrap()
     }
-
-    private fun isAlreadyRegistered() =
-        currentRegisteredCore?.get()?.isCoreActive() == true
 
     private fun logAlreadyRegisteredWarning(internalLogger: InternalLogger, firstCoreName: String) {
         internalLogger.log(
