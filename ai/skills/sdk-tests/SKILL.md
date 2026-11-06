@@ -361,7 +361,7 @@ Location: `src/test/kotlin/com/datadog/android/*/utils/forge/Configurator.kt`
 
 ## Assertions (AssertJ)
 
-Always use AssertJ `assertThat`, never the Kotlin `assert` keyword (a no-op without a JVM flag).
+Use AssertJ `assertThat` for value assertions, and never the Kotlin `assert` keyword (a no-op without a JVM flag); the assertion helpers documented below, such as `assertDoesNotThrow`, are the exception.
 
 ```kotlin
 import org.assertj.core.api.Assertions.assertThat
