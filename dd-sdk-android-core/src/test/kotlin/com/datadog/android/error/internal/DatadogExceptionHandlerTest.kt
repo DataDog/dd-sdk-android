@@ -417,6 +417,36 @@ internal class DatadogExceptionHandlerTest {
         }
     }
 
+    @Test
+    fun `M log capture failure once W uncaughtException() { stack capture fails }`(
+        @StringForgery fakeCaptureMessage: String
+    ) {
+        // Given
+        val captureError = IllegalStateException(fakeCaptureMessage)
+        testedHandler = DatadogExceptionHandler(
+            sdkCore = mockSdkCore,
+            appContext = appContext.mockInstance,
+            allStackTracesProvider = { onError ->
+                onError(fakeCaptureMessage, captureError)
+                emptyMap()
+            }
+        )
+        testedHandler.register()
+        val currentThread = Thread.currentThread()
+
+        // When
+        testedHandler.uncaughtException(currentThread, fakeThrowable)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            fakeCaptureMessage,
+            captureError,
+            onlyOnce = true
+        )
+    }
+
     // endregion
 
     private fun Forge.aThrowableWithoutMessage(): Throwable {
