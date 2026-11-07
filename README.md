@@ -106,6 +106,10 @@ If you encounter any issue when using the Datadog SDK for Android and Android TV
 the [troubleshooting checklist][6], [common problems](docs/advanced_troubleshooting.md), or at
 the existing [issues](https://github.com/DataDog/dd-sdk-android/issues?q=is%3Aissue).
 
+If you are investigating the SDK's impact on your application's startup time, the
+[cold-start benchmarking guide](docs/benchmarking_sdk_cold_start.md) walks through measuring
+it on your own app, with the scripts we use internally.
+
 <div class="alert alert-warning">
 Datadog cannot guarantee the Android and Android TV SDK's performance on Roku devices running with Android OS. If you encounter any issues when using the SDK for these devices, contact <a href="https://docs.datadoghq.com/help/">Datadog Support</a> or open an issue in our GitHub project.
 </div>
