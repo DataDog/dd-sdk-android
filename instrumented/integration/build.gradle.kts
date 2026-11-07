@@ -92,6 +92,7 @@ dependencies {
     }
     implementation(project(":features:dd-sdk-android-webview"))
     implementation(project(":features:dd-sdk-android-session-replay"))
+    implementation(project(":features:dd-sdk-android-session-replay-compose"))
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-rum"))
@@ -112,8 +113,11 @@ dependencies {
 
     androidTestImplementation(project(":dd-sdk-android-internal"))
     androidTestImplementation(project(":integrations:dd-sdk-android-compose"))
+    androidTestImplementation(libs.coil3Compose)
+    androidTestImplementation(testFixtures(project(":features:dd-sdk-android-session-replay-compose")))
     androidTestImplementation(libs.androidXComposeMaterial)
     androidTestImplementation(libs.androidXComposeUiTestJUnit4)
+    debugImplementation(libs.coil3Compose)
     debugImplementation(platform(libs.androidXComposeBom))
     debugImplementation(libs.androidXComposeUiTestManifest)
     androidTestImplementation(libs.leakCanaryInstrumentation)

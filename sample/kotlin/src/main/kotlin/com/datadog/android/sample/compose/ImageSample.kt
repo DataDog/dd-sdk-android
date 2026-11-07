@@ -35,7 +35,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil3.request.CachePolicy
 import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import coil3.request.crossfade
 import com.datadog.android.Datadog
 import com.datadog.android.coil3.DatadogCoilRequestListener
 import com.datadog.android.sample.R
@@ -75,6 +78,9 @@ internal fun ImageSample() {
             }
             item {
                 Coil3Image()
+            }
+            item {
+                Coil3CrossfadeImage()
             }
         }
     }
@@ -168,6 +174,30 @@ private fun Coil3Image() {
             contentDescription = "Network Image (Coil 3)"
         )
         DescriptionText("Network Image (Coil 3)")
+    }
+}
+
+@Composable
+private fun Coil3CrossfadeImage() {
+    val context = LocalContext.current
+    val imageRequest = remember(context) {
+        ImageRequest.Builder(context)
+            .data(R.drawable.ic_dd_icon_rgb)
+            .crossfade(2_000)
+            .allowHardware(false)
+            .memoryCachePolicy(CachePolicy.DISABLED)
+            .build()
+    }
+    val description = "Local Image (Coil 3, crossfade)"
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        AsyncImage3(
+            modifier = Modifier.imageModifier(),
+            model = imageRequest,
+            contentScale = ContentScale.Fit,
+            contentDescription = description
+        )
+        DescriptionText(description)
     }
 }
 
