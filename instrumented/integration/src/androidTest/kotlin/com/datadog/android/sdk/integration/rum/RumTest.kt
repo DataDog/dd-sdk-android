@@ -156,10 +156,15 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
             has("view") &&
             getAsJsonObject("view")["name"]?.asString == "ApplicationLaunch"
 
+    // Partial view updates only carry changed fields, so the ApplicationLaunch view is
+    // identified by its url when the name is absent.
     private val JsonObject.isViewUpdateEventRelatedToApplicationLaunch
         get() = get("type")?.asString == "view_update" &&
             has("view") &&
-            getAsJsonObject("view")["name"]?.asString == "ApplicationLaunch"
+            getAsJsonObject("view").let {
+                it["name"]?.asString == "ApplicationLaunch" ||
+                    it["url"]?.asString == "com/datadog/application-launch/view"
+            }
 
     private val JsonObject.isViewEvent
         get() = get("type")?.asString == "view"

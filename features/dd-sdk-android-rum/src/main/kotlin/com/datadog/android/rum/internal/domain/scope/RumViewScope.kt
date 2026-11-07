@@ -1249,7 +1249,8 @@ internal open class RumViewScope(
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
         writer: DataWriter<Any>,
-        eventType: EventType = EventType.DEFAULT
+        eventType: EventType = EventType.DEFAULT,
+        isInitialUpdate: Boolean = false
     ) {
         val viewComplete = isViewComplete()
         val timeToSettled = networkSettledMetricResolver.resolveMetric()
@@ -1284,7 +1285,7 @@ internal open class RumViewScope(
             ?.toInversePerformanceMetric()
 
         if (!stopped) {
-            resolveViewDuration(event)
+            resolveViewDuration(event, isInitialUpdate)
         }
         val durationNs = stoppedNanos - startedNanos
         val rumContext = getRumContext()
@@ -1504,14 +1505,25 @@ internal open class RumViewScope(
         )
     }
 
-    private fun resolveViewDuration(event: RumRawEvent) {
+    internal fun sendInitialViewUpdateIfNeeded(
+        event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ) {
+        if (version == 1L && !stopped) {
+            sendViewUpdate(event, datadogContext, writeScope, writer, isInitialUpdate = true)
+        }
+    }
+
+    private fun resolveViewDuration(event: RumRawEvent, isInitialUpdate: Boolean = false) {
         stoppedNanos = event.eventTime.nanoTime
         val duration = stoppedNanos - startedNanos
         viewEndedMetricDispatcher.onDurationResolved(duration)
         if (duration == 0L) {
             val isFatalBackgroundEvent = type == RumViewType.BACKGROUND &&
                 event is RumRawEvent.AddError && event.isFatal
-            if (isFatalBackgroundEvent || event is RumRawEvent.StartView) {
+            if (isInitialUpdate || isFatalBackgroundEvent || event is RumRawEvent.StartView) {
                 // This is a legitimate empty duration, no-op
             } else {
                 sdkCore.internalLogger.log(
