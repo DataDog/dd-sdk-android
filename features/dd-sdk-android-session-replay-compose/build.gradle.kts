@@ -4,8 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -44,10 +46,19 @@ android {
 
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
         compose = true
     }
+    testOptions {
+        targetSdk = AndroidConfig.TARGET_SDK
+    }
+}
+
+// Lint lacks this attribute and otherwise selects Compose desktop test artifacts.
+configurations.matching { it.name.endsWith("AndroidTestLintChecksClasspath") }.configureEach {
+    attributes.attribute(KotlinPlatformType.attribute, KotlinPlatformType.androidJvm)
 }
 
 dependencies {
@@ -81,6 +92,11 @@ dependencies {
         isTransitive = false
     }
     testImplementation(libs.coilCompose)
+    androidTestImplementation(testFixtures(project(":features:dd-sdk-android-session-replay")))
+    androidTestImplementation(platform(libs.androidXComposeTestBom))
+    androidTestImplementation(libs.androidXComposeUiTestJUnit4)
+    androidTestImplementation(libs.androidXComposeUiTestManifest)
+    androidTestImplementation(libs.bundles.integrationTests)
     unmock(libs.robolectric)
 }
 

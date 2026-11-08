@@ -33,6 +33,7 @@ import com.datadog.android.sessionreplay.compose.SessionReplayHidePropertyKey
 import com.datadog.android.sessionreplay.compose.TextInputSemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.TouchSemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
+import com.datadog.android.sessionreplay.compose.internal.isImageFillingNonScrollableRoot
 import com.datadog.android.sessionreplay.compose.internal.isLeafNode
 import com.datadog.android.sessionreplay.compose.internal.isPositionedAtOrigin
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
@@ -411,7 +412,8 @@ internal class SemanticsUtils(
     }
 
     internal fun isNodePositionUnavailable(semanticsNode: SemanticsNode): Boolean {
-        return semanticsNode.isLeafNode() && semanticsNode.isPositionedAtOrigin()
+        return semanticsNode.isLeafNode() && semanticsNode.isPositionedAtOrigin() &&
+            !semanticsNode.isImageFillingNonScrollableRoot()
     }
 
     internal fun getInteropView(semanticsNode: SemanticsNode): View? {
