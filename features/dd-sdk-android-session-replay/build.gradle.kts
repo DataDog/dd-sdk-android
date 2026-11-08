@@ -47,6 +47,10 @@ android {
     }
 
     namespace = "com.datadog.android.sessionreplay"
+
+    testFixtures {
+        enable = true
+    }
 }
 
 dependencies {
@@ -69,6 +73,7 @@ dependencies {
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
+    testFixturesImplementation(libs.kotlinRuntime)
     unmock(libs.robolectric)
 }
 

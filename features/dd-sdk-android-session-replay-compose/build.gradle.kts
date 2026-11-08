@@ -4,6 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.taskConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -44,9 +45,13 @@ android {
 
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
         compose = true
+    }
+    testOptions {
+        targetSdk = AndroidConfig.TARGET_SDK
     }
 }
 
@@ -68,6 +73,15 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    androidTestImplementation(testFixtures(project(":features:dd-sdk-android-session-replay")))
+    androidTestImplementation(platform(libs.androidXComposeTestBom))
+    androidTestImplementation(libs.androidXComposeUiTestJUnit4)
+    androidTestImplementation(libs.androidXComposeUiTestManifest)
+    androidTestImplementation(libs.assertJ)
+    androidTestImplementation(libs.bundles.integrationTests)
+    if (project.hasProperty(com.datadog.gradle.Properties.USE_API21_JAVA_BACKPORT)) {
+        androidTestImplementation(project(":tools:javabackport"))
+    }
     unmock(libs.robolectric)
 }
 

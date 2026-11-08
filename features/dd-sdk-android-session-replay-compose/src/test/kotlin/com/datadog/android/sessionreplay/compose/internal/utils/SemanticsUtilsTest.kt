@@ -29,10 +29,13 @@ import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.semantics.AccessibilityAction
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.ScrollAxisRange
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsConfiguration
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsOwner
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.MultiParagraph
@@ -66,6 +69,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -1557,6 +1561,127 @@ internal class SemanticsUtilsTest {
                 alignment = fakeAlignment
             )
         )
+    }
+
+    @ParameterizedTest
+    @CsvSource("true,true,false", "true,false,true", "false,true,true", "false,false,true")
+    fun `M check layout availability W isNodePositionUnavailable { leaf at origin }`(
+        isAttached: Boolean,
+        isPlaced: Boolean,
+        expectedUnavailable: Boolean,
+        @IntForgery(min = 1, max = 1000) fakeWidth: Int,
+        @IntForgery(min = 1, max = 1000) fakeHeight: Int
+    ) {
+        // Given
+        whenever(mockSemanticsNode.children) doReturn emptyList()
+        whenever(mockSemanticsNode.positionInRoot) doReturn Offset.Zero
+        whenever(mockLayoutInfo.isAttached) doReturn isAttached
+        whenever(mockLayoutInfo.isPlaced) doReturn isPlaced
+        whenever(mockConfig.getOrNull(SemanticsProperties.Role)) doReturn Role.Image
+        val fakeBounds = Rect(0f, 0f, fakeWidth.toFloat(), fakeHeight.toFloat())
+        val stubRoot = mock<SemanticsNode> {
+            on { boundsInRoot } doReturn fakeBounds
+            on { config } doReturn SemanticsConfiguration()
+        }
+        whenever(mockSemanticsNode.parent) doReturn stubRoot
+        whenever(mockSemanticsNode.boundsInRoot) doReturn fakeBounds
+
+        // When
+        val result = testedSemanticsUtils.isNodePositionUnavailable(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isEqualTo(expectedUnavailable)
+    }
+
+    @ParameterizedTest
+    @CsvSource("true,true", "true,false", "false,true", "false,false")
+    fun `M preserve scrolling artifact guard W isNodePositionUnavailable`(
+        hasEmptyBounds: Boolean,
+        hasImageRole: Boolean,
+        @IntForgery(min = 1, max = 1000) fakeWidth: Int,
+        @IntForgery(min = 1, max = 1000) fakeHeight: Int
+    ) {
+        // Given
+        val fakeBounds = if (hasEmptyBounds) Rect.Zero else Rect(0f, 0f, fakeWidth.toFloat(), fakeHeight.toFloat())
+        val fakeRootBounds = Rect(0f, 0f, fakeWidth.toFloat(), fakeHeight * 2f)
+        val stubRoot = mock<SemanticsNode> {
+            on { boundsInRoot } doReturn fakeRootBounds
+            on { config } doReturn SemanticsConfiguration()
+        }
+        whenever(mockSemanticsNode.children) doReturn emptyList()
+        whenever(mockSemanticsNode.positionInRoot) doReturn Offset.Zero
+        whenever(mockSemanticsNode.boundsInRoot) doReturn fakeBounds
+        whenever(mockSemanticsNode.parent) doReturn stubRoot
+        whenever(mockLayoutInfo.isAttached) doReturn true
+        whenever(mockLayoutInfo.isPlaced) doReturn true
+        whenever(mockConfig.getOrNull(SemanticsProperties.Role)) doReturn if (hasImageRole) Role.Image else null
+
+        // When
+        val result = testedSemanticsUtils.isNodePositionUnavailable(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @ParameterizedTest
+    @CsvSource("true,false", "false,false", "false,true")
+    fun `M skip full root image inside scroll container W isNodePositionUnavailable`(
+        vertical: Boolean,
+        actionOnly: Boolean,
+        @IntForgery(min = 1, max = 100) fakeDimension: Int
+    ) {
+        // Given
+        val fakeBounds = Rect(0f, 0f, fakeDimension.toFloat(), fakeDimension.toFloat())
+        val fakeRootConfig = SemanticsConfiguration()
+        if (actionOnly) {
+            fakeRootConfig[SemanticsActions.ScrollBy] = AccessibilityAction(
+                label = null,
+                action = { _: Float, _: Float -> true }
+            )
+        } else {
+            val fakeScrollKey = if (vertical) {
+                SemanticsProperties.VerticalScrollAxisRange
+            } else {
+                SemanticsProperties.HorizontalScrollAxisRange
+            }
+            fakeRootConfig[fakeScrollKey] = ScrollAxisRange({ 0f }, { 1f }, false)
+        }
+        val stubRoot = mock<SemanticsNode> {
+            on { boundsInRoot } doReturn fakeBounds
+            on { config } doReturn fakeRootConfig
+        }
+        whenever(mockSemanticsNode.children) doReturn emptyList()
+        whenever(mockSemanticsNode.positionInRoot) doReturn Offset.Zero
+        whenever(mockSemanticsNode.boundsInRoot) doReturn fakeBounds
+        whenever(mockSemanticsNode.parent) doReturn stubRoot
+        whenever(mockLayoutInfo.isAttached) doReturn true
+        whenever(mockLayoutInfo.isPlaced) doReturn true
+        whenever(mockConfig.getOrNull(SemanticsProperties.Role)) doReturn Role.Image
+
+        // When
+        val result = testedSemanticsUtils.isNodePositionUnavailable(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @ParameterizedTest
+    @CsvSource("true,false", "false,true")
+    fun `M preserve nodes outside origin leaf guard W isNodePositionUnavailable`(
+        isLeaf: Boolean,
+        isAtOrigin: Boolean,
+        @FloatForgery(min = 1f, max = 1000f) fakeX: Float,
+        @FloatForgery(min = 1f, max = 1000f) fakeY: Float
+    ) {
+        // Given
+        whenever(mockSemanticsNode.children) doReturn if (isLeaf) emptyList() else listOf(mock())
+        whenever(mockSemanticsNode.positionInRoot) doReturn if (isAtOrigin) Offset.Zero else Offset(fakeX, fakeY)
+
+        // When
+        val result = testedSemanticsUtils.isNodePositionUnavailable(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isFalse()
     }
 
     @Test

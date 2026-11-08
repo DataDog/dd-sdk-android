@@ -27,6 +27,7 @@ androidXAppCompat = "1.4.2" # Next version will bring coroutines
 androidXCar = "1.4.0"
 androidXCollection = "1.4.5"
 androidXComposeBom = "2023.10.01" # Next version will bring coroutines
+androidXComposeTestBom = "2024.04.01" # Device tests require the ALPHA_8 vector cache introduced in Compose 1.6.
 androidXComposeNavigation = "2.6.0"
 androidXComposeRuntime = "1.5.14"
 androidXConstraintLayout = "2.0.4"
@@ -178,6 +179,7 @@ googleAccompanistPagerIndicators = { module = "com.google.accompanist:accompanis
 googleMaterial = { module = "com.google.android.material:material", version.ref = "googleMaterial" }
 
 androidXComposeBom = { module = "androidx.compose:compose-bom", version.ref = "androidXComposeBom" }
+androidXComposeTestBom = { module = "androidx.compose:compose-bom", version.ref = "androidXComposeTestBom" }
 androidXComposeNavigation = { module = "androidx.navigation:navigation-compose", version.ref = "androidXComposeNavigation" }
 androidXComposeRuntime = { module = "androidx.compose.runtime:runtime" }
 androidXComposeUi = { module = "androidx.compose.ui:ui" }

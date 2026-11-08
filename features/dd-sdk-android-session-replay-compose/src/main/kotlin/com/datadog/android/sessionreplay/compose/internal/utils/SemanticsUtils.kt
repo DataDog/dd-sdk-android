@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -411,11 +412,38 @@ internal class SemanticsUtils(
     }
 
     internal fun isNodePositionUnavailable(semanticsNode: SemanticsNode): Boolean {
-        return semanticsNode.isLeafNode() && semanticsNode.isPositionedAtOrigin()
+        return semanticsNode.isLeafNode() && semanticsNode.isPositionedAtOrigin() &&
+            !isImageFillingNonScrollableComposeRoot(semanticsNode)
     }
 
     internal fun getInteropView(semanticsNode: SemanticsNode): View? {
         return reflectionUtils.getInteropView(semanticsNode)
+    }
+
+    private fun isImageFillingNonScrollableComposeRoot(semanticsNode: SemanticsNode): Boolean {
+        val layoutInfo = semanticsNode.layoutInfo
+        val isPlacedImage = semanticsNode.config.getOrNull(SemanticsProperties.Role) == Role.Image &&
+            layoutInfo.isAttached && layoutInfo.isPlaced
+        val bounds = semanticsNode.boundsInRoot
+        if (!isPlacedImage || bounds.isEmpty) {
+            return false
+        }
+        // RUM-9030's scrolling guard must also cover viewport-sized images in lazy lists.
+        // Exempt root-filling images only outside Compose scroll containers.
+        var root = semanticsNode
+        var hasScrollSemantics = isScrollContainer(root)
+        while (!hasScrollSemantics) {
+            root = root.parent ?: break
+            hasScrollSemantics = isScrollContainer(root)
+        }
+        return !hasScrollSemantics && root !== semanticsNode && bounds == root.boundsInRoot
+    }
+
+    private fun isScrollContainer(semanticsNode: SemanticsNode): Boolean {
+        val config = semanticsNode.config
+        return config.contains(SemanticsProperties.VerticalScrollAxisRange) ||
+            config.contains(SemanticsProperties.HorizontalScrollAxisRange) ||
+            config.contains(SemanticsActions.ScrollBy)
     }
 
     private fun resolveOnDrawInstance(semanticsNode: SemanticsNode): Any? {

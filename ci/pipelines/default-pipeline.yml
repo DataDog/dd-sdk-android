@@ -270,6 +270,7 @@ test:build-instrumented-apks:
         :instrumented:integration:assembleDebug
         :instrumented:integration:assembleDebugAndroidTest
         :features:dd-sdk-android-ndk:assembleDebugAndroidTest
+        :features:dd-sdk-android-session-replay-compose:assembleDebugAndroidTest
         :reliability:single-fit:flags:assembleReleaseAndroidTest
     - >-
         sha256sum build/flags-device-artifacts/*.aar
@@ -284,6 +285,7 @@ test:build-instrumented-apks:
       - "instrumented/integration/build/outputs/apk/debug/*.apk"
       - "instrumented/integration/build/outputs/apk/androidTest/debug/*.apk"
       - "features/dd-sdk-android-ndk/build/outputs/apk/androidTest/debug/*.apk"
+      - "features/dd-sdk-android-session-replay-compose/build/outputs/apk/androidTest/debug/*.apk"
       - "reliability/single-fit/flags/build/outputs/apk/androidTest/release/*.apk"
       - "build/flags-device-artifacts/"
 

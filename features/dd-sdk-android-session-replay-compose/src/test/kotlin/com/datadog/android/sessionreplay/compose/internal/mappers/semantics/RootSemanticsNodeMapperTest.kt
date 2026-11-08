@@ -7,8 +7,10 @@
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
 import android.view.View
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.toAndroidRectF
+import androidx.compose.ui.layout.LayoutInfo
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsConfiguration
@@ -29,6 +31,7 @@ import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -36,6 +39,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -55,7 +60,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(SessionReplayComposeForgeConfigurator::class)
-class RootSemanticsNodeMapperTest {
+internal class RootSemanticsNodeMapperTest {
 
     @Mock
     private lateinit var mockInternalLogger: InternalLogger
@@ -396,6 +401,56 @@ class RootSemanticsNodeMapperTest {
 
             // Then
             verifyNoInteractions(mapper)
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M map image only when placed W createComposeWireframes { leaf at origin }`(
+        isPlaced: Boolean,
+        @Forgery fakeWireframe: MobileSegment.Wireframe.ImageWireframe,
+        @IntForgery(min = 1, max = 1000) fakeWidth: Int,
+        @IntForgery(min = 1, max = 1000) fakeHeight: Int
+    ) {
+        // Given
+        val stubLayoutInfo = mock<LayoutInfo> {
+            on { isAttached } doReturn true
+            on { this.isPlaced } doReturn isPlaced
+        }
+        val mockSemanticsNode = mockSemanticsNode(Role.Image)
+        whenever(mockSemanticsNode.layoutInfo) doReturn stubLayoutInfo
+        whenever(mockSemanticsNode.positionInRoot) doReturn Offset.Zero
+        whenever(mockSemanticsNode.children) doReturn emptyList()
+        val fakeBounds = Rect(0f, 0f, fakeWidth.toFloat(), fakeHeight.toFloat())
+        val stubRoot = mock<SemanticsNode> {
+            on { boundsInRoot } doReturn fakeBounds
+            on { config } doReturn SemanticsConfiguration()
+        }
+        whenever(mockSemanticsNode.parent) doReturn stubRoot
+        whenever(mockSemanticsNode.boundsInRoot) doReturn fakeBounds
+        whenever(mockImageSemanticsNodeMapper.map(eq(mockSemanticsNode), any(), any(), any()))
+            .thenReturn(SemanticsWireframe(listOf(fakeWireframe), null))
+        testedRootSemanticsNodeMapper = RootSemanticsNodeMapper(
+            colorStringFormatter = mockColorStringFormatter,
+            semanticsUtils = SemanticsUtils(reflectionUtils = mock()),
+            semanticsNodeMapper = rolesToMappers
+        )
+
+        // When
+        val result = testedRootSemanticsNodeMapper.createComposeWireframes(
+            mockSemanticsNode,
+            fakeMappingContext.systemInformation.screenDensity,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback,
+            mockInternalLogger
+        )
+
+        // Then
+        if (isPlaced) {
+            assertThat(result).containsExactly(fakeWireframe)
+        } else {
+            assertThat(result).isEmpty()
+            verifyNoInteractions(mockImageSemanticsNodeMapper)
         }
     }
 

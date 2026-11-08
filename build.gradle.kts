@@ -182,6 +182,7 @@ registerSubModuleAggregationTask(
 
 tasks.register("instrumentTestAll") {
     dependsOn(":instrumented:integration:connectedCheck")
+    dependsOn(":features:dd-sdk-android-session-replay-compose:connectedDebugAndroidTest")
 }
 
 tasks.register("listAllPublishedArtifactIds") {
