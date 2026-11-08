@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
@@ -741,6 +742,58 @@ internal class SemanticsUtilsTest {
 
         // Then
         assertThat(result?.requiresPixelCapture).isEqualTo(styled)
+    }
+
+    @Test
+    fun `M skip action W resolveTextLayoutInfo {fitting measured plain text}`(forge: Forge) {
+        // Given
+        val data = setupTextLayoutMocks(forge)
+        val stubCache: ComposeTextCaptureCache = mock()
+        val fakeState = ComposeTextCaptureCache.State(Any(), 1L, 2L)
+        val style = TextStyle(color = Color.Red, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+        val measured = MeasuredTextLayout("Measured text", style, true)
+        whenever(mockReflectionUtils.isTextStringSimpleElement(mockModifier)) doReturn true
+        whenever(stubCache.state(any(), any())) doReturn fakeState
+        whenever(stubCache.measuredLayout(fakeState)) doReturn measured
+        whenever(mockReflectionUtils.getColorProducerColor(mockModifier)) doReturn Color.Blue
+        testedSemanticsUtils = SemanticsUtils(reflectionUtils = mockReflectionUtils, textCaptureCache = stubCache)
+
+        // When
+        val result = testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode, mockInternalLogger)
+
+        // Then
+        assertThat(result).isEqualTo(
+            TextLayoutInfo(
+                "Measured text",
+                Color.Blue.value,
+                17L,
+                null,
+                textAlign = style.textAlign,
+                requiresPixelCapture = true,
+                sourceText = "Measured text"
+            )
+        )
+        verify(stubCache).put(mockSemanticsNode.id, fakeState, mockModifier, requireNotNull(result))
+        verify(data.textLayoutResult, never()).layoutInput
+    }
+
+    @Test
+    fun `M use existing action W resolveTextLayoutInfo {measured layout unsupported}`(forge: Forge) {
+        // Given
+        val data = setupTextLayoutMocks(forge)
+        val stubCache: ComposeTextCaptureCache = mock()
+        val fakeState = ComposeTextCaptureCache.State(Any(), 1L, 2L)
+        whenever(mockReflectionUtils.isTextStringSimpleElement(mockModifier)) doReturn true
+        whenever(stubCache.state(any(), any())) doReturn fakeState
+        testedSemanticsUtils = SemanticsUtils(reflectionUtils = mockReflectionUtils, textCaptureCache = stubCache)
+
+        // When
+        val result = testedSemanticsUtils.resolveTextLayoutInfo(mockSemanticsNode, mockInternalLogger)
+
+        // Then
+        assertThat(result?.text).isEqualTo(data.fakeText.text)
+        verify(stubCache).measuredLayout(fakeState)
+        verify(data.textLayoutResult).layoutInput
     }
 
     @Test

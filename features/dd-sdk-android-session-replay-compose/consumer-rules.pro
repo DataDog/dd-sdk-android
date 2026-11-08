@@ -100,13 +100,14 @@
     <fields>;
 }
 
-# Optional invalidation checks for the measured plain-text paragraph cache.
+# Optional measured plain-text metadata and glyph capture.
 -keep,allowoptimization class androidx.compose.foundation.text.modifiers.TextStringSimpleNode {
     *** _layoutCache;
     java.lang.String text;
     androidx.compose.ui.text.TextStyle style;
     *** textSubstitution;
     *** semanticsTextLayoutResult;
+    androidx.compose.ui.graphics.ColorProducer overrideColor;
 }
 -keep,allowoptimization class androidx.compose.foundation.text.modifiers.ParagraphLayoutCache {
     java.lang.String text;
@@ -114,6 +115,7 @@
     *** paragraphIntrinsics;
     long prevConstraints;
     long layoutSize;
+    boolean softWrap;
 }
 
 # Optional composition layout traversal and already-applied placement properties.

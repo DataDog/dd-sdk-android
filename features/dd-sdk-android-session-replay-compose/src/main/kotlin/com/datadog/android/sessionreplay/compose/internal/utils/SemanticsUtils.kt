@@ -13,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
@@ -29,10 +28,6 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.TextLayoutInput
 import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import com.datadog.android.api.InternalLogger
@@ -301,6 +296,7 @@ internal class SemanticsUtils(
             val color = inspectedTextModifier?.let { reflectionUtils.getColorProducerColor(it) }?.value
             return if (color != null && color != cached.color) cached.copy(color = color) else cached
         }
+        resolveMeasuredTextLayoutInfo(semanticsNode, internalLogger, state, inspectedTextModifier)?.let { return it }
         val textLayoutResults = mutableListOf<TextLayoutResult>()
         action.invoke(textLayoutResults)
         return textLayoutResults.firstOrNull()?.let { textLayoutResult ->
@@ -323,6 +319,20 @@ internal class SemanticsUtils(
             ).also {
                 textCaptureCache?.put(semanticsNode.id, state, textModifier, it)
             }
+        }
+    }
+
+    private fun resolveMeasuredTextLayoutInfo(
+        semanticsNode: SemanticsNode,
+        internalLogger: InternalLogger,
+        state: ComposeTextCaptureCache.State?,
+        modifier: Modifier?
+    ): TextLayoutInfo? {
+        val measured = textCaptureCache?.measuredLayout(state) ?: return null
+        val modifierColor = modifier?.let { reflectionUtils.getColorProducerColor(it) }
+        val textOverflow = resolveTextStringSimpleElementOverflow(modifier, internalLogger)
+        return measured.toTextLayoutInfo(modifierColor, textOverflow).also {
+            textCaptureCache.put(semanticsNode.id, state, modifier, it)
         }
     }
 
@@ -616,26 +626,11 @@ internal class SemanticsUtils(
             fontFamily = layoutInput.style.fontFamily,
             textOverflow = textOverflow,
             // The flat text format cannot preserve the paragraph's measured breaks and baselines.
-            requiresPixelCapture = isMultiline || requiresTextPixels(layoutInput)
+            requiresPixelCapture =
+            isMultiline || layoutInput.text.spanStyles.isNotEmpty() ||
+                MeasuredTextLayout.requiresTextPixels(layoutInput.style)
         )
     }
-
-    // The wire format cannot represent these styles. Keep the measured glyphs instead of
-    // substituting a font or asking the player to reflow differently styled text.
-    private fun requiresTextPixels(input: TextLayoutInput): Boolean {
-        val style = input.style
-        return input.text.spanStyles.isNotEmpty() || hasUnsupportedFontStyle(style) || hasCustomTextSpacing(style) ||
-            style.brush != null || (style.shadow != null && style.shadow != Shadow.None) ||
-            (style.textDecoration != null && style.textDecoration != TextDecoration.None)
-    }
-
-    private fun hasUnsupportedFontStyle(style: TextStyle): Boolean =
-        (style.fontWeight != null && style.fontWeight != FontWeight.Normal) ||
-            (style.fontStyle != null && style.fontStyle != FontStyle.Normal)
-
-    private fun hasCustomTextSpacing(style: TextStyle): Boolean =
-        ((style.letterSpacing.isSp || style.letterSpacing.isEm) && style.letterSpacing.value != 0f) ||
-            style.lineHeight.isSp || style.lineHeight.isEm
 
     internal fun getImagePrivacyOverride(semanticsNode: SemanticsNode): ImagePrivacy? {
         return semanticsNode.config.getOrNull(ImagePrivacySemanticsPropertyKey)

@@ -7,11 +7,14 @@
 package com.datadog.android.sessionreplay.compose.internal.utils
 
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.text.Paragraph
 import androidx.compose.ui.text.ParagraphIntrinsics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntSize
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
@@ -31,7 +34,10 @@ internal class ComposeTextCaptureCache {
         val paragraph: Any,
         val constraints: Long,
         val size: Long,
-        val measured: MeasuredComposeText? = null
+        val measured: MeasuredComposeText? = null,
+        val sourceNode: Any? = null,
+        val sourceCache: Any? = null,
+        val intrinsics: ParagraphIntrinsics? = null
     )
     private data class Entry(
         val paragraph: WeakReference<Any>,
@@ -65,12 +71,64 @@ internal class ComposeTextCaptureCache {
                     currentParagraph,
                     currentConstraints,
                     currentSize,
-                    measuredText(current, cache, currentParagraph, currentSize)
+                    measuredText(current, cache, currentParagraph, currentSize),
+                    current,
+                    cache,
+                    currentIntrinsics
                 )
             }
             current = ComposeReflection.ChildFieldOfModifierNode?.getSafe(current)
         }
         return null
+    }
+
+    /** A metadata miss can reuse the measured paragraph without reconstructing a MultiParagraph. */
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Checked owners and UI-thread paragraph access.
+    fun measuredLayout(state: State?): MeasuredTextLayout? {
+        val node = state?.sourceNode ?: return null
+        val cache = state.sourceCache ?: return null
+        if (!hasNoSubstitution(node)) return null
+        val text = sourceText?.getSafe(node) as? String ?: return null
+        if (cachedText?.getSafe(cache) != text) return null
+        val paragraph = state.paragraph as? Paragraph ?: return null
+        val intrinsics = state.intrinsics ?: return null
+        val wrap = softWrap?.getSafe(cache) as? Boolean ?: return null
+        val size = IntSize((state.size shr Int.SIZE_BITS).toInt(), state.size.toInt())
+        if (!MeasuredTextLayout.canReuse(paragraph, intrinsics, Constraints(state.constraints), size, wrap)) return null
+        val style = measuredStyle(node) ?: return null
+        return MeasuredTextLayout(text, style, paragraph.lineCount > 1)
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // Checked instance field; reflection failures use fallback.
+    private fun hasNoSubstitution(node: Any): Boolean {
+        val field = substitution ?: return false
+        return try {
+            field.get(node) == null
+        } catch (_: IllegalArgumentException) {
+            false
+        } catch (_: ReflectiveOperationException) {
+            false
+        }
+    }
+
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Checked field and immutable style merge.
+    private fun measuredStyle(node: Any): TextStyle? {
+        val style = sourceStyle?.getSafe(node) as? TextStyle ?: return null
+        if (style.brush != null) return null
+        val field = overrideColor ?: return null
+        val color = try {
+            when (val producer = field.get(node)) {
+                null -> Color.Unspecified
+                is ColorProducer -> producer.invoke()
+                else -> return null
+            }
+        } catch (_: IllegalArgumentException) {
+            return null
+        } catch (_: ReflectiveOperationException) {
+            return null
+        }
+        // Preserve the action's first producer read, then the mapper reads the modifier color.
+        return style.merge(color = color)
     }
 
     @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Guard measured inputs and copied size.
@@ -139,10 +197,12 @@ internal class ComposeTextCaptureCache {
         private val sourceText = simpleNode?.getDeclaredFieldSafe("text", false)
         private val sourceStyle = simpleNode?.getDeclaredFieldSafe("style", false)
         private val substitution = simpleNode?.getDeclaredFieldSafe("textSubstitution", false)
+        private val overrideColor = simpleNode?.getDeclaredFieldSafe("overrideColor", false)
         private val layoutCache = simpleNode?.getDeclaredFieldSafe("_layoutCache", false)
         private val semanticsAction = simpleNode?.getDeclaredFieldSafe("semanticsTextLayoutResult", false)
         private val cacheClass = getClassSafe("androidx.compose.foundation.text.modifiers.ParagraphLayoutCache", false)
         private val cachedText = cacheClass?.getDeclaredFieldSafe("text", false)
+        private val softWrap = cacheClass?.getDeclaredFieldSafe("softWrap", false)
         private val paragraph = cacheClass?.getDeclaredFieldSafe("paragraph", false)
         private val intrinsics = cacheClass?.getDeclaredFieldSafe("paragraphIntrinsics", false)
         private val constraints = cacheClass?.getDeclaredFieldSafe("prevConstraints", false)
