@@ -94,6 +94,7 @@ internal class CapturedNativeSnapshotBuilder(
                     // Compose leaf culling relies on this unconditional intersection with copied host bounds.
                     val compositionAdded = addComposition(
                         composition = composition,
+                        bounds = view.bounds,
                         clip = childClip.intersectWith(view.bounds),
                         children = children,
                         layers = layers,
@@ -119,6 +120,7 @@ internal class CapturedNativeSnapshotBuilder(
     @Suppress("ReturnCount") // Expiry or excessive interop nesting discards all work.
     private fun addComposition(
         composition: CapturedComposition,
+        bounds: CapturedBounds,
         clip: ClipBounds,
         children: MutableList<CapturedChild>,
         layers: MutableList<CapturedLayer>,
@@ -143,7 +145,14 @@ internal class CapturedNativeSnapshotBuilder(
                 wireframes += wireframe.withClip(clip.clip(wireframe.bounds))
             }
         }
-        children += composition.result.rootChildren
+        layers += CapturedLayer(
+            identity = composition.contentIdentity,
+            kind = CapturedLayerKind.COMPOSITION_LAYER,
+            bounds = bounds,
+            children = composition.result.rootChildren,
+            modifiers = listOf(clip.toLayerClip(bounds))
+        )
+        children += CapturedChild.Layer(composition.contentIdentity)
         return true
     }
 
@@ -170,12 +179,7 @@ internal class CapturedNativeSnapshotBuilder(
         val view = pending.view
 
         @Suppress("UnsafeThirdPartyFunctionCall") // listOf wraps a non-null copied opacity.
-        val opacity = if (view.alpha == 1.0) emptyList() else listOf(CapturedModifier.Opacity(view.alpha))
-        val modifiers = if (view.composition == null) {
-            opacity
-        } else {
-            opacity + pending.childClip.intersectWith(view.bounds).toLayerClip(view.bounds)
-        }
+        val modifiers = if (view.alpha == 1.0) emptyList() else listOf(CapturedModifier.Opacity(view.alpha))
         val layer = CapturedLayer(
             identity = view.identity,
             kind = view.kind,

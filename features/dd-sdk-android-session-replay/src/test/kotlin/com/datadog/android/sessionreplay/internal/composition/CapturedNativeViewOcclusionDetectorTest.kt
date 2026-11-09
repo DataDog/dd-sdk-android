@@ -509,7 +509,8 @@ internal class CapturedNativeViewOcclusionDetectorTest {
                         ),
                         listOf(CapturedWireframe.Shape(fakeNestedShape, fakeNode.bounds))
                     ),
-                    emptyList()
+                    emptyList(),
+                    fakeFactory.layer(fakeNestedHost, "composition-content")
                 )
             )
         }
@@ -524,7 +525,8 @@ internal class CapturedNativeViewOcclusionDetectorTest {
                     listOf(fakeNode),
                     listOf(CapturedWireframe.Shape(fakeShapeIdentity, fakeNode.bounds))
                 ),
-                listOf(CapturedNativeWindow(1f, fakeNativeViews))
+                listOf(CapturedNativeWindow(1f, fakeNativeViews)),
+                fakeFactory.layer(fakeHostIdentity, "composition-content")
             )
         )
         val fakeViews = listOf(
@@ -543,17 +545,21 @@ internal class CapturedNativeViewOcclusionDetectorTest {
         val window = checkNotNull(result)
         val identities = window.wireframes.map { it.identity }
         val hostLayer = window.layers.single { it.identity == fakeHostIdentity }
-        assertThat(hostLayer.modifiers).containsExactly(CapturedModifier.Clip("M0 0 H100 V100 H0 Z"))
+        assertThat(hostLayer.modifiers).isEmpty()
         if (fakeCovered) {
             assertThat(identities).doesNotContain(fakeShapeIdentity, fakeInteropWireframe.identity)
             assertThat(window.layers.map { it.identity }).doesNotContain(fakeNodeIdentity, fakeInteropIdentity)
             verifyNoInteractions(fakeNative.viewData)
         } else {
+            val contentIdentity = fakeFactory.layer(fakeHostIdentity, "composition-content")
+            assertThat(window.layers.single { it.identity == contentIdentity }.modifiers)
+                .containsExactly(CapturedModifier.Clip("M0 0 H100 V100 H0 Z"))
             assertThat(identities).contains(fakeShapeIdentity, fakeInteropWireframe.identity)
             verify(fakeNative.viewData).map(isA())
             val effectLayer = if (fakeNestedEffect) {
                 val nestedHost = fakeFactory.composeHost(fakeWindow, "nested-host")
-                assertThat(window.layers.single { it.identity == nestedHost }.modifiers)
+                val nestedContent = fakeFactory.layer(nestedHost, "composition-content")
+                assertThat(window.layers.single { it.identity == nestedContent }.modifiers)
                     .containsExactly(CapturedModifier.Clip("M0 0 H100 V100 H0 Z"))
                 fakeFactory.composeNode(nestedHost, "nested-node")
             } else {

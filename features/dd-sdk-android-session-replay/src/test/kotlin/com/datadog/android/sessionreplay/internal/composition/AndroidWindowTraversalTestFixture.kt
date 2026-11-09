@@ -10,6 +10,7 @@ import android.content.res.Resources
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewGroup
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
@@ -113,15 +114,16 @@ internal abstract class AndroidWindowTraversalTestFixture {
     protected fun traversal(
         fallback: CapturedViewMapper<View> = noOpFallback,
         typedMappers: List<CapturedMapperTypeWrapper<*>> = emptyList(),
-        interopViewCallback: CapturedInteropViewCallback? = null
+        compositionHostDecomposer: CompositionHostDecomposer? = null,
+        internalLogger: InternalLogger = mock()
     ) = AndroidWindowTraversal(
         mapperRegistry = CapturedViewMapperRegistry(typedMappers, fallback, mock()),
-        internalLogger = mock(),
+        internalLogger = internalLogger,
         viewIdentifierResolver = mockViewIdentifierResolver,
         viewBoundsResolver = mockViewBoundsResolver,
         drawableToColorMapper = mockDrawableToColorMapper,
         viewUtilsInternal = ViewUtilsInternal(),
-        interopViewCallback = interopViewCallback
+        compositionHostDecomposer = compositionHostDecomposer
     )
 
     /** These trees are tiny and the deadline is generous, so a call is expected to complete in one slice. */

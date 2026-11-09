@@ -11,7 +11,6 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
-import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory
 import com.datadog.android.lint.InternalApi
@@ -39,10 +38,10 @@ interface CompositionHostDecomposer {
     fun canDecompose(view: View): Boolean
 
     /**
-     * Decomposes [view]'s content per [request]. Returns null if decomposition fails for any
-     * reason (e.g. the expected entry point on [view] can't be reached, or the running Compose
-     * runtime is incompatible) - the caller falls back to its ordinary native-View mapping of
-     * [view], exactly as if this decomposer didn't exist.
+     * Decomposes [view]'s content per [request]. Returns null when the host cannot be decomposed.
+     * The SDK caller contains thrown failures, reports them through its SDK-bound logger, and
+     * falls back to ordinary native-View capture. An implementation may disable itself after an
+     * incompatible-runtime failure; it must let that first failure reach the caller for reporting.
      */
     @InternalApi
     fun decompose(view: View, request: CompositionHostDecomposeRequest): CompositionHostDecomposeResult?
@@ -61,14 +60,13 @@ interface CompositionHostDecomposer {
  * composition output to this rectangle after subtree effects, even when the host does not clip
  * native children.
  * Null means that guarantee is unavailable and the decomposer must not cull against host bounds.
- * @param nativeViewHandoff Bound back into the caller's own native-View traversal - used when the
- * decomposer encounters a real interop `View` embedded inside the host (e.g. Compose's
- * `AndroidView { }`), so that region is mapped through the ordinary View-based path (becoming
- * normal [CapturedLayerKind.NATIVE_VIEW] layers/wireframes) instead of being left undescribed.
- * [childIdentity] is an identity already minted for this interop view via
- * [CompositionIdentityFactory.composeNode] - the caller mints it before invoking the handoff so a
- * consistent identity is used whether or not the handoff succeeds. Returns null if the interop view
- * itself is filtered out (e.g. not visible).
+ * @param shouldContinue Cooperative deadline/cancellation check. Stop between nodes and return null
+ * when it returns false; partial output must not be returned or treated as a compatibility failure.
+ * @param nativeViewHandoff Copies an embedded native View for construction on the processing
+ * executor. Returns true when the copy succeeds; the decomposer then references `childIdentity`
+ * as a child layer in its result. Returns false when the View is filtered out or capture expires.
+ * Native subtree construction is deferred. Copies are discarded if the
+ * enclosing decomposition returns null, so ordinary native traversal can still provide fallback.
  */
 @InternalApi
 class CompositionHostDecomposeRequest(
@@ -76,23 +74,8 @@ class CompositionHostDecomposeRequest(
     val hostIdentity: CapturedIdentity,
     val screenDensity: Float,
     val hostBounds: CapturedBounds?,
-    val nativeViewHandoff: (view: View, childIdentity: CapturedIdentity) -> CompositionNativeSubtree?
-)
-
-/**
- * One embedded native `View`'s subtree, mapped by the caller's own native-View traversal in
- * response to [CompositionHostDecomposeRequest.nativeViewHandoff].
- *
- * @param rootLayer The interop view's own layer - already present in [layers] as well, exposed
- * separately so the decomposer can reference it as a child in its own output without searching.
- * @param layers Every layer this subtree contains, [rootLayer] included.
- * @param wireframes Every wireframe this subtree contains.
- */
-@InternalApi
-class CompositionNativeSubtree(
-    val rootLayer: CapturedLayer,
-    val layers: List<CapturedLayer>,
-    val wireframes: List<CapturedWireframe>
+    val shouldContinue: () -> Boolean,
+    val nativeViewHandoff: (view: View, childIdentity: CapturedIdentity) -> Boolean
 )
 
 /**
@@ -102,9 +85,9 @@ class CompositionNativeSubtree(
  * @param rootChildren Direct children of the host view's own layer.
  * @param nodes Every further-nested [CapturedLayer] (kind `COMPOSE_NODE`) the decomposer built,
  * referenced from [rootChildren] or from each other's `children` - never embedded inline. Includes
- * every [CompositionNativeSubtree.layers] entry the decomposer chose to splice in.
- * @param wireframes Every leaf [CapturedWireframe] the decomposer produced (text, shape, or
- * an embedded native subtree's own wireframes), referenced from [rootChildren]/[nodes] by identity.
+ * only Compose-owned layers; native handoff layers are constructed separately by the caller.
+ * @param wireframes Every Compose-owned leaf [CapturedWireframe] the decomposer produced,
+ * referenced from [rootChildren]/[nodes] by identity. Native handoff output is added by the caller.
  */
 @InternalApi
 class CompositionHostDecomposeResult(

@@ -53,8 +53,11 @@ internal data class CapturedNativeView(
  * @param result Composition-owned layer and wireframe definitions. Native handoff roots appear
  * only as child references; their definitions must not be included in these result collections.
  * @param nativeSubtrees Copied native handoffs, whose definitions the worker constructs and adds once.
+ * @param contentIdentity Stable SDK-owned group identity minted during UI capture. Its clip encloses
+ * composition effects while keeping the host background outside content-only padding clips.
  */
 internal class CapturedComposition(
     val result: CompositionHostDecomposeResult,
-    val nativeSubtrees: List<CapturedNativeWindow>
+    val nativeSubtrees: List<CapturedNativeWindow>,
+    val contentIdentity: CapturedIdentity
 )

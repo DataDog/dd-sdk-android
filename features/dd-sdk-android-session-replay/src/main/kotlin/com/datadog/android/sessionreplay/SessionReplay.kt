@@ -78,7 +78,8 @@ object SessionReplay {
                     adaptiveCaptureSchedulingEnabled = effectiveConfiguration.adaptiveCaptureSchedulingEnabled,
                     internalCallback = effectiveConfiguration.internalCallback,
                     heatmapsEnabled = effectiveConfiguration.heatmapsEnabled,
-                    compositionTreeRecordingEnabled = effectiveConfiguration.compositionTreeRecordingEnabled
+                    compositionTreeRecordingEnabled = effectiveConfiguration.compositionTreeRecordingEnabled,
+                    compositionHostDecomposer = effectiveConfiguration.compositionHostDecomposer
                 )
 
                 if (isAlreadyRegistered()) {
