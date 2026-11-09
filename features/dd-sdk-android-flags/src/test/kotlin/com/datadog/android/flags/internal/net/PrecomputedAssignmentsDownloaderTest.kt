@@ -8,9 +8,11 @@ package com.datadog.android.flags.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.flags.internal.evaluation.AssignmentAuthorization
 import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -216,6 +218,36 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         assertThat(result).isEqualTo(PrecomputedAssignmentsResponse(fakeResponseBody, null))
+    }
+
+    @Test
+    fun `M redact ignored reason W readPrecomputedFlags() {assignment token supplied}`(
+        @StringForgery fakeResponseBody: String,
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        val token = "header.payload.signature"
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        val fakeResponse = createSuccessfulResponse(fakeResponseBody, fakeUrl)
+            .newBuilder()
+            .header("DD-Flag-Selection-Ignored", "reflected-$token")
+            .build()
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics, token))
+            .doReturn(fakeRequest)
+        whenever(mockRequestFactory.sendsFlagSelection) doReturn true
+        whenever(mockCallFactory.newCall(fakeRequest)) doReturn mockCall
+        whenever(mockCall.execute()) doReturn fakeResponse
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(
+            fakeEvaluationContext,
+            fakeDatadogContext,
+            fakeDiagnostics,
+            token
+        )
+
+        // Then
+        assertThat(result).isEqualTo(PrecomputedAssignmentsResponse(fakeResponseBody, "redacted"))
     }
 
     @Test
@@ -449,6 +481,107 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
+    fun `M return authorization rejection W readPrecomputedFlags() {typed 401}`(
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        val token = "header.payload.signature"
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        val body = """{"errors":[{"code":"${AssignmentAuthorization.AUTHORIZATION_FAILED}"}]}"""
+        val fakeResponse = createUnsuccessfulResponse(401, fakeUrl, body)
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics, token))
+            .doReturn(fakeRequest)
+        whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
+        whenever(mockCall.execute()).doReturn(fakeResponse)
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(
+            fakeEvaluationContext,
+            fakeDatadogContext,
+            fakeDiagnostics,
+            token
+        )
+
+        // Then
+        assertThat(result).isEqualTo(PrecomputedAssignmentsResult.AuthorizationRejected)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            "Assignment download failed: ${AssignmentAuthorization.AUTHORIZATION_FAILED}"
+        )
+        assertThat(body).doesNotContain(token)
+    }
+
+    @Test
+    fun `M retain ordinary failure W readPrecomputedFlags() {untyped 401}`(
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        val fakeResponse = createUnsuccessfulResponse(401, fakeUrl, """{"errors":[{"code":"OTHER"}]}""")
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
+            .doReturn(fakeRequest)
+        whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
+        whenever(mockCall.execute()).doReturn(fakeResponse)
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M retain ordinary failure W readPrecomputedFlags() {typed error without 401}`(
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        val body = """{"errors":[{"code":"${AssignmentAuthorization.AUTHORIZATION_FAILED}"}]}"""
+        val fakeResponse = createUnsuccessfulResponse(403, fakeUrl, body)
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
+            .doReturn(fakeRequest)
+        whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
+        whenever(mockCall.execute()).doReturn(fakeResponse)
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M redact transport throwable W readPrecomputedFlags() {token supplied}`(
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
+        // Given
+        val token = "header.payload.signature"
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        val exception = IOException("request header ${AssignmentAuthorization.HEADER}: $token")
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics, token))
+            .doReturn(fakeRequest)
+        whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
+        whenever(mockCall.execute()).doThrow(exception)
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(
+            fakeEvaluationContext,
+            fakeDatadogContext,
+            fakeDiagnostics,
+            token
+        )
+
+        // Then
+        assertThat(result).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            "Unexpected error while downloading flags with assignment authorization"
+        )
+    }
+
+    @Test
     fun `M return null W readPrecomputedFlags() { null response body }`(
         @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
     ) {
@@ -535,12 +668,12 @@ internal class PrecomputedAssignmentsDownloaderTest {
         .body(null)
         .build()
 
-    private fun createUnsuccessfulResponse(code: Int, url: String): Response = Response.Builder()
+    private fun createUnsuccessfulResponse(code: Int, url: String, body: String = ""): Response = Response.Builder()
         .request(Request.Builder().url(url).build())
         .protocol(Protocol.HTTP_1_1)
         .code(code)
         .message("Error")
-        .body("".toResponseBody("application/json".toMediaType()))
+        .body(body.toResponseBody("application/json".toMediaType()))
         .build()
 
     // endregion

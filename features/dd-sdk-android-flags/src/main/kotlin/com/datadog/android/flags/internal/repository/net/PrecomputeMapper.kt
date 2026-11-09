@@ -28,6 +28,18 @@ internal class PrecomputeMapper(
     internal fun map(
         rawJson: String,
         experimentationOptOut: ExperimentationOptOut.Request? = null
+    ): PrecomputedAssignments? = mapInternal(rawJson, experimentationOptOut, redactErrors = false)
+
+    internal fun map(
+        rawJson: String,
+        experimentationOptOut: ExperimentationOptOut.Request?,
+        redactErrors: Boolean
+    ): PrecomputedAssignments? = mapInternal(rawJson, experimentationOptOut, redactErrors)
+
+    private fun mapInternal(
+        rawJson: String,
+        experimentationOptOut: ExperimentationOptOut.Request?,
+        redactErrors: Boolean
     ): PrecomputedAssignments? = try {
         val attributes = AssignmentsResponse.fromJson(rawJson).data.attributes
         val metadata = JsonObject().apply {
@@ -68,22 +80,40 @@ internal class PrecomputeMapper(
             null
         }
     } catch (e: JsonParseException) {
-        internalLogger.log(
-            level = InternalLogger.Level.WARN,
-            target = InternalLogger.Target.MAINTAINER,
-            messageBuilder = { ERROR_FAILED_TO_PARSE_RESPONSE },
-            throwable = e
-        )
-
-        internalLogger.log(
-            level = InternalLogger.Level.WARN,
-            target = InternalLogger.Target.TELEMETRY,
-            messageBuilder = { ERROR_FAILED_TO_PARSE_RESPONSE },
-            throwable = e,
-            onlyOnce = true
-        )
-
+        logParseFailure(e, redactErrors)
         null
+    }
+
+    private fun logParseFailure(exception: JsonParseException, redactErrors: Boolean) {
+        if (redactErrors) {
+            // Parser exceptions can quote server-controlled response text. Never attach one for credentialed requests.
+            internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { ERROR_FAILED_TO_PARSE_RESPONSE }
+            )
+            internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                target = InternalLogger.Target.TELEMETRY,
+                messageBuilder = { ERROR_FAILED_TO_PARSE_RESPONSE },
+                onlyOnce = true
+            )
+        } else {
+            internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { ERROR_FAILED_TO_PARSE_RESPONSE },
+                throwable = exception
+            )
+
+            internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                target = InternalLogger.Target.TELEMETRY,
+                messageBuilder = { ERROR_FAILED_TO_PARSE_RESPONSE },
+                throwable = exception,
+                onlyOnce = true
+            )
+        }
     }
 
     private fun acknowledgesOptOut(options: JsonObject?, request: ExperimentationOptOut.Request?): Boolean {

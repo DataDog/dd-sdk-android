@@ -24,6 +24,8 @@ import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Sd
 import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Trigger
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
+import com.datadog.android.flags.internal.net.PrecomputedAssignmentsResponse
+import com.datadog.android.flags.internal.net.PrecomputedAssignmentsResult
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.internal.selection.logIgnoredFlagSelection
@@ -34,6 +36,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 
 internal fun interface InitializationTimeoutScheduler {
     fun schedule(timeoutMs: Long, action: () -> Unit): () -> Unit
@@ -95,6 +98,7 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
  * @param initializationTimeoutScheduler schedules the first context timeout
  * @param experimentationOptOut validates contexts and prevents superseded installations
  * @param callbackExecutor delivers customer callbacks outside state delivery and network operations
+ * @param assignmentAuthorization extracts assignment credentials and enforces subject isolation
  */
 @Suppress("TooManyFunctions") // Each step of the fetch, install and completion lifecycle is a separate function.
 internal class EvaluationsManager(
@@ -108,7 +112,9 @@ internal class EvaluationsManager(
     private val initializationTimeoutMs: Long?,
     private val initializationTimeoutScheduler: InitializationTimeoutScheduler,
     private val experimentationOptOut: ExperimentationOptOut,
-    private val callbackExecutor: Executor = InlineExecutor
+    private val callbackExecutor: Executor = InlineExecutor,
+    private val assignmentAuthorization: AssignmentAuthorization =
+        AssignmentAuthorization(internalLogger, experimentationOptOut.stateLock)
 ) {
     private val instanceId = UUIDv7Generator.generate(sdkCore.timeProvider.getDeviceTimestampMillis()).toString()
     private val fetchSequence = AtomicLong(0)
@@ -137,7 +143,14 @@ internal class EvaluationsManager(
         callback: EvaluationContextCallback? = null,
         onFetchFinished: () -> Unit = {}
     ) {
-        updatePreparedEvaluations(experimentationOptOut.prepare(context), callback, onFetchFinished)
+        updatePreparedEvaluations(prepare(context), callback, onFetchFinished)
+    }
+
+    internal fun prepare(context: EvaluationContext): ExperimentationOptOut.Request {
+        return synchronized(initializationTerminalLock) {
+            val authorization = assignmentAuthorization.prepare(context)
+            experimentationOptOut.prepare(authorization.context, authorization)
+        }
     }
 
     fun updatePreparedEvaluations(
@@ -148,7 +161,7 @@ internal class EvaluationsManager(
         if (request.invalid) {
             val error = FlagsInvalidContextException(ExperimentationOptOut.INVALID_CONTEXT_MESSAGE)
             synchronized(initializationTerminalLock) {
-                experimentationOptOut.ifCurrent(request) { enqueueState(FlagsClientState.Error(error)) }
+                ifCurrent(request) { enqueueState(FlagsClientState.Error(error)) }
                 enqueueCompletion(InitializationResult(callback), error)
             }
             effects.drain()
@@ -175,13 +188,13 @@ internal class EvaluationsManager(
             Sdk(instanceId),
             Fetch(sequence, if (sequence == 1L) Trigger.INITIALIZATION else Trigger.CONTEXT_CHANGE)
         )
-        val matchingCachedAssignments = AtomicBoolean(false)
-        val initializationCompletion = startInitializationTimeout(request, callback, matchingCachedAssignments) {
-            experimentationOptOut.ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
+        val cachedContext = AtomicReference<EvaluationContext?>()
+        val initializationCompletion = startInitializationTimeout(request, callback, cachedContext) {
+            ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
             effects.drain()
         }
         if (initializationCompletion == null) {
-            experimentationOptOut.ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
+            ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
             effects.drain()
         }
 
@@ -201,29 +214,63 @@ internal class EvaluationsManager(
                     InternalLogger.Target.MAINTAINER,
                     { "Processing evaluation context: ${context.targetingKey}" }
                 )
-                matchingCachedAssignments.set(
-                    flagsRepository.hasConfiguration() && flagsRepository.getEvaluationContext() == context
+                @Suppress("UnsafeThirdPartyFunctionCall") // AtomicReference accepts the repository's nullable snapshot.
+                cachedContext.set(
+                    if (flagsRepository.hasConfiguration()) flagsRepository.getEvaluationContext() else null
                 )
-                val response = datadogContext?.let { assignmentsReader.readPrecomputedFlags(context, it, diagnostics) }
-                val assignments = response?.let { rawResponse ->
-                    precomputeMapper.map(rawResponse.body, request.takeIf { it.optedOut })
+                val result = datadogContext?.let { datadogContext ->
+                    val assignmentToken = request.assignmentAuthorization?.token
+                    if (assignmentToken == null) {
+                        assignmentsReader.readPrecomputedFlags(context, datadogContext, diagnostics)
+                    } else {
+                        assignmentsReader.readPrecomputedFlags(
+                            context,
+                            datadogContext,
+                            diagnostics,
+                            assignmentToken
+                        )
+                    }
                 }
-                    ?.takeIf { it.obfuscation == null || supportsObfuscation }
-                if (assignments != null) {
-                    installFlags(
-                        request,
-                        assignments,
-                        response.flagSelectionIgnoredReason,
-                        initializationCompletion,
-                        callback
-                    )
-                } else {
-                    handleRequestFailure(
+                when (result) {
+                    is PrecomputedAssignmentsResponse -> {
+                        val response = result
+                        val assignments = mapAssignments(response, request, supportsObfuscation)
+                        if (assignments != null) {
+                            installFlags(
+                                request,
+                                assignments,
+                                response.flagSelectionIgnoredReason,
+                                initializationCompletion,
+                                callback
+                            )
+                        } else {
+                            handleRequestFailure(
+                                request,
+                                initializationCompletion,
+                                callback,
+                                cachedContext.get(),
+                                networkFailed = false,
+                                authorizationRejected = false
+                            )
+                        }
+                    }
+
+                    PrecomputedAssignmentsResult.AuthorizationRejected -> handleRequestFailure(
                         request,
                         initializationCompletion,
                         callback,
-                        matchingCachedAssignments.get(),
-                        response == null
+                        cachedContext.get(),
+                        networkFailed = false,
+                        authorizationRejected = true
+                    )
+
+                    null -> handleRequestFailure(
+                        request,
+                        initializationCompletion,
+                        callback,
+                        cachedContext.get(),
+                        networkFailed = true,
+                        authorizationRejected = false
                     )
                 }
             } finally {
@@ -231,6 +278,38 @@ internal class EvaluationsManager(
                 onFetchFinished()
             }
         }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun mapAssignments(
+        response: PrecomputedAssignmentsResponse,
+        request: ExperimentationOptOut.Request,
+        supportsObfuscation: Boolean
+    ): PrecomputedAssignments? = try {
+        val experimentationOptOut = request.takeIf { it.optedOut }
+        val assignments = if (request.assignmentAuthorization?.token == null) {
+            precomputeMapper.map(response.body, experimentationOptOut)
+        } else {
+            precomputeMapper.map(response.body, experimentationOptOut, redactErrors = true)
+        }
+        assignments?.takeIf { it.obfuscation == null || supportsObfuscation }
+    } catch (exception: Throwable) {
+        if (request.assignmentAuthorization?.token == null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { INVALID_RESPONSE_MESSAGE },
+                exception
+            )
+        } else {
+            // Response exceptions can quote server-controlled text. Never attach one for credentialed requests.
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { INVALID_RESPONSE_MESSAGE }
+            )
+        }
+        null
     }
 
     // Executor construction does not run the task. Rejection is rethrown only
@@ -250,23 +329,45 @@ internal class EvaluationsManager(
         request: ExperimentationOptOut.Request,
         initializationCompletion: InitializationCompletion?,
         callback: EvaluationContextCallback?,
-        matchingCachedAssignments: Boolean,
-        networkFailed: Boolean
+        cachedContext: EvaluationContext?,
+        networkFailed: Boolean,
+        authorizationRejected: Boolean
     ) {
-        val message = if (networkFailed) NETWORK_REQUEST_FAILED_MESSAGE else INVALID_RESPONSE_MESSAGE
+        val message = when {
+            authorizationRejected -> AssignmentAuthorization.AUTHORIZATION_FAILED
+            networkFailed -> NETWORK_REQUEST_FAILED_MESSAGE
+            else -> INVALID_RESPONSE_MESSAGE
+        }
         internalLogger.log(InternalLogger.Level.WARN, InternalLogger.Target.USER, { message })
         val throwable = NetworkRequestFailedException(message)
         synchronized(initializationTerminalLock) {
             val result = takeCompletion(initializationCompletion, callback)
-            val current = experimentationOptOut.ifCurrent(request) {
-                // Lifecycle is Stale only when retained flags match the requested context.
-                if (matchingCachedAssignments) {
+            val current = ifCurrent(request) {
+                if (authorizationRejected) {
+                    assignmentAuthorization.onAuthorizationRejected(request.assignmentAuthorization)
+                }
+                val fallback = assignmentAuthorization.fallback(
+                    request.assignmentAuthorization,
+                    cachedContext,
+                    experimentationOptOut.enabled
+                )
+                if (fallback.usable) {
+                    if (fallback.authorizationProtected) {
+                        assignmentAuthorization.onFallbackAccepted(request.assignmentAuthorization)
+                    }
                     enqueueState(FlagsClientState.Stale)
                 } else {
                     enqueueState(FlagsClientState.Error(throwable))
                 }
+                if (fallback.authorizationProtected) {
+                    enqueueCompletion(result, null)
+                } else {
+                    enqueueCompletion(result, throwable)
+                }
             }
-            enqueueCompletion(result, if (current) throwable else FlagsContextSupersededException(SUPERSEDED_MESSAGE))
+            if (!current) {
+                enqueueCompletion(result, FlagsContextSupersededException(SUPERSEDED_MESSAGE))
+            }
         }
         effects.drain()
     }
@@ -280,8 +381,8 @@ internal class EvaluationsManager(
     ) {
         val context = request.context
         val installed = synchronized(initializationTerminalLock) {
-            val isCurrent = experimentationOptOut.ifCurrent(request) {
-                installCurrentFlags(context, assignments, initializationCompletion, callback)
+            val isCurrent = ifCurrent(request) {
+                installCurrentFlags(request, context, assignments, initializationCompletion, callback)
             }
             if (!isCurrent) {
                 enqueueCompletion(
@@ -305,6 +406,7 @@ internal class EvaluationsManager(
 
     // Callers hold initializationTerminalLock; the Ready notification and callback run later from effects.drain().
     private fun installCurrentFlags(
+        request: ExperimentationOptOut.Request,
         context: EvaluationContext,
         assignments: PrecomputedAssignments,
         initializationCompletion: InitializationCompletion?,
@@ -316,6 +418,7 @@ internal class EvaluationsManager(
             assignments.obfuscation,
             assignments.observeFullEvaluationData
         )
+        assignmentAuthorization.onAssignmentsAccepted(request.assignmentAuthorization)
         val result = takeCompletion(initializationCompletion, callback)
         currentState = FlagsClientState.Ready
         effects.enqueue {
@@ -326,10 +429,12 @@ internal class EvaluationsManager(
         }
     }
 
+    // Timeout completion atomically reconciles request, state, and fallback policy.
+    @Suppress("CyclomaticComplexMethod")
     private fun startInitializationTimeout(
         request: ExperimentationOptOut.Request,
         callback: EvaluationContextCallback?,
-        matchingCachedAssignments: AtomicBoolean,
+        cachedContext: AtomicReference<EvaluationContext?>,
         beforeScheduling: () -> Unit
     ): InitializationCompletion? {
         val timeoutMs = initializationTimeoutMs
@@ -342,7 +447,9 @@ internal class EvaluationsManager(
                 synchronized(initializationTerminalLock) {
                     val claimedResult = completion.take(shouldCancelTimeout = false)
                         ?: return@synchronized null
-                    val target = if (experimentationOptOut.enabled) {
+                    val target = if (
+                        experimentationOptOut.enabled || assignmentAuthorization.shouldUseCurrentRequest()
+                    ) {
                         experimentationOptOut.currentValidRequest()
                     } else {
                         request
@@ -350,10 +457,19 @@ internal class EvaluationsManager(
                     val newerFailed = target !== request && currentState is FlagsClientState.Error
                     if (target != null && !newerFailed) {
                         if (currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale) {
-                            val hasMatchingCachedAssignments =
-                                (target === request && matchingCachedAssignments.get()) ||
-                                    flagsRepository.hasConfigurationForContext(target.context)
-                            val timeoutState = if (hasMatchingCachedAssignments) {
+                            val installedContext = fallbackContext(
+                                target,
+                                cachedContext.get().takeIf { target === request }
+                            )
+                            val fallback = assignmentAuthorization.fallback(
+                                target.assignmentAuthorization,
+                                installedContext,
+                                experimentationOptOut.enabled
+                            )
+                            if (fallback.authorizationProtected) {
+                                assignmentAuthorization.onFallbackAccepted(target.assignmentAuthorization)
+                            }
+                            val timeoutState = if (fallback.usable) {
                                 FlagsClientState.Stale
                             } else {
                                 FlagsClientState.Error(error)
@@ -367,6 +483,15 @@ internal class EvaluationsManager(
             }
             completion.armTimeoutCancellation(cancelTimeout)
         }
+    }
+
+    private fun fallbackContext(
+        request: ExperimentationOptOut.Request,
+        capturedContext: EvaluationContext?
+    ): EvaluationContext? = when {
+        capturedContext != null -> capturedContext
+        flagsRepository.hasConfigurationForContext(request.context) -> request.context
+        else -> null
     }
 
     // Called under the policy lock. State delivery must not acquire the state-holder lock here.
@@ -384,8 +509,16 @@ internal class EvaluationsManager(
         initializationCompletion.take()
     }
 
-    private fun enqueueCompletion(result: InitializationResult?, error: Throwable) {
+    private fun enqueueCompletion(result: InitializationResult?, error: Throwable?) {
         effects.enqueue { complete(result, error) }
+    }
+
+    private fun ifCurrent(request: ExperimentationOptOut.Request, action: () -> Unit): Boolean {
+        var authorizationCurrent = false
+        val optOutCurrent = experimentationOptOut.ifCurrent(request) {
+            authorizationCurrent = assignmentAuthorization.ifCurrent(request.assignmentAuthorization, action)
+        }
+        return optOutCurrent && authorizationCurrent
     }
 
     private fun complete(result: InitializationResult?, error: Throwable? = null) {

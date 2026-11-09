@@ -32,6 +32,7 @@ import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsResponse
+import com.datadog.android.flags.internal.net.PrecomputedAssignmentsResult
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.FlagsInstallation
 import com.datadog.android.flags.internal.repository.FlagsRepository
@@ -857,6 +858,144 @@ internal class EvaluationsManagerTest {
             verify(mockFlagsStateManager).updateState(FlagsClientState.Reconciling)
             verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
         }
+    }
+
+    @Test
+    fun `M use same subject fallback W updateEvaluationsForContext() {token request fails}`() {
+        // Given
+        val token = "header.payload.signature"
+        val requestedContext = EvaluationContext(
+            "subject",
+            mapOf(AssignmentAuthorization.ATTRIBUTE to token, "version" to "new")
+        )
+        val sanitizedContext = EvaluationContext("subject", mapOf("version" to "new"))
+        val cachedContext = EvaluationContext("subject", mapOf("version" to "old"))
+        val callback = mock<EvaluationContextCallback>()
+        whenever(mockFlagsRepository.hasConfiguration()).thenReturn(true)
+        whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(cachedContext)
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(sanitizedContext),
+                eq(fakeDatadogContext),
+                any(),
+                eq(token)
+            )
+        ).thenReturn(null)
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(requestedContext, callback)
+
+        // Then
+        verify(mockFlagsStateManager).updateState(FlagsClientState.Stale)
+        verify(callback).onSuccess()
+        verify(callback, never()).onFailure(any())
+    }
+
+    @Test
+    fun `M install sanitized context W updateEvaluationsForContext() {token request succeeds}`() {
+        // Given
+        val token = "header.payload.signature"
+        val publicContext = EvaluationContext(
+            "subject",
+            mapOf(AssignmentAuthorization.ATTRIBUTE to token, "plan" to "premium")
+        )
+        val sanitizedContext = EvaluationContext("subject", mapOf("plan" to "premium"))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(sanitizedContext),
+                eq(fakeDatadogContext),
+                any(),
+                eq(token)
+            )
+        ).thenReturn(PrecomputedAssignmentsResponse(EMPTY_FLAGS_RESPONSE_JSON, null))
+        whenever(
+            mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON, null, redactErrors = true)
+        ).thenReturn(PrecomputedAssignments(emptyMap()))
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(publicContext)
+
+        // Then
+        verify(mockFlagsRepository).installFlagsAndContext(sanitizedContext, emptyMap(), null, false)
+    }
+
+    @Test
+    fun `M redact response processing throwable W updateEvaluationsForContext() {token request}`() {
+        // Given
+        val token = "header.payload.signature"
+        val context = EvaluationContext("subject", mapOf(AssignmentAuthorization.ATTRIBUTE to token))
+        val sanitizedContext = EvaluationContext("subject")
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(sanitizedContext),
+                eq(fakeDatadogContext),
+                any(),
+                eq(token)
+            )
+        ).thenReturn(PrecomputedAssignmentsResponse("reflected-$token", null))
+        whenever(
+            mockPrecomputeMapper.map("reflected-$token", null, redactErrors = true)
+        ).thenThrow(IllegalStateException("reflected-$token"))
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(context)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            "Unable to read the feature flags response."
+        )
+    }
+
+    @Test
+    fun `M withhold cross subject fallback W updateEvaluationsForContext() {token request fails}`() {
+        // Given
+        val token = "header.payload.signature"
+        val requestedContext = EvaluationContext(
+            "requested",
+            mapOf(AssignmentAuthorization.ATTRIBUTE to token)
+        )
+        val callback = mock<EvaluationContextCallback>()
+        whenever(mockFlagsRepository.hasConfiguration()).thenReturn(true)
+        whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(EvaluationContext("installed"))
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(requestedContext, callback)
+
+        // Then
+        verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
+        verify(callback).onFailure(isA<NetworkRequestFailedException>())
+        verify(callback, never()).onSuccess()
+    }
+
+    @Test
+    fun `M use same subject fallback W updateEvaluationsForContext() {typed rejection without token}`() {
+        // Given
+        val requestedContext = EvaluationContext("subject", mapOf("version" to "new"))
+        val cachedContext = EvaluationContext("subject", mapOf("version" to "old"))
+        val callback = mock<EvaluationContextCallback>()
+        whenever(mockFlagsRepository.hasConfiguration()).thenReturn(true)
+        whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(cachedContext)
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(requestedContext),
+                eq(fakeDatadogContext),
+                any()
+            )
+        ).thenReturn(PrecomputedAssignmentsResult.AuthorizationRejected)
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(requestedContext, callback)
+
+        // Then
+        verify(mockFlagsStateManager).updateState(FlagsClientState.Stale)
+        verify(callback).onSuccess()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            AssignmentAuthorization.AUTHORIZATION_FAILED
+        )
     }
 
     @ParameterizedTest

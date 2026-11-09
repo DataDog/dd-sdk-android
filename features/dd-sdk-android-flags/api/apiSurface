@@ -72,6 +72,7 @@ enum com.datadog.android.flags.model.ErrorCode
   - PARSE_ERROR
   - TYPE_MISMATCH
   - INVALID_CONTEXT
+  - GENERAL
 data class com.datadog.android.flags.model.EvaluationContext
   constructor(String, Map<String, String> = emptyMap())
   companion object 

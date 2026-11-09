@@ -127,6 +127,50 @@ val client = FlagsClient.Builder().build()
 val analyticsClient = FlagsClient.Builder("analytics").build()
 ```
 
+### Authorize assignment downloads for a subject
+
+For environments configured to require subject authorization, obtain a JWT from your backend and include it in one
+complete context update:
+
+```kotlin
+client.setEvaluationContext(
+    EvaluationContext(
+        targetingKey = "user-123",
+        attributes = mapOf(
+            "country" to "US",
+            "dd_assignment_token" to jwtFromYourBackend
+        )
+    )
+)
+```
+
+Your backend signs the token for the requested subject and environment; keep the signing private key on the backend.
+Replace the token before it expires by calling `setEvaluationContext` again with the complete context. A token-only
+change performs a full assignment download. Omitting `dd_assignment_token` or setting it to an empty string removes
+the credential; the SDK never restores an earlier token.
+
+The SDK sends the token only in the reserved `DD-Assignment-Token` request header. It removes
+`dd_assignment_token` from targeting attributes, persisted assignment context, exposure data, evaluation telemetry,
+and SDK logs. A custom assignment endpoint must forward the header. The SDK treats the JWT as opaque: the assignment
+endpoint validates its signature, expiration, and other claims rather than relying on the device clock. A token must
+contain only printable ASCII characters without whitespace. An unusable value is omitted with a fixed warning that
+does not contain the value, and the request continues without a token.
+
+A usable token establishes a subject boundary as soon as the update is accepted. Retained assignments for a different
+targeting key become unavailable immediately, during the download and after a failure, so evaluation returns the
+application default with `ErrorCode.GENERAL`. Retained assignments for the same targeting key remain eligible as an
+availability fallback. That fallback keeps its original downloaded context and changes client state to `Stale`.
+Experimentation opt-out modes still require their stricter exact-context match.
+
+The server establishes the same boundary without a token only for HTTP 401 responses containing a JSON:API error with
+code `ASSIGNMENT_AUTHORIZATION_FAILED`. Removing a token or retrying does not restore another subject's assignments.
+A successful download or an eligible same-subject fallback recovers the client. The SDK does not parse token claims,
+automatically refresh a token, retry the update, or verify a signed assignment response.
+
+Ordinary no-token flows keep their existing behavior until a token or typed authorization rejection has established a
+boundary. Missing, empty, and unusable token values do not establish one by themselves. `ErrorCode.GENERAL` is a
+public enum constant, so exhaustive Kotlin `when` expressions over `ErrorCode` must handle it.
+
 ### Exclude a subject from experimentation
 
 Configure the client to honor `dd_experimentation_opt_out_at`:

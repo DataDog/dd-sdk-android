@@ -31,5 +31,8 @@ enum class ErrorCode {
     TYPE_MISMATCH,
 
     /** The evaluation context contains an invalid attribute. */
-    INVALID_CONTEXT
+    INVALID_CONTEXT,
+
+    /** A general error prevented the flag from being resolved. */
+    GENERAL
 }

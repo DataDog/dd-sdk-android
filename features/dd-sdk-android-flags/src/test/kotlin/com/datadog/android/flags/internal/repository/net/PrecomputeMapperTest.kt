@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.repository.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.model.VariationType
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.DoubleForgery
@@ -517,6 +518,23 @@ internal class PrecomputeMapperTest {
             eq(null)
         )
         assertThat(messageCaptor.firstValue.invoke()).isEqualTo("Failed to parse precomputed response")
+    }
+
+    @Test
+    fun `M redact parser throwable W map() {credentialed response}`() {
+        // Given
+        val invalidJson = "{ reflected-secret"
+
+        // When
+        val result = testedMapper.map(invalidJson, null, redactErrors = true)
+
+        // Then
+        assertThat(result).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            "Failed to parse precomputed response"
+        )
     }
 
     @Test

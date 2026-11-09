@@ -81,6 +81,34 @@ OpenFeatureAPI.setProviderAndWait(provider)
 
 You can configure the underlying `FlagsClient` before converting it to an OpenFeature provider:
 
+#### Authorize assignment downloads for a subject
+
+For environments configured to require subject authorization, obtain a JWT from your backend and include it in one
+complete OpenFeature context update:
+
+```kotlin
+OpenFeatureAPI.setEvaluationContext(
+    ImmutableContext(
+        targetingKey = "user-123",
+        attributes = mapOf(
+            "country" to Value.String("US"),
+            "dd_assignment_token" to Value.String(jwtFromYourBackend)
+        )
+    )
+)
+```
+
+The provider forwards the credential in the reserved `DD-Assignment-Token` request header and removes it from the
+Datadog targeting context, persistence, exposure data, evaluation telemetry, and logs. OpenFeature and application
+hooks can still access the original OpenFeature context, and other providers sharing it can read or forward the token;
+use a Datadog-only OpenFeature domain for token-bearing contexts.
+
+Use `Value.String` for the token. `Value.Null`, a missing value, or an empty string sends no header. Other OpenFeature
+value types, strings with whitespace, and non-ASCII strings are omitted with a fixed warning that never includes the
+value. The assignment request still proceeds. See the
+[native subject-authorization behavior](../dd-sdk-android-flags/README.md#authorize-assignment-downloads-for-a-subject)
+for same-subject fallback, cross-subject isolation, recovery, and the server rejection contract.
+
 #### Control evaluation telemetry
 
 Enable the control on the underlying client. Supply your decision as a typed boolean in the OpenFeature context:

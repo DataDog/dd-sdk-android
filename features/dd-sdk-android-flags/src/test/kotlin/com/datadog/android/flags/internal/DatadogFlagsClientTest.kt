@@ -15,6 +15,7 @@ import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKey
+import com.datadog.android.flags.internal.evaluation.AssignmentAuthorization
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
@@ -236,6 +237,114 @@ internal class DatadogFlagsClientTest {
         verify(mockRepository).getEvaluationSnapshot(fakeJsonKey)
         verify(mockRepository, never()).getEvaluationContext()
         verify(mockRepository).waitForPersistenceLoad()
+    }
+
+    @Test
+    fun `M return general error and default W resolve() {protected cross subject assignments}`(forge: Forge) {
+        // Given
+        val flag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = "true",
+            doLog = true
+        )
+        val installedContext = EvaluationContext("installed")
+        val experimentationOptOut = ExperimentationOptOut()
+        val assignmentAuthorization = AssignmentAuthorization(
+            mockInternalLogger,
+            experimentationOptOut.stateLock
+        )
+        assignmentAuthorization.prepare(
+            EvaluationContext(
+                "requested",
+                mapOf(AssignmentAuthorization.ATTRIBUTE to "header.payload.signature")
+            )
+        )
+        whenever(mockFlagsRepository.getEvaluationSnapshot(fakeJsonKey)) doReturn
+            FlagEvaluationSnapshot(flag, installedContext, false)
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore,
+            mockEvaluationsManager,
+            mockFlagsRepository,
+            FlagsConfiguration.Builder().trackExposures(true).build(),
+            mockRumEvaluationLogger,
+            mockProcessor,
+            null,
+            mockFlagsStateManager,
+            false,
+            experimentationOptOut,
+            assignmentAuthorization
+        )
+
+        // When
+        val result = testedClient.resolve(fakeJsonKey, false)
+
+        // Then
+        assertThat(result.value).isFalse()
+        assertThat(result.errorCode).isEqualTo(ErrorCode.GENERAL)
+        assertThat(result.errorMessage)
+            .isEqualTo("Flag '$fakeJsonKey': ${AssignmentAuthorization.AUTHORIZATION_FAILED}")
+        verifyNoInteractions(mockProcessor)
+    }
+
+    @Test
+    fun `M exclude assignment token W trackFlagExposure()`(forge: Forge) {
+        // Given
+        val token = "header.payload.signature"
+        val context = EvaluationContext(
+            "subject",
+            mapOf(AssignmentAuthorization.ATTRIBUTE to token, "plan" to "premium")
+        )
+        val flag = forge.getForgery<PrecomputedFlag>().copy(doLog = true)
+        val capturedContext = argumentCaptor<EvaluationContext>()
+
+        // When
+        testedClient.trackFlagExposure(fakeJsonKey, flag, context)
+
+        // Then
+        verify(mockProcessor).processEvent(eq(fakeJsonKey), capturedContext.capture(), eq(flag))
+        assertThat(capturedContext.firstValue.attributes).isEqualTo(mapOf("plan" to "premium"))
+    }
+
+    @Test
+    fun `M exclude assignment token W trackFlagEvaluationEvent()`(forge: Forge) {
+        // Given
+        val token = "header.payload.signature"
+        val context = EvaluationContext(
+            "subject",
+            mapOf(AssignmentAuthorization.ATTRIBUTE to token, "plan" to "premium")
+        )
+        val flag = forge.getForgery<PrecomputedFlag>()
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+        val capturedContext = argumentCaptor<EvaluationContext>()
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore,
+            mockEvaluationsManager,
+            mockFlagsRepository,
+            FlagsConfiguration.Builder().trackEvaluations(true).build(),
+            mockRumEvaluationLogger,
+            mockProcessor,
+            mockEvaluationsFeature,
+            mockFlagsStateManager,
+            false,
+            ExperimentationOptOut()
+        )
+
+        // When
+        testedClient.trackFlagEvaluationEvent(fakeJsonKey, flag, context, null)
+
+        // Then
+        verify(mockEvaluationsFeature).processEvaluation(
+            eq(fakeJsonKey),
+            capturedContext.capture(),
+            eq(flag.variationKey),
+            eq(flag.allocationKey),
+            isNull(),
+            isNull(),
+            eq(flag.observeFullEvaluationData),
+            eq(context.targetingKey),
+            any()
+        )
+        assertThat(capturedContext.firstValue.attributes).isEqualTo(mapOf("plan" to "premium"))
     }
 
     @ParameterizedTest

@@ -23,6 +23,7 @@ import com.datadog.android.flags.internal.LogWithPolicy
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.NoOpRumEvaluationLogger
 import com.datadog.android.flags.internal.RumEvaluationLogger
+import com.datadog.android.flags.internal.evaluation.AssignmentAuthorization
 import com.datadog.android.flags.internal.evaluation.EvaluationCallbackDispatcher
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
@@ -460,6 +461,10 @@ interface FlagsClient {
             evaluationTelemetryOptOutParameterEnabled: Boolean
         ): FlagsClient {
             val experimentationOptOut = ExperimentationOptOut(experimentationOptOutMode)
+            val assignmentAuthorization = AssignmentAuthorization(
+                featureSdkCore.internalLogger,
+                experimentationOptOut.stateLock
+            )
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
             )
@@ -523,7 +528,8 @@ interface FlagsClient {
                 experimentationOptOut = experimentationOptOut,
                 callbackExecutor = EvaluationCallbackDispatcher(featureSdkCore.internalLogger) {
                     featureSdkCore.createSingleThreadExecutorService(FLAGS_CALLBACK_EXECUTOR_NAME)
-                }
+                },
+                assignmentAuthorization = assignmentAuthorization
             )
 
             val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)
@@ -538,7 +544,8 @@ interface FlagsClient {
                 evaluationsFeature = evaluationsFeature,
                 flagStateManager = flagStateManager,
                 experimentationOptOut = experimentationOptOut,
-                evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled
+                evaluationTelemetryOptOutParameterEnabled = evaluationTelemetryOptOutParameterEnabled,
+                assignmentAuthorization = assignmentAuthorization
             )
         }
 
