@@ -126,7 +126,6 @@ internal class ProfilingDataWriter(
                         eventType = EventType.DEFAULT
                     )
                 }
-                // Outside the monitor, in the same task, before the trace file is deleted.
                 onWritten(isWritten)
                 fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
             }

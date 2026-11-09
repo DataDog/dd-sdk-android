@@ -167,7 +167,14 @@ internal class RumFeature(
 ) : StorageBackedFeature, FeatureEventReceiver, HeatmapIdentifierRegistryProvider {
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
-    internal val pendingOomErrorStore = PendingOomErrorStore(sdkCore, handler) { dataWriter }
+
+    // Created in onInitialize, shut down in onStop; NoOp before and after, like the vital executor.
+    internal var oomErrorExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
+    internal val pendingOomErrorStore = PendingOomErrorStore(
+        sdkCore,
+        { oomErrorExecutorService },
+        { sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.dataStore }
+    ) { dataWriter }
     internal val initialized = AtomicBoolean(false)
 
     internal var sampleRate: Float = 0f
@@ -287,6 +294,8 @@ internal class RumFeature(
 
         // The vital executor backs both the CPU/memory vital monitors and timeseries sampling.
         if (vitalsUpdatesRequired || configuration.timeseriesConfiguration != null) initializeVitalExecutorService()
+
+        oomErrorExecutorService = sdkCore.createScheduledExecutorService("rum-oom-error")
 
         if (vitalsUpdatesRequired) {
             // CPU/memory monitors schedule on the vital executor, so they are only set up when vitals
@@ -458,6 +467,8 @@ internal class RumFeature(
         anrDetectorExecutorService?.shutdownNow()
         anrDetectorRunnable?.stop()
         vitalExecutorService = NoOpScheduledExecutorService()
+        oomErrorExecutorService.shutdownNow()
+        oomErrorExecutorService = NoOpScheduledExecutorService()
         sessionListener = NoOpRumSessionListener()
 
         cleanupInfoProviders()

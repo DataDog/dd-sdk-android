@@ -47,6 +47,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 /**
  * A fatal OOM RUM error is held across a process death and sent on the next launch with a profiling
@@ -126,6 +127,22 @@ class ProfilingRumHeldOomErrorTest {
         // Then
         assertThat(profileErrorIds(next.core)).isEmpty()
         assertThat(errorProfilingStatus(next.core, errorId)).isEqualTo(ErrorEvent.ProfilingStatus.STOPPED)
+    }
+
+    @Test
+    fun `M send held error without profiling status W no OOM profile outcome before the timeout`(forge: Forge) {
+        // Given
+        val crashed = launch(forge, isProfilingFirst = false)
+        val errorId = crashWithOom(crashed)
+        val next = launch(forge, isProfilingFirst = true)
+        assertThat(errorEvents(next.core)).isEmpty()
+
+        // When
+        next.core.advanceTimeBy(TIMEOUT_ADVANCE_MS)
+
+        // Then
+        assertThat(errorProfilingStatus(next.core, errorId)).isNull()
+        assertThat(profileErrorIds(next.core)).isEmpty()
     }
 
     @Test
@@ -232,6 +249,9 @@ class ProfilingRumHeldOomErrorTest {
 
     companion object {
         private val mainLooper = MainLooperTestConfiguration()
+
+        // The held OOM error times out one minute after the launch that loads it.
+        private val TIMEOUT_ADVANCE_MS = TimeUnit.MINUTES.toMillis(1) + 1
 
         @TestConfigurationsProvider
         @JvmStatic

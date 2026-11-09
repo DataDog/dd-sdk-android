@@ -43,8 +43,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -54,6 +52,8 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
@@ -648,7 +648,7 @@ internal class ProfilingDataWriterTest {
         val profileFile = File(tmp, fakeFileName).apply { writeBytes(forge.aString().toByteArray()) }
         val fakeIsWritten = forge.aBool()
         whenever(mockEventBatchWriter.write(any(), anyOrNull(), any())) doReturn fakeIsWritten
-        val writtenOutcomes = mutableListOf<Pair<Boolean, Boolean>>()
+        val mockOnWritten = mock<(Boolean) -> Unit>()
 
         // When
         testedDataWriterTest.writeTriggerProfile(
@@ -661,11 +661,12 @@ internal class ProfilingDataWriterTest {
             ),
             rumErrorId = rumErrorId,
             rumContext = rumContext,
-            onWritten = { writtenOutcomes.add(it to profileFile.exists()) }
+            onWritten = mockOnWritten
         )
 
         // Then
-        assertThat(writtenOutcomes).containsExactly(fakeIsWritten to true)
+        verify(mockOnWritten)(fakeIsWritten)
+        verifyNoMoreInteractions(mockOnWritten)
         val argumentCaptor = argumentCaptor<RawBatchEvent>()
         verify(mockEventBatchWriter).write(
             event = argumentCaptor.capture(),
@@ -726,7 +727,7 @@ internal class ProfilingDataWriterTest {
     ) {
         // Given
         val profileFile = File(tmp, fakeFileName).apply { writeBytes(ByteArray(0)) }
-        val writtenOutcomes = mutableListOf<Boolean>()
+        val mockOnWritten = mock<(Boolean) -> Unit>()
 
         // When
         testedDataWriterTest.writeTriggerProfile(
@@ -737,11 +738,12 @@ internal class ProfilingDataWriterTest {
             ),
             rumErrorId = rumErrorId,
             rumContext = rumContext,
-            onWritten = { writtenOutcomes.add(it) }
+            onWritten = mockOnWritten
         )
 
         // Then
-        assertThat(writtenOutcomes).containsExactly(false)
+        verify(mockOnWritten)(false)
+        verifyNoMoreInteractions(mockOnWritten)
         verifyNoInteractions(mockEventBatchWriter)
         assertThat(profileFile.exists()).isFalse()
     }

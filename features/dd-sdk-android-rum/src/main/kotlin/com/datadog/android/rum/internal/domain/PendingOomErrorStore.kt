@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.domain
 
-import android.os.Handler
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
@@ -17,6 +16,7 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.internal.profiling.ProfilerEvent
@@ -26,6 +26,8 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 /**
@@ -37,22 +39,21 @@ import java.util.concurrent.TimeUnit
 @Suppress("TooManyFunctions")
 internal class PendingOomErrorStore(
     private val sdkCore: FeatureSdkCore,
-    private val handler: Handler,
+    private val executorProvider: () -> ScheduledExecutorService,
+    private val dataStoreProvider: () -> DataStoreHandler?,
     private val dataWriterProvider: () -> DataWriter<Any>
 ) {
     private val lock = Any()
 
     // All guarded by lock.
-    private var dataStore: DataStoreHandler? = null
     private var isLoaded = false
+    private var timeoutFuture: ScheduledFuture<*>? = null
 
     // The single held error: stored on disk by this process, or loaded from the previous launch.
     private var heldError: ErrorEvent? = null
 
-    private val timeoutRunnable = Runnable { onTimeout() }
-
-    fun start(dataStore: DataStoreHandler) {
-        synchronized(lock) { this.dataStore = dataStore }
+    fun start() {
+        val dataStore = dataStoreProvider() ?: return
         dataStore.value(
             key = KEY,
             version = VERSION,
@@ -70,7 +71,7 @@ internal class PendingOomErrorStore(
     }
 
     fun stop() {
-        handler.removeCallbacks(timeoutRunnable)
+        cancelTimeout()
     }
 
     /**
@@ -85,16 +86,17 @@ internal class PendingOomErrorStore(
     @WorkerThread
     fun tryHold(event: ErrorEvent): Boolean {
         val older = synchronized(lock) {
-            val store = dataStore
-            if (!isLoaded || store == null) return false
+            val store = if (isLoaded) dataStoreProvider() else null
             // TODO RUM-19677: Apply the RUM error event mapper before persisting the held error. Today the unredacted error sits on disk until it is released and mapped on the next launch.
+            if (store == null) return false
+            // Cancel the timeout of the error being replaced before the new one is visible, so it
+            // cannot fire between the two and take the new error.
+            cancelTimeout()
             store.setValue(KEY, event, VERSION, holdCallback(event), ErrorEventSerializer(sdkCore.internalLogger))
             heldError.also {
                 heldError = event
             }
         }
-        // A pending timeout must not write the new one.
-        handler.removeCallbacks(timeoutRunnable)
         log(LOG_HELD)
         older?.let { write(it, null) }
         return true
@@ -130,19 +132,20 @@ internal class PendingOomErrorStore(
     private fun onLoaded(loaded: ErrorEvent?) {
         synchronized(lock) {
             // Removed before any hold of this process can be stored: the data store runs in order.
-            if (loaded != null) dataStore?.removeValue(KEY)
+            if (loaded != null) dataStoreProvider()?.removeValue(KEY)
             isLoaded = true
             heldError = loaded
         }
         if (loaded != null) {
-            handler.postDelayed(timeoutRunnable, TIMEOUT_MS)
+            scheduleTimeout(loaded)
             announce(loaded)
         }
     }
 
-    private fun onTimeout() {
-        val event = synchronized(lock) { heldError } ?: return
-        take(event.error.id.orEmpty())?.let {
+    private fun onTimeout(rumErrorId: String) {
+        // Bound to the error the timeout was scheduled for: a stale one after a replacement finds
+        // nothing to take.
+        take(rumErrorId)?.let {
             log(LOG_TIMED_OUT)
             write(it, null)
         }
@@ -153,7 +156,7 @@ internal class PendingOomErrorStore(
         val event = synchronized(lock) {
             heldError?.takeIf { it.error.id == rumErrorId }?.also { heldError = null }
         }
-        if (event != null) handler.removeCallbacks(timeoutRunnable)
+        if (event != null) cancelTimeout()
         return event
     }
 
@@ -182,6 +185,24 @@ internal class PendingOomErrorStore(
 
     private fun log(message: String) {
         sdkCore.internalLogger.log(InternalLogger.Level.DEBUG, InternalLogger.Target.USER, { message })
+    }
+
+    private fun scheduleTimeout(event: ErrorEvent) {
+        val future = executorProvider().scheduleSafe(
+            OPERATION_TIMEOUT,
+            TIMEOUT_MS,
+            TimeUnit.MILLISECONDS,
+            sdkCore.internalLogger,
+            Runnable { onTimeout(event.error.id.orEmpty()) }
+        )
+        synchronized(lock) { timeoutFuture = future }
+    }
+
+    private fun cancelTimeout() {
+        synchronized(lock) {
+            timeoutFuture?.cancel(false)
+            timeoutFuture = null
+        }
     }
 
     /** Same attribute sanitization and safe mapping as the RUM event serializer. */
@@ -234,6 +255,7 @@ internal class PendingOomErrorStore(
         internal const val KEY = "pending_oom_error"
         internal const val VERSION = 1
         internal val TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1)
+        internal const val OPERATION_TIMEOUT = "pending_oom_error_timeout"
         internal const val LOG_HELD = "Fatal OOM error held until the outcome of its OOM profile is known."
         internal const val LOG_SERIALIZATION_FAILED =
             "Fatal OOM error could not be serialized: it is written right away."

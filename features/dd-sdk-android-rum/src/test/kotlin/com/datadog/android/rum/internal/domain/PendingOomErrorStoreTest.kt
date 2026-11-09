@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.domain
 
-import android.os.Handler
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
@@ -23,6 +22,7 @@ import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
+import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.utils.WriteOperation
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.utils.forge.Configurator
@@ -56,6 +56,10 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.Delayed
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -75,9 +79,6 @@ internal class PendingOomErrorStoreTest {
 
     @Mock
     lateinit var mockProfilingScope: FeatureScope
-
-    @Mock
-    lateinit var mockHandler: Handler
 
     @Mock
     lateinit var mockDataStore: DataStoreHandler
@@ -102,6 +103,12 @@ internal class PendingOomErrorStoreTest {
 
     // Callbacks of the stored error writes, completed by the test like the data store's thread would.
     private val storeWriteCallbacks = mutableListOf<DataStoreWriteCallback?>()
+
+    // What the data store provider returns; the test makes it null to simulate a missing feature.
+    private var providedDataStore: DataStoreHandler? = null
+
+    // The executor the timeout is scheduled on; the test runs its tasks on demand.
+    private var fakeExecutor = FakeOomErrorExecutor()
 
     @BeforeEach
     fun `set up`(@StringForgery fakeErrorId: String) {
@@ -137,15 +144,49 @@ internal class PendingOomErrorStoreTest {
             disk.clear()
             Unit
         }
-        testedStore = PendingOomErrorStore(mockSdkCore, mockHandler) { mockWriter }
+        providedDataStore = mockDataStore
+        fakeExecutor = FakeOomErrorExecutor()
+        testedStore = PendingOomErrorStore(mockSdkCore, { fakeExecutor }, { providedDataStore }) { mockWriter }
     }
+
+    // region null provider
+
+    @Test
+    fun `M not crash and not read W start() {provider returns null}`() {
+        // Given
+        providedDataStore = null
+
+        // When
+        testedStore.start()
+
+        // Then
+        verify(mockDataStore, never()).value<Any>(any(), anyOrNull(), any(), any())
+        assertThat(fakeExecutor.scheduledTasks).isEmpty()
+    }
+
+    @Test
+    fun `M not hold W tryHold() {provider returns null}`() {
+        // Given
+        load(null)
+        providedDataStore = null
+
+        // When
+        val result = testedStore.tryHold(fakeEvent)
+
+        // Then
+        assertThat(result).isFalse
+        verify(mockWriter, never()).write(any(), any(), any())
+        verify(mockProfilingScope, never()).sendEvent(any())
+    }
+
+    // endregion
 
     // region tryHold
 
     @Test
     fun `M not hold W tryHold() {not loaded}`() {
         // Given
-        testedStore.start(mockDataStore)
+        testedStore.start()
 
         // When
         val result = testedStore.tryHold(fakeEvent)
@@ -295,7 +336,7 @@ internal class PendingOomErrorStoreTest {
     @Test
     fun `M hold W tryHold() {load failed}`() {
         // Given
-        testedStore.start(mockDataStore)
+        testedStore.start()
         readCallback?.onFailure()
 
         // When
@@ -340,7 +381,9 @@ internal class PendingOomErrorStoreTest {
         assertThat(disk).isEmpty()
         verify(mockWriter, never()).write(any(), any(), any())
         verify(mockProfilingScope).sendEvent(ProfilerEvent.RumHeldOomErrorEvent(errorId))
-        verify(mockHandler).postDelayed(any(), eq(PendingOomErrorStore.TIMEOUT_MS))
+        val (_, future) = fakeExecutor.scheduledTasks.single()
+        assertThat(future.delayMs).isEqualTo(PendingOomErrorStore.TIMEOUT_MS)
+        assertThat(future.cancelled).isFalse
     }
 
     @Test
@@ -350,7 +393,7 @@ internal class PendingOomErrorStoreTest {
 
         // Then
         verify(mockDataStore, never()).removeValue(any(), anyOrNull())
-        verify(mockHandler, never()).postDelayed(any(), any())
+        assertThat(fakeExecutor.scheduledTasks).isEmpty()
     }
 
     @Test
@@ -425,6 +468,36 @@ internal class PendingOomErrorStoreTest {
     }
 
     @Test
+    fun `M not write the new one W stale timeout of the replaced error runs W tryHold()`(
+        @Forgery fakeNewEventRaw: ErrorEvent,
+        @StringForgery fakeNewErrorId: String
+    ) {
+        // Given
+        val fakeNewEvent = fakeNewEventRaw.copy(
+            error = fakeNewEventRaw.error.copy(id = fakeNewErrorId)
+        )
+        load(fakeEvent)
+        val staleTimeout = fakeExecutor.scheduledTasks.single().first
+
+        // When
+        assertThat(testedStore.tryHold(fakeNewEvent)).isTrue
+        // A stale timeout firing even though it was cancelled: it must not touch the new error.
+        staleTimeout.run()
+
+        // Then: only the older error was written right away, without status, and the new one is
+        // still held and resolvable by an answer.
+        testedStore.onOomProfileWriteResult(fakeNewErrorId, true)
+        val captor = argumentCaptor<Any>()
+        verify(mockWriter, times(2)).write(eq(mockBatchWriter), captor.capture(), eq(EventType.CRASH))
+        val written = captor.allValues.map { it as ErrorEvent }
+        assertThat(written[0].error.id).isEqualTo(errorId)
+        assertThat(written[0].dd.profiling).isNull()
+        assertThat(written[1].error.id).isEqualTo(fakeNewErrorId)
+        assertThat(written[1].dd.profiling?.status).isEqualTo(ErrorEvent.ProfilingStatus.RUNNING)
+        assertThat(disk).containsExactly(fakeNewEvent)
+    }
+
+    @Test
     fun `M write without profiling and ignore later profile write result W timeout`() {
         // Given
         load(fakeEvent)
@@ -449,9 +522,9 @@ internal class PendingOomErrorStoreTest {
         // Then
         assertThat(disk).isEmpty()
         clearInvocations(mockProfilingScope)
-        testedStore = PendingOomErrorStore(mockSdkCore, mock()) { mockWriter }
+        testedStore = PendingOomErrorStore(mockSdkCore, { fakeExecutor }, { providedDataStore }) { mockWriter }
         readCallback = null
-        testedStore.start(mockDataStore)
+        testedStore.start()
         readCallback?.onSuccess(null)
         verify(mockProfilingScope, never()).sendEvent(any())
     }
@@ -591,28 +664,58 @@ internal class PendingOomErrorStoreTest {
     private fun load(record: ErrorEvent?) {
         disk.clear()
         record?.let { disk.add(it) }
-        testedStore.start(mockDataStore)
+        testedStore.start()
         readCallback?.onSuccess(record?.let { DataStoreContent(PendingOomErrorStore.VERSION, it) })
     }
 
-    /** The posted timeout is removed: running it would write nothing. */
+    /** The scheduled timeout is cancelled: running it would write nothing. */
     private fun verifyTimeoutCancelled() {
-        argumentCaptor<Runnable> {
-            verify(mockHandler).postDelayed(capture(), eq(PendingOomErrorStore.TIMEOUT_MS))
-            verify(mockHandler).removeCallbacks(firstValue)
-        }
+        assertThat(lastTimeout().second.cancelled).isTrue
     }
 
     private fun runTimeout() {
-        argumentCaptor<Runnable> {
-            verify(mockHandler).postDelayed(capture(), eq(PendingOomErrorStore.TIMEOUT_MS))
-            lastValue.run()
-        }
+        lastTimeout().first.run()
     }
+
+    private fun lastTimeout(): Pair<Runnable, FakeScheduledFuture> = fakeExecutor.scheduledTasks.last()
 
     private fun writtenEvent(): ErrorEvent {
         val captor = argumentCaptor<Any>()
         verify(mockWriter).write(eq(mockBatchWriter), captor.capture(), eq(EventType.CRASH))
         return captor.firstValue as ErrorEvent
+    }
+}
+
+/** A timeout future the test can inspect: its delay and whether it was cancelled. */
+private class FakeScheduledFuture(val delayMs: Long) : ScheduledFuture<Any> {
+    var cancelled = false
+        private set
+
+    override fun cancel(mayInterruptIfRunning: Boolean): Boolean {
+        cancelled = true
+        return true
+    }
+
+    override fun isCancelled(): Boolean = cancelled
+
+    override fun isDone(): Boolean = cancelled
+
+    override fun get(): Any? = null
+
+    override fun get(timeout: Long, unit: TimeUnit?): Any? = null
+
+    override fun getDelay(unit: TimeUnit?): Long = delayMs
+
+    override fun compareTo(other: Delayed?): Int = 0
+}
+
+/** Runs the scheduled timeouts on demand, instead of a real delayed thread. */
+private class FakeOomErrorExecutor : ScheduledExecutorService by NoOpScheduledExecutorService() {
+    val scheduledTasks = mutableListOf<Pair<Runnable, FakeScheduledFuture>>()
+
+    override fun schedule(command: Runnable?, delay: Long, unit: TimeUnit?): ScheduledFuture<*>? {
+        val future = FakeScheduledFuture(unit?.toMillis(delay) ?: delay)
+        scheduledTasks.add(checkNotNull(command) to future)
+        return future
     }
 }

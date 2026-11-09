@@ -254,7 +254,7 @@ internal class ProfilingFeature(
                 }
             }
 
-            is ProfilerEvent.RumHeldOomErrorEvent -> onOomExecutor { onHeldOomError(event.id) }
+            is ProfilerEvent.RumHeldOomErrorEvent -> runOnOomExecutor { onHeldOomError(event.id) }
 
             else -> sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -492,7 +492,7 @@ internal class ProfilingFeature(
 
                 override fun onDeferredOomProfileReady() {
                     // Written once RUM announces its held error, possibly already done.
-                    onOomExecutor { writePendingOomProfileOfHeldError() }
+                    runOnOomExecutor { writePendingOomProfileOfHeldError() }
                 }
 
                 override fun isSessionQuotaDenied(sessionId: String): Boolean {
@@ -509,7 +509,7 @@ internal class ProfilingFeature(
     }
 
     private fun startOomProfileHandshake() {
-        onOomExecutor {
+        runOnOomExecutor {
             ProfilingStorage.getPendingOomProfile(appContext)
                 ?.takeIf { isPendingOomProfileExpired(it) }
                 ?.let { dropPendingOomProfile(it, LOG_PENDING_OOM_PROFILE_EXPIRED) }
@@ -518,7 +518,7 @@ internal class ProfilingFeature(
         }
     }
 
-    private fun onOomExecutor(block: () -> Unit) {
+    private fun runOnOomExecutor(block: () -> Unit) {
         profiler.scheduledExecutorService.executeSafe(
             OPERATION_OOM_PROFILE_HANDSHAKE,
             sdkCore.internalLogger,
@@ -588,7 +588,7 @@ internal class ProfilingFeature(
             rumContext = pending.rumContext
         ) { isWritten ->
             // Not reported from inside the writer's scope.
-            onOomExecutor { sendOomProfileWriteResult(pending.rumErrorId, isWritten) }
+            runOnOomExecutor { sendOomProfileWriteResult(pending.rumErrorId, isWritten) }
         }
     }
 
@@ -744,7 +744,7 @@ internal class ProfilingFeature(
         internal const val LOG_PENDING_OOM_PROFILE_EXPIRED =
             "Out of memory profile from a previous run dropped: too old to upload."
         internal const val LOG_PENDING_OOM_PROFILE_NOT_HELD =
-            "Out of memory profile from a previous run dropped: not for the held RUM error."
+            "Out Of Memory profile from a previous run dropped: not for the held RUM error."
         private const val OPERATION_OOM_PROFILE_HANDSHAKE = "oom_profile_handshake"
     }
 }

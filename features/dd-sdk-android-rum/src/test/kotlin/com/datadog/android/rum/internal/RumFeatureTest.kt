@@ -1245,6 +1245,22 @@ internal class RumFeatureTest {
     }
 
     @Test
+    fun `M shut down OOM error executor W onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val mockOomErrorExecutorService: ScheduledThreadPoolExecutor = mock()
+        testedFeature.oomErrorExecutorService = mockOomErrorExecutorService
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        verify(mockOomErrorExecutorService).shutdownNow()
+        assertThat(testedFeature.oomErrorExecutorService)
+            .isInstanceOf(NoOpScheduledExecutorService::class.java)
+    }
+
+    @Test
     fun `M reset vital executor W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
@@ -2008,8 +2024,6 @@ internal class RumFeatureTest {
 
         // Then
         verify(mockDetector).destroy()
-        // Only the held OOM error timeout is cancelled.
-        verify(mockHandler).removeCallbacks(any())
         verifyNoMoreInteractions(mockHandler)
     }
 
