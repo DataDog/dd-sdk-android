@@ -125,6 +125,9 @@ class CompositionHostDecomposeRequest @JvmOverloads constructor(
     /** Current pipeline's source-image resource lookup; absent preserves ordinary source capture. */
     var sourceImageResources: CompositionSourceImageResources? = null
 
+    /** Current pipeline's glyph resource lookup; absent preserves ordinary text rasterization. */
+    var textResources: CompositionTextResources? = null
+
     /** Preserves callers that do not supply a copied host clip. */
     @JvmOverloads
     constructor(

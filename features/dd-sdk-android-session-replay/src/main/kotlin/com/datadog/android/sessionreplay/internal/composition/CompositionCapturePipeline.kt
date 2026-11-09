@@ -21,7 +21,8 @@ internal class CompositionCapturePipeline(
     private val constructionExecutor: ExecutorService,
     private val resourceResolver: ResourceResolver? = null,
     private val resourceDataQueueHandler: DataQueueHandler? = null,
-    private val sourceImageResources: DefaultCompositionSourceImageResources? = null
+    private val sourceImageResources: DefaultCompositionSourceImageResources? = null,
+    private val textResources: DefaultCompositionTextResources? = null
 ) : Recorder {
     override fun registerCallbacks() {
         lifecycle.registerCallbacks()
@@ -35,6 +36,7 @@ internal class CompositionCapturePipeline(
 
     override fun stopProcessingRecords() {
         sourceImageResources?.stop()
+        textResources?.stop()
         orchestrator.shutdown()
         constructionExecutor.shutdownNow()
         completionQueue.stop()

@@ -9,9 +9,11 @@ package com.datadog.android.sessionreplay.compose.internal.granular
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ModifierInfo
 import androidx.compose.ui.semantics.AccessibilityAction
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsConfiguration
@@ -24,19 +26,28 @@ import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.Text
 import com.datadog.android.sessionreplay.compose.internal.utils.ComposeTextCaptureCache
 import com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOffset
 import com.datadog.android.sessionreplay.compose.internal.utils.MeasuredComposeText
+import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
+import com.datadog.android.sessionreplay.recorder.composition.CompositionTextResourceKey
+import com.datadog.android.sessionreplay.recorder.composition.CompositionTextResources
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito.mockConstruction
 import org.mockito.Mockito.mockStatic
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.lang.ref.WeakReference
 
 internal class ComposeTextRasterizerTest {
     private val mockSemanticsUtils: SemanticsUtils = mock()
@@ -47,7 +58,9 @@ internal class ComposeTextRasterizerTest {
     private val fakeOffset = ComposeWindowOffset(0, 0, 0, 0)
     private val fakeBounds = GlobalBounds(10, 20, 80, 40)
     private val fakeText = TextLayoutInfo("Current", Color.Red.value, 12, null, sourceText = "Current")
-    private val testedRasterizer = DefaultComposeTextRasterizer(mockSemanticsUtils, mockStateReader)
+    private val mockReflectionUtils: ReflectionUtils = mock()
+    private val testedRasterizer =
+        DefaultComposeTextRasterizer(mockSemanticsUtils, mockStateReader, mockReflectionUtils)
     private var layoutRequests = 0
 
     // Mockito sees the primitive JVM representations of these Compose value classes.
@@ -170,5 +183,63 @@ internal class ComposeTextRasterizerTest {
                 verify(pixels).recycle()
             }
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M reuse resolved glyphs or repaint on resource miss W rasterize`(resourcePresent: Boolean) {
+        // Given
+        measured()
+        val stubModifier: Modifier = mock()
+        val stubModifierInfo: ModifierInfo = mock()
+        whenever(stubModifierInfo.modifier).thenReturn(stubModifier)
+        whenever(mockReflectionUtils.isTextStringSimpleElement(stubModifier)).thenReturn(true)
+        val stubResources: CompositionTextResources = mock()
+        val stubPixels: Bitmap = mock()
+        val movedBounds = GlobalBounds(30, 40, 80, 40)
+        mockStatic(Bitmap::class.java).use { factory ->
+            factory.`when`<Bitmap> { Bitmap.createBitmap(80, 40, Bitmap.Config.ARGB_8888) }.thenReturn(stubPixels)
+            mockConstruction(Canvas::class.java).use {
+                testedRasterizer.rasterize(mockNode, fakeText, listOf(stubModifierInfo), fakeOffset, stubResources)
+                val key = argumentCaptor<CompositionTextResourceKey>()
+                verify(stubResources).registerCapture(key.capture(), eq(stubPixels))
+                // A live bitmap is preferred and does not consult the native coordinator.
+                testedRasterizer.rasterize(mockNode, fakeText, listOf(stubModifierInfo), fakeOffset, stubResources)
+                verify(stubResources, never()).findResourceId(any())
+                clearCachedBitmap()
+                whenever(stubResources.findResourceId(key.firstValue))
+                    .thenReturn(if (resourcePresent) "resolved-glyph" else null)
+                whenever(mockSemanticsUtils.resolveTextBounds(mockNode, fakeOffset)).thenReturn(movedBounds)
+
+                // When
+                val result = testedRasterizer.rasterize(
+                    mockNode,
+                    fakeText,
+                    listOf(stubModifierInfo),
+                    fakeOffset,
+                    stubResources
+                )!!
+
+                // Then
+                assertThat(result.bounds).isEqualTo(movedBounds)
+                assertThat(result.resourceId).isEqualTo(if (resourcePresent) "resolved-glyph" else null)
+                assertThat(result.bitmap).isSameAs(if (resourcePresent) null else stubPixels)
+                factory.verify({
+                    Bitmap.createBitmap(80, 40, Bitmap.Config.ARGB_8888)
+                }, times(if (resourcePresent) 1 else 2))
+                verify(stubResources, times(if (resourcePresent) 1 else 2)).registerCapture(any(), eq(stubPixels))
+                assertThat(layoutRequests).isZero()
+            }
+        }
+    }
+
+    private fun clearCachedBitmap() {
+        val cache = testedRasterizer.javaClass.getDeclaredField("bitmapCache").apply { isAccessible = true }
+            .get(testedRasterizer)
+        val entries = cache.javaClass.getDeclaredField("entries").apply { isAccessible = true }.get(cache) as Map<*, *>
+        val entry = entries[1]!!
+        val bitmap = entry.javaClass.getDeclaredField("bitmap").apply { isAccessible = true }
+            .get(entry) as WeakReference<*>
+        bitmap.clear()
     }
 }

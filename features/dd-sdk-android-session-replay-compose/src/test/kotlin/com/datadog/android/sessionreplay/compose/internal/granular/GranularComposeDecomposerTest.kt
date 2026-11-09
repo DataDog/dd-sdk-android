@@ -56,6 +56,7 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
 import com.datadog.android.sessionreplay.recorder.composition.CompositionNativeSubtree
 import com.datadog.android.sessionreplay.recorder.composition.CompositionSourceImageResources
+import com.datadog.android.sessionreplay.recorder.composition.CompositionTextResources
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -102,6 +103,85 @@ internal class GranularComposeDecomposerTest {
     private lateinit var testedGate: GranularComposeCompatibilityGate
     private lateinit var testedDecomposer: GranularComposeDecomposer
     private val mockView: View = mock()
+
+    @Test
+    fun `M emit resolved glyphs at current bounds without pending pixels W decompose`() {
+        // Given
+        val node = mockLeafNode()
+        val root = mockRoot(listOf(node))
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any(), any()))
+            .thenReturn(TextLayoutInfo("Current", Color.Black.value, 20, FontFamily(Font(42))))
+        val stubResources: CompositionTextResources = mock()
+        val registered = mutableListOf<PendingPixelCapture>()
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            textRasterizer = object : ComposeTextRasterizer {
+                override fun rasterize(
+                    node: SemanticsNode,
+                    text: TextLayoutInfo,
+                    modifiers: List<ModifierInfo>,
+                    windowOffset: com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOffset
+                ): RasterizedComposeText? = error("Expected the resource-aware path")
+
+                override fun rasterize(
+                    node: SemanticsNode,
+                    text: TextLayoutInfo,
+                    modifiers: List<ModifierInfo>,
+                    windowOffset: com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOffset,
+                    resources: CompositionTextResources
+                ): RasterizedComposeText {
+                    assertThat(resources).isSameAs(stubResources)
+                    return RasterizedComposeText(null, GlobalBounds(12, 24, 80, 30), "glyph")
+                }
+            }
+        )
+
+        // When
+        val result = testedDecomposer.decompose(
+            mockView,
+            realRequest(pendingPixelCaptureSink = PendingPixelCaptureSink { registered += it })
+                .also { it.textResources = stubResources }
+        )!!
+
+        // Then
+        val pixel = result.wireframes.single() as CapturedWireframe.Pixel
+        assertThat(pixel.bounds).isEqualTo(CapturedBounds(12, 24, 80, 30))
+        assertThat(pixel.resource).isEqualTo(PixelResource.Resolved("glyph", "image/webp"))
+        assertThat(registered).isEmpty()
+    }
+
+    @Test
+    fun `M count resolved glyphs against the host capture limit W decompose`() {
+        // Given
+        val nodes = List(101) { mockLeafNode() }
+        val root = mockRoot(nodes)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenReturn(root)
+        nodes.forEach { node ->
+            whenever(mockSemanticsUtils.resolveTextLayoutInfo(eq(node), any(), any()))
+                .thenReturn(TextLayoutInfo("Current", Color.Black.value, 20, FontFamily(Font(42))))
+        }
+        var captures = 0
+        testedDecomposer = GranularComposeDecomposer(
+            semanticsUtils = mockSemanticsUtils,
+            reflectionUtils = mockReflectionUtils,
+            compatibilityGate = testedGate,
+            textRasterizer = ComposeTextRasterizer { _, _, _, _ ->
+                captures++
+                RasterizedComposeText(null, GlobalBounds(0, 0, 10, 10), "glyph")
+            }
+        )
+
+        // When
+        val result = testedDecomposer.decompose(mockView, realRequest().also { it.textResources = mock() })!!
+
+        // Then
+        assertThat(captures).isEqualTo(100)
+        assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Pixel>()).hasSize(100)
+        assertThat(result.wireframes.filterIsInstance<CapturedWireframe.Text>()).hasSize(1)
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
@@ -176,7 +256,15 @@ internal class GranularComposeDecomposerTest {
         // When
         val result = testedDecomposer.decompose(
             mockView,
-            realRequest(textPrivacy = privacy, pendingPixelCaptureSink = PendingPixelCaptureSink { registered += it })
+            realRequest(
+                textPrivacy = privacy,
+                pendingPixelCaptureSink = PendingPixelCaptureSink {
+                    registered += it
+                }
+            ).also {
+                it.textResources =
+                    mock()
+            }
         )!!
 
         // Then

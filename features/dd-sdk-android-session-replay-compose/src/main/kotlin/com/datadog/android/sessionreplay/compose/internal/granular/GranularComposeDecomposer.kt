@@ -771,20 +771,26 @@ internal class GranularComposeDecomposer(
         ): CapturedWireframe.Pixel? {
             val standardFont = info.fontFamily == null || info.fontFamily == FontFamily.Default ||
                 info.fontFamily is GenericFontFamily
-            val textIsUnmasked = privacy.text != TextAndInputPrivacy.MASK_ALL &&
-                !semanticsUtils.isEditable(node) && !privacy.inEditable && !semanticsUtils.isPassword(node) &&
-                !privacy.masksInputState && !request.hasOptionSelectorParent
             val hasBudget = textPixelCaptures + pendingCaptures.size < MAX_PIXEL_CAPTURES_PER_HOST &&
                 request.shouldContinue()
             val requiresPixels = !standardFont || info.requiresPixelCapture
-            if (!requiresPixels || !textIsUnmasked || !hasBudget) {
+            if (!requiresPixels || !canCaptureUnmaskedText(node, privacy) || !hasBudget) {
                 return null
             }
-            val captured = textRasterizer.rasterize(node, info, modifiers, windowOffset) ?: return null
+            val resources = request.textResources
+            val captured = if (resources == null) {
+                textRasterizer.rasterize(node, info, modifiers, windowOffset)
+            } else {
+                textRasterizer.rasterize(node, info, modifiers, windowOffset, resources)
+            } ?: return null
             val pixelIdentity = request.identityFactory.imageWireframe(identity)
-            request.pendingPixelCaptureSink.register(
-                PendingPixelCapture(pixelIdentity, identity, captured.bitmap, isTextOnly = true)
-            )
+            val resource = captured.resourceId?.let { PixelResource.Resolved(it, "image/webp") } ?: run {
+                val pixels = captured.bitmap ?: return null
+                request.pendingPixelCaptureSink.register(
+                    PendingPixelCapture(pixelIdentity, identity, pixels, isTextOnly = true)
+                )
+                PixelResource.Unresolved
+            }
             textPixelCaptures++
             return CapturedWireframe.Pixel(
                 identity = pixelIdentity,
@@ -794,10 +800,15 @@ internal class GranularComposeDecomposer(
                     captured.bounds.width,
                     captured.bounds.height
                 ),
-                resource = PixelResource.Unresolved,
+                resource = resource,
                 clip = clipToVisible(node, captured.bounds)
             )
         }
+
+        private fun canCaptureUnmaskedText(node: SemanticsNode, privacy: NodePrivacy): Boolean =
+            privacy.text != TextAndInputPrivacy.MASK_ALL &&
+                !semanticsUtils.isEditable(node) && !privacy.inEditable && !semanticsUtils.isPassword(node) &&
+                !privacy.masksInputState && !request.hasOptionSelectorParent
 
         private fun clipToVisible(node: SemanticsNode, bounds: GlobalBounds): CapturedClip? =
             imageClip(bounds, semanticsUtils.resolveVisibleBounds(node, windowOffset))

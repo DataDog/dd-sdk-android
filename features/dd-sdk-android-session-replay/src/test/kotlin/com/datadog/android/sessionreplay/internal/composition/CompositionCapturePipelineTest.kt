@@ -6,9 +6,12 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import android.graphics.Bitmap
+import androidx.collection.LruCache
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
+import com.datadog.android.sessionreplay.recorder.composition.CompositionTextResourceKey
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -25,6 +28,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
 
@@ -47,6 +51,35 @@ internal class CompositionCapturePipelineTest {
 
     @Mock
     lateinit var mockConstructionExecutor: ExecutorService
+
+    @Test
+    fun `M preserve reusable glyphs through pause and clear them on disposal W lifecycle`() {
+        // Given
+        val rawCache = LruCache<Long, String>(1)
+        val testedResources = DefaultCompositionTextResources(rawCache)
+        val fakeKey = CompositionTextResourceKey()
+        val stubPixels: Bitmap = mock()
+        whenever(stubPixels.width).thenReturn(1)
+        whenever(stubPixels.height).thenReturn(1)
+        whenever(stubPixels.config).thenReturn(Bitmap.Config.ARGB_8888)
+        testedResources.registerCapture(fakeKey, stubPixels)
+        rawCache.put(1L, "glyph")
+        testedResources.onTextResolved(stubPixels, 1L)
+        val testedPipeline = CompositionCapturePipeline(
+            mock(),
+            mock(),
+            mock(),
+            mockConstructionExecutor,
+            textResources = testedResources
+        )
+
+        // When + Then
+        testedPipeline.stopRecorders()
+        testedPipeline.resumeRecorders()
+        assertThat(testedResources.findResourceId(fakeKey)).isEqualTo("glyph")
+        testedPipeline.stopProcessingRecords()
+        assertThat(testedResources.findResourceId(fakeKey)).isNull()
+    }
 
     @Test
     fun `M select only legacy pipeline W create { flag disabled }`() {

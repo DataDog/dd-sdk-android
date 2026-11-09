@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.MultiParagraph
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
@@ -27,9 +28,14 @@ import com.datadog.android.sessionreplay.compose.internal.utils.ComposeWindowOff
 import com.datadog.android.sessionreplay.compose.internal.utils.MeasuredComposeText
 import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
+import com.datadog.android.sessionreplay.recorder.composition.CompositionTextResources
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
-internal data class RasterizedComposeText(val bitmap: Bitmap, val bounds: GlobalBounds)
+internal data class RasterizedComposeText(
+    val bitmap: Bitmap?,
+    val bounds: GlobalBounds,
+    val resourceId: String? = null
+)
 
 /** Only paints the measured paragraph. It never draws or crops the host view or sibling content. */
 internal fun interface ComposeTextRasterizer {
@@ -39,14 +45,23 @@ internal fun interface ComposeTextRasterizer {
         modifiers: List<ModifierInfo>,
         windowOffset: ComposeWindowOffset
     ): RasterizedComposeText?
+
+    /** Existing rasterizers retain their ordinary behavior when the native pipeline offers reuse. */
+    fun rasterize(
+        node: SemanticsNode,
+        text: TextLayoutInfo,
+        modifiers: List<ModifierInfo>,
+        windowOffset: ComposeWindowOffset,
+        resources: CompositionTextResources
+    ): RasterizedComposeText? = rasterize(node, text, modifiers, windowOffset)
 }
 
 internal class DefaultComposeTextRasterizer(
     private val semanticsUtils: SemanticsUtils = SemanticsUtils(),
-    private val measuredTextState: ComposeTextCaptureCache = ComposeTextCaptureCache()
+    private val measuredTextState: ComposeTextCaptureCache = ComposeTextCaptureCache(),
+    private val reflectionUtils: ReflectionUtils = ReflectionUtils()
 ) : ComposeTextRasterizer {
     private val bitmapCache = ComposeTextBitmapCache()
-    private val reflectionUtils = ReflectionUtils()
 
     @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall")
     override fun rasterize(
@@ -54,6 +69,23 @@ internal class DefaultComposeTextRasterizer(
         text: TextLayoutInfo,
         modifiers: List<ModifierInfo>,
         windowOffset: ComposeWindowOffset
+    ): RasterizedComposeText? = rasterizeText(node, text, modifiers, windowOffset, null)
+
+    override fun rasterize(
+        node: SemanticsNode,
+        text: TextLayoutInfo,
+        modifiers: List<ModifierInfo>,
+        windowOffset: ComposeWindowOffset,
+        resources: CompositionTextResources
+    ): RasterizedComposeText? = rasterizeText(node, text, modifiers, windowOffset, resources)
+
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Reuse uses the same measured inputs and copied geometry.
+    private fun rasterizeText(
+        node: SemanticsNode,
+        text: TextLayoutInfo,
+        modifiers: List<ModifierInfo>,
+        windowOffset: ComposeWindowOffset,
+        resources: CompositionTextResources?
     ): RasterizedComposeText? {
         val action = node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action ?: return null
         val sourceText = text.sourceText ?: text.text
@@ -62,10 +94,27 @@ internal class DefaultComposeTextRasterizer(
         val modifier = modifiers.firstOrNull { reflectionUtils.isTextStringSimpleElement(it.modifier) }?.modifier
         val paint = ComposeTextBitmapCache.Paint(modifier, text.color.toLong(), sourceText)
         bitmapCache.get(node.id, state, paint)?.let { return RasterizedComposeText(it, bounds) }
+        bitmapCache.findResourceId(node.id, state, paint, resources)?.let {
+            return RasterizedComposeText(null, bounds, resourceId = it)
+        }
         val measured = state?.measured
         if (measured != null && measured.matches(sourceText, text.color)) {
-            return rasterizeMeasured(node.id, state, paint, measured, bounds)
+            return rasterizeMeasured(node.id, state, paint, measured, bounds, resources)
         }
+        return rasterizeLayout(node, text, state, paint, action, bounds, resources)
+    }
+
+    @Suppress("ReturnCount", "UnsafeThirdPartyFunctionCall") // Validate current layout before allocating glyph output.
+    private fun rasterizeLayout(
+        node: SemanticsNode,
+        text: TextLayoutInfo,
+        state: ComposeTextCaptureCache.State?,
+        paint: ComposeTextBitmapCache.Paint,
+        action: (MutableList<TextLayoutResult>) -> Boolean,
+        bounds: GlobalBounds,
+        resources: CompositionTextResources?
+    ): RasterizedComposeText? {
+        val sourceText = text.sourceText ?: text.text
         val results = mutableListOf<TextLayoutResult>()
         action.invoke(results)
         val layout = results.firstOrNull() ?: return null
@@ -90,7 +139,7 @@ internal class DefaultComposeTextRasterizer(
                 val color = if (layout.layoutInput.style.brush != null) Color.Unspecified else Color(text.color)
                 drawText(measuredLayout(layout), color = color)
             }
-            bitmapCache.put(node.id, state, paint, paintStyle, pixels)
+            rememberPixels(node.id, state, paint, paintStyle, pixels, resources)
             val captured = RasterizedComposeText(pixels, bounds)
             completed = true
             captured
@@ -105,7 +154,8 @@ internal class DefaultComposeTextRasterizer(
         state: ComposeTextCaptureCache.State,
         paint: ComposeTextBitmapCache.Paint,
         measured: MeasuredComposeText,
-        bounds: GlobalBounds
+        bounds: GlobalBounds,
+        resources: CompositionTextResources?
     ): RasterizedComposeText? {
         val size = measured.size
         if (size.width <= 0 || size.height <= 0 || size.width.toLong() * size.height > MAX_TEXT_PIXELS) return null
@@ -113,12 +163,24 @@ internal class DefaultComposeTextRasterizer(
         var completed = false
         return try {
             measured.draw(Canvas(pixels.asImageBitmap()))
-            bitmapCache.put(nodeId, state, paint, measured.style, pixels)
+            rememberPixels(nodeId, state, paint, measured.style, pixels, resources)
             completed = true
             RasterizedComposeText(pixels, bounds)
         } finally {
             if (!completed) pixels.recycle()
         }
+    }
+
+    private fun rememberPixels(
+        nodeId: Int,
+        state: ComposeTextCaptureCache.State?,
+        paint: ComposeTextBitmapCache.Paint,
+        style: TextStyle,
+        pixels: Bitmap,
+        resources: CompositionTextResources?
+    ) {
+        val key = bitmapCache.put(nodeId, state, paint, style, pixels) ?: return
+        resources?.registerCapture(key, pixels)
     }
 
     /** Simple text semantics can reconstruct a paragraph at the parent's maximum width while

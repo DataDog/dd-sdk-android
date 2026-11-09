@@ -22,6 +22,7 @@ import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapSigna
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultBitmapSignatureGenerator
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolverCallback
+import com.datadog.android.sessionreplay.recorder.composition.CompositionTextResourceKey
 import com.datadog.android.sessionreplay.recorder.privacy.TextDetectionOutcome
 import com.datadog.android.sessionreplay.recorder.privacy.TextDetector
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -167,6 +168,60 @@ internal class PixelFallbackSnapshotProcessorTest {
         // Then
         assertThat(processor.sourceImageResources.findResourceId(otherSource)).isEqualTo("existing-resource")
         verify(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["fresh", "hit", "failure", "nonText"])
+    fun `M publish only successfully resolved text resources W process`(kind: String) {
+        // Given
+        val fixture = Fixture("text-resource")
+        val signature: BitmapSignatureGenerator = mock()
+        whenever(signature.generateSignature(any())).thenReturn(42L)
+        val processor = PixelFallbackSnapshotProcessor(
+            mockResourceResolver,
+            null,
+            immediateMainThreadExecutor,
+            bitmapSignatureGenerator = signature
+        )
+        whenever(fixture.bitmap.width).thenReturn(120)
+        whenever(fixture.bitmap.height).thenReturn(80)
+        whenever(fixture.bitmap.config).thenReturn(Bitmap.Config.ARGB_8888)
+        val fakeKey = CompositionTextResourceKey()
+        processor.textResources.registerCapture(fakeKey, fixture.bitmap)
+        whenever(mockResourceResolver.resolveResourceIdFromBitmap(any(), any())) doAnswer {
+            val callback = it.getArgument<ResourceResolverCallback>(1)
+            if (kind == "failure") callback.onFailure() else callback.onSuccess("text-resource")
+            Unit
+        }
+        val request = SnapshotProcessingRequest(
+            generationContext(),
+            fixture.snapshot,
+            listOf(fixture.pending.copy(isTextOnly = kind != "nonText", isTextFree = kind == "nonText")),
+            fixture.identityFactory
+        )
+        if (kind == "hit") {
+            processor.process(request) {}
+            // Replace the registration while keeping the authoritative raw signature cached.
+            val otherPixels: Bitmap = mock()
+            whenever(otherPixels.width).thenReturn(120)
+            whenever(otherPixels.height).thenReturn(80)
+            whenever(otherPixels.config).thenReturn(Bitmap.Config.ARGB_8888)
+            processor.textResources.registerCapture(fakeKey, otherPixels)
+            processor.process(
+                request.copy(
+                    generation = generationContext(),
+                    pendingPixelCaptures = listOf(fixture.pending.copy(bitmap = otherPixels, isTextOnly = true))
+                )
+            ) {}
+            assertThat(processor.textResources.findResourceId(fakeKey)).isEqualTo("text-resource")
+        }
+
+        // When
+        processor.process(request.copy(generation = generationContext())) {}
+
+        // Then
+        assertThat(processor.textResources.findResourceId(fakeKey))
+            .isEqualTo(if (kind == "fresh" || kind == "hit") "text-resource" else null)
     }
 
     private val mockResourceResolver: ResourceResolver = mock()

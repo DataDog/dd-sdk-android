@@ -2165,8 +2165,10 @@ public final class com/datadog/android/sessionreplay/recorder/composition/Compos
 	public final fun getShouldContinue ()Lkotlin/jvm/functions/Function0;
 	public final fun getSourceImageResources ()Lcom/datadog/android/sessionreplay/recorder/composition/CompositionSourceImageResources;
 	public final fun getTextAndInputPrivacy ()Lcom/datadog/android/sessionreplay/TextAndInputPrivacy;
+	public final fun getTextResources ()Lcom/datadog/android/sessionreplay/recorder/composition/CompositionTextResources;
 	public final fun getUnclassifiedPixelCaptureUnavailableLabel ()Ljava/lang/String;
 	public final fun setSourceImageResources (Lcom/datadog/android/sessionreplay/recorder/composition/CompositionSourceImageResources;)V
+	public final fun setTextResources (Lcom/datadog/android/sessionreplay/recorder/composition/CompositionTextResources;)V
 	public final fun setUnclassifiedPixelCaptureUnavailableLabel (Ljava/lang/String;)V
 }
 
@@ -2203,6 +2205,15 @@ public final class com/datadog/android/sessionreplay/recorder/composition/Compos
 public abstract interface class com/datadog/android/sessionreplay/recorder/composition/CompositionSourceImageResources {
 	public abstract fun findResourceId (Landroid/graphics/Bitmap;)Ljava/lang/String;
 	public abstract fun registerSourceCopy (Landroid/graphics/Bitmap;Landroid/graphics/Bitmap;)V
+}
+
+public final class com/datadog/android/sessionreplay/recorder/composition/CompositionTextResourceKey {
+	public fun <init> ()V
+}
+
+public abstract interface class com/datadog/android/sessionreplay/recorder/composition/CompositionTextResources {
+	public abstract fun findResourceId (Lcom/datadog/android/sessionreplay/recorder/composition/CompositionTextResourceKey;)Ljava/lang/String;
+	public abstract fun registerCapture (Lcom/datadog/android/sessionreplay/recorder/composition/CompositionTextResourceKey;Landroid/graphics/Bitmap;)V
 }
 
 public abstract class com/datadog/android/sessionreplay/recorder/mapper/BaseAsyncBackgroundWireframeMapper : com/datadog/android/sessionreplay/recorder/mapper/BaseWireframeMapper {

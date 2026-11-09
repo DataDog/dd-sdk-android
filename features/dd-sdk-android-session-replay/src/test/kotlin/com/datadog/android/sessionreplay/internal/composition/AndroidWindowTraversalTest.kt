@@ -50,6 +50,7 @@ import com.datadog.android.sessionreplay.internal.recorder.ViewUtilsInternal
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeRequest
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposeResult
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
+import com.datadog.android.sessionreplay.recorder.composition.CompositionTextResources
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
@@ -175,7 +176,8 @@ internal class AndroidWindowTraversalTest {
         rootImagePrivacy: ImagePrivacy = ImagePrivacy.MASK_ALL,
         heatmapResolver: HeatmapIdentifierResolver? = null,
         embeddedContentMapper: CapturedEmbeddedContentMapper? = null,
-        unclassifiedPixelCaptureUnavailableLabel: String? = null
+        unclassifiedPixelCaptureUnavailableLabel: String? = null,
+        textResources: CompositionTextResources? = null
     ) = AndroidWindowTraversal(
         mapperRegistry = CapturedViewMapperRegistry(typedMappers, fallback, mock()),
         internalLogger = mock(),
@@ -189,7 +191,8 @@ internal class AndroidWindowTraversalTest {
         rootImagePrivacy = rootImagePrivacy,
         heatmapResolver = heatmapResolver,
         embeddedContentMapper = embeddedContentMapper,
-        unclassifiedPixelCaptureUnavailableLabel = unclassifiedPixelCaptureUnavailableLabel
+        unclassifiedPixelCaptureUnavailableLabel = unclassifiedPixelCaptureUnavailableLabel,
+        textResources = textResources
     )
 
     @ParameterizedTest
@@ -1202,6 +1205,7 @@ internal class AndroidWindowTraversalTest {
         whenever(root.childCount).thenReturn(1)
         whenever(root.getChildAt(0)).thenReturn(host)
         val fakeLabel = if (fakeUnavailable) "Image" else null
+        val stubTextResources: CompositionTextResources = mock()
         var capturedRequest: CompositionHostDecomposeRequest? = null
         val stubDecomposer = object : CompositionHostDecomposer {
             override fun canDecompose(view: View) = view === host
@@ -1218,11 +1222,13 @@ internal class AndroidWindowTraversalTest {
         traversal(
             composeHostDecomposer = stubDecomposer,
             isComposeHost = { it === host },
-            unclassifiedPixelCaptureUnavailableLabel = fakeLabel
+            unclassifiedPixelCaptureUnavailableLabel = fakeLabel,
+            textResources = stubTextResources
         ).traverseWindow(root, identityFactory.window("window"), identityFactory, fakeContext)
 
         // Then
         assertThat(checkNotNull(capturedRequest).unclassifiedPixelCaptureUnavailableLabel).isEqualTo(fakeLabel)
+        assertThat(checkNotNull(capturedRequest).textResources).isSameAs(stubTextResources)
     }
 
     @Test

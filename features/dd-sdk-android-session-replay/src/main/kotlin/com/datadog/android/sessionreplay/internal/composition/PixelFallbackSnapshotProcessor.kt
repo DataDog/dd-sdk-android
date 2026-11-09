@@ -72,6 +72,7 @@ internal class PixelFallbackSnapshotProcessor(
     @Suppress("UnsafeThirdPartyFunctionCall") // Positive, bounded cache size.
     private val rawContentCache = LruCache<Long, String>(MAX_RESOLVED_CONTENT_CACHE_SIZE)
     val sourceImageResources = DefaultCompositionSourceImageResources(rawContentCache)
+    val textResources = DefaultCompositionTextResources(rawContentCache)
     private val lateRecaptureRequested = AtomicBoolean(false)
 
     // Owned atomic reference releases the input on completion or cancellation.
@@ -245,12 +246,14 @@ internal class PixelFallbackSnapshotProcessor(
             if (capture.isSourceImage) {
                 sourceImageResources.onSourceResolved(capture.bitmap, signature)
             }
+            if (capture.isTextOnly) textResources.onTextResolved(capture.bitmap, signature)
             onResolved(PixelOutcome.Resolved(cached))
         } else {
             resolveBitmap(capture.bitmap, identityFactory, capture.ownerIdentity) { outcome ->
                 if (signature != null && outcome is PixelOutcome.Resolved) {
                     rawContentCache.put(signature, outcome.resourceId)
                     if (capture.isSourceImage) sourceImageResources.onSourceResolved(capture.bitmap, signature)
+                    if (capture.isTextOnly) textResources.onTextResolved(capture.bitmap, signature)
                 }
                 onResolved(outcome)
             }

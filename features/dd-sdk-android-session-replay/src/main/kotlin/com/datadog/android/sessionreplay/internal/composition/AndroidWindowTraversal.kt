@@ -52,6 +52,7 @@ import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDec
 import com.datadog.android.sessionreplay.recorder.composition.CompositionHostDecomposer
 import com.datadog.android.sessionreplay.recorder.composition.CompositionNativeSubtree
 import com.datadog.android.sessionreplay.recorder.composition.CompositionSourceImageResources
+import com.datadog.android.sessionreplay.recorder.composition.CompositionTextResources
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
@@ -97,7 +98,8 @@ internal class AndroidWindowTraversal(
     private val embeddedContentMapper: CapturedEmbeddedContentMapper? = null,
     private val optionSelectorDetector: OptionSelectorDetector = DefaultOptionSelectorDetector(),
     private val unclassifiedPixelCaptureUnavailableLabel: String? = null,
-    private val sourceImageResources: CompositionSourceImageResources? = null
+    private val sourceImageResources: CompositionSourceImageResources? = null,
+    private val textResources: CompositionTextResources? = null
 ) {
     private val occlusionDetector = ViewOcclusionDetector(drawableToColorMapper, viewUtilsInternal, internalLogger)
 
@@ -560,6 +562,7 @@ internal class AndroidWindowTraversal(
     ).also {
         it.unclassifiedPixelCaptureUnavailableLabel = unclassifiedPixelCaptureUnavailableLabel
         it.sourceImageResources = sourceImageResources
+        it.textResources = textResources
     }
 
     /** Copies native interop now; construction waits for mapper jobs on the worker. */

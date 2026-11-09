@@ -115,6 +115,7 @@ class com.datadog.android.sessionreplay.recorder.composition.CompositionHostDeco
   constructor(com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, Float, com.datadog.android.internal.sessionreplay.composition.CapturedBounds?, (android.view.View, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity) -> CompositionNativeSubtree?, () -> Boolean = { true }, (com.datadog.android.internal.sessionreplay.composition.CapturedBounds) -> String? = { null }, com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp, com.datadog.android.sessionreplay.ImagePrivacy = ImagePrivacy.MASK_ALL, com.datadog.android.sessionreplay.TextAndInputPrivacy = TextAndInputPrivacy.MASK_ALL, (android.view.View, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, com.datadog.android.sessionreplay.ImagePrivacy, com.datadog.android.sessionreplay.TextAndInputPrivacy) -> CompositionNativeSubtree?? = null, (com.datadog.android.sessionreplay.ImagePrivacy, com.datadog.android.internal.sessionreplay.composition.CapturedBounds) -> String?? = null, Boolean = false)
   var unclassifiedPixelCaptureUnavailableLabel: String?
   var sourceImageResources: CompositionSourceImageResources?
+  var textResources: CompositionTextResources?
   constructor(com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, Float, (android.view.View, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity) -> CompositionNativeSubtree?, () -> Boolean = { true }, (com.datadog.android.internal.sessionreplay.composition.CapturedBounds) -> String? = { null }, com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp)
 class com.datadog.android.sessionreplay.recorder.composition.CompositionNativeSubtree
   constructor(com.datadog.android.internal.sessionreplay.composition.CapturedLayer, List<com.datadog.android.internal.sessionreplay.composition.CapturedLayer>, List<com.datadog.android.internal.sessionreplay.composition.CapturedWireframe>, () -> CompositionNativeSubtree?? = null)
@@ -123,6 +124,10 @@ class com.datadog.android.sessionreplay.recorder.composition.CompositionHostDeco
 interface com.datadog.android.sessionreplay.recorder.composition.CompositionSourceImageResources
   fun findResourceId(android.graphics.Bitmap): String?
   fun registerSourceCopy(android.graphics.Bitmap, android.graphics.Bitmap)
+class com.datadog.android.sessionreplay.recorder.composition.CompositionTextResourceKey
+interface com.datadog.android.sessionreplay.recorder.composition.CompositionTextResources
+  fun findResourceId(CompositionTextResourceKey): String?
+  fun registerCapture(CompositionTextResourceKey, android.graphics.Bitmap)
 abstract class com.datadog.android.sessionreplay.recorder.mapper.BaseAsyncBackgroundWireframeMapper<T: android.view.View> : BaseWireframeMapper<T>
   constructor(com.datadog.android.sessionreplay.utils.ViewIdentifierResolver, com.datadog.android.sessionreplay.utils.ColorStringFormatter, com.datadog.android.sessionreplay.utils.ViewBoundsResolver, com.datadog.android.sessionreplay.utils.DrawableToColorMapper)
   override fun map(T, com.datadog.android.sessionreplay.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>

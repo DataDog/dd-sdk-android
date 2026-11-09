@@ -150,7 +150,8 @@ internal class DefaultCompositionPipelineFactory(
                     heatmapResolver,
                     embeddedContentSlotRegistry,
                     resourceResolverBundle.resourceResolver,
-                    pixelProcessor.sourceImageResources
+                    pixelProcessor.sourceImageResources,
+                    pixelProcessor.textResources
                 ),
             processor = ChainedCapturedSnapshotProcessor(
                 ExecutorCapturedSnapshotProcessor(
@@ -196,7 +197,8 @@ internal class DefaultCompositionPipelineFactory(
             constructionExecutor = constructionExecutor,
             resourceResolver = resourceResolverBundle.resourceResolver,
             resourceDataQueueHandler = resourceResolverBundle.dataQueueHandler,
-            sourceImageResources = pixelProcessor.sourceImageResources
+            sourceImageResources = pixelProcessor.sourceImageResources,
+            textResources = pixelProcessor.textResources
         )
     }
 
@@ -206,7 +208,8 @@ internal class DefaultCompositionPipelineFactory(
         heatmapResolver: HeatmapIdentifierResolver?,
         embeddedContentSlotRegistry: EmbeddedContentSlotRegistry,
         resourceResolver: ResourceResolver,
-        sourceImageResources: DefaultCompositionSourceImageResources
+        sourceImageResources: DefaultCompositionSourceImageResources,
+        textResources: DefaultCompositionTextResources
     ): CapturedSnapshotProducer {
         val embeddedContentMapper = CapturedEmbeddedContentMapper(
             embeddedContentSlotRegistry,
@@ -230,6 +233,7 @@ internal class DefaultCompositionPipelineFactory(
                 embeddedContentMapper = embeddedContentMapper,
                 optionSelectorDetector = optionSelectorDetector(),
                 sourceImageResources = sourceImageResources,
+                textResources = textResources,
                 unclassifiedPixelCaptureUnavailableLabel = if (textDetector == null) {
                     PixelCaptureEligibility.MASK_ALL_CONTENT_LABEL
                 } else {
