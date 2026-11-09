@@ -27,8 +27,6 @@ import com.datadog.tools.annotation.NoOpImplementation
 @NoOpImplementation
 internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
 
-    fun resetSession()
-
     fun start()
 
     fun stop()

@@ -18,7 +18,7 @@ internal class ViewEndedMetricDispatcher(
     private val samplingRate: Float = DEFAULT_SAMPLE_RATE
 ) : ViewMetricDispatcher {
 
-    private val instrumentationType: ViewScopeInstrumentationType =
+    internal val instrumentationType: ViewScopeInstrumentationType =
         instrumentationType ?: ViewScopeInstrumentationType.Native.MANUAL
 
     private var duration: Long? = null
