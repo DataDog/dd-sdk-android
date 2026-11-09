@@ -24,7 +24,7 @@ plugins {
 
 android {
     defaultConfig {
-        compileSdk = AndroidConfig.TARGET_SDK
+        compileSdk = AndroidConfig.COMPILE_SDK
         minSdk = AndroidConfig.MIN_SDK
     }
     namespace = "com.datadog.tools.benchmark"

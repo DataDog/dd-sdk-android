@@ -1,6 +1,9 @@
 # This base image is based on a GBI image
 FROM registry.ddbuild.io/images/docker:24.0.4-jammy
 
+# Keep tool installation paths independent of the base image's working directory.
+WORKDIR /
+
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Set timezone to UTC by default
@@ -25,13 +28,13 @@ RUN set -x \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/*
 
-ENV GRADLE_VERSION 9.8.2
-ENV ANDROID_COMPILE_SDK 36
-ENV ANDROID_BUILD_TOOLS 36.0.0
-ENV ANDROID_SDK_TOOLS 13114758
-ENV NDK_VERSION 28.0.13004108
-ENV CMAKE_VERSION 3.22.1
-ENV DD_TRACER_VERSION 1.60.1
+ENV GRADLE_VERSION=9.8.2
+ENV ANDROID_COMPILE_SDK=37.0
+ENV ANDROID_BUILD_TOOLS=37.0.0
+ENV ANDROID_SDK_TOOLS=13114758
+ENV NDK_VERSION=28.0.13004108
+ENV CMAKE_VERSION=3.22.1
+ENV DD_TRACER_VERSION=1.60.1
 # requires build with BuildKit to be available https://docs.docker.com/build/building/variables/#multi-platform-build-arguments
 ARG TARGETARCH
 ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-${TARGETARCH}
@@ -75,13 +78,13 @@ RUN \
     echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --install "cmake;${CMAKE_VERSION}" >/dev/null && \
     (yes || true) | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --licenses
 
-ENV ANDROID_SDK_ROOT $PWD/android-sdk-linux
-ENV ANDROID_HOME $PWD/android-sdk-linux
-ENV GRADLE_HOME /usr/local/gradle-${GRADLE_VERSION}
-ENV ANDROID_NDK $ANDROID_SDK_ROOT/ndk/${NDK_VERSION}
-ENV PATH $PATH:$GRADLE_HOME/bin
-ENV PATH $PATH:$ANDROID_HOME/platform-tools
-ENV PATH $PATH:$ANDROID_SDK_ROOT/build-tools/${ANDROID_BUILD_TOOLS}:$ANDROID_NDK
+ENV ANDROID_SDK_ROOT=/android-sdk-linux
+ENV ANDROID_HOME=$ANDROID_SDK_ROOT
+ENV GRADLE_HOME=/usr/local/gradle-${GRADLE_VERSION}
+ENV ANDROID_NDK=$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}
+ENV PATH=$PATH:$GRADLE_HOME/bin
+ENV PATH=$PATH:$ANDROID_HOME/platform-tools
+ENV PATH=$PATH:$ANDROID_SDK_ROOT/build-tools/${ANDROID_BUILD_TOOLS}:$ANDROID_NDK
 
 # Install Datadog CI
 ARG GITHUB_RELEASES_BASE=https://depot-read-api-github-releases.us1.ddbuild.io/internal/mirror/github-releases
@@ -100,7 +103,7 @@ RUN set -x \
   && datadog-ci version
 
 # Install Datadog Java tracer
-ENV DD_TRACER_FOLDER $PWD/dd-java-agent
+ENV DD_TRACER_FOLDER=/dd-java-agent
 RUN mkdir -p $DD_TRACER_FOLDER
 RUN curl -fsSLo $DD_TRACER_FOLDER/dd-java-agent.jar https://repo1.maven.org/maven2/com/datadoghq/dd-java-agent/$DD_TRACER_VERSION/dd-java-agent-$DD_TRACER_VERSION.jar
 
