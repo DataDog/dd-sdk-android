@@ -7,9 +7,9 @@
 package com.datadog.android.sample.data.db.sqldelight
 
 import android.content.Context
+import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.datadog.android.sample.LogsDatabase
 import com.datadog.android.sqldelight.DatadogSqliteCallback
-import com.squareup.sqldelight.android.AndroidSqliteDriver
 
 internal object Database {
 

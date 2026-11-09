@@ -105,7 +105,7 @@ internal class NetworkInstrumentationComparisonTest {
         // Given
         val method = networkRule.forge.anElementFrom(ALLOWED_METHODS)
         // https://github.com/RunningTheSnail/Okhttp/blob/84cbd2dae1708967c3b1bd71ccecdecefd6354f5/okhttp/src/main/java/okhttp3/internal/http/RetryAndFollowUpInterceptor.java#L318
-        // OkHttp will retry on 408 status code by default, se we excluding this code here
+        // OkHttp will retry on 408 status code by default, se we exclude this code here
         val error = networkRule.forge.anElementFrom(
             HttpSpec.StatusCode.clientErrors(HttpSpec.StatusCode.REQUEST_TIMEOUT)
         )

@@ -1,7 +1,7 @@
-class com.datadog.android.sqldelight.DatadogSqliteCallback : com.squareup.sqldelight.android.AndroidSqliteDriver.Callback
-  constructor(com.squareup.sqldelight.db.SqlDriver.Schema, com.datadog.android.api.SdkCore = Datadog.getInstance())
+class com.datadog.android.sqldelight.DatadogSqliteCallback : app.cash.sqldelight.driver.android.AndroidSqliteDriver.Callback
+  constructor(app.cash.sqldelight.db.SqlSchema<app.cash.sqldelight.db.QueryResult.Value<Unit>>, com.datadog.android.api.SdkCore = Datadog.getInstance())
   override fun onCorruption(androidx.sqlite.db.SupportSQLiteDatabase)
-fun <T: com.squareup.sqldelight.Transacter> T.transactionTraced(String, Boolean = false, TransactionWithSpanAndWithoutReturn.() -> Unit)
-fun <T: com.squareup.sqldelight.Transacter, R> T.transactionTracedWithResult(String, Boolean = false, TransactionWithSpanAndWithReturn<R>.() -> R): R
-interface com.datadog.android.sqldelight.TransactionWithSpanAndWithReturn<R> : com.squareup.sqldelight.TransactionWithReturn<R>, com.datadog.android.trace.api.span.DatadogSpan
-interface com.datadog.android.sqldelight.TransactionWithSpanAndWithoutReturn : com.squareup.sqldelight.TransactionWithoutReturn, com.datadog.android.trace.api.span.DatadogSpan
+fun <T: app.cash.sqldelight.Transacter> T.transactionTraced(String, Boolean = false, TransactionWithSpanAndWithoutReturn.() -> Unit)
+fun <T: app.cash.sqldelight.Transacter, R> T.transactionTracedWithResult(String, Boolean = false, TransactionWithSpanAndWithReturn<R>.() -> R): R
+interface com.datadog.android.sqldelight.TransactionWithSpanAndWithReturn<R> : app.cash.sqldelight.TransactionWithReturn<R>, com.datadog.android.trace.api.span.DatadogSpan
+interface com.datadog.android.sqldelight.TransactionWithSpanAndWithoutReturn : app.cash.sqldelight.TransactionWithoutReturn, com.datadog.android.trace.api.span.DatadogSpan

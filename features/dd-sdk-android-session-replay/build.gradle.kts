@@ -8,7 +8,6 @@
 import com.datadog.gradle.utils.cloneRumEventsFormat
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
 import com.datadog.gradle.utils.createRumEventsFormatCloneTask
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Apply ktlint before AGP: built-in Kotlin otherwise causes duplicate ktlint tasks.
@@ -123,7 +122,7 @@ createJsonModelsGenerationTask("generateSessionReplayModels") {
 }
 
 datadogBuild {
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyAndroidLibraryConfig()
     applyJunitConfig()
     applyJavadocConfig()

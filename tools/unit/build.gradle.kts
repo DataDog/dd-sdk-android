@@ -5,8 +5,7 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.java11
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import com.datadog.gradle.config.java17
 
 plugins {
     // Apply ktlint before AGP: built-in Kotlin otherwise causes duplicate ktlint tasks.
@@ -29,18 +28,7 @@ android {
     namespace = "com.datadog.tools.unit"
 
     compileOptions {
-        java11()
-    }
-
-    sourceSets.named("main") {
-        java.directories += "src/main/kotlin"
-        java.directories += "src/main/java"
-    }
-    sourceSets.named("test") {
-        java.directories += "src/test/kotlin"
-    }
-    sourceSets.named("androidTest") {
-        java.directories += "src/androidTest/kotlin"
+        java17()
     }
 
     flavorDimensions += "platform"
@@ -74,11 +62,7 @@ unMock {
     keepStartingWith("org.json")
 }
 
-// It has to target 11 even if it is for unit-tests and this lib is not client facing, because
-// with bytecode of Java 17 there is an error:
-// Cannot inline bytecode built with JVM target 17 into bytecode that is being built with JVM target 11
-
 datadogBuild {
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyJunitConfig()
 }

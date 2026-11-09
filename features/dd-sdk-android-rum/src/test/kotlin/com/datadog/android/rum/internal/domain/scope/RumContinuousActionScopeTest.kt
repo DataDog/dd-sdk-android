@@ -55,7 +55,6 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -3083,9 +3082,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     private fun mockEvent(timeOffset: Long = 0L): RumRawEvent {
-        val event: RumRawEvent = mock()
-        whenever(event.eventTime) doReturn timeWithOffset(timeOffset)
-        return event
+        return RumRawEvent.WebViewEvent(eventTime = timeWithOffset(timeOffset))
     }
 
     // endregion

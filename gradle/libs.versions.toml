@@ -21,7 +21,7 @@ okHttp = "4.12.1"
 
 # Android
 androidDesugaringSdk = "2.0.4"
-androidToolsPlugin = "9.1.1"
+androidToolsPlugin = "9.2.1"
 androidXAnnotations = "1.9.1"
 androidXAppCompat = "1.4.2" # Next version will bring coroutines
 androidXCar = "1.4.0"
@@ -73,7 +73,7 @@ ktlint = "1.8.0"
 ktlintGradlePlugin = "14.2.0"
 unmock = "0.11.0"
 robolectric = "4.4_r1-robolectric-r2"
-androidLint = "31.0.2"
+androidLint = "32.2.1"
 
 nexusPublishGradlePlugin = "2.0.0"
 datadogPlugin = "1.32.0"
@@ -85,7 +85,9 @@ dependencyLicense = "0.8.1"
 kotlinXmlBuilder = "1.9.3"
 
 # Integrations
-sqlDelight = "1.5.5"
+# Keep the published driver compatible with the SDK's Kotlin runtime.
+sqlDelight = "2.0.2"
+sqlDelightPlugin = "2.3.2"
 coil = "1.0.0"
 coilCompose = "2.1.0"
 coil3 = "3.0.4"
@@ -95,7 +97,7 @@ picasso = "2.8"
 room = "2.5.1"
 rxJava3 = "3.0.0"
 timber = "5.0.1"
-coroutines = "1.7.3"
+coroutines = "1.9.0"
 media3 = "1.1.1"
 newPipeExtractor = "v0.24.6"
 navigation3 = "1.0.0-alpha01"
@@ -239,7 +241,8 @@ jsonSchemaValidator = { module = "com.github.erosb:everit-json-schema", version.
 kotlinXmlBuilder = { module = "org.redundent:kotlin-xml-builder", version.ref = "kotlinXmlBuilder" }
 
 # Integrations
-sqlDelight = { module = "com.squareup.sqldelight:android-driver", version.ref = "sqlDelight" }
+sqlDelight = { module = "app.cash.sqldelight:android-driver", version.ref = "sqlDelight" }
+sqlDelightSqlite324Dialect = { module = "app.cash.sqldelight:sqlite-3-24-dialect", version.ref = "sqlDelightPlugin" }
 coil = { module = "io.coil-kt:coil", version.ref = "coil" }
 coilCompose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 coil3 = { module = "io.coil-kt.coil3:coil", version.ref = "coil3" }
@@ -319,8 +322,7 @@ testTools = [
 ]
 
 androidXNavigation = [
-    "androidXNavigationFragment",
-    "androidXNavigationRuntime"
+    "androidXNavigationFragment"
 ]
 
 androidXSupportBase = [
@@ -331,8 +333,6 @@ androidXSupportBase = [
 
 androidXCompose = [
     "androidXComposeNavigation",
-    "androidXComposeRuntime",
-    "androidXComposeUi",
     "androidXComposeUiTooling",
     "androidXComposeMaterial",
 ]
@@ -357,7 +357,6 @@ fresco = [
 ]
 
 glide = [
-    "glideAnnotations",
     "glideCore",
     "glideOkHttp3",
 ]
@@ -378,7 +377,6 @@ ktorServer = [
     "ktorServerSSE"
 ]
 ktorClient = [
-    "ktorClientCore",
     "ktorClientOkHttp",
     "ktorContentNegotiation",
     "ktorSerializationKotlinxJson"
@@ -398,7 +396,7 @@ dependencyLicenseGradlePlugin = { id = "com.datadoghq.dependency-license", versi
 androidLibraryPlugin = { id = "com.android.library", version.ref = "androidToolsPlugin" }
 kotlinSPGradlePlugin = { id = "com.google.devtools.ksp", version.ref = "kotlinSP" }
 dokkaGradlePlugin = { id = "org.jetbrains.dokka", version.ref = "dokka" }
-sqlDelightGradlePlugin = { id = "com.squareup.sqldelight", version.ref = "sqlDelight" }
+sqlDelightGradlePlugin = { id = "app.cash.sqldelight", version.ref = "sqlDelightPlugin" }
 binaryCompatibilityGradlePlugin = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibility" }
 kotlinxSerializationPlugin = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinBuildscript" }
 koverPlugin = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

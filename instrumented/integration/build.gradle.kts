@@ -47,16 +47,6 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
-    sourceSets.named("main") {
-        java.directories += "src/main/kotlin"
-    }
-    sourceSets.named("test") {
-        java.directories += "src/test/kotlin"
-    }
-    sourceSets.named("androidTest") {
-        java.directories += "src/androidTest/kotlin"
-    }
-
     compileOptions {
         java17()
         if (project.hasProperty(com.datadog.gradle.Properties.USE_DESUGARING)) {
@@ -106,6 +96,10 @@ dependencies {
 
     implementation(libs.gson)
     implementation(libs.kotlinRuntime)
+    // androidTest network wrappers use kotlinx.coroutines; declared on main so consistent
+    // resolution aligns the whole module to the SDK's coroutines version (vs the old 1.6.4
+    // pulled transitively via androidx.test), and it lands on the androidTest compile classpath.
+    implementation(libs.coroutinesCore)
     implementation(libs.bundles.androidXSupportBase)
     implementation(libs.elmyr)
     implementation(libs.leakCanaryAndroid)

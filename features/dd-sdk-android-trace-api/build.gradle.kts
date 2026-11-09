@@ -6,7 +6,6 @@
 @file:Suppress("StringLiteralDuplication")
 
 import com.datadog.gradle.config.taskConfig
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Apply ktlint before AGP: built-in Kotlin otherwise causes duplicate ktlint tasks.
@@ -58,7 +57,7 @@ unMock {
 }
 
 datadogBuild {
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyAndroidLibraryConfig()
     applyJunitConfig()
     applyJavadocConfig()

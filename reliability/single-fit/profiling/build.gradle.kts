@@ -4,8 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     // Apply ktlint before AGP: built-in Kotlin otherwise causes duplicate ktlint tasks.
     id("ktlint")
@@ -57,6 +55,6 @@ unMock {
 
 datadogBuild {
     applyAndroidLibraryConfig()
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyJunitConfig()
 }

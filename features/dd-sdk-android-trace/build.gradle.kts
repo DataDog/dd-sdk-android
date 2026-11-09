@@ -6,7 +6,6 @@
 @file:Suppress("StringLiteralDuplication")
 
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.nio.file.Paths
 
 plugins {
@@ -59,7 +58,6 @@ dependencies {
     implementation(libs.kotlinRuntime)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
-    implementation(libs.bundles.traceCore)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
@@ -82,7 +80,8 @@ dependencies {
 
     unmock(libs.robolectric)
 
-    // Test Fixtures
+    // Test Fixtures — declared explicitly because the testFixtures source set is its own variant
+    // and does not inherit the main `implementation` classpath (nor the auto-added kotlin-stdlib).
     testFixturesImplementation(libs.gson)
     testFixturesImplementation(libs.kotlinRuntime)
     testFixturesImplementation(libs.okHttp)
@@ -108,7 +107,7 @@ createJsonModelsGenerationTask("generateTraceModelsFromJson") {
 }
 
 datadogBuild {
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyAndroidLibraryConfig()
     applyJunitConfig()
     applyJavadocConfig()

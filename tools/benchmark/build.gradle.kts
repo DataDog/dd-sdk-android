@@ -5,9 +5,8 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.java11
+import com.datadog.gradle.config.java17
 import com.datadog.gradle.utils.createJsonModelsGenerationTask
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     // Apply ktlint before AGP: built-in Kotlin otherwise causes duplicate ktlint tasks.
@@ -29,7 +28,7 @@ android {
     }
     namespace = "com.datadog.tools.benchmark"
     compileOptions {
-        java11()
+        java17()
     }
 }
 
@@ -60,7 +59,7 @@ createJsonModelsGenerationTask("generateTraceModelsFromJson") {
 }
 
 datadogBuild {
-    applyKotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
+    applyKotlinConfig()
     applyJunitConfig()
     applyAndroidLibraryConfig()
     applyPublishingConfig(

@@ -367,7 +367,7 @@ internal class LogEventSerializerTest {
             doesNotHaveField(KEY_USR_EMAIL)
         }
         containsExtraAttributes(
-            userInfo.additionalProperties.minus(LogEvent.Usr.RESERVED_PROPERTIES)
+            userInfo.additionalProperties.minus(LogEvent.Usr.RESERVED_PROPERTIES.toSet())
         )
     }
 
@@ -387,7 +387,7 @@ internal class LogEventSerializerTest {
             doesNotHaveField(KEY_ACCOUNT_NAME)
         }
         containsExtraAttributes(
-            accountInfo.additionalProperties.minus(LogEvent.Account.RESERVED_PROPERTIES)
+            accountInfo.additionalProperties.minus(LogEvent.Account.RESERVED_PROPERTIES.toSet())
         )
     }
 

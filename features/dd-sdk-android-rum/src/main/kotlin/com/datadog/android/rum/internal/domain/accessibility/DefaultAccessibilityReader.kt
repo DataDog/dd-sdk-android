@@ -86,6 +86,7 @@ internal class DefaultAccessibilityReader(
     }
 
     @Deprecated("Deprecated in Java")
+    @Suppress("OVERRIDE_DEPRECATION")
     override fun onLowMemory() {
         // do nothing - there's nothing we're holding onto that takes up any significant memory
     }
