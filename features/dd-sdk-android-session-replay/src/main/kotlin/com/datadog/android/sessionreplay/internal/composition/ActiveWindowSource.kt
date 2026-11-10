@@ -23,7 +23,12 @@ import java.lang.ref.WeakReference
 internal class ActiveWindowSource(
     // Visual fallback cannot establish Compose semantics privacy; verify it before the next touch.
     private val refreshTouchPrivacyAfterCapture: Boolean,
-    private val readTouchPrivacy: (View) -> Map<Rect, TouchPrivacy>? = WindowTouchPrivacyReader()::read
+    private val readTouchPrivacy: (View) -> Map<Rect, TouchPrivacy>? = WindowTouchPrivacyReader().let { reader ->
+        { view ->
+            @Suppress("ThreadSafety") // Invoked only by the UI-thread touch privacy refresh.
+            reader.read(view)
+        }
+    }
 ) {
     private val lock = Any()
     private var windows: List<WeakReference<View>> = emptyList()
@@ -36,7 +41,7 @@ internal class ActiveWindowSource(
 
     /** Returns whether the ordered roots changed; an unchanged discovery refresh keeps captures valid. */
     fun update(views: List<View>): Boolean {
-        val references = views.map(::WeakReference)
+        val references = views.map { view -> WeakReference(view) }
         return synchronized(lock) {
             @Suppress("UnsafeThirdPartyFunctionCall") // Equal list sizes keep every indexed comparison in bounds.
             val changed = windows.size != views.size || windows.indices.any { windows[it].get() !== views[it] }
@@ -50,10 +55,10 @@ internal class ActiveWindowSource(
     }
 
     fun currentWindows(): List<View> =
-        synchronized(lock) { windows }.mapNotNull(WeakReference<View>::get)
+        synchronized(lock) { windows }.mapNotNull { reference -> reference.get() }
 
     fun snapshot(): Snapshot = synchronized(lock) {
-        Snapshot(windows.mapNotNull(WeakReference<View>::get), version, touchPrivacyVersion, drawVersion)
+        Snapshot(windows.mapNotNull { reference -> reference.get() }, version, touchPrivacyVersion, drawVersion)
     }
 
     fun isCurrent(snapshot: Snapshot): Boolean = synchronized(lock) { version == snapshot.version }
@@ -110,7 +115,7 @@ internal class ActiveWindowSource(
                 if (privacyScope?.rumViewScope != scope || !samePolicy) {
                     touchPrivacyVersion++
                 }
-                privacyReadyWindows = views.map(::WeakReference)
+                privacyReadyWindows = views.map { view -> WeakReference(view) }
                 privacyOverrides = nextOverrides
                 privacyScope = TouchPrivacyScope(scope, touchPrivacyVersion)
             }

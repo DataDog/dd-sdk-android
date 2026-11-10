@@ -54,7 +54,7 @@ internal class ExecutorCapturedSnapshotProcessor(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.TELEMETRY,
-                { "Unable to schedule composition snapshot construction" },
+                { SNAPSHOT_SCHEDULING_FAILED_MESSAGE },
                 e,
                 onlyOnce = true
             )
@@ -79,7 +79,7 @@ internal class ExecutorCapturedSnapshotProcessor(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
-            { "Composition snapshot construction threw an exception" },
+            { SNAPSHOT_CONSTRUCTION_FAILED_MESSAGE },
             e,
             onlyOnce = true
         )
@@ -87,6 +87,8 @@ internal class ExecutorCapturedSnapshotProcessor(
     }
 
     private companion object {
+        const val SNAPSHOT_SCHEDULING_FAILED_MESSAGE = "Unable to schedule composition snapshot construction"
+        const val SNAPSHOT_CONSTRUCTION_FAILED_MESSAGE = "Composition snapshot construction threw an exception"
         const val EXECUTION_CONTEXT = "Session Replay composition snapshot construction"
     }
 }

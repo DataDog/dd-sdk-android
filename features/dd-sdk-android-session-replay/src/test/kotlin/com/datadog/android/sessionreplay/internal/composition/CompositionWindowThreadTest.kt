@@ -496,7 +496,7 @@ internal class CompositionWindowThreadTest {
         trackedRoot: View? = null,
         var reportedRoots: List<View> = roots
     ) {
-        private val windows = roots.associateWith(::mockWindow)
+        private val windows = roots.associateWith { root -> mockWindow(root) }
         val mockDrawInterceptor: CompositionViewOnDrawInterceptor = mock()
         val mockTouchInterceptor: CompositionWindowTouchInterceptor = mock()
         val mockWindowResolver: (View) -> Window? = mock {

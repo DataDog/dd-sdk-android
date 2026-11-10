@@ -19,7 +19,7 @@ internal class GenerationWorkRegistry {
     private val trackedWork = Collections.newSetFromMap(ConcurrentHashMap<CancellableCaptureWork, Boolean>())
 
     fun createToken(context: CaptureGenerationContext): CaptureWorkToken =
-        CaptureWorkToken(context, this).also(workTokens::add)
+        CaptureWorkToken(context, this).also { token -> workTokens += token }
 
     fun track(work: CancellableCaptureWork) {
         trackedWork += work
@@ -34,9 +34,9 @@ internal class GenerationWorkRegistry {
     }
 
     fun invalidateAll() {
-        workTokens.forEach(CaptureWorkToken::invalidate)
+        workTokens.forEach { token -> token.invalidate() }
         workTokens.clear()
-        trackedWork.forEach(CancellableCaptureWork::cancel)
+        trackedWork.forEach { work -> work.cancel() }
         trackedWork.clear()
     }
 }

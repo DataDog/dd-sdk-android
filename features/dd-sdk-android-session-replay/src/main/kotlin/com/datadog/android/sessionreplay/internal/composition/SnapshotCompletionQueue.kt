@@ -97,7 +97,7 @@ internal class SnapshotCompletionQueue(
             if (stopped.get()) {
                 drainScheduled.set(false)
             } else {
-                executorService.executeSafe(EXECUTION_CONTEXT, internalLogger, ::drain)
+                executorService.executeSafe(EXECUTION_CONTEXT, internalLogger) { drain() }
             }
         }
     }
@@ -131,7 +131,7 @@ internal class SnapshotCompletionQueue(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.TELEMETRY,
-                { "Composition snapshot completion processing threw an exception" },
+                { COMPLETION_PROCESSING_FAILED_MESSAGE },
                 e
             )
         } finally {
@@ -153,6 +153,8 @@ internal class SnapshotCompletionQueue(
             "Dropped saturated composition snapshots before the completion queue stopped"
         internal const val MAX_QUEUED_CAPTURES_PROPERTY = "max_queued_captures"
         internal const val DROPPED_CAPTURE_COUNT_PROPERTY = "dropped_capture_count"
+        private const val COMPLETION_PROCESSING_FAILED_MESSAGE =
+            "Composition snapshot completion processing threw an exception"
         private const val EXECUTION_CONTEXT = "Session Replay composition snapshot completion"
     }
 }

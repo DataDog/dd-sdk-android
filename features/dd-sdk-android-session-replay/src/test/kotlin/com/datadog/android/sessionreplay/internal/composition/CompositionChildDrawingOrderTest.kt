@@ -246,7 +246,7 @@ internal class CompositionChildDrawingOrderTest {
     ) {
         // Given
         val fakeFixture = Fixture(fakeScopeValue, childCount = 2)
-        fakeFixture.mockChildren.forEach(fakeFixture::makeOpaque)
+        fakeFixture.mockChildren.forEach { view -> fakeFixture.makeOpaque(view) }
         val mockTransformedChild = fakeFixture.mockChildren[fakeTransformedIndex]
         mockTransformedChild.stub {
             on { rotation } doReturn fakeRotation
@@ -384,7 +384,7 @@ internal class CompositionChildDrawingOrderTest {
         // Given
         val fakeFixture = Fixture(fakeScopeValue, childCount = 2, sdkInt = sdkInt)
         fakeFixture.customOrder(1, 0)
-        fakeFixture.mockChildren.forEach(fakeFixture::makeOpaque)
+        fakeFixture.mockChildren.forEach { view -> fakeFixture.makeOpaque(view) }
 
         // When
         val result = fakeFixture.traverseWindow()
@@ -420,7 +420,7 @@ internal class CompositionChildDrawingOrderTest {
         // Given
         val fakeFixture = Fixture(fakeScopeValue, childCount = 2, sdkInt = sdkInt)
         fakeFixture.customOrder(invalidIndex, 1)
-        fakeFixture.mockChildren.forEach(fakeFixture::makeOpaque)
+        fakeFixture.mockChildren.forEach { view -> fakeFixture.makeOpaque(view) }
 
         // When
         val result = fakeFixture.traverseWindow()
@@ -438,7 +438,7 @@ internal class CompositionChildDrawingOrderTest {
         // Given
         val fakeFixture = Fixture(fakeScopeValue, childCount = 2, sdkInt = sdkInt)
         fakeFixture.customOrder(1, 0)
-        fakeFixture.mockChildren.forEach(fakeFixture::makeOpaque)
+        fakeFixture.mockChildren.forEach { view -> fakeFixture.makeOpaque(view) }
         whenever(fakeFixture.mockRoot.getChildDrawingOrder(any(), any())).thenThrow(IllegalStateException())
         whenever(fakeFixture.mockRoot.getChildDrawingOrder(any())).thenThrow(IllegalStateException())
 
@@ -453,7 +453,7 @@ internal class CompositionChildDrawingOrderTest {
     fun `M retain every child W traverseWindow { custom ordering flag cannot be read }`() {
         // Given
         val fakeFixture = Fixture(fakeScopeValue, childCount = 2)
-        fakeFixture.mockChildren.forEach(fakeFixture::makeOpaque)
+        fakeFixture.mockChildren.forEach { view -> fakeFixture.makeOpaque(view) }
         whenever(fakeFixture.mockRoot.isChildrenDrawingOrderEnabled).thenThrow(IllegalStateException())
 
         // When
@@ -541,7 +541,7 @@ internal class CompositionChildDrawingOrderTest {
     fun `M retain all children W traverseWindow() { sibling group exceeds occlusion limit }`() {
         // Given
         val fakeFixture = Fixture(fakeScopeValue, childCount = 65)
-        fakeFixture.mockChildren.forEach(fakeFixture::makeOpaque)
+        fakeFixture.mockChildren.forEach { view -> fakeFixture.makeOpaque(view) }
 
         // When
         val result = fakeFixture.traverseWindow()

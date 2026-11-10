@@ -50,7 +50,7 @@ internal class CapturedMutationValidation(
     }
 
     private fun validateOperationDuplicates(identities: List<CapturedIdentity>) {
-        identities.groupBy(CapturedIdentity::wireId).values.forEach { operations ->
+        identities.groupBy { it.wireId }.values.forEach { operations ->
             if (operations.size > 1) {
                 operations.firstOrNull()?.let {
                     failures += validationFailure(CaptureValidationErrorCode.DUPLICATE_MUTATION_OPERATION, it)
@@ -61,7 +61,7 @@ internal class CapturedMutationValidation(
 
     private fun validateContradictions() {
         val addIds = adds.map { it.identity.wireId }.toSet()
-        val removeIds = removes.map(CapturedIdentity::wireId).toSet()
+        val removeIds = removes.map { it.wireId }.toSet()
         val updateIds = updates.map { it.identity.wireId }.toSet()
         (addIds intersect removeIds).forEach { reportContradiction(it) }
         (addIds intersect updateIds).forEach { reportContradiction(it) }
@@ -76,9 +76,9 @@ internal class CapturedMutationValidation(
     }
 
     private fun validateTargets() {
-        removes.forEach(::validateRemoval)
-        updates.forEach(::validateUpdate)
-        adds.forEach(::validateAddition)
+        removes.forEach { validateRemoval(it) }
+        updates.forEach { validateUpdate(it) }
+        adds.forEach { validateAddition(it) }
     }
 
     private fun validateRemoval(identity: CapturedIdentity) {

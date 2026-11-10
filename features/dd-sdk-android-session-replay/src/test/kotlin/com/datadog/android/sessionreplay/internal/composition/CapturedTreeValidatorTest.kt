@@ -650,7 +650,7 @@ internal class CapturedTreeValidatorTest {
         val fakeLayers = fakeIdentities.mapIndexed { index, identity ->
             val fakeChild = fakeIdentities.getOrNull(index + 1)
                 ?: fakeIdentities.first().takeIf { fakeHasCycle }
-            layer(identity, CapturedLayerKind.NATIVE_VIEW, listOfNotNull(fakeChild?.let(CapturedChild::Layer)))
+            layer(identity, CapturedLayerKind.NATIVE_VIEW, listOfNotNull(fakeChild?.let { CapturedChild.Layer(it) }))
         }
         val fakeSnapshot = fakeTree.snapshot.copy(
             root = fakeTree.root.copy(children = listOf(CapturedChild.Layer(fakeIdentities.first()))),

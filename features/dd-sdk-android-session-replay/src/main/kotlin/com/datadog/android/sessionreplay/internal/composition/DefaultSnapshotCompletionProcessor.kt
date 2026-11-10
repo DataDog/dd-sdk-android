@@ -46,13 +46,13 @@ internal class DefaultSnapshotCompletionProcessor(
                 capture.generation.expire()
                 // Failure identities and details are per-view, so they are deliberately left out:
                 // the message stays constant and only the bounded error codes are attached.
-                val errorCodes = mapping.failures.map(CaptureValidationFailure::code).distinct().sorted()
+                val errorCodes = mapping.failures.map { it.code }.distinct().sorted()
                 internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.TELEMETRY,
                     { INVALID_SNAPSHOT_MESSAGE },
                     additionalProperties = mapOf(
-                        VALIDATION_ERROR_CODES_PROPERTY to errorCodes.map(Enum<*>::name),
+                        VALIDATION_ERROR_CODES_PROPERTY to errorCodes.map { it.name },
                         VALIDATION_FAILURE_COUNT_PROPERTY to mapping.failures.size
                     )
                 )

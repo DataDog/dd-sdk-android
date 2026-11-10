@@ -10,6 +10,8 @@ import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 import java.util.concurrent.TimeUnit
 
+private const val SNAPSHOT_PRODUCER_FAILED_MESSAGE = "Composition snapshot producer threw an exception"
+
 /**
  * Serializes snapshot generations and owns their complete lifetime: traversal, asynchronous
  * processing, expiry, and handoff. A draw signal only calls [requestCapture]; it owns no capture
@@ -119,7 +121,7 @@ internal class SnapshotCaptureOrchestrator(
         if (snapshot != null && active.generation.isActive()) {
             val processing = processor.process(
                 SnapshotProcessingRequest(active.generation, snapshot),
-                SnapshotProcessingCallback(::onProcessed)
+                SnapshotProcessingCallback { result -> onProcessed(result) }
             )
             val shouldCancel = synchronized(lock) {
                 val current = activeGeneration
@@ -205,7 +207,7 @@ internal class SnapshotCaptureOrchestrator(
         // snapshot silently, while expire() itself found activeGeneration already cleared. Removed
         // rather than duplicated: with expire() closing the gap on its side, this decision is final.
         expired?.cancel()
-        completed?.let(consumer::consume)
+        completed?.let { consumer.consume(it) }
         scheduleCaptureIfRequested()
     }
 
@@ -269,7 +271,7 @@ private fun safeCapture(
     internalLogger.log(
         InternalLogger.Level.ERROR,
         InternalLogger.Target.TELEMETRY,
-        { "Composition snapshot producer threw an exception" },
+        { SNAPSHOT_PRODUCER_FAILED_MESSAGE },
         e
     )
     null

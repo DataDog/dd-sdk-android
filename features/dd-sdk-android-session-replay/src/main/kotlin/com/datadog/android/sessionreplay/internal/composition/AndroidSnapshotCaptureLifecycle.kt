@@ -35,7 +35,7 @@ internal class AndroidSnapshotCaptureLifecycle(
     private val windowFromDecorView: (View) -> Window? = {
         WindowReflectionUtils.getWindowFromDecorView(it, internalLogger)
     },
-    private val isMainThreadWindow: (View) -> Boolean = ::isAttachedToMainLooper
+    private val isMainThreadWindow: (View) -> Boolean = { view -> isAttachedToMainLooper(view) }
 ) : CompositionCaptureLifecycle, OnWindowRefreshedCallback {
     private val lifecycleCallback = SessionReplayLifecycleCallback(this)
     private val viewUtilsInternal = ViewUtilsInternal()
@@ -81,7 +81,7 @@ internal class AndroidSnapshotCaptureLifecycle(
         uiHandler.post {
             isRunning = false
             uiHandler.removeCallbacks(untrackedWindowRefreshRunnable)
-            pendingAttachmentListeners.keys.toList().forEach(::removeAttachmentListener)
+            pendingAttachmentListeners.keys.toList().forEach { view -> removeAttachmentListener(view) }
             interceptor.stop()
             touchInterceptor.stop()
             excludedDecorViews.clear()
@@ -90,7 +90,7 @@ internal class AndroidSnapshotCaptureLifecycle(
 
     @MainThread
     override fun onWindowsAdded(windows: List<Window>) {
-        windows.mapNotNull { it.peekDecorView() }.forEach(excludedDecorViews::remove)
+        windows.mapNotNull { it.peekDecorView() }.forEach { view -> excludedDecorViews -= view }
         refreshWindows()
     }
 
@@ -119,9 +119,13 @@ internal class AndroidSnapshotCaptureLifecycle(
     private fun updatePendingAttachments(trackedWindows: List<Window>) {
         val detachedRoots = trackedWindows.mapNotNull { it.peekDecorView() }
             .filter { !isMainThreadWindow(it) && it.handler == null }.toSet()
-        pendingAttachmentListeners.keys.filterNot(detachedRoots::contains).forEach(::removeAttachmentListener)
+        pendingAttachmentListeners.keys.filterNot { view ->
+            view in detachedRoots
+        }.forEach { view -> removeAttachmentListener(view) }
         @Suppress("UnsafeThirdPartyFunctionCall") // Snapshot iteration with a plain map membership check.
-        detachedRoots.filterNot(pendingAttachmentListeners::containsKey).forEach(::awaitAttachment)
+        detachedRoots.filterNot { view ->
+            pendingAttachmentListeners.containsKey(view)
+        }.forEach { view -> awaitAttachment(view) }
     }
 
     @MainThread
@@ -158,7 +162,7 @@ internal class AndroidSnapshotCaptureLifecycle(
     private fun removeAttachmentListener(root: View) {
         @Suppress("UnsafeThirdPartyFunctionCall") // Private mutable map supports removal of any key.
         val listener = pendingAttachmentListeners.remove(root)
-        listener?.let(root::removeOnAttachStateChangeListener)
+        listener?.let { root.removeOnAttachStateChangeListener(it) }
     }
 
     /**
@@ -198,7 +202,7 @@ internal class AndroidSnapshotCaptureLifecycle(
             .filter { it in trackedDecorViews || it !in excludedDecorViews }
             .filter(isMainThreadWindow)
             // Traversal skips secondary displays, including their touch-privacy overrides.
-            .filterNot(viewUtilsInternal::isOnSecondaryDisplay)
+            .filterNot { view -> viewUtilsInternal.isOnSecondaryDisplay(view) }
         val trackedByDecorView = supportedTrackedWindows.associateBy { it.peekDecorView() }
         val orderedWindows = orderedDecorViews.mapNotNull { root ->
             trackedByDecorView[root] ?: windowFromDecorView(root)

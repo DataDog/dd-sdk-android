@@ -607,7 +607,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         // Given
         val mockApplication = mock<Application>()
         val fakeRoots = List(4) { mock<View>() }
-        val fakeActivities = fakeRoots.map(::mockActivityShowing)
+        val fakeActivities = fakeRoots.map { root -> mockActivityShowing(root) }
         val fakeWindows = fakeActivities.map { it.window }
         val mockDrawInterceptor = mock<CompositionViewOnDrawInterceptor>()
         val mockTouchInterceptor = mock<CompositionWindowTouchInterceptor>()

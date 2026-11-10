@@ -1502,11 +1502,11 @@ internal class CompositionTouchPrivacyTest {
         val orchestrator = SnapshotCaptureOrchestrator(
             producer = producer,
             processor = if (deferProcessing) {
-                ExecutorCapturedSnapshotProcessor(Executor(processingTasks::add), mock())
+                ExecutorCapturedSnapshotProcessor(Executor { task -> processingTasks.add(task) }, mock())
             } else {
                 ImmediateCapturedSnapshotProcessor()
             },
-            consumer = CompletedSnapshotConsumer(consumed::add),
+            consumer = CompletedSnapshotConsumer { capture -> consumed.add(capture) },
             timeProvider = CaptureTimeProvider { nowNs },
             captureScheduler = captureScheduler,
             mainThreadExecutor = mainThreadExecutor,
@@ -1608,7 +1608,7 @@ internal class CompositionTouchPrivacyTest {
         override fun execute(task: () -> Unit): CancellableCaptureWork = schedule(0L, task)
 
         override fun schedule(delayNs: Long, task: () -> Unit): CancellableCaptureWork =
-            Task(task).also(tasks::add)
+            Task(task).also { scheduledTask -> tasks.add(scheduledTask) }
 
         fun pendingCount() = tasks.count { !it.cancelled && !it.executed }
 

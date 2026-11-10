@@ -11,6 +11,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentityKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframeKind
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+import java.util.Locale
 
 /**
  * Added to every raw layer replay id so that layer wire ids always land above the Int range
@@ -159,7 +160,7 @@ internal class DefaultCapturedIdentityFactory(
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                { "Identity owner must be a captured layer." }
+                { INVALID_LAYER_OWNER_MESSAGE }
             )
         }
     }
@@ -172,14 +173,14 @@ internal class DefaultCapturedIdentityFactory(
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                { "Identity owner belongs to a different RUM view scope." }
+                { WRONG_OWNER_SCOPE_MESSAGE }
             )
         }
         if (expectedKind != null && owner.kind != expectedKind) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                { "Identity owner must be a $expectedKind." }
+                { WRONG_OWNER_KIND_MESSAGE.format(Locale.US, expectedKind) }
             )
         }
     }
@@ -192,6 +193,9 @@ internal class DefaultCapturedIdentityFactory(
     )
 
     private companion object {
+        const val INVALID_LAYER_OWNER_MESSAGE = "Identity owner must be a captured layer."
+        const val WRONG_OWNER_SCOPE_MESSAGE = "Identity owner belongs to a different RUM view scope."
+        const val WRONG_OWNER_KIND_MESSAGE = "Identity owner must be a %s."
         const val SCREEN_ROOT_LOCAL_ID = "screen"
         const val NAMESPACE_SHIFT = 32
     }

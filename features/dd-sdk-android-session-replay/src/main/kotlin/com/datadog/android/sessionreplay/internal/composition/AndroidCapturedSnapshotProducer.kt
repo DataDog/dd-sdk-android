@@ -24,7 +24,7 @@ internal class AndroidCapturedSnapshotProducer(
     private val traversal: AndroidWindowTraversal,
     private val touchPrivacyManager: TouchPrivacyManager,
     private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver,
-    private val isMainThreadWindow: (View) -> Boolean = ::isAttachedToMainLooper
+    private val isMainThreadWindow: (View) -> Boolean = { view -> isAttachedToMainLooper(view) }
 ) : CapturedSnapshotProducer {
     @MainThread
     @Suppress("ReturnCount")

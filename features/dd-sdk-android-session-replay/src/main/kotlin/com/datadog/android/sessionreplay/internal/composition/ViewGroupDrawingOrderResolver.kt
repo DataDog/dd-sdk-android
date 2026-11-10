@@ -27,14 +27,14 @@ internal class ViewGroupDrawingOrderResolver(
         val childCount = viewGroup.childCount
         val children = mutableListOf<View>()
         for (i in 0 until childCount) {
-            viewGroup.getChildAt(i)?.let(children::add)
+            viewGroup.getChildAt(i)?.let { child -> children += child }
         }
         val ordered = if (children.size == childCount) resolveCustomOrder(viewGroup, children) else null
         if (ordered == null) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                { "Unable to resolve child drawing order; retaining all children without occlusion culling" },
+                { DRAWING_ORDER_UNAVAILABLE_MESSAGE },
                 onlyOnce = true
             )
         }
@@ -79,6 +79,11 @@ internal class ViewGroupDrawingOrderResolver(
 
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.Q)
     private fun hasPublicDrawingOrderApi(): Boolean = sdkInt >= Build.VERSION_CODES.Q
+
+    private companion object {
+        const val DRAWING_ORDER_UNAVAILABLE_MESSAGE =
+            "Unable to resolve child drawing order; retaining all children without occlusion culling"
+    }
 }
 
 /** These protected SDK hooks predate API 29. Cache their lookup, but never retain a ViewGroup. */

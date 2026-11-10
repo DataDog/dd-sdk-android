@@ -63,9 +63,9 @@ internal class CompositionCaptureConcurrencyTest {
 
     @AfterEach
     fun tearDown() {
-        fakeWorkers.filter(Thread::isAlive).forEach(Thread::interrupt)
+        fakeWorkers.filter { thread -> thread.isAlive }.forEach { thread -> thread.interrupt() }
         fakeCleanupActions.asReversed().forEach { it() }
-        fakeExecutors.forEach(ExecutorService::shutdownNow)
+        fakeExecutors.forEach { executor -> executor.shutdownNow() }
         fakeWorkers.forEach { it.awaitCompletion() }
         fakeExecutors.forEach {
             assertThat(it.awaitTermination(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS))
@@ -321,7 +321,7 @@ internal class CompositionCaptureConcurrencyTest {
         val fakeProcessorEntered = CountDownLatch(1)
         val fakeStopCompleted = CountDownLatch(1)
         val fakeProcessedCaptures = CopyOnWriteArrayList<CompletedSnapshotCapture>()
-        val fakeExecutorService = Executors.newSingleThreadExecutor().also(fakeExecutors::add)
+        val fakeExecutorService = Executors.newSingleThreadExecutor().also { executor -> fakeExecutors.add(executor) }
         val testedQueue = SnapshotCompletionQueue(
             executorService = fakeExecutorService,
             processor = SnapshotCompletionProcessor { capture ->
@@ -331,11 +331,11 @@ internal class CompositionCaptureConcurrencyTest {
             },
             internalLogger = mock<InternalLogger>(),
             maxQueuedCaptures = fakeQueuedCaptureCount + 1
-        ).also { fakeCleanupActions += it::stop }
+        ).also { component -> fakeCleanupActions += { component.stop() } }
         val fakeCaptures = forge.aList(size = fakeQueuedCaptureCount + 1) { aCompletedCapture() }
 
         // When
-        fakeCaptures.forEach(testedQueue::consume)
+        fakeCaptures.forEach { capture -> testedQueue.consume(capture) }
         val processorStarted = fakeProcessorEntered.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         testedQueue.stop()
         fakeStopCompleted.countDown()
@@ -360,7 +360,7 @@ internal class CompositionCaptureConcurrencyTest {
         val fakeFixture = QueueSaturationFixture(forge, fakeMaxQueuedCaptures)
 
         // When
-        fakeFixture.fakeOverflowingCaptures.forEach(fakeFixture.testedQueue::consume)
+        fakeFixture.fakeOverflowingCaptures.forEach { capture -> fakeFixture.testedQueue.consume(capture) }
 
         // Then
         assertThat(fakeFixture.fakeOverflowingCaptures.filterNot { it.generation.isActive() })
@@ -374,7 +374,7 @@ internal class CompositionCaptureConcurrencyTest {
     ) {
         // Given
         val fakeFixture = QueueSaturationFixture(forge, fakeMaxQueuedCaptures)
-        fakeFixture.fakeOverflowingCaptures.forEach(fakeFixture.testedQueue::consume)
+        fakeFixture.fakeOverflowingCaptures.forEach { capture -> fakeFixture.testedQueue.consume(capture) }
 
         // When
         fakeFixture.releaseAndDrain()
@@ -421,8 +421,10 @@ internal class CompositionCaptureConcurrencyTest {
         generationBudgetNs: Long,
         processorDelayRangeMs: LongRange
     ) {
-        private val expiryExecutor = Executors.newScheduledThreadPool(2).also(fakeExecutors::add)
-        private val processorExecutor = Executors.newFixedThreadPool(2).also(fakeExecutors::add)
+        private val expiryExecutor = Executors.newScheduledThreadPool(2).also { executor ->
+            fakeExecutors.add(executor)
+        }
+        private val processorExecutor = Executors.newFixedThreadPool(2).also { executor -> fakeExecutors.add(executor) }
         val createdGenerations = CopyOnWriteArrayList<CaptureGenerationContext>()
         val consumedGenerationIds = ConcurrentLinkedQueue<Long>()
         private val fakeProcessorDelaysMs = forge.aList(size = ITERATIONS) {
@@ -455,7 +457,7 @@ internal class CompositionCaptureConcurrencyTest {
             expiryScheduler = ExecutorCaptureTaskScheduler(expiryExecutor, mock()),
             generationBudgetNs = generationBudgetNs,
             internalLogger = mock()
-        ).also { fakeCleanupActions += it::stop }
+        ).also { component -> fakeCleanupActions += { component.stop() } }
 
         fun stopExecutors(): Boolean {
             processorExecutor.shutdown()
@@ -468,7 +470,7 @@ internal class CompositionCaptureConcurrencyTest {
         private val fakeDrainBlocked = CountDownLatch(1)
         private val fakeProcessorEntered = CountDownLatch(1)
         val fakeProcessedCaptures = CopyOnWriteArrayList<CompletedSnapshotCapture>()
-        private val fakeExecutor = Executors.newSingleThreadExecutor().also(fakeExecutors::add)
+        private val fakeExecutor = Executors.newSingleThreadExecutor().also { executor -> fakeExecutors.add(executor) }
         val testedQueue = SnapshotCompletionQueue(
             executorService = fakeExecutor,
             processor = SnapshotCompletionProcessor { capture ->
@@ -478,7 +480,7 @@ internal class CompositionCaptureConcurrencyTest {
             },
             internalLogger = mock<InternalLogger>(),
             maxQueuedCaptures = fakeCapacity
-        ).also { fakeCleanupActions += it::stop }
+        ).also { component -> fakeCleanupActions += { component.stop() } }
         val fakeOverflowingCaptures = forge.aList(size = fakeCapacity + 1) { aCompletedCapture() }
 
         init {
@@ -511,7 +513,7 @@ internal class CompositionCaptureConcurrencyTest {
                 assertDoesNotThrow { block(threadIndex) }
             }
         }
-        threads.forEach(Thread::start)
+        threads.forEach { thread -> thread.start() }
         startLine.countDown()
         threads.forEach { it.awaitCompletion() }
     }
@@ -587,11 +589,11 @@ internal class CompositionCaptureConcurrencyTest {
     ) {
         val createdGenerations = CopyOnWriteArrayList<CaptureGenerationContext>()
         val testedCompletionQueue = SnapshotCompletionQueue(
-            executorService = Executors.newSingleThreadExecutor().also(fakeExecutors::add),
+            executorService = Executors.newSingleThreadExecutor().also { executor -> fakeExecutors.add(executor) },
             // Mirrors the production processor contract: every capture ends accepted or expired.
             processor = SnapshotCompletionProcessor { it.generation.tryAccept() },
             internalLogger = mock<InternalLogger>()
-        ).also { fakeCleanupActions += it::stop }
+        ).also { component -> fakeCleanupActions += { component.stop() } }
         private val scheduledCaptures = ConcurrentLinkedQueue<() -> Unit>()
         private val snapshot = forge.aCompositionTestTree().snapshot
         val testedOrchestrator = SnapshotCaptureOrchestrator(
@@ -613,7 +615,7 @@ internal class CompositionCaptureConcurrencyTest {
             },
             expiryScheduler = { _, _ -> CancellableCaptureWork.NONE },
             internalLogger = mock<InternalLogger>()
-        ).also { fakeCleanupActions += it::stop }
+        ).also { component -> fakeCleanupActions += { component.stop() } }
 
         fun runScheduledCaptures() {
             while (true) {
@@ -622,7 +624,7 @@ internal class CompositionCaptureConcurrencyTest {
             }
         }
 
-        fun generationIds(): List<Long> = createdGenerations.map(CaptureGenerationContext::id)
+        fun generationIds(): List<Long> = createdGenerations.map { it.id }
     }
 
     private companion object {

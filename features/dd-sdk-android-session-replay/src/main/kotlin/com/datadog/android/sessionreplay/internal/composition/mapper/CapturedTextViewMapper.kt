@@ -101,7 +101,7 @@ internal class CapturedTextViewMapper(
                     internalLogger.log(
                         level = InternalLogger.Level.INFO,
                         target = InternalLogger.Target.TELEMETRY,
-                        messageBuilder = { "Unable to resolve text font family; using sans-serif fallback" },
+                        messageBuilder = { UNSUPPORTED_FONT_FAMILY_MESSAGE },
                         onlyOnce = true
                     )
                 }
@@ -136,6 +136,7 @@ internal class CapturedTextViewMapper(
     }
 
     private companion object {
+        const val UNSUPPORTED_FONT_FAMILY_MESSAGE = "Unable to resolve text font family; using sans-serif fallback"
         const val SANS_SERIF_FAMILY_NAME = "roboto, sans-serif"
         const val SERIF_FAMILY_NAME = "serif"
         const val MONOSPACE_FAMILY_NAME = "monospace"

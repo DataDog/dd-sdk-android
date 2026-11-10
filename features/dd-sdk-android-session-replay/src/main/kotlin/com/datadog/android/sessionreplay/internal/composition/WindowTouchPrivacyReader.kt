@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.putTouchOverrideArea
@@ -26,17 +27,13 @@ import java.util.concurrent.TimeUnit
  * while visual capture waits for scheduling or processing; a failed or over-budget pass denies the touch.
  */
 internal class WindowTouchPrivacyReader(
-    private val timeProvider: CaptureTimeProvider = CaptureTimeProvider(System::nanoTime),
+    private val timeProvider: CaptureTimeProvider = DEFAULT_TIME_PROVIDER,
     private val budgetNs: Long = DEFAULT_BUDGET_NS,
     private val internalLogger: InternalLogger = InternalLogger.UNBOUND,
-    private val isMainThreadWindow: (View) -> Boolean = ::isAttachedToMainLooper,
+    private val isMainThreadWindow: (View) -> Boolean = { view -> isAttachedToMainLooper(view) },
     private val readCompositionTouchPrivacy: ((View, () -> Boolean) -> Map<Rect, TouchPrivacy>?)? = null
 ) {
     private val viewUtils = ViewUtilsInternal()
-
-    private companion object {
-        val DEFAULT_BUDGET_NS = TimeUnit.MILLISECONDS.toNanos(8L)
-    }
 
     @UiThread
     @Suppress("TooGenericExceptionCaught") // Custom View implementations must not break app touch dispatch.
@@ -46,7 +43,7 @@ internal class WindowTouchPrivacyReader(
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
-            { "Unable to refresh composition touch privacy" },
+            { TOUCH_PRIVACY_REFRESH_FAILED_MESSAGE },
             e,
             onlyOnce = true
         )
@@ -102,6 +99,14 @@ internal class WindowTouchPrivacyReader(
     @UiThread
     private fun shouldSkipSubtree(view: View): Boolean = viewUtils.isNotVisible(view) ||
         viewUtils.isSystemNoise(view) || viewUtils.isOnSecondaryDisplay(view)
+
+    private companion object {
+        const val TOUCH_PRIVACY_REFRESH_FAILED_MESSAGE = "Unable to refresh composition touch privacy"
+        val DEFAULT_BUDGET_NS = TimeUnit.MILLISECONDS.toNanos(8L)
+        val DEFAULT_TIME_PROVIDER = DefaultTimeProvider().let { provider ->
+            CaptureTimeProvider { provider.getDeviceElapsedTimeNanos() }
+        }
+    }
 }
 
 /** Shared with visual traversal so live refresh and captured overrides use identical precedence and geometry. */
