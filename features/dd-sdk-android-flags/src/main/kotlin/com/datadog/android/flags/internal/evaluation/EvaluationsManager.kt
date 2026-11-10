@@ -488,10 +488,13 @@ internal class EvaluationsManager(
     private fun fallbackContext(
         request: ExperimentationOptOut.Request,
         capturedContext: EvaluationContext?
-    ): EvaluationContext? = when {
-        capturedContext != null -> capturedContext
-        flagsRepository.hasConfigurationForContext(request.context) -> request.context
-        else -> null
+    ): EvaluationContext? {
+        val installedContext = capturedContext ?: flagsRepository.getAssignmentsSnapshot()?.context
+        return when {
+            installedContext != null -> installedContext
+            flagsRepository.hasConfigurationForContext(request.context) -> request.context
+            else -> null
+        }
     }
 
     // Called under the policy lock. State delivery must not acquire the state-holder lock here.

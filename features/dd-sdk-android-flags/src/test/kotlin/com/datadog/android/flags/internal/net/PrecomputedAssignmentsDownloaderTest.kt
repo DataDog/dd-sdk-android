@@ -22,11 +22,15 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
 import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -48,6 +52,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.IOException
 import java.net.UnknownHostException
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -88,6 +93,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         testedDownloader = PrecomputedAssignmentsDownloader(
             callFactory = mockCallFactory,
+            assignmentAuthorizationCallFactory = mockCallFactory,
             internalLogger = mockInternalLogger,
             requestFactory = mockRequestFactory
         )
@@ -272,6 +278,104 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         verify(mockRequestFactory).create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = [302, 303, 307])
+    fun `M not forward credential W readPrecomputedFlags() {cross-origin redirect}`(statusCode: Int) {
+        // Given
+        val token = "header.payload.signature"
+        val redirectServer = MockWebServer()
+        val targetServer = MockWebServer()
+        redirectServer.start()
+        targetServer.start()
+        val request = Request.Builder()
+            .url(redirectServer.url("/assignments"))
+            .header(AssignmentAuthorization.HEADER, token)
+            .post("{}".toRequestBody())
+            .build()
+        redirectServer.enqueue(
+            MockResponse()
+                .setResponseCode(statusCode)
+                .setHeader("Location", targetServer.url("/redirected"))
+        )
+        targetServer.enqueue(MockResponse().setResponseCode(200).setBody("redirected-response"))
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics, token))
+            .doReturn(request)
+        val downloader = PrecomputedAssignmentsDownloader(
+            callFactory = OkHttpClient(),
+            assignmentAuthorizationCallFactory = OkHttpClient.Builder()
+                .followRedirects(false)
+                .followSslRedirects(false)
+                .build(),
+            internalLogger = mockInternalLogger,
+            requestFactory = mockRequestFactory
+        )
+
+        try {
+            // When
+            val result = downloader.readPrecomputedFlags(
+                fakeEvaluationContext,
+                fakeDatadogContext,
+                fakeDiagnostics,
+                token
+            )
+
+            // Then
+            assertThat(result).isNull()
+            assertThat(redirectServer.takeRequest().getHeader(AssignmentAuthorization.HEADER)).isEqualTo(token)
+            assertThat(targetServer.takeRequest(250, TimeUnit.MILLISECONDS)).isNull()
+        } finally {
+            redirectServer.shutdown()
+            targetServer.shutdown()
+        }
+    }
+
+    @Test
+    fun `M preserve redirect W readPrecomputedFlags() {no assignment credential}`() {
+        // Given
+        val fakeResponseBody = "redirected-response"
+        val redirectServer = MockWebServer()
+        val targetServer = MockWebServer()
+        redirectServer.start()
+        targetServer.start()
+        val request = Request.Builder()
+            .url(redirectServer.url("/assignments"))
+            .post("{}".toRequestBody())
+            .build()
+        redirectServer.enqueue(
+            MockResponse()
+                .setResponseCode(307)
+                .setHeader("Location", targetServer.url("/redirected"))
+        )
+        targetServer.enqueue(MockResponse().setResponseCode(200).setBody(fakeResponseBody))
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
+            .doReturn(request)
+        val downloader = PrecomputedAssignmentsDownloader(
+            callFactory = OkHttpClient(),
+            assignmentAuthorizationCallFactory = OkHttpClient.Builder()
+                .followRedirects(false)
+                .followSslRedirects(false)
+                .build(),
+            internalLogger = mockInternalLogger,
+            requestFactory = mockRequestFactory
+        )
+
+        try {
+            // When
+            val result = downloader.readPrecomputedFlags(
+                fakeEvaluationContext,
+                fakeDatadogContext,
+                fakeDiagnostics
+            )
+
+            // Then
+            assertThat(result).isEqualTo(PrecomputedAssignmentsResponse(fakeResponseBody, null))
+            assertThat(targetServer.takeRequest().getHeader(AssignmentAuthorization.HEADER)).isNull()
+        } finally {
+            redirectServer.shutdown()
+            targetServer.shutdown()
+        }
     }
 
     // endregion

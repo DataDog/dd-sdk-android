@@ -26,6 +26,7 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
+import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.api.AfterEach
@@ -42,6 +43,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -130,6 +132,36 @@ internal class FlagsClientTest {
         val flagsFeature = sdkCore.getFeature(FLAGS_FEATURE_NAME)
             ?.unwrap<FlagsFeature>()
         flagsFeature?.clearClients()
+    }
+
+    @Test
+    fun `M disable redirects W createInternal() {assignment authorization call factory}`() {
+        // Given
+        val configuration = FlagsConfiguration.Builder().trackEvaluations(false).build()
+        whenever(mockSdkCore.timeProvider).thenReturn(mock())
+        whenever(mockSdkCore.createSingleThreadExecutorService(any())).thenReturn(mock())
+        whenever(mockSdkCore.createOkHttpCallFactory(any())).thenReturn(mock())
+
+        // When
+        FlagsClient.createInternal(
+            configuration = configuration,
+            featureSdkCore = mockSdkCore,
+            flagsFeature = FlagsFeature(mockSdkCore, configuration),
+            evaluationsFeature = null,
+            name = "redirect-policy",
+            evaluationTelemetryOptOutParameterEnabled = false
+        )
+
+        // Then
+        argumentCaptor<OkHttpClient.Builder.() -> Unit> {
+            verify(mockSdkCore, times(2)).createOkHttpCallFactory(capture())
+            val standardClient = OkHttpClient.Builder().apply(firstValue).build()
+            val authorizedClient = OkHttpClient.Builder().apply(lastValue).build()
+            assertThat(standardClient.followRedirects).isTrue()
+            assertThat(standardClient.followSslRedirects).isTrue()
+            assertThat(authorizedClient.followRedirects).isFalse()
+            assertThat(authorizedClient.followSslRedirects).isFalse()
+        }
     }
 
     @Test

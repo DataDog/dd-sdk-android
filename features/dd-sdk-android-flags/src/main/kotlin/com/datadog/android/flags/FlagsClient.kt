@@ -491,9 +491,16 @@ interface FlagsClient {
             }
 
             val callFactory = featureSdkCore.createOkHttpCallFactory()
+            val assignmentAuthorizationCallFactory = featureSdkCore.createOkHttpCallFactory {
+                @Suppress("UnsafeThirdPartyFunctionCall") // Safe: constant builder configuration.
+                followRedirects(false)
+                @Suppress("UnsafeThirdPartyFunctionCall") // Safe: constant builder configuration.
+                followSslRedirects(false)
+            }
             val assignmentsDownloader = PrecomputedAssignmentsDownloader(
                 internalLogger = featureSdkCore.internalLogger,
                 callFactory = callFactory,
+                assignmentAuthorizationCallFactory = assignmentAuthorizationCallFactory,
                 requestFactory = if (experimentationOptOut.enabled) {
                     PrecomputedAssignmentsRequestFactory(
                         featureSdkCore.internalLogger,

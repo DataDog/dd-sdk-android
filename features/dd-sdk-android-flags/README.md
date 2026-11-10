@@ -151,10 +151,11 @@ the credential; the SDK never restores an earlier token.
 
 The SDK sends the token only in the reserved `DD-Assignment-Token` request header. It removes
 `dd_assignment_token` from targeting attributes, persisted assignment context, exposure data, evaluation telemetry,
-and SDK logs. A custom assignment endpoint must forward the header. The SDK treats the JWT as opaque: the assignment
-endpoint validates its signature, expiration, and other claims rather than relying on the device clock. A token must
-contain only printable ASCII characters without whitespace. An unusable value is omitted with a fixed warning that
-does not contain the value, and the request continues without a token.
+and SDK logs. A custom assignment endpoint must forward the header and must use its final URL because token-bearing
+requests do not follow redirects. The SDK treats the JWT as opaque: the assignment endpoint validates its signature,
+expiration, and other claims rather than relying on the device clock. A token must contain only printable ASCII
+characters without whitespace. An unusable value is omitted with a fixed warning that does not contain the value, and
+the request continues without a token.
 
 A usable token establishes a subject boundary as soon as the update is accepted. Retained assignments for a different
 targeting key become unavailable immediately, during the download and after a failure, so evaluation returns the

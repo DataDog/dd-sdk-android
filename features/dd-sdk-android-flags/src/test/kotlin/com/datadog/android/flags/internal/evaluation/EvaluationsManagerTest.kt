@@ -34,6 +34,7 @@ import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsResponse
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsResult
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
+import com.datadog.android.flags.internal.repository.FlagsAssignmentsSnapshot
 import com.datadog.android.flags.internal.repository.FlagsInstallation
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
@@ -1240,6 +1241,77 @@ internal class EvaluationsManagerTest {
 
         // Then
         assertThat(stateAtTimeoutCallback).isEqualTo(FlagsClientState.Stale)
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "DISABLED,true,false,true",
+        "DISABLED,false,false,false",
+        "IMMEDIATE,true,false,false",
+        "FUTURE_EXPERIMENTS_ONLY,true,false,false",
+        "IMMEDIATE,true,true,true",
+        "FUTURE_EXPERIMENTS_ONLY,true,true,true"
+    )
+    fun `M select cached state W updateEvaluationsForContext() {authorization timeout before fetch starts}`(
+        mode: ExperimentationOptOutMode,
+        sameSubject: Boolean,
+        exactContext: Boolean,
+        expectStale: Boolean
+    ) {
+        // Given
+        val attributes = mutableMapOf("plan" to "requested")
+        if (mode != ExperimentationOptOutMode.DISABLED) {
+            attributes[ExperimentationOptOut.ATTRIBUTE] = "2026-10-21T12:00:00Z"
+        }
+        val sanitizedContext = EvaluationContext("requested-subject", attributes)
+        val requestedContext = sanitizedContext.copy(
+            attributes = attributes + (AssignmentAuthorization.ATTRIBUTE to "header.payload.signature")
+        )
+        val installedContext = when {
+            exactContext -> sanitizedContext
+            sameSubject -> sanitizedContext.copy(attributes = attributes + ("plan" to "cached"))
+            else -> sanitizedContext.copy(targetingKey = "installed-subject")
+        }
+        val stateManager = FlagsStateManager(
+            DDCoreStateHolder.create(
+                initialState = FlagsClientState.NotReady,
+                onStateChanged = FlagsStateListener::onStateChanged
+            )
+        )
+        val callback = mock<EvaluationContextCallback>()
+        var timeoutAction: (() -> Unit)? = null
+        whenever(mockExecutorService.execute(any())).thenAnswer { null }
+        whenever(mockFlagsRepository.getAssignmentsSnapshot()) doReturn
+            FlagsAssignmentsSnapshot(emptyMap(), installedContext)
+        val testedManager = EvaluationsManager(
+            sdkCore = mockSdkCore,
+            executorService = mockExecutorService,
+            internalLogger = mockInternalLogger,
+            flagsRepository = mockFlagsRepository,
+            assignmentsReader = mockAssignmentsDownloader,
+            precomputeMapper = mockPrecomputeMapper,
+            flagStateManager = stateManager,
+            initializationTimeoutMs = 2_500L,
+            initializationTimeoutScheduler = { _, action ->
+                timeoutAction = action
+                {}
+            },
+            experimentationOptOut = ExperimentationOptOut(mode)
+        )
+
+        // When
+        testedManager.updateEvaluationsForContext(requestedContext, callback)
+        checkNotNull(timeoutAction).invoke()
+
+        // Then
+        if (expectStale) {
+            assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        } else {
+            assertThat(stateManager.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+        }
+        verify(callback).onFailure(isA<FlagsInitializationTimeoutException>())
+        verify(mockFlagsRepository).getAssignmentsSnapshot()
+        verify(mockFlagsRepository, never()).getEvaluationContext()
     }
 
     @Test

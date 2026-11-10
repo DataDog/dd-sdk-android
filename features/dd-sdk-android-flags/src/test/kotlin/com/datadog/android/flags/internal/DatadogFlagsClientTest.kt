@@ -28,6 +28,7 @@ import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientEvent
+import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -284,6 +285,79 @@ internal class DatadogFlagsClientTest {
         assertThat(result.errorMessage)
             .isEqualTo("Flag '$fakeJsonKey': ${AssignmentAuthorization.AUTHORIZATION_FAILED}")
         verifyNoInteractions(mockProcessor)
+    }
+
+    @Test
+    fun `M not return previous subject value W resolve() {authorized subject switch completes during read}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = "true"
+        )
+        val fakeInstalledContext = EvaluationContext("installed-subject")
+        val experimentationOptOut = ExperimentationOptOut()
+        val assignmentAuthorization = AssignmentAuthorization(
+            mockInternalLogger,
+            experimentationOptOut.stateLock
+        )
+        val authorizationRequest = assignmentAuthorization.prepare(
+            EvaluationContext(
+                "requested-subject",
+                mapOf(AssignmentAuthorization.ATTRIBUTE to "header.payload.signature")
+            )
+        )
+        val snapshotRead = CountDownLatch(1)
+        val releaseSnapshot = CountDownLatch(1)
+        val switchStarted = CountDownLatch(1)
+        val switchCompleted = CountDownLatch(1)
+        whenever(mockFlagsRepository.getEvaluationSnapshot(fakeJsonKey)).thenAnswer {
+            snapshotRead.countDown()
+            check(releaseSnapshot.await(5, TimeUnit.SECONDS))
+            FlagEvaluationSnapshot(fakeFlag, fakeInstalledContext, false)
+        }
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore,
+            mockEvaluationsManager,
+            mockFlagsRepository,
+            FlagsConfiguration.Builder().build(),
+            mockRumEvaluationLogger,
+            mockProcessor,
+            null,
+            mockFlagsStateManager,
+            false,
+            experimentationOptOut,
+            assignmentAuthorization
+        )
+        val executor = Executors.newFixedThreadPool(2)
+
+        try {
+            // When
+            val resolution = executor.submit<ResolutionDetails<Boolean>> {
+                testedClient.resolve(fakeJsonKey, false)
+            }
+            assertThat(snapshotRead.await(5, TimeUnit.SECONDS)).isTrue()
+            val subjectSwitch = executor.submit {
+                switchStarted.countDown()
+                assignmentAuthorization.onAssignmentsAccepted(authorizationRequest)
+                switchCompleted.countDown()
+            }
+            assertThat(switchStarted.await(5, TimeUnit.SECONDS)).isTrue()
+            val switchCompletedBeforeSnapshot = switchCompleted.await(250, TimeUnit.MILLISECONDS)
+            releaseSnapshot.countDown()
+            val result = resolution.get(5, TimeUnit.SECONDS)
+            subjectSwitch.get(5, TimeUnit.SECONDS)
+
+            // Then
+            assertThat(switchCompletedBeforeSnapshot).isFalse()
+            assertThat(result.value).isFalse()
+            assertThat(result.errorCode).isEqualTo(ErrorCode.GENERAL)
+        } finally {
+            releaseSnapshot.countDown()
+            executor.shutdownNow()
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue()
+        }
     }
 
     @Test

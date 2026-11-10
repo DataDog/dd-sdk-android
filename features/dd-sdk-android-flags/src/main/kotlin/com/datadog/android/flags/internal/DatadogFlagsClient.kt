@@ -38,9 +38,9 @@ import org.json.JSONObject
  * This implementation fetches precomputed flag values from the local repository and handles
  * type conversion with appropriate fallback to default values.
  *
- * Thread safety: Resolve methods capture assignments and the subject policy together.
- * When opt-out is disabled, reads do not acquire the policy lock. [setEvaluationContext] is thread-safe
- * but triggers asynchronous background operations for fetching updated flag evaluations.
+ * Thread safety: Resolve methods wait for persistence without the policy lock, then capture assignments and the
+ * subject policy together under that lock. [setEvaluationContext] is thread-safe but triggers asynchronous background
+ * operations for fetching updated flag evaluations.
  *
  * @param featureSdkCore the SDK core for logging and internal operations
  * @param evaluationsManager manages flag evaluations and network requests
@@ -376,11 +376,7 @@ internal class DatadogFlagsClient(
         flagsRepository.waitForPersistenceLoad()
         // Keep the subject decision alive until it has been captured with the
         // assignments. Repository reads inside this lock must not wait for persistence.
-        return if (evaluationTelemetryOptOutParameterEnabled || experimentationOptOut.enabled) {
-            synchronized(telemetryLock) { readEvaluationSnapshot(flagKey) }
-        } else {
-            readEvaluationSnapshot(flagKey)
-        }
+        return synchronized(telemetryLock) { readEvaluationSnapshot(flagKey) }
     }
 
     private fun readEvaluationSnapshot(flagKey: String): EvaluationSnapshot {

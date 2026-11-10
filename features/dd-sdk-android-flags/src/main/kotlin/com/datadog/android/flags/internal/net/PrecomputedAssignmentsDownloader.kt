@@ -22,12 +22,14 @@ import org.json.JSONObject
 /**
  * Downloads precomputed flag assignments from Datadog Feature Flags service.
  *
- * @param callFactory Factory for creating HTTP calls
+ * @param callFactory Factory for creating ordinary HTTP calls
+ * @param assignmentAuthorizationCallFactory Factory for credentialed calls, which must not follow redirects
  * @param internalLogger Logger for error and debug messages
  * @param requestFactory Factory for creating precomputed assignments requests
  */
 internal class PrecomputedAssignmentsDownloader(
     private val callFactory: Call.Factory,
+    private val assignmentAuthorizationCallFactory: Call.Factory,
     private val internalLogger: InternalLogger,
     private val requestFactory: PrecomputedAssignmentsRequestFactory
 ) : PrecomputedAssignmentsReader {
@@ -60,7 +62,8 @@ internal class PrecomputedAssignmentsDownloader(
 
     @Suppress("TooGenericExceptionCaught")
     private fun executeDownloadRequest(request: Request, credentialUsed: Boolean): PrecomputedAssignmentsResult? = try {
-        val response = callFactory.newCall(request).execute()
+        val selectedCallFactory = if (credentialUsed) assignmentAuthorizationCallFactory else callFactory
+        val response = selectedCallFactory.newCall(request).execute()
         handleResponse(response, credentialUsed)
     } catch (e: Throwable) {
         if (credentialUsed) {
