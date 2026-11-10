@@ -37,6 +37,9 @@ import org.json.JSONObject
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 
 @ExtendWith(ForgeExtension::class, TestConfigurationExtension::class)
 @ForgeConfiguration(FlagsIntegrationForgeConfigurator::class)
@@ -186,6 +189,77 @@ internal class ExposureHookTest {
             .isEqualTo(SUBJECT)
     }
 
+    @ParameterizedTest
+    @MethodSource("nestedEvaluations")
+    fun `M keep the outer decision W getBooleanDetails() {hook evaluates other flags}`(
+        hookStage: String,
+        innerEvaluations: Int,
+        trackExposures: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        start(forge, trackExposures)
+        val nestingHook = object : Hook<Boolean> {
+            override fun after(
+                ctx: HookContext<Boolean>,
+                details: FlagEvaluationDetails<Boolean>,
+                hints: Map<String, Any>
+            ) {
+                if (hookStage == AFTER) evaluateInnerFlag(innerEvaluations)
+            }
+
+            override fun finallyAfter(
+                ctx: HookContext<Boolean>,
+                details: FlagEvaluationDetails<Boolean>,
+                hints: Map<String, Any>
+            ) {
+                if (hookStage == FINALLY_AFTER) evaluateInnerFlag(innerEvaluations)
+            }
+        }
+
+        // When
+        val details = OpenFeatureAPI.getClient().getBooleanDetails(FLAG, false, hookOptions(nestingHook))
+        fixture.flush()
+
+        // Then
+        assertThat(details.errorCode).isNull()
+        val outer = evaluations.single { it.flagKey == FLAG }
+        assertThat(outer.isExposure()).isTrue()
+        assertThat(outer.shouldSend()).isTrue()
+        assertThat(outer.features).containsEntry("holdout.key", "holdout-1")
+        val outerEvents = fixture.events(Feature.FLAGS_FEATURE_NAME)
+            .filter { it.getAsJsonObject("flag")["key"].asString == FLAG }
+        assertThat(outerEvents).hasSize(if (trackExposures) 1 else 0)
+    }
+
+    @Test
+    fun `M send one exposure W getBooleanDetails() {after hook evaluates the same flag}`(forge: Forge) {
+        // Given
+        start(forge)
+        val nestingHook = object : Hook<Boolean> {
+            override fun after(
+                ctx: HookContext<Boolean>,
+                details: FlagEvaluationDetails<Boolean>,
+                hints: Map<String, Any>
+            ) {
+                OpenFeatureAPI.getClient().getBooleanValue(FLAG, false)
+            }
+        }
+
+        // When
+        OpenFeatureAPI.getClient().getBooleanDetails(FLAG, false, hookOptions(nestingHook))
+        fixture.flush()
+
+        // Then
+        assertThat(evaluations.map { it.shouldSend() }).containsExactly(true, false)
+        assertThat(evaluations.map { it.isCacheHit() }).containsExactly(false, true)
+        assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
+    }
+
+    private fun evaluateInnerFlag(times: Int) {
+        repeat(times) { OpenFeatureAPI.getClient().getBooleanValue(INNER_FLAG, false) }
+    }
+
     private fun start(
         forge: Forge,
         trackExposures: Boolean = true,
@@ -208,6 +282,12 @@ internal class ExposureHookTest {
                         .put(feature("evaluation.key", 3, "EVALUATION"))
                         .put(feature("unknown.key", "nowhere", "FUTURE"))
                         .put(JSONObject().put("key", "invalid.value").put("value", JSONObject()))
+                ),
+                INNER_FLAG to FakeAssignment(
+                    variationType = "boolean",
+                    variationValue = true,
+                    variationKey = "on",
+                    allocationKey = "inner-allocation"
                 )
             )
         )
@@ -231,6 +311,14 @@ internal class ExposureHookTest {
         private const val FLAG = "holdout-flag"
         private const val SUBJECT = "subject"
         private const val ALLOCATION = "holdout-allocation"
+        private const val INNER_FLAG = "inner-flag"
+        private const val AFTER = "after"
+        private const val FINALLY_AFTER = "finallyAfter"
+
+        @JvmStatic
+        fun nestedEvaluations(): List<Arguments> = listOf(AFTER, FINALLY_AFTER).flatMap { stage ->
+            listOf(16, 17).flatMap { count -> listOf(true, false).map { Arguments.of(stage, count, it) } }
+        }
 
         @TestConfigurationsProvider
         @JvmStatic

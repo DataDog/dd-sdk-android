@@ -19,6 +19,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import java.lang.ref.WeakReference
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -31,6 +32,7 @@ internal class ExposureDecisionsTest {
     lateinit var fakeFlagKey: String
 
     private var recordCount = 0
+    private var decisionId = 0
     private lateinit var testedDecisions: ExposureDecisions
 
     @BeforeEach
@@ -71,7 +73,7 @@ internal class ExposureDecisionsTest {
     }
 
     @Test
-    fun `M match by identity W complete() {equal metadata of another evaluation}`() {
+    fun `M keep apart W complete() {metadata of another evaluation}`() {
         // Given
         testedDecisions.register(newMetadata(), emptyMap(), null, record(false))
 
@@ -84,34 +86,62 @@ internal class ExposureDecisionsTest {
     }
 
     @Test
-    fun `M keep the decision on its thread W complete() {other thread}`() {
+    fun `M share the decision W complete() {other thread}`() {
         // Given
         val metadata = newMetadata()
-        testedDecisions.register(metadata, emptyMap(), null, record(false))
+        testedDecisions.register(metadata, emptyMap(), null, record(true))
         val executor = Executors.newSingleThreadExecutor()
 
         // When
-        val result = AtomicReference<Boolean?>(true)
+        val result = AtomicReference<Boolean?>(null)
         executor.submit { result.set(testedDecisions.complete(details(metadata))) }.get(5, TimeUnit.SECONDS)
         executor.shutdown()
+        val repeated = testedDecisions.complete(details(metadata))
 
         // Then
-        assertThat(result.get()).isNull()
-        assertThat(recordCount).isZero()
+        assertThat(result.get()).isTrue()
+        assertThat(repeated).isTrue()
+        assertThat(recordCount).isEqualTo(1)
     }
 
     @Test
-    fun `M drop the oldest decision W register() {more than the per-thread capacity}`() {
+    fun `M survive 17 nested evaluations W register() + complete()`() {
         // Given
-        val metadata = List(17) { newMetadata() }
+        val outer = newMetadata()
+        testedDecisions.register(outer, mapOf("holdout.key" to "holdout-1"), null, record(false))
 
         // When
-        metadata.forEach { testedDecisions.register(it, emptyMap(), null, record(false)) }
+        val nested = List(17) { newMetadata() }
+        nested.forEach { testedDecisions.register(it, emptyMap(), null, record(false)) }
+        val result = testedDecisions.complete(details(outer))
 
         // Then
-        assertThat(testedDecisions.find(details(metadata.first()))).isNull()
-        assertThat(testedDecisions.find(details(metadata[1]))).isNotNull()
-        assertThat(testedDecisions.find(details(metadata.last()))).isNotNull()
+        assertThat(result).isFalse()
+        assertThat(checkNotNull(testedDecisions.find(details(outer))).hookFeatures)
+            .containsEntry("holdout.key", "holdout-1")
+        assertThat(nested.map { testedDecisions.find(details(it)) }).doesNotContainNull()
+    }
+
+    @Test
+    fun `M release the decision W register() {evaluation result dropped}`() {
+        // Given
+        val released = registerAndDrop()
+
+        // When
+        var attempts = 0
+        while (released.get() != null && attempts < MAX_GC_ATTEMPTS) {
+            System.gc()
+            attempts++
+        }
+
+        // Then
+        assertThat(released.get()).isNull()
+    }
+
+    private fun registerAndDrop(): WeakReference<EvaluationMetadata> {
+        val metadata = newMetadata()
+        testedDecisions.register(metadata, mapOf("holdout.key" to "holdout-1"), null, record(false))
+        return WeakReference(metadata)
     }
 
     @Test
@@ -145,8 +175,15 @@ internal class ExposureDecisionsTest {
         isRecorded
     }
 
-    private fun newMetadata(): EvaluationMetadata = EvaluationMetadata.builder().putBoolean("__dd_do_log", true).build()
+    private fun newMetadata(): EvaluationMetadata = EvaluationMetadata.builder()
+        .putBoolean("__dd_do_log", true)
+        .putInt("__dd_exposure_decision", ++decisionId)
+        .build()
 
     private fun details(metadata: EvaluationMetadata) =
         FlagEvaluationDetails(fakeFlagKey, true, variant = "on", metadata = metadata)
+
+    private companion object {
+        const val MAX_GC_ATTEMPTS = 50
+    }
 }

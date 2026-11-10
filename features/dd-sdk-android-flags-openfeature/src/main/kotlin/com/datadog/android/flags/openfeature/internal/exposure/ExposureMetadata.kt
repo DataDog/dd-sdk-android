@@ -19,4 +19,5 @@ internal class DatadogProviderMetadata(
 internal object ExposureMetadata {
     const val FEATURE_PREFIX = "__dd_feature."
     const val ALLOCATION_KEY = "allocationKey"
+    const val DECISION_ID = "__dd_exposure_decision"
 }

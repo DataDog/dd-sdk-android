@@ -10,23 +10,23 @@ import com.datadog.android.flags.model.EvaluationContext
 import dev.openfeature.kotlin.sdk.EvaluationMetadata
 import dev.openfeature.kotlin.sdk.FlagEvaluationDetails
 import dev.openfeature.kotlin.sdk.Reason
+import java.util.WeakHashMap
 
 /**
- * Exposure decisions of the evaluations a provider resolved on the current thread.
+ * Exposure decisions of the evaluations that a provider resolved.
  *
- * OpenFeature passes the provider's metadata instance unchanged to every hook of the same evaluation,
- * so it identifies the evaluation. Hooks run on the evaluating thread, after the provider returns.
+ * OpenFeature passes the provider's metadata instance unchanged to every hook of the same evaluation, and the
+ * provider makes that metadata unique, so it keys the evaluation's decision. A decision is released when
+ * OpenFeature drops the evaluation result, so nested evaluations cannot evict it.
  */
 internal class ExposureDecisions {
 
     /**
-     * @param metadata the metadata instance that the provider returned for the evaluation.
      * @param hookFeatures the `HOOK` features of the selected split.
      * @param context the context of the assignment that was evaluated.
      * @param recordExposure records the exposure; null when the evaluation is not an exposure.
      */
     internal class Decision(
-        val metadata: EvaluationMetadata,
         val hookFeatures: Map<String, Any>,
         val context: EvaluationContext?,
         private val recordExposure: (() -> Boolean)?
@@ -37,15 +37,15 @@ internal class ExposureDecisions {
             get() = recordExposure != null
 
         /** Records the exposure on the first call; returns whether it was already recorded, or null. */
+        @Synchronized
         fun complete(): Boolean? {
             val record = recordExposure ?: return null
             return isRecorded ?: record().also { isRecorded = it }
         }
     }
 
-    private val decisions = object : ThreadLocal<ArrayDeque<Decision>>() {
-        override fun initialValue(): ArrayDeque<Decision> = ArrayDeque()
-    }
+    // A decision must not reference its metadata: the map would then never release the entry.
+    private val decisions = WeakHashMap<EvaluationMetadata, Decision>()
 
     fun register(
         metadata: EvaluationMetadata,
@@ -54,13 +54,11 @@ internal class ExposureDecisions {
         recordExposure: (() -> Boolean)?
     ) {
         if (hookFeatures.isEmpty() && recordExposure == null) return
-        val queue = decisions.get() ?: return
-        if (queue.size == MAX_DECISIONS_PER_THREAD) queue.removeFirstOrNull()
-        queue.addLast(Decision(metadata, hookFeatures, context, recordExposure))
+        val decision = Decision(hookFeatures, context, recordExposure)
+        synchronized(decisions) { decisions[metadata] = decision }
     }
 
-    fun find(details: FlagEvaluationDetails<*>): Decision? =
-        decisions.get()?.lastOrNull { it.metadata === details.metadata }
+    fun find(details: FlagEvaluationDetails<*>): Decision? = synchronized(decisions) { decisions[details.metadata] }
 
     /**
      * Makes the final exposure decision of a successful evaluation.
@@ -68,9 +66,4 @@ internal class ExposureDecisions {
      */
     fun complete(details: FlagEvaluationDetails<*>): Boolean? =
         if (details.errorCode != null || details.reason == Reason.ERROR.name) null else find(details)?.complete()
-
-    private companion object {
-        // Covers evaluations nested in hooks; a decision is used by the hooks of its own evaluation only.
-        const val MAX_DECISIONS_PER_THREAD = 16
-    }
 }

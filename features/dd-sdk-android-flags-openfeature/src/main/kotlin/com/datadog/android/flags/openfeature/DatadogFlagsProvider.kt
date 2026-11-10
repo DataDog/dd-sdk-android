@@ -23,6 +23,7 @@ import com.datadog.android.flags.openfeature.internal.adapters.toProviderEvaluat
 import com.datadog.android.flags.openfeature.internal.exposure.DatadogProviderMetadata
 import com.datadog.android.flags.openfeature.internal.exposure.ExposureAdmissionHook
 import com.datadog.android.flags.openfeature.internal.exposure.ExposureDecisions
+import com.datadog.android.flags.openfeature.internal.exposure.ExposureMetadata
 import com.datadog.android.flags.openfeature.internal.setEvaluationContextSuspend
 import dev.openfeature.kotlin.sdk.FeatureProvider
 import dev.openfeature.kotlin.sdk.Hook
@@ -34,6 +35,7 @@ import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import java.util.concurrent.atomic.AtomicInteger
 import com.datadog.android.flags.model.EvaluationContext as DatadogEvaluationContext
 import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
 
@@ -91,6 +93,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         _FlagsInternalProxy(flagsClient).isEvaluationTelemetryOptOutParameterEnabled()
 
     private val exposureDecisions = ExposureDecisions()
+    private val nextDecisionId = AtomicInteger(0)
 
     override val metadata: ProviderMetadata = DatadogProviderMetadata(PROVIDER_NAME, exposureDecisions, internalLogger)
 
@@ -195,7 +198,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
             reason = resolutionDetails.reason?.name,
             errorCode = null,
             errorMessage = null,
-            metadata = resolutionDetails.flagMetadata.toEvaluationMetadata()
+            metadata = decisionMetadata(resolution).toEvaluationMetadata()
         ).also { register(it, resolution) }
     }
 
@@ -260,14 +263,28 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
 
     private fun <T : Any> evaluate(key: String, defaultValue: T): ProviderEvaluation<T> {
         val resolution = _FlagsInternalProxy(flagsClient).resolveDeferringExposure(key, defaultValue)
-        return resolution.details.toProviderEvaluation()
+        return resolution.details.copy(flagMetadata = decisionMetadata(resolution)).toProviderEvaluation()
             .also { register(it, resolution) }
     }
+
+    // A decision id makes each evaluation's metadata unique, so it can key the evaluation's decision.
+    private fun decisionMetadata(resolution: _FlagsInternalProxy.DeferredExposureResolution<*>): Map<String, Any> {
+        val metadata = resolution.details.flagMetadata
+        return if (hasDecision(resolution)) {
+            metadata + (ExposureMetadata.DECISION_ID to nextDecisionId.incrementAndGet())
+        } else {
+            metadata
+        }
+    }
+
+    private fun hasDecision(resolution: _FlagsInternalProxy.DeferredExposureResolution<*>): Boolean =
+        resolution.recordExposure != null || resolution.details.hookFeatures().isNotEmpty()
 
     private fun register(
         evaluation: ProviderEvaluation<*>,
         resolution: _FlagsInternalProxy.DeferredExposureResolution<*>
     ) {
+        if (!hasDecision(resolution)) return
         exposureDecisions.register(
             evaluation.metadata,
             resolution.details.hookFeatures(),

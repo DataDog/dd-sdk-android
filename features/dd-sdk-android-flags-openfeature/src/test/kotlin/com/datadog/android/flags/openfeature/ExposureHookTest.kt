@@ -66,6 +66,7 @@ internal class ExposureHookTest {
     lateinit var fakeTargetingKey: String
 
     private val evaluations = mutableListOf<ExposureEvaluation>()
+    private var decisionId = 0
     private val decisions = ExposureDecisions()
     private lateinit var providerMetadata: DatadogProviderMetadata
     private lateinit var fakeContext: LiveContext
@@ -316,6 +317,7 @@ internal class ExposureHookTest {
         .putString("allocationKey", "allocation")
         .putBoolean("__dd_do_log", true)
         .putBoolean("__dd_exposure_cache_hit", provisionalIsRecorded)
+        .putInt("__dd_exposure_decision", ++decisionId)
         .build()
 
     private fun hookContext(metadata: ProviderMetadata = providerMetadata) =
