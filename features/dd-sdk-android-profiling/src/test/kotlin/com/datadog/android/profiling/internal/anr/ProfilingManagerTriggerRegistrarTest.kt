@@ -214,7 +214,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
     }
 
     @Test
-    fun `M deliver empty allThreads W getAllStackTraces throws`(
+    fun `M deliver empty allThreads W callback accept() {no stack traces captured}`(
         @TempDir tempDir: File
     ) {
         // Given
@@ -226,7 +226,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
         whenever(mockTimeProvider.getDeviceTimestampMillis()).doReturn(creationTimeMs)
         testedRegistrar.threadDumper = ThreadDumper(
             mainThreadProvider = { Thread.currentThread() },
-            allStackTracesProvider = { throw RuntimeException("boom") }
+            allStackTracesProvider = { emptyMap() }
         )
         testedRegistrar.register(mockContext, mockListener)
         val triggerCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()

@@ -117,6 +117,7 @@ datadog:
       - "java.lang.Thread.constructor(java.lang.Runnable?, kotlin.String?):java.lang.NullPointerException,java.lang.SecurityException,java.lang.IllegalArgumentException"
       - "java.lang.Thread.constructor(java.lang.Runnable, kotlin.String):java.lang.NullPointerException,java.lang.SecurityException,java.lang.IllegalArgumentException"
       - "java.lang.Thread.getAllStackTraces():java.lang.SecurityException"
+      - "java.lang.Thread.getStackTrace():java.lang.SecurityException"
       - "java.lang.Thread.interrupt():java.lang.SecurityException"
       - "java.lang.Thread.sleep(kotlin.Long):java.lang.IllegalArgumentException,java.lang.InterruptedException"
       - "java.util.concurrent.BlockingQueue.drainTo(kotlin.collections.MutableCollection):java.lang.UnsupportedOperationException,java.lang.ClassCastException,java.lang.NullPointerException,java.lang.IllegalArgumentException"
