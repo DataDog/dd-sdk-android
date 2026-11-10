@@ -32,7 +32,7 @@ internal object FlagValueConverter {
     private val INT_MIN = BigDecimal(Int.MIN_VALUE)
     private val INT_MAX = BigDecimal(Int.MAX_VALUE)
 
-    // The longest decimal value that Int reads, and Double reads at or above 2^53, parse with BigDecimal.
+    // The longest decimal value that Int reads, and Double reads of zero or of 2^53 or more, parse with BigDecimal.
     // This bounds the BigDecimal work on each read.
     private const val MAX_DECIMAL_LENGTH = 64
 
@@ -49,7 +49,7 @@ internal object FlagValueConverter {
      * @return Result containing the converted value on success,
      *         or a Failure with TypeMismatchException if types are incompatible
      *         or a numeric value can't be read as Int without loss,
-     *         or a whole value matches neither the Double nor its printed form,
+     *         or a whole value isn't exactly a Double, or a nonzero value rounds to a zero Double,
      *         or a Failure with the parse exception if conversion failed
      */
     @Suppress("UNCHECKED_CAST")
@@ -159,16 +159,16 @@ internal object FlagValueConverter {
     }
 
     /**
-     * A whole value reads as Double only when the Double equals it, or when the Double prints as the same value,
-     * such as `1e300`. So `9007199254740993` is a type mismatch. A fractional value reads as the nearest Double,
-     * such as `1.2`. A value that can't be parsed returns null, which [convert] reports as a parse error. So does
-     * a value whose parsed Double is 2^53 or more in magnitude, when the value is longer than [MAX_DECIMAL_LENGTH]
-     * characters or [BigDecimal] can't parse it.
+     * A whole value reads as Double only when the Double equals it. So `9007199254740993` and `1e300` are type
+     * mismatches. A fractional value reads as the nearest Double, such as `1.2`, unless a nonzero value rounds to
+     * zero, such as `1e-400`: that is a type mismatch. A value that can't be parsed returns null, which [convert]
+     * reports as a parse error. So does a value whose parsed Double is zero or 2^53 or more in magnitude, when the
+     * value is longer than [MAX_DECIMAL_LENGTH] characters or [BigDecimal] can't parse it.
      */
     @Throws(TypeMismatchException::class)
     private fun parseLosslessDouble(variationValue: String, variationType: String): Double? =
         variationValue.toDoubleOrNull()?.let { double ->
-            if (double > -EXACT_DOUBLE_LIMIT && double < EXACT_DOUBLE_LIMIT) {
+            if (double != 0.0 && double > -EXACT_DOUBLE_LIMIT && double < EXACT_DOUBLE_LIMIT) {
                 double
             } else {
                 variationValue.takeIf { it.length <= MAX_DECIMAL_LENGTH }
@@ -184,20 +184,23 @@ internal object FlagValueConverter {
         variationValue: String,
         variationType: String
     ): Double {
-        if (!isFractional(decimal) && !isExactDouble(decimal, double)) {
+        val problem = when {
+            double == 0.0 && decimal.signum() != 0 -> "nonzero value '$variationValue' that Double rounds to zero"
+            !isFractional(decimal) && !isExactDouble(decimal, double) ->
+                "whole value '$variationValue' that Double can't hold exactly"
+            else -> null
+        }
+        if (problem != null) {
             @Suppress("ThrowingInternalException") // Caught by runCatching in convert()
-            throw TypeMismatchException(
-                "Flag has type '$variationType' with whole value '$variationValue' that Double can't hold exactly " +
-                    "but Double was requested"
-            )
+            throw TypeMismatchException("Flag has type '$variationType' with $problem but Double was requested")
         }
         return double
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // Safe: BigDecimal(Double) and valueOf() only run for a finite Double
+    @Suppress("UnsafeThirdPartyFunctionCall") // Safe: BigDecimal(Double) only runs for a finite Double
     private fun isExactDouble(decimal: BigDecimal, double: Double): Boolean =
         double != Double.POSITIVE_INFINITY && double != Double.NEGATIVE_INFINITY &&
-            (decimal.compareTo(BigDecimal(double)) == 0 || decimal.compareTo(BigDecimal.valueOf(double)) == 0)
+            decimal.compareTo(BigDecimal(double)) == 0
 
     /**
      * A value with a scale of 0 or less is whole. Check the scale first: it also prevents

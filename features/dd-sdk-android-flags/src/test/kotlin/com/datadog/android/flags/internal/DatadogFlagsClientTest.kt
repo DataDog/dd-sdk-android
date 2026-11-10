@@ -1227,8 +1227,10 @@ internal class DatadogFlagsClientTest {
         "number, 9007199254740992, 9007199254740992.0",
         "number, -9223372036854775808, -9223372036854775808.0",
         "float, 18446744073709551616, 18446744073709551616.0",
-        "number, 1e300, 1e300",
         "number, 1.20000000000000001, 1.2",
+        "number, 4.9e-324, 4.9e-324",
+        "number, 0e-400, 0.0",
+        "number, -0.0, -0.0",
         "float, 9007199254740993.5, 9007199254740994.0",
         "number, 9007199254740992.00000000000000000000000000000000000000000000000, 9007199254740992.0",
         "number, 1.000000000000000000000000000000000000000000000000000000000000000, 1.0"
@@ -1265,8 +1267,10 @@ internal class DatadogFlagsClientTest {
         "number, 9007199254740993.0",
         "number, 1e400",
         "number, 1e2147483648",
+        "number, 1e300",
         "integer, 9007199254740993",
-        "float, 9007199254740993"
+        "float, 9007199254740993",
+        "float, 1e300"
     )
     fun `M return default with TYPE_MISMATCH W resolve() { whole value Double can't hold, Double default }`(
         fakeVariationType: String,
@@ -1299,13 +1303,50 @@ internal class DatadogFlagsClientTest {
 
     @ParameterizedTest
     @CsvSource(
+        "number, 1e-400",
+        "number, -1e-400",
+        "float, 2e-324",
+        "integer, 1e-400"
+    )
+    fun `M return default with TYPE_MISMATCH W resolve() { nonzero value that rounds to zero, Double default }`(
+        fakeVariationType: String,
+        fakeVariationValue: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aDouble()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = fakeVariationType,
+            variationValue = fakeVariationValue,
+            doLog = true
+        )
+        whenever(mockFlagsRepository.getEvaluationSnapshot(fakeFlagKey)) doReturn
+            FlagEvaluationSnapshot(fakeFlag, fakeDefaultContext, false)
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeDefaultValue)
+        assertThat(result.errorCode).isEqualTo(ErrorCode.TYPE_MISMATCH)
+        assertThat(result.errorMessage).isEqualTo(
+            "Flag '$fakeFlagKey': Flag has type '$fakeVariationType' with nonzero value " +
+                "'$fakeVariationValue' that Double rounds to zero but Double was requested"
+        )
+        verifyNoInteractions(mockProcessor)
+    }
+
+    @ParameterizedTest
+    @CsvSource(
         "number, not-a-number",
         "number, NaN",
         "number, Infinity",
         "float, -Infinity",
         "number, 10000000000000000000000000000000000000000000000000000000000000000.0",
         "number, 9007199254740992.0000000000000000000000000000000000000000000000001",
-        "number, 1e2147483649"
+        "number, 1e2147483649",
+        "number, 0.000000000000000000000000000000000000000000000000000000000000000"
     )
     fun `M return default with PARSE_ERROR W resolve() { malformed numeric value, Double default }`(
         fakeVariationType: String,
@@ -2162,7 +2203,7 @@ internal class DatadogFlagsClientTest {
         val fakeFlagKey1 = forge.anAlphabeticalString()
         val fakeFlagKey2 = forge.anAlphabeticalString()
         val fakeFlagKey3 = forge.anAlphabeticalString()
-        val fakeFlagValue = forge.aDouble()
+        val fakeFlagValue = forge.aDouble(min = -1_000_000.0, max = 1_000_000.0)
         val fakeFlagIntValue = forge.anInt()
         val fakeDefaultValue = forge.aDouble()
 

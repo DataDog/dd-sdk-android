@@ -131,9 +131,10 @@ interface FlagsClient {
      * Resolves a numeric flag value.
      *
      * Any numeric flag type is accepted. A fractional value, such as `1.2`, resolves to the nearest [Double]. A
-     * whole value resolves only when the [Double] has exactly that value, or prints as that value, such as `1e300`.
-     * A value such as `9007199254740993` returns the default value. So does a value that can't be parsed, such as
-     * `NaN`, and a value longer than 64 characters whose [Double] is 2^53 or more in magnitude.
+     * whole value resolves only when the [Double] has exactly that value. A value such as `9007199254740993` or
+     * `1e300` returns the default value. So does a nonzero value that rounds to zero, such as `1e-400`, a value
+     * that can't be parsed, such as `NaN`, and a value longer than 64 characters whose [Double] is zero or 2^53 or
+     * more in magnitude.
      *
      * @param flagKey The unique identifier of the flag to resolve.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.

@@ -116,7 +116,7 @@ class FlagsEvaluationTest {
         @BoolForgery fakeBoolean: Boolean,
         @StringForgery fakeString: String,
         @IntForgery fakeInt: Int,
-        @DoubleForgery fakeDouble: Double,
+        @DoubleForgery(min = -1_000_000.0, max = 1_000_000.0) fakeDouble: Double,
         @StringForgery fakeStructureKey: String,
         @StringForgery fakeStructureValue: String
     ) {
