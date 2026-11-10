@@ -247,7 +247,8 @@ To stop sending exposures to Datadog and keep only your own, use `FlagsConfigura
 
 Keep in mind:
 
-- The SDK records an exposure only when the whole evaluation succeeds, in the final hook stage. If another hook fails, the evaluation is not an exposure.
+- The provider records the exposure in the final hook stage, after the provider and every `before` and `after` hook succeed. A failure in those stages prevents the exposure. Provider hooks run first in the final stage, so a `finallyAfter` hook that throws later leaves the exposure recorded.
+- With experimentation opt-out enabled, the provider checks the evaluation context again when it records the exposure. An evaluation whose context a newer context replaced is a non-exposure for both Datadog and `ExposureHook`.
 - The provider records exposures in its own hook. Evaluate flags through an OpenFeature client: a direct call to a provider `get...Evaluation` method records no exposure.
 - The callback runs on the evaluating thread. Do not do I/O in it: hand the data to a background queue.
 - An exception from the callback does not affect the evaluation. The SDK logs the first one as a warning, and later ones at debug level.

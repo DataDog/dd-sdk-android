@@ -10,6 +10,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import dev.openfeature.kotlin.sdk.EvaluationMetadata
 import dev.openfeature.kotlin.sdk.FlagEvaluationDetails
 import dev.openfeature.kotlin.sdk.Reason
+import java.util.Collections
 import java.util.WeakHashMap
 
 /**
@@ -19,39 +20,51 @@ import java.util.WeakHashMap
  * provider makes that metadata unique, so it keys the evaluation's decision. A decision is released when
  * OpenFeature drops the evaluation result, so nested evaluations cannot evict it.
  */
-internal class ExposureDecisions {
+internal class ExposureDecisions(
+    // A decision must not reference its metadata: the map would then never release the entry.
+    private val decisions: MutableMap<EvaluationMetadata, Decision> = WeakHashMap()
+) {
 
     /**
-     * @param hookFeatures the `HOOK` features of the selected split.
+     * @param features the `HOOK` features of the selected split. The decision keeps a read-only copy.
      * @param context the context of the assignment that was evaluated.
-     * @param recordExposure records the exposure; null when the evaluation is not an exposure.
+     * @param recordExposure records the exposure and returns whether it was already recorded, or null when the
+     * evaluation turned stale. It is null for a non-exposure.
      */
     internal class Decision(
-        val hookFeatures: Map<String, Any>,
+        features: Map<String, Any>,
         val context: EvaluationContext?,
-        private val recordExposure: (() -> Boolean)?
+        private val recordExposure: (() -> Boolean?)?
     ) {
+        val hookFeatures: Map<String, Any> =
+            if (features.isEmpty()) emptyMap() else Collections.unmodifiableMap(LinkedHashMap(features))
+
+        private var isCompleted = false
         private var isRecorded: Boolean? = null
 
         val isExposure: Boolean
             get() = recordExposure != null
 
-        /** Records the exposure on the first call; returns whether it was already recorded, or null. */
+        /**
+         * Records the exposure on the first call.
+         * @return whether it was already recorded, or null for a non-exposure or a stale evaluation.
+         */
         @Synchronized
         fun complete(): Boolean? {
             val record = recordExposure ?: return null
-            return isRecorded ?: record().also { isRecorded = it }
+            if (!isCompleted) {
+                isRecorded = record()
+                isCompleted = true
+            }
+            return isRecorded
         }
     }
-
-    // A decision must not reference its metadata: the map would then never release the entry.
-    private val decisions = WeakHashMap<EvaluationMetadata, Decision>()
 
     fun register(
         metadata: EvaluationMetadata,
         hookFeatures: Map<String, Any>,
         context: EvaluationContext?,
-        recordExposure: (() -> Boolean)?
+        recordExposure: (() -> Boolean?)?
     ) {
         if (hookFeatures.isEmpty() && recordExposure == null) return
         val decision = Decision(hookFeatures, context, recordExposure)

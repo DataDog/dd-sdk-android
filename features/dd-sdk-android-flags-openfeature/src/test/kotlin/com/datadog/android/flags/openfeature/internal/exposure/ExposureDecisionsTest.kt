@@ -19,7 +19,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import java.lang.ref.WeakReference
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -123,25 +122,57 @@ internal class ExposureDecisionsTest {
     }
 
     @Test
-    fun `M release the decision W register() {evaluation result dropped}`() {
+    fun `M store a decision without its metadata W register()`() {
         // Given
-        val released = registerAndDrop()
+        val backingMap = HashMap<EvaluationMetadata, ExposureDecisions.Decision>()
+        val decisions = ExposureDecisions(backingMap)
+        val metadata = newMetadata()
+        val features = mutableMapOf<String, Any>("holdout.key" to "holdout-1")
 
         // When
-        var attempts = 0
-        while (released.get() != null && attempts < MAX_GC_ATTEMPTS) {
-            System.gc()
-            attempts++
-        }
+        decisions.register(metadata, features, null, record(false))
+        features.clear()
 
         // Then
-        assertThat(released.get()).isNull()
+        val stored = checkNotNull(backingMap[metadata])
+        assertThat(backingMap.keys).containsExactly(metadata)
+        assertThat(stored.hookFeatures).containsExactlyEntriesOf(mapOf("holdout.key" to "holdout-1"))
+        assertThat(stored.hookFeatures.values).doesNotContain(metadata)
     }
 
-    private fun registerAndDrop(): WeakReference<EvaluationMetadata> {
+    @Test
+    fun `M keep a read-only copy of the features W register()`() {
+        // Given
         val metadata = newMetadata()
         testedDecisions.register(metadata, mapOf("holdout.key" to "holdout-1"), null, record(false))
-        return WeakReference(metadata)
+        val features = checkNotNull(testedDecisions.find(details(metadata))).hookFeatures
+
+        // When
+        @Suppress("UNCHECKED_CAST", "DontDowncastCollectionTypes")
+        val result = runCatching { (features as MutableMap<String, Any>).clear() }
+
+        // Then
+        assertThat(result.exceptionOrNull()).isInstanceOf(UnsupportedOperationException::class.java)
+        assertThat(features).containsEntry("holdout.key", "holdout-1")
+    }
+
+    @Test
+    fun `M report a non-exposure W complete() twice {stale evaluation}`() {
+        // Given
+        val metadata = newMetadata()
+        testedDecisions.register(metadata, emptyMap(), null) {
+            recordCount++
+            null
+        }
+
+        // When
+        val first = testedDecisions.complete(details(metadata))
+        val second = testedDecisions.complete(details(metadata))
+
+        // Then
+        assertThat(first).isNull()
+        assertThat(second).isNull()
+        assertThat(recordCount).isEqualTo(1)
     }
 
     @Test
@@ -182,8 +213,4 @@ internal class ExposureDecisionsTest {
 
     private fun details(metadata: EvaluationMetadata) =
         FlagEvaluationDetails(fakeFlagKey, true, variant = "on", metadata = metadata)
-
-    private companion object {
-        const val MAX_GC_ATTEMPTS = 50
-    }
 }

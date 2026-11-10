@@ -187,6 +187,7 @@ datadog:
       - "java.lang.Thread.setDefaultUncaughtExceptionHandler(java.lang.Thread.UncaughtExceptionHandler?)"
       - "java.lang.Thread.threadId()"
       - "java.util.Collections.synchronizedSet(kotlin.collections.MutableSet?)"
+      - "java.util.Collections.unmodifiableMap(kotlin.collections.MutableMap?)"
       - "java.util.concurrent.Callable(kotlin.Function0)"
       - "java.util.concurrent.ConcurrentHashMap.clear()"
       - "java.util.concurrent.ConcurrentHashMap.computeIfPresent(okhttp3.Call, java.util.function.BiFunction)"

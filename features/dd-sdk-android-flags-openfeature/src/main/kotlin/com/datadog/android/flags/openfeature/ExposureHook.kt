@@ -15,7 +15,6 @@ import dev.openfeature.kotlin.sdk.FlagEvaluationDetails
 import dev.openfeature.kotlin.sdk.Hook
 import dev.openfeature.kotlin.sdk.HookContext
 import dev.openfeature.kotlin.sdk.ImmutableContext
-import dev.openfeature.kotlin.sdk.Reason
 import dev.openfeature.kotlin.sdk.Value
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -28,9 +27,14 @@ import java.util.concurrent.atomic.AtomicBoolean
  * SDK sends to Datadog, also when [com.datadog.android.flags.FlagsConfiguration.Builder.trackExposures] is
  * off and nothing is sent.
  *
- * The callback runs in the final hook stage, so it sees errors from other hooks. It runs only for
- * evaluations of a [DatadogFlagsProvider] set directly as the OpenFeature provider: composed providers
- * such as `MultiProvider` do not run provider hooks, so the SDK records no exposures under them.
+ * The callback runs in the final hook stage, so it sees errors from other hooks. The provider records the
+ * exposure in the final hook stage, after the provider and every `before` and `after` hook succeed. Provider
+ * hooks run first in the final stage, so a `finallyAfter` hook that throws later leaves the exposure recorded.
+ * With experimentation opt-out enabled, an evaluation whose context a newer context replaced before recording
+ * is a non-exposure.
+ *
+ * The callback runs for evaluations of a [DatadogFlagsProvider] set directly as the OpenFeature provider.
+ * Composed providers such as `MultiProvider` skip provider hooks, so the SDK records no exposures under them.
  *
  * An exception from the callback does not affect the evaluation. The first one is logged as a warning,
  * later ones at debug level.
@@ -75,10 +79,8 @@ class ExposureHook internal constructor(
     ): ExposureEvaluation {
         val decisions = providerMetadata.exposureDecisions
         val decision = decisions.find(details)
-        val isExposure = details.errorCode == null &&
-            details.reason != Reason.ERROR.name &&
-            decision?.isExposure == true
-        val cacheHit = if (isExposure) decisions.complete(details) else null
+        val cacheHit = if (decision?.isExposure == true) decisions.complete(details) else null
+        val isExposure = cacheHit != null
         val subject = decision?.context
         val context = if (subject != null) {
             ImmutableContext(subject.targetingKey, subject.attributes.mapValues { Value.String(it.value) })

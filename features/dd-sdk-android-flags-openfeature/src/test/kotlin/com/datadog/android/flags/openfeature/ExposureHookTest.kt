@@ -202,6 +202,23 @@ internal class ExposureHookTest {
     }
 
     @Test
+    fun `M report a non-exposure W finallyAfter() {stale evaluation}`() {
+        // Given
+        val metadata = exposureMetadata(false)
+        decisions.register(metadata, emptyMap(), null) { null }
+        val details = FlagEvaluationDetails<Any>(fakeFlagKey, true, "on", metadata = metadata)
+
+        // When
+        testedHook.finallyAfter(hookContext(), details, emptyMap())
+
+        // Then
+        val evaluation = evaluations.single()
+        assertThat(evaluation.isExposure()).isFalse()
+        assertThat(evaluation.shouldSend()).isFalse()
+        assertThat(evaluation.isCacheHit()).isFalse()
+    }
+
+    @Test
     fun `M pass a copy of the context W finallyAfter()`() {
         // Given
         val details = exposureDetails(isRecorded = false)

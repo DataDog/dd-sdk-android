@@ -57,7 +57,7 @@ import org.json.JSONObject
  */
 @Suppress("TooManyFunctions") // All functions are necessary for flag evaluation lifecycle
 internal class DatadogFlagsClient(
-    private val featureSdkCore: FeatureSdkCore,
+    internal val featureSdkCore: FeatureSdkCore,
     private val evaluationsManager: EvaluationsManager,
     private val flagsRepository: FlagsRepository,
     private val flagsConfiguration: FlagsConfiguration,
@@ -301,7 +301,8 @@ internal class DatadogFlagsClient(
                 ?.let { metadata[METADATA_SPLIT_SERIAL_ID] = it.toInt() }
             metadata[METADATA_EXPOSURE_CACHE_HIT] = exposureProcessor.isRecorded(flagKey, context, flag)
             _FlagsInternalProxy.DeferredExposureResolution(details.copy(flagMetadata = metadata), context) {
-                exposureProcessor.processEvent(flagKey, context, flag)
+                val isCurrent = isCurrentResolutionContext(context)
+                if (isCurrent) exposureProcessor.processEvent(flagKey, context, flag) else null
             }
         } else {
             _FlagsInternalProxy.DeferredExposureResolution(details, context, null)

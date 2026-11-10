@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
@@ -97,19 +98,7 @@ internal class DatadogFlagsClientExposureTest {
             doLog = true,
             serialId = forge.aLong(min = 0L, max = Int.MAX_VALUE.toLong())
         )
-        testedClient = DatadogFlagsClient(
-            featureSdkCore = mockFeatureSdkCore,
-            evaluationsManager = mockEvaluationsManager,
-            flagsRepository = mockFlagsRepository,
-            flagsConfiguration = FlagsConfiguration.Builder().trackEvaluations(true).rumIntegrationEnabled(false)
-                .build(),
-            rumEvaluationLogger = mockRumEvaluationLogger,
-            exposureProcessor = mockProcessor,
-            evaluationsFeature = mockEvaluationsFeature,
-            flagStateManager = mockFlagsStateManager,
-            evaluationTelemetryOptOutParameterEnabled = false,
-            experimentationOptOut = ExperimentationOptOut()
-        )
+        testedClient = newClient(ExperimentationOptOut())
     }
 
     @Test
@@ -236,6 +225,24 @@ internal class DatadogFlagsClientExposureTest {
     }
 
     @Test
+    fun `M record nothing W resolveDeferringExposure() + recordExposure() {newer context replaced it}`() {
+        // Given
+        val policy = ExperimentationOptOut(ExperimentationOptOutMode.IMMEDIATE)
+        policy.prepare(fakeContext)
+        testedClient = newClient(policy)
+        install(fakeFlag)
+        val resolution = testedClient.resolveDeferringExposure(fakeFlagKey, false)
+        policy.prepare(EvaluationContext(fakeContext.targetingKey + "-other"))
+
+        // When
+        val isRecorded = checkNotNull(resolution.recordExposure).invoke()
+
+        // Then
+        assertThat(isRecorded).isNull()
+        verify(mockProcessor, never()).processEvent(any(), any(), any())
+    }
+
+    @Test
     fun `M track evaluation telemetry with consent W resolveDeferringExposure()`(
         @BoolForgery fakeConsent: Boolean
     ) {
@@ -350,6 +357,20 @@ internal class DatadogFlagsClientExposureTest {
         )
         verify(mockProcessor, never()).isRecorded(any(), any(), any())
     }
+
+    private fun newClient(experimentationOptOut: ExperimentationOptOut) = DatadogFlagsClient(
+        featureSdkCore = mockFeatureSdkCore,
+        evaluationsManager = mockEvaluationsManager,
+        flagsRepository = mockFlagsRepository,
+        flagsConfiguration = FlagsConfiguration.Builder().trackEvaluations(true).rumIntegrationEnabled(false)
+            .build(),
+        rumEvaluationLogger = mockRumEvaluationLogger,
+        exposureProcessor = mockProcessor,
+        evaluationsFeature = mockEvaluationsFeature,
+        flagStateManager = mockFlagsStateManager,
+        evaluationTelemetryOptOutParameterEnabled = false,
+        experimentationOptOut = experimentationOptOut
+    )
 
     private fun install(flag: PrecomputedFlag) {
         fakeFlag = flag

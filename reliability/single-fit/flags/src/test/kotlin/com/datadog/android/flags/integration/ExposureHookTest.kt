@@ -6,12 +6,16 @@
 
 package com.datadog.android.flags.integration
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.integration.tests.elmyr.FlagsIntegrationForgeConfigurator
 import com.datadog.android.flags.integration.tests.utils.FakeAssignment
 import com.datadog.android.flags.integration.tests.utils.FlagsTelemetryTestFixture
 import com.datadog.android.flags.integration.tests.utils.MainLooperTestConfiguration
+import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.openfeature.ExposureEvaluation
 import com.datadog.android.flags.openfeature.ExposureHook
 import com.datadog.android.flags.openfeature.asOpenFeatureProvider
@@ -40,6 +44,12 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isA
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 
 @ExtendWith(ForgeExtension::class, TestConfigurationExtension::class)
 @ForgeConfiguration(FlagsIntegrationForgeConfigurator::class)
@@ -256,6 +266,78 @@ internal class ExposureHookTest {
         assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
     }
 
+    @Test
+    fun `M log callback failures to the client's core W getBooleanValue() {callback throws}`(forge: Forge) {
+        // Given
+        val mockLogger = mock<InternalLogger>()
+        start(
+            forge,
+            callback = { throw IllegalStateException("callback failed") },
+            clientCore = { core -> object : InternalSdkCore by core { override val internalLogger = mockLogger } }
+        )
+
+        // When
+        OpenFeatureAPI.getClient().getBooleanValue(FLAG, false)
+
+        // Then
+        val messageCaptor = argumentCaptor<() -> String>()
+        verify(mockLogger).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.USER),
+            messageCaptor.capture(),
+            isA<IllegalStateException>(),
+            eq(false),
+            isNull()
+        )
+        assertThat(messageCaptor.firstValue())
+            .isEqualTo("Exposure callback failed; later failures are logged at debug level.")
+    }
+
+    @Test
+    fun `M report a non-exposure W getBooleanDetails() {after hook replaces the context}`(forge: Forge) {
+        // Given
+        lateinit var client: FlagsClient
+        val contextHook = object : Hook<Boolean> {
+            override fun after(
+                ctx: HookContext<Boolean>,
+                details: FlagEvaluationDetails<Boolean>,
+                hints: Map<String, Any>
+            ) {
+                fixture.pauseAssignments = true
+                client.setEvaluationContext(EvaluationContext("other"))
+            }
+        }
+        client = start(forge, optOutMode = ExperimentationOptOutMode.IMMEDIATE)
+
+        // When
+        val details = OpenFeatureAPI.getClient().getBooleanDetails(FLAG, false, hookOptions(contextHook))
+        fixture.flush()
+
+        // Then
+        assertThat(details.errorCode).isNull()
+        assertThat(evaluations.single().isExposure()).isFalse()
+        assertThat(evaluations.single().shouldSend()).isFalse()
+        assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).isEmpty()
+    }
+
+    @Test
+    fun `M give each callback the same features W getBooleanValue() {earlier callback edits the map}`(
+        forge: Forge
+    ) {
+        // Given
+        val editingHook = ExposureHook { evaluation ->
+            @Suppress("UNCHECKED_CAST")
+            (evaluation.features as MutableMap<String, Any>).clear()
+        }
+        start(forge, hooksBefore = listOf(editingHook))
+
+        // When
+        OpenFeatureAPI.getClient().getBooleanValue(FLAG, false)
+
+        // Then
+        assertThat(evaluations.single().features).containsEntry("holdout.key", "holdout-1")
+    }
+
     private fun evaluateInnerFlag(times: Int) {
         repeat(times) { OpenFeatureAPI.getClient().getBooleanValue(INNER_FLAG, false) }
     }
@@ -263,8 +345,11 @@ internal class ExposureHookTest {
     private fun start(
         forge: Forge,
         trackExposures: Boolean = true,
-        callback: (ExposureEvaluation) -> Unit = { evaluations.add(it) }
-    ) {
+        callback: (ExposureEvaluation) -> Unit = { evaluations.add(it) },
+        optOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
+        hooksBefore: List<Hook<*>> = emptyList(),
+        clientCore: (InternalSdkCore) -> InternalSdkCore = { it }
+    ): FlagsClient {
         fixture = FlagsTelemetryTestFixture(forge, trackExposures)
         fixture.assignments(
             mapOf(
@@ -291,15 +376,18 @@ internal class ExposureHookTest {
                 )
             )
         )
-        val provider = FlagsClient.Builder("exposure-hook", fixture.core).build().asOpenFeatureProvider()
-        OpenFeatureAPI.addHooks(listOf(ExposureHook { callback(it) }))
+        val client = FlagsClient.Builder("exposure-hook", clientCore(fixture.core))
+            .experimentationOptOutMode(optOutMode)
+            .build()
+        OpenFeatureAPI.addHooks(hooksBefore + ExposureHook { callback(it) })
         runBlocking {
             OpenFeatureAPI.setProviderAndWait(
-                provider,
+                client.asOpenFeatureProvider(),
                 ImmutableContext(SUBJECT, mapOf("plan" to Value.String("pro"))),
                 Dispatchers.Unconfined
             )
         }
+        return client
     }
 
     private fun feature(key: String, value: Any, destination: String): JSONObject =

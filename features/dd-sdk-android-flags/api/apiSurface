@@ -55,6 +55,7 @@ interface com.datadog.android.flags.StateObservable
   fun removeListener(FlagsStateListener)
 class com.datadog.android.flags._FlagsInternalProxy
   constructor(FlagsClient)
+  fun getSdkCore(): com.datadog.android.api.feature.FeatureSdkCore?
   fun isExperimentationOptOutEnabled(): Boolean
   fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext, EvaluationContextCallback?, Boolean)
   fun isEvaluationTelemetryOptOutParameterEnabled(): Boolean
@@ -68,7 +69,7 @@ class com.datadog.android.flags._FlagsInternalProxy
   fun trackFlagRumEvaluation(String, String, com.datadog.android.flags.model.EvaluationContext)
   fun <T: Any> resolveDeferringExposure(String, T): DeferredExposureResolution<T>
   class DeferredExposureResolution<T: Any>
-    constructor(com.datadog.android.flags.model.ResolutionDetails<T>, com.datadog.android.flags.model.EvaluationContext?, () -> Boolean?)
+    constructor(com.datadog.android.flags.model.ResolutionDetails<T>, com.datadog.android.flags.model.EvaluationContext?, () -> Boolean??)
 enum com.datadog.android.flags.model.ErrorCode
   - PROVIDER_NOT_READY
   - FLAG_NOT_FOUND

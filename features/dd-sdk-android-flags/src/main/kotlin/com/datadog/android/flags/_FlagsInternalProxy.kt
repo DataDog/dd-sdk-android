@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags
 
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionDetails
@@ -25,6 +26,9 @@ import com.datadog.android.lint.InternalApi
 @InternalApi
 @Suppress("ClassName", "ClassNaming", "UndocumentedPublicFunction", "TooManyFunctions")
 class _FlagsInternalProxy(private val client: FlagsClient) {
+    /** Returns the SDK core that owns a Datadog client, or null for another [FlagsClient]. */
+    fun getSdkCore(): FeatureSdkCore? = (client as? DatadogFlagsClient)?.featureSdkCore
+
     fun isExperimentationOptOutEnabled(): Boolean =
         (client as? DatadogFlagsClient)?.experimentationOptOut?.enabled == true
     fun setEvaluationContext(
@@ -162,12 +166,13 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
      * @param T the type of the flag value.
      * @property details the resolution. Its `__dd_exposure_cache_hit` metadata is provisional.
      * @property context the evaluation context of the assignments that were read, or null when none were read.
-     * @property recordExposure records the exposure, sends it unless exposure tracking is off, and returns
-     * whether it was already recorded. Null when the resolution is not an exposure.
+     * @property recordExposure records the exposure, sends it when exposure tracking is on, and returns whether
+     * it was already recorded. It returns null when a newer evaluation context has replaced the evaluated one.
+     * The property is null for a non-exposure.
      */
     class DeferredExposureResolution<T : Any>(
         val details: ResolutionDetails<T>,
         val context: EvaluationContext?,
-        val recordExposure: (() -> Boolean)?
+        val recordExposure: (() -> Boolean?)?
     )
 }
