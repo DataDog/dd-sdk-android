@@ -47,6 +47,11 @@ private data class InitializationResult(
     val cancelTimeout: (() -> Unit)? = null
 )
 
+private data class AcceptedTimeoutFallback(
+    val request: ExperimentationOptOut.Request,
+    val authorizationProtected: Boolean
+)
+
 private class InitializationCompletion(private var callback: EvaluationContextCallback?) {
     private val lock = Any()
     private var isPending = true
@@ -122,6 +127,7 @@ internal class EvaluationsManager(
     private val initializationTerminalLock = experimentationOptOut.stateLock
     private val effects = EvaluationEffects(initializationTerminalLock, internalLogger)
     private var currentState: FlagsClientState = FlagsClientState.NotReady
+    private var acceptedTimeoutFallback: AcceptedTimeoutFallback? = null
 
     /**
      * Processes a new evaluation context by fetching flags and storing atomically.
@@ -148,6 +154,7 @@ internal class EvaluationsManager(
 
     internal fun prepare(context: EvaluationContext): ExperimentationOptOut.Request {
         return synchronized(initializationTerminalLock) {
+            acceptedTimeoutFallback = null
             val authorization = assignmentAuthorization.prepare(context)
             experimentationOptOut.prepare(authorization.context, authorization)
         }
@@ -343,6 +350,8 @@ internal class EvaluationsManager(
         synchronized(initializationTerminalLock) {
             val result = takeCompletion(initializationCompletion, callback)
             val current = ifCurrent(request) {
+                val timeoutFallback = acceptedTimeoutFallback?.takeIf { it.request === request }
+                if (timeoutFallback != null) acceptedTimeoutFallback = null
                 if (authorizationRejected) {
                     assignmentAuthorization.onAuthorizationRejected(request.assignmentAuthorization)
                 }
@@ -355,11 +364,17 @@ internal class EvaluationsManager(
                     if (fallback.authorizationProtected) {
                         assignmentAuthorization.onFallbackAccepted(request.assignmentAuthorization)
                     }
-                    enqueueState(FlagsClientState.Stale)
-                } else {
-                    enqueueState(FlagsClientState.Error(throwable))
                 }
-                if (fallback.authorizationProtected) {
+                // The timeout already published Stale for this request. A late failure cannot make that accepted
+                // cache ineligible, but a request that had no timeout fallback still uses the terminal result.
+                if (timeoutFallback == null) {
+                    if (fallback.usable) {
+                        enqueueState(FlagsClientState.Stale)
+                    } else {
+                        enqueueState(FlagsClientState.Error(throwable))
+                    }
+                }
+                if (fallback.authorizationProtected || timeoutFallback?.authorizationProtected == true) {
                     enqueueCompletion(result, null)
                 } else {
                     enqueueCompletion(result, throwable)
@@ -419,6 +434,7 @@ internal class EvaluationsManager(
             assignments.observeFullEvaluationData
         )
         assignmentAuthorization.onAssignmentsAccepted(request.assignmentAuthorization)
+        if (acceptedTimeoutFallback?.request === request) acceptedTimeoutFallback = null
         val result = takeCompletion(initializationCompletion, callback)
         currentState = FlagsClientState.Ready
         effects.enqueue {
@@ -466,6 +482,12 @@ internal class EvaluationsManager(
                                 installedContext,
                                 experimentationOptOut.enabled
                             )
+                            if (fallback.usable) {
+                                acceptedTimeoutFallback = AcceptedTimeoutFallback(
+                                    target,
+                                    fallback.authorizationProtected
+                                )
+                            }
                             if (fallback.authorizationProtected) {
                                 assignmentAuthorization.onFallbackAccepted(target.assignmentAuthorization)
                             }

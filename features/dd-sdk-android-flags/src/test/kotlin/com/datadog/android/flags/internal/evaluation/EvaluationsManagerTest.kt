@@ -1315,6 +1315,81 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
+    fun `M keep STALE W updateEvaluationsForContext() {same-subject timeout then request fails}`() {
+        // Given
+        val token = "header.payload.signature"
+        val requestedContext = EvaluationContext(
+            "subject",
+            mapOf(AssignmentAuthorization.ATTRIBUTE to token, "plan" to "requested")
+        )
+        val sanitizedContext = EvaluationContext("subject", mapOf("plan" to "requested"))
+        val installedContext = EvaluationContext("subject", mapOf("plan" to "cached"))
+        val stateManager = FlagsStateManager(
+            DDCoreStateHolder.create(
+                initialState = FlagsClientState.NotReady,
+                onStateChanged = FlagsStateListener::onStateChanged
+            )
+        )
+        val stateListener = mock<FlagsStateListener>()
+        val callback = mock<EvaluationContextCallback>()
+        val operations = mutableListOf<Runnable>()
+        lateinit var timeoutAction: () -> Unit
+        stateManager.addListener(stateListener)
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operations += it.getArgument<Runnable>(0)
+            null
+        }
+        whenever(mockFlagsRepository.getAssignmentsSnapshot()) doReturn
+            FlagsAssignmentsSnapshot(emptyMap(), installedContext)
+        whenever(mockFlagsRepository.hasConfiguration()) doReturn true
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn installedContext
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(sanitizedContext),
+                eq(fakeDatadogContext),
+                any(),
+                eq(token)
+            )
+        ).thenReturn(null)
+        val testedManager = EvaluationsManager(
+            sdkCore = mockSdkCore,
+            executorService = mockExecutorService,
+            internalLogger = mockInternalLogger,
+            flagsRepository = mockFlagsRepository,
+            assignmentsReader = mockAssignmentsDownloader,
+            precomputeMapper = mockPrecomputeMapper,
+            flagStateManager = stateManager,
+            initializationTimeoutMs = 2_500L,
+            initializationTimeoutScheduler = { _, action ->
+                timeoutAction = action
+                {}
+            },
+            experimentationOptOut = ExperimentationOptOut()
+        )
+
+        // When
+        testedManager.updateEvaluationsForContext(requestedContext, callback)
+        timeoutAction()
+
+        // Then
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        verify(callback).onFailure(isA<FlagsInitializationTimeoutException>())
+
+        // When
+        operations.single().run()
+
+        // Then
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        inOrder(stateListener) {
+            verify(stateListener).onStateChanged(FlagsClientState.NotReady)
+            verify(stateListener).onStateChanged(FlagsClientState.Reconciling)
+            verify(stateListener).onStateChanged(FlagsClientState.Stale)
+        }
+        verifyNoMoreInteractions(stateListener)
+        verifyNoMoreInteractions(callback)
+    }
+
+    @Test
     fun `M keep ready state W updateEvaluationsForContext() { newer request completed before timeout }`() {
         // Given
         val mockFirstCallback = mock<EvaluationContextCallback>()
