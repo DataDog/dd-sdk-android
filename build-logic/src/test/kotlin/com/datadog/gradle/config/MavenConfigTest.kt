@@ -7,18 +7,25 @@
 package com.datadog.gradle.config
 
 import com.datadog.gradle.utils.Version
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
 
-class MavenConfigTest {
+@ExtendWith(ForgeExtension::class)
+internal class MavenConfigTest {
 
     @ParameterizedTest
     @EnumSource(PublishingDestination::class)
-    fun internalRepositoryForDogfoodVersionIsDogfood(destination: PublishingDestination) {
+    fun `M return dogfood repository W internalRepositoryFor() {dogfood version, any destination}`(
+        destination: PublishingDestination,
+        @StringForgery fakeShortSha: String
+    ) {
         // When
-        val repository = internalRepositoryFor(Version.Type.Dogfood("a1b2c3d"), destination)
+        val repository = internalRepositoryFor(Version.Type.Dogfood(fakeShortSha), destination)
 
         // Then
         assertThat(repository).isEqualTo(
@@ -28,7 +35,9 @@ class MavenConfigTest {
 
     @ParameterizedTest
     @MethodSource("nonDogfoodVersionTypes")
-    fun internalRepositoryForInternalBenchmarkIsBenchmark(versionType: Version.Type) {
+    fun `M return benchmark repository W internalRepositoryFor() {non-dogfood version, INTERNAL_BENCHMARK}`(
+        versionType: Version.Type
+    ) {
         // When
         val repository = internalRepositoryFor(versionType, PublishingDestination.INTERNAL_BENCHMARK)
 
@@ -40,7 +49,7 @@ class MavenConfigTest {
 
     @ParameterizedTest
     @MethodSource("nonDogfoodVersionTypes")
-    fun internalRepositoryForMavenCentralIsNull(versionType: Version.Type) {
+    fun `M return null W internalRepositoryFor() {non-dogfood version, MAVEN_CENTRAL}`(versionType: Version.Type) {
         // When
         val repository = internalRepositoryFor(versionType, PublishingDestination.MAVEN_CENTRAL)
 
