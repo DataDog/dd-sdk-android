@@ -150,7 +150,7 @@ analysis:ktlint:
   extends: .verification-gradle-job
   timeout: 30m
   script:
-    - ./gradlew ktlintCheck :build-logic:ktlintCheck
+    - ./gradlew ktlintCheck :build-logic:ktlintCheck :build-logic-settings:ktlintCheck
 
 analysis:detekt:
   extends: .verification-gradle-job
