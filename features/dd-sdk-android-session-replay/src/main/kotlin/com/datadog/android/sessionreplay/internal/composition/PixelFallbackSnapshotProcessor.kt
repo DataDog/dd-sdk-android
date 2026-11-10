@@ -75,7 +75,7 @@ internal class PixelFallbackSnapshotProcessor(
     val textResources = DefaultCompositionTextResources(rawContentCache)
     private val lateRecaptureRequested = AtomicBoolean(false)
 
-    // Owned atomic reference releases the input on completion or cancellation.
+    // Retain only the bitmap-free snapshot while individual pixel jobs finish.
     @Suppress("UnsafeThirdPartyFunctionCall")
     override fun process(
         request: SnapshotProcessingRequest,
@@ -91,13 +91,14 @@ internal class PixelFallbackSnapshotProcessor(
         }
 
         val generation = request.generation
-        val retainedRequest = AtomicReference(request)
+        // Keeping the request here would retain every completed bitmap until the last job finishes.
+        val retainedSnapshot = AtomicReference(request.snapshot as CapturedFullSnapshot)
         val outcomes = ConcurrentHashMap<Long, PixelOutcome>()
         val remaining = AtomicInteger(pending.size)
         val hasLateResolvedPixels = AtomicBoolean(false)
         fun completeCapture() {
             if (remaining.decrementAndGet() == 0) {
-                retainedRequest.getAndSet(null)?.let { finish(it, outcomes, callback) }
+                retainedSnapshot.getAndSet(null)?.let { finish(generation, it, outcomes, callback) }
                 if (hasLateResolvedPixels.get()) requestRecaptureOnce()
             }
         }
@@ -119,7 +120,7 @@ internal class PixelFallbackSnapshotProcessor(
             }
         }
 
-        return CancellableCaptureWork { retainedRequest.set(null) }
+        return CancellableCaptureWork { retainedSnapshot.set(null) }
     }
 
     /**
@@ -299,15 +300,16 @@ internal class PixelFallbackSnapshotProcessor(
     }
 
     private fun finish(
-        request: SnapshotProcessingRequest,
+        generation: CaptureGenerationContext,
+        snapshot: CapturedFullSnapshot,
         outcomes: Map<Long, PixelOutcome>,
         callback: SnapshotProcessingCallback
     ) {
-        if (!request.generation.isActive()) return
+        if (!generation.isActive()) return
         @Suppress("UnsafeThirdPartyFunctionCall") // The outcomes map contains only this processor's sealed values.
         if (outcomes.values.all { it is PixelOutcome.Resolved }) lateRecaptureRequested.set(false)
-        val resolvedSnapshot = applyOutcomes(request.snapshot as CapturedFullSnapshot, outcomes)
-        callback.onProcessed(SnapshotProcessingResult.Completed(request.generation.id, resolvedSnapshot))
+        val resolvedSnapshot = applyOutcomes(snapshot, outcomes)
+        callback.onProcessed(SnapshotProcessingResult.Completed(generation.id, resolvedSnapshot))
     }
 
     private fun applyOutcomes(snapshot: CapturedFullSnapshot, outcomes: Map<Long, PixelOutcome>): CapturedFullSnapshot {

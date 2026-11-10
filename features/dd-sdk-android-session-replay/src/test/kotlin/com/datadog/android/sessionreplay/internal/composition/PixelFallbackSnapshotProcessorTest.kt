@@ -44,7 +44,11 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.lang.reflect.Modifier
+import java.util.Collections
+import java.util.IdentityHashMap
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -433,6 +437,137 @@ internal class PixelFallbackSnapshotProcessorTest {
 
         // Then
         assertThat(fakeResults).isEmpty()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M release completed pixels independently W process() { sibling still pending }`(shared: Boolean) {
+        // Given
+        val fakeFixture = Fixture("independent-pixels")
+        val fakeCallbacks = mutableListOf<ResourceResolverCallback>()
+        doAnswer {
+            fakeCallbacks += it.getArgument<ResourceResolverCallback>(1)
+            null
+        }.whenever(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
+        val testedProcessor = PixelFallbackSnapshotProcessor(mockResourceResolver, null, immediateMainThreadExecutor)
+        val fakeSecondBitmap: Bitmap = if (shared) fakeFixture.bitmap else mock()
+        val fakeSecondOwner = fakeFixture.identityFactory.view(fakeFixture.identityFactory.window("window"), "second")
+        val fakeSecond = PendingPixelCapture(
+            fakeFixture.identityFactory.imageWireframe(fakeSecondOwner),
+            fakeSecondOwner,
+            fakeSecondBitmap,
+            isTextOnly = true
+        )
+        val fakeRequest = SnapshotProcessingRequest(
+            generationContext(),
+            fakeFixture.snapshot,
+            listOf(fakeFixture.pendingTextFree, fakeSecond),
+            fakeFixture.identityFactory
+        )
+        val fakeResults = mutableListOf<SnapshotProcessingResult>()
+        val fakeWork = testedProcessor.process(fakeRequest, fakeResults::add)
+
+        // When
+        fakeCallbacks.removeAt(0).onSuccess("first")
+
+        // Then
+        assertThat(fakeResults).isEmpty()
+        // Inspect closure ownership without depending on garbage collection or Mockito's argument history.
+        val fakeRetainedByWork = retainedClosureValues(fakeWork)
+        val fakeRetainedBySibling = retainedClosureValues(fakeCallbacks.single())
+        assertThat(fakeRetainedByWork).doesNotContain(fakeRequest, fakeFixture.pendingTextFree, fakeFixture.bitmap)
+        assertThat(fakeRetainedBySibling).doesNotContain(fakeRequest, fakeFixture.pendingTextFree)
+        if (!shared) assertThat(fakeRetainedBySibling).doesNotContain(fakeFixture.bitmap)
+        assertThat(fakeRetainedBySibling).contains(fakeSecond, fakeSecondBitmap)
+        assertThat(fakeRetainedByWork).contains(fakeFixture.snapshot)
+
+        fakeCallbacks.single().onSuccess("second")
+        assertThat(fakeResults).hasSize(1)
+        assertThat(retainedClosureValues(fakeWork)).doesNotContain(fakeFixture.snapshot)
+        verify(fakeFixture.bitmap, never()).recycle()
+        verify(fakeSecondBitmap, never()).recycle()
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["complete", "cancel", "expire"])
+    fun `M retain only completion metadata W process() { mixed synchronous and asynchronous jobs }`(kind: String) {
+        // Given
+        val fakeFixture = Fixture("mixed-completion")
+        val fakeSecondBitmap: Bitmap = mock()
+        val fakeSecondOwner = fakeFixture.identityFactory.view(fakeFixture.identityFactory.window("window"), "second")
+        val fakeSecondId = fakeFixture.identityFactory.imageWireframe(fakeSecondOwner)
+        val fakeSnapshot = fakeFixture.snapshot.copy(
+            wireframes = fakeFixture.snapshot.wireframes + fakeFixture.pixelWireframe.copy(identity = fakeSecondId)
+        )
+        val fakeSecond = PendingPixelCapture(fakeSecondId, fakeSecondOwner, fakeSecondBitmap, isTextOnly = true)
+        val fakeCallbacks = mutableListOf<ResourceResolverCallback>()
+        doAnswer {
+            val callback = it.getArgument<ResourceResolverCallback>(1)
+            if (it.getArgument<Bitmap>(0) === fakeFixture.bitmap) {
+                callback.onSuccess("first")
+            } else {
+                fakeCallbacks += callback
+            }
+            null
+        }.whenever(mockResourceResolver).resolveResourceIdFromBitmap(any(), any())
+        val testedProcessor = PixelFallbackSnapshotProcessor(mockResourceResolver, null, immediateMainThreadExecutor)
+        val fakeGeneration = generationContext()
+        val fakeResults = mutableListOf<SnapshotProcessingResult>()
+        val fakeWork = testedProcessor.process(
+            SnapshotProcessingRequest(
+                fakeGeneration,
+                fakeSnapshot,
+                listOf(fakeFixture.pendingTextFree, fakeSecond),
+                fakeFixture.identityFactory
+            ),
+            fakeResults::add
+        )
+        assertThat(fakeResults).isEmpty()
+
+        // When
+        if (kind == "cancel") {
+            fakeWork.cancel()
+            assertThat(retainedClosureValues(fakeWork)).doesNotContain(fakeSnapshot)
+        }
+        if (kind == "expire") fakeGeneration.expire()
+        fakeCallbacks.single().onSuccess("second")
+        fakeCallbacks.single().onFailure()
+
+        // Then
+        assertThat(retainedClosureValues(fakeWork)).doesNotContain(fakeSnapshot)
+        if (kind == "complete") {
+            val fakeResult = fakeResults.single() as SnapshotProcessingResult.Completed
+            assertThat(fakeResult.generationId).isEqualTo(fakeGeneration.id)
+            assertThat(fakeResult.snapshot.wireframes.filterIsInstance<CapturedWireframe.Pixel>().map { it.resource })
+                .containsExactly(
+                    PixelResource.Resolved("first", "image/webp"),
+                    PixelResource.Resolved("second", "image/webp")
+                )
+        } else {
+            assertThat(fakeResults).isEmpty()
+        }
+    }
+
+    private fun retainedClosureValues(owner: Any): Set<Any> {
+        val values = Collections.newSetFromMap(IdentityHashMap<Any, Boolean>())
+        val pending = ArrayDeque<Any>()
+        pending.add(owner)
+        while (pending.isNotEmpty()) {
+            val value = pending.removeFirst()
+            if (!values.add(value)) continue
+            when (value) {
+                is AtomicReference<*> -> value.get()?.let(pending::add)
+                is SnapshotProcessingRequest -> pending.addAll(value.pendingPixelCaptures)
+                is PendingPixelCapture -> pending.add(value.bitmap)
+                is Function<*>, is ResourceResolverCallback, is CancellableCaptureWork -> {
+                    value.javaClass.declaredFields.filterNot { Modifier.isStatic(it.modifiers) }.forEach {
+                        it.isAccessible = true
+                        it.get(value)?.let(pending::add)
+                    }
+                }
+            }
+        }
+        return values
     }
 
     @Test
