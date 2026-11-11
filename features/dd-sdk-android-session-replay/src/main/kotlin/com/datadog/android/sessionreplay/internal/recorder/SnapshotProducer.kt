@@ -104,7 +104,6 @@ internal class SnapshotProducer(
             val identity = resolveHeatmapIdentity(view, nodePath, typeIndex, nextTraversalStrategy, heatmapContext)
             val viewPath = identity?.viewPath ?: nodePath
             val heatmapIdentifier = identity?.identifier
-            val childHeatmapContext = if (identity?.isPathValid == false) null else heatmapContext
 
             if (nextTraversalStrategy == TraversalStrategy.STOP_AND_RETURN_NODE) {
                 return Node(
@@ -121,7 +120,10 @@ internal class SnapshotProducer(
             ) {
                 val childMappingContext = resolveChildMappingContext(view, localMappingContext)
                 val parentsCopy = LinkedList(parents).apply { addAll(resolvedWireframes) }
-                val childTypeIndices = heatmapContext?.computeChildTypeIndices(view)
+                // An identity is always resolved for a view whose children are traversed, so a missing
+                // one means the screen-root provider failed: record the subtree without identifiers.
+                val childHeatmapContext = heatmapContext?.takeIf { identity != null }
+                val childTypeIndices = childHeatmapContext?.computeChildTypeIndices(view)
                 for (i in 0 until view.childCount) {
                     val viewChild = view.getChildAt(i) ?: continue
 

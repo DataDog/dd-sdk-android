@@ -42,7 +42,7 @@ internal class HeatmapIdentifierResolver(
         nodePath: List<String>,
         typeIndex: Int,
         context: TraversalContext
-    ): HeatmapIdentity {
+    ): HeatmapIdentity? {
         // Cross-platform callback implementations may throw exceptions unknown to this SDK.
         @Suppress("TooGenericExceptionCaught")
         val screenRootKey = try {
@@ -56,7 +56,7 @@ internal class HeatmapIdentifierResolver(
                 error,
                 onlyOnce = true
             )
-            return HeatmapIdentity(viewPath = emptyList(), identifier = null)
+            return null
         }
         val viewPath = if (!screenRootKey.isNullOrEmpty()) {
             listOf("screen-root:$screenRootKey")
@@ -178,11 +178,7 @@ internal class HeatmapIdentifierResolver(
     data class HeatmapIdentity(
         val viewPath: List<String>,
         val identifier: HeatmapIdentifier?
-    ) {
-        // Valid paths include this view's component; an empty path represents failed resolution.
-        val isPathValid: Boolean
-            get() = viewPath.isNotEmpty()
-    }
+    )
 
     internal class CachedHeatmapEntry(
         val identifier: HeatmapIdentifier,
@@ -194,8 +190,9 @@ internal class HeatmapIdentifierResolver(
         val entries: MutableMap<Long, CachedHeatmapEntry> = mutableMapOf()
         var hasProviderFailure: Boolean = false
 
+        // Null when the screen-root provider fails: the view and its subtree get no identifiers.
         @UiThread
-        fun resolveIdentity(view: View, nodePath: List<String>, typeIndex: Int): HeatmapIdentity =
+        fun resolveIdentity(view: View, nodePath: List<String>, typeIndex: Int): HeatmapIdentity? =
             this@HeatmapIdentifierResolver.resolveIdentity(view, nodePath, typeIndex, this)
 
         @UiThread
