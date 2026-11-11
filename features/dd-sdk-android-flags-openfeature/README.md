@@ -241,7 +241,7 @@ OpenFeatureAPI.addHooks(
 | `flagKey`, `variant`, `allocationKey`, `targetingKey` | The evaluated flag and the selected assignment. |
 | `evaluationContext` | A copy of the evaluation context. |
 
-The same features are in the flag metadata as `__dd_feature.<feature key>`, so other hooks can read them too. Other `__dd_` metadata entries are internal.
+The same features are in the flag metadata as `__dd_feature.<feature key>`, so other hooks can read them too. `__dd_feature.<feature key>` is the public metadata contract, and `ExposureHook` is the supported interface for exposure decisions. The other `__dd_` metadata entries are internal and can change. For example, `__dd_exposure_cache_hit` holds the verdict at resolve time, and `ExposureHook` reports the final verdict.
 
 To stop sending exposures to Datadog and keep only your own, use `FlagsConfiguration.Builder().trackExposures(false)`. The hook still reports the same decisions.
 
