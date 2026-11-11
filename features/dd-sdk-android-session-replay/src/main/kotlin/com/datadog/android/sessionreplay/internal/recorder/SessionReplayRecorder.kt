@@ -19,6 +19,7 @@ import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
+import com.datadog.android.sessionreplay.SessionReplayHeatmapScreenRootProvider
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
@@ -227,7 +228,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
                         HeatmapIdentifierResolver(
                             appPackageName = appContext.packageName,
                             registry = it,
-                            internalLogger = internalLogger
+                            internalLogger = internalLogger,
+                            screenRootProvider = internalCallback as? SessionReplayHeatmapScreenRootProvider
                         )
                     },
                     embeddedContentViewMapper = embeddedContentViewMapper

@@ -16,11 +16,13 @@ import com.datadog.android.heatmaps.heatmapViewKey
 import com.datadog.android.internal.heatmaps.HeatmapIdentifier
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.internal.utils.isValidTapTarget
+import com.datadog.android.sessionreplay.SessionReplayHeatmapScreenRootProvider
 
 internal class HeatmapIdentifierResolver(
     private val appPackageName: String,
     private val registry: HeatmapIdentifierRegistry,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val screenRootProvider: SessionReplayHeatmapScreenRootProvider? = null
 ) {
 
     private var lastPublishedScreenName: String? = null
@@ -41,32 +43,47 @@ internal class HeatmapIdentifierResolver(
         typeIndex: Int,
         context: TraversalContext
     ): HeatmapIdentity {
-        if (!view.isValidTapTarget()) {
-            return HeatmapIdentity(viewPath = nodePath + pathComponentFor(view, typeIndex), identifier = null)
+        // Cross-platform callback implementations may throw exceptions unknown to this SDK.
+        @Suppress("TooGenericExceptionCaught")
+        val screenRootKey = try {
+            screenRootProvider?.getHeatmapScreenRootKey(view)
+        } catch (error: Throwable) {
+            context.hasProviderFailure = true
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { SCREEN_ROOT_FAILURE_MESSAGE },
+                error,
+                onlyOnce = true
+            )
+            return HeatmapIdentity(viewPath = emptyList(), identifier = null)
         }
-
-        val identityHash = heatmapViewKey(view)
-        val pathComponent = pathComponentFor(view, typeIndex)
-        val cachedEntry = synchronized(lock) {
-            lastPublishedEntries[identityHash]?.takeIf { context.viewUrl == lastPublishedScreenName }
-        }
-            // Guards against stale entries when a view or any ancestor shifts among same-type
-            // siblings without being detached (e.g. notifyItemMoved with an in-place animator).
-            ?.takeIf { it.viewPath == nodePath + pathComponent }
-        val viewPath: List<String>
-        val identifier: HeatmapIdentifier?
-        if (cachedEntry != null) {
-            context.entries[identityHash] = cachedEntry
-            viewPath = cachedEntry.viewPath
-            identifier = cachedEntry.identifier
+        val viewPath = if (!screenRootKey.isNullOrEmpty()) {
+            listOf("screen-root:$screenRootKey")
         } else {
-            viewPath = nodePath + pathComponent
-            identifier = HeatmapIdentifier.create(
-                elementPath = viewPath,
-                screenName = context.viewUrl,
-                appPackageName = appPackageName,
-                onHashingFailure = { error -> logHashingFailure(error) }
-            )?.also { context.entries[identityHash] = CachedHeatmapEntry(it, viewPath) }
+            nodePath + pathComponentFor(view, typeIndex)
+        }
+        val identifier = if (view.isValidTapTarget()) {
+            val identityHash = heatmapViewKey(view)
+            val cachedEntry = synchronized(lock) {
+                lastPublishedEntries[identityHash]?.takeIf { context.viewUrl == lastPublishedScreenName }
+            }
+                // Guards against stale entries when a view or any ancestor shifts among same-type
+                // siblings without being detached (e.g. notifyItemMoved with an in-place animator).
+                ?.takeIf { it.viewPath == viewPath }
+            if (cachedEntry != null) {
+                context.entries[identityHash] = cachedEntry
+                cachedEntry.identifier
+            } else {
+                HeatmapIdentifier.create(
+                    elementPath = viewPath,
+                    screenName = context.viewUrl,
+                    appPackageName = appPackageName,
+                    onHashingFailure = { error -> logHashingFailure(error) }
+                )?.also { context.entries[identityHash] = CachedHeatmapEntry(it, viewPath) }
+            }
+        } else {
+            null
         }
         return HeatmapIdentity(viewPath = viewPath, identifier = identifier)
     }
@@ -129,7 +146,7 @@ internal class HeatmapIdentifierResolver(
         // not scoped per screen). The registry write is a cheap in-memory operation with its own
         // lock and no reentrancy into this resolver, so holding this lock during the call is safe.
         synchronized(lock) {
-            if (context.entries.isEmpty()) {
+            if (context.entries.isEmpty() && !context.hasProviderFailure) {
                 lastPublishedScreenName = null
                 lastPublishedEntries.clear()
                 return
@@ -161,7 +178,11 @@ internal class HeatmapIdentifierResolver(
     data class HeatmapIdentity(
         val viewPath: List<String>,
         val identifier: HeatmapIdentifier?
-    )
+    ) {
+        // Valid paths include this view's component; an empty path represents failed resolution.
+        val isPathValid: Boolean
+            get() = viewPath.isNotEmpty()
+    }
 
     internal class CachedHeatmapEntry(
         val identifier: HeatmapIdentifier,
@@ -171,6 +192,7 @@ internal class HeatmapIdentifierResolver(
     @UiThread
     inner class TraversalContext(val viewUrl: String) {
         val entries: MutableMap<Long, CachedHeatmapEntry> = mutableMapOf()
+        var hasProviderFailure: Boolean = false
 
         @UiThread
         fun resolveIdentity(view: View, nodePath: List<String>, typeIndex: Int): HeatmapIdentity =
@@ -185,6 +207,8 @@ internal class HeatmapIdentifierResolver(
     }
 
     companion object {
+        private const val SCREEN_ROOT_FAILURE_MESSAGE =
+            "Failed to resolve heatmap screen root. Heatmap identifiers are omitted for the affected subtree."
         internal const val HASHING_FAILURE_MESSAGE =
             "Failed to hash heatmap identifier; this view will not be correlated with RUM action events."
 

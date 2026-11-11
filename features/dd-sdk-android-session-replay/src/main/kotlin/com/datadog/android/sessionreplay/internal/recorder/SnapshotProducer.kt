@@ -104,6 +104,7 @@ internal class SnapshotProducer(
             val identity = resolveHeatmapIdentity(view, nodePath, typeIndex, nextTraversalStrategy, heatmapContext)
             val viewPath = identity?.viewPath ?: nodePath
             val heatmapIdentifier = identity?.identifier
+            val childHeatmapContext = if (identity?.isPathValid == false) null else heatmapContext
 
             if (nextTraversalStrategy == TraversalStrategy.STOP_AND_RETURN_NODE) {
                 return Node(
@@ -133,7 +134,7 @@ internal class SnapshotProducer(
                         recordedDataQueueRefs = recordedDataQueueRefs,
                         nodePath = viewPath,
                         typeIndex = childTypeIndex,
-                        heatmapContext = heatmapContext
+                        heatmapContext = childHeatmapContext
                     )?.let {
                         childNodes.add(it)
                     }
