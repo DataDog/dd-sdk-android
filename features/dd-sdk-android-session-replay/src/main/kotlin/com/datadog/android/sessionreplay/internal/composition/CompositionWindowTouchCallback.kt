@@ -47,7 +47,10 @@ internal class CompositionWindowTouchCallback(
     motionEventUtils: MotionEventUtils = MotionEventUtils,
     motionUpdateThresholdInNs: Long = PointerInteractionRecorder.MOTION_UPDATE_DELAY_THRESHOLD_NS,
     flushPositionBufferThresholdInNs: Long = PointerInteractionRecorder.FLUSH_BUFFER_THRESHOLD_NS,
-    shouldRecordTouch: (Point) -> Boolean = touchPrivacyManager::shouldRecordTouch
+    shouldRecordTouch: (Point) -> Boolean = { point ->
+        @Suppress("ThreadSafety") // Invoked only during main-thread pointer interaction recording.
+        touchPrivacyManager.shouldRecordTouch(point)
+    }
 ) : FixedWindowCallback(wrappedCallback) {
 
     // Set once this callback has been unwrapped, even when a third party has since nested it
@@ -62,7 +65,10 @@ internal class CompositionWindowTouchCallback(
         timeProvider = timeProvider,
         rumContextProvider = rumContextProvider,
         touchPrivacyManager = touchPrivacyManager,
-        onFlush = ::flushToRecordWriter,
+        onFlush = { records ->
+            @Suppress("ThreadSafety") // PointerInteractionRecorder flushes during main-thread touch processing.
+            flushToRecordWriter(records)
+        },
         copyEvent = copyEvent,
         motionEventUtils = motionEventUtils,
         motionUpdateThresholdInNs = motionUpdateThresholdInNs,

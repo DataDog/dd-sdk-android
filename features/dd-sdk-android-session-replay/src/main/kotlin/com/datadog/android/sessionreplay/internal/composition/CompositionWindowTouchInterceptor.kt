@@ -41,15 +41,15 @@ internal class CompositionWindowTouchInterceptor(
 
     @MainThread
     fun intercept(windows: List<Window>) {
-        val staleWindows = synchronized(lock) { wrappedWindows.keys.filterNot(windows::contains) }
-        staleWindows.forEach(::unwrap)
-        windows.forEach(::wrap)
+        val staleWindows = synchronized(lock) { wrappedWindows.keys.filterNot { window -> window in windows } }
+        staleWindows.forEach { window -> unwrap(window) }
+        windows.forEach { window -> wrap(window) }
     }
 
     @MainThread
     fun stop() {
         val wrappedWindowsSnapshot = synchronized(lock) { wrappedWindows.keys.toList() }
-        wrappedWindowsSnapshot.forEach(::unwrap)
+        wrappedWindowsSnapshot.forEach { window -> unwrap(window) }
         // A resumed screen must not inherit SHOW regions from the previous capture.
         windowSource.clearTouchPrivacy()
         touchPrivacyManager.replaceCurrentTouchOverrideAreas(emptyMap())

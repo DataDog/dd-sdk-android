@@ -788,7 +788,7 @@ internal class SnapshotCaptureOrchestratorTest {
                 snapshotToProduce
             },
             processor = fakeProcessor,
-            consumer = CompletedSnapshotConsumer(consumedCaptures::add),
+            consumer = CompletedSnapshotConsumer { capture -> consumedCaptures.add(capture) },
             timeProvider = fakeClock,
             captureScheduler = fakeCaptureScheduler,
             mainThreadExecutor = mainThreadExecutor,
@@ -814,7 +814,7 @@ internal class SnapshotCaptureOrchestratorTest {
         override fun process(
             request: SnapshotProcessingRequest,
             callback: SnapshotProcessingCallback
-        ): CancellableCaptureWork = PendingProcessing(request, callback).also(pending::add)
+        ): CancellableCaptureWork = PendingProcessing(request, callback).also { processing -> pending.add(processing) }
     }
 
     private class FakeMainThreadExecutor(
@@ -832,7 +832,7 @@ internal class SnapshotCaptureOrchestratorTest {
                 } finally {
                     isExecuting = false
                 }
-            }.also(tasks::add)
+            }.also { scheduledTask -> tasks.add(scheduledTask) }
             if (autoRun) scheduled.run()
             return scheduled
         }
@@ -864,7 +864,7 @@ internal class SnapshotCaptureOrchestratorTest {
         var shutdowns = 0
 
         override fun schedule(delayNs: Long, task: () -> Unit): CancellableCaptureWork =
-            ScheduledTask(delayNs, task).also(tasks::add)
+            ScheduledTask(delayNs, task).also { scheduledTask -> tasks.add(scheduledTask) }
 
         fun runNext(delayNs: Long) {
             tasks.first { !it.executed && !it.cancelled && it.delayNs == delayNs }.run()

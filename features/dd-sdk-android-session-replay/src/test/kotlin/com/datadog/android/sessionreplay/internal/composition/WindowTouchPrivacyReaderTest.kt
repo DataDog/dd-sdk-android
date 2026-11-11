@@ -183,7 +183,9 @@ internal class WindowTouchPrivacyReaderTest {
             }
         )
         val windows =
-            ActiveWindowSource(readTouchPrivacy = testedReader::read, refreshTouchPrivacyAfterCapture = fakeHidden)
+            ActiveWindowSource(readTouchPrivacy = { view ->
+                testedReader.read(view)
+            }, refreshTouchPrivacyAfterCapture = fakeHidden)
         windows.update(listOf(mockRoot))
         val fakeScope = RumViewIdentityScope(fakeScopeId)
         windows.publishTouchPrivacy(windows.snapshot(), listOf(mockRoot), fakeScope) {}

@@ -60,11 +60,13 @@ internal class ExecutorCapturedSnapshotProcessorTest {
     fun `M defer snapshot construction W process() { executor task queued }`() {
         // Given
         val fakeQueue = mutableListOf<Runnable>()
-        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(fakeQueue::add), mock())
+        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor { task -> fakeQueue.add(task) }, mock())
         val fakeResults = mutableListOf<SnapshotProcessingResult>()
 
         // When
-        testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), fakeResults::add)
+        testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), { result ->
+            fakeResults.add(result)
+        })
 
         // Then
         assertThat(fakeResults).isEmpty()
@@ -74,10 +76,12 @@ internal class ExecutorCapturedSnapshotProcessorTest {
     fun `M construct the queued snapshot W run() { executor starts processing }`() {
         // Given
         val fakeQueue = mutableListOf<Runnable>()
-        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(fakeQueue::add), mock())
+        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor { task -> fakeQueue.add(task) }, mock())
         val fakeResults = mutableListOf<SnapshotProcessingResult>()
 
-        testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), fakeResults::add)
+        testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), { result ->
+            fakeResults.add(result)
+        })
 
         // When
         fakeQueue.single().run()
@@ -105,10 +109,10 @@ internal class ExecutorCapturedSnapshotProcessorTest {
             fakeWindow.wireframes
         )
         val fakeResults = mutableListOf<SnapshotProcessingResult>()
-        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(Runnable::run), mock())
+        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor { task -> task.run() }, mock())
 
         // When
-        testedProcessor.process(SnapshotProcessingRequest(fakeContext, fakeTree), fakeResults::add)
+        testedProcessor.process(SnapshotProcessingRequest(fakeContext, fakeTree), { result -> fakeResults.add(result) })
 
         // Then
         assertThat((fakeResults.single() as SnapshotProcessingResult.Completed).snapshot).isSameAs(fakeTree)
@@ -118,10 +122,12 @@ internal class ExecutorCapturedSnapshotProcessorTest {
     fun `M retain completed generation W process() + cancel() { callback completes before process returns }`() {
         // Given
         val fakeResults = mutableListOf<SnapshotProcessingResult>()
-        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(Runnable::run), mock())
+        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor { task -> task.run() }, mock())
 
         // When
-        val work = testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), fakeResults::add)
+        val work = testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), { result ->
+            fakeResults.add(result)
+        })
         work.cancel()
 
         // Then
@@ -135,8 +141,10 @@ internal class ExecutorCapturedSnapshotProcessorTest {
         // Given
         val fakeQueue = mutableListOf<Runnable>()
         val fakeResults = mutableListOf<SnapshotProcessingResult>()
-        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(fakeQueue::add), mock())
-        val testedWork = testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), fakeResults::add)
+        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor { task -> fakeQueue.add(task) }, mock())
+        val testedWork = testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), { result ->
+            fakeResults.add(result)
+        })
 
         // When
         testedWork.cancel()
@@ -158,8 +166,11 @@ internal class ExecutorCapturedSnapshotProcessorTest {
             work.cancel()
             CapturedViewMapperResult.None
         }
-        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(fakeQueue::add), mock())
-        work = testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot(mockMapping)), fakeResults::add)
+        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor { task -> fakeQueue.add(task) }, mock())
+        work =
+            testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot(mockMapping)), { result ->
+                fakeResults.add(result)
+            })
 
         // When
         fakeQueue.single().run()
@@ -178,7 +189,9 @@ internal class ExecutorCapturedSnapshotProcessorTest {
         val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor { throw fakeError }, mockLogger)
 
         // When
-        testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), fakeResults::add)
+        testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot()), { result ->
+            fakeResults.add(result)
+        })
 
         // Then
         assertThat(fakeResults).containsExactly(SnapshotProcessingResult.Failed(fakeContext.id))
@@ -199,10 +212,12 @@ internal class ExecutorCapturedSnapshotProcessorTest {
         val fakeError = IllegalStateException("Invalid copied value")
         whenever(mockMapping.map(any())).thenThrow(fakeError)
         val mockLogger: InternalLogger = mock()
-        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(Runnable::run), mockLogger)
+        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor { task -> task.run() }, mockLogger)
 
         // When
-        testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot(mockMapping)), fakeResults::add)
+        testedProcessor.process(SnapshotProcessingRequest(fakeContext, snapshot(mockMapping)), { result ->
+            fakeResults.add(result)
+        })
 
         // Then
         assertThat(fakeResults).containsExactly(SnapshotProcessingResult.Failed(fakeContext.id))

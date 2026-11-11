@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal.composition
 import android.view.View
 import android.view.ViewTreeObserver
 import com.datadog.android.api.InternalLogger
+import java.util.Locale
 import java.util.WeakHashMap
 
 internal class CompositionViewOnDrawInterceptor(
@@ -20,10 +21,10 @@ internal class CompositionViewOnDrawInterceptor(
     private val interceptedViews = WeakHashMap<View, ListenerRegistration>()
 
     fun intercept(decorViews: List<View>) {
-        val staleViews = synchronized(lock) { interceptedViews.keys.filterNot(decorViews::contains) }
-        staleViews.forEach(::removeListener)
-        val newViews = synchronized(lock) { decorViews.filterNot(interceptedViews::containsKey) }
-        newViews.forEach(::addListener)
+        val staleViews = synchronized(lock) { interceptedViews.keys.filterNot { view -> view in decorViews } }
+        staleViews.forEach { view -> removeListener(view) }
+        val newViews = synchronized(lock) { decorViews.filterNot { view -> interceptedViews.containsKey(view) } }
+        newViews.forEach { view -> addListener(view) }
         // Per-frame draws are already reported by CompositionOnDrawListener.onDraw on each tracked
         // view; this notifies only about the window roots or their order changing. Re-polling for untracked
         // windows calls intercept() every second regardless of activity, so without this check an
@@ -35,7 +36,7 @@ internal class CompositionViewOnDrawInterceptor(
 
     fun stop() {
         val interceptedViewsSnapshot = synchronized(lock) { interceptedViews.keys.toList() }
-        interceptedViewsSnapshot.forEach(::removeListener)
+        interceptedViewsSnapshot.forEach { view -> removeListener(view) }
         synchronized(lock) { interceptedViews.clear() }
         windowSource.clear()
     }
@@ -53,7 +54,7 @@ internal class CompositionViewOnDrawInterceptor(
         val source = windowSource
         val changeListener = onWindowsChanged
         val listener = CompositionOnDrawListener(view) { roots ->
-            roots.forEach(source::onDraw)
+            roots.forEach { root -> source.onDraw(root) }
             changeListener.onWindowsChanged(roots)
         }
         val reserved = synchronized(lock) {
@@ -96,8 +97,13 @@ internal class CompositionViewOnDrawInterceptor(
         internalLogger.log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            { "Unable to $operation composition onDrawListener on viewTreeObserver" },
+            { LISTENER_UPDATE_FAILED_MESSAGE.format(Locale.US, operation) },
             error
         )
+    }
+
+    private companion object {
+        const val LISTENER_UPDATE_FAILED_MESSAGE =
+            "Unable to %s composition onDrawListener on viewTreeObserver"
     }
 }

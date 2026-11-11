@@ -91,7 +91,7 @@ internal class DefaultCompositionPipelineFactory(
                 internalLogger = internalLogger
             ),
             timeBudget = createTimeBudget(),
-            onFrameSkipped = skippedFrameNotifier::notifySkippedFrame,
+            onFrameSkipped = { skippedFrameNotifier.notifySkippedFrame() },
             internalLogger = internalLogger
         )
         val interceptor = CompositionViewOnDrawInterceptor(
@@ -127,12 +127,21 @@ internal class DefaultCompositionPipelineFactory(
         val hostCapture = compositionHostDecomposer?.let {
             CompositionHostCapture(it, internalLogger, textAndInputPrivacy)
         }
+        val touchPrivacyReader = WindowTouchPrivacyReader(
+            internalLogger = internalLogger,
+            readCompositionTouchPrivacy = hostCapture?.let { capture ->
+                { view, shouldContinue ->
+                    @Suppress("ThreadSafety") // WindowTouchPrivacyReader invokes this during its UI-thread pass.
+                    capture.readTouchOverrideAreas(view, shouldContinue)
+                }
+            }
+        )
         return ActiveWindowSource(
             refreshTouchPrivacyAfterCapture = compositionHostDecomposer != null,
-            readTouchPrivacy = WindowTouchPrivacyReader(
-                internalLogger = internalLogger,
-                readCompositionTouchPrivacy = hostCapture?.let { it::readTouchOverrideAreas }
-            )::read
+            readTouchPrivacy = { view ->
+                @Suppress("ThreadSafety") // ActiveWindowSource refreshes touch privacy only on the UI thread.
+                touchPrivacyReader.read(view)
+            }
         )
     }
 

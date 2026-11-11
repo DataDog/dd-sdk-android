@@ -588,7 +588,7 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
         val testedTraversal = traversal(fallback = mockMapper, compositionHostDecomposer = mockDecomposer)
         val fakeQueue = mutableListOf<Runnable>()
         val fakeResults = mutableListOf<SnapshotProcessingResult>()
-        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor(fakeQueue::add), mock())
+        val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor { task -> fakeQueue.add(task) }, mock())
 
         // When
         val copy = testedTraversal.traverseWindow(
@@ -602,7 +602,7 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
                 fakeContext,
                 CapturedNativeSnapshot(1L, identityFactory.scope, listOf(copy.window))
             ),
-            fakeResults::add
+            { result -> fakeResults.add(result) }
         )
 
         // Then

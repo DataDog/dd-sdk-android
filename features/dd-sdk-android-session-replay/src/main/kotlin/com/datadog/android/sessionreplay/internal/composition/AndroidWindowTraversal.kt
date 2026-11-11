@@ -228,7 +228,7 @@ internal class AndroidWindowTraversal(
         val capturedHost = compositionHostCapture?.capture(
             view = view,
             mappingContext = mappingContext,
-            shouldContinue = context::shouldContinue,
+            shouldContinue = { context.shouldContinue() },
             copyNativeSubtree = { interopView, childIdentity ->
                 copyNativeSubtree(interopView, childIdentity, state, context)
             }

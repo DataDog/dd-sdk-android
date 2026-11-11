@@ -147,20 +147,26 @@ private class CoverageGeometry(size: Int) {
     }
 
     private fun resolveBounds(view: CapturedNativeView, replayCoordinates: Boolean): CoverageRectangle? =
-        if (replayCoordinates) CoverageRectangle.from(view.bounds) else view.pixelBounds?.let(CoverageRectangle::from)
+        if (replayCoordinates) {
+            CoverageRectangle.from(view.bounds)
+        } else {
+            view.pixelBounds?.let {
+                CoverageRectangle.from(it)
+            }
+        }
 
     private fun resolveExplicitClip(view: CapturedNativeView, replayCoordinates: Boolean): CoverageRectangle? =
         if (replayCoordinates) {
-            view.explicitClip?.let(CoverageRectangle::from)
+            view.explicitClip?.let { CoverageRectangle.from(it) }
         } else {
-            view.pixelClip?.let(CoverageRectangle::from)
+            view.pixelClip?.let { CoverageRectangle.from(it) }
         }
 
     private fun resolvePaddingClip(view: CapturedNativeView, replayCoordinates: Boolean): CoverageRectangle? =
         if (replayCoordinates) {
-            view.childPaddingClip?.let(CoverageRectangle::from)
+            view.childPaddingClip?.let { CoverageRectangle.from(it) }
         } else {
-            view.pixelChildPaddingClip?.let(CoverageRectangle::from)
+            view.pixelChildPaddingClip?.let { CoverageRectangle.from(it) }
         }
 
     private fun isGeometryReliable(view: CapturedNativeView, parent: Int): Boolean =

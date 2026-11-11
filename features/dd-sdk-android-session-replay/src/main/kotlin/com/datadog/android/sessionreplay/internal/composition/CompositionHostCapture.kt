@@ -30,7 +30,7 @@ internal class CompositionHostCapture(
 
     @UiThread
     fun readTouchOverrideAreas(view: View, shouldContinue: () -> Boolean): Map<Rect, TouchPrivacy>? =
-        invokeDecomposer(null, "Composition touch privacy refresh failed; skipping touch recording") {
+        invokeDecomposer(null, TOUCH_PRIVACY_REFRESH_FAILED_MESSAGE) {
             decomposer.readTouchOverrideAreas(view, shouldContinue)
         }
 
@@ -80,7 +80,7 @@ internal class CompositionHostCapture(
                     internalLogger.log(
                         InternalLogger.Level.ERROR,
                         InternalLogger.Target.USER,
-                        { "Invalid text privacy override; inheriting the parent policy" },
+                        { INVALID_TEXT_PRIVACY_OVERRIDE_MESSAGE },
                         throwable = error,
                         onlyOnce = true
                     )
@@ -94,7 +94,7 @@ internal class CompositionHostCapture(
     @Suppress("TooGenericExceptionCaught") // Optional extension linkage failures must not escape onto the UI thread.
     private inline fun <T> invokeDecomposer(
         fallback: T,
-        failureMessage: String = "Composition host decomposition failed; falling back to native capture",
+        failureMessage: String = HOST_DECOMPOSITION_FAILED_MESSAGE,
         block: () -> T
     ): T = try {
         block()
@@ -113,4 +113,13 @@ internal class CompositionHostCapture(
         val decomposition: CompositionHostDecomposeResult,
         val nativeCopies: List<WindowCopyResult.Present>
     )
+
+    private companion object {
+        const val HOST_DECOMPOSITION_FAILED_MESSAGE =
+            "Composition host decomposition failed; falling back to native capture"
+        const val TOUCH_PRIVACY_REFRESH_FAILED_MESSAGE =
+            "Composition touch privacy refresh failed; skipping touch recording"
+        const val INVALID_TEXT_PRIVACY_OVERRIDE_MESSAGE =
+            "Invalid text privacy override; inheriting the parent policy"
+    }
 }

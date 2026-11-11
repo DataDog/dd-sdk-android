@@ -165,7 +165,7 @@ internal class SnapshotCompletionQueueTest {
         val fakeCaptures = (0..fakeMaxQueuedCaptures).map { fakeFixture.aCapture(generationId = it + 1L) }
 
         // When
-        fakeCaptures.forEach(fakeFixture.testedQueue::consume)
+        fakeCaptures.forEach { capture -> fakeFixture.testedQueue.consume(capture) }
 
         // Then
         assertThat(fakeCaptures.first().generation.isActive()).isFalse()
@@ -191,7 +191,7 @@ internal class SnapshotCompletionQueueTest {
         val fakeCaptures = (0..fakeMaxQueuedCaptures).map { fakeFixture.aCapture(generationId = it + 1L) }
 
         // When
-        fakeCaptures.forEach(fakeFixture.testedQueue::consume)
+        fakeCaptures.forEach { capture -> fakeFixture.testedQueue.consume(capture) }
         fakeFixture.runQueuedTask()
 
         // Then
@@ -441,7 +441,7 @@ internal class SnapshotCompletionQueueTest {
         // Then
         verifyNoInteractions(mockRecordWriter)
         assertThat(fakeGeneration.isActive()).isFalse()
-        val expectedCodes = fakeFailures.asSequence().map { it.code }.distinct().sorted().map(Enum<*>::name).toList()
+        val expectedCodes = fakeFailures.asSequence().map { it.code }.distinct().sorted().map { it.name }.toList()
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.TELEMETRY,

@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
+import java.util.Locale
 
 /**
  * First-match-wins lookup, mirroring the legacy `TreeViewTraversal.findMapperForView` registry.
@@ -42,10 +43,14 @@ internal class CapturedViewMapperRegistry(
         internalLogger.log(
             level = InternalLogger.Level.INFO,
             target = InternalLogger.Target.TELEMETRY,
-            messageBuilder = { "No mapper found for view $viewType" },
+            messageBuilder = { UNMAPPED_VIEW_MESSAGE.format(Locale.US, viewType) },
             throwable = null,
             onlyOnce = true,
             additionalProperties = mapOf("replay.widget.type" to viewType)
         )
+    }
+
+    private companion object {
+        const val UNMAPPED_VIEW_MESSAGE = "No mapper found for view %s"
     }
 }

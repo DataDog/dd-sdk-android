@@ -106,7 +106,7 @@ internal class SnapshotOrchestrationIntegrationTest {
         private val tasks = mutableListOf<TestTask>()
 
         override fun schedule(delayNs: Long, task: () -> Unit): CancellableCaptureWork =
-            TestTask(task).also(tasks::add)
+            TestTask(task).also { scheduledTask -> tasks.add(scheduledTask) }
 
         fun runNext() {
             tasks.first { !it.cancelled }.run()

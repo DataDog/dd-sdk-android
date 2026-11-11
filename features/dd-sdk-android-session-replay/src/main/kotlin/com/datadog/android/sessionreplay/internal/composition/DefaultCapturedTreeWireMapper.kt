@@ -76,7 +76,7 @@ internal class DefaultCapturedTreeWireMapper(
         val data = MobileSegment.MobileIncrementalData.CompositionTreeMutationData(
             root = mutation.root.mapOrNull { it.toWireLayer() },
             adds = mutation.adds.mapOrNull { layers -> layers.map { it.toWireLayer() } },
-            removes = mutation.removes.mapOrNull { identities -> identities.map(CapturedIdentity::wireId) },
+            removes = mutation.removes.mapOrNull { identities -> identities.map { it.wireId } },
             updates = mutation.updates.mapOrNull { updates -> updates.map { it.toWireUpdate() } }
         )
         return CaptureWireMappingResult.Success(

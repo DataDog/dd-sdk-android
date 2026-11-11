@@ -74,15 +74,15 @@ internal class CapturedSnapshotValidation(
         }
         val identities = layers.map { it.identity } + wireframeIdentities
         validateIdentityDefinitions(identities)
-        layers.forEach(::validateLayer)
-        if (validateWireframeDefinitions) snapshot.wireframes.forEach(::validateWireframe)
+        layers.forEach { validateLayer(it) }
+        if (validateWireframeDefinitions) snapshot.wireframes.forEach { validateWireframe(it) }
     }
 
     private fun validateIdentityDefinitions(identities: List<CapturedIdentity>) {
         identities.filter { it.scope != snapshot.scope }.forEach {
             failures += validationFailure(CaptureValidationErrorCode.WRONG_IDENTITY_SCOPE, it)
         }
-        identities.groupBy(CapturedIdentity::wireId).values.forEach { matchingWireIds ->
+        identities.groupBy { it.wireId }.values.forEach { matchingWireIds ->
             if (matchingWireIds.size > 1) {
                 matchingWireIds.firstOrNull()?.let {
                     failures += validationFailure(CaptureValidationErrorCode.DUPLICATE_IDENTITY, it)
