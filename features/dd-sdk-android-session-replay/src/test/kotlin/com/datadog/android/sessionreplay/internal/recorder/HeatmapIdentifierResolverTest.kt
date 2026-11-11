@@ -10,24 +10,32 @@ import android.content.res.Resources
 import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.heatmaps.HeatmapIdentifier
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
+import com.datadog.android.sessionreplay.SessionReplayHeatmapScreenRootProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.HeatmapIdentifierResolver.Companion.LOCAL_KEY_CLASS_PREFIX
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.NullAndEmptySource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Random
@@ -44,14 +52,31 @@ internal class HeatmapIdentifierResolverTest {
 
     private lateinit var testedResolver: HeatmapIdentifierResolver
 
+    private lateinit var testedScreenRootResolver: HeatmapIdentifierResolver
+
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockRegistry: HeatmapIdentifierRegistry
 
+    @Mock
+    lateinit var mockScreenRootProvider: SessionReplayHeatmapScreenRootProvider
+
+    @Mock
+    lateinit var mockScreenRoot: View
+
+    @Mock
+    lateinit var mockTarget: View
+
     @StringForgery
     lateinit var fakeAppPackageName: String
+
+    @StringForgery
+    lateinit var fakeUrl: String
+
+    @StringForgery
+    lateinit var fakeScreenKey: String
 
     @BeforeEach
     fun `set up`() {
@@ -60,6 +85,18 @@ internal class HeatmapIdentifierResolverTest {
             registry = mockRegistry,
             internalLogger = mockInternalLogger
         )
+        testedScreenRootResolver = HeatmapIdentifierResolver(
+            appPackageName = fakeAppPackageName,
+            registry = mockRegistry,
+            internalLogger = mockInternalLogger,
+            screenRootProvider = mockScreenRootProvider
+        )
+        listOf(mockScreenRoot, mockTarget).forEach {
+            whenever(it.id).thenReturn(View.NO_ID)
+            whenever(it.isClickable).thenReturn(true)
+            whenever(it.visibility).thenReturn(View.VISIBLE)
+        }
+        whenever(mockScreenRootProvider.getHeatmapScreenRootKey(mockScreenRoot)).thenReturn(fakeScreenKey)
     }
 
     // region pathComponentFor
@@ -243,6 +280,264 @@ internal class HeatmapIdentifierResolverTest {
     }
 
     // endregion
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M reset path at screen root W resolveIdentity()`(fakeClickable: Boolean) {
+        // Given
+        val context = testedScreenRootResolver.beginTraversal(fakeUrl)
+        whenever(mockScreenRoot.isClickable).thenReturn(fakeClickable)
+
+        // When
+        val result = context.resolveIdentity(mockScreenRoot, listOf("window-ancestor"), 8)
+
+        // Then
+        assertThat(result.viewPath).containsExactly("screen-root:$fakeScreenKey")
+        val expectedIdentifier = if (fakeClickable) {
+            HeatmapIdentifier.create(listOf("screen-root:$fakeScreenKey"), fakeUrl, fakeAppPackageName)
+        } else {
+            null
+        }
+        assertThat(result.identifier).isEqualTo(expectedIdentifier)
+    }
+
+    @Test
+    fun `M reuse published identifier at screen root W resolveIdentity() {ancestors changed}`() {
+        // Given
+        val before = testedScreenRootResolver.beginTraversal(fakeUrl)
+        val oldRoot = before.resolveIdentity(mockScreenRoot, listOf("old-ancestor"), 0)
+        before.publish()
+        val after = testedScreenRootResolver.beginTraversal(fakeUrl)
+
+        // When
+        val result = after.resolveIdentity(mockScreenRoot, listOf("new-ancestor"), 8)
+
+        // Then
+        assertThat(result.viewPath).containsExactly("screen-root:$fakeScreenKey")
+        assertThat(result.identifier).isNotNull().isEqualTo(oldRoot.identifier)
+    }
+
+    @Test
+    fun `M preserve permanent identity after ancestor movement W resolveIdentity()`(
+        @StringForgery fakeAncestor: String,
+        @StringForgery fakeOtherAncestor: String
+    ) {
+        // Given
+        val before = testedScreenRootResolver.beginTraversal(fakeUrl)
+        val oldRoot = before.resolveIdentity(mockScreenRoot, listOf(fakeAncestor), 0)
+        val oldTarget = before.resolveIdentity(mockTarget, oldRoot.viewPath, 0)
+        before.publish()
+        val after = testedScreenRootResolver.beginTraversal(fakeUrl)
+
+        // When
+        val newRoot = after.resolveIdentity(mockScreenRoot, listOf(fakeOtherAncestor), 3)
+        val newTarget = after.resolveIdentity(mockTarget, newRoot.viewPath, 0)
+
+        // Then
+        assertThat(newTarget.identifier).isNotNull().isEqualTo(oldTarget.identifier)
+        assertThat(newTarget.viewPath).containsExactly(
+            "screen-root:$fakeScreenKey",
+            "$LOCAL_KEY_CLASS_PREFIX${mockTarget.javaClass.name}#0"
+        )
+    }
+
+    @Test
+    fun `M distinguish retained roots under same current URL W resolveIdentity()`(
+        @StringForgery fakeOtherKey: String
+    ) {
+        // Given
+        val context = testedScreenRootResolver.beginTraversal(fakeUrl)
+        val firstRoot = context.resolveIdentity(mockScreenRoot, emptyList(), 0)
+        val firstTarget = context.resolveIdentity(mockTarget, firstRoot.viewPath, 0)
+        whenever(mockScreenRootProvider.getHeatmapScreenRootKey(mockScreenRoot)).thenReturn("other:$fakeOtherKey")
+
+        // When
+        val otherRoot = context.resolveIdentity(mockScreenRoot, emptyList(), 1)
+        val otherTarget = context.resolveIdentity(mockTarget, otherRoot.viewPath, 0)
+
+        // Then
+        assertThat(otherTarget.identifier).isNotNull().isNotEqualTo(firstTarget.identifier)
+    }
+
+    @Test
+    fun `M preserve indices below screen root W resolveIdentity()`() {
+        // Given
+        val context = testedScreenRootResolver.beginTraversal(fakeUrl)
+        val root = context.resolveIdentity(mockScreenRoot, emptyList(), 0)
+
+        // When
+        val first = context.resolveIdentity(mockTarget, root.viewPath, 0)
+        val second = context.resolveIdentity(mockTarget, root.viewPath, 1)
+
+        // Then
+        assertThat(first.identifier).isNotNull().isNotEqualTo(second.identifier)
+        assertThat(second.viewPath.last()).endsWith("#1")
+    }
+
+    @Test
+    fun `M prefer nearest nested root W resolveIdentity()`(@StringForgery fakeAncestor: String) {
+        // Given
+        val context = testedScreenRootResolver.beginTraversal(fakeUrl)
+        val outer = context.resolveIdentity(mockScreenRoot, listOf(fakeAncestor), 4)
+        whenever(mockScreenRootProvider.getHeatmapScreenRootKey(mockScreenRoot)).thenReturn("nested:$fakeScreenKey")
+
+        // When
+        val inner = context.resolveIdentity(mockScreenRoot, outer.viewPath, 2)
+        val target = context.resolveIdentity(mockTarget, inner.viewPath, 0)
+
+        // Then
+        assertThat(target.viewPath).containsExactly(
+            "screen-root:nested:$fakeScreenKey",
+            "$LOCAL_KEY_CLASS_PREFIX${mockTarget.javaClass.name}#0"
+        )
+    }
+
+    @Test
+    fun `M invalidate cached path when provider key removed W resolveIdentity()`(@StringForgery fakeAncestor: String) {
+        // Given
+        val before = testedScreenRootResolver.beginTraversal(fakeUrl)
+        val root = before.resolveIdentity(mockScreenRoot, listOf(fakeAncestor), 2)
+        val anchored = before.resolveIdentity(mockTarget, root.viewPath, 0)
+        before.publish()
+        whenever(mockScreenRootProvider.getHeatmapScreenRootKey(mockScreenRoot)).thenReturn(null)
+        val after = testedScreenRootResolver.beginTraversal(fakeUrl)
+
+        // When
+        val restoredRoot = after.resolveIdentity(mockScreenRoot, listOf(fakeAncestor), 2)
+        val restored = after.resolveIdentity(mockTarget, restoredRoot.viewPath, 0)
+
+        // Then
+        val expectedPath = listOf(
+            fakeAncestor,
+            "$LOCAL_KEY_CLASS_PREFIX${mockScreenRoot.javaClass.name}#2",
+            "$LOCAL_KEY_CLASS_PREFIX${mockTarget.javaClass.name}#0"
+        )
+        assertThat(restored.viewPath).isEqualTo(expectedPath)
+        assertThat(restored.identifier).isEqualTo(HeatmapIdentifier.create(expectedPath, fakeUrl, fakeAppPackageName))
+            .isNotEqualTo(anchored.identifier)
+    }
+
+    @Test
+    fun `M preserve native hierarchy W resolveIdentity() {no provider}`() {
+        // Given
+        val context = testedResolver.beginTraversal(fakeUrl)
+
+        // When
+        val result = context.resolveIdentity(mockScreenRoot, listOf("ancestor"), 2)
+
+        // Then
+        assertThat(result.viewPath)
+            .containsExactly("ancestor", "$LOCAL_KEY_CLASS_PREFIX${mockScreenRoot.javaClass.name}#2")
+        assertThat(result.isPathValid).isTrue()
+        verifyNoInteractions(mockScreenRootProvider, mockInternalLogger)
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    fun `M retain ordinary hierarchy W resolveIdentity() {no integration boundary}`(fakeKey: String?) {
+        // Given
+        whenever(mockScreenRootProvider.getHeatmapScreenRootKey(mockScreenRoot)).thenReturn(fakeKey)
+        val context = testedScreenRootResolver.beginTraversal(fakeUrl)
+
+        // When
+        val result = context.resolveIdentity(mockScreenRoot, listOf("ancestor"), 2)
+
+        // Then
+        assertThat(result.viewPath)
+            .containsExactly("ancestor", "$LOCAL_KEY_CLASS_PREFIX${mockScreenRoot.javaClass.name}#2")
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    fun `M retain valid root path W resolveIdentity() {no integration boundary}`(fakeKey: String?) {
+        // Given
+        whenever(mockScreenRootProvider.getHeatmapScreenRootKey(mockScreenRoot)).thenReturn(fakeKey)
+        val context = testedScreenRootResolver.beginTraversal(fakeUrl)
+
+        // When
+        val result = context.resolveIdentity(mockScreenRoot, emptyList(), 0)
+
+        // Then
+        assertThat(result.viewPath).containsExactly("$LOCAL_KEY_CLASS_PREFIX${mockScreenRoot.javaClass.name}#0")
+        assertThat(result.isPathValid).isTrue()
+        assertThat(result.identifier).isNotNull()
+    }
+
+    @Test
+    fun `M invalidate cache after integration key changes W resolveIdentity()`(@StringForgery fakeOtherKey: String) {
+        // Given
+        val before = testedScreenRootResolver.beginTraversal(fakeUrl)
+        val oldRoot = before.resolveIdentity(mockScreenRoot, emptyList(), 0)
+        before.publish()
+        whenever(mockScreenRootProvider.getHeatmapScreenRootKey(mockScreenRoot)).thenReturn("other:$fakeOtherKey")
+        val after = testedScreenRootResolver.beginTraversal(fakeUrl)
+
+        // When
+        val result = after.resolveIdentity(mockScreenRoot, emptyList(), 0)
+
+        // Then
+        assertThat(result.viewPath).containsExactly("screen-root:other:$fakeOtherKey")
+        assertThat(result.identifier).isNotNull().isNotEqualTo(oldRoot.identifier)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M isolate provider failure and remove stale identifiers W resolveIdentity() and publish()`(
+        fakeIsError: Boolean,
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        val before = testedScreenRootResolver.beginTraversal(fakeUrl)
+        before.resolveIdentity(mockScreenRoot, emptyList(), 0)
+        before.publish()
+        val fakeFailure = if (fakeIsError) AssertionError(fakeMessage) else IllegalStateException(fakeMessage)
+        whenever(mockScreenRootProvider.getHeatmapScreenRootKey(mockScreenRoot)).thenThrow(fakeFailure)
+        val context = testedScreenRootResolver.beginTraversal(fakeUrl)
+
+        // When
+        val result = assertDoesNotThrow<HeatmapIdentifierResolver.HeatmapIdentity> {
+            context.resolveIdentity(mockScreenRoot, emptyList(), 0)
+        }
+        context.publish()
+
+        // Then
+        assertThat(result.isPathValid).isFalse()
+        assertThat(result.viewPath).isEmpty()
+        assertThat(result.identifier).isNull()
+        assertThat(context.entries).isEmpty()
+        verify(mockRegistry).setHeatmapIdentifiers(emptyMap(), fakeUrl)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            "Failed to resolve heatmap screen root. Heatmap identifiers are omitted for the affected subtree.",
+            throwable = fakeFailure,
+            onlyOnce = true
+        )
+    }
+
+    @Test
+    fun `M recover after a provider failure W resolveIdentity() and publish()`(@StringForgery fakeMessage: String) {
+        // Given
+        val before = testedScreenRootResolver.beginTraversal(fakeUrl)
+        val original = before.resolveIdentity(mockScreenRoot, emptyList(), 0)
+        before.publish()
+        whenever(mockScreenRootProvider.getHeatmapScreenRootKey(mockScreenRoot))
+            .thenThrow(IllegalStateException(fakeMessage))
+            .thenReturn(fakeScreenKey)
+
+        // When
+        val failureContext = testedScreenRootResolver.beginTraversal(fakeUrl)
+        failureContext.resolveIdentity(mockScreenRoot, emptyList(), 0)
+        failureContext.publish()
+        val recoveryContext = testedScreenRootResolver.beginTraversal(fakeUrl)
+        val recovered = recoveryContext.resolveIdentity(mockScreenRoot, emptyList(), 0)
+        recoveryContext.publish()
+
+        // Then
+        assertThat(recovered.isPathValid).isTrue()
+        assertThat(recovered.identifier).isNotNull().isEqualTo(original.identifier)
+        assertThat(recoveryContext.hasProviderFailure).isFalse()
+    }
 
     // region concurrency
 

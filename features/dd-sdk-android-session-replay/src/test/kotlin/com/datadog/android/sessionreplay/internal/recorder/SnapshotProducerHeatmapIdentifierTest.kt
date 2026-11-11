@@ -14,6 +14,7 @@ import com.datadog.android.heatmaps.heatmapViewKey
 import com.datadog.android.internal.heatmaps.HeatmapIdentifier
 import com.datadog.android.internal.heatmaps.HeatmapIdentifierRegistry
 import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.SessionReplayHeatmapScreenRootProvider
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
@@ -27,10 +28,13 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -75,6 +79,9 @@ internal class SnapshotProducerHeatmapIdentifierTest {
     @Mock
     lateinit var mockHeatmapIdentifierRegistry: HeatmapIdentifierRegistry
 
+    @Mock
+    lateinit var mockScreenRootProvider: SessionReplayHeatmapScreenRootProvider
+
     @Forgery
     lateinit var fakeSystemInformation: SystemInformation
 
@@ -101,7 +108,8 @@ internal class SnapshotProducerHeatmapIdentifierTest {
             heatmapResolver = HeatmapIdentifierResolver(
                 appPackageName = fakeAppPackageName,
                 registry = mockHeatmapIdentifierRegistry,
-                internalLogger = mockInternalLogger
+                internalLogger = mockInternalLogger,
+                screenRootProvider = mockScreenRootProvider
             )
         )
     }
@@ -802,6 +810,79 @@ internal class SnapshotProducerHeatmapIdentifierTest {
     }
 
     // endregion
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M preserve capture and omit affected identifiers W produce() { screen root provider failure }`(
+        fakeFailureAtRoot: Boolean,
+        forge: Forge,
+        @StringForgery fakeViewUrl: String,
+        @StringForgery fakeScreenKey: String
+    ) {
+        // Given
+        val fakeBranchTarget = forge.aMockViewWithResourceId(
+            viewId = forge.anInt(min = 1, max = Int.MAX_VALUE),
+            resourceName = forge.anAlphabeticalString()
+        )
+        val fakeSiblingTarget = forge.aMockViewWithResourceId(
+            viewId = forge.anInt(min = 1, max = Int.MAX_VALUE),
+            resourceName = forge.anAlphabeticalString()
+        )
+        val fakeBranch = forge.aMockViewGroupWithResourceId(
+            viewId = forge.anInt(min = 1, max = Int.MAX_VALUE),
+            resourceName = forge.anAlphabeticalString(),
+            children = listOf(fakeBranchTarget),
+            isClickable = false
+        )
+        val fakeRoot = forge.aMockViewGroupWithResourceId(
+            viewId = forge.anInt(min = 1, max = Int.MAX_VALUE),
+            resourceName = forge.anAlphabeticalString(),
+            children = listOf(fakeBranch, fakeSiblingTarget),
+            isClickable = false
+        )
+        whenever(mockScreenRootProvider.getHeatmapScreenRootKey(fakeSiblingTarget)).thenReturn(fakeScreenKey)
+        whenever(mockScreenRootProvider.getHeatmapScreenRootKey(if (fakeFailureAtRoot) fakeRoot else fakeBranch))
+            .thenThrow(IllegalStateException())
+        whenever(mockTreeViewTraversal.traverse(any(), any(), any())).thenReturn(
+            TreeViewTraversal.TraversedTreeView(
+                fakeViewWireframes,
+                TraversalStrategy.TRAVERSE_ALL_CHILDREN
+            )
+        )
+
+        // When
+        val result = assertDoesNotThrow<Node?> {
+            testedSnapshotProducer.produce(
+                rootView = fakeRoot,
+                systemInformation = fakeSystemInformation,
+                textAndInputPrivacy = fakeTextAndInputPrivacy,
+                imagePrivacy = fakeImagePrivacy,
+                recordedDataQueueRefs = mockRecordedDataQueueRefs,
+                activeRumViewUrl = fakeViewUrl
+            )
+        }
+
+        // Then
+        val root = checkNotNull(result)
+        assertThat(root.children).hasSize(2)
+        assertThat(root.wireframes).isSameAs(fakeViewWireframes)
+        val branch = root.children[0]
+        assertThat(branch.wireframes).isSameAs(fakeViewWireframes)
+        assertThat(branch.children).hasSize(1)
+        assertThat(branch.heatmapIdentifier).isNull()
+        assertThat(branch.children[0].heatmapIdentifier).isNull()
+        assertThat(branch.children[0].wireframes).isSameAs(fakeViewWireframes)
+        verify(mockScreenRootProvider, never()).getHeatmapScreenRootKey(fakeBranchTarget)
+        val identifiersCaptor = argumentCaptor<Map<Long, HeatmapIdentifier>>()
+        verify(mockHeatmapIdentifierRegistry).setHeatmapIdentifiers(identifiersCaptor.capture(), eq(fakeViewUrl))
+        if (fakeFailureAtRoot) {
+            assertThat(root.children[1].heatmapIdentifier).isNull()
+            assertThat(identifiersCaptor.firstValue).isEmpty()
+        } else {
+            val siblingIdentifier = checkNotNull(root.children[1].heatmapIdentifier)
+            assertThat(identifiersCaptor.firstValue.values).containsExactly(siblingIdentifier)
+        }
+    }
 
     // region helpers
 
