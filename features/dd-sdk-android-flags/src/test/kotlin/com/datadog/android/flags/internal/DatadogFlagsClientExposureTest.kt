@@ -43,6 +43,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -188,10 +189,9 @@ internal class DatadogFlagsClientExposureTest {
     }
 
     @Test
-    fun `M stamp a provisional verdict W resolveDeferringExposure()`(@BoolForgery fakeIsRecorded: Boolean) {
+    fun `M defer the exposure W resolveDeferringExposure()`() {
         // Given
         install(fakeFlag)
-        whenever(mockProcessor.isRecorded(fakeFlagKey, fakeContext, fakeFlag)) doReturn fakeIsRecorded
 
         // When
         val result = testedClient.resolveDeferringExposure(fakeFlagKey, false)
@@ -201,12 +201,12 @@ internal class DatadogFlagsClientExposureTest {
         assertThat(result.details.flagMetadata).containsAllEntriesOf(
             mapOf(
                 "__dd_do_log" to true,
-                "__dd_split_serial_id" to checkNotNull(fakeFlag.serialId).toInt(),
-                "__dd_exposure_cache_hit" to fakeIsRecorded
+                "__dd_split_serial_id" to checkNotNull(fakeFlag.serialId).toInt()
             )
         )
+        assertThat(result.details.flagMetadata).doesNotContainKey("__dd_exposure_cache_hit")
         assertThat(result.recordExposure as Any?).isNotNull()
-        verify(mockProcessor, never()).processEvent(any(), any(), any())
+        verifyNoInteractions(mockProcessor)
     }
 
     @Test
@@ -281,7 +281,7 @@ internal class DatadogFlagsClientExposureTest {
 
         // Then
         assertThat(result.recordExposure as Any?).isNull()
-        verify(mockProcessor, never()).isRecorded(any(), any(), any())
+        verifyNoInteractions(mockProcessor)
     }
 
     @Test
@@ -329,7 +329,7 @@ internal class DatadogFlagsClientExposureTest {
         // Then
         assertThat(result.recordExposure as Any?).isNull()
         assertThat(result.details.flagMetadata).doesNotContainKeys("__dd_do_log", "__dd_exposure_cache_hit")
-        verify(mockProcessor, never()).isRecorded(any(), any(), any())
+        verifyNoInteractions(mockProcessor)
     }
 
     @Test
@@ -355,7 +355,7 @@ internal class DatadogFlagsClientExposureTest {
             anyOrNull(),
             eq(emptyMap())
         )
-        verify(mockProcessor, never()).isRecorded(any(), any(), any())
+        verifyNoInteractions(mockProcessor)
     }
 
     private fun newClient(experimentationOptOut: ExperimentationOptOut) = DatadogFlagsClient(

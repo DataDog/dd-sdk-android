@@ -267,7 +267,6 @@ internal class DatadogFlagsClient(
     /**
      * Resolves like [resolve], but leaves the exposure to the caller, which records it with
      * [_FlagsInternalProxy.DeferredExposureResolution.recordExposure] once the evaluation has succeeded.
-     * The exposure verdict in the metadata is provisional until then.
      */
     internal fun <T : Any> resolveDeferringExposure(
         flagKey: String,
@@ -299,7 +298,6 @@ internal class DatadogFlagsClient(
             metadata[METADATA_DO_LOG] = true
             flag.serialId?.takeIf { it in Int.MIN_VALUE..Int.MAX_VALUE }
                 ?.let { metadata[METADATA_SPLIT_SERIAL_ID] = it.toInt() }
-            metadata[METADATA_EXPOSURE_CACHE_HIT] = exposureProcessor.isRecorded(flagKey, context, flag)
             _FlagsInternalProxy.DeferredExposureResolution(details.copy(flagMetadata = metadata), context) {
                 val isCurrent = isCurrentResolutionContext(context)
                 if (isCurrent) exposureProcessor.processEvent(flagKey, context, flag) else null
@@ -879,9 +877,6 @@ internal class DatadogFlagsClient(
         const val RESERVED_METADATA_PREFIX = "__dd_"
         const val METADATA_DO_LOG = "__dd_do_log"
         const val METADATA_SPLIT_SERIAL_ID = "__dd_split_serial_id"
-
-        // Internal, and the verdict at resolve time; ExposureHook reports the final verdict.
-        const val METADATA_EXPOSURE_CACHE_HIT = "__dd_exposure_cache_hit"
 
         // Only the HOOK prefix is a public contract.
         val FEATURE_METADATA_PREFIXES = mapOf(

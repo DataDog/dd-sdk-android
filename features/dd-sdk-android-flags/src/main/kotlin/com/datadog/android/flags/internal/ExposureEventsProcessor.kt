@@ -56,11 +56,6 @@ internal class ExposureEventsProcessor(
         }
     }
 
-    override fun isRecorded(flagKey: String, context: EvaluationContext, data: UnparsedFlag): Boolean =
-        synchronized(exposuresSentCache) {
-            exposuresSentCache[CacheKey(context.targetingKey, flagKey)] == data.toCacheValue()
-        }
-
     private fun UnparsedFlag.toCacheValue() = CacheValue(
         allocationKey = allocationKey,
         variationKey = variationKey,

@@ -129,24 +129,6 @@ internal class ExposureEventsProcessorTest {
     }
 
     @Test
-    fun `M record nothing W isRecorded()`() {
-        // Given
-        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
-
-        // When
-        val before = testedProcessor.isRecorded(fakeFlagKey, fakeContext, fakeFlag)
-        val stillBefore = testedProcessor.isRecorded(fakeFlagKey, fakeContext, fakeFlag)
-        testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
-        val after = testedProcessor.isRecorded(fakeFlagKey, fakeContext, fakeFlag)
-
-        // Then
-        assertThat(before).isFalse()
-        assertThat(stillBefore).isFalse()
-        assertThat(after).isTrue()
-        verify(mockRecordWriter).write(any())
-    }
-
-    @Test
     fun `M write only EXPOSURE features W processEvent() {split features}`() {
         // Given
         val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)

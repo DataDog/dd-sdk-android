@@ -17,7 +17,4 @@ internal interface EventsProcessor {
      * @return true if the same exposure was already recorded for this subject.
      */
     fun processEvent(flagKey: String, context: EvaluationContext, data: UnparsedFlag): Boolean
-
-    /** @return true if the same exposure is recorded for this subject. Records nothing. */
-    fun isRecorded(flagKey: String, context: EvaluationContext, data: UnparsedFlag): Boolean
 }

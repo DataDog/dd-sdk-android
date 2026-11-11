@@ -164,7 +164,7 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
      * A resolution whose exposure is not recorded yet.
      *
      * @param T the type of the flag value.
-     * @property details the resolution. Its `__dd_exposure_cache_hit` metadata is provisional.
+     * @property details the resolution.
      * @property context the evaluation context of the assignments that were read, or null when none were read.
      * @property recordExposure records the exposure, sends it when exposure tracking is on, and returns whether
      * it was already recorded. It returns null when a newer evaluation context has replaced the evaluated one.
