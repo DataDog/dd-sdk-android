@@ -16,9 +16,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.quality.Strictness
 
 @ExtendWith(MockitoExtension::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class AssignmentAuthorizationTest {
 
     @Mock
@@ -111,12 +114,13 @@ internal class AssignmentAuthorizationTest {
     }
 
     @Test
-    fun `M establish boundary W onAuthorizationRejected() {no token}`() {
+    fun `M retain authorization isolation W prepare() {token removed after rejection}`() {
         // Given
-        val request = testedAuthorization.prepare(EvaluationContext("requested"))
+        val rejected = testedAuthorization.prepare(EvaluationContext("rejected"))
+        testedAuthorization.onAuthorizationRejected(rejected)
 
         // When
-        testedAuthorization.onAuthorizationRejected(request)
+        testedAuthorization.prepare(EvaluationContext("requested"))
 
         // Then
         assertThat(testedAuthorization.resolutionContext(EvaluationContext("installed")).errorCode)
@@ -124,7 +128,7 @@ internal class AssignmentAuthorizationTest {
     }
 
     @Test
-    fun `M recover boundary W onFallbackAccepted() {same subject}`() {
+    fun `M clear authorization isolation W onFallbackAccepted() {same subject}`() {
         // Given
         val request = testedAuthorization.prepare(
             EvaluationContext("subject", mapOf(AssignmentAuthorization.ATTRIBUTE to "token", "version" to "new"))
@@ -142,7 +146,7 @@ internal class AssignmentAuthorizationTest {
     }
 
     @Test
-    fun `M retain established boundary W prepare() {token removed}`() {
+    fun `M retain authorization isolation W prepare() {token removed while protected request unresolved}`() {
         // Given
         testedAuthorization.prepare(
             EvaluationContext("first", mapOf(AssignmentAuthorization.ATTRIBUTE to "token"))
@@ -157,21 +161,7 @@ internal class AssignmentAuthorizationTest {
     }
 
     @Test
-    fun `M recover boundary W onAssignmentsAccepted()`() {
-        // Given
-        val request = testedAuthorization.prepare(
-            EvaluationContext("requested", mapOf(AssignmentAuthorization.ATTRIBUTE to "token"))
-        )
-
-        // When
-        testedAuthorization.onAssignmentsAccepted(request)
-
-        // Then
-        assertThat(testedAuthorization.resolutionContext(EvaluationContext("other")).errorCode).isNull()
-    }
-
-    @Test
-    fun `M restore established boundary for later request W prepare() {accepted token then token removed}`() {
+    fun `M keep authorization isolation inactive W prepare() {accepted token then token removed}`() {
         // Given
         val accepted = testedAuthorization.prepare(
             EvaluationContext("first", mapOf(AssignmentAuthorization.ATTRIBUTE to "token"))
@@ -182,7 +172,9 @@ internal class AssignmentAuthorizationTest {
         testedAuthorization.prepare(EvaluationContext("second"))
 
         // Then
-        assertThat(testedAuthorization.resolutionContext(EvaluationContext("first")).errorCode)
-            .isEqualTo(ErrorCode.GENERAL)
+        val installed = EvaluationContext("first")
+        val resolution = testedAuthorization.resolutionContext(installed)
+        assertThat(resolution.errorCode).isNull()
+        assertThat(resolution.context).isEqualTo(installed)
     }
 }

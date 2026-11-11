@@ -26,6 +26,8 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -96,13 +98,19 @@ internal class FlagsClientExtTest {
     @Mock
     lateinit var mockFlagsClient: FlagsClient
 
-    @Test
-    fun `M complete successfully W setEvaluationContextSuspend() {callback onSuccess}`(
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M return state outcome W setEvaluationContextSuspend() {callback onSuccess}`(
+        stale: Boolean,
         @StringForgery targetingKey: String
     ) = runTest {
         // Given
         val context = EvaluationContext(targetingKey = targetingKey)
         val contextCaptor = argumentCaptor<EvaluationContext>()
+        val stubState = mock<StateObservable>()
+        val currentState = if (stale) FlagsClientState.Stale else FlagsClientState.Ready
+        whenever(mockFlagsClient.state).thenReturn(stubState)
+        whenever(stubState.getCurrentState()).thenReturn(currentState)
 
         doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
@@ -110,32 +118,41 @@ internal class FlagsClientExtTest {
         }.whenever(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
 
         // When
-        mockFlagsClient.setEvaluationContextSuspend(context)
+        val result = mockFlagsClient.setEvaluationContextSuspend(context)
 
-        // Then - verify the correct context was passed
+        // Then
         verify(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
         assertThat(contextCaptor.firstValue).isEqualTo(context)
+        assertThat(result).isEqualTo(
+            if (stale) ContextUpdateOutcome.STALE else ContextUpdateOutcome.READY
+        )
     }
 
-    @Test
-    fun `M complete successfully W setEvaluationContextSuspend() {timeout callback races ready state}`(
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M return state outcome W setEvaluationContextSuspend() {timeout with usable assignments}`(
+        stale: Boolean,
         @StringForgery targetingKey: String
     ) = runTest {
         // Given
         val context = EvaluationContext(targetingKey = targetingKey)
         val stubState = mock<StateObservable>()
         val stubTimeoutError = mock<FlagsInitializationTimeoutException>()
+        val currentState = if (stale) FlagsClientState.Stale else FlagsClientState.Ready
         whenever(mockFlagsClient.state).thenReturn(stubState)
-        whenever(stubState.getCurrentState()).thenReturn(FlagsClientState.Ready)
+        whenever(stubState.getCurrentState()).thenReturn(currentState)
         doAnswer { invocation ->
             invocation.getArgument<EvaluationContextCallback>(1).onFailure(stubTimeoutError)
         }.whenever(mockFlagsClient).setEvaluationContext(eq(context), any())
 
         // When
-        mockFlagsClient.setEvaluationContextSuspend(context)
+        val result = mockFlagsClient.setEvaluationContextSuspend(context)
 
         // Then
         verify(mockFlagsClient).setEvaluationContext(eq(context), any())
+        assertThat(result).isEqualTo(
+            if (stale) ContextUpdateOutcome.STALE else ContextUpdateOutcome.READY
+        )
     }
 
     @Test
@@ -266,6 +283,9 @@ internal class FlagsClientExtTest {
             attributes = attributes
         )
         val contextCaptor = argumentCaptor<EvaluationContext>()
+        val stubState = mock<StateObservable>()
+        whenever(mockFlagsClient.state).thenReturn(stubState)
+        whenever(stubState.getCurrentState()).thenReturn(FlagsClientState.Ready)
 
         doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)

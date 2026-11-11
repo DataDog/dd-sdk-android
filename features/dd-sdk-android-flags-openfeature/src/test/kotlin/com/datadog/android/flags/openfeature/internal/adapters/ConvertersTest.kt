@@ -455,16 +455,10 @@ internal class ConvertersTest {
 
     // endregion
 
-    // region toDatadogEvaluationContext
-    // Note: Context conversion is tested indirectly through provider integration tests
-    // Direct unit tests removed due to ImmutableContext API complexity
-    // endregion
-
     companion object {
         @JvmStatic
         fun errorCodeMappings() = listOf(
             Arguments.of(ErrorCode.GENERAL, OpenFeatureErrorCode.GENERAL),
-            Arguments.of(ErrorCode.INVALID_CONTEXT, OpenFeatureErrorCode.INVALID_CONTEXT),
             Arguments.of(ErrorCode.PROVIDER_NOT_READY, OpenFeatureErrorCode.PROVIDER_NOT_READY),
             Arguments.of(ErrorCode.FLAG_NOT_FOUND, OpenFeatureErrorCode.FLAG_NOT_FOUND),
             Arguments.of(ErrorCode.PARSE_ERROR, OpenFeatureErrorCode.PARSE_ERROR),

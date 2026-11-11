@@ -16,8 +16,8 @@ internal class AssignmentAuthorization(
     val stateLock: Any
 ) {
     private var currentRequest: Request? = null
-    private var subjectIsolationRequired = false
-    private var requestOrderingRequired = false
+    private var authorizationIsolationActive = false
+    private var staleResponseProtectionEnabled = false
 
     /**
      * Extracts the reserved credential from [context] and records the sanitized context as the latest request.
@@ -31,11 +31,9 @@ internal class AssignmentAuthorization(
         synchronized(stateLock) {
             currentRequest = request
             if (token != null) {
-                requestOrderingRequired = true
+                staleResponseProtectionEnabled = true
+                authorizationIsolationActive = true
             }
-            // Once authorization has been observed, every later context transition must keep the
-            // installed subject isolated, including transitions that intentionally omit the token.
-            if (requestOrderingRequired) subjectIsolationRequired = true
         }
         return request
     }
@@ -55,7 +53,7 @@ internal class AssignmentAuthorization(
     }
 
     fun ifCurrent(request: Request?, action: () -> Unit): Boolean = synchronized(stateLock) {
-        if (requestOrderingRequired && currentRequest !== request) {
+        if (staleResponseProtectionEnabled && currentRequest !== request) {
             false
         } else {
             action()
@@ -65,13 +63,13 @@ internal class AssignmentAuthorization(
 
     fun onAuthorizationRejected(request: Request?) = synchronized(stateLock) {
         if (currentRequest === request) {
-            subjectIsolationRequired = true
-            requestOrderingRequired = true
+            authorizationIsolationActive = true
+            staleResponseProtectionEnabled = true
         }
     }
 
     fun onAssignmentsAccepted(request: Request?) = synchronized(stateLock) {
-        if (currentRequest === request) subjectIsolationRequired = false
+        if (currentRequest === request) authorizationIsolationActive = false
     }
 
     fun fallback(
@@ -81,7 +79,7 @@ internal class AssignmentAuthorization(
     ): Fallback {
         if (request == null || installedContext == null) return Fallback(false, false)
         return synchronized(stateLock) {
-            val protectedFallback = subjectIsolationRequired && currentRequest === request
+            val protectedFallback = authorizationIsolationActive && currentRequest === request
             val usable = if (protectedFallback && !requireExactContext) {
                 installedContext.targetingKey == request.context.targetingKey
             } else {
@@ -95,7 +93,7 @@ internal class AssignmentAuthorization(
 
     fun resolutionContext(installedContext: EvaluationContext?): ResolutionContext = synchronized(stateLock) {
         val request = currentRequest
-        if (!subjectIsolationRequired || request == null ||
+        if (!authorizationIsolationActive || request == null ||
             installedContext?.targetingKey == request.context.targetingKey
         ) {
             ResolutionContext(installedContext, null)
@@ -104,7 +102,7 @@ internal class AssignmentAuthorization(
         }
     }
 
-    fun shouldUseCurrentRequest(): Boolean = synchronized(stateLock) { requestOrderingRequired }
+    fun isStaleResponseProtectionEnabled(): Boolean = synchronized(stateLock) { staleResponseProtectionEnabled }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Regex.matches is safe for the non-null String branch.
     private fun normalize(value: String?): String? = when {

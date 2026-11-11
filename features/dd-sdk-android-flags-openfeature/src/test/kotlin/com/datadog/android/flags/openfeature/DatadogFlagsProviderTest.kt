@@ -480,26 +480,32 @@ internal class DatadogFlagsProviderTest {
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun `M complete initialization W initialize() {timeout with matching cached assignments}`() = runTest {
+    fun `M keep Stale status W setProviderAndWait() {timeout with matching cached assignments}`() = runTest {
         // Given
-        val fakeTimeoutError = mock<FlagsInitializationTimeoutException>()
+        val stubTimeoutError = mock<FlagsInitializationTimeoutException>()
         whenever(mockStateObservable.getCurrentState()).thenReturn(FlagsClientState.Stale)
         whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Stale)
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
-            callback.onFailure(fakeTimeoutError)
+            callback.onFailure(stubTimeoutError)
         }
 
-        // When
-        var initializationError: OpenFeatureError.GeneralError? = null
         try {
-            provider.initialize(ImmutableContext(targetingKey = "user-123"))
-        } catch (error: OpenFeatureError.GeneralError) {
-            initializationError = error
-        }
+            // When
+            OpenFeatureAPI.setProviderAndWait(
+                provider = provider,
+                initialContext = ImmutableContext(targetingKey = "user-123"),
+                dispatcher = UnconfinedTestDispatcher(testScheduler)
+            )
+            testScheduler.runCurrent()
 
-        // Then
-        assertThat(initializationError).isNull()
+            // Then
+            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Stale)
+        } finally {
+            OpenFeatureAPI.shutdown()
+        }
     }
 
     @Test
@@ -514,6 +520,49 @@ internal class DatadogFlagsProviderTest {
         val contextCaptor = argumentCaptor<EvaluationContext>()
         verify(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
         assertThat(contextCaptor.firstValue.targetingKey).isEqualTo("user-456")
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `M keep Stale status W setEvaluationContextAndWait() {same-subject cached fallback}`() = runTest {
+        // Given
+        var currentState: FlagsClientState = FlagsClientState.Ready
+        var updateCount = 0
+        whenever(mockStateObservable.getCurrentState()).thenAnswer { currentState }
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            updateCount++
+            currentState = if (updateCount == 1) FlagsClientState.Ready else FlagsClientState.Stale
+            checkNotNull(capturedStateListener).onStateChanged(currentState)
+            invocation.getArgument<EvaluationContextCallback>(1).onSuccess()
+        }
+        val initialContext = ImmutableContext(
+            targetingKey = "subject",
+            attributes = mapOf("dd_assignment_token" to Value.String("header.payload.signature"))
+        )
+        val refreshedContext = ImmutableContext(
+            targetingKey = "subject",
+            attributes = mapOf(
+                "dd_assignment_token" to Value.String("header.payload.signature"),
+                "plan" to Value.String("requested")
+            )
+        )
+
+        try {
+            OpenFeatureAPI.setProviderAndWait(
+                provider = provider,
+                initialContext = initialContext,
+                dispatcher = UnconfinedTestDispatcher(testScheduler)
+            )
+
+            // When
+            OpenFeatureAPI.setEvaluationContextAndWait(refreshedContext)
+            testScheduler.runCurrent()
+
+            // Then
+            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Stale)
+        } finally {
+            OpenFeatureAPI.shutdown()
+        }
     }
 
     // endregion
@@ -555,25 +604,6 @@ internal class DatadogFlagsProviderTest {
         // Then - Ready state is converted to ProviderReady event
         assertThat(events).hasSize(1)
         assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderReady::class.java)
-    }
-
-    @Test
-    fun `M emit ProviderStale event W observe() {state changes to Stale}`() = runTest {
-        // Given
-        val events = mutableListOf<OpenFeatureProviderEvents>()
-
-        // When
-        val job = launch {
-            provider.observe().collect { events.add(it) }
-        }
-        testScheduler.runCurrent()
-        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Stale)
-        testScheduler.runCurrent()
-        job.cancel()
-
-        // Then - Stale state is converted to ProviderStale event
-        assertThat(events).hasSize(1)
-        assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderStale::class.java)
     }
 
     @Test

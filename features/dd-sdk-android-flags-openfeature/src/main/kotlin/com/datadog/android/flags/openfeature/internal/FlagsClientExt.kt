@@ -30,6 +30,8 @@ import kotlin.coroutines.suspendCoroutine
  *
  * @param context The evaluation context to set
  * @param telemetryOptedOut The typed subject decision, or null to preserve native telemetry configuration.
+ * @return [ContextUpdateOutcome.STALE] when matching cached assignments remain usable, otherwise
+ * [ContextUpdateOutcome.READY].
  * @throws [CancellationException] in enabled experimentation opt-out modes, if a newer request replaces this
  * request before its result is processed.
  * @throws [OpenFeatureError.GeneralError] if setting the context fails. The first context operation also
@@ -38,14 +40,14 @@ import kotlin.coroutines.suspendCoroutine
 internal suspend fun FlagsClient.setEvaluationContextSuspend(
     context: EvaluationContext,
     telemetryOptedOut: Boolean? = null
-) {
+): ContextUpdateOutcome {
     // Subsequent invocation of any resume function will produce
     // an IllegalStateException, but we are safe here
     @Suppress("UnsafeThirdPartyFunctionCall")
-    suspendCoroutine { continuation ->
+    return suspendCoroutine { continuation ->
         val callback = object : EvaluationContextCallback {
             override fun onSuccess() {
-                continuation.resume(Unit)
+                continuation.resume(state.getCurrentState().toContextUpdateOutcome())
             }
 
             override fun onFailure(error: Throwable) {
@@ -53,24 +55,22 @@ internal suspend fun FlagsClient.setEvaluationContextSuspend(
                     continuation.resumeWithException(CancellationException(error.message))
                     return
                 }
-                val isUsableTimeout = error is FlagsInitializationTimeoutException &&
-                    when (state.getCurrentState()) {
-                        FlagsClientState.Ready, FlagsClientState.Stale -> true
-                        else -> false
+                if (error is FlagsInitializationTimeoutException) {
+                    val currentState = state.getCurrentState()
+                    if (currentState == FlagsClientState.Ready || currentState == FlagsClientState.Stale) {
+                        continuation.resume(currentState.toContextUpdateOutcome())
+                        return
                     }
-                if (isUsableTimeout) {
-                    continuation.resume(Unit)
-                } else {
-                    continuation.resumeWithException(
-                        if (error is FlagsInvalidContextException) {
-                            OpenFeatureError.InvalidContextError(error.message ?: "Invalid evaluation context")
-                        } else {
-                            OpenFeatureError.GeneralError(
-                                error.message ?: "Unknown error: ${error::class.simpleName}"
-                            )
-                        }
-                    )
                 }
+                continuation.resumeWithException(
+                    if (error is FlagsInvalidContextException) {
+                        OpenFeatureError.InvalidContextError(error.message ?: "Invalid evaluation context")
+                    } else {
+                        OpenFeatureError.GeneralError(
+                            error.message ?: "Unknown error: ${error::class.simpleName}"
+                        )
+                    }
+                )
             }
         }
 
@@ -81,3 +81,11 @@ internal suspend fun FlagsClient.setEvaluationContextSuspend(
         }
     }
 }
+
+internal enum class ContextUpdateOutcome {
+    READY,
+    STALE
+}
+
+private fun FlagsClientState.toContextUpdateOutcome(): ContextUpdateOutcome =
+    if (this == FlagsClientState.Stale) ContextUpdateOutcome.STALE else ContextUpdateOutcome.READY

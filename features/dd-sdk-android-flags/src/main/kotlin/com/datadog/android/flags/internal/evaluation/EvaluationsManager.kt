@@ -464,7 +464,7 @@ internal class EvaluationsManager(
                     val claimedResult = completion.take(shouldCancelTimeout = false)
                         ?: return@synchronized null
                     val target = if (
-                        experimentationOptOut.enabled || assignmentAuthorization.shouldUseCurrentRequest()
+                        experimentationOptOut.enabled || assignmentAuthorization.isStaleResponseProtectionEnabled()
                     ) {
                         experimentationOptOut.currentValidRequest()
                     } else {
