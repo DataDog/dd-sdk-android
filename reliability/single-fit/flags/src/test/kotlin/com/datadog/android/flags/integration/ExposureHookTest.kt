@@ -338,6 +338,26 @@ internal class ExposureHookTest {
         assertThat(evaluations.single().features).containsEntry("holdout.key", "holdout-1")
     }
 
+    @Test
+    fun `M record the exposure once W getObjectDetails() twice {split features}`(forge: Forge) {
+        // Given
+        start(forge)
+
+        // When
+        val details = OpenFeatureAPI.getClient().getObjectDetails(OBJECT_FLAG, Value.Structure(emptyMap()))
+        OpenFeatureAPI.getClient().getObjectDetails(OBJECT_FLAG, Value.Structure(emptyMap()))
+        fixture.flush()
+
+        // Then
+        assertThat(details.errorCode).isNull()
+        assertThat(details.value).isEqualTo(Value.Structure(mapOf("color" to Value.String("blue"))))
+        assertThat(evaluations.map { it.shouldSend() }).containsExactly(true, false)
+        assertThat(evaluations.first().features).containsExactlyEntriesOf(mapOf("holdout.key" to "holdout-2"))
+        val exposure = fixture.events(Feature.FLAGS_FEATURE_NAME).single()
+        assertThat(exposure.getAsJsonObject("flag")["key"].asString).isEqualTo(OBJECT_FLAG)
+        assertThat(exposure.getAsJsonObject("features")["exposure.key"].asString).isEqualTo("object-exposed")
+    }
+
     private fun evaluateInnerFlag(times: Int) {
         repeat(times) { OpenFeatureAPI.getClient().getBooleanValue(INNER_FLAG, false) }
     }
@@ -367,6 +387,15 @@ internal class ExposureHookTest {
                         .put(feature("evaluation.key", 3, "EVALUATION"))
                         .put(feature("unknown.key", "nowhere", "FUTURE"))
                         .put(JSONObject().put("key", "invalid.value").put("value", JSONObject()))
+                ),
+                OBJECT_FLAG to FakeAssignment(
+                    variationType = "object",
+                    variationValue = JSONObject().put("color", "blue"),
+                    variationKey = "blue",
+                    allocationKey = "object-allocation",
+                    features = JSONArray()
+                        .put(feature("holdout.key", "holdout-2", "HOOK"))
+                        .put(feature("exposure.key", "object-exposed", "EXPOSURE"))
                 ),
                 INNER_FLAG to FakeAssignment(
                     variationType = "boolean",
@@ -400,6 +429,7 @@ internal class ExposureHookTest {
         private const val SUBJECT = "subject"
         private const val ALLOCATION = "holdout-allocation"
         private const val INNER_FLAG = "inner-flag"
+        private const val OBJECT_FLAG = "object-flag"
         private const val AFTER = "after"
         private const val FINALLY_AFTER = "finallyAfter"
 
