@@ -23,13 +23,14 @@ import java.util.concurrent.atomic.AtomicBoolean
  * to [callback], so that an application can record exposures in its own data store.
  *
  * Register it with `OpenFeatureAPI.addHooks(listOf(ExposureHook { evaluation -> ... }))`, or on a client.
- * Use [ExposureEvaluation.shouldSend] to keep new or changed exposures. They are exactly the exposures the
- * SDK sends to Datadog, also when [com.datadog.android.flags.FlagsConfiguration.Builder.trackExposures] is
- * off and nothing is sent.
+ * Use [ExposureEvaluation.shouldSend] to keep new or changed exposures. The SDK sends these exposures to Datadog
+ * when [com.datadog.android.flags.FlagsConfiguration.Builder.trackExposures] is on.
  *
- * The callback runs in the final hook stage, so it sees errors from other hooks. The provider records the
- * exposure in the final hook stage, after the provider and every `before` and `after` hook succeed. Provider
- * hooks run first in the final stage, so a `finallyAfter` hook that throws later leaves the exposure recorded.
+ * The callback runs in the final hook stage, so it sees errors from `before` and `after` hooks. The provider
+ * records the exposure in the final hook stage, after the provider and every `before` and `after` hook succeed.
+ * Provider hooks run first in the final stage. If a later `finallyAfter` hook throws, the exposure stays recorded,
+ * OpenFeature rethrows the exception, and it skips the `finallyAfter` hooks after the failing one, which can
+ * include this hook.
  * With experimentation opt-out enabled, an evaluation whose context a newer context replaced before recording
  * is a non-exposure.
  *

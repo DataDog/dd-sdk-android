@@ -43,6 +43,6 @@ class ExposureEvaluation internal constructor(
      */
     fun isCacheHit(): Boolean = exposure && cacheHit == true
 
-    /** True for a new or changed exposure: exactly the exposures the SDK sends to Datadog. */
+    /** True for a new or changed exposure. The SDK sends it to Datadog when exposure tracking is on. */
     fun shouldSend(): Boolean = exposure && cacheHit == false
 }

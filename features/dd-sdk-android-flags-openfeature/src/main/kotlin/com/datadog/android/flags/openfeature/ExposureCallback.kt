@@ -11,7 +11,8 @@ package com.datadog.android.flags.openfeature
  */
 fun interface ExposureCallback {
     /**
-     * Called on the evaluating thread, for every evaluation, including errors and repeats.
+     * Called on the evaluating thread for each evaluation of a [DatadogFlagsProvider] that reaches the hook,
+     * including errors and repeats. A `finallyAfter` hook that throws earlier in the final stage skips this call.
      * Do not do I/O here: hand the data to a background queue.
      *
      * @param evaluation the evaluation and its Datadog exposure decision.

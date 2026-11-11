@@ -358,6 +358,34 @@ internal class ExposureHookTest {
         assertThat(exposure.getAsJsonObject("features")["exposure.key"].asString).isEqualTo("object-exposed")
     }
 
+    @Test
+    fun `M keep the exposure and skip later hooks W getBooleanValue() {client finallyAfter hook throws}`(
+        forge: Forge
+    ) {
+        // Given
+        start(forge)
+        val failingHook = object : Hook<Boolean> {
+            override fun finallyAfter(
+                ctx: HookContext<Boolean>,
+                details: FlagEvaluationDetails<Boolean>,
+                hints: Map<String, Any>
+            ) {
+                throw IllegalStateException("finallyAfter hook failed")
+            }
+        }
+        val client = OpenFeatureAPI.getClient()
+        client.addHooks(listOf(failingHook))
+
+        // When
+        val failure = runCatching { client.getBooleanValue(FLAG, false) }.exceptionOrNull()
+        fixture.flush()
+
+        // Then
+        assertThat(failure).isInstanceOf(IllegalStateException::class.java)
+        assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
+        assertThat(evaluations).isEmpty()
+    }
+
     private fun evaluateInnerFlag(times: Int) {
         repeat(times) { OpenFeatureAPI.getClient().getBooleanValue(INNER_FLAG, false) }
     }
