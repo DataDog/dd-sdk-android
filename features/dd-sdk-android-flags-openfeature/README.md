@@ -100,8 +100,9 @@ OpenFeatureAPI.setEvaluationContext(
 
 The provider forwards the credential in the reserved `DD-Assignment-Token` request header and removes it from the
 Datadog targeting context, persistence, exposure data, evaluation telemetry, and logs. OpenFeature and application
-hooks can still access the original OpenFeature context, and other providers sharing it can read or forward the token;
-use a Datadog-only OpenFeature domain for token-bearing contexts.
+hooks can still access the original OpenFeature context. OpenFeature Kotlin SDK 0.6.2 uses a global provider and
+evaluation context; named clients do not isolate that context. If hooks or other consumers must not receive the
+credential, use the native `FlagsClient` API outside the shared OpenFeature context.
 
 Use `Value.String` for the token. `Value.Null`, a missing value, or an empty string sends no header. Other OpenFeature
 value types, strings with whitespace, and non-ASCII strings are omitted with a fixed warning that never includes the

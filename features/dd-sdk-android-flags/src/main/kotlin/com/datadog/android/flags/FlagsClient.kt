@@ -102,8 +102,9 @@ interface FlagsClient {
      * In enabled experimentation opt-out modes, assignments are unavailable until they match this context,
      * including when the timestamp attribute is absent. Resolutions return defaults with PROVIDER_NOT_READY.
      * An invalid timestamp prevents the assignment request and fails with [FlagsInvalidContextException].
-     * In enabled modes, if a newer context replaces this request before its result is processed, the callback fails with
-     * [FlagsContextSupersededException], unless its initialization timeout already completed it.
+     * When experimentation opt-out or subject-authorization ordering is active, if a newer context replaces this
+     * request before its result is processed, the callback fails with [FlagsContextSupersededException], unless its
+     * initialization timeout already completed it.
      *
      * @param context The [EvaluationContext] containing targeting key and attributes.
      * @param callback Optional callback to notify when the operation completes or fails.

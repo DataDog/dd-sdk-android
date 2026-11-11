@@ -21,7 +21,7 @@ internal class AssignmentAuthorization(
 
     /**
      * Extracts the reserved credential from [context] and records the sanitized context as the latest request.
-     * The token is carried only by the returned immutable request and is never retained in policy state.
+     * The token is kept separate from targeting data and is carried by its prepared request.
      */
     fun prepare(context: EvaluationContext): Request {
         val inputAttributes: Map<out String?, String?> = context.attributes

@@ -32,8 +32,8 @@ import kotlin.coroutines.suspendCoroutine
  * @param telemetryOptedOut The typed subject decision, or null to preserve native telemetry configuration.
  * @return [ContextUpdateOutcome.STALE] when matching cached assignments remain usable, otherwise
  * [ContextUpdateOutcome.READY].
- * @throws [CancellationException] in enabled experimentation opt-out modes, if a newer request replaces this
- * request before its result is processed.
+ * @throws [CancellationException] if a newer request replaces this request before its result is processed while
+ * experimentation opt-out or subject-authorization ordering is active.
  * @throws [OpenFeatureError.GeneralError] if setting the context fails. The first context operation also
  * fails when the configured Flags initialization timeout elapses without matching cached assignments.
  */

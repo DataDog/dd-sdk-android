@@ -762,11 +762,10 @@ internal class DatadogFlagsClient(
     }
 
     internal fun trackFlagExposure(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
+        if (!flagsConfiguration.trackExposures || !flag.doLog) return
         val targetingContext = assignmentAuthorization.targetingContext(context)
         if (!isCurrentResolutionContext(targetingContext)) return
-        if (flagsConfiguration.trackExposures && flag.doLog) {
-            writeExposureEvent(flagKey, flag, targetingContext)
-        }
+        writeExposureEvent(flagKey, flag, targetingContext)
     }
 
     internal fun trackFlagEvaluationEvent(
