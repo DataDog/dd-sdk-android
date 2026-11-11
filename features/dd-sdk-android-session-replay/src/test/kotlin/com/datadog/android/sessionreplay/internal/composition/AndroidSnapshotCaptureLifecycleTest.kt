@@ -103,7 +103,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
             mock<View>().apply { whenever(viewTreeObserver).thenReturn(mockObserver) }
         }
         val fakeChangedWindows = mutableListOf<List<View>>()
-        val fakeSource = ActiveWindowSource()
+        val fakeSource = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false)
         val testedInterceptor = CompositionViewOnDrawInterceptor(fakeSource, { fakeChangedWindows += it }, mock())
         testedInterceptor.intercept(fakeViews)
 
@@ -124,7 +124,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
             mock<View>().apply { whenever(viewTreeObserver).thenReturn(mockObserver) }
         }
         val fakeChangedWindows = mutableListOf<List<View>>()
-        val fakeSource = ActiveWindowSource()
+        val fakeSource = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false)
         val testedInterceptor = CompositionViewOnDrawInterceptor(fakeSource, { fakeChangedWindows += it }, mock())
         testedInterceptor.intercept(fakeViews)
 
@@ -144,7 +144,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         whenever(mockObserver.isAlive).thenReturn(false)
         val mockView = mock<View>()
         whenever(mockView.viewTreeObserver).thenReturn(mockObserver)
-        val fakeSource = ActiveWindowSource()
+        val fakeSource = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false)
         val testedInterceptor = CompositionViewOnDrawInterceptor(fakeSource, { }, mock())
 
         // When
@@ -165,7 +165,11 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val mockView = mock<View>()
         whenever(mockView.viewTreeObserver).thenReturn(mockObserver)
         val mockInternalLogger = mock<InternalLogger>()
-        val testedInterceptor = CompositionViewOnDrawInterceptor(ActiveWindowSource(), { }, mockInternalLogger)
+        val testedInterceptor = CompositionViewOnDrawInterceptor(
+            ActiveWindowSource(refreshTouchPrivacyAfterCapture = false),
+            { },
+            mockInternalLogger
+        )
 
         // When
         testedInterceptor.intercept(listOf(mockView))
@@ -186,7 +190,11 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         whenever(mockObserver.isAlive).thenReturn(true)
         val mockView = mock<View>()
         whenever(mockView.viewTreeObserver).thenReturn(mockObserver)
-        val testedInterceptor = CompositionViewOnDrawInterceptor(ActiveWindowSource(), { }, mock())
+        val testedInterceptor = CompositionViewOnDrawInterceptor(
+            ActiveWindowSource(refreshTouchPrivacyAfterCapture = false),
+            { },
+            mock()
+        )
         testedInterceptor.intercept(listOf(mockView))
 
         // When
@@ -207,7 +215,11 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         whenever(mockAttachedObserver.isAlive).thenReturn(true)
         val mockView = mock<View>()
         whenever(mockView.viewTreeObserver).thenReturn(mockOriginalObserver)
-        val testedInterceptor = CompositionViewOnDrawInterceptor(ActiveWindowSource(), { }, mock())
+        val testedInterceptor = CompositionViewOnDrawInterceptor(
+            ActiveWindowSource(refreshTouchPrivacyAfterCapture = false),
+            { },
+            mock()
+        )
         testedInterceptor.intercept(listOf(mockView))
         val fakeAddedListener = argumentCaptor<ViewTreeObserver.OnDrawListener>()
         verify(mockOriginalObserver).addOnDrawListener(fakeAddedListener.capture())
@@ -230,7 +242,11 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val mockView = mock<View>()
         whenever(mockView.viewTreeObserver).thenReturn(mockObserver)
         val mockInternalLogger = mock<InternalLogger>()
-        val testedInterceptor = CompositionViewOnDrawInterceptor(ActiveWindowSource(), { }, mockInternalLogger)
+        val testedInterceptor = CompositionViewOnDrawInterceptor(
+            ActiveWindowSource(refreshTouchPrivacyAfterCapture = false),
+            { },
+            mockInternalLogger
+        )
         testedInterceptor.intercept(listOf(mockView))
         val fakeError = IllegalStateException("removeOnDrawListener failed")
         whenever(mockObserver.removeOnDrawListener(any())).doThrow(fakeError)
@@ -254,7 +270,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         whenever(mockObserver.isAlive).thenReturn(true)
         val mockView = mock<View>()
         whenever(mockView.viewTreeObserver).thenReturn(mockObserver)
-        val fakeSource = ActiveWindowSource()
+        val fakeSource = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false)
         val testedInterceptor = CompositionViewOnDrawInterceptor(fakeSource, { }, mock())
         testedInterceptor.intercept(listOf(mockView))
         val fakeAddedListener = argumentCaptor<ViewTreeObserver.OnDrawListener>()
@@ -829,7 +845,7 @@ internal class AndroidSnapshotCaptureLifecycleTest {
         val mockObserver: ViewTreeObserver = mock { on { isAlive } doReturn true }
         val mockRoot: View = mock { on { viewTreeObserver } doReturn mockObserver }
         val fakeChangedWindows = mutableListOf<List<View>>()
-        val fakeSource = ActiveWindowSource()
+        val fakeSource = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false)
         val testedInterceptor = CompositionViewOnDrawInterceptor(fakeSource, { fakeChangedWindows += it }, mock())
     }
 

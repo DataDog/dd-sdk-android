@@ -19,6 +19,7 @@ import android.view.Window
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.sessionreplay.R
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
@@ -1462,7 +1463,7 @@ internal class CompositionTouchPrivacyTest {
             budgetNs = SLICE_BUDGET_NS,
             isMainThreadWindow = { true }
         )
-        val windowSource = ActiveWindowSource { view ->
+        val windowSource = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false) { view ->
             onPrivacyRead()
             if (privacyReadAllowed) privacyReader.read(view) else null
         }.apply { update(listOf(mockRoot)) }
@@ -1490,6 +1491,7 @@ internal class CompositionTouchPrivacyTest {
                     mock()
                 ),
                 internalLogger = mock(),
+                textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
                 viewIdentifierResolver = mockViewIdentifierResolver,
                 viewBoundsResolver = mockViewBoundsResolver
             ),

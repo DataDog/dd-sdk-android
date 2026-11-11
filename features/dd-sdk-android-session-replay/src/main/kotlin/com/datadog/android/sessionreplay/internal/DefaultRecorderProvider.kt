@@ -84,6 +84,7 @@ constructor(
         internalCallback = internalCallback,
         touchPrivacyManager = touchPrivacyManager,
         compositionHostDecomposer = compositionHostDecomposer,
+        textAndInputPrivacy = textAndInputPrivacy,
         dynamicOptimizationEnabled = dynamicOptimizationEnabled,
         customDrawableMappers = customDrawableMappers
     )

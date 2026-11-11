@@ -22,6 +22,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.sessionreplay.composition.CapturedTextStyle
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.R
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -87,7 +89,8 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
                     listOf(CapturedWireframe.Shape(fakeWireframeIdentity, fakeRootBounds.toCapturedBounds()))
                 } else {
                     emptyList()
-                }
+                },
+                emptyMap()
             )
         }
 
@@ -131,7 +134,7 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
             fakeBeforeExpiry = request.shouldContinue()
             now = 100L
             fakeAfterExpiry = request.shouldContinue()
-            CompositionHostDecomposeResult(emptyList(), emptyList(), emptyList())
+            CompositionHostDecomposeResult(emptyList(), emptyList(), emptyList(), emptyMap())
         }
 
         // When
@@ -161,6 +164,9 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
         var capturedHostIdentity: CapturedIdentity? = null
         var capturedHostBounds: CapturedBounds? = null
         val decomposer = object : CompositionHostDecomposer {
+            override fun readTouchOverrideAreas(view: View, shouldContinue: () -> Boolean): Map<Rect, TouchPrivacy> =
+                emptyMap()
+
             override fun canDecompose(view: View) = view === composeHost
             override fun decompose(
                 view: View,
@@ -183,7 +189,8 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
                 return CompositionHostDecomposeResult(
                     rootChildren = listOf(CapturedChild.Layer(nodeIdentity)),
                     nodes = listOf(node),
-                    wireframes = listOf(wireframe)
+                    wireframes = listOf(wireframe),
+                    emptyMap()
                 )
             }
         }
@@ -249,6 +256,9 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
         val windowIdentity = identityFactory.window("window")
 
         val decomposer = object : CompositionHostDecomposer {
+            override fun readTouchOverrideAreas(view: View, shouldContinue: () -> Boolean): Map<Rect, TouchPrivacy> =
+                emptyMap()
+
             override fun canDecompose(view: View) = view === composeHost
             override fun decompose(
                 view: View,
@@ -259,7 +269,8 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
                 return CompositionHostDecomposeResult(
                     rootChildren = listOf(CapturedChild.Layer(childIdentity)),
                     nodes = emptyList(),
-                    wireframes = emptyList()
+                    wireframes = emptyList(),
+                    emptyMap()
                 )
             }
         }
@@ -311,7 +322,8 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
                 emptyList(),
                 listOf(
                     CapturedWireframe.Shape(identity, CapturedBounds(-10, -10, 120, 120), CapturedClip(top = 40))
-                )
+                ),
+                emptyMap()
             )
         }
 
@@ -365,7 +377,8 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
             CompositionHostDecomposeResult(
                 fakeWireframes.map { CapturedChild.Wireframe(it.identity) },
                 emptyList(),
-                fakeWireframes
+                fakeWireframes,
+                emptyMap()
             )
         }
 
@@ -410,7 +423,7 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
             val request = it.getArgument<CompositionHostDecomposeRequest>(1)
             val identity = request.identityFactory.composeNode(request.hostIdentity, "interop")
             assertThat(request.nativeViewHandoff(interopView, identity)).isTrue()
-            CompositionHostDecomposeResult(listOf(CapturedChild.Layer(identity)), emptyList(), emptyList())
+            CompositionHostDecomposeResult(listOf(CapturedChild.Layer(identity)), emptyList(), emptyList(), emptyMap())
         }
 
         // When
@@ -570,7 +583,7 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
             val request = invocation.getArgument<CompositionHostDecomposeRequest>(1)
             val identity = request.identityFactory.composeNode(request.hostIdentity, "interop")
             assertThat(request.nativeViewHandoff(mockInterop, identity)).isTrue()
-            CompositionHostDecomposeResult(listOf(CapturedChild.Layer(identity)), emptyList(), emptyList())
+            CompositionHostDecomposeResult(listOf(CapturedChild.Layer(identity)), emptyList(), emptyList(), emptyMap())
         }
         val testedTraversal = traversal(fallback = mockMapper, compositionHostDecomposer = mockDecomposer)
         val fakeQueue = mutableListOf<Runnable>()
@@ -665,11 +678,12 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
             val request = it.getArgument<CompositionHostDecomposeRequest>(1)
             val identity = request.identityFactory.composeNode(request.hostIdentity, "interop")
             assertThat(request.nativeViewHandoff(mockInterop, identity)).isTrue()
-            CompositionHostDecomposeResult(listOf(CapturedChild.Layer(identity)), emptyList(), emptyList())
+            CompositionHostDecomposeResult(listOf(CapturedChild.Layer(identity)), emptyList(), emptyList(), emptyMap())
         }
         val testedTraversal = AndroidWindowTraversal(
             mapperRegistry = CapturedViewMapperRegistry(emptyList(), mockMapper, mock()),
             internalLogger = mock(),
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
             viewIdentifierResolver = mockViewIdentifierResolver,
             drawableToColorMapper = mockDrawableToColorMapper,
             compositionHostDecomposer = mockDecomposer
@@ -705,4 +719,36 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
     }
 
     private fun GlobalBounds.toCapturedBounds() = CapturedBounds(x, y, width, height)
+
+    @ParameterizedTest
+    @CsvSource("HIDE,SHOW,HIDE", "SHOW,HIDE,HIDE", "SHOW,SHOW,SHOW")
+    fun `M merge Compose and native touch overrides W traverseWindow()`(
+        fakeNativePrivacy: TouchPrivacy,
+        fakeComposePrivacy: TouchPrivacy,
+        fakeExpected: TouchPrivacy
+    ) {
+        // Given
+        val root = mockViewGroup(GlobalBounds(0, 0, 100, 100))
+        val host = mockView(GlobalBounds(0, 0, 100, 100))
+        root.withChildren(host)
+        whenever(host.getTag(R.id.datadog_touch_privacy)).thenReturn(fakeNativePrivacy.name)
+        val decomposer: CompositionHostDecomposer = mock()
+        whenever(decomposer.canDecompose(host)).thenReturn(true)
+        whenever(decomposer.decompose(eq(host), any())).thenReturn(
+            CompositionHostDecomposeResult(
+                emptyList(),
+                emptyList(),
+                emptyList(),
+                mapOf(Rect(0, 0, 100, 100) to fakeComposePrivacy)
+            )
+        )
+
+        // When
+        val result = traversal(compositionHostDecomposer = decomposer)
+            .traverseWindow(root, identityFactory.window("window"), identityFactory, fakeContext)
+
+        // Then
+        val captured = result as WindowCopyResult.Present
+        assertThat(captured.touchOverrideAreas).containsEntry(Rect(0, 0, 100, 100), fakeExpected)
+    }
 }

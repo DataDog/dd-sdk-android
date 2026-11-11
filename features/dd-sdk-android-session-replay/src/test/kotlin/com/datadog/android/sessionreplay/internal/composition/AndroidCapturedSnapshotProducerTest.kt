@@ -14,6 +14,7 @@ import android.widget.TextView
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedBackgroundShapeStyleResolver
@@ -110,6 +111,7 @@ internal class AndroidCapturedSnapshotProducerTest {
             internalLogger = mock()
         ),
         internalLogger = mock(),
+        textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
         viewIdentifierResolver = mockViewIdentifierResolver,
         viewBoundsResolver = mockViewBoundsResolver,
         viewUtilsInternal = ViewUtilsInternal()
@@ -128,7 +130,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         scope: CapturedRumViewScope?,
         fakeDeviceTimestampMs: Long
     ): AndroidCapturedSnapshotProducer {
-        val windowSource = ActiveWindowSource().apply { update(windows) }
+        val windowSource = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false).apply { update(windows) }
         val mockTimeProvider: TimeProvider = mock()
         whenever(mockTimeProvider.getDeviceTimestampMillis()).thenReturn(fakeDeviceTimestampMs)
         return AndroidCapturedSnapshotProducer(

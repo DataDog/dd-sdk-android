@@ -15,6 +15,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedBackgroundShapeStyleResolver
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewGroupFallbackMapper
@@ -95,7 +96,8 @@ internal class AndroidWindowTraversalHostBackgroundTest : AndroidWindowTraversal
                         listOf(CapturedModifier.GaussianBlur(4.0))
                     )
                 ),
-                listOf(CapturedWireframe.Shape(shape, CapturedBounds(0, 0, 30, 30)))
+                listOf(CapturedWireframe.Shape(shape, CapturedBounds(0, 0, 30, 30))),
+                emptyMap()
             )
         }
         val testedTraversal = AndroidWindowTraversal(
@@ -108,6 +110,7 @@ internal class AndroidWindowTraversalHostBackgroundTest : AndroidWindowTraversal
                 mockLogger
             ),
             internalLogger = mockLogger,
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
             viewIdentifierResolver = mockViewIdentifierResolver,
             viewBoundsResolver = mockViewBoundsResolver,
             drawableToColorMapper = mockDrawableToColorMapper,

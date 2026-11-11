@@ -10,6 +10,7 @@ import android.view.View
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewData
@@ -110,11 +111,17 @@ internal class AndroidWindowTraversalHandoffGeometryTest : AndroidWindowTraversa
             val childIdentity = request.identityFactory.composeNode(request.hostIdentity, fakeInteropId)
             val child = if (view === mockHost) mockInteropRoot else mockContentRoot
             assertThat(request.nativeViewHandoff(child, childIdentity)).isTrue()
-            CompositionHostDecomposeResult(listOf(CapturedChild.Layer(childIdentity)), emptyList(), emptyList())
+            CompositionHostDecomposeResult(
+                listOf(CapturedChild.Layer(childIdentity)),
+                emptyList(),
+                emptyList(),
+                emptyMap()
+            )
         }
         val testedTraversal = AndroidWindowTraversal(
             mapperRegistry = CapturedViewMapperRegistry(emptyList(), nativeMapper(mockCover), mock()),
             internalLogger = mock(),
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
             viewIdentifierResolver = mockViewIdentifierResolver,
             drawableToColorMapper = mockDrawableToColorMapper,
             compositionHostDecomposer = mockDecomposer.takeIf { fakeHandoff }

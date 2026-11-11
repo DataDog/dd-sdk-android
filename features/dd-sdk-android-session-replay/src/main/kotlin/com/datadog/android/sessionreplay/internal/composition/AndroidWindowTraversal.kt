@@ -21,6 +21,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
 import com.datadog.android.sessionreplay.R
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedHiddenViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
@@ -54,6 +55,7 @@ internal sealed interface WindowCopyResult {
 internal class AndroidWindowTraversal(
     private val mapperRegistry: CapturedViewMapperRegistry,
     private val internalLogger: InternalLogger,
+    textAndInputPrivacy: TextAndInputPrivacy,
     private val hiddenViewMapper: CapturedViewMapper<View> = CapturedHiddenViewMapper(),
     private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver,
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
@@ -63,7 +65,9 @@ internal class AndroidWindowTraversal(
     private val drawingOrderResolver: ViewGroupDrawingOrderResolver = ViewGroupDrawingOrderResolver(internalLogger)
 ) {
     private val occlusionDetector = ViewOcclusionDetector(drawableToColorMapper, viewUtilsInternal, internalLogger)
-    private val compositionHostCapture = compositionHostDecomposer?.let { CompositionHostCapture(it, internalLogger) }
+    private val compositionHostCapture = compositionHostDecomposer?.let {
+        CompositionHostCapture(it, internalLogger, textAndInputPrivacy)
+    }
 
     @UiThread
     fun traverseWindow(
@@ -229,6 +233,9 @@ internal class AndroidWindowTraversal(
                 copyNativeSubtree(interopView, childIdentity, state, context)
             }
         ) ?: return null
+        capturedHost.decomposition.touchOverrideAreas.forEach { (bounds, privacy) ->
+            state.touchOverrideAreas.putTouchOverrideArea(bounds, privacy)
+        }
         for (copy in capturedHost.nativeCopies) {
             copy.touchOverrideAreas.forEach { (bounds, privacy) ->
                 state.touchOverrideAreas.putTouchOverrideArea(bounds, privacy)

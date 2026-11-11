@@ -165,7 +165,7 @@ internal class CompositionDrawListenerRetentionTest {
     private class ObserverFixture(state: ObserverState) {
         val mockObserver: ViewTreeObserver = mock { on { isAlive } doReturn true }
         val mockRoot: View = mock { on { viewTreeObserver } doReturn mockObserver }
-        val source = ActiveWindowSource()
+        val source = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false)
         val testedInterceptor = CompositionViewOnDrawInterceptor(source, {}, mock())
         private val registeredListener = argumentCaptor<ViewTreeObserver.OnDrawListener>()
         val listener: ViewTreeObserver.OnDrawListener get() = registeredListener.firstValue
@@ -197,7 +197,7 @@ internal class CompositionDrawListenerRetentionTest {
     }
 
     private class ExcludedWindowFixture(previouslyRecording: Boolean) {
-        val source = ActiveWindowSource()
+        val source = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false)
         val mockObserver: ViewTreeObserver = mock { on { isAlive } doReturn true }
         val mockRoot: View = mock { on { viewTreeObserver } doReturn mockObserver }
         val mockWindow: Window = mock { on { peekDecorView() } doReturn mockRoot }

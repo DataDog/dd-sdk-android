@@ -258,7 +258,8 @@ internal class CapturedNativeSnapshotBuilderTest {
                         CompositionHostDecomposeResult(
                             listOf(CapturedChild.Layer(nested.views.first().identity)),
                             emptyList(),
-                            emptyList()
+                            emptyList(),
+                            emptyMap()
                         ),
                         listOf(nested),
                         fakeFactory.layer(
@@ -335,7 +336,8 @@ internal class CapturedNativeSnapshotBuilderTest {
             CompositionHostDecomposeResult(
                 listOf(CapturedChild.Layer(fakeNodeIdentity), CapturedChild.Layer(fakeInteropIdentity)),
                 listOf(node),
-                listOf(shape)
+                listOf(shape),
+                emptyMap()
             ),
             listOf(CapturedNativeWindow(fakeDensity, listOf(native))),
             fakeContentIdentity

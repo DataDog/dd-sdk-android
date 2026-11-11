@@ -6,9 +6,14 @@
 
 package com.datadog.android.sessionreplay.internal.composition
 
+import android.graphics.Rect
 import android.view.View
+import android.view.ViewGroup
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
+import com.datadog.android.sessionreplay.R
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
 import com.datadog.android.utils.verifyLog
@@ -23,6 +28,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -57,7 +63,7 @@ internal class CompositionHostCaptureTest {
     private lateinit var fakeChildIdentity: CapturedIdentity
     private lateinit var fakeNativeCopy: WindowCopyResult.Present
     private lateinit var testedCapture: CompositionHostCapture
-    private val fakeDecomposition = CompositionHostDecomposeResult(emptyList(), emptyList(), emptyList())
+    private val fakeDecomposition = CompositionHostDecomposeResult(emptyList(), emptyList(), emptyList(), emptyMap())
 
     @BeforeEach
     fun setUp(
@@ -70,7 +76,7 @@ internal class CompositionHostCaptureTest {
         fakeMappingContext = fakeContext.copy(ownerIdentity = fakeHostIdentity)
         fakeChildIdentity = fakeContext.identityFactory.composeNode(fakeHostIdentity, fakeNodeName)
         fakeNativeCopy = WindowCopyResult.Present(fakeWindow, emptyMap())
-        testedCapture = CompositionHostCapture(mockDecomposer, mockLogger)
+        testedCapture = CompositionHostCapture(mockDecomposer, mockLogger, TextAndInputPrivacy.MASK_ALL)
         whenever(mockNativeCopier(mockInteropView, fakeChildIdentity)).thenReturn(fakeNativeCopy)
     }
 
@@ -102,6 +108,8 @@ internal class CompositionHostCaptureTest {
         assertThat(requestCaptor.firstValue.hostIdentity).isEqualTo(fakeMappingContext.ownerIdentity)
         assertThat(requestCaptor.firstValue.screenDensity).isEqualTo(fakeMappingContext.screenDensity)
         assertThat(requestCaptor.firstValue.hostBounds).isEqualTo(fakeMappingContext.bounds)
+        assertThat(requestCaptor.firstValue.textAndInputPrivacy).isEqualTo(TextAndInputPrivacy.MASK_ALL)
+        assertThat(requestCaptor.firstValue.internalLogger).isSameAs(mockLogger)
     }
 
     @ParameterizedTest
@@ -227,5 +235,72 @@ internal class CompositionHostCaptureTest {
         val nestedCapture = checkNotNull(fakeNestedCapture)
         assertThat(capturedHost.nativeCopies).containsExactly(fakeNativeCopy)
         assertThat(nestedCapture.nativeCopies).containsExactly(fakeNestedCopy)
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "MASK_SENSITIVE_INPUTS,,,MASK_SENSITIVE_INPUTS",
+        "MASK_ALL,MASK_SENSITIVE_INPUTS,,MASK_SENSITIVE_INPUTS",
+        "MASK_SENSITIVE_INPUTS,MASK_ALL,MASK_ALL_INPUTS,MASK_ALL_INPUTS",
+        "MASK_SENSITIVE_INPUTS,MASK_ALL,INVALID,MASK_ALL"
+    )
+    fun `M bind effective host privacy and SDK logger W capture()`(
+        fakeGlobal: TextAndInputPrivacy,
+        fakeParentOverride: String?,
+        fakeHostOverride: String?,
+        fakeExpected: TextAndInputPrivacy
+    ) {
+        // Given
+        val mockParent: ViewGroup = mock()
+        whenever(mockHost.parent).thenReturn(mockParent)
+        whenever(mockHost.getTag(R.id.datadog_text_and_input_privacy))
+            .thenReturn(fakeHostOverride)
+        whenever(mockParent.getTag(R.id.datadog_text_and_input_privacy))
+            .thenReturn(fakeParentOverride)
+        whenever(mockDecomposer.decompose(eq(mockHost), any())).thenReturn(fakeDecomposition)
+        testedCapture = CompositionHostCapture(mockDecomposer, mockLogger, fakeGlobal)
+
+        // When
+        val result = testedCapture.capture(mockHost, fakeMappingContext, { true }, mockNativeCopier)
+
+        // Then
+        assertThat(result).isNotNull()
+        val captor = argumentCaptor<CompositionHostDecomposeRequest>()
+        verify(mockDecomposer).decompose(eq(mockHost), captor.capture())
+        assertThat(captor.firstValue.textAndInputPrivacy).isEqualTo(fakeExpected)
+        assertThat(captor.firstValue.internalLogger).isSameAs(mockLogger)
+        if (fakeHostOverride == "INVALID") {
+            mockLogger.verifyLog(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                "Invalid text privacy override; inheriting the parent policy",
+                throwableClass = IllegalArgumentException::class.java,
+                onlyOnce = true
+            )
+        }
+    }
+
+    @Test
+    fun `M contain extension failure during live privacy refresh W readTouchOverrideAreas()`(
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        val fakeFailure = NoSuchMethodError(fakeMessage)
+        whenever(mockDecomposer.readTouchOverrideAreas(eq(mockHost), any())).thenThrow(fakeFailure)
+
+        // When
+        val result = assertDoesNotThrow<Map<Rect, TouchPrivacy>?> {
+            testedCapture.readTouchOverrideAreas(mockHost) { true }
+        }
+
+        // Then
+        assertThat(result).isNull()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            "Composition touch privacy refresh failed; skipping touch recording",
+            throwable = fakeFailure,
+            onlyOnce = true
+        )
     }
 }

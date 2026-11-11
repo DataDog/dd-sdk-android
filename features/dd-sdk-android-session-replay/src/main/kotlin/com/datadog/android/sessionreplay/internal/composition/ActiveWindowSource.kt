@@ -21,6 +21,8 @@ import java.lang.ref.WeakReference
  */
 @Suppress("TooManyFunctions") // Window membership, privacy revisions and readiness share one lock.
 internal class ActiveWindowSource(
+    // Visual fallback cannot establish Compose semantics privacy; verify it before the next touch.
+    private val refreshTouchPrivacyAfterCapture: Boolean,
     private val readTouchPrivacy: (View) -> Map<Rect, TouchPrivacy>? = WindowTouchPrivacyReader()::read
 ) {
     private val lock = Any()
@@ -96,7 +98,7 @@ internal class ActiveWindowSource(
                         WindowTouchOverrides(
                             WeakReference(view),
                             overridesByWindow[view].orEmpty().toMap(),
-                            if (sameDraw) null else drawVersion
+                            if (sameDraw && !refreshTouchPrivacyAfterCapture) null else drawVersion
                         )
                     }
                 }

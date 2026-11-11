@@ -104,7 +104,7 @@ internal class CompositionCaptureConcurrencyTest {
         forge: Forge
     ) {
         // Given
-        val testedWindowSource = ActiveWindowSource()
+        val testedWindowSource = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false)
         val fakeFirstWindows = forge.aList(size = WINDOW_SET_SIZE) { mock<View>() }
         val fakeSecondWindows = forge.aList(size = WINDOW_SET_SIZE) { mock<View>() }
         val fakeFailures = CopyOnWriteArrayList<Throwable>()
@@ -528,7 +528,7 @@ internal class CompositionCaptureConcurrencyTest {
     }
 
     private fun drawInterceptor() = CompositionViewOnDrawInterceptor(
-        windowSource = ActiveWindowSource(),
+        windowSource = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false),
         onWindowsChanged = CompositionChangeListener { },
         internalLogger = mock()
     )
@@ -540,7 +540,7 @@ internal class CompositionCaptureConcurrencyTest {
         rumContextProvider = mock(),
         touchPrivacyManager = mock(),
         internalLogger = mock(),
-        windowSource = ActiveWindowSource()
+        windowSource = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false)
     )
 
     private fun Thread.awaitCompletion() {

@@ -23,6 +23,7 @@ import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
@@ -681,6 +682,7 @@ internal class CompositionChildDrawingOrderTest {
                     mock()
                 ),
                 internalLogger = mock(),
+                textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
                 viewBoundsResolver = mockBoundsResolver,
                 viewIdentifierResolver = mockIdentifierResolver,
                 drawableToColorMapper = mockDrawableToColorMapper,

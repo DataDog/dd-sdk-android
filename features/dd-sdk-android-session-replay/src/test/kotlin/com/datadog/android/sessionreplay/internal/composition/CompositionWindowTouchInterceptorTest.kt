@@ -478,7 +478,7 @@ internal class CompositionWindowTouchInterceptorTest {
             on { peekDecorView() } doAnswer { mockDecor }
             on { callback } doAnswer { fakeCurrentCallback }
         }
-        val fakeSource = ActiveWindowSource().apply { update(listOf(mockRoot)) }
+        val fakeSource = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false).apply { update(listOf(mockRoot)) }
         val testedInterceptor = buildInterceptor(mockPrivacyManager, fakeSource, mockRumProvider)
 
         init {
@@ -522,7 +522,7 @@ internal class CompositionWindowTouchInterceptorTest {
 
     private fun buildInterceptor(
         touchPrivacyManager: TouchPrivacyManager = mock(),
-        windowSource: ActiveWindowSource = ActiveWindowSource(),
+        windowSource: ActiveWindowSource = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false),
         rumContextProvider: RumContextProvider = mock()
     ) = CompositionWindowTouchInterceptor(
         appContext = mock<Application> { mockApplication ->

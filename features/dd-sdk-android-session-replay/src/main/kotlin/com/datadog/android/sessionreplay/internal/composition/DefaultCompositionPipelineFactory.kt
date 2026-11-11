@@ -12,6 +12,7 @@ import android.widget.TextView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedBackgroundShapeStyleResolver
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
@@ -36,6 +37,7 @@ internal class DefaultCompositionPipelineFactory(
     private val touchPrivacyManager: TouchPrivacyManager,
     private val compositionHostDecomposer: CompositionHostDecomposer? = null,
     private val dynamicOptimizationEnabled: Boolean,
+    private val textAndInputPrivacy: TextAndInputPrivacy,
     private val customDrawableMappers: List<DrawableToColorMapper> = emptyList(),
     private val snapshotProducerFactory: (ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer = {
             windowSource,
@@ -48,7 +50,8 @@ internal class DefaultCompositionPipelineFactory(
             traversal = AndroidWindowTraversal(
                 mapperRegistry = builtInCapturedMappers(sdkCore.internalLogger, customDrawableMappers),
                 internalLogger = sdkCore.internalLogger,
-                compositionHostDecomposer = compositionHostDecomposer
+                compositionHostDecomposer = compositionHostDecomposer,
+                textAndInputPrivacy = textAndInputPrivacy
             ),
             touchPrivacyManager = touchPrivacyManager
         )
@@ -62,7 +65,7 @@ internal class DefaultCompositionPipelineFactory(
         application: Application
     ): Recorder {
         val internalLogger = sdkCore.internalLogger
-        val windowSource = ActiveWindowSource(WindowTouchPrivacyReader(internalLogger = internalLogger)::read)
+        val windowSource = createWindowSource(internalLogger)
         val skippedFrameNotifier = CaptureSkippedFrameNotifier(sdkCore)
         // Construction has a capture deadline and must not queue behind completion mapping or writes.
         val constructionExecutor = sdkCore.createSingleThreadExecutorService(CONSTRUCTION_EXECUTOR_NAME)
@@ -117,6 +120,19 @@ internal class DefaultCompositionPipelineFactory(
             completionQueue = completionQueue,
             constructionExecutor = constructionExecutor,
             internalLogger = internalLogger
+        )
+    }
+
+    private fun createWindowSource(internalLogger: InternalLogger): ActiveWindowSource {
+        val hostCapture = compositionHostDecomposer?.let {
+            CompositionHostCapture(it, internalLogger, textAndInputPrivacy)
+        }
+        return ActiveWindowSource(
+            refreshTouchPrivacyAfterCapture = compositionHostDecomposer != null,
+            readTouchPrivacy = WindowTouchPrivacyReader(
+                internalLogger = internalLogger,
+                readCompositionTouchPrivacy = hostCapture?.let { it::readTouchOverrideAreas }
+            )::read
         )
     }
 

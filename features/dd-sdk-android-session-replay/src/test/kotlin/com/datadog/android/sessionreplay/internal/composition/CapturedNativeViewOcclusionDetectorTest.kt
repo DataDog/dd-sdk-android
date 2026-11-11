@@ -507,7 +507,8 @@ internal class CapturedNativeViewOcclusionDetectorTest {
                                 fakeModifiers
                             )
                         ),
-                        listOf(CapturedWireframe.Shape(fakeNestedShape, fakeNode.bounds))
+                        listOf(CapturedWireframe.Shape(fakeNestedShape, fakeNode.bounds)),
+                        emptyMap()
                     ),
                     emptyList(),
                     fakeFactory.layer(fakeNestedHost, "composition-content")
@@ -523,7 +524,8 @@ internal class CapturedNativeViewOcclusionDetectorTest {
                 CompositionHostDecomposeResult(
                     listOf(CapturedChild.Layer(fakeNodeIdentity), CapturedChild.Layer(fakeInteropIdentity)),
                     listOf(fakeNode),
-                    listOf(CapturedWireframe.Shape(fakeShapeIdentity, fakeNode.bounds))
+                    listOf(CapturedWireframe.Shape(fakeShapeIdentity, fakeNode.bounds)),
+                    emptyMap()
                 ),
                 listOf(CapturedNativeWindow(1f, fakeNativeViews)),
                 fakeFactory.layer(fakeHostIdentity, "composition-content")

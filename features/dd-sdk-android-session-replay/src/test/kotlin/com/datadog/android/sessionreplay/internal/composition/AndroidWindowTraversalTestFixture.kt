@@ -14,6 +14,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
@@ -119,6 +120,7 @@ internal abstract class AndroidWindowTraversalTestFixture {
     ) = AndroidWindowTraversal(
         mapperRegistry = CapturedViewMapperRegistry(typedMappers, fallback, mock()),
         internalLogger = internalLogger,
+        textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
         viewIdentifierResolver = mockViewIdentifierResolver,
         viewBoundsResolver = mockViewBoundsResolver,
         drawableToColorMapper = mockDrawableToColorMapper,

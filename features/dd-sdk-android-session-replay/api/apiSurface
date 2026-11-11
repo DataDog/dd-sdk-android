@@ -90,11 +90,12 @@ class com.datadog.android.sessionreplay.internal.TouchPrivacyManager
   fun addTouchOverrideArea(android.graphics.Rect, com.datadog.android.sessionreplay.TouchPrivacy)
 interface com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposer
   fun canDecompose(android.view.View): Boolean
+  fun readTouchOverrideAreas(android.view.View, () -> Boolean): Map<android.graphics.Rect, com.datadog.android.sessionreplay.TouchPrivacy>?
   fun decompose(android.view.View, CompositionHostDecomposeRequest): CompositionHostDecomposeResult?
 class com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposeRequest
-  constructor(com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, Float, com.datadog.android.internal.sessionreplay.composition.CapturedBounds?, () -> Boolean, (android.view.View, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity) -> Boolean)
+  constructor(com.datadog.android.internal.sessionreplay.composition.CompositionIdentityFactory, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity, Float, com.datadog.android.internal.sessionreplay.composition.CapturedBounds?, com.datadog.android.sessionreplay.TextAndInputPrivacy, com.datadog.android.api.InternalLogger, () -> Boolean, (android.view.View, com.datadog.android.internal.sessionreplay.composition.CapturedIdentity) -> Boolean)
 class com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposeResult
-  constructor(List<com.datadog.android.internal.sessionreplay.composition.CapturedChild>, List<com.datadog.android.internal.sessionreplay.composition.CapturedLayer>, List<com.datadog.android.internal.sessionreplay.composition.CapturedWireframe>)
+  constructor(List<com.datadog.android.internal.sessionreplay.composition.CapturedChild>, List<com.datadog.android.internal.sessionreplay.composition.CapturedLayer>, List<com.datadog.android.internal.sessionreplay.composition.CapturedWireframe>, Map<android.graphics.Rect, com.datadog.android.sessionreplay.TouchPrivacy>)
 interface com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposerProvider : com.datadog.android.sessionreplay.ExtensionSupport
   fun getCompositionHostDecomposer(): CompositionHostDecomposer?
 interface com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
