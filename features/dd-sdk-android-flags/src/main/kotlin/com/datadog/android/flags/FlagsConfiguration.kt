@@ -73,7 +73,8 @@ data class FlagsConfiguration internal constructor(
          *
          * @param mode OFF by default; OBSERVE accepts unverified data, REQUIRED uses verified memory only.
          * @param trustedRootCertificates Explicit trusted public root certificates as padded base64 DER.
-         * Empty or invalid roots leave responses unverified; REQUIRED then returns evaluation defaults.
+         * An empty list selects bundled trust only for the exact staging endpoint.
+         * Explicit roots replace bundled trust. Invalid or unavailable roots cannot verify responses.
          * @return this builder.
          */
         fun responseSigning(mode: ResponseSigningMode, trustedRootCertificates: List<String>): Builder {

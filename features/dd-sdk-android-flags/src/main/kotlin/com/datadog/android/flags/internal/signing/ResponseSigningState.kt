@@ -66,7 +66,8 @@ internal class ResponseSigningState(
     }
 
     fun prepare(original: Request, requestGeneration: Long): Request? = try {
-        signingCheck(configuration.mode != ResponseSigningMode.REQUIRED || configuration.trustedRoots.isNotEmpty())
+        val roots = ResponseSigningTrustRoots.forEndpoint(original.url, configuration.trustedRoots)
+        signingCheck(configuration.mode != ResponseSigningMode.REQUIRED || roots.isNotEmpty())
         val nonce = ByteArray(NONCE_BYTES)
         SecureRandom().nextBytes(nonce)
         val capabilities = original.header("x-dd-feature-flags-capabilities")

@@ -71,27 +71,33 @@ The first public response-signing protocol is v1. The SDK advertises
 and draft v3 labels are not supported public versions; public v1 rejects their proofs.
 X.509 v3 certificate encoding is unchanged.
 
-Response signing is disabled by default. During a browser-first pilot, Android can
-observe the same public v1 response proofs with an explicitly provisioned public trust anchor:
+Response signing is disabled by default. This draft enables a staging-only mobile pilot
+using the same public root as the browser SDK. Production endpoints have no bundled root.
 
 ```kotlin
 val flagsConfig = FlagsConfiguration.Builder()
-    .responseSigning(ResponseSigningMode.OBSERVE, listOf(publicRootCertificateBase64Der))
+    .useCustomFlagEndpoint("https://preview.ff-cdn.datad0g.com/precompute-assignments")
+    .responseSigning(ResponseSigningMode.REQUIRED, emptyList())
     .build()
 ```
 
-No production root or test root is bundled. The list contains locally trusted public
-root certificates encoded as padded base64 DER. Never put a private key in SDK configuration.
-The root stays fixed while each response carries a leaf and one intermediate certificate,
-so intermediate rotation does not require an SDK update or a prior successful fetch.
-The configured root's validity still limits how long an unchanged SDK can verify responses.
+An empty root list selects bundled trust only for `https://preview.ff-cdn.datad0g.com`
+on port 443. The effective request endpoint selects trust, including a custom endpoint.
+The application's `env` value does not select a root. A nonempty list replaces bundled
+trust with explicitly configured public root certificates encoded as padded base64 DER.
+Never put a private key in SDK configuration. No roots are downloaded.
+
+Use required mode for the staging pilot; keep production signing off. Fresh sessions
+provide observations across rotations without adding polling. The root stays fixed while
+responses carry the current leaf and intermediate certificates. Routine rotation needs
+no SDK update or prior successful fetch. Root validity still bounds unchanged SDK support.
 
 - `OFF` preserves existing transport and persistence and performs no signing work.
 - `OBSERVE` reports bounded verified/unverified telemetry and accepts otherwise-valid
   responses when optional verification fails. Authentication, transport, redirect, and
   JSON errors remain failures. Signed and unsigned requests are never retried as a downgrade.
-- `REQUIRED` accepts only valid proofs. Empty or invalid roots yield evaluation defaults;
-  an empty root list fails locally before a request. Verified assignments are held only
+- `REQUIRED` accepts only valid proofs. Invalid or unavailable roots yield evaluation defaults;
+  an endpoint without a configured or bundled root fails locally before a request. Verified assignments are held only
   in memory and are checked against their original expiry on every evaluation. Restart,
   expiry, a changed request scope, or a clock earlier than admission causes defaults.
   A live RUM application-ID change or stopping the Flags feature immediately invalidates

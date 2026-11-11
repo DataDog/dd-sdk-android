@@ -10,14 +10,56 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.ByteString.Companion.decodeBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DynamicTest
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 
 internal class ResponseSigningVerifierTest {
+    @TestFactory
+    fun `M select staging trust only for exact HTTPS origin W forEndpoint()`(): List<DynamicTest> {
+        val cases = mapOf(
+            "https://preview.ff-cdn.datad0g.com/precompute-assignments" to true,
+            "https://PREVIEW.FF-CDN.DATAD0G.COM:443/precompute-assignments?dd_env=production" to true,
+            "https://preview.ff-cdn.datadoghq.com/precompute-assignments?dd_env=staging" to false,
+            "https://preview.ff-cdn.us3.datadoghq.com/precompute-assignments" to false,
+            "https://preview.ff-cdn.datad0g.com.attacker.test/precompute-assignments" to false,
+            "https://attacker-preview.ff-cdn.datad0g.com/precompute-assignments" to false,
+            "https://preview.ff-cdn.datad0g.com:444/precompute-assignments" to false,
+            "http://preview.ff-cdn.datad0g.com/precompute-assignments" to false,
+            "https://user@preview.ff-cdn.datad0g.com/precompute-assignments" to false
+        )
+        return cases.map { (endpoint, expected) ->
+            DynamicTest.dynamicTest(endpoint) {
+                // When
+                val roots = ResponseSigningTrustRoots.forEndpoint(endpoint.toHttpUrl(), emptyList())
+                // Then
+                assertThat(roots).hasSize(if (expected) 1 else 0)
+                if (expected) {
+                    assertThat(checkNotNull(roots.single().decodeBase64()).sha256().hex())
+                        .isEqualTo("6e83e91905e966b37a4eaf30961143cba6027ead0affc207ae6edc012390171e")
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `M replace bundled staging trust W forEndpoint() {explicit roots}`() {
+        // Given
+        val roots = listOf(resource("corpus.json")["anchor_der_base64"].asString)
+        // When
+        val result = ResponseSigningTrustRoots.forEndpoint(
+            "https://preview.ff-cdn.datad0g.com/precompute-assignments".toHttpUrl(),
+            roots
+        )
+        // Then
+        assertThat(result).isEqualTo(roots)
+    }
+
     @TestFactory
     fun `M match frozen independent vectors W verify()`(): List<DynamicTest> {
         val corpus = resource("corpus.json")

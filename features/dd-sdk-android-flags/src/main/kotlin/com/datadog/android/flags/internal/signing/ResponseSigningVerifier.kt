@@ -49,7 +49,7 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
         val intermediate = certificate(intermediateBytes)
         leaf.restrict(false)
         intermediate.restrict(true)
-        val anchor = trustedRoots.asSequence().mapNotNull { root ->
+        val anchor = ResponseSigningTrustRoots.forEndpoint(request.url, trustedRoots).asSequence().mapNotNull { root ->
             try {
                 certificate(base64(root, 4096)).takeIf { parent ->
                     parent.covers(now, issued, expires) && intermediate.issuedBy(parent)
