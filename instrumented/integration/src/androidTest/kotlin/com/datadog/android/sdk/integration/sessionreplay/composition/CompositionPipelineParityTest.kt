@@ -83,7 +83,13 @@ internal class CompositionPipelineParityTest(private val fakeCompositionEnabled:
             val activity = rule.activity
             activity.setTheme(com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar)
             val root = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
-            root.addView(TextView(activity).apply { text = "native-parity" })
+            root.addView(
+                TextView(activity).apply {
+                    text = "native-parity"
+                    // This scenario asserts structured text; native font padding uses glyph pixels instead.
+                    includeFontPadding = false
+                }
+            )
             root.addView(CheckBox(activity).apply { text = "checked-option"; isChecked = true })
             root.addView(RadioButton(activity).apply { text = "radio-option"; isChecked = true })
             root.addView(SeekBar(activity).apply { progress = 37 }, 600, 100)
@@ -215,7 +221,8 @@ internal class CompositionPipelineParityTest(private val fakeCompositionEnabled:
             GlobalRumMonitor.get().startView("window-parity", "window-parity")
         }
         composeRule.waitForIdle()
-        runInstrumentationScenario()
+        // The non-focusable popup must not be selected as an Espresso interaction root.
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
         val fakeWireframes = awaitWireframes("dialog-parity", "popup-parity")
         assertThat(fakeWireframes.toString()).doesNotContain("dialog-private", "popup-hidden")

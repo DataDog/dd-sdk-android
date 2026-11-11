@@ -32,6 +32,9 @@ import androidx.compose.ui.unit.sp
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.compose.internal.granular.ComposeTextRasterizer
 import com.datadog.android.sessionreplay.compose.internal.granular.DefaultComposeHostCaptureRasterizer
 import com.datadog.android.sessionreplay.compose.internal.granular.GranularComposeCompatibilityGate
 import com.datadog.android.sessionreplay.compose.internal.granular.GranularComposeDecomposer
@@ -128,15 +131,25 @@ internal class ComposeCaptureStyleAndCropRegressionTest {
         val activity = composeRule.activity
         val factory = DefaultCapturedIdentityFactory(RumViewIdentityScope("style-regression"))
         val identity = factory.composeHost(factory.window("window"), "host")
-        val candidate = GranularComposeDecomposer(compatibilityGate = GranularComposeCompatibilityGate())
+        // Exercise the structured metadata cache; measured glyph pixels have separate round-trip coverage.
+        val candidate = GranularComposeDecomposer(
+            compatibilityGate = GranularComposeCompatibilityGate(),
+            textRasterizer = ComposeTextRasterizer { _, _, _, _ -> null }
+        )
         repeat(3) { value ->
             composeRule.runOnIdle { version.value = value }
             composeRule.runOnIdle {
                 val host = checkNotNull(findHost(activity.window.decorView))
                 val request =
-                    CompositionHostDecomposeRequest(factory, identity, host.resources.displayMetrics.density, { _, _ ->
-                        null
-                    })
+                    CompositionHostDecomposeRequest(
+                        factory,
+                        identity,
+                        host.resources.displayMetrics.density,
+                        hostBounds = null,
+                        nativeViewHandoff = { _, _ -> null },
+                        imagePrivacy = ImagePrivacy.MASK_NONE,
+                        textAndInputPrivacy = TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+                    )
                 val actual = checkNotNull(candidate.decompose(host, request))
                 val texts = actual.wireframes.filterIsInstance<CapturedWireframe.Text>()
                 assertThat(texts.map { it.text }).isEqualTo((0 until 180).map { "Item $it" })

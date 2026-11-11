@@ -12,8 +12,10 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
+import android.os.Build
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
@@ -51,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.PathParser
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.platform.graphics.HardwareRendererCompat
 import com.datadog.android.compose.datadog
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
@@ -72,8 +75,11 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import java.io.File
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 /** Screenshot round trips through a deliberately small reference renderer, not the dashboard player. */
 internal class ComposeVisualParityRegressionTest {
@@ -542,7 +548,7 @@ internal class ComposeVisualParityRegressionTest {
     }
 
     private fun compare(name: String, verify: (CompositionHostDecomposeResult) -> Unit) {
-        val actual = composeRule.onNodeWithTag(ROOT).captureToImage().asAndroidBitmap()
+        val actual = captureNativeRoot()
         lateinit var rendered: Bitmap
         val captures = mutableListOf<PendingPixelCapture>()
         try {
@@ -587,6 +593,43 @@ internal class ComposeVisualParityRegressionTest {
         } finally {
             captures.forEach { it.bitmap.recycle() }
             actual.recycle()
+        }
+    }
+
+    private fun captureNativeRoot(): Bitmap {
+        val root = composeRule.onNodeWithTag(ROOT)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            return root.captureToImage().asAndroidBitmap()
+        }
+        // Compose's PixelCopy helper requires API 26; use an independent native screen oracle below it.
+        val bounds = root.fetchSemanticsNode().boundsInWindow
+        val drawingEnabled = HardwareRendererCompat.isDrawingEnabled()
+        try {
+            if (!drawingEnabled) HardwareRendererCompat.setDrawingEnabled(true)
+            val drawn = CountDownLatch(1)
+            composeRule.runOnIdle {
+                val view = composeRule.activity.window.decorView
+                val observer = view.viewTreeObserver
+                val listener = object : ViewTreeObserver.OnDrawListener {
+                    override fun onDraw() {
+                        view.post { if (observer.isAlive) observer.removeOnDrawListener(this) }
+                        view.postOnAnimation { drawn.countDown() }
+                    }
+                }
+                observer.addOnDrawListener(listener)
+                view.invalidate()
+            }
+            check(drawn.await(5, TimeUnit.SECONDS)) { "Native screenshot did not observe a draw" }
+            val screen = checkNotNull(InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot())
+            return try {
+                val left = bounds.left.roundToInt().coerceIn(0, screen.width - 1)
+                val top = bounds.top.roundToInt().coerceIn(0, screen.height - 1)
+                val right = bounds.right.roundToInt().coerceIn(left + 1, screen.width)
+                val bottom = bounds.bottom.roundToInt().coerceIn(top + 1, screen.height)
+                Bitmap.createBitmap(screen, left, top, right - left, bottom - top)
+            } finally { screen.recycle() }
+        } finally {
+            if (!drawingEnabled) HardwareRendererCompat.setDrawingEnabled(false)
         }
     }
 

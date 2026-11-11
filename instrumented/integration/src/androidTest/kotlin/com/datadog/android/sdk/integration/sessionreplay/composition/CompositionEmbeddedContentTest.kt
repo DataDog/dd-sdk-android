@@ -62,7 +62,11 @@ internal class CompositionEmbeddedContentTest(private val fakeCompositionEnabled
         lateinit var fakeLabel: TextView
         onMain {
             val activity = rule.activity
-            fakeLabel = TextView(activity).apply { text = "embedded-host" }
+            fakeLabel = TextView(activity).apply {
+                text = "embedded-host"
+                // Later phases assert this label through structured replay text.
+                includeFontPadding = false
+            }
             fakeSlot = View(activity)
             fakeRoot = LinearLayout(activity).apply {
                 orientation = LinearLayout.VERTICAL

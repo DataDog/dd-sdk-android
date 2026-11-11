@@ -107,7 +107,12 @@ internal class ComposeCaptureRegressionTest {
                 })
             )
             assertThat(result).isNotNull()
-            assertThat(result!!.wireframes).hasSize(3).allMatch { it is CapturedWireframe.Pixel }
+            val shapes = result!!.wireframes.filterIsInstance<CapturedWireframe.Shape>()
+            assertThat(shapes).hasSize(3)
+            assertThat(shapes).allSatisfy {
+                assertThat(it.style?.backgroundColor).isEqualTo("#ff0000ff")
+                assertThat(it.style?.cornerRadius).isEqualTo(24.0)
+            }
         }
     }
 
@@ -134,8 +139,12 @@ internal class ComposeCaptureRegressionTest {
             }.flatten()
             val modifier = nodes.flatMap { it.layoutInfo.getModifierInfo() }
                 .map { it.modifier }
-                .first { ComposeReflection.DrawOverscrollModifierClass?.isInstance(it) == true }
-            val effect = checkNotNull(ComposeReflection.OverscrollEffectField).get(modifier)
+                .firstOrNull { ComposeReflection.DrawOverscrollModifierClass?.isInstance(it) == true }
+            org.junit.Assume.assumeTrue(
+                "Legacy overscroll modifier unavailable in this Compose runtime",
+                modifier != null
+            )
+            val effect = checkNotNull(ComposeReflection.OverscrollEffectField).get(checkNotNull(modifier))
             val edges = ComposeReflection.OverscrollEdgeFields.map { checkNotNull(it).get(effect) as EdgeEffect }
 
             assertThat(decomposer.decompose(host, request)!!.wireframes)

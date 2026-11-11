@@ -47,12 +47,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
+import org.junit.jupiter.params.provider.CsvSource
 import org.mockito.Mock
 import org.mockito.Mockito.mockConstruction
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -189,13 +190,25 @@ internal class DefaultRecorderProviderTest {
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = [false, true])
+    @CsvSource(
+        "false, 0",
+        "true, 0",
+        "false, 1",
+        "true, 1",
+        "false, 128",
+        "true, 128",
+        "false, 255",
+        "true, 255"
+    )
     fun `M capture custom drawable backgrounds W provideSessionReplayRecorder { composition enabled }`(
         fakeTextView: Boolean,
-        @IntForgery fakeColor: Int,
+        fakeAlpha: Int,
+        @IntForgery fakeRgb: Int,
         @StringForgery fakeViewId: String
     ) {
-        // Given: only the configured extension understands this drawable.
+        // Given: exercise transparent, minimally visible, translucent, and opaque custom colors.
+        val fakeColor = (fakeRgb and 0x00ffffff) or (fakeAlpha shl 24)
+        // Only the configured extension understands this drawable.
         val fakeDrawable: Drawable = mock()
         val mockDrawableMapper: DrawableToColorMapper = mock()
         whenever(mockDrawableMapper.mapDrawableToColor(fakeDrawable, mockInternalLogger)).thenReturn(fakeColor)
@@ -239,11 +252,17 @@ internal class DefaultRecorderProviderTest {
                 fakeContext
             ).buildWindow(fakeContext)
 
-            // Then: both the text mapper and generic fallback retain the extension's background color.
+            // Then: both mappers retain visible custom colors and omit fully transparent backgrounds.
             val snapshot = result as WindowWalkResult.Present
-            assertThat(snapshot.wireframes.filterIsInstance<CapturedWireframe.Shape>().single().style?.backgroundColor)
-                .isEqualTo(DefaultColorStringFormatter.formatColorAsHexString(fakeColor))
-            verify(mockDrawableMapper).mapDrawableToColor(fakeDrawable, mockInternalLogger)
+            val backgrounds = snapshot.wireframes.filterIsInstance<CapturedWireframe.Shape>()
+            if (fakeAlpha == 0) {
+                assertThat(backgrounds).isEmpty()
+            } else {
+                assertThat(backgrounds).hasSize(1)
+                assertThat(backgrounds.single().style?.backgroundColor)
+                    .isEqualTo(DefaultColorStringFormatter.formatColorAsHexString(fakeColor))
+            }
+            verify(mockDrawableMapper, atLeastOnce()).mapDrawableToColor(fakeDrawable, mockInternalLogger)
         }
     }
 

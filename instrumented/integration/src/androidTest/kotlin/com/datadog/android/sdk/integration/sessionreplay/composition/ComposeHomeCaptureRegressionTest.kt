@@ -197,8 +197,10 @@ internal class ComposeHomeCaptureRegressionTest {
             for (node in nodes) {
                 val info = checkNotNull(utils.resolveTextLayoutInfo(node, InternalLogger.UNBOUND))
                 val bitmap = checkNotNull(
-                    rasterizer.rasterize(node, info, node.layoutInfo.getModifierInfo(), ComposeWindowOffset.NONE)
-                ).bitmap
+                    checkNotNull(
+                        rasterizer.rasterize(node, info, node.layoutInfo.getModifierInfo(), ComposeWindowOffset.NONE)
+                    ).bitmap
+                )
                 try {
                     val ink = (0 until bitmap.width).filter { x ->
                         (0 until bitmap.height).any { y -> bitmap.getPixel(x, y) ushr 24 != 0 }
