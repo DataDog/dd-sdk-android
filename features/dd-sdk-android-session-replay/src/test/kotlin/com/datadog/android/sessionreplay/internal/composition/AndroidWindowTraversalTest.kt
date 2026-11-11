@@ -21,6 +21,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedClip
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.R
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
@@ -78,6 +79,7 @@ internal class AndroidWindowTraversalTest : AndroidWindowTraversalTestFixture() 
         val testedTraversal = AndroidWindowTraversal(
             mapperRegistry = CapturedViewMapperRegistry(emptyList(), noOpFallback, mock()),
             internalLogger = mock(),
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
             viewIdentifierResolver = mockViewIdentifierResolver,
             drawableToColorMapper = mockDrawableToColorMapper,
             viewUtilsInternal = ViewUtilsInternal()
@@ -392,6 +394,7 @@ internal class AndroidWindowTraversalTest : AndroidWindowTraversalTestFixture() 
         val testedTraversal = AndroidWindowTraversal(
             mapperRegistry = CapturedViewMapperRegistry(emptyList(), noOpFallback, mock()),
             internalLogger = mock(),
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
             viewIdentifierResolver = mockViewIdentifierResolver,
             viewBoundsResolver = mockViewBoundsResolver,
             viewUtilsInternal = ViewUtilsInternal()
@@ -529,6 +532,7 @@ internal class AndroidWindowTraversalTest : AndroidWindowTraversalTestFixture() 
         val testedTraversal = AndroidWindowTraversal(
             mapperRegistry = CapturedViewMapperRegistry(emptyList(), noOpFallback, mock()),
             internalLogger = mockInternalLogger,
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
             viewIdentifierResolver = mockViewIdentifierResolver,
             viewBoundsResolver = mockViewBoundsResolver,
             viewUtilsInternal = ViewUtilsInternal()

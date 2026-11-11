@@ -20,6 +20,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.sessionreplay.composition.RumViewIdentityScope
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
@@ -518,6 +519,7 @@ internal class CompositionClippingTest {
             val testedTraversal = AndroidWindowTraversal(
                 mapperRegistry = CapturedViewMapperRegistry(emptyList(), mapper, mock()),
                 internalLogger = mock(),
+                textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
                 viewBoundsResolver = mockBoundsResolver,
                 viewIdentifierResolver = mockIdentifierResolver,
                 drawableToColorMapper = mockDrawableToColorMapper

@@ -63,7 +63,7 @@ internal class CompositionHostCaptureTest {
     private lateinit var fakeChildIdentity: CapturedIdentity
     private lateinit var fakeNativeCopy: WindowCopyResult.Present
     private lateinit var testedCapture: CompositionHostCapture
-    private val fakeDecomposition = CompositionHostDecomposeResult(emptyList(), emptyList(), emptyList())
+    private val fakeDecomposition = CompositionHostDecomposeResult(emptyList(), emptyList(), emptyList(), emptyMap())
 
     @BeforeEach
     fun setUp(

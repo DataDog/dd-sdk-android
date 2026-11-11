@@ -22,6 +22,7 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
 import com.datadog.android.internal.sessionreplay.composition.CapturedTextStyle
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.R
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
@@ -88,7 +89,8 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
                     listOf(CapturedWireframe.Shape(fakeWireframeIdentity, fakeRootBounds.toCapturedBounds()))
                 } else {
                     emptyList()
-                }
+                },
+                emptyMap()
             )
         }
 
@@ -132,7 +134,7 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
             fakeBeforeExpiry = request.shouldContinue()
             now = 100L
             fakeAfterExpiry = request.shouldContinue()
-            CompositionHostDecomposeResult(emptyList(), emptyList(), emptyList())
+            CompositionHostDecomposeResult(emptyList(), emptyList(), emptyList(), emptyMap())
         }
 
         // When
@@ -187,7 +189,8 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
                 return CompositionHostDecomposeResult(
                     rootChildren = listOf(CapturedChild.Layer(nodeIdentity)),
                     nodes = listOf(node),
-                    wireframes = listOf(wireframe)
+                    wireframes = listOf(wireframe),
+                    emptyMap()
                 )
             }
         }
@@ -266,7 +269,8 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
                 return CompositionHostDecomposeResult(
                     rootChildren = listOf(CapturedChild.Layer(childIdentity)),
                     nodes = emptyList(),
-                    wireframes = emptyList()
+                    wireframes = emptyList(),
+                    emptyMap()
                 )
             }
         }
@@ -318,7 +322,8 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
                 emptyList(),
                 listOf(
                     CapturedWireframe.Shape(identity, CapturedBounds(-10, -10, 120, 120), CapturedClip(top = 40))
-                )
+                ),
+                emptyMap()
             )
         }
 
@@ -372,7 +377,8 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
             CompositionHostDecomposeResult(
                 fakeWireframes.map { CapturedChild.Wireframe(it.identity) },
                 emptyList(),
-                fakeWireframes
+                fakeWireframes,
+                emptyMap()
             )
         }
 
@@ -417,7 +423,7 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
             val request = it.getArgument<CompositionHostDecomposeRequest>(1)
             val identity = request.identityFactory.composeNode(request.hostIdentity, "interop")
             assertThat(request.nativeViewHandoff(interopView, identity)).isTrue()
-            CompositionHostDecomposeResult(listOf(CapturedChild.Layer(identity)), emptyList(), emptyList())
+            CompositionHostDecomposeResult(listOf(CapturedChild.Layer(identity)), emptyList(), emptyList(), emptyMap())
         }
 
         // When
@@ -577,7 +583,7 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
             val request = invocation.getArgument<CompositionHostDecomposeRequest>(1)
             val identity = request.identityFactory.composeNode(request.hostIdentity, "interop")
             assertThat(request.nativeViewHandoff(mockInterop, identity)).isTrue()
-            CompositionHostDecomposeResult(listOf(CapturedChild.Layer(identity)), emptyList(), emptyList())
+            CompositionHostDecomposeResult(listOf(CapturedChild.Layer(identity)), emptyList(), emptyList(), emptyMap())
         }
         val testedTraversal = traversal(fallback = mockMapper, compositionHostDecomposer = mockDecomposer)
         val fakeQueue = mutableListOf<Runnable>()
@@ -672,11 +678,12 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
             val request = it.getArgument<CompositionHostDecomposeRequest>(1)
             val identity = request.identityFactory.composeNode(request.hostIdentity, "interop")
             assertThat(request.nativeViewHandoff(mockInterop, identity)).isTrue()
-            CompositionHostDecomposeResult(listOf(CapturedChild.Layer(identity)), emptyList(), emptyList())
+            CompositionHostDecomposeResult(listOf(CapturedChild.Layer(identity)), emptyList(), emptyList(), emptyMap())
         }
         val testedTraversal = AndroidWindowTraversal(
             mapperRegistry = CapturedViewMapperRegistry(emptyList(), mockMapper, mock()),
             internalLogger = mock(),
+            textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
             viewIdentifierResolver = mockViewIdentifierResolver,
             drawableToColorMapper = mockDrawableToColorMapper,
             compositionHostDecomposer = mockDecomposer

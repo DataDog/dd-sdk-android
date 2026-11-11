@@ -450,7 +450,7 @@ internal class CompositionWindowThreadTest {
         val mockObserver: ViewTreeObserver = mock()
         whenever(mockObserver.isAlive).thenReturn(true)
         whenever(mockRoot.viewTreeObserver).thenReturn(mockObserver)
-        val fakeSource = ActiveWindowSource()
+        val fakeSource = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false)
         val testedInterceptor = CompositionViewOnDrawInterceptor(fakeSource, {}, mock())
         testedInterceptor.intercept(listOf(mockRoot))
         val fakeRegistered = argumentCaptor<ViewTreeObserver.OnDrawListener>()
@@ -577,7 +577,7 @@ internal class CompositionWindowThreadTest {
         }
 
         val producer = AndroidCapturedSnapshotProducer(
-            windowSource = ActiveWindowSource().apply { update(windows) },
+            windowSource = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false).apply { update(windows) },
             scopeProvider = RumViewScopeProvider { scope },
             timeProvider = mock(),
             traversal = mockTraversal,

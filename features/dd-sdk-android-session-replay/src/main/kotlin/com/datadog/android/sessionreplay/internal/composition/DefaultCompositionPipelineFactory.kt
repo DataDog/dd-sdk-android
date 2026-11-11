@@ -37,7 +37,7 @@ internal class DefaultCompositionPipelineFactory(
     private val touchPrivacyManager: TouchPrivacyManager,
     private val compositionHostDecomposer: CompositionHostDecomposer? = null,
     private val dynamicOptimizationEnabled: Boolean,
-    private val textAndInputPrivacy: TextAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
+    private val textAndInputPrivacy: TextAndInputPrivacy,
     private val customDrawableMappers: List<DrawableToColorMapper> = emptyList(),
     private val snapshotProducerFactory: (ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer = {
             windowSource,

@@ -112,5 +112,5 @@ class CompositionHostDecomposeResult(
     val rootChildren: List<CapturedChild>,
     val nodes: List<CapturedLayer>,
     val wireframes: List<CapturedWireframe>,
-    val touchOverrideAreas: Map<Rect, TouchPrivacy> = emptyMap()
+    val touchOverrideAreas: Map<Rect, TouchPrivacy>
 )

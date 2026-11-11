@@ -310,7 +310,7 @@ internal class ActiveWindowSourceTest {
         var fakeReadAllowed = true
         var fakeReadCount = 0
         var onRead: () -> Unit = {}
-        val testedSource = ActiveWindowSource {
+        val testedSource = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false) {
             fakeReadCount++
             onRead()
             fakeAreas.takeIf { fakeReadAllowed }

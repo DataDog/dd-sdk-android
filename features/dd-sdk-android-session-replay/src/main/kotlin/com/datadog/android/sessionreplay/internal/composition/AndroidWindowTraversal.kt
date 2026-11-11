@@ -55,14 +55,14 @@ internal sealed interface WindowCopyResult {
 internal class AndroidWindowTraversal(
     private val mapperRegistry: CapturedViewMapperRegistry,
     private val internalLogger: InternalLogger,
+    textAndInputPrivacy: TextAndInputPrivacy,
     private val hiddenViewMapper: CapturedViewMapper<View> = CapturedHiddenViewMapper(),
     private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver,
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
     private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault(),
     private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
     compositionHostDecomposer: CompositionHostDecomposer? = null,
-    private val drawingOrderResolver: ViewGroupDrawingOrderResolver = ViewGroupDrawingOrderResolver(internalLogger),
-    textAndInputPrivacy: TextAndInputPrivacy = TextAndInputPrivacy.MASK_ALL
+    private val drawingOrderResolver: ViewGroupDrawingOrderResolver = ViewGroupDrawingOrderResolver(internalLogger)
 ) {
     private val occlusionDetector = ViewOcclusionDetector(drawableToColorMapper, viewUtilsInternal, internalLogger)
     private val compositionHostCapture = compositionHostDecomposer?.let {
