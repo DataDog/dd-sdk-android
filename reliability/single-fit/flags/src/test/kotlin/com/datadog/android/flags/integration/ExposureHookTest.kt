@@ -22,12 +22,14 @@ import com.datadog.android.flags.openfeature.asOpenFeatureProvider
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import dev.openfeature.kotlin.sdk.FeatureProvider
 import dev.openfeature.kotlin.sdk.FlagEvaluationDetails
 import dev.openfeature.kotlin.sdk.FlagEvaluationOptions
 import dev.openfeature.kotlin.sdk.Hook
 import dev.openfeature.kotlin.sdk.HookContext
 import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.OpenFeatureAPI
+import dev.openfeature.kotlin.sdk.ProviderMetadata
 import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode
 import fr.xgouchet.elmyr.Forge
@@ -386,6 +388,46 @@ internal class ExposureHookTest {
         assertThat(evaluations).isEmpty()
     }
 
+    @ParameterizedTest
+    @MethodSource("wrappers")
+    fun `M follow what the wrapper returns W getBooleanValue() {provider wrapped}`(
+        wrapper: String,
+        registerExposureHook: Boolean,
+        expectedEvents: Int,
+        expectedCallbacks: Int,
+        forge: Forge
+    ) {
+        // Given
+        start(forge, wrapProvider = { wrap(it, wrapper) }, registerExposureHook = registerExposureHook)
+
+        // When
+        OpenFeatureAPI.getClient().getBooleanValue(FLAG, false)
+        fixture.flush()
+
+        // Then
+        assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).hasSize(expectedEvents)
+        assertThat(evaluations).hasSize(expectedCallbacks)
+    }
+
+    private fun wrap(inner: FeatureProvider, wrapper: String): FeatureProvider {
+        val ownMetadata = object : ProviderMetadata {
+            override val name: String = "wrapper"
+        }
+        return when (wrapper) {
+            DELEGATES_ALL -> object : FeatureProvider by inner {}
+            OWN_METADATA -> object : FeatureProvider by inner {
+                override val metadata: ProviderMetadata = ownMetadata
+            }
+            DROPS_HOOKS -> object : FeatureProvider by inner {
+                override val hooks: List<Hook<*>> = emptyList()
+            }
+            else -> object : FeatureProvider by inner {
+                override val hooks: List<Hook<*>> = emptyList()
+                override val metadata: ProviderMetadata = ownMetadata
+            }
+        }
+    }
+
     private fun evaluateInnerFlag(times: Int) {
         repeat(times) { OpenFeatureAPI.getClient().getBooleanValue(INNER_FLAG, false) }
     }
@@ -396,7 +438,9 @@ internal class ExposureHookTest {
         callback: (ExposureEvaluation) -> Unit = { evaluations.add(it) },
         optOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
         hooksBefore: List<Hook<*>> = emptyList(),
-        clientCore: (InternalSdkCore) -> InternalSdkCore = { it }
+        clientCore: (InternalSdkCore) -> InternalSdkCore = { it },
+        wrapProvider: (FeatureProvider) -> FeatureProvider = { it },
+        registerExposureHook: Boolean = true
     ): FlagsClient {
         fixture = FlagsTelemetryTestFixture(forge, trackExposures)
         fixture.assignments(
@@ -436,10 +480,10 @@ internal class ExposureHookTest {
         val client = FlagsClient.Builder("exposure-hook", clientCore(fixture.core))
             .experimentationOptOutMode(optOutMode)
             .build()
-        OpenFeatureAPI.addHooks(hooksBefore + ExposureHook { callback(it) })
+        OpenFeatureAPI.addHooks(if (registerExposureHook) hooksBefore + ExposureHook { callback(it) } else hooksBefore)
         runBlocking {
             OpenFeatureAPI.setProviderAndWait(
-                client.asOpenFeatureProvider(),
+                wrapProvider(client.asOpenFeatureProvider()),
                 ImmutableContext(SUBJECT, mapOf("plan" to Value.String("pro"))),
                 Dispatchers.Unconfined
             )
@@ -457,6 +501,19 @@ internal class ExposureHookTest {
         private const val SUBJECT = "subject"
         private const val ALLOCATION = "holdout-allocation"
         private const val INNER_FLAG = "inner-flag"
+        private const val DELEGATES_ALL = "delegates hooks and metadata"
+        private const val OWN_METADATA = "own metadata"
+        private const val DROPS_HOOKS = "drops hooks"
+        private const val OWN_METADATA_DROPS_HOOKS = "own metadata, drops hooks"
+
+        @JvmStatic
+        fun wrappers(): List<Arguments> = listOf(
+            Arguments.of(DELEGATES_ALL, true, 1, 1),
+            Arguments.of(OWN_METADATA, true, 1, 0),
+            Arguments.of(DROPS_HOOKS, true, 1, 1),
+            Arguments.of(DROPS_HOOKS, false, 0, 0),
+            Arguments.of(OWN_METADATA_DROPS_HOOKS, true, 0, 0)
+        )
         private const val OBJECT_FLAG = "object-flag"
         private const val AFTER = "after"
         private const val FINALLY_AFTER = "finallyAfter"

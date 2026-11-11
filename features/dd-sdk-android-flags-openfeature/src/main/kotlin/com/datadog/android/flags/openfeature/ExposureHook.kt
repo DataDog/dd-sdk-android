@@ -34,8 +34,10 @@ import java.util.concurrent.atomic.AtomicBoolean
  * With experimentation opt-out enabled, an evaluation whose context a newer context replaced before recording
  * is a non-exposure.
  *
- * The callback runs for evaluations of a [DatadogFlagsProvider] set directly as the OpenFeature provider.
- * Composed providers such as `MultiProvider` skip provider hooks, so the SDK records no exposures under them.
+ * The callback runs for evaluations of a [DatadogFlagsProvider], set as the OpenFeature provider or wrapped by a
+ * provider that returns its `metadata`. A wrapping provider also returns the Datadog provider's `hooks`, which
+ * record every exposure; a wrapper that drops them records an exposure when this callback runs. Composed
+ * providers such as `MultiProvider` skip provider hooks, so the SDK records no exposures under them.
  *
  * An exception from the callback does not affect the evaluation. The first one is logged as a warning,
  * later ones at debug level.
