@@ -168,6 +168,7 @@ datadog:
       - "java.lang.System.loadLibrary(kotlin.String?):java.lang.SecurityException,java.lang.UnsatisfiedLinkError,java.lang.NullPointerException"
       - "java.lang.reflect.Field.get(kotlin.Any):java.lang.IllegalAccessException,java.lang.IllegalArgumentException,java.lang.NullPointerException,java.lang.ExceptionInInitializerError"
       - "java.lang.reflect.Field.get(kotlin.Any?):java.lang.IllegalAccessException,java.lang.IllegalArgumentException,java.lang.NullPointerException,java.lang.ExceptionInInitializerError"
+      - "java.math.BigDecimal.stripTrailingZeros():java.lang.ArithmeticException"
       - "java.math.BigInteger.and(java.math.BigInteger?):java.lang.NumberFormatException,java.lang.ArithmeticException"
       - "java.math.BigInteger.constructor(kotlin.String?, kotlin.Int):java.lang.NumberFormatException,java.lang.ArithmeticException"
       - "java.math.BigInteger.shiftRight(kotlin.Int):java.lang.NumberFormatException,java.lang.ArithmeticException"
