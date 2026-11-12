@@ -810,8 +810,8 @@ internal class DatadogFlagsClient(
 
     // endregion
 
-    private fun isCurrentResolutionContext(context: EvaluationContext): Boolean =
-        synchronized(telemetryLock) { resolutionContext(context).errorCode == null }
+    private fun isCurrentResolutionContext(targetingContext: EvaluationContext): Boolean =
+        synchronized(telemetryLock) { resolutionContext(targetingContext).errorCode == null }
 
     private fun resolutionContext(installedContext: EvaluationContext?): ExperimentationOptOut.ResolutionContext {
         val optOut = experimentationOptOut.resolutionContext(installedContext)

@@ -24,9 +24,8 @@ internal class AssignmentAuthorization(
      * The token is kept separate from targeting data and is carried by its prepared request.
      */
     fun prepare(context: EvaluationContext): Request {
-        val inputAttributes: Map<out String?, String?> = context.attributes
-        val rawToken = inputAttributes.entries.firstOrNull { it.key == ATTRIBUTE }?.value
-        val token = normalize(rawToken)
+        val rawToken = context.attributes[ATTRIBUTE]
+        val token = rawToken?.let(::normalize)
         val request = Request(targetingContext(context), token)
         synchronized(stateLock) {
             currentRequest = request
@@ -89,8 +88,6 @@ internal class AssignmentAuthorization(
         }
     }
 
-    fun onFallbackAccepted(request: Request?) = onAssignmentsAccepted(request)
-
     fun resolutionContext(installedContext: EvaluationContext?): ResolutionContext = synchronized(stateLock) {
         val request = currentRequest
         if (!authorizationIsolationActive || request == null ||
@@ -105,8 +102,8 @@ internal class AssignmentAuthorization(
     fun isStaleResponseProtectionEnabled(): Boolean = synchronized(stateLock) { staleResponseProtectionEnabled }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Regex.matches is safe for the non-null String branch.
-    private fun normalize(value: String?): String? = when {
-        value.isNullOrEmpty() -> null
+    private fun normalize(value: String): String? = when {
+        value.isEmpty() -> null
         !TOKEN_VALUE.matches(value) -> {
             internalLogger?.log(
                 InternalLogger.Level.WARN,

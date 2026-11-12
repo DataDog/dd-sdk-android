@@ -129,7 +129,7 @@ internal class AssignmentAuthorizationTest {
     }
 
     @Test
-    fun `M clear authorization isolation W onFallbackAccepted() {same subject}`() {
+    fun `M clear authorization isolation W onAssignmentsAccepted() {same-subject fallback}`() {
         // Given
         val request = testedAuthorization.prepare(
             EvaluationContext("subject", mapOf(AssignmentAuthorization.ATTRIBUTE to "token", "version" to "new"))
@@ -138,7 +138,7 @@ internal class AssignmentAuthorizationTest {
         val fallback = testedAuthorization.fallback(request, installed, requireExactContext = false)
 
         // When
-        testedAuthorization.onFallbackAccepted(request)
+        testedAuthorization.onAssignmentsAccepted(request)
 
         // Then
         assertThat(fallback.usable).isTrue()

@@ -344,7 +344,7 @@ internal class EvaluationsManager(
                 )
                 if (fallback.usable) {
                     if (fallback.authorizationProtected) {
-                        assignmentAuthorization.onFallbackAccepted(request.assignmentAuthorization)
+                        assignmentAuthorization.onAssignmentsAccepted(request.assignmentAuthorization)
                     }
                 }
                 // The timeout already published Stale for this request. A late failure cannot make that accepted
@@ -471,7 +471,7 @@ internal class EvaluationsManager(
                                 )
                             }
                             if (fallback.authorizationProtected) {
-                                assignmentAuthorization.onFallbackAccepted(target.assignmentAuthorization)
+                                assignmentAuthorization.onAssignmentsAccepted(target.assignmentAuthorization)
                             }
                             val timeoutState = if (fallback.usable) {
                                 FlagsClientState.Stale
