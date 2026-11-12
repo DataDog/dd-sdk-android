@@ -141,19 +141,19 @@ internal class ExposureDecisionsTest {
     }
 
     @Test
-    fun `M keep a read-only copy of the features W register()`() {
+    fun `M keep its own copy of the features W register() {caller changes its map}`() {
         // Given
         val metadata = newMetadata()
-        testedDecisions.register(metadata, mapOf("holdout.key" to "holdout-1"), null, record(false))
-        val features = checkNotNull(testedDecisions.find(details(metadata))).hookFeatures
+        val features = mutableMapOf<String, Any>("holdout.key" to "holdout-1")
+        testedDecisions.register(metadata, features, null, record(false))
 
         // When
-        @Suppress("UNCHECKED_CAST", "DontDowncastCollectionTypes")
-        val result = runCatching { (features as MutableMap<String, Any>).clear() }
+        features["holdout.key"] = "changed"
+        features["extra"] = true
 
         // Then
-        assertThat(result.exceptionOrNull()).isInstanceOf(UnsupportedOperationException::class.java)
-        assertThat(features).containsEntry("holdout.key", "holdout-1")
+        assertThat(checkNotNull(testedDecisions.find(details(metadata))).hookFeatures)
+            .containsExactlyEntriesOf(mapOf("holdout.key" to "holdout-1"))
     }
 
     @Test

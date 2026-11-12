@@ -219,6 +219,31 @@ internal class ExposureHookTest {
     }
 
     @Test
+    fun `M give each callback its own features W finallyAfter() {two hooks, first changes its map}`() {
+        // Given
+        val details = exposureDetails(isRecorded = false, features = mapOf("holdout.key" to "holdout-1"))
+        val firstFeatures = mutableListOf<Map<String, Any>>()
+        val changingHook = ExposureHook(
+            { evaluation ->
+                firstFeatures.add(evaluation.features)
+                @Suppress("UNCHECKED_CAST", "DontDowncastCollectionTypes")
+                (evaluation.features as MutableMap<String, Any>).clear()
+            },
+            { mockDefaultLogger }
+        )
+
+        // When
+        changingHook.finallyAfter(hookContext(), details, emptyMap())
+        testedHook.finallyAfter(hookContext(), details, emptyMap())
+
+        // Then
+        assertThat(firstFeatures.single()).isEmpty()
+        assertThat(evaluations.single().features).containsExactlyEntriesOf(mapOf("holdout.key" to "holdout-1"))
+        assertThat(evaluations.single().features).isNotSameAs(firstFeatures.single())
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
     fun `M pass a copy of the context W finallyAfter()`() {
         // Given
         val details = exposureDetails(isRecorded = false)

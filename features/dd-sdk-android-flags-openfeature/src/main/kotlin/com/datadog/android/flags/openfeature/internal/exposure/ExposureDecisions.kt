@@ -10,7 +10,6 @@ import com.datadog.android.flags.model.EvaluationContext
 import dev.openfeature.kotlin.sdk.EvaluationMetadata
 import dev.openfeature.kotlin.sdk.FlagEvaluationDetails
 import dev.openfeature.kotlin.sdk.Reason
-import java.util.Collections
 import java.util.WeakHashMap
 
 /**
@@ -26,7 +25,7 @@ internal class ExposureDecisions(
 ) {
 
     /**
-     * @param features the `HOOK` features of the selected split. The decision keeps a read-only copy.
+     * @param features the `HOOK` features of the selected split. The decision keeps its own copy.
      * @param context the context of the assignment that was evaluated.
      * @param recordExposure records the exposure and returns whether it was already recorded, or null when the
      * evaluation turned stale. It is null for a non-exposure.
@@ -36,8 +35,7 @@ internal class ExposureDecisions(
         val context: EvaluationContext?,
         private val recordExposure: (() -> Boolean?)?
     ) {
-        val hookFeatures: Map<String, Any> =
-            if (features.isEmpty()) emptyMap() else Collections.unmodifiableMap(LinkedHashMap(features))
+        val hookFeatures: Map<String, Any> = features.toMap()
 
         private var isCompleted = false
         private var isRecorded: Boolean? = null
