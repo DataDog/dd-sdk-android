@@ -39,6 +39,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -82,33 +83,29 @@ internal class DatadogFlagsProviderTest {
             errorResolution
         }
 
-        try {
-            OpenFeatureAPI.setProviderAndWait(
-                provider = provider,
-                initialContext = ImmutableContext(targetingKey = "user-123"),
-                dispatcher = UnconfinedTestDispatcher(testScheduler)
-            )
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "user-123"),
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
 
-            // When
-            checkNotNull(capturedStateListener)
-                .onStateChanged(FlagsClientState.Error(RuntimeException("Network request failed")))
-            testScheduler.runCurrent()
-            val errorStatus = OpenFeatureAPI.getStatus()
-            val details = OpenFeatureAPI.getClient().getBooleanDetails("flag", false)
-            OpenFeatureAPI.setEvaluationContextAndWait(ImmutableContext(targetingKey = "user-456"))
+        // When
+        checkNotNull(capturedStateListener)
+            .onStateChanged(FlagsClientState.Error(RuntimeException("Network request failed")))
+        testScheduler.runCurrent()
+        val errorStatus = OpenFeatureAPI.getStatus()
+        val details = OpenFeatureAPI.getClient().getBooleanDetails("flag", false)
+        OpenFeatureAPI.setEvaluationContextAndWait(ImmutableContext(targetingKey = "user-456"))
 
-            // Then
-            assertThat(errorStatus).isInstanceOf(OpenFeatureStatus.Error::class.java)
-            assertThat((errorStatus as OpenFeatureStatus.Error).error)
-                .isInstanceOf(OpenFeatureError.GeneralError::class.java)
-                .hasMessage("Network request failed")
-            assertThat(resolveCalls).isEqualTo(1)
-            assertThat(details.value).isFalse()
-            assertThat(details.errorCode).isEqualTo(OpenFeatureErrorCode.PROVIDER_NOT_READY)
-            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Ready)
-        } finally {
-            OpenFeatureAPI.shutdown()
-        }
+        // Then
+        assertThat(errorStatus).isInstanceOf(OpenFeatureStatus.Error::class.java)
+        assertThat((errorStatus as OpenFeatureStatus.Error).error)
+            .isInstanceOf(OpenFeatureError.GeneralError::class.java)
+            .hasMessage("Network request failed")
+        assertThat(resolveCalls).isEqualTo(1)
+        assertThat(details.value).isFalse()
+        assertThat(details.errorCode).isEqualTo(OpenFeatureErrorCode.PROVIDER_NOT_READY)
+        assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Ready)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -117,26 +114,22 @@ internal class DatadogFlagsProviderTest {
         // Given
         val cause = mock<FlagsInvalidContextException> { on { message } doReturn "Invalid opt-out timestamp" }
 
-        try {
-            OpenFeatureAPI.setProviderAndWait(
-                provider = provider,
-                initialContext = ImmutableContext(targetingKey = "user-123"),
-                dispatcher = UnconfinedTestDispatcher(testScheduler)
-            )
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "user-123"),
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
 
-            // When
-            checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Error(cause))
-            testScheduler.runCurrent()
+        // When
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Error(cause))
+        testScheduler.runCurrent()
 
-            // Then
-            val errorStatus = OpenFeatureAPI.getStatus()
-            assertThat(errorStatus).isInstanceOf(OpenFeatureStatus.Error::class.java)
-            assertThat((errorStatus as OpenFeatureStatus.Error).error)
-                .isInstanceOf(OpenFeatureError.InvalidContextError::class.java)
-                .hasMessage("Invalid opt-out timestamp")
-        } finally {
-            OpenFeatureAPI.shutdown()
-        }
+        // Then
+        val errorStatus = OpenFeatureAPI.getStatus()
+        assertThat(errorStatus).isInstanceOf(OpenFeatureStatus.Error::class.java)
+        assertThat((errorStatus as OpenFeatureStatus.Error).error)
+            .isInstanceOf(OpenFeatureError.InvalidContextError::class.java)
+            .hasMessage("Invalid opt-out timestamp")
     }
 
     @Mock
@@ -177,6 +170,11 @@ internal class DatadogFlagsProviderTest {
         }
 
         provider = DatadogFlagsProvider.wrap(mockFlagsClient, mockSdkCore)
+    }
+
+    @AfterEach
+    fun `tear down`() = runTest {
+        OpenFeatureAPI.shutdown()
     }
 
     @Test
@@ -461,23 +459,19 @@ internal class DatadogFlagsProviderTest {
             callback.onFailure(stubTimeoutError)
         }
 
-        try {
-            // When
-            OpenFeatureAPI.setProviderAndWait(
-                provider = provider,
-                initialContext = ImmutableContext(targetingKey = "user-123"),
-                dispatcher = UnconfinedTestDispatcher(testScheduler)
-            )
+        // When
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "user-123"),
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
 
-            // Then
-            val status = OpenFeatureAPI.getStatus()
-            assertThat(status).isInstanceOf(OpenFeatureStatus.Error::class.java)
-            val error = (status as OpenFeatureStatus.Error).error
-            assertThat(error).isInstanceOf(OpenFeatureError.GeneralError::class.java)
-            assertThat(error).hasMessage(timeoutMessage)
-        } finally {
-            OpenFeatureAPI.shutdown()
-        }
+        // Then
+        val status = OpenFeatureAPI.getStatus()
+        assertThat(status).isInstanceOf(OpenFeatureStatus.Error::class.java)
+        val error = (status as OpenFeatureStatus.Error).error
+        assertThat(error).isInstanceOf(OpenFeatureError.GeneralError::class.java)
+        assertThat(error).hasMessage(timeoutMessage)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -492,20 +486,16 @@ internal class DatadogFlagsProviderTest {
             callback.onFailure(stubTimeoutError)
         }
 
-        try {
-            // When
-            OpenFeatureAPI.setProviderAndWait(
-                provider = provider,
-                initialContext = ImmutableContext(targetingKey = "user-123"),
-                dispatcher = UnconfinedTestDispatcher(testScheduler)
-            )
-            testScheduler.runCurrent()
+        // When
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "user-123"),
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
+        testScheduler.runCurrent()
 
-            // Then
-            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Stale)
-        } finally {
-            OpenFeatureAPI.shutdown()
-        }
+        // Then
+        assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Stale)
     }
 
     @Test
@@ -552,22 +542,18 @@ internal class DatadogFlagsProviderTest {
             )
         )
 
-        try {
-            OpenFeatureAPI.setProviderAndWait(
-                provider = provider,
-                initialContext = initialContext,
-                dispatcher = UnconfinedTestDispatcher(testScheduler)
-            )
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = initialContext,
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
 
-            // When
-            OpenFeatureAPI.setEvaluationContextAndWait(refreshedContext)
-            testScheduler.runCurrent()
+        // When
+        OpenFeatureAPI.setEvaluationContextAndWait(refreshedContext)
+        testScheduler.runCurrent()
 
-            // Then
-            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Stale)
-        } finally {
-            OpenFeatureAPI.shutdown()
-        }
+        // Then
+        assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Stale)
     }
 
     // endregion

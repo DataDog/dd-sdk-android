@@ -23,11 +23,13 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -98,19 +100,26 @@ internal class FlagsClientExtTest {
     @Mock
     lateinit var mockFlagsClient: FlagsClient
 
+    @Mock
+    lateinit var stubStateObservable: StateObservable
+
+    @BeforeEach
+    fun `set up`() {
+        whenever(mockFlagsClient.state).thenReturn(stubStateObservable)
+        whenever(stubStateObservable.getCurrentState()).thenReturn(FlagsClientState.Ready)
+    }
+
     @ParameterizedTest
-    @ValueSource(booleans = [false, true])
+    @MethodSource("stateOutcomes")
     fun `M return state outcome W setEvaluationContextSuspend() {callback onSuccess}`(
-        stale: Boolean,
+        currentState: FlagsClientState,
+        expectedOutcome: ContextUpdateOutcome,
         @StringForgery targetingKey: String
     ) = runTest {
         // Given
         val context = EvaluationContext(targetingKey = targetingKey)
         val contextCaptor = argumentCaptor<EvaluationContext>()
-        val stubState = mock<StateObservable>()
-        val currentState = if (stale) FlagsClientState.Stale else FlagsClientState.Ready
-        whenever(mockFlagsClient.state).thenReturn(stubState)
-        whenever(stubState.getCurrentState()).thenReturn(currentState)
+        whenever(stubStateObservable.getCurrentState()).thenReturn(currentState)
 
         doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
@@ -123,24 +132,20 @@ internal class FlagsClientExtTest {
         // Then
         verify(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
         assertThat(contextCaptor.firstValue).isEqualTo(context)
-        assertThat(result).isEqualTo(
-            if (stale) ContextUpdateOutcome.STALE else ContextUpdateOutcome.READY
-        )
+        assertThat(result).isEqualTo(expectedOutcome)
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = [false, true])
+    @MethodSource("stateOutcomes")
     fun `M return state outcome W setEvaluationContextSuspend() {timeout with usable assignments}`(
-        stale: Boolean,
+        currentState: FlagsClientState,
+        expectedOutcome: ContextUpdateOutcome,
         @StringForgery targetingKey: String
     ) = runTest {
         // Given
         val context = EvaluationContext(targetingKey = targetingKey)
-        val stubState = mock<StateObservable>()
         val stubTimeoutError = mock<FlagsInitializationTimeoutException>()
-        val currentState = if (stale) FlagsClientState.Stale else FlagsClientState.Ready
-        whenever(mockFlagsClient.state).thenReturn(stubState)
-        whenever(stubState.getCurrentState()).thenReturn(currentState)
+        whenever(stubStateObservable.getCurrentState()).thenReturn(currentState)
         doAnswer { invocation ->
             invocation.getArgument<EvaluationContextCallback>(1).onFailure(stubTimeoutError)
         }.whenever(mockFlagsClient).setEvaluationContext(eq(context), any())
@@ -150,9 +155,7 @@ internal class FlagsClientExtTest {
 
         // Then
         verify(mockFlagsClient).setEvaluationContext(eq(context), any())
-        assertThat(result).isEqualTo(
-            if (stale) ContextUpdateOutcome.STALE else ContextUpdateOutcome.READY
-        )
+        assertThat(result).isEqualTo(expectedOutcome)
     }
 
     @Test
@@ -162,9 +165,7 @@ internal class FlagsClientExtTest {
     ) = runTest {
         // Given
         val context = EvaluationContext(targetingKey = targetingKey)
-        val stubState = mock<StateObservable>()
-        whenever(mockFlagsClient.state).thenReturn(stubState)
-        whenever(stubState.getCurrentState()).thenReturn(FlagsClientState.Stale)
+        whenever(stubStateObservable.getCurrentState()).thenReturn(FlagsClientState.Stale)
         doAnswer { invocation ->
             invocation.getArgument<EvaluationContextCallback>(1).onFailure(RuntimeException(errorMessage))
         }.whenever(mockFlagsClient).setEvaluationContext(eq(context), any())
@@ -304,9 +305,7 @@ internal class FlagsClientExtTest {
             attributes = attributes
         )
         val contextCaptor = argumentCaptor<EvaluationContext>()
-        val stubState = mock<StateObservable>()
-        whenever(mockFlagsClient.state).thenReturn(stubState)
-        whenever(stubState.getCurrentState()).thenReturn(FlagsClientState.Ready)
+        whenever(stubStateObservable.getCurrentState()).thenReturn(FlagsClientState.Ready)
 
         doAnswer { invocation ->
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
@@ -337,5 +336,13 @@ internal class FlagsClientExtTest {
         assertThatThrownBy {
             runBlocking { mockFlagsClient.setEvaluationContextSuspend(context) }
         }.isInstanceOf(CancellationException::class.java)
+    }
+
+    companion object {
+        @JvmStatic
+        fun stateOutcomes() = listOf(
+            Arguments.of(FlagsClientState.Ready, ContextUpdateOutcome.READY),
+            Arguments.of(FlagsClientState.Stale, ContextUpdateOutcome.STALE)
+        )
     }
 }
