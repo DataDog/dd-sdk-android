@@ -66,60 +66,57 @@ internal class GranularComposeDecomposer(
     private val semanticsUtils: SemanticsUtils = SemanticsUtils(),
     private val reflectionUtils: ReflectionUtils = ReflectionUtils(),
     private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter,
-    private val compatibilityGate: GranularComposeCompatibilityGate = GranularComposeCompatibilityGate.SHARED
+    private val compatibilityGate: GranularComposeCompatibilityGate = GranularComposeCompatibilityGate()
 ) : CompositionHostDecomposer {
 
-    // Disable on incompatible runtime failures, then let the SDK caller report the original
-    // throwable through its SDK-bound logger and perform native fallback.
-    @Suppress("TooGenericExceptionCaught")
     override fun canDecompose(view: View): Boolean {
         if (!compatibilityGate.isAvailable()) return false
-        return try {
-            findRoot(view) != null
-        } catch (t: Throwable) {
-            compatibilityGate.markIncompatible()
-            @Suppress("ThrowingInternalException") // The SDK caller reports and contains this original failure.
-            throw t
-        }
+        return disableOnLinkageError { findRoot(view) != null }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun decompose(view: View, request: CompositionHostDecomposeRequest): CompositionHostDecomposeResult? {
         if (!compatibilityGate.isAvailable() || !request.shouldContinue()) return null
-        return try {
-            DecomposeSession(view, request).run()
-        } catch (t: Throwable) {
-            compatibilityGate.markIncompatible()
-            @Suppress("ThrowingInternalException") // The SDK caller reports and contains this original failure.
-            throw t
+        return disableOnLinkageError { DecomposeSession(view, request).run() }
+    }
+
+    @Suppress("ReturnCount")
+    override fun readTouchOverrideAreas(view: View, shouldContinue: () -> Boolean): Map<Rect, TouchPrivacy>? {
+        if (!shouldContinue()) return null
+        if (view !is AbstractComposeView && !reflectionUtils.isAndroidComposeView(view)) return emptyMap()
+        if (!compatibilityGate.isAvailable()) return null
+        return disableOnLinkageError {
+            val root = findRoot(view)
+            if (root == null || !root.hasAvailablePosition()) {
+                null
+            } else {
+                val touchPrivacy = GranularComposeTouchPrivacy(
+                    semanticsUtils,
+                    view.resolveComposeWindowOffset(1f),
+                    shouldContinue
+                )
+                if (touchPrivacy.captureSubtree(root)) touchPrivacy.areas else null
+            }
         }
     }
 
-    @Suppress("TooGenericExceptionCaught", "ReturnCount") // Optional runtime failures reach the SDK guard.
-    override fun readTouchOverrideAreas(view: View, shouldContinue: () -> Boolean): Map<Rect, TouchPrivacy>? {
-        if (!shouldContinue()) return null
+    // Disable on incompatible runtime failures, then let the SDK caller report the original
+    // throwable through its SDK-bound logger and perform native fallback. Other failures
+    // propagate without disabling, since they are specific to one capture.
+    private inline fun <T> disableOnLinkageError(block: () -> T): T {
         return try {
-            if (view !is AbstractComposeView && !reflectionUtils.isAndroidComposeView(view)) return emptyMap()
-            if (!compatibilityGate.isAvailable()) return null
-            val root = findRoot(view) ?: return null
-            if (!root.hasAvailablePosition()) return null
-            val privacy = GranularComposeTouchPrivacy(
-                semanticsUtils,
-                view.resolveComposeWindowOffset(1f),
-                shouldContinue
-            )
-            if (privacy.captureSubtree(root)) privacy.areas else null
-        } catch (error: Throwable) {
+            block()
+        } catch (error: LinkageError) {
             compatibilityGate.markIncompatible()
             @Suppress("ThrowingInternalException") // The SDK caller reports and contains this original failure.
             throw error
         }
     }
 
-    private fun findRoot(view: View): SemanticsNode? = if (reflectionUtils.isAndroidComposeView(view)) {
-        reflectionUtils.getSemanticsOwner(view)?.unmergedRootSemanticsNode
-    } else {
-        semanticsUtils.findRootSemanticsNode(view)
+    // Native Views must not reach composition reflection, which fails on them and reports telemetry.
+    private fun findRoot(view: View): SemanticsNode? = when {
+        reflectionUtils.isAndroidComposeView(view) -> reflectionUtils.getSemanticsOwner(view)?.unmergedRootSemanticsNode
+        view is AbstractComposeView -> semanticsUtils.findRootSemanticsNode(view)
+        else -> null
     }
 
     /** One [decompose] call's state - a fresh instance per call, so this class itself stays stateless. */
@@ -132,32 +129,32 @@ internal class GranularComposeDecomposer(
         private val nodes = mutableListOf<CapturedLayer>()
         private val wireframes = mutableListOf<CapturedWireframe>()
         private val touchPrivacy = GranularComposeTouchPrivacy(semanticsUtils, windowOffset, request.shouldContinue)
-        private val textMapper = GranularComposeTextMapper(::convertColor)
-        private var culledLeaf = false
+        private val textMapper = GranularComposeTextMapper { convertColor(it) }
+        private var hasCulledLeaf = false
 
         @Suppress("ReturnCount")
         fun run(): CompositionHostDecomposeResult? {
             val root = findRoot(hostView) ?: return null
             if (!root.hasAvailablePosition()) return null
             touchPrivacy.captureNode(root)
-            val privacy = semanticsUtils.getTextAndInputPrivacyOverride(root) ?: request.textAndInputPrivacy
+            val textPrivacy = semanticsUtils.getTextAndInputPrivacyOverride(root) ?: request.textAndInputPrivacy
             val rootChildren = mutableListOf<CapturedChild>()
-            if (!walkChildren(root.children, rootChildren, privacy)) return null
-            if (rootChildren.isEmpty() && !culledLeaf) return null
+            if (!walkChildren(root.children, rootChildren, textPrivacy)) return null
+            if (rootChildren.isEmpty() && !hasCulledLeaf) return null
             return CompositionHostDecomposeResult(rootChildren, nodes, wireframes, touchPrivacy.areas)
         }
 
         @Suppress("ReturnCount")
         private fun walkNode(
             node: SemanticsNode,
-            parentPrivacy: TextAndInputPrivacy,
+            parentTextPrivacy: TextAndInputPrivacy,
             allowCulling: Boolean
         ): CapturedChild? {
             if (!node.hasAvailablePosition()) return null
-            val privacy = semanticsUtils.getTextAndInputPrivacyOverride(node) ?: parentPrivacy
+            val textPrivacy = semanticsUtils.getTextAndInputPrivacyOverride(node) ?: parentTextPrivacy
             touchPrivacy.captureNode(node)
             val nodeIdentity = request.identityFactory.composeNode(request.hostIdentity, node.id.toString())
-            val bounds = boundsOf(node)
+            val bounds = innerBoundsOf(node)
 
             if (semanticsUtils.isNodeHidden(node)) {
                 if (!touchPrivacy.captureSubtree(node)) return null
@@ -175,18 +172,18 @@ internal class GranularComposeDecomposer(
             if (allowCulling && hostClip != null && isFullyOutsideHostClip(bounds, hostClip)) {
                 resolvedChildren = node.children
                 if (resolvedChildren.isEmpty()) {
-                    culledLeaf = true
+                    hasCulledLeaf = true
                     return null
                 }
             }
 
             val children = mutableListOf<CapturedChild>()
-            resolveShapeWireframe(node, nodeIdentity, bounds)?.let { shape ->
+            resolveBackgroundWireframe(node, nodeIdentity, bounds)?.let { shape ->
                 wireframes += shape
                 children += CapturedChild.Wireframe(shape.identity)
             }
-            captureText(node, nodeIdentity, bounds, privacy, children)
-            if (!walkChildren(resolvedChildren ?: node.children, children, privacy)) return null
+            captureText(node, nodeIdentity, bounds, textPrivacy, children)
+            if (!walkChildren(resolvedChildren ?: node.children, children, textPrivacy)) return null
 
             return registerLayer(nodeIdentity, bounds, children, modifiers = resolveModifiers(node))
         }
@@ -194,12 +191,12 @@ internal class GranularComposeDecomposer(
         private fun walkChildren(
             source: List<SemanticsNode>,
             destination: MutableList<CapturedChild>,
-            privacy: TextAndInputPrivacy
+            textPrivacy: TextAndInputPrivacy
         ): Boolean {
             val allowCulling = hostClip != null && source.size >= MIN_CULLING_SIBLINGS
             for (child in source) {
                 if (!request.shouldContinue()) return false
-                walkNode(child, privacy, allowCulling)?.let { destination += it }
+                walkNode(child, textPrivacy, allowCulling)?.let { destination += it }
             }
             return request.shouldContinue()
         }
@@ -208,21 +205,21 @@ internal class GranularComposeDecomposer(
             node: SemanticsNode,
             nodeIdentity: CapturedIdentity,
             bounds: CapturedBounds,
-            privacy: TextAndInputPrivacy,
+            textPrivacy: TextAndInputPrivacy,
             children: MutableList<CapturedChild>
         ) {
             val textLayoutInfo = semanticsUtils.resolveTextLayoutInfo(node, request.internalLogger) ?: return
-            val textId = request.identityFactory.textWireframe(nodeIdentity)
+            val textIdentity = request.identityFactory.textWireframe(nodeIdentity)
             val isInput = node.config.contains(SemanticsActions.SetText) ||
                 node.config.contains(SemanticsProperties.EditableText)
-            wireframes += textMapper.map(textId, bounds, textLayoutInfo, privacy, isInput)
-            children += CapturedChild.Wireframe(textId)
+            wireframes += textMapper.map(textIdentity, bounds, textLayoutInfo, textPrivacy, isInput)
+            children += CapturedChild.Wireframe(textIdentity)
         }
 
         private fun captureHiddenNode(identity: CapturedIdentity, bounds: CapturedBounds): CapturedChild {
-            val placeholderId = request.identityFactory.placeholderWireframe(identity)
-            wireframes += CapturedWireframe.PrivacyPlaceholder(placeholderId, bounds, label = HIDDEN_LABEL)
-            return registerLayer(identity, bounds, listOf(CapturedChild.Wireframe(placeholderId)))
+            val placeholderIdentity = request.identityFactory.placeholderWireframe(identity)
+            wireframes += CapturedWireframe.PrivacyPlaceholder(placeholderIdentity, bounds, label = HIDDEN_LABEL)
+            return registerLayer(identity, bounds, listOf(CapturedChild.Wireframe(placeholderIdentity)))
         }
 
         private fun registerLayer(
@@ -242,17 +239,17 @@ internal class GranularComposeDecomposer(
             return CapturedChild.Layer(identity)
         }
 
-        private fun boundsOf(node: SemanticsNode): CapturedBounds {
+        private fun innerBoundsOf(node: SemanticsNode): CapturedBounds {
             val globalBounds = semanticsUtils.resolveInnerBounds(node, windowOffset)
             return CapturedBounds(globalBounds.x, globalBounds.y, globalBounds.width, globalBounds.height)
         }
 
-        private fun resolveShapeWireframe(
+        private fun resolveBackgroundWireframe(
             node: SemanticsNode,
             nodeIdentity: CapturedIdentity,
             bounds: CapturedBounds
         ): CapturedWireframe.Shape? {
-            val colorLong = semanticsUtils.resolveBackgroundColor(node) ?: return null
+            val rawColor = semanticsUtils.resolveBackgroundColor(node) ?: return null
             val cornerRadius = semanticsUtils.resolveBackgroundShape(node)?.let { shape ->
                 semanticsUtils.resolveCornerRadius(
                     shape,
@@ -264,7 +261,7 @@ internal class GranularComposeDecomposer(
                 identity = request.identityFactory.shapeWireframe(nodeIdentity),
                 bounds = bounds,
                 style = CapturedShapeStyle(
-                    backgroundColor = convertColor(colorLong),
+                    backgroundColor = convertColor(rawColor),
                     cornerRadius = cornerRadius?.toDouble()
                 )
             )

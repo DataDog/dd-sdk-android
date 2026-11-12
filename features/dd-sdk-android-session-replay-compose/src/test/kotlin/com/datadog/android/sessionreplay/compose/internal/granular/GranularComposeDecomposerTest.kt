@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.compose.internal.granular
 
 import android.view.View
 import androidx.compose.ui.layout.LayoutInfo
+import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.ui.semantics.SemanticsNode
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
@@ -54,7 +55,7 @@ internal class GranularComposeDecomposerTest {
     private val mockReflectionUtils: ReflectionUtils = mock()
     private lateinit var testedGate: GranularComposeCompatibilityGate
     private lateinit var testedDecomposer: GranularComposeDecomposer
-    private val mockView: View = mock()
+    private val mockView: View = mock<AbstractComposeView>()
 
     @BeforeEach
     fun `set up`() {
@@ -134,6 +135,72 @@ internal class GranularComposeDecomposerTest {
         assertThat(testedDecomposer.canDecompose(mockView)).isFalse()
         assertThat(testedDecomposer.decompose(mockView, request)).isNull()
         verify(mockSemanticsUtils).findRootSemanticsNode(mockView)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M propagate failure without disabling W canDecompose() or decompose() { capture-specific failure }`(
+        fakeRecognitionFailure: Boolean,
+        @StringForgery fakeErrorMessage: String
+    ) {
+        // Given
+        val fakeError = IllegalStateException(fakeErrorMessage)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView)).thenThrow(fakeError)
+        val request: CompositionHostDecomposeRequest = mock {
+            on { shouldContinue } doReturn { true }
+        }
+
+        // When
+        val thrown = assertThrows<IllegalStateException> {
+            if (fakeRecognitionFailure) {
+                testedDecomposer.canDecompose(mockView)
+            } else {
+                testedDecomposer.decompose(mockView, request)
+            }
+        }
+
+        // Then
+        assertThat(thrown).isSameAs(fakeError)
+        assertThat(testedGate.isAvailable()).isTrue()
+    }
+
+    @Test
+    fun `M keep another instance available W canDecompose() { incompatible runtime in one instance }`(
+        @StringForgery fakeErrorMessage: String
+    ) {
+        // Given
+        val testedFirst = GranularComposeDecomposer(mockSemanticsUtils, mockReflectionUtils)
+        val testedSecond = GranularComposeDecomposer(mockSemanticsUtils, mockReflectionUtils)
+        whenever(mockSemanticsUtils.findRootSemanticsNode(mockView))
+            .thenThrow(NoSuchMethodError(fakeErrorMessage))
+            .thenReturn(mock())
+        assertThrows<NoSuchMethodError> { testedFirst.canDecompose(mockView) }
+
+        // When
+        val firstResult = testedFirst.canDecompose(mockView)
+        val secondResult = testedSecond.canDecompose(mockView)
+
+        // Then
+        assertThat(firstResult).isFalse()
+        assertThat(secondResult).isTrue()
+    }
+
+    @Test
+    fun `M skip composition lookup W canDecompose() + decompose() { native View }`() {
+        // Given
+        val stubNativeView: View = mock()
+        val request: CompositionHostDecomposeRequest = mock {
+            on { shouldContinue } doReturn { true }
+        }
+
+        // When
+        val recognized = testedDecomposer.canDecompose(stubNativeView)
+        val result = testedDecomposer.decompose(stubNativeView, request)
+
+        // Then
+        assertThat(recognized).isFalse()
+        assertThat(result).isNull()
+        verifyNoInteractions(mockSemanticsUtils)
     }
 
     @Test

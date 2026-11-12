@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.compose.internal.granular
 
 import android.view.View
 import androidx.compose.ui.layout.LayoutInfo
+import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.ui.semantics.SemanticsNode
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
@@ -45,7 +46,7 @@ import org.mockito.quality.Strictness
 internal class GranularComposeCancellationTest {
     private val mockSemanticsUtils: SemanticsUtils = mock()
     private val mockReflectionUtils: ReflectionUtils = mock()
-    private val mockHostView: View = mock()
+    private val mockHostView: View = mock<AbstractComposeView>()
     private val testedGate = GranularComposeCompatibilityGate()
     private val testedDecomposer = GranularComposeDecomposer(
         semanticsUtils = mockSemanticsUtils,

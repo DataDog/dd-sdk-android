@@ -7,15 +7,13 @@
 package com.datadog.android.sessionreplay.compose.internal.granular
 
 /**
- * Monotonic, process-lifetime kill switch for [GranularComposeDecomposer]: once a decomposition
- * attempt fails against the running Compose UI runtime (a version outside this artifact's tested
- * range - a [LinkageError]/[NoSuchMethodError] from a shifted internal API, not an ordinary bug),
- * every host falls back to the generic native-View mapper for the rest of the process, matching
- * production behavior from before this decomposer existed. Never re-attempted, mirroring
- * `LayoutNodeUtils.MethodResolver`'s escalating, never-downgrading state in
- * `integrations/dd-sdk-android-compose` - the only existing precedent for this shape in this
- * codebase. The decomposer propagates the first failure to its SDK caller, which owns error
- * reporting and native fallback; subsequent calls return unavailable without retrying.
+ * Monotonic kill switch for one [GranularComposeDecomposer]: once a decomposition attempt hits a
+ * [LinkageError] from a Compose UI runtime outside this artifact's tested range (a shifted internal
+ * API, not an ordinary bug), that decomposer's hosts fall back to the generic native-View mapper
+ * and are never re-attempted, mirroring `LayoutNodeUtils.MethodResolver`'s never-downgrading state
+ * in `integrations/dd-sdk-android-compose`. Each SDK core configures its own
+ * `ComposeExtensionSupport`, so the gate is scoped to that core. The decomposer propagates the
+ * failure to its SDK caller, which owns error reporting and native fallback.
  */
 internal class GranularComposeCompatibilityGate {
 
@@ -26,9 +24,5 @@ internal class GranularComposeCompatibilityGate {
 
     fun markIncompatible() {
         incompatible = true
-    }
-
-    internal companion object {
-        internal val SHARED = GranularComposeCompatibilityGate()
     }
 }

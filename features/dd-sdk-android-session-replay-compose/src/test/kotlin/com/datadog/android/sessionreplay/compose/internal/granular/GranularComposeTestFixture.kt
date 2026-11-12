@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.compose.internal.granular
 import android.view.View
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.LayoutInfo
+import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.ui.semantics.SemanticsConfiguration
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -35,7 +36,7 @@ internal abstract class GranularComposeTestFixture {
     protected val mockSemanticsUtils: SemanticsUtils = mock()
     protected val mockReflectionUtils: ReflectionUtils = mock()
     protected val mockLogger: InternalLogger = mock()
-    protected val mockHost: View = mock()
+    protected val mockHost: View = mock<AbstractComposeView>()
     protected val stubIdentityFactory: CompositionIdentityFactory = mock()
     protected val fakeHostIdentity: CapturedIdentity = mock()
     protected val testedGate = GranularComposeCompatibilityGate()
