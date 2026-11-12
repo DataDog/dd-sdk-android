@@ -7,7 +7,6 @@
 package com.datadog.android.internal.tests.elmyr
 
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
-import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 

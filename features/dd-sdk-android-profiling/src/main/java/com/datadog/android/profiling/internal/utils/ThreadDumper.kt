@@ -10,15 +10,13 @@ import android.os.Looper
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.profiling.ProfilingAnrDetectedEvent
 import com.datadog.android.internal.profiling.ProfilingThreadDump
+import com.datadog.android.internal.utils.AllStackTracesProvider
 import com.datadog.android.internal.utils.loggableStackTrace
+import com.datadog.android.internal.utils.safeGetAllStackTraces
 
 internal class ThreadDumper(
     private val mainThreadProvider: () -> Thread = { Looper.getMainLooper().thread },
-    private val allStackTracesProvider: () -> Map<Thread, Array<StackTraceElement>> = {
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        // Caught by try catch block in the call site
-        Thread.getAllStackTraces()
-    }
+    private val allStackTracesProvider: AllStackTracesProvider = ::safeGetAllStackTraces
 ) {
 
     @Volatile
@@ -27,7 +25,7 @@ internal class ThreadDumper(
     fun dump(detectedAtMs: Long): ProfilingAnrDetectedEvent {
         val mainThread = mainThreadProvider()
         val anrThreadStack = mainThread.stackTrace.toList()
-        val allThreads = safeGetAllStackTraces()
+        val allThreads = allStackTracesProvider(::logError)
             .filterKeys { it != mainThread }
             .filterValues { it.isNotEmpty() }
             .map { (thread, stack) ->
@@ -46,21 +44,13 @@ internal class ThreadDumper(
         )
     }
 
-    private fun safeGetAllStackTraces(): Map<Thread, Array<StackTraceElement>> {
-        return try {
-            allStackTracesProvider()
-        } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-            internalLogger?.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { LOG_STACKS_FAILED },
-                t
-            )
-            emptyMap()
-        }
-    }
-
-    private companion object {
-        const val LOG_STACKS_FAILED = "Failed to capture all stack traces for thread dump."
+    private fun logError(message: String, throwable: Throwable) {
+        internalLogger?.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            { message },
+            throwable,
+            onlyOnce = true
+        )
     }
 }

@@ -559,7 +559,7 @@ internal class CompositionWindowThreadTest {
         }
     }
 
-    private class CaptureFixture(private val fakeScopeValue: String, private val windows: List<View>) {
+    private class CaptureFixture(fakeScopeValue: String, private val windows: List<View>) {
         val mockTraversal: AndroidWindowTraversal = mock()
         val mockIdentifiers: ViewIdentifierResolver = mock()
         val mockTouchPrivacyManager: TouchPrivacyManager = mock()

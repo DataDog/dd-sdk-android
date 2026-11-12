@@ -8,11 +8,14 @@ package com.datadog.android.flags.openfeature.internal
 
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
+import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
+import java.util.concurrent.CancellationException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -27,6 +30,8 @@ import kotlin.coroutines.suspendCoroutine
  *
  * @param context The evaluation context to set
  * @param telemetryOptedOut The typed subject decision, or null to preserve native telemetry configuration.
+ * @throws [CancellationException] in enabled experimentation opt-out modes, if a newer request replaces this
+ * request before its result is processed.
  * @throws [OpenFeatureError.GeneralError] if setting the context fails. The first context operation also
  * fails when the configured Flags initialization timeout elapses without matching cached assignments.
  */
@@ -44,6 +49,10 @@ internal suspend fun FlagsClient.setEvaluationContextSuspend(
             }
 
             override fun onFailure(error: Throwable) {
+                if (error is FlagsContextSupersededException) {
+                    continuation.resumeWithException(CancellationException(error.message))
+                    return
+                }
                 val isUsableTimeout = error is FlagsInitializationTimeoutException &&
                     when (state.getCurrentState()) {
                         FlagsClientState.Ready, FlagsClientState.Stale -> true
@@ -53,9 +62,13 @@ internal suspend fun FlagsClient.setEvaluationContextSuspend(
                     continuation.resume(Unit)
                 } else {
                     continuation.resumeWithException(
-                        OpenFeatureError.GeneralError(
-                            error.message ?: "Unknown error: ${error::class.simpleName}"
-                        )
+                        if (error is FlagsInvalidContextException) {
+                            OpenFeatureError.InvalidContextError(error.message ?: "Invalid evaluation context")
+                        } else {
+                            OpenFeatureError.GeneralError(
+                                error.message ?: "Unknown error: ${error::class.simpleName}"
+                            )
+                        }
                     )
                 }
             }

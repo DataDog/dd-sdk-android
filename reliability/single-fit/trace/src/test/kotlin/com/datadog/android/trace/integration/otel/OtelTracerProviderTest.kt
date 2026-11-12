@@ -7,8 +7,8 @@
 package com.datadog.android.trace.integration.otel
 
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.tests.ktx.getInt
 import com.datadog.android.trace.Trace
@@ -17,9 +17,7 @@ import com.datadog.android.trace.integration.tests.assertj.SpansPayloadAssert
 import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeConfigurator
 import com.datadog.android.trace.integration.tests.utils.BlockingWriterWrapper
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider
-import com.datadog.android.utils.withRumContext
 import com.datadog.opentelemetry.trace.OtelConventions
-import com.datadog.tools.unit.completedFutureMock
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.trace.api.sampling.PrioritySampling
 import com.datadog.trace.bootstrap.instrumentation.api.Tags
@@ -39,6 +37,7 @@ import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.context.Context
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
+import org.junit.jupiter.api.AutoClose
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
@@ -46,8 +45,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
 import java.time.Instant
 import java.util.UUID
@@ -63,6 +60,7 @@ import kotlin.system.measureNanoTime
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class OtelTracerProviderTest {
 
+    @AutoClose
     private lateinit var stubSdkCore: StubSDKCore
     private lateinit var blockingWriterWrapper: BlockingWriterWrapper
 
@@ -1040,14 +1038,15 @@ internal class OtelTracerProviderTest {
     ) {
         // Given
         val fakeViewContext = fakeRumContext.copy(viewId = fakeRumViewId.toString())
-        val datadogContext = stubSdkCore.getDatadogContext().withRumContext(fakeViewContext)
+        stubSdkCore.stubFeature(Feature.RUM_FEATURE_NAME)
+        stubSdkCore.stubFeatureContext(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(FeatureContextKeys.RUM_CONTEXT to fakeViewContext)
+        )
 
-        val rumFeature = mock<Feature> {
-            on { name } doReturn Feature.RUM_FEATURE_NAME
-        }
-
-        stubSdkCore.stubFeatureScope(rumFeature, SdkFeatureMock.create(completedFutureMock(datadogContext)))
-        val testedProvider = OtelTracerProvider.Builder(stubSdkCore).setBundleWithRumEnabled(true).build()
+        val testedProvider = OtelTracerProvider.Builder(stubSdkCore)
+            .setBundleWithRumEnabled(true)
+            .build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
 
         // When
@@ -1067,6 +1066,7 @@ internal class OtelTracerProviderTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
         val payload0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        val datadogContext = stubSdkCore.getDatadogContext()
         SpansPayloadAssert.assertThat(payload0)
             .hasEnv(datadogContext.env)
             .hasSpanAtIndexWith(0) {

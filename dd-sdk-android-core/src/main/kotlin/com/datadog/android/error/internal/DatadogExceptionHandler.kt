@@ -16,13 +16,16 @@ import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.triggerUploadWorker
+import com.datadog.android.internal.utils.AllStackTracesProvider
 import com.datadog.android.internal.utils.asString
 import com.datadog.android.internal.utils.loggableStackTrace
+import com.datadog.android.internal.utils.safeGetAllStackTraces
 import java.util.concurrent.ThreadPoolExecutor
 
 internal class DatadogExceptionHandler(
     private val sdkCore: FeatureSdkCore,
-    private val appContext: Context
+    private val appContext: Context,
+    private val allStackTracesProvider: AllStackTracesProvider = ::safeGetAllStackTraces
 ) : Thread.UncaughtExceptionHandler {
 
     @Volatile
@@ -123,7 +126,7 @@ internal class DatadogExceptionHandler(
                 state = crashedThread.state.asString(),
                 stack = e.loggableStackTrace()
             )
-        ) + safeGetAllStacktraces()
+        ) + captureAllStackTraces()
             .filterKeys { it != crashedThread }
             .filterValues { it.isNotEmpty() }
             .map { (thread, stackTrace) ->
@@ -136,18 +139,15 @@ internal class DatadogExceptionHandler(
             }
     }
 
-    private fun safeGetAllStacktraces(): Map<Thread, Array<StackTraceElement>> {
-        return try {
-            Thread.getAllStackTraces()
-        } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-            // coroutines machinery can throw errors here
+    private fun captureAllStackTraces(): Map<Thread, Array<StackTraceElement>> {
+        return allStackTracesProvider { message, throwable ->
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                { "Failed to get all threads dump" },
-                t
+                { message },
+                throwable,
+                onlyOnce = true
             )
-            emptyMap()
         }
     }
 

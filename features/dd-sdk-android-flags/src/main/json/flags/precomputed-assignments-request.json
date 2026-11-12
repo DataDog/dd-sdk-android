@@ -13,6 +13,17 @@
         "attributes": {
           "type": "object",
           "properties": {
+            "evaluation_options": {
+              "type": "object",
+              "properties": {
+                "experimentation_opt_out_mode": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "experimentation_opt_out_mode"
+              ]
+            },
             "env": {
               "type": "object",
               "properties": {
@@ -56,6 +67,28 @@
               "required": [
                 "targeting_key",
                 "targeting_attributes"
+              ]
+            },
+            "flag_selection": {
+              "description": "Canonical flag selection. Sent only when the application configures a valid selection.",
+              "type": "object",
+              "properties": {
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "key_patterns": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "tags",
+                "key_patterns"
               ]
             }
           },

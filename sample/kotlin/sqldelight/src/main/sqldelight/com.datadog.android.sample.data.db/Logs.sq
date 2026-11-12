@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS logs (
+    _id TEXT PRIMARY KEY,
+    message TEXT,
+    timestamp TEXT,
+    ttl INTEGER
+);
+
+getLogs:
+SELECT * FROM logs WHERE logs.ttl >= ?;
+
+purgeLogs:
+DELETE FROM logs WHERE logs.ttl < ?;
+
+insertLog:
+INSERT OR REPLACE INTO logs (_id, message, timestamp, ttl) VALUES (?,?,?,?);

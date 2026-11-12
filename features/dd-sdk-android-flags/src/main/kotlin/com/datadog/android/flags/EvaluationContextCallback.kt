@@ -19,8 +19,9 @@ interface EvaluationContextCallback {
      * Invoked when the evaluation context update completes successfully.
      *
      * This method is called on a background executor thread after the state transitions
-     * to [FlagsClientState.Ready]. The new flag evaluations are now available for
-     * subsequent flag resolution calls.
+     * to [FlagsClientState.Ready]. A newer context can replace the installed assignments before delivery.
+     * In enabled experimentation opt-out modes, resolutions return defaults until assignments match the current context.
+     * In disabled mode, previous assignments remain available until replaced.
      */
     fun onSuccess()
 
@@ -32,6 +33,12 @@ interface EvaluationContextCallback {
      * [FlagsClientState.Error] (network failed with no cached flags). An initialization timeout uses
      * the same state selection based on matching cached assignments. The request continues and can
      * transition the client to [FlagsClientState.Ready] later.
+     *
+     * In enabled experimentation opt-out modes, malformed timestamps fail with [FlagsInvalidContextException]
+     * without an assignment request. In enabled modes, a request replaced before its result is processed fails with
+     * [FlagsContextSupersededException], whether its fetch succeeds or fails, unless its timeout already completed it.
+     * A result processed before the request is replaced keeps its original completion outcome.
+     * Treat that exception as cancellation. It does not change the newer request's client state.
      *
      * @param error A [Throwable] containing details about the failure, typically including
      * a message explaining the network request failure.

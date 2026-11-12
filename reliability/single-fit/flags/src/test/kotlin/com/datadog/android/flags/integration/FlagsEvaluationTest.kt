@@ -31,6 +31,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
+import org.junit.jupiter.api.AutoClose
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -54,6 +55,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 class FlagsEvaluationTest {
 
+    @AutoClose
     private lateinit var stubSdkCore: StubSDKCore
 
     private lateinit var fakeFlagEndpoint: String
@@ -114,7 +116,7 @@ class FlagsEvaluationTest {
         @BoolForgery fakeBoolean: Boolean,
         @StringForgery fakeString: String,
         @IntForgery fakeInt: Int,
-        @DoubleForgery fakeDouble: Double,
+        @DoubleForgery(min = -1_000_000.0, max = 1_000_000.0) fakeDouble: Double,
         @StringForgery fakeStructureKey: String,
         @StringForgery fakeStructureValue: String
     ) {
@@ -125,6 +127,7 @@ class FlagsEvaluationTest {
                 "string" to assignment("string", fakeString),
                 "int" to assignment("integer", fakeInt),
                 "double" to assignment("number", fakeDouble),
+                "float" to assignment("float", fakeInt),
                 "object" to assignment("object", JSONObject().put(fakeStructureKey, fakeStructureValue))
             )
         )
@@ -139,6 +142,8 @@ class FlagsEvaluationTest {
         assertThat(client.resolveStringValue("string", "")).isEqualTo(fakeString)
         assertThat(client.resolveIntValue("int", fakeInt.inv())).isEqualTo(fakeInt)
         assertThat(client.resolveDoubleValue("double", fakeDouble + 1)).isEqualTo(fakeDouble)
+        assertThat(client.resolveIntValue("float", fakeInt.inv())).isEqualTo(fakeInt)
+        assertThat(client.resolveDoubleValue("int", fakeInt.inv().toDouble())).isEqualTo(fakeInt.toDouble())
         assertThat(client.resolveStructureValue("object", JSONObject()).getString(fakeStructureKey))
             .isEqualTo(fakeStructureValue)
         assertThat(client.resolveStructureValue("object", emptyMap()))
@@ -425,7 +430,7 @@ class FlagsEvaluationTest {
         assertThat(evaluation.getJSONObject("flag").getString("key")).isEqualTo(fakeFlagKey)
         assertThat(evaluation.getJSONObject("variant").getString("key")).isEqualTo(fakeVariationKey)
         assertThat(evaluation.getJSONObject("allocation").getString("key")).isEqualTo(fakeAllocationKey)
-        assertThat(evaluation.getString("targeting_key")).isEqualTo(fakeTargetingKey)
+        assertThat(evaluation.getString("targeting_key")).matches("sha256_[0-9a-f]{64}")
         assertThat(evaluation.getInt("evaluation_count")).isEqualTo(fakeEvaluationCount)
     }
 

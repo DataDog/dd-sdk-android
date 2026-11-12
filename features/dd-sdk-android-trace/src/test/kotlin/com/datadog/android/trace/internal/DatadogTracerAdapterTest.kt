@@ -8,7 +8,6 @@ package com.datadog.android.trace.internal
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
-import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.trace.api.scope.DatadogScopeListener
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
@@ -65,6 +64,7 @@ internal class DatadogTracerAdapterTest {
     @Mock
     lateinit var mockDatadogSpan: DatadogSpanAdapter
 
+    @Mock
     lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock
@@ -84,7 +84,7 @@ internal class DatadogTracerAdapterTest {
 
     @BeforeEach
     fun `set up`() {
-        mockRumFeatureScope = SdkFeatureMock.create(mockContextFuture)
+        whenever(mockSdkCore.getDatadogContextFuture(any())) doReturn mockContextFuture
 
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.internalLogger).thenReturn(mock())

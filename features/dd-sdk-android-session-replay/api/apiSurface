@@ -577,7 +577,6 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
       fun fromJson(kotlin.String): StartPoint
       fun fromJsonObject(com.google.gson.JsonObject): StartPoint
   enum Source
-    constructor(kotlin.String)
     - ANDROID
     - IOS
     - FLUTTER
@@ -589,7 +588,6 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): Source
   enum PointerEventType
-    constructor(kotlin.String)
     - DOWN
     - UP
     - MOVE
@@ -597,7 +595,6 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): PointerEventType
   enum PointerType
-    constructor(kotlin.String)
     - MOUSE
     - TOUCH
     - PEN
@@ -605,7 +602,6 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): PointerType
   enum CompositeOperation
-    constructor(kotlin.String)
     - SOURCEOVER
     - DESTINATIONIN
     - DESTINATIONOUT
@@ -614,7 +610,6 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): CompositeOperation
   enum TruncationMode
-    constructor(kotlin.String)
     - CLIP
     - HEAD
     - TAIL
@@ -623,21 +618,18 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): TruncationMode
   enum Type
-    constructor(kotlin.String)
     - WIREFRAME
     - LAYER
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Type
   enum FillRule
-    constructor(kotlin.String)
     - NONZERO
     - EVENODD
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): FillRule
   enum Horizontal
-    constructor(kotlin.String)
     - LEFT
     - RIGHT
     - CENTER
@@ -645,7 +637,6 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): Horizontal
   enum Vertical
-    constructor(kotlin.String)
     - TOP
     - BOTTOM
     - CENTER

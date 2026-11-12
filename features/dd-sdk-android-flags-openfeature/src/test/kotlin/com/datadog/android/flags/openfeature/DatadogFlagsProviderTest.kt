@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInitializationTimeoutException
+import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.ErrorCode
@@ -50,11 +51,13 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -63,6 +66,78 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 @ForgeConfiguration(BaseConfigurator::class)
 internal class DatadogFlagsProviderTest {
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `M keep provider recoverable W client enters Error state {OpenFeatureAPI}`() = runTest {
+        // Given
+        var resolveCalls = 0
+        val errorResolution = ResolutionDetails(
+            value = false,
+            errorCode = ErrorCode.PROVIDER_NOT_READY,
+            reason = ResolutionReason.ERROR
+        )
+        lenient().whenever(mockFlagsClient.resolve("flag", false)).doAnswer {
+            resolveCalls++
+            errorResolution
+        }
+
+        try {
+            OpenFeatureAPI.setProviderAndWait(
+                provider = provider,
+                initialContext = ImmutableContext(targetingKey = "user-123"),
+                dispatcher = UnconfinedTestDispatcher(testScheduler)
+            )
+
+            // When
+            checkNotNull(capturedStateListener)
+                .onStateChanged(FlagsClientState.Error(RuntimeException("Network request failed")))
+            testScheduler.runCurrent()
+            val errorStatus = OpenFeatureAPI.getStatus()
+            val details = OpenFeatureAPI.getClient().getBooleanDetails("flag", false)
+            OpenFeatureAPI.setEvaluationContextAndWait(ImmutableContext(targetingKey = "user-456"))
+
+            // Then
+            assertThat(errorStatus).isInstanceOf(OpenFeatureStatus.Error::class.java)
+            assertThat((errorStatus as OpenFeatureStatus.Error).error)
+                .isInstanceOf(OpenFeatureError.GeneralError::class.java)
+                .hasMessage("Network request failed")
+            assertThat(resolveCalls).isEqualTo(1)
+            assertThat(details.value).isFalse()
+            assertThat(details.errorCode).isEqualTo(OpenFeatureErrorCode.PROVIDER_NOT_READY)
+            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Ready)
+        } finally {
+            OpenFeatureAPI.shutdown()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `M report InvalidContextError W client enters Error state {invalid opt-out timestamp}`() = runTest {
+        // Given
+        val cause = mock<FlagsInvalidContextException> { on { message } doReturn "Invalid opt-out timestamp" }
+
+        try {
+            OpenFeatureAPI.setProviderAndWait(
+                provider = provider,
+                initialContext = ImmutableContext(targetingKey = "user-123"),
+                dispatcher = UnconfinedTestDispatcher(testScheduler)
+            )
+
+            // When
+            checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Error(cause))
+            testScheduler.runCurrent()
+
+            // Then
+            val errorStatus = OpenFeatureAPI.getStatus()
+            assertThat(errorStatus).isInstanceOf(OpenFeatureStatus.Error::class.java)
+            assertThat((errorStatus as OpenFeatureStatus.Error).error)
+                .isInstanceOf(OpenFeatureError.InvalidContextError::class.java)
+                .hasMessage("Invalid opt-out timestamp")
+        } finally {
+            OpenFeatureAPI.shutdown()
+        }
+    }
 
     @Mock
     lateinit var mockFlagsClient: FlagsClient

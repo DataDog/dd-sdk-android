@@ -9,9 +9,13 @@ package com.datadog.android.sessionreplay.compose.internal.utils
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.painter.Painter
+import coil.compose.AsyncImagePainter
+import coil.request.SuccessResult
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -19,8 +23,10 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
+import coil3.compose.AsyncImagePainter as AsyncImagePainter3
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -83,4 +89,50 @@ internal class ReflectionUtilsTest {
     }
 
     // endregion
+
+    @Test
+    fun `M return state painter W getNestedPainter() {Coil AsyncImagePainter}`() {
+        // Given
+        val mockLoadedPainter = mock<Painter>()
+        val fakeState = AsyncImagePainter.State.Success(mockLoadedPainter, mock<SuccessResult>())
+        val mockAsyncImagePainter = mock<AsyncImagePainter> {
+            on { state } doReturn fakeState
+        }
+
+        // When
+        val result = testedReflectionUtils.getNestedPainter(mockAsyncImagePainter)
+
+        // Then
+        assertThat(result).isSameAs(mockLoadedPainter)
+    }
+
+    @Test
+    fun `M return null W getNestedPainter() {Coil AsyncImagePainter with empty state}`() {
+        // Given
+        val mockAsyncImagePainter = mock<AsyncImagePainter> {
+            on { state } doReturn AsyncImagePainter.State.Empty
+        }
+
+        // When
+        val result = testedReflectionUtils.getNestedPainter(mockAsyncImagePainter)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return state painter W getNestedPainter() {Coil 3 AsyncImagePainter}`() {
+        // Given
+        val mockLoadedPainter = mock<Painter>()
+        val fakeState = AsyncImagePainter3.State.Loading(mockLoadedPainter)
+        val mockAsyncImagePainter = mock<AsyncImagePainter3> {
+            on { state } doReturn MutableStateFlow(fakeState)
+        }
+
+        // When
+        val result = testedReflectionUtils.getNestedPainter(mockAsyncImagePainter)
+
+        // Then
+        assertThat(result).isSameAs(mockLoadedPainter)
+    }
 }

@@ -40,3 +40,6 @@ gh_token
 .claude/worktrees/
 
 ci/scripts/__pycache__/
+
+# Vitrine
+.vitrine/

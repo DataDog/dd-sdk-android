@@ -67,8 +67,8 @@ internal class RumSessionScope(
     private val rumSessionTypeOverride: RumSessionType?,
     private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
-    private val viewEventMapper: ViewEventMapper,
-    private val viewEventWriteConfig: ViewEventWriteConfig,
+    viewEventMapper: ViewEventMapper,
+    viewEventWriteConfig: ViewEventWriteConfig,
     heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
     private val timeseriesCollector: TimeseriesCollector = NoOpTimeseriesCollector()
 ) : RumScope {
@@ -129,13 +129,11 @@ internal class RumSessionScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ): RumScope? {
-        if (event is RumRawEvent.ResetSession) {
-            renewSession(event.eventTime, RumSessionStartReason.EXPLICIT_STOP)
-        } else if (event is RumRawEvent.StopSession) {
+        if (event is RumRawEvent.StopSession) {
             stopSession()
         }
 
-        updateSession(event)
+        updateSession(event, datadogContext, writeScope, writer)
 
         val actualWriter = if (sessionState == RumSessionState.TRACKED) writer else noOpWriter
 
@@ -238,8 +236,14 @@ internal class RumSessionScope(
         return !isActive && childScope == null
     }
 
+    @WorkerThread
     @Suppress("CyclomaticComplexMethod")
-    private fun updateSession(event: RumRawEvent) {
+    private fun updateSession(
+        event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ) {
         val nanoTime = sdkCore.timeProvider.getDeviceElapsedRealtimeNanos()
         val isNewSession = sessionId == RumContext.NULL_UUID
 
@@ -270,34 +274,52 @@ internal class RumSessionScope(
                 } else {
                     RumSessionStartReason.MAX_DURATION
                 }
-                renewSession(event.eventTime, reason)
+                renewSession(event.eventTime, reason, datadogContext, writeScope, writer)
             }
             lastUserInteractionNs.set(nanoTime)
         } else if (isExpired) {
             if (backgroundTrackingEnabled && (isBackgroundEvent || isSdkInitInBackground)) {
-                renewSession(event.eventTime, RumSessionStartReason.BACKGROUND_LAUNCH)
+                renewSession(
+                    event.eventTime,
+                    RumSessionStartReason.BACKGROUND_LAUNCH,
+                    datadogContext,
+                    writeScope,
+                    writer
+                )
                 lastUserInteractionNs.set(nanoTime)
             } else {
                 stopTimeseries()
                 sessionState = RumSessionState.EXPIRED
             }
         } else if (isTimedOut) {
-            renewSession(event.eventTime, RumSessionStartReason.MAX_DURATION)
+            renewSession(event.eventTime, RumSessionStartReason.MAX_DURATION, datadogContext, writeScope, writer)
         }
 
         updateSessionStateForSessionReplay(sessionId)
     }
 
-    private fun renewSession(time: Time, reason: RumSessionStartReason) {
+    @WorkerThread
+    private fun renewSession(
+        time: Time,
+        reason: RumSessionStartReason,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ) {
         stopTimeseries()
         val newSessionId = UUID.randomUUID().toString()
         val keepSession = sessionSampler.sample(newSessionId)
+        // The final updates of the stopped views belong to the ending session, so they must follow
+        // its sampling decision, not the new session's one. This is a hack, essentially.
+        val endingSessionWriter = if (sessionState == RumSessionState.TRACKED) writer else noOpWriter
+        val viewToCarryOver =
+            childScope?.stopViewsForSessionRenewal(time, datadogContext, writeScope, endingSessionWriter)
         startReason = reason
         sessionState = if (keepSession) RumSessionState.TRACKED else RumSessionState.NOT_TRACKED
         sessionId = newSessionId
         sessionStartNs.set(sdkCore.timeProvider.getDeviceElapsedRealtimeNanos())
         rumSessionScopeStartupManager = rumSessionScopeStartupManagerFactory()
-        childScope?.renewViewScopes(time)
+        viewToCarryOver?.let { childScope?.carryOverView(it, time) }
         if (keepSession) {
             sessionEndedMetricDispatcher.startMetric(
                 sessionId = sessionId,

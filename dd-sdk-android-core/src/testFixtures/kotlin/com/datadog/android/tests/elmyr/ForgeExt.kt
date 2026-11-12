@@ -13,39 +13,8 @@ import fr.xgouchet.elmyr.Forge
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONArray
-import org.json.JSONObject
-import java.io.File
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 
 const val URL_FORGERY_PATTERN = "http(s?)://[a-z]+\\.com/[a-z]+"
-
-fun Forge.exhaustiveAttributes(
-    excludedKeys: Set<String> = emptySet()
-): MutableMap<String, Any?> {
-    return listOf(
-        aBool(),
-        anInt(),
-        aLong(),
-        aFloat(),
-        aDouble(),
-        anAsciiString(),
-        getForgery<Date>(),
-        getForgery<Locale>(),
-        getForgery<TimeZone>(),
-        getForgery<File>(),
-        getForgery<JSONObject>(),
-        getForgery<JSONArray>(),
-        aList { anAlphabeticalString() },
-        aList { aDouble() },
-        null
-    )
-        .associateBy { anAlphaNumericalString() }
-        .filter { it.key !in excludedKeys }
-        .toMutableMap()
-}
 
 fun <T : Forge> T.useCoreFactories(): T {
     addFactory(DatadogContextForgeryFactory())
