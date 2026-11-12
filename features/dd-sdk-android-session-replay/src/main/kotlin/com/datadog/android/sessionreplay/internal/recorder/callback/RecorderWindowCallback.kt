@@ -38,13 +38,13 @@ internal class RecorderWindowCallback(
     private val privacy: TextAndInputPrivacy,
     private val imagePrivacy: ImagePrivacy,
     private val touchPrivacyManager: TouchPrivacyManager,
-    private val copyEvent: (MotionEvent) -> MotionEvent = {
+    copyEvent: (MotionEvent) -> MotionEvent = {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         MotionEvent.obtain(it)
     },
-    private val motionEventUtils: MotionEventUtils = MotionEventUtils,
-    private val motionUpdateThresholdInNs: Long = PointerInteractionRecorder.MOTION_UPDATE_DELAY_THRESHOLD_NS,
-    private val flushPositionBufferThresholdInNs: Long = PointerInteractionRecorder.FLUSH_BUFFER_THRESHOLD_NS,
+    motionEventUtils: MotionEventUtils = MotionEventUtils,
+    motionUpdateThresholdInNs: Long = PointerInteractionRecorder.MOTION_UPDATE_DELAY_THRESHOLD_NS,
+    flushPositionBufferThresholdInNs: Long = PointerInteractionRecorder.FLUSH_BUFFER_THRESHOLD_NS,
     private val windowInspector: WindowInspector = WindowInspector,
     private val windowFromDecorView: (
         View

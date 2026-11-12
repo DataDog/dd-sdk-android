@@ -59,7 +59,7 @@ internal class AndroidWindowTraversal(
     private val hiddenViewMapper: CapturedViewMapper<View> = CapturedHiddenViewMapper(),
     private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver,
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
-    private val drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault(),
+    drawableToColorMapper: DrawableToColorMapper = DrawableToColorMapper.getDefault(),
     private val viewUtilsInternal: ViewUtilsInternal = ViewUtilsInternal(),
     compositionHostDecomposer: CompositionHostDecomposer? = null,
     private val drawingOrderResolver: ViewGroupDrawingOrderResolver = ViewGroupDrawingOrderResolver(internalLogger)

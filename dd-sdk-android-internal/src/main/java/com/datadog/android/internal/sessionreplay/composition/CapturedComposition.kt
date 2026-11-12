@@ -145,6 +145,7 @@ sealed interface CapturedWireframe {
     // already carries the slot id verbatim as its wire id, so the wire mapper derives slotId from
     // `identity.wireId` directly. A separate field would let the two silently drift apart, breaking
     // the id == slotId JS-bridge correlation contract (see CapturedWireframeKind.WEB_VIEW).
+
     /**
      * An opaque placeholder rect for a `WebView` - its content is recorded separately via an
      * out-of-band JS bridge correlated by `identity.wireId == slotId`.

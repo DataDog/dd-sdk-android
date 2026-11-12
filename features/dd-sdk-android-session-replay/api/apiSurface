@@ -602,7 +602,6 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): PointerType
   enum CompositeOperation
-    constructor(kotlin.String)
     - SOURCEOVER
     - DESTINATIONIN
     - DESTINATIONOUT
@@ -619,14 +618,12 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): TruncationMode
   enum Type
-    constructor(kotlin.String)
     - WIREFRAME
     - LAYER
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Type
   enum FillRule
-    constructor(kotlin.String)
     - NONZERO
     - EVENODD
     fun toJson(): com.google.gson.JsonElement

@@ -344,7 +344,6 @@ enum com.datadog.android.internal.sessionreplay.composition.CapturedIdentityKind
   - LAYER
   - WIREFRAME
 enum com.datadog.android.internal.sessionreplay.composition.CapturedWireframeKind
-  constructor(Long)
   - WEB_VIEW
   - SHAPE
   - TEXT
