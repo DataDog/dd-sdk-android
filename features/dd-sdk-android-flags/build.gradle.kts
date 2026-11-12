@@ -8,12 +8,11 @@ import com.datadog.gradle.utils.createJsonModelsGenerationTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    // Apply ktlint before AGP: built-in Kotlin otherwise causes duplicate ktlint tasks.
+    id("ktlint")
+
     // Build
     id("com.android.library")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    kotlin("android")
     id("com.google.devtools.ksp")
     id("datadogBuildConfig")
 
@@ -45,8 +44,6 @@ createJsonModelsGenerationTask("generateFlagsInternalModelsFromJson") {
     internalModels.set(true)
 }
 
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.flags"
 }

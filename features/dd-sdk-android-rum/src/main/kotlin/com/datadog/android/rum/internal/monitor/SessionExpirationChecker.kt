@@ -13,8 +13,8 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 
 internal class SessionExpirationChecker(
-    private val monitor: DatadogRumMonitor,
-    private val timeProvider: TimeProvider,
+    monitor: DatadogRumMonitor,
+    timeProvider: TimeProvider,
     internal var checkIntervalMs: Long,
     private val handler: Handler
 ) {

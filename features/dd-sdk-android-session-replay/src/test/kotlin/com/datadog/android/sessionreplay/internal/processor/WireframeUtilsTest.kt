@@ -381,9 +381,13 @@ internal class WireframeUtilsTest {
                 .thenReturn(true)
         }
 
+        // When
+        val resolvedWireframe = testedWireframeUtils.resolveWireframe(fakeWireframe)
+        val resolvedTopWireframes = topWireframes.map { testedWireframeUtils.resolveWireframe(it) }
+        val isCovered = testedWireframeUtils.checkWireframeIsCovered(resolvedWireframe, resolvedTopWireframes)
+
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsCovered(fakeWireframe, topWireframes))
-            .isTrue
+        assertThat(isCovered).isTrue
     }
 
     @Test
@@ -403,9 +407,13 @@ internal class WireframeUtilsTest {
                 .thenReturn(true)
         }
 
+        // When
+        val resolvedWireframe = testedWireframeUtils.resolveWireframe(fakeWireframe)
+        val resolvedTopWireframes = topWireframes.map { testedWireframeUtils.resolveWireframe(it) }
+        val isCovered = testedWireframeUtils.checkWireframeIsCovered(resolvedWireframe, resolvedTopWireframes)
+
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsCovered(fakeWireframe, topWireframes))
-            .isFalse
+        assertThat(isCovered).isFalse
     }
 
     @Test
@@ -426,9 +434,13 @@ internal class WireframeUtilsTest {
                 .thenReturn(true)
         }
 
+        // When
+        val resolvedWireframe = testedWireframeUtils.resolveWireframe(fakeWireframe)
+        val resolvedTopWireframes = topWireframes.map { testedWireframeUtils.resolveWireframe(it) }
+        val isCovered = testedWireframeUtils.checkWireframeIsCovered(resolvedWireframe, resolvedTopWireframes)
+
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsCovered(fakeWireframe, topWireframes))
-            .isFalse
+        assertThat(isCovered).isFalse
     }
 
     @Test
@@ -448,9 +460,13 @@ internal class WireframeUtilsTest {
                 .thenReturn(true)
         }
 
+        // When
+        val resolvedWireframe = testedWireframeUtils.resolveWireframe(fakeWireframe)
+        val resolvedTopWireframes = topWireframes.map { testedWireframeUtils.resolveWireframe(it) }
+        val isCovered = testedWireframeUtils.checkWireframeIsCovered(resolvedWireframe, resolvedTopWireframes)
+
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsCovered(fakeWireframe, topWireframes))
-            .isFalse
+        assertThat(isCovered).isFalse
     }
 
     @Test
@@ -473,9 +489,13 @@ internal class WireframeUtilsTest {
             }
         }
 
+        // When
+        val resolvedWireframe = testedWireframeUtils.resolveWireframe(fakeWireframe)
+        val resolvedTopWireframes = topWireframes.map { testedWireframeUtils.resolveWireframe(it) }
+        val isCovered = testedWireframeUtils.checkWireframeIsCovered(resolvedWireframe, resolvedTopWireframes)
+
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsCovered(fakeWireframe, topWireframes))
-            .isTrue
+        assertThat(isCovered).isTrue
     }
 
     @Test
@@ -498,9 +518,13 @@ internal class WireframeUtilsTest {
             }
         }
 
+        // When
+        val resolvedWireframe = testedWireframeUtils.resolveWireframe(fakeWireframe)
+        val resolvedTopWireframes = topWireframes.map { testedWireframeUtils.resolveWireframe(it) }
+        val isCovered = testedWireframeUtils.checkWireframeIsCovered(resolvedWireframe, resolvedTopWireframes)
+
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsCovered(fakeWireframe, topWireframes))
-            .isTrue
+        assertThat(isCovered).isTrue
     }
 
     @Test
@@ -524,9 +548,13 @@ internal class WireframeUtilsTest {
             }
         }
 
+        // When
+        val resolvedWireframe = testedWireframeUtils.resolveWireframe(fakeWireframe)
+        val resolvedTopWireframes = topWireframes.map { testedWireframeUtils.resolveWireframe(it) }
+        val isCovered = testedWireframeUtils.checkWireframeIsCovered(resolvedWireframe, resolvedTopWireframes)
+
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsCovered(fakeWireframe, topWireframes))
-            .isTrue
+        assertThat(isCovered).isTrue
     }
 
     @Test
@@ -550,9 +578,13 @@ internal class WireframeUtilsTest {
             }
         }
 
+        // When
+        val resolvedWireframe = testedWireframeUtils.resolveWireframe(fakeWireframe)
+        val resolvedTopWireframes = topWireframes.map { testedWireframeUtils.resolveWireframe(it) }
+        val isCovered = testedWireframeUtils.checkWireframeIsCovered(resolvedWireframe, resolvedTopWireframes)
+
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsCovered(fakeWireframe, topWireframes))
-            .isFalse
+        assertThat(isCovered).isFalse
     }
 
     @Test
@@ -576,9 +608,13 @@ internal class WireframeUtilsTest {
                 .thenReturn(true)
         }
 
+        // When
+        val resolvedWireframe = testedWireframeUtils.resolveWireframe(fakeWireframe)
+        val resolvedTopWireframes = topWireframes.map { testedWireframeUtils.resolveWireframe(it) }
+        val isCovered = testedWireframeUtils.checkWireframeIsCovered(resolvedWireframe, resolvedTopWireframes)
+
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsCovered(fakeWireframe, topWireframes))
-            .isFalse
+        assertThat(isCovered).isFalse
     }
 
     @Test
@@ -588,10 +624,15 @@ internal class WireframeUtilsTest {
     ) {
         // Given
         val hiddenWireframe = fakeWireframe.copy(isVisible = false)
+        val wireframeUtils = WireframeUtils()
+
+        // When
+        val resolvedWireframe = wireframeUtils.resolveWireframe(hiddenWireframe)
+        val resolvedTopWireframes = topWireframes.map { wireframeUtils.resolveWireframe(it) }
+        val isCovered = testedWireframeUtils.checkWireframeIsCovered(resolvedWireframe, resolvedTopWireframes)
 
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsCovered(hiddenWireframe, topWireframes))
-            .isFalse
+        assertThat(isCovered).isFalse
     }
 
     // endregion
@@ -611,8 +652,12 @@ internal class WireframeUtilsTest {
         whenever(mockBoundsUtils.resolveBounds(fakeWireframe))
             .thenReturn(forge.getForgery<WireframeBounds>().copy(width = 0))
 
+        // When
+        val resolvedWireframe = testedWireframeUtils.resolveWireframe(fakeWireframe)
+        val isValid = testedWireframeUtils.checkWireframeIsValid(resolvedWireframe)
+
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsValid(fakeWireframe)).isFalse
+        assertThat(isValid).isFalse
     }
 
     @Test
@@ -628,8 +673,12 @@ internal class WireframeUtilsTest {
         whenever(mockBoundsUtils.resolveBounds(fakeWireframe))
             .thenReturn(forge.getForgery<WireframeBounds>().copy(height = 0))
 
+        // When
+        val resolvedWireframe = testedWireframeUtils.resolveWireframe(fakeWireframe)
+        val isValid = testedWireframeUtils.checkWireframeIsValid(resolvedWireframe)
+
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsValid(fakeWireframe)).isFalse
+        assertThat(isValid).isFalse
     }
 
     @Test
@@ -643,8 +692,12 @@ internal class WireframeUtilsTest {
             isVisible = false
         )
 
+        // When
+        val resolvedWireframe = WireframeUtils().resolveWireframe(hiddenWireframe)
+        val isValid = testedWireframeUtils.checkWireframeIsValid(resolvedWireframe)
+
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsValid(hiddenWireframe)).isTrue
+        assertThat(isValid).isTrue
     }
 
     @Test
@@ -661,8 +714,12 @@ internal class WireframeUtilsTest {
             )
         )
 
+        // When
+        val resolvedWireframe = testedWireframeUtils.resolveWireframe(fakeWireframe)
+        val isValid = testedWireframeUtils.checkWireframeIsValid(resolvedWireframe)
+
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsValid(fakeWireframe)).isFalse
+        assertThat(isValid).isFalse
     }
 
     @Test
@@ -679,8 +736,12 @@ internal class WireframeUtilsTest {
             )
         )
 
+        // When
+        val resolvedWireframe = testedWireframeUtils.resolveWireframe(fakeWireframe)
+        val isValid = testedWireframeUtils.checkWireframeIsValid(resolvedWireframe)
+
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsValid(fakeWireframe)).isTrue
+        assertThat(isValid).isTrue
     }
 
     @Test
@@ -697,8 +758,12 @@ internal class WireframeUtilsTest {
             )
         )
 
+        // When
+        val resolvedWireframe = testedWireframeUtils.resolveWireframe(fakeWireframe)
+        val isValid = testedWireframeUtils.checkWireframeIsValid(resolvedWireframe)
+
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsValid(fakeWireframe)).isTrue
+        assertThat(isValid).isTrue
     }
 
     @Test
@@ -715,8 +780,12 @@ internal class WireframeUtilsTest {
             )
         )
 
+        // When
+        val resolvedWireframe = testedWireframeUtils.resolveWireframe(fakeWireframe)
+        val isValid = testedWireframeUtils.checkWireframeIsValid(resolvedWireframe)
+
         // Then
-        assertThat(testedWireframeUtils.checkWireframeIsValid(fakeWireframe)).isTrue
+        assertThat(isValid).isTrue
     }
 
     // endregion

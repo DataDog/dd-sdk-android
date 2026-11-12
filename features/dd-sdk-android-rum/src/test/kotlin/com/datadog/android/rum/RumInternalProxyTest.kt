@@ -85,17 +85,19 @@ internal class RumInternalProxyTest {
     @Test
     fun `M proxy addLongTask to RumMonitor W addLongTask()`(
         @LongForgery time: Long,
-        @StringForgery target: String
+        @StringForgery target: String,
+        forge: Forge
     ) {
         // Given
+        val fakeAttributes = forge.aMap { anAlphabeticalString() to anAlphabeticalString() }
         val mockRumMonitor = mock(AdvancedRumMonitor::class.java)
         val proxy = _RumInternalProxy(mockRumMonitor)
 
         // When
-        proxy.addLongTask(time, target)
+        proxy.addLongTask(time, target, fakeAttributes)
 
         // Then
-        verify(mockRumMonitor).addLongTask(time, target)
+        verify(mockRumMonitor).addLongTask(time, target, fakeAttributes)
     }
 
     @Test

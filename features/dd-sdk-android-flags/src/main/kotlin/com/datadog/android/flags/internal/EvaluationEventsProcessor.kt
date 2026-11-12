@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.aggregation.EvaluationAggregationStats
 import com.datadog.android.flags.internal.aggregation.EvaluationAggregator
+import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKey
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.internal.time.TimeProvider
 import java.util.concurrent.RejectedExecutionException
@@ -42,13 +43,16 @@ internal class EvaluationEventsProcessor(
 
     fun processEvaluation(
         flagKey: String,
-        context: EvaluationContext,
+        context: EvaluationContext?,
         rumApplicationId: String?,
         rumViewName: String?,
         variantKey: String?,
         allocationKey: String?,
         errorCode: String?,
-        errorMessage: String?
+        errorMessage: String?,
+        observeFullEvaluationData: Boolean = false,
+        telemetryTargetingKey: String? = context?.targetingKey,
+        preparedTargetingKey: EvaluationTargetingKey? = null
     ) {
         val drainedEvents = aggregator.record(
             timestamp = timeProvider.getDeviceTimestampMillis(),
@@ -59,7 +63,10 @@ internal class EvaluationEventsProcessor(
             variantKey = variantKey,
             allocationKey = allocationKey,
             errorCode = errorCode,
-            errorMessage = errorMessage
+            errorMessage = errorMessage,
+            observeFullEvaluationData = observeFullEvaluationData,
+            telemetryTargetingKey = telemetryTargetingKey,
+            preparedTargetingKey = preparedTargetingKey
         )
 
         if (drainedEvents.isNotEmpty()) {

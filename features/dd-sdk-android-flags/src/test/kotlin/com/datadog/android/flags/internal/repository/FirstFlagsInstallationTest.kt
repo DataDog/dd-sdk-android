@@ -61,7 +61,7 @@ internal class FirstFlagsInstallationTest {
         try {
             // When
             val installation = executor.submit {
-                tested.setFlagsAndContext(context, networkFlags) {
+                tested.installFlagsAndContext(context, networkFlags).complete {
                     inBookkeeping.countDown()
                     check(finish.await(5, TimeUnit.SECONDS))
                 }
@@ -78,7 +78,7 @@ internal class FirstFlagsInstallationTest {
             executor.shutdownNow()
         }
         assertThat(events.single()).containsExactly(fakeNetworkKey)
-        assertThat(tested.getFlagsSnapshot()).containsOnlyKeys(fakeNetworkKey)
+        assertThat(checkNotNull(tested.getAssignmentsSnapshot()).flags).containsOnlyKeys(fakeNetworkKey)
     }
 
     @Test
@@ -106,12 +106,14 @@ internal class FirstFlagsInstallationTest {
         // Given
         val tested = repository(TimeUnit.MINUTES.toMillis(1))
         val observed = CopyOnWriteArrayList<Set<String>>()
-        tested.firstFlags.whenComplete { observed.add(tested.getFlagsSnapshot().keys) }
+        tested.firstFlags.whenComplete { observed.add(checkNotNull(tested.getAssignmentsSnapshot()).flags.keys) }
         val networkFlags = mapOf(fakeNetworkKey to mock<PrecomputedFlag>())
         val executor = Executors.newSingleThreadExecutor()
         try {
             // When
-            executor.submit { tested.setFlagsAndContext(context, networkFlags) }.get(5, TimeUnit.SECONDS)
+            executor.submit {
+                tested.installFlagsAndContext(context, networkFlags).complete {}
+            }.get(5, TimeUnit.SECONDS)
         } finally {
             executor.shutdownNow()
         }
@@ -134,7 +136,7 @@ internal class FirstFlagsInstallationTest {
 
             // When
             val thrown = assertThrows<IllegalStateException> {
-                tested.setFlagsAndContext(context, emptyMap()) {
+                tested.installFlagsAndContext(context, emptyMap()).complete {
                     terminalCalls++
                     throw terminalError
                 }
@@ -159,7 +161,7 @@ internal class FirstFlagsInstallationTest {
         try {
             // When
             val installation = executor.submit {
-                tested.setFlagsAndContext(context, emptyMap()) {
+                tested.installFlagsAndContext(context, emptyMap()).complete {
                     installed.countDown()
                     check(finish.await(5, TimeUnit.SECONDS))
                 }
@@ -187,7 +189,7 @@ internal class FirstFlagsInstallationTest {
 
         // When
         assertThrows<IllegalStateException> {
-            tested.setFlagsAndContext(context, emptyMap()) { error("terminal failure") }
+            tested.installFlagsAndContext(context, emptyMap()).complete { error("terminal failure") }
         }
 
         // Then
@@ -205,11 +207,10 @@ internal class FirstFlagsInstallationTest {
                 // When
                 val reads = executor.submit {
                     // Then
-                    assertThat(tested.getPrecomputedFlag("unknown")).isNull()
                     assertThat(tested.getEvaluationContext()).isNull()
-                    assertThat(tested.getFlagsSnapshot()).isEmpty()
-                    assertThat(tested.hasFlags()).isFalse()
-                    assertThat(tested.getPrecomputedFlagWithContext("unknown")).isNull()
+                    assertThat(tested.getAssignmentsSnapshot()).isNull()
+                    assertThat(tested.hasConfiguration()).isFalse()
+                    assertThat(tested.getEvaluationSnapshot("unknown")).isNull()
                 }
                 if (missing) disk.onSuccess(null) else disk.onFailure()
                 reads.get(5, TimeUnit.SECONDS)
@@ -226,12 +227,12 @@ internal class FirstFlagsInstallationTest {
 
         // When
         disk.onSuccess(restored(emptyList()))
-        tested.setFlagsAndContext(context, mapOf(fakeNetworkKey to mock()))
+        tested.installFlagsAndContext(context, mapOf(fakeNetworkKey to mock())).complete {}
 
         // Then
         assertThat(events).hasSize(1)
         assertThat(events.single()).isEmpty()
-        assertThat(tested.getFlagsSnapshot()).containsOnlyKeys(fakeNetworkKey)
+        assertThat(checkNotNull(tested.getAssignmentsSnapshot()).flags).containsOnlyKeys(fakeNetworkKey)
     }
 
     @Test
@@ -257,7 +258,7 @@ internal class FirstFlagsInstallationTest {
 
             // Then
             assertThat(claimed.await(5, TimeUnit.SECONDS)).isTrue()
-            tested.setFlagsAndContext(context, mapOf(fakeNetworkKey to mock()))
+            tested.installFlagsAndContext(context, mapOf(fakeNetworkKey to mock())).complete {}
             assertThat(events).isEmpty()
             release.countDown()
             loading.get(5, TimeUnit.SECONDS)
@@ -266,7 +267,7 @@ internal class FirstFlagsInstallationTest {
             executor.shutdownNow()
         }
         assertThat(events.single()).containsExactly(fakeCacheKey)
-        assertThat(tested.getFlagsSnapshot()).containsOnlyKeys(fakeNetworkKey)
+        assertThat(checkNotNull(tested.getAssignmentsSnapshot()).flags).containsOnlyKeys(fakeNetworkKey)
     }
 
     @Test
@@ -275,12 +276,12 @@ internal class FirstFlagsInstallationTest {
         val tested = repository()
 
         // When
-        tested.setFlagsAndContext(context, mapOf(fakeNetworkKey to mock()))
+        tested.installFlagsAndContext(context, mapOf(fakeNetworkKey to mock())).complete {}
         disk.onSuccess(restored(listOf(fakeCacheKey)))
 
         // Then
         assertThat(events.single()).containsExactly(fakeNetworkKey)
-        assertThat(tested.getFlagsSnapshot()).containsOnlyKeys(fakeNetworkKey)
+        assertThat(checkNotNull(tested.getAssignmentsSnapshot()).flags).containsOnlyKeys(fakeNetworkKey)
     }
 
     @Test
@@ -295,8 +296,8 @@ internal class FirstFlagsInstallationTest {
 
             // Then
             assertThat(events).isEmpty()
-            assertThat(tested.getFlagsSnapshot()).isEmpty()
-            tested.setFlagsAndContext(context, emptyMap())
+            assertThat(tested.getAssignmentsSnapshot()).isNull()
+            tested.installFlagsAndContext(context, emptyMap()).complete {}
             assertThat(events).hasSize(1)
             assertThat(events.single()).isEmpty()
         }
@@ -310,7 +311,7 @@ internal class FirstFlagsInstallationTest {
             .setValue<FlagsStateEntry>(any(), any(), any(), anyOrNull(), any())
 
         // When
-        tested.setFlagsAndContext(context, emptyMap())
+        tested.installFlagsAndContext(context, emptyMap()).complete {}
 
         // Then
         assertThat(events).hasSize(1)
@@ -342,7 +343,7 @@ internal class FirstFlagsInstallationTest {
                 }
                 val networkWorker = executor.submit {
                     check(start.await(5, TimeUnit.SECONDS))
-                    tested.setFlagsAndContext(context, mapOf(fakeNetworkKey to mock()))
+                    tested.installFlagsAndContext(context, mapOf(fakeNetworkKey to mock())).complete {}
                 }
                 start.countDown()
                 diskWorker.get(5, TimeUnit.SECONDS)
@@ -354,7 +355,7 @@ internal class FirstFlagsInstallationTest {
             // Then
             assertThat(events).hasSize(1)
             assertThat(events.single()).isIn(emptyList<String>(), listOf(fakeNetworkKey))
-            assertThat(tested.getFlagsSnapshot()).containsOnlyKeys(fakeNetworkKey)
+            assertThat(checkNotNull(tested.getAssignmentsSnapshot()).flags).containsOnlyKeys(fakeNetworkKey)
         }
     }
 
@@ -365,7 +366,7 @@ internal class FirstFlagsInstallationTest {
             disk = it.getArgument(2)
             null
         }.whenever(store).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
-        return DefaultFlagsRepository(core, "first", store, persistenceLoadTimeoutMs = timeoutMs).also {
+        return DefaultFlagsRepository(core, "first", store, null, persistenceLoadTimeoutMs = timeoutMs).also {
             it.firstFlags.whenComplete { keys -> events.add(keys) }
         }
     }

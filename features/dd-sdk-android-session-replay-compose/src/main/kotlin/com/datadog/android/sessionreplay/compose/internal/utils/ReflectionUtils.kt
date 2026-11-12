@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.SemanticsOwner
 import androidx.compose.ui.text.MultiParagraph
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.AlignmentField
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.AsyncImagePainter3Class
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.AsyncImagePainterClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.BitmapField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ChildFieldOfModifierNode
@@ -45,17 +46,18 @@ import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeRefl
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.NodesFieldOfLayoutNode
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterElementClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterField
-import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfAsyncImagePainter
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfContentPainterElement
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfContentPainterModifier
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfPainterNode
-import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterMethodOfAsync3ImagePainter
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterNodeClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.StaticLayoutField
 import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
 
 @Suppress("TooManyFunctions")
 internal class ReflectionUtils {
+
+    private val coilPainterResolver = if (AsyncImagePainterClass != null) CoilPainterResolver() else null
+    private val coil3PainterResolver = if (AsyncImagePainter3Class != null) Coil3PainterResolver() else null
 
     fun getComposition(view: View): Composition? {
         return CompositionField?.getSafe(view) as? Composition
@@ -82,7 +84,8 @@ internal class ReflectionUtils {
     }
 
     fun isAsyncImagePainter(painter: Painter): Boolean {
-        return ComposeReflection.AsyncImagePainterClass?.isInstance(painter) == true
+        return ComposeReflection.AsyncImagePainterClass?.isInstance(painter) == true ||
+            ComposeReflection.AsyncImagePainter3Class?.isInstance(painter) == true
     }
 
     fun isDrawBehindElementClass(modifier: Modifier): Boolean {
@@ -198,9 +201,7 @@ internal class ReflectionUtils {
             }
             currentNode = ChildFieldOfModifierNode?.getSafe(currentNode) as? Modifier.Node
         }
-        val asyncImagePainter = PainterFieldOfPainterNode?.getSafe(painterNode)
-        val painter = asyncImagePainter?.let { PainterMethodOfAsync3ImagePainter?.invoke(it) }
-        return painter as? Painter
+        return coil3PainterResolver?.resolveStatePainter(PainterFieldOfPainterNode?.getSafe(painterNode))
     }
 
     fun getLocalImagePainter(semanticsNode: SemanticsNode): Painter? {
@@ -238,11 +239,15 @@ internal class ReflectionUtils {
                 null
             }
         }
-        return PainterFieldOfAsyncImagePainter?.getSafe(asyncPainter) as? Painter
+        return coilPainterResolver?.resolveStatePainter(asyncPainter)
     }
 
     fun getNestedPainter(painter: Painter): Painter? {
-        return PainterFieldOfAsyncImagePainter?.getSafe(painter) as? Painter
+        return if (AsyncImagePainter3Class?.isInstance(painter) == true) {
+            coil3PainterResolver?.resolveStatePainter(painter)
+        } else {
+            coilPainterResolver?.resolveStatePainter(painter)
+        }
     }
 
     fun getMultiParagraphCapturedText(multiParagraph: MultiParagraph): String? {

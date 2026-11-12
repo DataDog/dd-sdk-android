@@ -6,8 +6,8 @@
 
 package com.datadog.android.log.internal.logger
 
-import com.datadog.android.tests.elmyr.exhaustiveAttributes
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery

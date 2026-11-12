@@ -31,21 +31,29 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
     fun record(
         timestamp: Long,
         flagKey: String,
-        context: EvaluationContext,
+        context: EvaluationContext?,
         rumApplicationId: String?,
         rumViewName: String?,
         variantKey: String?,
         allocationKey: String?,
         errorCode: String?,
-        errorMessage: String?
+        errorMessage: String?,
+        observeFullEvaluationData: Boolean = false,
+        telemetryTargetingKey: String? = context?.targetingKey,
+        preparedTargetingKey: EvaluationTargetingKey? = null
     ): List<EvaluationAggregationStats> {
+        val safeErrorCode = EvaluationPrivacy.errorCode(errorCode, errorMessage)
         val key = EvaluationAggregationKey(
             flagKey = flagKey,
             variantKey = variantKey,
             allocationKey = allocationKey,
-            targetingKey = context.targetingKey,
+            targetingKey = (
+                preparedTargetingKey
+                    ?: EvaluationTargetingKey.create(telemetryTargetingKey, observeFullEvaluationData)
+                ).value,
             viewName = rumViewName,
-            errorCode = errorCode
+            errorCode = safeErrorCode,
+            observeFullEvaluationData = observeFullEvaluationData
         )
 
         val drained = mapLock.withLock {
@@ -55,16 +63,13 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
                 count = 0,
                 firstEvaluation = timestamp,
                 lastEvaluation = timestamp,
-                context = context,
-                rumApplicationId = rumApplicationId,
-                errorMessage = errorMessage
+                rumApplicationId = rumApplicationId
             )
             @Suppress("UnsafeThirdPartyFunctionCall") // safe - non-null key and value
             aggregationMap[key] = existing.copy(
                 count = existing.count + 1,
                 firstEvaluation = minOf(existing.firstEvaluation, timestamp),
-                lastEvaluation = maxOf(existing.lastEvaluation, timestamp),
-                errorMessage = errorMessage
+                lastEvaluation = maxOf(existing.lastEvaluation, timestamp)
             )
 
             if (aggregationMap.size < maxAggregations) emptyMap() else drainAggregationStats()

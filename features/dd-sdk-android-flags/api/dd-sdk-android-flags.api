@@ -3,6 +3,15 @@ public abstract interface class com/datadog/android/flags/EvaluationContextCallb
 	public abstract fun onSuccess ()V
 }
 
+public final class com/datadog/android/flags/ExperimentationOptOutMode : java/lang/Enum {
+	public static final field DISABLED Lcom/datadog/android/flags/ExperimentationOptOutMode;
+	public static final field FUTURE_EXPERIMENTS_ONLY Lcom/datadog/android/flags/ExperimentationOptOutMode;
+	public static final field IMMEDIATE Lcom/datadog/android/flags/ExperimentationOptOutMode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/flags/ExperimentationOptOutMode;
+	public static fun values ()[Lcom/datadog/android/flags/ExperimentationOptOutMode;
+}
+
 public final class com/datadog/android/flags/Flags {
 	public static final field INSTANCE Lcom/datadog/android/flags/Flags;
 	public static final fun enable ()V
@@ -33,6 +42,7 @@ public final class com/datadog/android/flags/FlagsClient$Builder {
 	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun build ()Lcom/datadog/android/flags/FlagsClient;
 	public final fun enableEvaluationTelemetryOptOutParameter (Z)Lcom/datadog/android/flags/FlagsClient$Builder;
+	public final fun experimentationOptOutMode (Lcom/datadog/android/flags/ExperimentationOptOutMode;)Lcom/datadog/android/flags/FlagsClient$Builder;
 }
 
 public final class com/datadog/android/flags/FlagsClient$Companion {
@@ -66,6 +76,7 @@ public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public fun <init> ()V
 	public final fun build ()Lcom/datadog/android/flags/FlagsConfiguration;
 	public final fun evaluationFlushInterval (J)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
+	public final fun flagSelection (Ljava/util/List;Ljava/util/List;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun gracefulModeEnabled (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun initializationTimeout (J)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun rumIntegrationEnabled (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
@@ -76,7 +87,13 @@ public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public final fun useCustomFlagEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 }
 
+public final class com/datadog/android/flags/FlagsContextSupersededException : java/lang/IllegalStateException {
+}
+
 public final class com/datadog/android/flags/FlagsInitializationTimeoutException : java/lang/RuntimeException {
+}
+
+public final class com/datadog/android/flags/FlagsInvalidContextException : java/lang/IllegalArgumentException {
 }
 
 public abstract interface class com/datadog/android/flags/FlagsStateListener {
@@ -96,16 +113,21 @@ public abstract interface class com/datadog/android/flags/StateObservable {
 public final class com/datadog/android/flags/_FlagsInternalProxy {
 	public fun <init> (Lcom/datadog/android/flags/FlagsClient;)V
 	public final fun getFlagAssignmentsSnapshot ()Ljava/util/Map;
+	public final fun getFlagAssignmentsSnapshot (Lcom/datadog/android/flags/model/EvaluationContext;)Ljava/util/Map;
 	public final fun isEvaluationTelemetryOptOutParameterEnabled ()Z
+	public final fun isExperimentationOptOutEnabled ()Z
 	public final fun setEvaluationContext (Lcom/datadog/android/flags/model/EvaluationContext;Lcom/datadog/android/flags/EvaluationContextCallback;Z)V
 	public final fun trackFlagEvaluationEvent (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/String;)V
+	public final fun trackFlagEvaluationEvent (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/String;ZLjava/lang/String;)V
 	public final fun trackFlagExposure (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;)V
 	public final fun trackFlagRumEvaluation (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/flags/model/EvaluationContext;)V
 	public final fun trackFlagSnapshotEvaluation (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;)V
+	public final fun trackFlagSnapshotEvaluation (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/String;)V
 }
 
 public final class com/datadog/android/flags/model/ErrorCode : java/lang/Enum {
 	public static final field FLAG_NOT_FOUND Lcom/datadog/android/flags/model/ErrorCode;
+	public static final field INVALID_CONTEXT Lcom/datadog/android/flags/model/ErrorCode;
 	public static final field PARSE_ERROR Lcom/datadog/android/flags/model/ErrorCode;
 	public static final field PROVIDER_NOT_READY Lcom/datadog/android/flags/model/ErrorCode;
 	public static final field TYPE_MISMATCH Lcom/datadog/android/flags/model/ErrorCode;
@@ -223,5 +245,9 @@ public abstract interface class com/datadog/android/flags/model/UnparsedFlag {
 	public abstract fun getVariationKey ()Ljava/lang/String;
 	public abstract fun getVariationType ()Ljava/lang/String;
 	public abstract fun getVariationValue ()Ljava/lang/String;
+}
+
+public abstract interface class com/datadog/android/flags/model/UnparsedFlagWithConsent : com/datadog/android/flags/model/UnparsedFlag {
+	public abstract fun getObserveFullEvaluationData ()Z
 }
 

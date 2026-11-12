@@ -109,7 +109,7 @@ internal class TimeBasedInitialResourceIdentifierTest : ObjectTest<TimeBasedInit
         fakeNetworkSettledResourceContext =
             fakeNetworkSettledResourceContext.copy(
                 eventCreatedAtNanos =
-                fakeViewCreatedTimestamp + fakeIntervalThresholdInNanos + forge.aTinyPositiveLong()
+                    fakeViewCreatedTimestamp + fakeIntervalThresholdInNanos + forge.aTinyPositiveLong()
             )
 
         // When
@@ -125,7 +125,7 @@ internal class TimeBasedInitialResourceIdentifierTest : ObjectTest<TimeBasedInit
         fakeNetworkSettledResourceContext =
             fakeNetworkSettledResourceContext.copy(
                 eventCreatedAtNanos =
-                fakeViewCreatedTimestamp + forge.aLong(min = 0, max = fakeIntervalThresholdInNanos)
+                    fakeViewCreatedTimestamp + forge.aLong(min = 0, max = fakeIntervalThresholdInNanos)
             )
 
         // When

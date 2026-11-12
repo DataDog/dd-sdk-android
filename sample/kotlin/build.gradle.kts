@@ -14,29 +14,18 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.Locale
 
 plugins {
+    // Apply ktlint before AGP: built-in Kotlin otherwise causes duplicate ktlint tasks.
+    id("ktlint")
+
     // Build
     id("com.android.application")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    kotlin("android")
     alias(libs.plugins.composeCompilerPlugin)
-    alias(libs.plugins.sqlDelightGradlePlugin)
     id("com.google.devtools.ksp")
     id("datadogBuildConfig")
     alias(libs.plugins.datadogGradlePlugin)
 }
 
-sqldelight {
-    database("LogsDatabase") {
-        packageName = "com.datadog.android.sample"
-        dialect = "sqlite:3.24"
-        sourceFolders = listOf("sqldelight")
-    }
-}
-
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION", "StringLiteralDuplication")
+@Suppress("StringLiteralDuplication")
 android {
     compileSdk = AndroidConfig.TARGET_SDK
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
@@ -83,16 +72,6 @@ android {
                 configureFlavorForSampleApp(project, this, project.rootDir)
             }
         }
-    }
-
-    sourceSets.named("main") {
-        java.srcDir("src/main/kotlin")
-    }
-    sourceSets.named("test") {
-        java.srcDir("src/test/kotlin")
-    }
-    sourceSets.named("androidTest") {
-        java.srcDir("src/androidTest/kotlin")
     }
 
     packaging {
@@ -159,6 +138,8 @@ androidComponents {
 
 datadog {
     composeInstrumentation = InstrumentationMode.AUTO
+    // since the upload job is on Gitlab, default url will be different
+    remoteRepositoryUrl = "https://github.com/DataDog/dd-sdk-android"
     variants {
         SAMPLE_APP_REGIONS.forEach {
             register(it) {
@@ -200,8 +181,9 @@ dependencies {
     // Desugaring SDK
     coreLibraryDesugaring(libs.androidDesugaringSdk)
 
-    // Sample Vendor Library
+    // Sample modules
     implementation(project(":sample:vendor-lib"))
+    implementation(project(":sample:kotlin:sqldelight"))
 
     implementation(libs.kotlinRuntime)
 
@@ -272,4 +254,10 @@ taskConfig<KotlinCompile> {
     compilerOptions {
         optIn.add("kotlin.RequiresOptIn")
     }
+}
+
+tasks.register("lintRelease") {
+    group = "verification"
+    description = "Runs release lint on the US1 sample flavor."
+    dependsOn("lintUs1Release")
 }

@@ -7,6 +7,7 @@
 package com.datadog.android.tests.elmyr
 
 import com.datadog.android.api.context.AccountInfo
+import com.datadog.android.internal.tests.elmyr.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
