@@ -524,7 +524,7 @@ internal class DatadogFlagsProviderTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun `M keep Stale status W setEvaluationContextAndWait() {same-subject cached fallback}`() = runTest {
+    fun `M keep Stale status W setEvaluationContextAndWait() {failed refresh with same-subject fallback}`() = runTest {
         // Given
         var currentState: FlagsClientState = FlagsClientState.Ready
         var updateCount = 0
@@ -533,7 +533,12 @@ internal class DatadogFlagsProviderTest {
             updateCount++
             currentState = if (updateCount == 1) FlagsClientState.Ready else FlagsClientState.Stale
             checkNotNull(capturedStateListener).onStateChanged(currentState)
-            invocation.getArgument<EvaluationContextCallback>(1).onSuccess()
+            val callback = invocation.getArgument<EvaluationContextCallback>(1)
+            if (currentState == FlagsClientState.Ready) {
+                callback.onSuccess()
+            } else {
+                callback.onFailure(RuntimeException("Unable to fetch feature flags"))
+            }
         }
         val initialContext = ImmutableContext(
             targetingKey = "subject",

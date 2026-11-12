@@ -255,6 +255,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         }
     }
 
+    @Throws(CancellationException::class)
     private suspend fun setEvaluationContext(context: OpenFeatureEvaluationContext?) {
         val datadogContext = targetingContext(context)
         val telemetryOptedOut = if (evaluationTelemetryOptOutParameterEnabled) {

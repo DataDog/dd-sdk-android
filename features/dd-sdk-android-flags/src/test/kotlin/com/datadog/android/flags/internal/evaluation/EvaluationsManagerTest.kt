@@ -15,7 +15,9 @@ import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.EvaluationContextOutcomeCallback
 import com.datadog.android.flags.ExperimentationOptOutMode
+import com.datadog.android.flags.FlagsAssignmentAuthorizationException
 import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsInvalidContextException
@@ -862,7 +864,7 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
-    fun `M use same subject fallback W updateEvaluationsForContext() {token request fails}`() {
+    fun `M report failed refresh with stale outcome W updateEvaluationsForContext() {token request fails}`() {
         // Given
         val token = "header.payload.signature"
         val requestedContext = EvaluationContext(
@@ -871,7 +873,26 @@ internal class EvaluationsManagerTest {
         )
         val sanitizedContext = EvaluationContext("subject", mapOf("version" to "new"))
         val cachedContext = EvaluationContext("subject", mapOf("version" to "old"))
-        val callback = mock<EvaluationContextCallback>()
+        var callbackState: FlagsClientState? = null
+        var callbackError: Throwable? = null
+        val callback = object : EvaluationContextOutcomeCallback {
+            override fun onSuccess(state: FlagsClientState) {
+                fail<Unit>("onSuccess should not be called")
+            }
+
+            override fun onFailure(error: Throwable, state: FlagsClientState) {
+                callbackError = error
+                callbackState = state
+            }
+
+            override fun onSuccess() {
+                fail<Unit>("state-aware onSuccess should be called")
+            }
+
+            override fun onFailure(error: Throwable) {
+                fail<Unit>("state-aware onFailure should be called")
+            }
+        }
         whenever(mockFlagsRepository.hasConfiguration()).thenReturn(true)
         whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(cachedContext)
         whenever(
@@ -888,8 +909,8 @@ internal class EvaluationsManagerTest {
 
         // Then
         verify(mockFlagsStateManager).updateState(FlagsClientState.Stale)
-        verify(callback).onSuccess()
-        verify(callback, never()).onFailure(any())
+        assertThat(callbackState).isEqualTo(FlagsClientState.Stale)
+        assertThat(callbackError).isInstanceOf(NetworkRequestFailedException::class.java)
     }
 
     @Test
@@ -962,7 +983,8 @@ internal class EvaluationsManagerTest {
 
         // Then
         verify(mockFlagsStateManager).updateState(FlagsClientState.Stale)
-        verify(callback).onSuccess()
+        verify(callback).onFailure(isA<FlagsAssignmentAuthorizationException>())
+        verify(callback, never()).onSuccess()
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,

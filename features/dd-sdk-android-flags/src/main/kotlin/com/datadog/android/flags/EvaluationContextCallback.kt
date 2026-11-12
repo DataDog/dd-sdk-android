@@ -6,6 +6,8 @@
 
 package com.datadog.android.flags
 
+import com.datadog.android.flags.model.FlagsClientState
+
 /**
  * Callback interface for asynchronous evaluation context update operations.
  *
@@ -18,9 +20,8 @@ interface EvaluationContextCallback {
     /**
      * Invoked when the evaluation context update completes successfully.
      *
-     * This method is called on a background executor thread after the state transitions to [FlagsClientState.Ready],
-     * or to [FlagsClientState.Stale] when an eligible subject-authorization fallback safely retains assignments for
-     * the same subject. A newer context can replace the installed assignments before delivery.
+     * This method is called on a background executor thread after the state transitions to [FlagsClientState.Ready].
+     * A newer context can replace the installed assignments before delivery.
      * In enabled experimentation opt-out modes, resolutions return defaults until assignments match the current context.
      * In disabled mode, previous assignments normally remain available until replaced, but subject authorization can
      * withhold them when a different subject is requested.
@@ -37,14 +38,21 @@ interface EvaluationContextCallback {
      * transition the client to [FlagsClientState.Ready] later.
      *
      * In enabled experimentation opt-out modes, malformed timestamps fail with [FlagsInvalidContextException]
-     * without an assignment request. When experimentation opt-out or subject-authorization ordering is active, a
-     * request replaced before its result is processed fails with [FlagsContextSupersededException], whether its fetch
-     * succeeds or fails, unless its timeout already completed it. A result processed before the request is replaced
-     * keeps its original completion outcome.
+     * without an assignment request. An exact subject-authorization rejection fails with
+     * [FlagsAssignmentAuthorizationException]. When experimentation opt-out or subject-authorization ordering is
+     * active, a request replaced before its result is processed fails with [FlagsContextSupersededException], whether
+     * its fetch succeeds or fails, unless its timeout already completed it. A result processed before the request is
+     * replaced keeps its original completion outcome.
      * Treat that exception as cancellation. It does not change the newer request's client state.
      *
      * @param error A [Throwable] containing details about the failure, typically including
      * a message explaining the network request failure.
      */
     fun onFailure(error: Throwable)
+}
+
+internal interface EvaluationContextOutcomeCallback : EvaluationContextCallback {
+    fun onSuccess(state: FlagsClientState)
+
+    fun onFailure(error: Throwable, state: FlagsClientState)
 }

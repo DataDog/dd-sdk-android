@@ -156,6 +156,27 @@ internal class FlagsClientExtTest {
     }
 
     @Test
+    fun `M return STALE W setEvaluationContextSuspend() {failed refresh with stale assignments}`(
+        @StringForgery targetingKey: String,
+        @StringForgery errorMessage: String
+    ) = runTest {
+        // Given
+        val context = EvaluationContext(targetingKey = targetingKey)
+        val stubState = mock<StateObservable>()
+        whenever(mockFlagsClient.state).thenReturn(stubState)
+        whenever(stubState.getCurrentState()).thenReturn(FlagsClientState.Stale)
+        doAnswer { invocation ->
+            invocation.getArgument<EvaluationContextCallback>(1).onFailure(RuntimeException(errorMessage))
+        }.whenever(mockFlagsClient).setEvaluationContext(eq(context), any())
+
+        // When
+        val result = mockFlagsClient.setEvaluationContextSuspend(context)
+
+        // Then
+        assertThat(result).isEqualTo(ContextUpdateOutcome.STALE)
+    }
+
+    @Test
     fun `M throw OpenFeatureError GeneralError W setEvaluationContextSuspend() {callback onFailure with message}`(
         @StringForgery targetingKey: String,
         @StringForgery errorMessage: String

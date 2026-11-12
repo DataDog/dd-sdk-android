@@ -6,7 +6,6 @@
 
 package com.datadog.android.flags.openfeature.internal
 
-import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
@@ -26,7 +25,7 @@ import kotlin.coroutines.suspendCoroutine
  * Wraps the callback API in a [suspendCoroutine], converting success/failure callbacks
  * to [resume]/[resumeWithException].
  *
- * A timeout with matching cached assignments completes successfully and leaves the provider stale.
+ * A failed refresh or timeout with matching cached assignments leaves the provider stale.
  *
  * @param context The evaluation context to set
  * @param telemetryOptedOut The typed subject decision, or null to preserve native telemetry configuration.
@@ -34,8 +33,8 @@ import kotlin.coroutines.suspendCoroutine
  * [ContextUpdateOutcome.READY].
  * @throws [CancellationException] if a newer request replaces this request before its result is processed while
  * experimentation opt-out or subject-authorization ordering is active.
- * @throws [OpenFeatureError.GeneralError] if setting the context fails. The first context operation also
- * fails when the configured Flags initialization timeout elapses without matching cached assignments.
+ * @throws [OpenFeatureError.GeneralError] if setting the context fails without usable cached assignments. The first
+ * context operation also fails when the configured Flags initialization timeout elapses without a usable cache.
  */
 internal suspend fun FlagsClient.setEvaluationContextSuspend(
     context: EvaluationContext,
@@ -45,24 +44,17 @@ internal suspend fun FlagsClient.setEvaluationContextSuspend(
     // an IllegalStateException, but we are safe here
     @Suppress("UnsafeThirdPartyFunctionCall")
     return suspendCoroutine { continuation ->
-        val callback = object : EvaluationContextCallback {
-            override fun onSuccess() {
-                continuation.resume(state.getCurrentState().toContextUpdateOutcome())
-            }
-
-            override fun onFailure(error: Throwable) {
-                if (error is FlagsContextSupersededException) {
+        _FlagsInternalProxy(this).setEvaluationContext(context, telemetryOptedOut) { state, error ->
+            when {
+                error is FlagsContextSupersededException -> {
                     continuation.resumeWithException(CancellationException(error.message))
-                    return
                 }
-                if (error is FlagsInitializationTimeoutException) {
-                    val currentState = state.getCurrentState()
-                    if (currentState == FlagsClientState.Ready || currentState == FlagsClientState.Stale) {
-                        continuation.resume(currentState.toContextUpdateOutcome())
-                        return
-                    }
+                state == FlagsClientState.Stale ||
+                    (error is FlagsInitializationTimeoutException && state == FlagsClientState.Ready) -> {
+                    continuation.resume(state.toContextUpdateOutcome())
                 }
-                continuation.resumeWithException(
+                error == null -> continuation.resume(state.toContextUpdateOutcome())
+                else -> continuation.resumeWithException(
                     if (error is FlagsInvalidContextException) {
                         OpenFeatureError.InvalidContextError(error.message ?: "Invalid evaluation context")
                     } else {
@@ -72,12 +64,6 @@ internal suspend fun FlagsClient.setEvaluationContextSuspend(
                     }
                 )
             }
-        }
-
-        if (telemetryOptedOut == null) {
-            setEvaluationContext(context, callback)
-        } else {
-            _FlagsInternalProxy(this).setEvaluationContext(context, callback, telemetryOptedOut)
         }
     }
 }

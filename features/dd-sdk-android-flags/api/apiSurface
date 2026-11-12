@@ -42,6 +42,7 @@ data class com.datadog.android.flags.FlagsConfiguration
     fun rumIntegrationEnabled(Boolean): Builder
     fun gracefulModeEnabled(Boolean): Builder
     fun build(): FlagsConfiguration
+class com.datadog.android.flags.FlagsAssignmentAuthorizationException : RuntimeException
 class com.datadog.android.flags.FlagsContextSupersededException : IllegalStateException
 class com.datadog.android.flags.FlagsInitializationTimeoutException : RuntimeException
 class com.datadog.android.flags.FlagsInvalidContextException : IllegalArgumentException
@@ -57,6 +58,7 @@ class com.datadog.android.flags._FlagsInternalProxy
   constructor(FlagsClient)
   fun isExperimentationOptOutEnabled(): Boolean
   fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext, EvaluationContextCallback?, Boolean)
+  fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext, Boolean?, (com.datadog.android.flags.model.FlagsClientState, Throwable?) -> Unit)
   fun isEvaluationTelemetryOptOutParameterEnabled(): Boolean
   fun getFlagAssignmentsSnapshot(com.datadog.android.flags.model.EvaluationContext): Map<String, com.datadog.android.flags.model.UnparsedFlag>?
   fun getFlagAssignmentsSnapshot(): Map<String, com.datadog.android.flags.model.UnparsedFlag>

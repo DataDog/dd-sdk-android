@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.EvaluationContextOutcomeCallback
 import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsStateListener
@@ -28,6 +29,7 @@ import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientEvent
+import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
@@ -2102,6 +2104,32 @@ internal class DatadogFlagsClientTest {
     // endregion
 
     // region Internal APIs exposed through _FlagsInternalProxy
+
+    @Test
+    fun `M report request outcome W setEvaluationContext() {internal proxy}`(forge: Forge) {
+        // Given
+        val fakeContext = EvaluationContext(forge.anAlphabeticalString())
+        val fakeError = RuntimeException(forge.anAlphabeticalString())
+        var completionState: FlagsClientState? = null
+        var completionError: Throwable? = null
+        val testedProxy = _FlagsInternalProxy(testedClient)
+
+        // When
+        testedProxy.setEvaluationContext(fakeContext, null) { state, error ->
+            completionState = state
+            completionError = error
+        }
+        val callbackCaptor = argumentCaptor<EvaluationContextCallback>()
+        verify(mockEvaluationsManager).updateEvaluationsForContext(fakeContext, callbackCaptor.capture())
+        val callback = checkNotNull(callbackCaptor.firstValue as? EvaluationContextOutcomeCallback) {
+            "Expected a state-aware callback"
+        }
+        callback.onFailure(fakeError, FlagsClientState.Stale)
+
+        // Then
+        assertThat(completionState).isEqualTo(FlagsClientState.Stale)
+        assertThat(completionError).isSameAs(fakeError)
+    }
 
     @ParameterizedTest
     @EnumSource(ExperimentationOptOutMode::class)

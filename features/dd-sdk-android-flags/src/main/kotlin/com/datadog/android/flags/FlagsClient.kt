@@ -105,6 +105,8 @@ interface FlagsClient {
      * When experimentation opt-out or subject-authorization ordering is active, if a newer context replaces this
      * request before its result is processed, the callback fails with [FlagsContextSupersededException], unless its
      * initialization timeout already completed it.
+     * An exact subject-authorization rejection fails with [FlagsAssignmentAuthorizationException]. Eligible cached
+     * assignments can remain available in [FlagsClientState.Stale] while the callback reports the failed refresh.
      *
      * @param context The [EvaluationContext] containing targeting key and attributes.
      * @param callback Optional callback to notify when the operation completes or fails.

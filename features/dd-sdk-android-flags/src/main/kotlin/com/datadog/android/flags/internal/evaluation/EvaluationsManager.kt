@@ -12,6 +12,8 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.EvaluationContextOutcomeCallback
+import com.datadog.android.flags.FlagsAssignmentAuthorizationException
 import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsInvalidContextException
@@ -328,7 +330,11 @@ internal class EvaluationsManager(
             else -> INVALID_RESPONSE_MESSAGE
         }
         internalLogger.log(InternalLogger.Level.WARN, InternalLogger.Target.USER, { message })
-        val throwable = NetworkRequestFailedException(message)
+        val throwable = if (authorizationRejected) {
+            FlagsAssignmentAuthorizationException()
+        } else {
+            NetworkRequestFailedException(message)
+        }
         synchronized(initializationTerminalLock) {
             val result = takeCompletion(initializationCompletion, callback)
             val current = ifCurrent(request) {
@@ -356,11 +362,7 @@ internal class EvaluationsManager(
                         enqueueState(FlagsClientState.Error(throwable))
                     }
                 }
-                if (fallback.authorizationProtected || timeoutFallback?.authorizationProtected == true) {
-                    enqueueCompletion(result, null)
-                } else {
-                    enqueueCompletion(result, throwable)
-                }
+                enqueueCompletion(result, throwable)
             }
             if (!current) {
                 enqueueCompletion(result, FlagsContextSupersededException(SUPERSEDED_MESSAGE))
@@ -422,7 +424,7 @@ internal class EvaluationsManager(
         effects.enqueue {
             installation.complete {
                 effects.notifySafely { flagStateManager.updateState(FlagsClientState.Ready) }
-                complete(result)
+                complete(result, FlagsClientState.Ready)
             }
         }
     }
@@ -517,7 +519,8 @@ internal class EvaluationsManager(
     }
 
     private fun enqueueCompletion(result: InitializationResult?, error: Throwable?) {
-        effects.enqueue { complete(result, error) }
+        val state = currentState
+        effects.enqueue { complete(result, state, error) }
     }
 
     private fun ifCurrent(request: ExperimentationOptOut.Request, action: () -> Unit): Boolean {
@@ -528,11 +531,22 @@ internal class EvaluationsManager(
         return optOutCurrent && authorizationCurrent
     }
 
-    private fun complete(result: InitializationResult?, error: Throwable? = null) {
+    private fun complete(
+        result: InitializationResult?,
+        state: FlagsClientState,
+        error: Throwable? = null
+    ) {
         effects.notifySafely { result?.cancelTimeout?.invoke() }
         val callback = result?.callback ?: return
         callbackExecutor.executeSafe("Deliver evaluation context callback", internalLogger) {
-            effects.notifySafely { if (error == null) callback.onSuccess() else callback.onFailure(error) }
+            effects.notifySafely {
+                when {
+                    callback is EvaluationContextOutcomeCallback && error == null -> callback.onSuccess(state)
+                    callback is EvaluationContextOutcomeCallback && error != null -> callback.onFailure(error, state)
+                    error == null -> callback.onSuccess()
+                    else -> callback.onFailure(error)
+                }
+            }
         }
     }
 

@@ -87,6 +87,9 @@ public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public final fun useCustomFlagEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 }
 
+public final class com/datadog/android/flags/FlagsAssignmentAuthorizationException : java/lang/RuntimeException {
+}
+
 public final class com/datadog/android/flags/FlagsContextSupersededException : java/lang/IllegalStateException {
 }
 
@@ -116,6 +119,7 @@ public final class com/datadog/android/flags/_FlagsInternalProxy {
 	public final fun getFlagAssignmentsSnapshot (Lcom/datadog/android/flags/model/EvaluationContext;)Ljava/util/Map;
 	public final fun isEvaluationTelemetryOptOutParameterEnabled ()Z
 	public final fun isExperimentationOptOutEnabled ()Z
+	public final fun setEvaluationContext (Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/Boolean;Lkotlin/jvm/functions/Function2;)V
 	public final fun setEvaluationContext (Lcom/datadog/android/flags/model/EvaluationContext;Lcom/datadog/android/flags/EvaluationContextCallback;Z)V
 	public final fun trackFlagEvaluationEvent (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/String;)V
 	public final fun trackFlagEvaluationEvent (Ljava/lang/String;Lcom/datadog/android/flags/model/UnparsedFlag;Lcom/datadog/android/flags/model/EvaluationContext;Ljava/lang/String;ZLjava/lang/String;)V
