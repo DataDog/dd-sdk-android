@@ -21,6 +21,7 @@ internal data class ResponseSigningConfiguration(
 internal data class SignedAssignmentsResponse(
     val json: String,
     val proof: VerifiedResponse?,
+    val flagSelectionIgnoredReason: String? = null,
     val isCancelled: () -> Boolean = { false }
 )
 

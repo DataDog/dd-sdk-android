@@ -20,6 +20,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.useCoreFactories()
         forge.addFactory(RumContextForgeryFactory())
 
+        forge.addFactory(PrecomputedRequestDiagnosticsForgeryFactory())
         forge.addFactory(FlagsConfigurationForgeryFactory())
         forge.addFactory(PrecomputedFlagForgeryFactory())
         forge.addFactory(PrecomputedAssignmentsForgeryFactory())

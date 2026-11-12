@@ -28,5 +28,8 @@ enum class ErrorCode {
     /**
      * The type of the flag value does not match the expected type.
      */
-    TYPE_MISMATCH
+    TYPE_MISMATCH,
+
+    /** The evaluation context contains an invalid attribute. */
+    INVALID_CONTEXT
 }

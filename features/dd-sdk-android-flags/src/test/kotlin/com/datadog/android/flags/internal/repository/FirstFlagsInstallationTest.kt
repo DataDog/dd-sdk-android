@@ -35,6 +35,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 @ExtendWith(ForgeExtension::class)
+@Suppress("DEPRECATION") // These tests retain coverage for the deprecated repository helpers.
 internal class FirstFlagsInstallationTest {
     @StringForgery
     lateinit var fakeNetworkKey: String
@@ -208,7 +209,7 @@ internal class FirstFlagsInstallationTest {
                     assertThat(tested.getPrecomputedFlag("unknown")).isNull()
                     assertThat(tested.getEvaluationContext()).isNull()
                     assertThat(tested.getFlagsSnapshot()).isEmpty()
-                    assertThat(tested.hasFlags()).isFalse()
+                    assertThat(tested.hasConfiguration()).isFalse()
                     assertThat(tested.getPrecomputedFlagWithContext("unknown")).isNull()
                 }
                 if (missing) disk.onSuccess(null) else disk.onFailure()
@@ -365,7 +366,7 @@ internal class FirstFlagsInstallationTest {
             disk = it.getArgument(2)
             null
         }.whenever(store).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
-        return DefaultFlagsRepository(core, "first", store, persistenceLoadTimeoutMs = timeoutMs).also {
+        return DefaultFlagsRepository(core, "first", store, null, persistenceLoadTimeoutMs = timeoutMs).also {
             it.firstFlags.whenComplete { keys -> events.add(keys) }
         }
     }

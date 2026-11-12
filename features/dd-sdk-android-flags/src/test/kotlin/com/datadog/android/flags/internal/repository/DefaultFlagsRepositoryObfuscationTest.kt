@@ -46,6 +46,7 @@ import org.mockito.quality.Strictness
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
+@Suppress("DEPRECATION") // These tests retain coverage for the deprecated repository helpers.
 internal class DefaultFlagsRepositoryObfuscationTest {
     private lateinit var testedRepository: DefaultFlagsRepository
     private lateinit var encoding: FlagKeyObfuscation
@@ -90,7 +91,7 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         whenever(mockSdkCore.source) doReturn "android"
         doAnswer { it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onFailure() }
             .whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
-        testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore)
+        testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore, null)
     }
 
     @Test
@@ -101,7 +102,7 @@ internal class DefaultFlagsRepositoryObfuscationTest {
             .whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
 
         // When
-        val testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore)
+        val testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore, null)
 
         // Then
         val (flag, context) = checkNotNull(testedRepository.getPrecomputedFlagWithContext(fakeFlagKey))
@@ -124,7 +125,7 @@ internal class DefaultFlagsRepositoryObfuscationTest {
             .whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
         whenever(mockSdkCore.source) doReturn source
         val entry = cachedEntry(encoded)
-        testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore)
+        testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore, null)
         val firstFlags = mutableListOf<List<String>>()
         testedRepository.firstFlags.whenComplete { firstFlags.add(it) }
 
@@ -135,8 +136,8 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         // Then
         val readable = !encoded || source == "android"
         assertThat(result?.variationValue).isEqualTo(if (readable) fakeFlag.variationValue else null)
-        assertThat(testedRepository.hasFlags()).isEqualTo(readable)
-        assertThat(testedRepository.hasLoadedFlagsForContext(fakeContext)).isEqualTo(readable)
+        assertThat(testedRepository.hasConfiguration()).isEqualTo(readable)
+        assertThat(testedRepository.hasConfigurationForContext(fakeContext)).isEqualTo(readable)
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(if (readable) fakeContext else null)
         assertThat(testedRepository.getPrecomputedFlagWithContext(fakeFlagKey) != null).isEqualTo(readable)
         assertThat(testedRepository.getFlagsSnapshot().isEmpty()).isEqualTo(encoded)
@@ -169,7 +170,7 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         whenever(mockSdkCore.source) doReturn "react-native"
         doAnswer { it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(DataStoreContent(0, entry)) }
             .whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
-        testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore)
+        testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore, null)
         val firstFlags = mutableListOf<List<String>>()
         testedRepository.firstFlags.whenComplete { firstFlags.add(it) }
         assertThat(firstFlags).isEmpty()

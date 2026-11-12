@@ -10,7 +10,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsClient
-import com.datadog.android.flags.FlagsInitializationTimeoutException
+import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.FlagsClientState
@@ -81,6 +81,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     FeatureProvider {
 
     private val internalLogger: InternalLogger = sdkCore.internalLogger
+    private val experimentationOptOutEnabled = _FlagsInternalProxy(flagsClient).isExperimentationOptOutEnabled()
     private val evaluationTelemetryOptOutParameterEnabled =
         _FlagsInternalProxy(flagsClient).isEvaluationTelemetryOptOutParameterEnabled()
 
@@ -102,6 +103,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * The method suspends while the [FlagsClient] in turn, takes the context and fetches the flags from the server.
      *
      * @param initialContext The initial evaluation context to set (optional)
+     * @throws java.util.concurrent.CancellationException in enabled experimentation opt-out modes, if a newer
+     * context replaces this request before its result is processed.
      * @throws OpenFeatureError if initialization fails or reaches the configured Flags initialization timeout
      * without matching cached assignments
      */
@@ -120,6 +123,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      *
      * @param oldContext The previous evaluation context
      * @param newContext The new evaluation context to set
+     * @throws java.util.concurrent.CancellationException in enabled experimentation opt-out modes, if a newer
+     * context replaces this request before its result is processed.
      * @throws OpenFeatureError if the provider is unable to set the new context.
      */
     override suspend fun onContextSet(
@@ -225,10 +230,10 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
                     FlagsClientState.Stale -> OpenFeatureProviderEvents.ProviderStale
                     is FlagsClientState.Error -> newState.error.let { cause ->
                         OpenFeatureProviderEvents.ProviderError(
-                            error = if (cause is FlagsInitializationTimeoutException) {
-                                OpenFeatureError.GeneralError(cause.message ?: "Flags initialization timed out")
-                            } else {
-                                OpenFeatureError.ProviderFatalError()
+                            error = when (cause) {
+                                is FlagsInvalidContextException ->
+                                    OpenFeatureError.InvalidContextError(cause.message ?: "Invalid evaluation context")
+                                else -> OpenFeatureError.GeneralError(cause?.message ?: "Unable to fetch feature flags")
                             }
                         )
                     }
@@ -256,7 +261,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     }
 
     private fun targetingContext(context: OpenFeatureEvaluationContext?): DatadogEvaluationContext =
-        context?.toDatadogEvaluationContext() ?: DatadogEvaluationContext.EMPTY
+        context?.toDatadogEvaluationContext(experimentationOptOutEnabled) ?: DatadogEvaluationContext.EMPTY
 
     companion object {
         private const val PROVIDER_NAME = "Datadog Feature Flags Provider"

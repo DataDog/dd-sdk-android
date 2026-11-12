@@ -7,7 +7,6 @@
 package com.datadog.android.profiling.internal
 
 import com.datadog.android.core.internal.remote.model.RemoteConfiguration
-import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 
 /**
@@ -18,7 +17,6 @@ import com.datadog.android.profiling.ProfilingConfiguration
  * section of the remote configuration is consumed here; other sections (rum, sessionReplay, trace)
  * are handled by their respective feature modules.
  */
-@OptIn(ExperimentalProfilingApi::class)
 internal fun ProfilingConfiguration.applyRemoteConfiguration(
     rc: RemoteConfiguration?
 ): ProfilingConfiguration {

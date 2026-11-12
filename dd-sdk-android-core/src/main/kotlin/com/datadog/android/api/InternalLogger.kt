@@ -171,6 +171,8 @@ interface InternalLogger {
 
     /**
      * Logs an API usage from the internal implementation.
+     * Each distinct usage (event type and its configuration, additional properties excluded) is reported at most
+     * once per SDK instance. Repeated usages are dropped before sampling.
      * @param samplingRate value between 0-100 for sampling the event. Note that the sampling rate applied to this
      * event will be applied in addition to the global telemetry sampling rate. By default, the sampling rate is 15%.
      * @param apiUsageEventBuilder the lambda building the API event being tracked

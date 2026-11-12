@@ -51,7 +51,6 @@ import org.mockito.quality.Strictness
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 
-@OptIn(ExperimentalProfilingApi::class)
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),

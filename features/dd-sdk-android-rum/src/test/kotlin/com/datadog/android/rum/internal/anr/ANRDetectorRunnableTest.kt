@@ -30,12 +30,12 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.reset
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -43,6 +43,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 @Extensions(
@@ -240,30 +241,30 @@ internal class ANRDetectorRunnableTest {
         @IntForgery(1, 10) repeatCount: Int
     ) {
         // Given
+        val postCount = AtomicInteger()
         whenever(mockHandler.post(any())) doAnswer {
-            Thread(it.getArgument(0) as Runnable).start()
+            (it.getArgument(0) as Runnable).run()
+            if (postCount.incrementAndGet() == repeatCount) {
+                testedRunnable.stop()
+            }
             true
         }
+        val detectorThread = Thread(testedRunnable)
 
         // When
-        Thread(testedRunnable).start()
-        repeat(repeatCount) {
-            Thread.sleep(TEST_ANR_TEST_DELAY_MS)
-        }
-        Thread.sleep(TEST_ANR_TEST_DELAY_MS / 2)
-        testedRunnable.stop()
+        detectorThread.start()
+        detectorThread.join(TEST_JOIN_TIMEOUT_MS)
 
         // Then
+        assertThat(detectorThread.isAlive).isFalse()
         verifyNoInteractions(rumMonitor.mockInstance)
-        verify(
-            mockHandler,
-            atLeast(repeatCount)
-        ).post(isA<ANRDetectorRunnable.CallbackRunnable>())
+        verify(mockHandler, times(repeatCount)).post(isA<ANRDetectorRunnable.CallbackRunnable>())
     }
 
     companion object {
         private const val TEST_ANR_THRESHOLD_MS = 500L
         private const val TEST_ANR_TEST_DELAY_MS = 50L
+        private const val TEST_JOIN_TIMEOUT_MS = 5_000L
 
         val rumMonitor = GlobalRumMonitorTestConfiguration()
 

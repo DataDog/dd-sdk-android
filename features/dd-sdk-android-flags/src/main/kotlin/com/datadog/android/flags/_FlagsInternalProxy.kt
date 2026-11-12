@@ -24,6 +24,8 @@ import com.datadog.android.lint.InternalApi
 @InternalApi
 @Suppress("ClassName", "ClassNaming", "UndocumentedPublicFunction")
 class _FlagsInternalProxy(private val client: FlagsClient) {
+    fun isExperimentationOptOutEnabled(): Boolean =
+        (client as? DatadogFlagsClient)?.experimentationOptOut?.enabled == true
     fun setEvaluationContext(
         context: EvaluationContext,
         callback: EvaluationContextCallback?,
@@ -38,6 +40,15 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
 
     fun isEvaluationTelemetryOptOutParameterEnabled(): Boolean =
         (client as? DatadogFlagsClient)?.evaluationTelemetryOptOutParameterEnabled == true
+
+    /**
+     * Returns the installed assignments only if they were fetched for [context] and, with an enabled
+     * experimentation opt-out mode, [context] is still the current request. Returns null otherwise,
+     * including for a client that is not a Datadog client.
+     * Use it in a completion callback: a newer request can install before the callback runs.
+     */
+    fun getFlagAssignmentsSnapshot(context: EvaluationContext): Map<String, UnparsedFlag>? =
+        (client as? DatadogFlagsClient)?.getFlagAssignmentsSnapshot(context)
 
     fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag> = if (client is DatadogFlagsClient) {
         client.getFlagAssignmentsSnapshot()

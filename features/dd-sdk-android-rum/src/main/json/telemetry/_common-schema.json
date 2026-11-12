@@ -47,7 +47,8 @@
         "kotlin-multiplatform",
         "electron",
         "rum-cpp",
-        "maui"
+        "maui",
+        "unreal"
       ],
       "readOnly": true
     },

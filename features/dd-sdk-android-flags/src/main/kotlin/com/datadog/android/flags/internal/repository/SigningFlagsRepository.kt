@@ -52,37 +52,49 @@ internal class SigningFlagsRepository(
 
     private fun current(): VerifiedFlags? = verified.get()?.takeIf { signing.permits(it.context, it.proof) }
 
+    override fun installFlagsAndContext(
+        context: EvaluationContext,
+        flags: Map<String, PrecomputedFlag>,
+        obfuscation: FlagKeyObfuscation?
+    ): FlagsInstallation = if (required) {
+        FlagsInstallation { }
+    } else {
+        ordinary().installFlagsAndContext(context, flags, obfuscation)
+    }
+
+    @Deprecated("Use installFlagsAndContext instead")
     override fun setFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
         obfuscation: FlagKeyObfuscation?,
         onInstalled: () -> Unit
-    ) {
-        if (!required) ordinary().setFlagsAndContext(context, flags, obfuscation, onInstalled)
-    }
+    ) = installFlagsAndContext(context, flags, obfuscation).complete(onInstalled)
 
-    override fun setSignedFlagsAndContext(
+    override fun installSignedFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
         obfuscation: FlagKeyObfuscation?,
-        proof: VerifiedResponse?,
-        onInstalled: () -> Unit
-    ) {
+        proof: VerifiedResponse?
+    ): FlagsInstallation? {
         if (proof != null && signing.permits(context, proof)) {
             verified.set(VerifiedFlags(context, flags, obfuscation, proof))
         } else if (required) {
-            return
+            return null
         }
-        if (required) {
-            onInstalled()
-            firstFlags.complete(if (obfuscation == null) flags.keys else emptySet(), deliverFirstFlags)
+        return if (required) {
+            FlagsInstallation { onInstalled ->
+                onInstalled()
+                firstFlags.complete(if (obfuscation == null) flags.keys else emptySet(), deliverFirstFlags)
+            }
         } else {
-            ordinary().setFlagsAndContext(context, flags, obfuscation, onInstalled)
+            ordinary().installFlagsAndContext(context, flags, obfuscation)
         }
     }
 
-    override fun restoreVerifiedFlags() {
-        if (!required) current()?.let { ordinary().setFlagsAndContext(it.context, it.flags, it.obfuscation) }
+    override fun restoreVerifiedFlags(): FlagsInstallation? = if (required) {
+        null
+    } else {
+        current()?.let { ordinary().installFlagsAndContext(it.context, it.flags, it.obfuscation) }
     }
 
     @Suppress("ReturnCount") // Stop before resolving a flag when no admissible snapshot exists.
@@ -99,21 +111,28 @@ internal class SigningFlagsRepository(
     override fun getEvaluationContext(): EvaluationContext? =
         if (required) current()?.context else ordinary().getEvaluationContext()
 
+    override fun getAssignmentsSnapshot(): FlagsAssignmentsSnapshot? = if (required) {
+        current()?.takeIf { it.obfuscation == null }?.let { FlagsAssignmentsSnapshot(it.flags, it.context) }
+    } else {
+        ordinary().getAssignmentsSnapshot()
+    }
+
+    @Deprecated("Use getAssignmentsSnapshot instead")
     override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> =
         if (required) {
             current()?.takeIf {
                 it.obfuscation == null
             }?.flags ?: emptyMap()
         } else {
-            ordinary().getFlagsSnapshot()
+            ordinary().getAssignmentsSnapshot()?.flags ?: emptyMap()
         }
 
-    override fun hasFlags(): Boolean = if (required) current()?.flags?.isNotEmpty() == true else ordinary().hasFlags()
+    override fun hasConfiguration(): Boolean = if (required) current() != null else ordinary().hasConfiguration()
 
-    override fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean =
+    override fun hasConfigurationForContext(context: EvaluationContext): Boolean =
         if (required) {
-            current()?.let { it.context == context && it.flags.isNotEmpty() } == true
+            current()?.let { it.context == context } == true
         } else {
-            ordinary().hasLoadedFlagsForContext(context)
+            ordinary().hasConfigurationForContext(context)
         }
 }

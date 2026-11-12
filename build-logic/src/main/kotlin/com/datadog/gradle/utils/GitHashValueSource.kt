@@ -8,14 +8,19 @@ package com.datadog.gradle.utils
 
 import org.gradle.api.provider.ValueSource
 import org.gradle.api.provider.ValueSourceParameters
-import org.gradle.process.ExecOperations
-import javax.inject.Inject
 
-abstract class GitHashValueSource @Inject constructor(
-    private val execOperations: ExecOperations
-) : ValueSource<String, ValueSourceParameters.None> {
+/**
+ * Provides the commit SHA embedded in the SDK. The real SHA is only passed (via `-DsdkCommitSha1`) by the CI jobs
+ * that ship artifacts; everywhere else a constant stub is used, so the value doesn't invalidate the build cache.
+ */
+abstract class GitHashValueSource : ValueSource<String, ValueSourceParameters.None> {
 
-    override fun obtain(): String? {
-        return execOperations.execShell("git", "rev-parse", "HEAD").joinToString().trim()
+    override fun obtain(): String {
+        return System.getProperty(SDK_COMMIT_SHA1_PROPERTY) ?: STUB_COMMIT_SHA1
+    }
+
+    private companion object {
+        const val SDK_COMMIT_SHA1_PROPERTY = "sdkCommitSha1"
+        const val STUB_COMMIT_SHA1 = "0000000000000000000000000000000000000000"
     }
 }

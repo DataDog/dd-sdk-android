@@ -7,7 +7,6 @@
 package com.datadog.android.profiling.internal
 
 import com.datadog.android.core.internal.remote.model.RemoteConfiguration
-import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -24,7 +23,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
-@OptIn(ExperimentalProfilingApi::class)
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)

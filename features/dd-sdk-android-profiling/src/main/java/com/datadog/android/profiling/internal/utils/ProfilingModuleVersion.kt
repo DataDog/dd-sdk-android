@@ -7,15 +7,15 @@
 package com.datadog.android.profiling.internal.utils
 
 /**
- * First version of the `com.google.android.profiling` system package (mainline 2026-07) which no longer
+ * First version of the `com.google.android.profiling` system package (mainline 2026-10) which no longer
  * records stack sampling traces without any stack sample. Version codes increase with each release.
  */
-private const val EMPTY_STACK_SAMPLES_FIXED_MODULE_VERSION_CODE = 371020780L
+private const val EMPTY_STACK_SAMPLES_FIXED_MODULE_VERSION_CODE = 373040100L
 
 /**
  * Whether the profiling system package version can record stack sampling traces without any stack sample.
  * An unknown version (0, e.g. the system package is not found) is not considered as affected.
  */
 internal fun canProfilingModuleRecordNoStackSamples(versionCode: Long): Boolean {
-    return versionCode > 0L && versionCode < EMPTY_STACK_SAMPLES_FIXED_MODULE_VERSION_CODE
+    return versionCode in 1..<EMPTY_STACK_SAMPLES_FIXED_MODULE_VERSION_CODE
 }

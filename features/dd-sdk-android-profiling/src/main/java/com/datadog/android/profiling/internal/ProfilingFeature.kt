@@ -26,7 +26,6 @@ import com.datadog.android.internal.rum.RumSessionConstants
 import com.datadog.android.internal.rum.RumSessionState
 import com.datadog.android.internal.rum.rumContext
 import com.datadog.android.internal.time.DefaultTimeProvider
-import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.quota.NoOpQuotaChecker
@@ -43,7 +42,6 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-@OptIn(ExperimentalProfilingApi::class)
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 @Suppress("TooManyFunctions")
 internal class ProfilingFeature(

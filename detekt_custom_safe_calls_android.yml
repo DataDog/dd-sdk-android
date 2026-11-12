@@ -107,7 +107,7 @@ datadog:
       - "android.util.TypedValue.constructor()"
       - "android.view.accessibility.AccessibilityManager.addTouchExplorationStateChangeListener(android.view.accessibility.AccessibilityManager.TouchExplorationStateChangeListener)"
       - "android.view.accessibility.AccessibilityManager.removeTouchExplorationStateChangeListener(android.view.accessibility.AccessibilityManager.TouchExplorationStateChangeListener)"
-      - "android.view.accessibility.TouchExplorationStateChangeListener(kotlin.Function1)"
+      - "android.view.accessibility.AccessibilityManager.TouchExplorationStateChangeListener(kotlin.Function1)"
       - "android.view.Choreographer.postFrameCallback(android.view.Choreographer.FrameCallback)"
       - "android.view.Display.getSize(android.graphics.Point?)"
       - "android.view.FrameMetrics.getMetric(kotlin.Int)"

@@ -412,6 +412,11 @@
                   "description": "The version of MAUI used in a .NET MAUI application",
                   "readOnly": false
                 },
+                "unreal_version": {
+                  "type": "string",
+                  "description": "The version of Unreal Engine used in an Unreal Engine application",
+                  "readOnly": false
+                },
                 "app_hang_threshold": {
                   "type": "integer",
                   "description": "The threshold used for iOS App Hangs monitoring (in milliseconds)"
@@ -490,7 +495,7 @@
                 },
                 "source": {
                   "type": "string",
-                  "description": "The source of the SDK, e.g., 'browser', 'ios', 'android', 'flutter', 'react-native', 'unity', 'kotlin-multiplatform', 'maui'.",
+                  "description": "The source of the SDK, e.g., 'browser', 'ios', 'android', 'flutter', 'react-native', 'unity', 'kotlin-multiplatform', 'maui', 'unreal'.",
                   "readOnly": false
                 },
                 "variant": {

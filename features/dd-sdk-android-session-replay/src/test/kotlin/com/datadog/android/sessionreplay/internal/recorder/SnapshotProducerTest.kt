@@ -352,7 +352,7 @@ internal class SnapshotProducerTest {
             .thenReturn(
                 fakeTraversedTreeView.copy(
                     nextActionStrategy =
-                    TraversalStrategy.STOP_AND_RETURN_NODE
+                        TraversalStrategy.STOP_AND_RETURN_NODE
                 )
             )
         var expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
@@ -390,7 +390,7 @@ internal class SnapshotProducerTest {
             .thenReturn(
                 fakeTraversedTreeView.copy(
                     nextActionStrategy =
-                    TraversalStrategy.STOP_AND_DROP_NODE
+                        TraversalStrategy.STOP_AND_DROP_NODE
                 )
             )
         val expectedSnapshot = fakeRoot.toNode(viewMappedWireframes = fakeViewWireframes)
@@ -431,7 +431,7 @@ internal class SnapshotProducerTest {
             .thenReturn(
                 fakeTraversedTreeView.copy(
                     nextActionStrategy =
-                    TraversalStrategy.STOP_AND_DROP_NODE
+                        TraversalStrategy.STOP_AND_DROP_NODE
                 )
             )
 
@@ -478,7 +478,7 @@ internal class SnapshotProducerTest {
             .thenReturn(
                 fakeTraversedTreeView.copy(
                     nextActionStrategy =
-                    TraversalStrategy.STOP_AND_DROP_NODE
+                        TraversalStrategy.STOP_AND_DROP_NODE
                 )
             )
 

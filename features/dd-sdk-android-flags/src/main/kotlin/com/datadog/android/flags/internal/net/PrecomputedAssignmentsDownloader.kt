@@ -10,6 +10,8 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.flags.ResponseSigningMode
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
+import com.datadog.android.flags.internal.selection.FlagSelectionIgnoredReason
 import com.datadog.android.flags.internal.signing.ResponseSigningState
 import com.datadog.android.flags.internal.signing.ResponseSigningVerifier
 import com.datadog.android.flags.internal.signing.SignedAssignmentsResponse
@@ -36,9 +38,12 @@ internal class PrecomputedAssignmentsDownloader(
 ) : PrecomputedAssignmentsReader {
 
     @WorkerThread
-    override fun readPrecomputedFlags(context: EvaluationContext, datadogContext: DatadogContext): String? {
-        val request = requestFactory.create(context, datadogContext) ?: return null
-
+    override fun readPrecomputedFlags(
+        context: EvaluationContext,
+        datadogContext: DatadogContext,
+        diagnostics: Diagnostics
+    ): PrecomputedAssignmentsResponse? {
+        val request = requestFactory.create(context, datadogContext, diagnostics) ?: return null
         return executeDownloadRequest(request)
     }
 
@@ -48,13 +53,16 @@ internal class PrecomputedAssignmentsDownloader(
     override fun readSignedPrecomputedFlags(
         context: EvaluationContext,
         datadogContext: DatadogContext,
+        diagnostics: Diagnostics,
         generation: Long,
         onPrepared: () -> Unit
     ): SignedAssignmentsResponse? {
         val state =
-            signing ?: return readPrecomputedFlags(context, datadogContext)?.let { SignedAssignmentsResponse(it, null) }
+            signing ?: return readPrecomputedFlags(context, datadogContext, diagnostics)?.let {
+                SignedAssignmentsResponse(it.body, null, it.flagSelectionIgnoredReason)
+            }
         if (!state.isCurrent(generation)) return null
-        val original = requestFactory.create(context, datadogContext) ?: return null
+        val original = requestFactory.create(context, datadogContext, diagnostics) ?: return null
         val prepared = state.prepare(original, generation)
         if (prepared == null && state.configuration.mode == ResponseSigningMode.REQUIRED) return null
         onPrepared()
@@ -86,7 +94,16 @@ internal class PrecomputedAssignmentsDownloader(
                 }
                 state.report(proof != null)
                 if (proof == null && state.configuration.mode == ResponseSigningMode.REQUIRED) return null
-                SignedAssignmentsResponse(bytes.toString(Charsets.UTF_8), proof) { call.isCanceled() }
+                SignedAssignmentsResponse(
+                    bytes.toString(Charsets.UTF_8),
+                    proof,
+                    if (requestFactory.sendsFlagSelection) {
+                        response.header(HEADER_FLAG_SELECTION_IGNORED)?.takeIf(String::isNotEmpty)
+                            ?.let(FlagSelectionIgnoredReason::sanitize)
+                    } else {
+                        null
+                    }
+                ) { call.isCanceled() }
             }
         } catch (_: IllegalArgumentException) {
             failedSignedDownload()
@@ -119,7 +136,7 @@ internal class PrecomputedAssignmentsDownloader(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun executeDownloadRequest(request: Request): String? = try {
+    private fun executeDownloadRequest(request: Request): PrecomputedAssignmentsResponse? = try {
         val response = callFactory.newCall(request).execute()
         handleResponse(response)
     } catch (e: Throwable) {
@@ -132,9 +149,20 @@ internal class PrecomputedAssignmentsDownloader(
         null
     }
 
-    private fun handleResponse(response: Response): String? = if (response.isSuccessful) {
+    private fun handleResponse(response: Response): PrecomputedAssignmentsResponse? = if (response.isSuccessful) {
         @Suppress("UnsafeThirdPartyFunctionCall") // Safe: wrapped in outer try-catch
-        response.body?.use { it.string() }
+        response.body?.use { it.string() }?.let { body ->
+            PrecomputedAssignmentsResponse(
+                body = body,
+                flagSelectionIgnoredReason = if (requestFactory.sendsFlagSelection) {
+                    response.header(HEADER_FLAG_SELECTION_IGNORED)
+                        ?.takeIf(String::isNotEmpty)
+                        ?.let(FlagSelectionIgnoredReason::sanitize)
+                } else {
+                    null
+                }
+            )
+        }
     } else {
         internalLogger.log(
             InternalLogger.Level.ERROR,
@@ -153,5 +181,9 @@ internal class PrecomputedAssignmentsDownloader(
         response.body?.close()
 
         null
+    }
+
+    private companion object {
+        const val HEADER_FLAG_SELECTION_IGNORED = "DD-Flag-Selection-Ignored"
     }
 }

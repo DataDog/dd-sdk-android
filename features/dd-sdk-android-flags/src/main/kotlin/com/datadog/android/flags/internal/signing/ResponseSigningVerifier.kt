@@ -6,6 +6,8 @@
 
 package com.datadog.android.flags.internal.signing
 
+import com.google.gson.JsonParseException
+import com.google.gson.JsonParser
 import okhttp3.Headers
 import okhttp3.Request
 import okio.Buffer
@@ -147,6 +149,7 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
         return Certificate(native, tbs[3].encoded, tbs[5].encoded, extensions)
     }
 
+    @Suppress("TooManyFunctions") // Protocol encoding and cache identity helpers stay together.
     companion object {
         const val PREFIX = "x-datadog-feature-flags-"
         private const val NONCE_HEADER = PREFIX + "request-nonce"
@@ -214,7 +217,9 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
             )
                 .forEach { result.lp(it.toByteArray(Charsets.UTF_8)) }
             if (includeNonce) result.lp(hex(nonce))
-            result.write(body.signingBytes().signingBytes().sha256())
+            val requestBytes = body.signingBytes()
+            val scopedBytes = if (includeNonce) requestBytes else withoutDiagnostics(requestBytes)
+            result.write(scopedBytes.signingBytes().sha256())
             result.write(single(request.headers, "dd-client-token").toByteArray(Charsets.UTF_8).signingBytes().sha256())
             SEMANTIC_HEADERS.forEach { name ->
                 val values = request.headers.values(name)
@@ -231,6 +236,19 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
                 )
             }
             return result
+        }
+
+        // Diagnostics identify a fetch, not an assignment scope. Signature verification still hashes every wire byte.
+        private fun withoutDiagnostics(body: ByteArray): ByteArray = try {
+            val json = JsonParser.parseString(body.toString(Charsets.UTF_8))
+            if (json.isJsonObject && json.asJsonObject.has("diagnostics")) {
+                json.asJsonObject.remove("diagnostics")
+                json.toString().toByteArray(Charsets.UTF_8)
+            } else {
+                body
+            }
+        } catch (_: JsonParseException) {
+            body
         }
 
         private fun Buffer.lp(bytes: ByteArray) {

@@ -34,9 +34,11 @@ import okhttp3.Response
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.reset
 import org.mockito.kotlin.whenever
 import java.io.IOException
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
@@ -45,6 +47,10 @@ import java.util.concurrent.TimeUnit
  *
  * It adds several functions to get info about internal state and usage:
  * [eventsWritten], …
+ *
+ * Closing it stops the registered features, which releases the references global registries
+ * (e.g. `GlobalRumMonitor`) hold on this instance. Annotate test fields with
+ * [org.junit.jupiter.api.AutoClose] to close it after each test.
  */
 @Suppress("UnsafeThirdPartyFunctionCall")
 class StubSDKCore(
@@ -55,12 +61,12 @@ class StubSDKCore(
     private val mockContext: Application = mock(stubOnly = true),
     private val mockSdkCore: InternalSdkCore = mock(stubOnly = true) { on { name } doReturn toString() },
     private var datadogContext: DatadogContext = forge.getForgery<DatadogContext>().copy(source = "android")
-) : InternalSdkCore by mockSdkCore {
+) : InternalSdkCore by mockSdkCore, AutoCloseable {
 
     override val source: String
         get() = datadogContext.source
 
-    private val featureScopes = mutableMapOf<String, FeatureScope>()
+    private val featureScopes = mutableMapOf<String, StubFeatureScope>()
 
     private val dataStores = mutableMapOf<String, DataStoreHandler>()
 
@@ -95,7 +101,7 @@ class StubSDKCore(
      * @return a list of [StubEvent]
      */
     fun eventsWritten(featureName: String): List<StubEvent> {
-        return (featureScopes[featureName] as? StubFeatureScope)?.eventsWritten() ?: emptyList()
+        return featureScopes[featureName]?.eventsWritten().orEmpty()
     }
 
     /**
@@ -112,7 +118,7 @@ class StubSDKCore(
      * @return a list of objects
      */
     fun eventsReceived(featureName: String): List<Any> {
-        return (featureScopes[featureName] as? StubFeatureScope)?.eventsReceived() ?: emptyList()
+        return featureScopes[featureName]?.eventsReceived().orEmpty()
     }
 
     /**
@@ -180,6 +186,20 @@ class StubSDKCore(
     }
 
     /**
+     * Stubs feature context.
+     *
+     * @param featureName name of the feature
+     * @param context value of the new context
+     */
+    fun stubFeatureContext(featureName: String, context: Map<String, Any?>) {
+        datadogContext = datadogContext.copy(
+            featuresContext = datadogContext.featuresContext.toMutableMap().apply {
+                put(featureName, context)
+            }
+        )
+    }
+
+    /**
      * Advances the current time and drains due tasks on all scheduled executors created by this core.
      * @param durationMs the duration to advance in milliseconds
      */
@@ -208,21 +228,6 @@ class StubSDKCore(
         )
     }
 
-    /**
-     * Stubs a feature and its corresponding feature scope with a mock.
-     *
-     * @param feature The Datadog feature being used in core.
-     * @param featureScope The feature scope that will be returned by the [getFeature] method.
-     */
-    fun stubFeatureScope(feature: Feature, featureScope: FeatureScope) {
-        // Stop previous registered
-        featureScopes[feature.name]?.unwrap<Feature>()?.onStop()
-
-        featureScopes[feature.name] = featureScope
-
-        feature.onInitialize(mockContext)
-    }
-
     // endregion
 
     // region InternalSdkCore
@@ -232,6 +237,10 @@ class StubSDKCore(
 
     override fun getDatadogContext(withFeatureContexts: Set<String>): DatadogContext {
         return datadogContext
+    }
+
+    override fun getDatadogContextFuture(withFeatureContexts: Set<String>): Future<DatadogContext?> {
+        return StubFuture(datadogContext)
     }
 
     override val networkInfo: NetworkInfo
@@ -258,16 +267,16 @@ class StubSDKCore(
     }
 
     override fun registerFeature(feature: Feature) {
-        val featureName = feature.name
-        stubFeatureScope(
-            feature,
-            StubFeatureScope(
-                feature = feature,
-                datadogContextProvider = { datadogContext },
-                dataStoreProvider = { dataStores[featureName] },
-                eventReceiverProvider = { eventReceivers[featureName] }
-            )
+        // Stop previous registered
+        featureScopes[feature.name]?.unwrap<Feature>()?.onStop()
+
+        featureScopes[feature.name] = StubFeatureScope(
+            feature = feature,
+            datadogContextProvider = { datadogContext },
+            dataStoreProvider = { dataStores[feature.name] },
+            eventReceiverProvider = { eventReceivers[feature.name] }
         )
+        feature.onInitialize(mockContext)
     }
 
     override fun setEventReceiver(featureName: String, receiver: FeatureEventReceiver) {
@@ -367,6 +376,16 @@ class StubSDKCore(
 
     override fun clearAccountInfo() {
         datadogContext = datadogContext.copy(accountInfo = null)
+    }
+
+    // endregion
+
+    // region AutoCloseable
+
+    override fun close() {
+        stopFeatures()
+        // Even stub-only mocks keep their last invocation, which can reference a feature (and this core)
+        reset(mockContext, mockSdkCore)
     }
 
     // endregion

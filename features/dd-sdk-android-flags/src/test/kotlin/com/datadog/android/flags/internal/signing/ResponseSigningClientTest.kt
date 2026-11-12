@@ -18,6 +18,7 @@ import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
@@ -230,11 +231,11 @@ internal class ResponseSigningClientTest {
         val actual = testedClient.resolveBooleanValue("critical-demo", false)
         // Then
         assertThat(actual).isFalse()
-        assertThat(repository.hasFlags()).isFalse()
-        assertThat(repository.getFlagsSnapshot()).isEmpty()
+        assertThat(repository.hasConfiguration()).isFalse()
+        assertThat(repository.getAssignmentsSnapshot()).isNull()
         assertThat(repository.getPrecomputedFlag("critical-demo")).isNull()
         assertThat(repository.getEvaluationContext()).isNull()
-        assertThat(repository.hasLoadedFlagsForContext(EvaluationContext("subject"))).isFalse()
+        assertThat(repository.hasConfigurationForContext(EvaluationContext("subject"))).isFalse()
         verifyNoInteractions(mockStore)
     }
 
@@ -419,7 +420,7 @@ internal class ResponseSigningClientTest {
         queue.removeFirst().run()
         // Then
         assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
-        assertThat(repository.getFlagsSnapshot()).isEmpty()
+        assertThat(repository.getAssignmentsSnapshot()).isNull()
     }
 
     @ParameterizedTest
@@ -469,6 +470,7 @@ internal class ResponseSigningClientTest {
             mockCore,
             "signing-test-$scope",
             mockStore,
+            flagSelection = null,
             persistenceLoadTimeoutMs = 0
         )
         repository = signing?.let { SigningFlagsRepository(::ordinary, it, Runnable::run) } ?: ordinary("off")
@@ -483,17 +485,22 @@ internal class ResponseSigningClientTest {
         val reader = PrecomputedAssignmentsDownloader(
             transport,
             mockLogger,
-            PrecomputedAssignmentsRequestFactory(mockLogger, endpoint),
+            PrecomputedAssignmentsRequestFactory(mockLogger, endpoint, null),
             signing
         )
         val stateManager =
             FlagsStateManager(DDCoreStateHolder.create(FlagsClientState.NotReady, FlagsStateListener::onStateChanged))
+        val optOut = ExperimentationOptOut(stateLock = signing?.lock ?: Any())
         val manager = EvaluationsManager(
             mockCore, mockExecutor, mockLogger, repository, reader, PrecomputeMapper(mockLogger), stateManager,
-            initializationTimeoutMs = null, signing = signing, initializationTimeoutScheduler = { _, _ -> {} }
+            initializationTimeoutMs = null,
+            signing = signing,
+            experimentationOptOut = optOut,
+            initializationTimeoutScheduler = { _, _ -> {} }
         )
-        testedClient =
-            DatadogFlagsClient(mockCore, manager, repository, configuration, mock(), mock(), null, stateManager, false)
+        testedClient = DatadogFlagsClient(
+            mockCore, manager, repository, configuration, mock(), mock(), null, stateManager, false, optOut
+        )
     }
 
     private fun response(request: Request): Response {

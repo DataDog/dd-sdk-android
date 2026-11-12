@@ -12,13 +12,21 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
+import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
+import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.internal.FlagsStateManager
+import com.datadog.android.flags.internal.diagnostics.UUIDv7Generator
 import com.datadog.android.flags.internal.model.PrecomputedAssignments
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Fetch
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Sdk
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Trigger
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
+import com.datadog.android.flags.internal.selection.logIgnoredFlagSelection
 import com.datadog.android.flags.internal.signing.ResponseSigningState
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
@@ -26,12 +34,16 @@ import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 
 internal fun interface InitializationTimeoutScheduler {
     fun schedule(timeoutMs: Long, action: () -> Unit): () -> Unit
 }
 
-private data class InitializationResult(val callback: EvaluationContextCallback?)
+private data class InitializationResult(
+    val callback: EvaluationContextCallback?,
+    val cancelTimeout: (() -> Unit)? = null
+)
 
 private class InitializationCompletion(private var callback: EvaluationContextCallback?) {
     private val lock = Any()
@@ -62,8 +74,7 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
             cancelTimeout = null
             outcome
         }
-        outcome.second?.invoke()
-        return InitializationResult(outcome.first)
+        return InitializationResult(outcome.first, outcome.second)
     }
 }
 
@@ -82,9 +93,12 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
  * @param precomputeMapper transforms network responses into internal flag format
  * @param flagStateManager channel for notifying state change listeners
  * @param initializationTimeoutMs optional maximum duration of the first context operation
- * @param signing optional verification and request generation state
  * @param initializationTimeoutScheduler schedules the first context timeout
+ * @param signing verifies proof lifetime and request scope before admission
+ * @param experimentationOptOut validates contexts and prevents superseded installations
+ * @param callbackExecutor delivers customer callbacks outside state delivery and network operations
  */
+@Suppress("TooManyFunctions") // Each step of the fetch, install and completion lifecycle is a separate function.
 internal class EvaluationsManager(
     private val sdkCore: FeatureSdkCore,
     private val executorService: ExecutorService,
@@ -94,11 +108,18 @@ internal class EvaluationsManager(
     private val precomputeMapper: PrecomputeMapper,
     private val flagStateManager: FlagsStateManager,
     private val initializationTimeoutMs: Long?,
+    private val initializationTimeoutScheduler: InitializationTimeoutScheduler,
     private val signing: ResponseSigningState? = null,
-    private val initializationTimeoutScheduler: InitializationTimeoutScheduler
+    private val experimentationOptOut: ExperimentationOptOut =
+        ExperimentationOptOut(stateLock = signing?.lock ?: Any()),
+    private val callbackExecutor: Executor = InlineExecutor
 ) {
+    private val instanceId = UUIDv7Generator.generate(sdkCore.timeProvider.getDeviceTimestampMillis()).toString()
+    private val fetchSequence = AtomicLong(0)
     private val didStartInitialization = AtomicBoolean(false)
-    private val initializationTerminalLock = signing?.lock ?: Any()
+    private val initializationTerminalLock = experimentationOptOut.stateLock
+    private val effects = EvaluationEffects(initializationTerminalLock, internalLogger)
+    private var currentState: FlagsClientState = FlagsClientState.NotReady
 
     /**
      * Processes a new evaluation context by fetching flags and storing atomically.
@@ -113,80 +134,106 @@ internal class EvaluationsManager(
      * @param context The evaluation context to process. Must be non-null and contain
      * a valid targeting key.
      * @param callback Optional callback invoked when the context is set and the flags have been fetched successfully or not.
-     * @param onFetchFinished Releases request state when the fetch terminates, not when initialization times out.
+     * @param onFetchFinished releases pending request state when the fetch ends, including rejected dispatch.
      */
-    @Suppress("LongMethod") // Preserve the existing off-mode lifecycle; signed admission has its own boundary.
     fun updateEvaluationsForContext(
         context: EvaluationContext,
         callback: EvaluationContextCallback? = null,
         onFetchFinished: () -> Unit = {}
     ) {
-        if (signing != null) {
-            updateSignedEvaluationsForContext(
-                context.copy(attributes = context.attributes.toMap()),
-                callback,
-                onFetchFinished,
-                signing
+        updatePreparedEvaluations(experimentationOptOut.prepare(context), callback, onFetchFinished)
+    }
+
+    fun updatePreparedEvaluations(
+        request: ExperimentationOptOut.Request,
+        callback: EvaluationContextCallback?,
+        onFetchFinished: () -> Unit
+    ) {
+        val generation = signing?.begin(request.context)
+        if (request.invalid) {
+            val error = FlagsInvalidContextException(ExperimentationOptOut.INVALID_CONTEXT_MESSAGE)
+            synchronized(initializationTerminalLock) {
+                experimentationOptOut.ifCurrent(request) { enqueueState(FlagsClientState.Error(error)) }
+                enqueueCompletion(InitializationResult(callback), error)
+            }
+            effects.drain()
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { ExperimentationOptOut.INVALID_CONTEXT_MESSAGE }
             )
+            onFetchFinished()
             return
         }
-        val matchingCachedAssignments = AtomicBoolean(false)
-        val initializationCompletion = startInitializationTimeout(context, callback, matchingCachedAssignments) {
-            flagStateManager.updateState(FlagsClientState.Reconciling)
+        if (signing != null && generation != null) {
+            fetchSignedEvaluations(request, generation, callback, onFetchFinished, signing)
+        } else {
+            fetchEvaluations(request, callback, onFetchFinished)
         }
-        if (initializationCompletion == null) flagStateManager.updateState(FlagsClientState.Reconciling)
+    }
 
-        completionAwareExecutor(onFetchFinished).executeSafe(
-            operationName = FETCH_AND_STORE_OPERATION_NAME,
-            internalLogger = internalLogger
-        ) {
+    @Suppress("LongMethod") // Keep diagnostics and opt-out checks with the fetch lifecycle.
+    private fun fetchEvaluations(
+        request: ExperimentationOptOut.Request,
+        callback: EvaluationContextCallback?,
+        onFetchFinished: () -> Unit
+    ) {
+        val context = request.context
+        val sequence = fetchSequence.incrementAndGet()
+        val diagnostics = Diagnostics(
+            Sdk(instanceId),
+            Fetch(sequence, if (sequence == 1L) Trigger.INITIALIZATION else Trigger.CONTEXT_CHANGE)
+        )
+        val matchingCachedAssignments = AtomicBoolean(false)
+        val initializationCompletion = startInitializationTimeout(request, callback, matchingCachedAssignments) {
+            experimentationOptOut.ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
+            effects.drain()
+        }
+        if (initializationCompletion == null) {
+            experimentationOptOut.ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
+            effects.drain()
+        }
+
+        completionAwareExecutor(onFetchFinished).executeSafe(FETCH_AND_STORE_OPERATION_NAME, internalLogger) {
             try {
-                // Read on the fetch executor so unavailable core context still reaches finally.
+                // Read on the fetch executor so unavailable core context still releases pending telemetry state.
                 // withContext can silently skip its callback after shutdown or rejected dispatch.
                 val datadogContext = if (sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME) != null) {
                     (sdkCore as? InternalSdkCore)?.getDatadogContext(setOf(Feature.RUM_FEATURE_NAME))
                 } else {
                     null
                 }
-                // The React Native bridge requires a map keyed by original flag names, which encoded data omits.
+                // The React Native bridge requires original flag names, which encoded data omits.
                 val supportsObfuscation = datadogContext?.source == "android"
                 internalLogger.log(
                     InternalLogger.Level.DEBUG,
                     InternalLogger.Target.MAINTAINER,
                     { "Processing evaluation context: ${context.targetingKey}" }
                 )
-
-                val hadFlags = flagsRepository.hasFlags()
                 matchingCachedAssignments.set(
-                    hadFlags && flagsRepository.getEvaluationContext() == context
+                    flagsRepository.hasConfiguration() && flagsRepository.getEvaluationContext() == context
                 )
-                val response = datadogContext?.let { assignmentsReader.readPrecomputedFlags(context, it) }
-                val assignments = response?.let { precomputeMapper.map(it) }
+                val response = datadogContext?.let { assignmentsReader.readPrecomputedFlags(context, it, diagnostics) }
+                val assignments = response?.let { rawResponse ->
+                    precomputeMapper.map(rawResponse.body, request.takeIf { it.optedOut })
+                }
                     ?.takeIf { it.obfuscation == null || supportsObfuscation }
                 if (assignments != null) {
-                    installFlags(context, assignments, initializationCompletion, callback)
-                } else {
-                    val message = if (response == null) NETWORK_REQUEST_FAILED_MESSAGE else INVALID_RESPONSE_MESSAGE
-                    internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.USER,
-                        { message }
+                    installFlags(
+                        request,
+                        assignments,
+                        response.flagSelectionIgnoredReason,
+                        initializationCompletion,
+                        callback
                     )
-
-                    val throwable = NetworkRequestFailedException(message)
-                    // Lifecycle is Stale only when retained flags match the requested context.
-                    // Failed fetches do not replace the installed flags or their context.
-                    val completionCallback = synchronized(initializationTerminalLock) {
-                        val result = initializationCompletion?.take()?.callback
-                            ?: if (initializationCompletion == null) callback else null
-                        if (matchingCachedAssignments.get()) {
-                            flagStateManager.updateState(FlagsClientState.Stale)
-                        } else {
-                            flagStateManager.updateState(FlagsClientState.Error(throwable))
-                        }
-                        result
-                    }
-                    completionCallback?.onFailure(throwable)
+                } else {
+                    handleRequestFailure(
+                        request,
+                        initializationCompletion,
+                        callback,
+                        matchingCachedAssignments.get(),
+                        response == null
+                    )
                 }
             } finally {
                 // Timeouts complete the public callback but do not stop this fetch.
@@ -195,19 +242,30 @@ internal class EvaluationsManager(
         }
     }
 
-    @Suppress("CyclomaticComplexMethod") // Keep generation, shutdown and proof gates adjacent to installation.
-    private fun updateSignedEvaluationsForContext(
-        context: EvaluationContext,
+    // Keep proof, cancellation and context gates atomic with installation.
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
+    private fun fetchSignedEvaluations(
+        request: ExperimentationOptOut.Request,
+        generation: Long,
         callback: EvaluationContextCallback?,
         onFetchFinished: () -> Unit,
         signing: ResponseSigningState
     ) {
-        val generation = signing.begin(context)
+        val context = request.context
+        val sequence = fetchSequence.incrementAndGet()
+        val diagnostics = Diagnostics(
+            Sdk(instanceId),
+            Fetch(sequence, if (sequence == 1L) Trigger.INITIALIZATION else Trigger.CONTEXT_CHANGE)
+        )
         val cached = AtomicBoolean(false)
-        val completion = startInitializationTimeout(context, callback, cached, { signing.isCurrent(generation) }) {
-            flagStateManager.updateState(FlagsClientState.Reconciling)
+        val completion = startInitializationTimeout(request, callback, cached, { signing.isCurrent(generation) }) {
+            experimentationOptOut.ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
+            effects.drain()
         }
-        if (completion == null) flagStateManager.updateState(FlagsClientState.Reconciling)
+        if (completion == null) {
+            experimentationOptOut.ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
+            effects.drain()
+        }
         completionAwareExecutor(onFetchFinished).executeSafe(FETCH_AND_STORE_OPERATION_NAME, internalLogger) {
             try {
                 val datadogContext = if (sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME) != null) {
@@ -216,45 +274,62 @@ internal class EvaluationsManager(
                     null
                 }
                 val response = datadogContext?.let {
-                    assignmentsReader.readSignedPrecomputedFlags(context, it, generation) {
+                    assignmentsReader.readSignedPrecomputedFlags(context, it, diagnostics, generation) {
                         flagsRepository.waitForPersistenceLoad()
                     }
                 }
-                val assignments = response?.json?.let { precomputeMapper.map(it) }
+                val assignments = response?.json?.let {
+                    precomputeMapper.map(it, request.takeIf { candidate -> candidate.optedOut })
+                }
                     ?.takeIf { it.obfuscation == null || datadogContext.source == "android" }
-                var completedCallback: EvaluationContextCallback? = null
                 val error = NetworkRequestFailedException(
                     if (response == null) NETWORK_REQUEST_FAILED_MESSAGE else INVALID_RESPONSE_MESSAGE
                 )
                 val eligible = assignments != null && sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME) != null
-                var installed = false
                 val admitted = signing.admit(generation) {
                     synchronized(initializationTerminalLock) {
-                        completedCallback = completion?.take()?.callback ?: if (completion == null) callback else null
-                        if (eligible && !response.isCancelled()) {
-                            flagsRepository.setSignedFlagsAndContext(
-                                context,
-                                assignments.flags,
-                                assignments.obfuscation,
-                                response.proof
-                            ) {
-                                installed = true
-                                flagStateManager.updateState(FlagsClientState.Ready)
+                        val result = takeCompletion(completion, callback)
+                        val current = experimentationOptOut.ifCurrent(request) {
+                            val installation = if (eligible && !response.isCancelled()) {
+                                flagsRepository.installSignedFlagsAndContext(
+                                    context,
+                                    assignments.flags,
+                                    assignments.obfuscation,
+                                    response.proof
+                                )
+                            } else {
+                                null
+                            }
+                            if (installation != null) {
+                                currentState = FlagsClientState.Ready
+                                effects.enqueue {
+                                    installation.complete {
+                                        effects.notifySafely { flagStateManager.updateState(FlagsClientState.Ready) }
+                                        complete(result)
+                                    }
+                                    response?.flagSelectionIgnoredReason?.let {
+                                        internalLogger.logIgnoredFlagSelection(it)
+                                    }
+                                }
+                            } else {
+                                val restoration = flagsRepository.restoreVerifiedFlags()
+                                restoration?.let { effects.enqueue { it.complete {} } }
+                                cached.set(flagsRepository.hasConfigurationForContext(context))
+                                enqueueState(
+                                    if (cached.get()) FlagsClientState.Stale else FlagsClientState.Error(error)
+                                )
+                                enqueueCompletion(result, error)
                             }
                         }
-                        if (!installed) {
-                            flagsRepository.restoreVerifiedFlags()
-                            cached.set(flagsRepository.hasLoadedFlagsForContext(context))
-                            flagStateManager.updateState(
-                                if (cached.get()) FlagsClientState.Stale else FlagsClientState.Error(error)
-                            )
-                        }
+                        if (!current) enqueueCompletion(result, FlagsContextSupersededException(SUPERSEDED_MESSAGE))
                     }
                 }
                 if (!admitted) {
-                    completedCallback = completion?.take()?.callback ?: if (completion == null) callback else null
+                    synchronized(initializationTerminalLock) {
+                        enqueueCompletion(takeCompletion(completion, callback), error)
+                    }
                 }
-                if (admitted && installed) completedCallback?.onSuccess() else completedCallback?.onFailure(error)
+                effects.drain()
             } finally {
                 onFetchFinished()
             }
@@ -274,30 +349,88 @@ internal class EvaluationsManager(
         }
     }
 
+    private fun handleRequestFailure(
+        request: ExperimentationOptOut.Request,
+        initializationCompletion: InitializationCompletion?,
+        callback: EvaluationContextCallback?,
+        matchingCachedAssignments: Boolean,
+        networkFailed: Boolean
+    ) {
+        val message = if (networkFailed) NETWORK_REQUEST_FAILED_MESSAGE else INVALID_RESPONSE_MESSAGE
+        internalLogger.log(InternalLogger.Level.WARN, InternalLogger.Target.USER, { message })
+        val throwable = NetworkRequestFailedException(message)
+        synchronized(initializationTerminalLock) {
+            val result = takeCompletion(initializationCompletion, callback)
+            val current = experimentationOptOut.ifCurrent(request) {
+                // Lifecycle is Stale only when retained flags match the requested context.
+                if (matchingCachedAssignments) {
+                    enqueueState(FlagsClientState.Stale)
+                } else {
+                    enqueueState(FlagsClientState.Error(throwable))
+                }
+            }
+            enqueueCompletion(result, if (current) throwable else FlagsContextSupersededException(SUPERSEDED_MESSAGE))
+        }
+        effects.drain()
+    }
+
     private fun installFlags(
+        request: ExperimentationOptOut.Request,
+        assignments: PrecomputedAssignments,
+        flagSelectionIgnoredReason: String?,
+        initializationCompletion: InitializationCompletion?,
+        callback: EvaluationContextCallback?
+    ) {
+        val context = request.context
+        val installed = synchronized(initializationTerminalLock) {
+            val isCurrent = experimentationOptOut.ifCurrent(request) {
+                installCurrentFlags(context, assignments, initializationCompletion, callback)
+            }
+            if (!isCurrent) {
+                enqueueCompletion(
+                    takeCompletion(initializationCompletion, callback),
+                    FlagsContextSupersededException(SUPERSEDED_MESSAGE)
+                )
+            }
+            isCurrent
+        }
+        effects.drain()
+        // A superseded response is not installed, so its ignored reason would describe flags that never loaded.
+        if (installed) {
+            flagSelectionIgnoredReason?.let { internalLogger.logIgnoredFlagSelection(it) }
+            internalLogger.log(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.MAINTAINER,
+                { "Successfully processed context ${context.targetingKey} with ${assignments.flags.size} flags" }
+            )
+        }
+    }
+
+    // Callers hold initializationTerminalLock; the Ready notification and callback run later from effects.drain().
+    private fun installCurrentFlags(
         context: EvaluationContext,
         assignments: PrecomputedAssignments,
         initializationCompletion: InitializationCompletion?,
         callback: EvaluationContextCallback?
     ) {
-        flagsRepository.setFlagsAndContext(context, assignments.flags, assignments.obfuscation) {
-            val completionCallback = synchronized(initializationTerminalLock) {
-                val result = initializationCompletion?.take()?.callback
-                    ?: if (initializationCompletion == null) callback else null
-                flagStateManager.updateState(FlagsClientState.Ready)
-                result
-            }
-            completionCallback?.onSuccess()
-        }
-        internalLogger.log(
-            InternalLogger.Level.DEBUG,
-            InternalLogger.Target.MAINTAINER,
-            { "Successfully processed context ${context.targetingKey} with ${assignments.flags.size} flags" }
+        val installation = flagsRepository.installFlagsAndContext(
+            context,
+            assignments.flags,
+            assignments.obfuscation
         )
+        val result = takeCompletion(initializationCompletion, callback)
+        currentState = FlagsClientState.Ready
+        effects.enqueue {
+            installation.complete {
+                effects.notifySafely { flagStateManager.updateState(FlagsClientState.Ready) }
+                complete(result)
+            }
+        }
     }
 
+    @Suppress("CyclomaticComplexMethod") // One terminal decision covers timeout, context and proof generation.
     private fun startInitializationTimeout(
-        context: EvaluationContext,
+        request: ExperimentationOptOut.Request,
         callback: EvaluationContextCallback?,
         matchingCachedAssignments: AtomicBoolean,
         isCurrent: () -> Boolean = { true },
@@ -310,31 +443,69 @@ internal class EvaluationsManager(
         return InitializationCompletion(callback).also { completion ->
             val cancelTimeout = initializationTimeoutScheduler.schedule(timeoutMs) {
                 val error = FlagsInitializationTimeoutException(timeoutMs)
-                val result = synchronized(initializationTerminalLock) {
+                synchronized(initializationTerminalLock) {
                     val claimedResult = completion.take(shouldCancelTimeout = false)
                         ?: return@synchronized null
-                    val currentState = flagStateManager.getCurrentState()
-                    if (isCurrent() && currentState != FlagsClientState.Ready &&
-                        currentState != FlagsClientState.Stale
-                    ) {
-                        val hasMatchingCachedAssignments = matchingCachedAssignments.get() ||
-                            flagsRepository.hasLoadedFlagsForContext(context)
-                        val timeoutState = if (hasMatchingCachedAssignments) {
-                            FlagsClientState.Stale
-                        } else {
-                            FlagsClientState.Error(error)
-                        }
-                        flagStateManager.updateState(timeoutState)
+                    val target = if (experimentationOptOut.enabled) {
+                        experimentationOptOut.currentValidRequest()
+                    } else {
+                        request
                     }
-                    claimedResult
+                    val newerFailed = target !== request && currentState is FlagsClientState.Error
+                    if (isCurrent() && target != null && !newerFailed) {
+                        if (currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale) {
+                            val hasMatchingCachedAssignments =
+                                (target === request && matchingCachedAssignments.get()) ||
+                                    flagsRepository.hasConfigurationForContext(target.context)
+                            val timeoutState = if (hasMatchingCachedAssignments) {
+                                FlagsClientState.Stale
+                            } else {
+                                FlagsClientState.Error(error)
+                            }
+                            enqueueState(timeoutState)
+                        }
+                    }
+                    enqueueCompletion(claimedResult, error)
                 }
-                result?.callback?.onFailure(error)
+                effects.drain()
             }
             completion.armTimeoutCancellation(cancelTimeout)
         }
     }
 
+    // Called under the policy lock. State delivery must not acquire the state-holder lock here.
+    private fun enqueueState(state: FlagsClientState) {
+        currentState = state
+        effects.enqueue { flagStateManager.updateState(state) }
+    }
+
+    private fun takeCompletion(
+        initializationCompletion: InitializationCompletion?,
+        callback: EvaluationContextCallback?
+    ): InitializationResult? = if (initializationCompletion == null) {
+        InitializationResult(callback)
+    } else {
+        initializationCompletion.take()
+    }
+
+    private fun enqueueCompletion(result: InitializationResult?, error: Throwable) {
+        effects.enqueue { complete(result, error) }
+    }
+
+    private fun complete(result: InitializationResult?, error: Throwable? = null) {
+        effects.notifySafely { result?.cancelTimeout?.invoke() }
+        val callback = result?.callback ?: return
+        callbackExecutor.executeSafe("Deliver evaluation context callback", internalLogger) {
+            effects.notifySafely { if (error == null) callback.onSuccess() else callback.onFailure(error) }
+        }
+    }
+
+    private object InlineExecutor : Executor {
+        override fun execute(command: Runnable) = command.run()
+    }
+
     companion object {
+        private const val SUPERSEDED_MESSAGE = "A newer evaluation context replaced this request."
         private const val FETCH_AND_STORE_OPERATION_NAME = "Fetch and store flags for evaluation context"
         private const val INVALID_RESPONSE_MESSAGE = "Unable to read the feature flags response."
         private const val NETWORK_REQUEST_FAILED_MESSAGE =

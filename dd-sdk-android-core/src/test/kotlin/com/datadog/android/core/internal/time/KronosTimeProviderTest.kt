@@ -17,7 +17,6 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.data.Offset
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -66,34 +65,38 @@ internal class KronosTimeProviderTest {
 
     @Test
     fun `returns server time offset in nanoseconds`() {
-        val now = System.currentTimeMillis()
+        // When
+        val timeBefore = System.currentTimeMillis()
         val result = testedTimeProvider.getServerOffsetNanos()
+        val timeAfter = System.currentTimeMillis()
 
-        val expectedOffset = TimeUnit.MILLISECONDS.toNanos(fakeDate.time - now)
-        assertThat(result).isCloseTo(
-            expectedOffset,
-            Offset.offset(TimeUnit.MILLISECONDS.toNanos(TEST_OFFSET))
+        // Then
+        assertThat(result).isBetween(
+            TimeUnit.MILLISECONDS.toNanos(fakeDate.time - timeAfter),
+            TimeUnit.MILLISECONDS.toNanos(fakeDate.time - timeBefore)
         )
     }
 
     @Test
     fun `returns server time offset in milliseconds`() {
-        val now = System.currentTimeMillis()
+        // When
+        val timeBefore = System.currentTimeMillis()
         val result = testedTimeProvider.getServerOffsetMillis()
+        val timeAfter = System.currentTimeMillis()
 
-        val expectedOffset = fakeDate.time - now
-        assertThat(result).isCloseTo(
-            expectedOffset,
-            Offset.offset(TEST_OFFSET)
-        )
+        // Then
+        assertThat(result).isBetween(fakeDate.time - timeAfter, fakeDate.time - timeBefore)
     }
 
     @Test
     fun `returns device time`() {
-        val now = System.currentTimeMillis()
+        // When
+        val timeBefore = System.currentTimeMillis()
         val result = testedTimeProvider.getDeviceTimestampMillis()
+        val timeAfter = System.currentTimeMillis()
 
-        assertThat(result).isCloseTo(now, Offset.offset(TEST_OFFSET))
+        // Then
+        assertThat(result).isBetween(timeBefore, timeAfter)
     }
 
     @Test
@@ -126,8 +129,9 @@ internal class KronosTimeProviderTest {
         whenever(mockClock.getCurrentTimeMs()) doThrow exception
 
         // When
-        val now = System.currentTimeMillis()
+        val timeBefore = System.currentTimeMillis()
         val result = testedTimeProvider.getServerTimestampMillis()
+        val timeAfter = System.currentTimeMillis()
 
         // Then
         internalLogger.verifyLog(
@@ -138,10 +142,6 @@ internal class KronosTimeProviderTest {
             onlyOnce = true,
             additionalProperties = emptyMap()
         )
-        assertThat(result).isCloseTo(now, Offset.offset(TEST_OFFSET))
-    }
-
-    companion object {
-        const val TEST_OFFSET = 10L
+        assertThat(result).isBetween(timeBefore, timeAfter)
     }
 }

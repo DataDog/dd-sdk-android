@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal.net
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
 import com.datadog.android.flags.internal.signing.SignedAssignmentsResponse
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.tools.annotation.NoOpImplementation
@@ -15,15 +16,28 @@ import com.datadog.tools.annotation.NoOpImplementation
 @NoOpImplementation
 internal interface PrecomputedAssignmentsReader {
     @WorkerThread
-    fun readPrecomputedFlags(context: EvaluationContext, datadogContext: DatadogContext): String?
+    fun readPrecomputedFlags(
+        context: EvaluationContext,
+        datadogContext: DatadogContext,
+        diagnostics: Diagnostics
+    ): PrecomputedAssignmentsResponse?
 
     @WorkerThread
     fun readSignedPrecomputedFlags(
         context: EvaluationContext,
         datadogContext: DatadogContext,
+        diagnostics: Diagnostics,
         generation: Long,
         onPrepared: () -> Unit = {}
-    ): SignedAssignmentsResponse? = readPrecomputedFlags(context, datadogContext)?.let {
-        SignedAssignmentsResponse(it, null)
+    ): SignedAssignmentsResponse? = readPrecomputedFlags(context, datadogContext, diagnostics)?.let {
+        SignedAssignmentsResponse(it.body, null, it.flagSelectionIgnoredReason)
     }
 }
+
+/**
+ * [flagSelectionIgnoredReason] is the sanitized `DD-Flag-Selection-Ignored` reason, or null when the header is absent.
+ */
+internal data class PrecomputedAssignmentsResponse(
+    val body: String,
+    val flagSelectionIgnoredReason: String?
+)

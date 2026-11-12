@@ -681,7 +681,8 @@ internal class EvaluationTelemetryTest {
             listOf(
                 Arguments.of("missing", false, ErrorCode.FLAG_NOT_FOUND, optedOut),
                 Arguments.of("enabled", "fallback", ErrorCode.TYPE_MISMATCH, optedOut),
-                Arguments.of("malformed", false, ErrorCode.PARSE_ERROR, optedOut)
+                Arguments.of("malformed", false, ErrorCode.PARSE_ERROR, optedOut),
+                Arguments.of("number", 0, ErrorCode.TYPE_MISMATCH, optedOut)
             )
         }
 

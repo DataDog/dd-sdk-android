@@ -4,16 +4,22 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import com.datadog.gradle.repositories.DatadogRepositories
+
 pluginManagement {
-    repositories {
-        // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
-        listOf("gradlePluginProxy", "mavenRepositoryProxy")
-            .mapNotNull { providers.gradleProperty(it).orNull?.takeIf { url -> url.isNotBlank() } }
-            .forEach { url -> maven(url) }
-        gradlePluginPortal()
-        google()
-        mavenCentral()
-    }
+    includeBuild("../gradle/settings-plugin")
+}
+
+plugins {
+    id("com.datadog.gradle.repositories")
+}
+
+val datadogRepositories = DatadogRepositories(providers)
+
+pluginManagement.repositories {
+    datadogRepositories.gradlePluginPortalDepotProxied(this)
+    datadogRepositories.mavenCentralDepotProxied(this)
+    datadogRepositories.googleConstrained(this)
 }
 
 dependencyResolutionManagement {
@@ -21,5 +27,13 @@ dependencyResolutionManagement {
         create("libs") {
             from(files("../gradle/libs.versions.toml"))
         }
+    }
+    @Suppress("UnstableApiUsage")
+    repositories {
+        repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+        datadogRepositories.mavenCentralDepotProxied(this)
+        datadogRepositories.gradlePluginPortalDepotProxied(this)
+        datadogRepositories.googleConstrained(this)
+        datadogRepositories.jitpackConstrained(this)
     }
 }
