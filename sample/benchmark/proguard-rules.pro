@@ -28,5 +28,8 @@
 # These annotations are introduced by OpenTelemetry API and we need to make sure R8 will not complain about them
 -dontwarn  com.google.**
 
+# OpenTelemetry SDK references optional incubator APIs that the benchmark does not use.
+-dontwarn io.opentelemetry.api.incubator.**
+
 -keepattributes RuntimeVisibleAnnotations
 -keep class * extends androidx.navigation.Navigator
