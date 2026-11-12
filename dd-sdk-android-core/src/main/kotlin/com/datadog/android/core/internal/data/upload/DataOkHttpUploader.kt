@@ -29,8 +29,8 @@ internal class DataOkHttpUploader(
     val requestFactory: RequestFactory,
     val internalLogger: InternalLogger,
     val callFactory: Call.Factory,
-    val sdkVersion: String,
-    val androidInfoProvider: AndroidInfoProvider,
+    sdkVersion: String,
+    androidInfoProvider: AndroidInfoProvider,
     val executionTimer: ExecutionTimer
 ) : DataUploader {
 

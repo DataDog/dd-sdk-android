@@ -81,7 +81,7 @@ internal open class RumViewScope(
     private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     internal val key: RumScopeKey,
     eventTime: Time,
-    private val initialAttributes: Map<String, Any?>,
+    initialAttributes: Map<String, Any?>,
     private val viewChangedListener: RumViewChangedListener?,
     internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     internal val cpuVitalMonitor: VitalMonitor,
