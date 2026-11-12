@@ -741,6 +741,40 @@ internal class ContinuousProfilingSchedulerTest {
     // region lifecycle — onBackground / onForeground
 
     @Test
+    fun `M pause cooldown W onAppLaunchProfilingComplete() {app in background}`() {
+        // Given
+        testedScheduler.start(launchProfilingActive = true)
+        testedScheduler.onBackground()
+
+        // When
+        testedScheduler.onAppLaunchProfilingComplete()
+
+        // Then
+        verify(mockSchedulerExecutor, never()).schedule(any<Runnable>(), any(), any<TimeUnit>())
+        assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.PAUSED_COOLDOWN)
+    }
+
+    @Test
+    fun `M resume jittered cooldown W onForeground() {launch completed in background}`() {
+        // Given
+        testedScheduler.start(launchProfilingActive = true)
+        testedScheduler.onBackground()
+        testedScheduler.onAppLaunchProfilingComplete()
+        val delayCaptor = argumentCaptor<Long>()
+        whenever(
+            mockSchedulerExecutor.schedule(any<Runnable>(), delayCaptor.capture(), any<TimeUnit>())
+        ) doReturn mockFuture
+
+        // When
+        testedScheduler.onForeground()
+
+        // Then
+        val cooldownBase = ContinuousProfilingScheduler.CONTINUOUS_COOLDOWN_DURATION_MS
+        assertThat(delayCaptor.firstValue)
+            .isBetween((cooldownBase * 0.8).toLong(), (cooldownBase * 1.2).toLong())
+    }
+
+    @Test
     fun `M start grace period timer W onBackground() {active window running}`() {
         // Given
         openActiveWindow()
