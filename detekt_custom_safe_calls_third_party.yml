@@ -1140,6 +1140,8 @@ datadog:
       - "okhttp3.OkHttpClient.Builder.callTimeout(kotlin.Long, java.util.concurrent.TimeUnit)"
       - "okhttp3.OkHttpClient.Builder.connectionSpecs(kotlin.collections.List)"
       - "okhttp3.OkHttpClient.Builder.constructor()"
+      - "okhttp3.OkHttpClient.Builder.followRedirects(kotlin.Boolean)"
+      - "okhttp3.OkHttpClient.Builder.followSslRedirects(kotlin.Boolean)"
       - "okhttp3.OkHttpClient.Builder.protocols(kotlin.collections.List)"
       - "okhttp3.OkHttpClient.Builder.proxy(java.net.Proxy?)"
       - "okhttp3.OkHttpClient.Builder.proxyAuthenticator(okhttp3.Authenticator)"
