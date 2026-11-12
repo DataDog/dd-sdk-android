@@ -120,6 +120,8 @@ Some schema folders are cloned from the upstream [`rum-events-format`](https://g
 
 Changes to these must be made upstream in `rum-events-format` first, then synced. The other schema folders (e.g. `dd-sdk-android-core/src/main/json/rc`, `features/dd-sdk-android-logs/src/main/json/log`, `features/dd-sdk-android-trace/src/main/json/trace`, `features/dd-sdk-android-flags/src/main/json/flags`) are local and can be edited directly. Rebuild after editing.
 
+When adding local schemas, name the folder `src/main/json/<feature>` (no `internal` in the path), don't put `generated` in the target package name (the output already lands in `build/`), and keep the generated models `internal` unless a public API uses them.
+
 # Code Conventions
 
 These are rules that reviewers repeatedly enforce. Follow them when writing code to avoid review round-trips, and flag violations of them when reviewing a PR.
@@ -130,11 +132,14 @@ Exception for shared SDK internals: `dd-sdk-android-internal` is an `implementat
 
 - Keep everything `internal` unless it is meant for customers. Check the `api/apiSurface` diff for anything leaked by accident.
 - Don't expose `Impl` classes, internal types in public signatures, or internal classes in public KDoc. Cross-module internal access goes through `_RumInternalProxy`-style proxies or a cast inside the function body.
-- If a class is meant to be built via `Builder`, make its constructor `internal` or `private`.
+- If a class is meant to be built via `Builder`, make its constructor `internal` or `private`. The same applies to types the SDK creates and hands to customers (events, results, states).
+- Expose collections as Kotlin read-only types (`List`, `Map`), e.g. via `toList()`. Don't return `Collections.unmodifiableList(...)`: it surfaces as `java.util.List` with mutators that throw `UnsupportedOperationException` at runtime.
 - Return empty collections instead of nullable collections. Prefer a NoOp implementation over a nullable type. Avoid unneeded default arguments.
 - Changing a public signature, nullability or a data class shape is a breaking change. Flag it explicitly and prefer deprecate-and-alias. Also consider cross-platform consumers such as Flutter, React Native and KMP.
 - Avoid `data class` in public API unless needed (`copy` becomes part of the ABI).
 - New public APIs should be consistent with the iOS SDK. If you can't verify iOS parity, say so in the PR description as an open question.
+- Drop words the scope already implies (e.g., no `Rum` prefix inside RUM APIs).
+- In cross-platform setups, `DatadogContext.sdkVersion` is the version of the host SDK (React Native, Flutter, Unity, …), not of `dd-sdk-android`; use `DatadogContext.source` to identify the platform. Don't pair `sdkVersion` with a hard-coded `dd-sdk-android` name, and don't make native behavior depend on which cross-platform SDK wraps it unless the feature requires it.
 
 ## Threading
 
@@ -142,6 +147,8 @@ Exception for shared SDK internals: `dd-sdk-android-internal` is an `implementat
 - Don't block the main thread or SDK initialization. `getFeatureContext` takes a lock. On hot paths, subscribe with `FeatureContextUpdateReceiver` instead.
 - Don't stack concurrency primitives, e.g. an `AtomicBoolean` or `ConcurrentHashMap` inside `synchronized`. Prefer immutable data plus a single atomic swap (`getAndSet`) to multiple layers of locking.
 - Declare `AtomicXXX` fields as `val`, not `var`: reassigning the reference bypasses the atomic.
+- Don't post non-UI work to a main-thread `Handler` (e.g. the one RUM keeps for lifecycle tracking). Add `@MainThread` only where a real main-thread requirement exists.
+- Read immutable configuration once (e.g. when the feature starts) instead of fetching it from the feature context on every call. Prefer a synchronous read of immutable state over setting it asynchronously and racing with its readers.
 - Multiple SDK core instances can coexist. Don't keep mutable state in `object`s or companion objects; scope it to the `SdkCore` instance, so that it doesn't leak between instances or get delivered to only one of them. If a feature holds shared state, add a test with two cores.
 
 ## Logging and Errors
@@ -149,7 +156,7 @@ Exception for shared SDK internals: `dd-sdk-android-internal` is an `implementat
 - Log only via `InternalLogger`, obtained from the relevant SDK core. Never use `android.util.Log`, `println` or `System.err` in SDK code. The sample app uses Timber.
 - Choose the target deliberately, following the rule of thumb in the `InternalLogger` KDoc. `USER` is for messages that are actionable or report the main data-processing steps (tracking, storage, upload). `TELEMETRY` is for events we need to monitor. `MAINTAINER` is for internal details and is visible only in SDK debug builds. Use `onlyOnce = true` for messages that could spam: log and telemetry spam costs customers money and hides real problems.
 - Pass the exception as the `throwable` argument. Don't put `e.message` in the log text, since the logger already prints it.
-- Never throw from SDK code paths that could reach the host app. Catch narrow exception types (e.g. `IOException`), not `Throwable` or `Exception`. Exception to this rule: calls into customer-provided or third-party code (event mappers, serializers, listeners) whose exceptions are unknown: there, catching `Throwable` is intentional (see `Serializer.serializeToByteArray`); suppress `TooGenericExceptionCaught` at that site and log the exception. Don't swallow exceptions silently. Don't create a bare `Throwable` or `Exception`; use a specific subclass.
+- Never throw from SDK code paths that could reach the host app. Catch narrow exception types (e.g. `IOException`), not `Throwable` or `Exception`. Exception to this rule: calls into customer-provided or third-party code (event mappers, serializers, listeners) whose exceptions are unknown: there, a broad catch is intentional; suppress `TooGenericExceptionCaught` at that site and log the exception. Even there, never swallow `Error` (`OutOfMemoryError`, `AssertionError`, …) in order to continue: it signals a state the VM can't recover from, and hiding it masks the real failure. Catch `Exception`, or rethrow `Error` if you catch `Throwable`. Don't create a bare `Throwable` or `Exception`; use a specific subclass.
 
 ## Static Analysis and Compatibility
 
@@ -157,7 +164,7 @@ Exception for shared SDK internals: `dd-sdk-android-internal` is an `implementat
 - Android and third-party calls that can throw must be declared in `detekt_custom_unsafe_calls.yml` and handled. Only genuinely non-throwing calls go into the `detekt_custom_safe_calls_*.yml` files. Keep these files sorted. The `UnsafeThirdPartyFunctionCall` rule skips the SDK's own `com.datadog.*` calls, so handle exceptions thrown by SDK code explicitly; listing them in these files has no effect.
 - Place `@Suppress(...)` on the narrowest scope: the call site, not the whole method or class.
 - Use `Locale.US` for case conversions and formatting. The default locale gives wrong results in some locales (e.g. Turkish dotless `i`).
-- Dependencies go in `gradle/libs.versions.toml`. Prefer `implementation` over `api`. A new module must be registered in `settings.gradle.kts`. To make it publishable, apply the `maven-publish` and `signing` plugins and call `applyPublishingConfig(...)` in its `datadogBuild { }` block (see `integrations/dd-sdk-android-cronet/build.gradle.kts`). CI publishing (`publishToSonatype`) picks it up automatically.
+- Dependencies go in `gradle/libs.versions.toml`. Prefer `implementation` over `api`. In a module's `dependencies { }` block, declare the main source set dependencies first (`api`, `implementation`, `compileOnly`, …), then test dependencies (`testImplementation`, …), then test fixtures dependencies (`testFixturesImplementation`, …). A new module must be registered in `settings.gradle.kts`. To make it publishable, apply the `maven-publish` and `signing` plugins and call `applyPublishingConfig(...)` in its `datadogBuild { }` block (see `integrations/dd-sdk-android-cronet/build.gradle.kts`). CI publishing (`publishToSonatype`) picks it up automatically.
 - Prefer JSON schemas and generated models over hand-written JSON parsing (see [Generated Models](#generated-models)).
 - Don't put code into `dd-sdk-android-internal` if only one module uses it.
 
@@ -166,8 +173,14 @@ Exception for shared SDK internals: `dd-sdk-android-internal` is an `implementat
 - Use imports instead of fully qualified names.
 - Order class members as: properties, overridden/interface methods, then private methods. Put `companion object` and nested `Builder` at the bottom. Mark the companion `internal` or `private` when possible.
 - Don't add comments or KDoc that restate the code. Use `@inheritDoc` instead of copy-pasting KDoc. Keep existing comments accurate when changing code.
-- Names must be precise. For example, use `set` rather than `add` for a single value. Don't use names that clash with existing concepts, such as "elapsed" vs `elapsedRealtime`. Don't put `Thread` in the name of something that isn't a thread.
+- Names must be precise. For example, use `set` rather than `add` for a single value, and a singular noun for a holder of one item. Don't use names that clash with existing concepts, such as "elapsed" vs `elapsedRealtime`. Don't put `Thread` in the name of something that isn't a thread.
+- Names and docs of time values state the clock base and the unit: epoch vs. boot or elapsed time, `Ns` vs. `Ms`.
+- Refer to Android versions by API level (`API 34`), not by release name.
 - Prefer the type system: sealed classes or enums over strings, `T : Any` over `T?`, Kotlin function types over `java.util.function.*`.
+- `when` over a sealed type or enum must be exhaustive, without an `else` branch, so that a new subtype fails to compile instead of being silently ignored.
+- Prefer an explicit call over function references in chains: `x?.let { foo(it) }` or a block body, not `x?.let(::foo)`.
+- Use named arguments when the meaning of a value isn't clear at the call site (e.g. several booleans or numbers in a row).
+- Reuse an existing helper instead of writing another copy; extract a shared utility when a second copy appears.
 
 # Testing
 
@@ -181,7 +194,7 @@ Unit test conventions (class boilerplate, naming, test rules, Elmyr Forge config
 
 `instrumented/integration`, `reliability/core-it` and `reliability/with-backend` contain instrumented tests that run on a connected device or emulator.
 
-`reliability/single-fit/*` contains E2E tests that run on the JVM without a device, e.g. `./gradlew :reliability:single-fit:rum:testReleaseUnitTest` (this is what CI runs). The Flags module also has a privacy suite that runs on a connected device or emulator: `./gradlew :reliability:single-fit:flags:connectedReleaseAndroidTest`. Its README documents the exact-AAR option.
+`reliability/single-fit/*` contains E2E tests that run on the JVM without a device, e.g. `./gradlew :reliability:single-fit:rum:testReleaseUnitTest` (this is what CI runs). Tests that wire several real components together belong there, not in a feature module's unit or instrumented tests. `single-fit` tests use stubs (e.g. `stub-core`) rather than mocks. The Flags module also has a privacy suite that runs on a connected device or emulator: `./gradlew :reliability:single-fit:flags:connectedReleaseAndroidTest`. Its README documents the exact-AAR option.
 
 ```bash
 ./gradlew instrumentTestAll                                        # all integration tests
