@@ -111,7 +111,8 @@ internal class AssignmentAuthorization(
             internalLogger?.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                { INVALID_TOKEN_MESSAGE }
+                { INVALID_TOKEN_MESSAGE },
+                onlyOnce = true
             )
             null
         }

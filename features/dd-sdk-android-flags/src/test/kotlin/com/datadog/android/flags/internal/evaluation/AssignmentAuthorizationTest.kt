@@ -81,7 +81,8 @@ internal class AssignmentAuthorizationTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
-            AssignmentAuthorization.INVALID_TOKEN_MESSAGE
+            AssignmentAuthorization.INVALID_TOKEN_MESSAGE,
+            onlyOnce = true
         )
         assertThat(AssignmentAuthorization.INVALID_TOKEN_MESSAGE).doesNotContain(token)
     }
