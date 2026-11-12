@@ -24,6 +24,7 @@ internal object FlagsJson {
     }
 
     @Throws(JsonParseException::class)
+    @Suppress("ThrowsCount") // Report each invalid assignment field before generated readers can coerce it.
     fun readAssignment(json: JsonObject): PrecomputedFlag {
         // Preserve JSONObject's string conversion, including JSON variants and explicit null.
         STRING_FIELDS.forEach { field ->
