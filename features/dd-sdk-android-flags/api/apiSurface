@@ -7,6 +7,7 @@ enum com.datadog.android.flags.ExperimentationOptOutMode
   - FUTURE_EXPERIMENTS_ONLY
 object com.datadog.android.flags.Flags
   fun enable(FlagsConfiguration = FlagsConfiguration.default, com.datadog.android.api.SdkCore = Datadog.getInstance())
+class com.datadog.android.flags.FlagsAssignmentAuthorizationException : RuntimeException
 interface com.datadog.android.flags.FlagsClient
   fun onFirstFlags(FlagsClientEventListener): FlagsSubscription
   fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext, EvaluationContextCallback? = null)
@@ -42,7 +43,6 @@ data class com.datadog.android.flags.FlagsConfiguration
     fun rumIntegrationEnabled(Boolean): Builder
     fun gracefulModeEnabled(Boolean): Builder
     fun build(): FlagsConfiguration
-class com.datadog.android.flags.FlagsAssignmentAuthorizationException : RuntimeException
 class com.datadog.android.flags.FlagsContextSupersededException : IllegalStateException
 class com.datadog.android.flags.FlagsInitializationTimeoutException : RuntimeException
 class com.datadog.android.flags.FlagsInvalidContextException : IllegalArgumentException

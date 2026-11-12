@@ -10,13 +10,13 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
-import com.datadog.android.flags.EvaluationContextOutcomeCallback
 import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKey
 import com.datadog.android.flags.internal.evaluation.AssignmentAuthorization
+import com.datadog.android.flags.internal.evaluation.EvaluationContextOutcomeCallback
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
@@ -2120,7 +2120,11 @@ internal class DatadogFlagsClientTest {
             completionError = error
         }
         val callbackCaptor = argumentCaptor<EvaluationContextCallback>()
-        verify(mockEvaluationsManager).updateEvaluationsForContext(fakeContext, callbackCaptor.capture())
+        verify(mockEvaluationsManager).updateEvaluationsForContext(
+            eq(fakeContext),
+            callbackCaptor.capture(),
+            any()
+        )
         val callback = checkNotNull(callbackCaptor.firstValue as? EvaluationContextOutcomeCallback) {
             "Expected a state-aware callback"
         }

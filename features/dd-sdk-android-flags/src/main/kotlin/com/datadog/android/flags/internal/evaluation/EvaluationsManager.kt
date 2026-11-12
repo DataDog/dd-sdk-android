@@ -12,7 +12,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.EvaluationContextCallback
-import com.datadog.android.flags.EvaluationContextOutcomeCallback
 import com.datadog.android.flags.FlagsAssignmentAuthorizationException
 import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException

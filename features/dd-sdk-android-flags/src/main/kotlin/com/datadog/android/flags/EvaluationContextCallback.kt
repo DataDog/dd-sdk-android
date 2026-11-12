@@ -50,9 +50,3 @@ interface EvaluationContextCallback {
      */
     fun onFailure(error: Throwable)
 }
-
-internal interface EvaluationContextOutcomeCallback : EvaluationContextCallback {
-    fun onSuccess(state: FlagsClientState)
-
-    fun onFailure(error: Throwable, state: FlagsClientState)
-}

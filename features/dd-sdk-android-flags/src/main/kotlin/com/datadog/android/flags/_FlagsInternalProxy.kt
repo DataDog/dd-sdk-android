@@ -7,6 +7,7 @@
 package com.datadog.android.flags
 
 import com.datadog.android.flags.internal.DatadogFlagsClient
+import com.datadog.android.flags.internal.evaluation.EvaluationContextOutcomeCallback
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.UnparsedFlag
@@ -23,7 +24,7 @@ import com.datadog.android.lint.InternalApi
  * are not considered part of the public interface of the Datadog SDK.
  */
 @InternalApi
-@Suppress("ClassName", "ClassNaming", "UndocumentedPublicFunction")
+@Suppress("ClassName", "ClassNaming", "UndocumentedPublicFunction", "TooManyFunctions")
 class _FlagsInternalProxy(private val client: FlagsClient) {
     fun isExperimentationOptOutEnabled(): Boolean =
         (client as? DatadogFlagsClient)?.experimentationOptOut?.enabled == true

@@ -15,7 +15,6 @@ import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
-import com.datadog.android.flags.EvaluationContextOutcomeCallback
 import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.FlagsAssignmentAuthorizationException
 import com.datadog.android.flags.FlagsContextSupersededException
