@@ -68,6 +68,9 @@ internal class ContinuousProfilingScheduler(
     @Volatile
     private var remainingCooldownMs: Long = 0L
 
+    // Accessed only on schedulerExecutor.
+    private var isInBackground = false
+
     @Volatile
     internal var lastQuotaResult: QuotaResult? = null
 
@@ -159,6 +162,7 @@ internal class ContinuousProfilingScheduler(
      */
     fun onBackground() {
         schedulerExecutor.executeSafe(OPERATION_ON_BACKGROUND, sdkCore.internalLogger) {
+            isInBackground = true
             if (!isScheduling) return@executeSafe
             when (state) {
                 State.ACTIVE -> {
@@ -199,6 +203,7 @@ internal class ContinuousProfilingScheduler(
      */
     fun onForeground() {
         schedulerExecutor.executeSafe(OPERATION_ON_FOREGROUND, sdkCore.internalLogger) {
+            isInBackground = false
             if (!isScheduling) return@executeSafe
             when (state) {
                 State.GRACE_PERIOD -> {
@@ -282,6 +287,13 @@ internal class ContinuousProfilingScheduler(
     }
 
     private fun scheduleCooldown(cooldownMs: Long) {
+        if (isInBackground) {
+            // The app went to background before the cycle started; resume on foreground.
+            remainingCooldownMs = cooldownMs
+            state = State.PAUSED_COOLDOWN
+            logToUser { LOG_BACKGROUND_COOLDOWN_PAUSED.format(Locale.US, cooldownMs) }
+            return
+        }
         state = State.COOLDOWN
         cooldownWindowEndMs = timeProvider.getDeviceTimestampMillis() + cooldownMs
         scheduleTimer(OPERATION_COOLDOWN_END, cooldownMs) { scheduleNextCycle() }
