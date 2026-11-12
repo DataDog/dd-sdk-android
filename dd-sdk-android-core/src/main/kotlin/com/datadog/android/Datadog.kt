@@ -70,7 +70,7 @@ object Datadog {
                     InternalLogger.Target.USER,
                     { MESSAGE_ALREADY_INITIALIZED }
                 )
-                return existing
+                return NoOpInternalSdkCore
             }
 
             val sdkInstanceId = hashGenerator.generate(
