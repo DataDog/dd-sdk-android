@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.domain
 
+import android.util.Log
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
@@ -391,13 +392,13 @@ internal class DatadogLogGenerator(
     @Suppress("DEPRECATION")
     private fun resolveLogLevelStatus(level: Int): LogEvent.Status {
         return when (level) {
-            android.util.Log.ASSERT -> LogEvent.Status.CRITICAL
-            android.util.Log.ERROR -> LogEvent.Status.ERROR
-            android.util.Log.WARN -> LogEvent.Status.WARN
-            android.util.Log.INFO -> LogEvent.Status.INFO
-            android.util.Log.DEBUG -> LogEvent.Status.DEBUG
-            android.util.Log.VERBOSE -> LogEvent.Status.TRACE
-            DatadogLogGenerator.CRASH -> LogEvent.Status.EMERGENCY
+            Log.ASSERT -> LogEvent.Status.CRITICAL
+            Log.ERROR -> LogEvent.Status.ERROR
+            Log.WARN -> LogEvent.Status.WARN
+            Log.INFO -> LogEvent.Status.INFO
+            Log.DEBUG -> LogEvent.Status.DEBUG
+            Log.VERBOSE -> LogEvent.Status.TRACE
+            CRASH -> LogEvent.Status.EMERGENCY
             else -> LogEvent.Status.DEBUG
         }
     }

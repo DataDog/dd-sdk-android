@@ -135,17 +135,17 @@ class UnsafeThirdPartyFunctionCall(
         if (exception in caughtTypes) return true
 
         val exceptionClass = findExceptionClass(exception)
-        if (exceptionClass == null) {
+        return if (exceptionClass == null) {
             // Unknown class (e.g. missing from the classpath), only top level catch clauses can be checked
             val catchesAnyException = caughtTypes.any { it in topLevelExceptions }
             val catchesAnyError = caughtTypes.any { it in topLevelErrors }
             val isUncaughtException = exception.endsWith("Exception") && !catchesAnyException
             val isUncaughtError = exception.endsWith("Error") && !catchesAnyError
-            return !isUncaughtException && !isUncaughtError
-        }
-
-        return exceptionClass.defaultType.allSupertypes.any {
-            (it as? KaClassType)?.classId?.asSingleFqName()?.asString() in caughtTypes
+            !isUncaughtException && !isUncaughtError
+        } else {
+            exceptionClass.defaultType.allSupertypes.any {
+                (it as? KaClassType)?.classId?.asSingleFqName()?.asString() in caughtTypes
+            }
         }
     }
 

@@ -128,6 +128,7 @@ class MultiClassGenerator(
         return funBuilder.build()
     }
 
+    @Suppress("LongMethod")
     private fun generateMultiClassDeserializer(
         definition: TypeDefinition.OneOfClass,
         rootTypeName: String
@@ -156,7 +157,7 @@ class MultiClassGenerator(
                         ClassNameRef.JsonObject
                     )
                     funBuilder.addStatement(
-                        "%T.%L(%L)",
+                        DESERIALIZER_CALL_FORMAT,
                         typeName,
                         Identifier.FUN_FROM_JSON_OBJ,
                         Identifier.PARAM_JSON_ELEMENT
@@ -175,7 +176,7 @@ class MultiClassGenerator(
                         ClassNameRef.JsonPrimitive
                     )
                     funBuilder.addStatement(
-                        "%T.%L(%L)",
+                        DESERIALIZER_CALL_FORMAT,
                         typeName,
                         Identifier.FUN_FROM_JSON_PRIMITIVE,
                         Identifier.PARAM_JSON_ELEMENT

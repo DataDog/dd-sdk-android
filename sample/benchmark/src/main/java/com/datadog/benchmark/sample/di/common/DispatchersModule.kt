@@ -21,6 +21,8 @@ internal annotation class CoroutineDispatcherQualifier(val type: CoroutineDispat
 
 @Module
 internal object DispatchersModule {
+    // This provider selects the concrete dispatcher injected into consumers.
+    @Suppress("InjectDispatcher")
     @Provides
     @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default)
     fun provideDefaultDispatcher(): CoroutineDispatcher = Dispatchers.Default
@@ -29,6 +31,8 @@ internal object DispatchersModule {
     @CoroutineDispatcherQualifier(CoroutineDispatcherType.Main)
     fun provideMainDispatcher(): CoroutineDispatcher = Dispatchers.Main
 
+    // This provider selects the concrete dispatcher injected into consumers.
+    @Suppress("InjectDispatcher")
     @Provides
     @CoroutineDispatcherQualifier(CoroutineDispatcherType.IO)
     fun provideIODispatcher(): CoroutineDispatcher = Dispatchers.IO

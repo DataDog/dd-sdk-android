@@ -10,6 +10,7 @@ import com.datadog.gradle.config.configureFlavorForSampleApp
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.taskConfig
 import com.datadog.gradle.plugin.InstrumentationMode
+import dev.detekt.gradle.Detekt
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.Locale
 
@@ -22,7 +23,18 @@ plugins {
     alias(libs.plugins.composeCompilerPlugin)
     id("com.google.devtools.ksp")
     id("datadogBuildConfig")
+    id("detekt-common")
     alias(libs.plugins.datadogGradlePlugin)
+}
+
+detekt {
+    // Regions share sources and dependencies; only generated configuration differs.
+    ignoredFlavors.addAll(SAMPLE_APP_REGIONS.filter { it != "us1" })
+}
+
+// TODO RUM-19669: Re-enable Detekt after addressing the Kotlin sample app's remaining findings.
+tasks.withType<Detekt>().configureEach {
+    isEnabled = false
 }
 
 @Suppress("StringLiteralDuplication")

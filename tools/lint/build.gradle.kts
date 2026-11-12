@@ -11,6 +11,7 @@ plugins {
     id("org.jetbrains.kotlin.jvm")
     id("com.android.lint")
     id("datadogBuildConfig")
+    id("detekt-common")
 
     // Analysis tools
     id("ktlint")

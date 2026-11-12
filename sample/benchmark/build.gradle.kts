@@ -20,6 +20,7 @@ plugins {
     kotlin("plugin.serialization")
     id("kotlin-parcelize")
     id("datadogBuildConfig")
+    id("detekt-common")
     alias(libs.plugins.datadogGradlePlugin)
 }
 

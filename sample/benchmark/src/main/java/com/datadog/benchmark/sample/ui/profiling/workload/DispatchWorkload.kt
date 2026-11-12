@@ -21,6 +21,8 @@ internal class DispatchWorkload(
         scope.launch {
             while (true) {
                 repeat(parallelism) {
+                    // Measure dispatching on the standard computation pool.
+                    @Suppress("InjectDispatcher")
                     launch(Dispatchers.Default) {
                         var x = 0.0
                         for (i in 0 until 500) x += sqrt(i.toDouble())

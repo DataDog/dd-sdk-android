@@ -7,6 +7,7 @@
 import org.gradle.api.attributes.Usage
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.kotlin.dsl.named
+import java.util.Locale
 
 plugins {
     id("org.gradle.reporting-base")
@@ -53,6 +54,9 @@ tasks.register("checkTestPyramidCoverage") {
     val surfaceFilesProvider = apiSurfaceReportsConfiguration.map { it.files }
     val usageFilesProvider = apiUsageReportsConfiguration.map { it.files }
     doLast {
+        @Suppress("MagicNumber")
+        val percentageScale = 100f
+
         // A producer's task can be skipped as NO-SOURCE (e.g. a module with no unit tests at
         // all), in which case its declared output file is never actually written.
         val surfaceApis = surfaceFilesProvider.get().filter { it.exists() }
@@ -68,8 +72,8 @@ tasks.register("checkTestPyramidCoverage") {
             missedApis.isEmpty() -> "✔ Test Integration coverage 100%"
             else ->
                 "⚠ Test Integration coverage missed ${missedApis.size} apis " +
-                    "(${"%.1f".format(hitApis.size * 100f / surfaceApis.size)} % coverage; " +
-                    "${"%.1f".format(missedApis.size * 100f / surfaceApis.size)} % miss)"
+                    "(${"%.1f".format(Locale.US, hitApis.size * percentageScale / surfaceApis.size)} % coverage; " +
+                    "${"%.1f".format(Locale.US, missedApis.size * percentageScale / surfaceApis.size)} % miss)"
         }
 
         val report = buildString {

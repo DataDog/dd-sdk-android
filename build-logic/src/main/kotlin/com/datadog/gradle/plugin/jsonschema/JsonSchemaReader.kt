@@ -11,6 +11,7 @@ import com.google.gson.Gson
 import org.gradle.api.logging.Logger
 import java.io.File
 
+@Suppress("TooManyFunctions")
 class JsonSchemaReader(
     private val nameMapping: Map<String, String>,
     private val logger: Logger
@@ -46,8 +47,8 @@ class JsonSchemaReader(
      * - `#/definitions/foo`
      * - `#bar`
      *
-     * @param fromFile the file where the reference is being used
      * @param ref the reference used to resolve the target definition
+     * @param fromFile the file where the reference is being used
      * @return the found Definition reference or null
      */
     @Suppress("ReturnCount")
@@ -57,8 +58,7 @@ class JsonSchemaReader(
     ): JsonDefinitionReference? {
         val file = REF_FILE_REGEX.matchEntire(ref)
         if (file != null) {
-            val path = file.groupValues[2]
-            val localRef = file.groupValues[5]
+            val (path, localRef) = file.destructured
             return loadDefinitionFromFileRef(path, localRef, fromFile)
         }
 
@@ -94,9 +94,11 @@ class JsonSchemaReader(
     }
 
     /**
-     * Loads a Definition from a Json Schema file
-     * @param path the path to the file to load (relatively to the root file)
-     * @param ref a nested reference to a definition, or blank to use the root type.
+     * Loads a definition from a referenced JSON Schema file.
+     *
+     * @param path the file path relative to the directory containing [fromFile]
+     * @param ref a nested reference to a definition, or blank to use the root type
+     * @param fromFile the schema file containing the reference
      * @return the loaded definition or `null` if it wasn't found
      */
     private fun loadDefinitionFromFileRef(
@@ -120,7 +122,7 @@ class JsonSchemaReader(
     }
 
     /**
-     * Loads a Json Schema from the given file.
+     * Loads a JSON Schema from the given file.
      * @param file the [File] to load from.
      * @return the loaded [JsonDefinition]
      */
@@ -144,14 +146,9 @@ class JsonSchemaReader(
 
     // region Extensions
 
-    private fun String.singular(): String {
-        return if (endsWith("ies")) {
-            substring(0, length - 3)
-        } else if (endsWith("s")) {
-            substring(0, length - 1)
-        } else {
-            this
-        }
+    private fun String.singular(): String = when {
+        endsWith("ies") -> removeSuffix("ies")
+        else -> removeSuffix("s")
     }
 
     // endregion
@@ -432,11 +429,13 @@ class JsonSchemaReader(
     companion object {
         private const val REF_TYPE_PROPERTIES = "properties"
         private const val REF_TYPE_DEFINITIONS = "definitions"
-        private const val REF_TYPE_DEFS = "\$defs"
+        private const val REF_TYPE_DEFS = $$"$defs"
 
         private val REF_NAME_REGEX =
-            Regex("#/($REF_TYPE_DEFINITIONS|\\$REF_TYPE_DEFS|$REF_TYPE_PROPERTIES)/([\\w]+)")
-        private val REF_ID_REGEX = Regex("#[\\w]+")
-        private val REF_FILE_REGEX = Regex("(file:)?(([^/]+/)*([^/]+)\\.json)(#(.*))?")
+            Regex("#/($REF_TYPE_DEFINITIONS|\\$REF_TYPE_DEFS|$REF_TYPE_PROPERTIES)/(\\w+)")
+        private val REF_ID_REGEX = Regex("#\\w+")
+
+        // Capture only the file path and optional fragment, including its leading '#'.
+        private val REF_FILE_REGEX = Regex("(?:file:)?((?:[^/]+/)*[^/]+\\.json)(#.*)?")
     }
 }

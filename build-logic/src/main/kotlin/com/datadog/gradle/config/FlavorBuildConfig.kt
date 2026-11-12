@@ -8,6 +8,7 @@ package com.datadog.gradle.config
 
 import com.android.build.api.dsl.ApplicationDefaultConfig
 import com.android.build.api.dsl.ApplicationProductFlavor
+import com.android.build.api.dsl.VariantDimension
 import com.google.gson.Gson
 import org.gradle.api.Project
 import java.io.File
@@ -41,26 +42,10 @@ fun ApplicationDefaultConfig.configureFlavorForBenchmark(
     rootDir: File
 ) {
     val config = sampleAppConfig("${rootDir.absolutePath}/config/benchmark.json")
-    buildConfigField(
-        "String",
-        "BENCHMARK_RUM_APPLICATION_ID",
-        "\"${config.rumApplicationId}\""
-    )
-    buildConfigField(
-        "String",
-        "BENCHMARK_CLIENT_TOKEN",
-        "\"${config.token}\""
-    )
-    buildConfigField(
-        "String",
-        "BENCHMARK_API_KEY",
-        "\"${config.apiKey}\""
-    )
-    buildConfigField(
-        "String",
-        "BENCHMARK_APPLICATION_KEY",
-        "\"${config.applicationKey}\""
-    )
+    buildConfigString("BENCHMARK_RUM_APPLICATION_ID", config.rumApplicationId)
+    buildConfigString("BENCHMARK_CLIENT_TOKEN", config.token)
+    buildConfigString("BENCHMARK_API_KEY", config.apiKey)
+    buildConfigString("BENCHMARK_APPLICATION_KEY", config.applicationKey)
 }
 
 fun configureFlavorForSampleApp(
@@ -70,86 +55,36 @@ fun configureFlavorForSampleApp(
 ) {
     val config = sampleAppConfig("${rootDir.absolutePath}/config/${flavor.name}.json")
     project.logger.info("Configuring flavor: [${flavor.name}] with config: [$config]")
-    flavor.buildConfigField(
-        "String",
-        "DD_OVERRIDE_LOGS_URL",
-        "\"${config.logsEndpoint}\""
-    )
-    flavor.buildConfigField(
-        "String",
-        "DD_OVERRIDE_TRACES_URL",
-        "\"${config.tracesEndpoint}\""
-    )
-    flavor.buildConfigField(
-        "String",
-        "DD_OVERRIDE_RUM_URL",
-        "\"${config.rumEndpoint}\""
-    )
-    flavor.buildConfigField(
-        "String",
-        "DD_OVERRIDE_SESSION_REPLAY_URL",
-        "\"${config.sessionReplayEndpoint}\""
-    )
-    flavor.buildConfigField(
-        "String",
-        "DD_RUM_APPLICATION_ID",
-        "\"${config.rumApplicationId}\""
-    )
-    flavor.buildConfigField(
-        "String",
-        "DD_REMOTE_CONFIGURATION_ID",
-        "\"${config.remoteConfigurationId}\""
-    )
-    flavor.buildConfigField(
-        "String",
-        "DD_CLIENT_TOKEN",
-        "\"${config.token}\""
-    )
-    flavor.buildConfigField(
-        "String",
-        "DD_API_KEY",
-        "\"${config.apiKey}\""
-    )
-    flavor.buildConfigField(
-        "String",
-        "DD_APPLICATION_KEY",
-        "\"${config.applicationKey}\""
-    )
-    flavor.buildConfigField(
-        "String",
-        "DD_SITE_NAME",
-        "\"${flavor.name.uppercase(Locale.US)}\""
-    )
+    flavor.buildConfigString("DD_OVERRIDE_LOGS_URL", config.logsEndpoint)
+    flavor.buildConfigString("DD_OVERRIDE_TRACES_URL", config.tracesEndpoint)
+    flavor.buildConfigString("DD_OVERRIDE_RUM_URL", config.rumEndpoint)
+    flavor.buildConfigString("DD_OVERRIDE_SESSION_REPLAY_URL", config.sessionReplayEndpoint)
+    flavor.configureRumBuildConfig(config)
+    flavor.buildConfigString("DD_REMOTE_CONFIGURATION_ID", config.remoteConfigurationId)
+    flavor.buildConfigString("DD_API_KEY", config.apiKey)
+    flavor.buildConfigString("DD_APPLICATION_KEY", config.applicationKey)
+    flavor.buildConfigString("DD_SITE_NAME", flavor.name.uppercase(Locale.US))
 }
 
 fun ApplicationDefaultConfig.configureFlavorForTvApp(
     rootDir: File
 ) {
     val config = sampleAppConfig("${rootDir.absolutePath}/config/tv.json")
-    buildConfigField(
-        "String",
-        "DD_RUM_APPLICATION_ID",
-        "\"${config.rumApplicationId}\""
-    )
-    buildConfigField(
-        "String",
-        "DD_CLIENT_TOKEN",
-        "\"${config.token}\""
-    )
+    configureRumBuildConfig(config)
 }
 
 fun ApplicationDefaultConfig.configureFlavorForAutoApp(
     rootDir: File
 ) {
     val config = sampleAppConfig("${rootDir.absolutePath}/config/auto.json")
-    buildConfigField(
-        "String",
-        "DD_RUM_APPLICATION_ID",
-        "\"${config.rumApplicationId}\""
-    )
-    buildConfigField(
-        "String",
-        "DD_CLIENT_TOKEN",
-        "\"${config.token}\""
-    )
+    configureRumBuildConfig(config)
+}
+
+private fun VariantDimension.buildConfigString(name: String, value: String) {
+    buildConfigField("String", name, "\"$value\"")
+}
+
+private fun VariantDimension.configureRumBuildConfig(config: SampleAppConfig) {
+    buildConfigString("DD_RUM_APPLICATION_ID", config.rumApplicationId)
+    buildConfigString("DD_CLIENT_TOKEN", config.token)
 }

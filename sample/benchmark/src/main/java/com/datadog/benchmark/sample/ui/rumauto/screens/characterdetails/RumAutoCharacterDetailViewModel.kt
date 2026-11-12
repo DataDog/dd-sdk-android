@@ -35,7 +35,7 @@ internal sealed interface RumAutoCharacterAction {
 
 internal class RumAutoCharacterDetailsViewModel(
     private val defaultDispatcher: CoroutineDispatcher,
-    private val character: Character,
+    character: Character,
     private val rickAndMortyNetworkService: RickAndMortyNetworkService
 ) : ViewModel() {
     private val stateMachine = StateMachine.create(

@@ -39,6 +39,7 @@ import java.net.URI
 import java.time.Duration
 import java.util.Locale
 import java.util.Random
+import kotlin.time.Duration.Companion.milliseconds
 
 @Suppress("DEPRECATION", "StringLiteralDuplication", "TooManyFunctions")
 internal class TracesViewModel(
@@ -134,28 +135,28 @@ internal class TracesViewModel(
 
     @Suppress("MagicNumber")
     private suspend fun performTask(scope: CoroutineScopeSpan) {
-        delay(100)
+        delay(100.milliseconds)
 
         val deferred = scope.asyncTraced("coroutine async", Dispatchers.IO) {
             setTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
-            delay(2000)
+            delay(2000.milliseconds)
             42
         }
-        delay(100)
+        delay(100.milliseconds)
 
         withContextTraced("coroutine unconfined task", Dispatchers.Unconfined) {
             setTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
-            delay(500)
+            delay(500.milliseconds)
         }
 
-        delay(100)
+        delay(100.milliseconds)
 
         withContextTraced("coroutine task", Dispatchers.Default) {
             setTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
-            delay(500)
+            delay(500.milliseconds)
         }
 
-        delay(100)
+        delay(100.milliseconds)
 
         val x = deferred.awaitTraced("coroutine await")
         scope.logMessage("The answer to life, the universe and everything is… $x")
@@ -163,7 +164,7 @@ internal class TracesViewModel(
 
     @Suppress("TooGenericExceptionCaught", "MagicNumber")
     private suspend fun performFlowTask() {
-        delay(100)
+        delay(100.milliseconds)
         withContextTraced("coroutine flow collect", Dispatchers.Default) {
             try {
                 setTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
@@ -193,7 +194,7 @@ internal class TracesViewModel(
         return flow {
             val names = listOf("jake", "cassie", "marco", "rachel", "tobias", "ax", "david")
             for (name in names) {
-                delay(500)
+                delay(500.milliseconds)
                 emit(name)
             }
         }

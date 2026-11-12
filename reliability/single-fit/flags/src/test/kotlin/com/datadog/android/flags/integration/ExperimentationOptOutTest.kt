@@ -379,7 +379,12 @@ internal class ExperimentationOptOutTest {
         val invalid = ImmutableContext("subject", mapOf(OPT_OUT_ATTRIBUTE to Value.Boolean(true)))
 
         // When
-        val failure = runCatching { testedProvider.onContextSet(initial, invalid) }.exceptionOrNull()
+        val failure = try {
+            testedProvider.onContextSet(initial, invalid)
+            null
+        } catch (error: OpenFeatureError.InvalidContextError) {
+            error
+        }
         val result = testedProvider.getBooleanEvaluation("flag", false, invalid)
 
         // Then
@@ -416,7 +421,12 @@ internal class ExperimentationOptOutTest {
         val context = ImmutableContext("subject", mapOf(OPT_OUT_ATTRIBUTE to Value.Null))
 
         // When
-        val failure = runCatching { testedProvider.initialize(context) }.exceptionOrNull()
+        val failure = try {
+            testedProvider.initialize(context)
+            null
+        } catch (error: OpenFeatureError.InvalidContextError) {
+            error
+        }
         val result = testedProvider.getBooleanEvaluation("flag", false, context)
 
         // Then
@@ -459,7 +469,7 @@ internal class ExperimentationOptOutTest {
         assertThat(testedClient.resolveStringValue("string", "")).isEqualTo(values["string"])
         assertThat(testedClient.resolveIntValue("integer", 0)).isEqualTo(values["integer"])
         assertThat(testedClient.resolveDoubleValue("number", 0.0)).isEqualTo(1.5)
-        assertThat(testedClient.resolveStructureValue("object", emptyMap<String, Any?>())).containsEntry("key", "value")
+        assertThat(testedClient.resolveStructureValue("object", emptyMap())).containsEntry("key", "value")
         assertThat(stubSdkCore.eventsWritten(Feature.FLAGS_FEATURE_NAME)).isEmpty()
     }
 

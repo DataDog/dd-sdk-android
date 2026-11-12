@@ -14,6 +14,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.http.content.TextContent
+import kotlinx.coroutines.CancellationException
 import java.io.IOException
 
 internal sealed interface KtorHttpResponse<out T : Any> {
@@ -38,6 +39,8 @@ internal suspend inline fun <reified T : Any> HttpClient.safePost(url: Url, body
             in 400..499 -> KtorHttpResponse.ClientError(statusCode)
             else -> KtorHttpResponse.Success(response.body())
         }
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: IOException) {
         KtorHttpResponse.IOError(e)
     } catch (e: Exception) {

@@ -21,11 +21,14 @@ internal inline fun <reified T : Parcelable> NavController.navigate(@IdRes id: I
 @Suppress("DEPRECATION")
 internal inline fun <reified T : Parcelable> Fragment.args(): Lazy<T> {
     return lazy {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            arguments?.getParcelable(getArgKey<T>(), T::class.java)!!
+        val bundle = requireArguments()
+        val key = getArgKey<T>()
+        val argument = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            bundle.getParcelable(key, T::class.java)
         } else {
-            arguments?.getParcelable(getArgKey<T>())!!
+            bundle.getParcelable<T>(key)
         }
+        checkNotNull(argument) { "Missing navigation argument: $key" }
     }
 }
 

@@ -4,6 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import com.android.build.api.variant.HasUnitTest
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -13,6 +14,7 @@ plugins {
     // Build
     id("com.android.library")
     id("datadogBuildConfig")
+    id("detekt-common")
 
     // Analysis tools
     id("test-pyramid-api-usage")
@@ -64,7 +66,9 @@ apollo {
         packageName.set("com.datadog.android.testgraphql")
         schemaFiles.from("src/test/resources/graphql/schema.graphqls")
         outputDirConnection {
-            connectToAndroidTestComponents(kotlin = true)
+            androidComponents.onVariants { variant ->
+                (variant as? HasUnitTest)?.unitTest?.let { connectToAndroidComponent(it, kotlin = true) }
+            }
         }
     }
 }

@@ -17,6 +17,7 @@ plugins {
     // Build
     id("com.android.library")
     id("datadogBuildConfig")
+    id("detekt-common")
 }
 
 android {

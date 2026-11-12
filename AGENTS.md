@@ -80,7 +80,7 @@ Detekt checks:
 ./gradlew <module_name>:detekt
 
 # or for all modules
-./gradlew detekt
+./gradlew detektAll
 ```
 
 # Before You Finish
@@ -89,10 +89,21 @@ Run these for every module you changed before considering the work done:
 
 ```bash
 ./gradlew :<module>:ktlintFormat
-./gradlew :<module>:detekt              # only modules applying `detekt-conventions` (not tools/*, sample/*, reliability/*, instrumented/*)
+./gradlew :<module>:detekt              # all Kotlin modules, including tools, samples, reliability and instrumented tests
 ./gradlew :<module>:testDebugUnitTest   # Android modules; JVM modules (tools/detekt, tools/lint, tools/noopfactory) use :<module>:test, build-logic uses :build-logic:test
 ./gradlew checkGeneratedFiles   # if public API, dependencies or Kotlin/AAR metadata may have changed
 ```
+
+The separate build uses `./gradlew :build-logic:detekt`. `detektAll` includes it,
+all module checks, and `detektScripts`. The script task covers Kotlin build scripts
+without type resolution. The Java settings plugin is outside Detekt's language scope.
+Detekt source checks for `sample:kotlin` are temporarily disabled pending
+[RUM-19669](https://datadoghq.atlassian.net/browse/RUM-19669); its build scripts
+are still checked by `detektScripts`.
+SDK modules apply `detekt-conventions` for shared and SDK-specific rules; other
+Kotlin modules apply `detekt-common`. Include both main and test source sets when
+adding new module coverage. See [Code quality](CONTRIBUTING.md#code-quality) for
+variant selection and generated-source exclusions.
 
 # Checked-in Generated Files
 
