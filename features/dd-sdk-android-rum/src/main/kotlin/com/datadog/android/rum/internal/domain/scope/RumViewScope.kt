@@ -512,37 +512,6 @@ internal open class RumViewScope(
         return !stopped
     }
 
-    internal fun renew(newEventTime: Time): RumViewScope {
-        return RumViewScope(
-            parentScope = this,
-            sdkCore = sdkCore,
-            sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
-            key = key,
-            eventTime = newEventTime,
-            initialAttributes = initialAttributes,
-            viewChangedListener = viewChangedListener,
-            firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,
-            cpuVitalMonitor = cpuVitalMonitor,
-            memoryVitalMonitor = memoryVitalMonitor,
-            frameRateVitalMonitor = frameRateVitalMonitor,
-            featuresContextResolver = featuresContextResolver,
-            type = type,
-            trackFrustrations = trackFrustrations,
-            sampleRate = sampleRate,
-            interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
-            networkSettledMetricResolver = networkSettledMetricResolver,
-            viewEndedMetricDispatcher = viewEndedMetricDispatcher,
-            slowFramesListener = slowFramesListener,
-            rumSessionTypeOverride = rumSessionTypeOverride,
-            accessibilityInfoProvider = accessibilityInfoProvider,
-            batteryInfoProvider = batteryInfoProvider,
-            displayInfoProvider = displayInfoProvider,
-            insightsCollector = insightsCollector,
-            rumViewEventWriterFactory = rumViewEventWriterFactory,
-            heatmapIdentifierRegistry = heatmapIdentifierRegistry
-        )
-    }
-
     // endregion
 
     // region Internal
@@ -1952,6 +1921,50 @@ internal open class RumViewScope(
                     )
                 },
                 heatmapIdentifierRegistry = heatmapIdentifierRegistry
+            )
+        }
+
+        internal fun fromExisting(
+            existing: RumViewScope,
+            newEventTime: Time,
+            initialResourceIdentifier: InitialResourceIdentifier
+        ): RumViewScope {
+            return RumViewScope(
+                parentScope = existing.parentScope,
+                sdkCore = existing.sdkCore,
+                sessionEndedMetricDispatcher = existing.sessionEndedMetricDispatcher,
+                key = existing.key,
+                eventTime = newEventTime,
+                // note: we carry added view attributes as well.
+                initialAttributes = existing.viewAttributes.toMap(),
+                viewChangedListener = existing.viewChangedListener,
+                firstPartyHostHeaderTypeResolver = existing.firstPartyHostHeaderTypeResolver,
+                cpuVitalMonitor = existing.cpuVitalMonitor,
+                memoryVitalMonitor = existing.memoryVitalMonitor,
+                frameRateVitalMonitor = existing.frameRateVitalMonitor,
+                featuresContextResolver = existing.featuresContextResolver,
+                type = existing.type,
+                trackFrustrations = existing.trackFrustrations,
+                sampleRate = existing.sampleRate,
+                interactionToNextViewMetricResolver = existing.interactionToNextViewMetricResolver,
+                networkSettledMetricResolver = NetworkSettledMetricResolver(
+                    initialResourceIdentifier,
+                    existing.sdkCore.internalLogger
+                ),
+                viewEndedMetricDispatcher = ViewEndedMetricDispatcher(
+                    viewType = existing.type,
+                    internalLogger = existing.sdkCore.internalLogger,
+                    instrumentationType = (existing.viewEndedMetricDispatcher as? ViewEndedMetricDispatcher)
+                        ?.instrumentationType
+                ),
+                slowFramesListener = existing.slowFramesListener,
+                rumSessionTypeOverride = existing.rumSessionTypeOverride,
+                accessibilityInfoProvider = existing.accessibilityInfoProvider,
+                batteryInfoProvider = existing.batteryInfoProvider,
+                displayInfoProvider = existing.displayInfoProvider,
+                insightsCollector = existing.insightsCollector,
+                rumViewEventWriterFactory = existing.rumViewEventWriterFactory,
+                heatmapIdentifierRegistry = existing.heatmapIdentifierRegistry
             )
         }
 

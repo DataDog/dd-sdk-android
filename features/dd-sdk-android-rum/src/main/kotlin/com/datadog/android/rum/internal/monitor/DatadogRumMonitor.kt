@@ -567,12 +567,6 @@ internal class DatadogRumMonitor(
         handleEvent(RumRawEvent.WebViewEvent(now()))
     }
 
-    override fun resetSession() {
-        handleEvent(
-            RumRawEvent.ResetSession(now())
-        )
-    }
-
     override fun start() {
         val processImportance = DdRumContentProvider.processImportance
         val isAppInForeground = processImportance ==

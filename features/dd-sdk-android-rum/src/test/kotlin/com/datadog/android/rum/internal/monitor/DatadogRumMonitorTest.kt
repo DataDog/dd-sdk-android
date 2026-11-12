@@ -1510,26 +1510,6 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W resetSession()`() {
-        // When
-        testedMonitor.resetSession()
-
-        // Then
-        argumentCaptor<RumRawEvent> {
-            verify(mockApplicationScope).handleEvent(
-                capture(),
-                same(fakeDatadogContext),
-                same(mockEventWriteScope),
-                same(mockWriter)
-            )
-
-            val event = firstValue
-            check(event is RumRawEvent.ResetSession)
-        }
-        verifyNoMoreInteractions(mockWriter)
-    }
-
-    @Test
     fun `M delegate event to rootScope W start() { application is in foreground }`() {
         // Given
         DdRumContentProvider.processImportance =

@@ -171,10 +171,6 @@ internal sealed class RumRawEvent {
         val isFrozenFrame: Boolean = false
     ) : RumRawEvent()
 
-    internal data class ResetSession(
-        override val eventTime: Time
-    ) : RumRawEvent()
-
     internal data class ApplicationStarted(
         val applicationStartupNanos: Long,
         override val eventTime: Time
