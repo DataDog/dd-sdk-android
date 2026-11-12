@@ -535,7 +535,9 @@ publish:release-all:
   script:
     - !reference [.snippets, set-publishing-credentials]
     - !reference [.snippets, setup-gradle]
-    - ./gradlew publishToSonatype closeSonatypeStagingRepository --no-build-cache
+    # Keep compilation parallel while limiting concurrent Sonatype uploads.
+    - ./gradlew assembleLibrariesRelease --parallel --no-build-cache
+    - ./gradlew publishToSonatype closeSonatypeStagingRepository --no-build-cache --no-parallel --max-workers=1
   artifacts:
     when: on_success
     expire_in: 7 days
