@@ -107,6 +107,7 @@ dependencies {
     ksp(libs.glideKsp)
     implementation(libs.coroutinesCore)
     implementation(libs.bundles.ktorClient)
+    implementation(libs.ktorServerCio)
     implementation(libs.kotlinxSerializationJson)
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-rum"))
