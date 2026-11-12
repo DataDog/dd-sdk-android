@@ -13,6 +13,7 @@ import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
+import org.json.JSONException
 import org.json.JSONObject
 
 /** Generated model adapters, legacy JSON conversions, and encoding validation. */
@@ -41,8 +42,12 @@ internal object FlagsJson {
 
         val assignment = Assignment.fromJsonObject(json)
 
-        @Suppress("UnsafeThirdPartyFunctionCall") // Generated JSON is a valid object.
-        val extraLogging = JSONObject(assignment.extraLogging.toJson().toString())
+        @Suppress("UnsafeThirdPartyFunctionCall") // Normalize JSONObject failures for the response mapper.
+        val extraLogging = try {
+            JSONObject(assignment.extraLogging.toJson().toString())
+        } catch (exception: JSONException) {
+            throw JsonParseException("Invalid assignment extraLogging", exception)
+        }
         return PrecomputedFlag(
             variationType = assignment.variationType,
             variationValue = assignment.variationValue,
