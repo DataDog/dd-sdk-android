@@ -83,8 +83,10 @@ You can configure the underlying `FlagsClient` before converting it to an OpenFe
 
 #### Authorize assignment downloads for a subject
 
-For environments configured to require subject authorization, obtain a JWT from your backend and include it in one
-complete OpenFeature context update:
+Subject authorization prevents the SDK from returning cached flag assignments for one subject (targeting key) while
+the app requests assignments for another subject. If your environment requires subject authorization, get a JWT for
+the subject from your backend. Then pass the complete OpenFeature context, including the token in the
+`dd_assignment_token` attribute, in a single `OpenFeatureAPI.setEvaluationContext` call:
 
 ```kotlin
 OpenFeatureAPI.setEvaluationContext(
@@ -98,17 +100,19 @@ OpenFeatureAPI.setEvaluationContext(
 )
 ```
 
-The provider forwards the credential in the reserved `DD-Assignment-Token` request header and removes it from the
-Datadog targeting context, persistence, exposure data, evaluation telemetry, and logs. OpenFeature and application
-hooks can still access the original OpenFeature context. OpenFeature Kotlin SDK 0.6.2 uses a global provider and
-evaluation context; named clients do not isolate that context. If hooks or other consumers must not receive the
-credential, use the native `FlagsClient` API outside the shared OpenFeature context.
+The provider sends the token only in the reserved `DD-Assignment-Token` request header. It removes the token from the
+Datadog targeting context, persistence, exposure data, evaluation telemetry, and logs.
 
-Use `Value.String` for the token. `Value.Null`, a missing value, or an empty string sends no header. Other OpenFeature
-value types, strings with whitespace, and non-ASCII strings are omitted with a fixed warning that never includes the
-value. The assignment request still proceeds. See the
-[native subject-authorization behavior](../dd-sdk-android-flags/README.md#authorize-assignment-downloads-for-a-subject)
-for same-subject fallback, cross-subject isolation, recovery, and the server rejection contract.
+**Note**: OpenFeature and application hooks can still read the token from the original OpenFeature context. OpenFeature
+Kotlin SDK 0.6.2 uses a global provider and evaluation context, and named clients do not isolate that context. If hooks
+or other consumers must not receive the token, use the native `FlagsClient` API instead of the shared OpenFeature
+context.
+
+Pass the token as a `Value.String`. If the value is `Value.Null`, missing, or an empty string, the provider sends no
+header. For other value types, or strings that contain whitespace or characters other than printable ASCII, the
+provider omits the token, logs a fixed warning that does not include the value, and sends the request without a token.
+For details about same-subject fallback, cross-subject isolation, recovery, and server rejections, see
+[Authorize assignment downloads for a subject](../dd-sdk-android-flags/README.md#authorize-assignment-downloads-for-a-subject).
 
 #### Control evaluation telemetry
 
