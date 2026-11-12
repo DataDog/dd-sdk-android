@@ -535,7 +535,7 @@ publish:release-all:
   script:
     - !reference [.snippets, set-publishing-credentials]
     - !reference [.snippets, setup-gradle]
-    # Keep Javadocs, metadata and signing out of the serial upload phase.
+    # Keep compilation parallel and publishing serialized.
     - ./gradlew signReleasePublication generateVerificationXml --parallel --no-build-cache
     - ./gradlew publishToSonatype closeSonatypeStagingRepository --no-build-cache --no-parallel --max-workers=1
   artifacts:
