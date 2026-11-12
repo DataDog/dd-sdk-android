@@ -287,36 +287,18 @@ internal class EvaluationsManager(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun mapAssignments(
         response: PrecomputedAssignmentsResponse,
         request: ExperimentationOptOut.Request,
         supportsObfuscation: Boolean
-    ): PrecomputedAssignments? = try {
+    ): PrecomputedAssignments? {
         val experimentationOptOut = request.takeIf { it.optedOut }
         val assignments = if (request.assignmentAuthorization?.token == null) {
             precomputeMapper.map(response.body, experimentationOptOut)
         } else {
             precomputeMapper.map(response.body, experimentationOptOut, redactErrors = true)
         }
-        assignments?.takeIf { it.obfuscation == null || supportsObfuscation }
-    } catch (exception: Throwable) {
-        if (request.assignmentAuthorization?.token == null) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { INVALID_RESPONSE_MESSAGE },
-                exception
-            )
-        } else {
-            // Response exceptions can quote server-controlled text. Never attach one for credentialed requests.
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { INVALID_RESPONSE_MESSAGE }
-            )
-        }
-        null
+        return assignments?.takeIf { it.obfuscation == null || supportsObfuscation }
     }
 
     // Executor construction does not run the task. Rejection is rethrown only

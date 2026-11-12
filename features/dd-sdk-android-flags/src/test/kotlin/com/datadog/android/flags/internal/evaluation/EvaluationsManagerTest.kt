@@ -921,35 +921,6 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
-    fun `M redact response processing throwable W updateEvaluationsForContext() {token request}`() {
-        // Given
-        val token = "header.payload.signature"
-        val context = EvaluationContext("subject", mapOf(AssignmentAuthorization.ATTRIBUTE to token))
-        val sanitizedContext = EvaluationContext("subject")
-        whenever(
-            mockAssignmentsDownloader.readPrecomputedFlags(
-                eq(sanitizedContext),
-                eq(fakeDatadogContext),
-                any(),
-                eq(token)
-            )
-        ).thenReturn(PrecomputedAssignmentsResponse("reflected-$token", null))
-        whenever(
-            mockPrecomputeMapper.map("reflected-$token", null, redactErrors = true)
-        ).thenThrow(IllegalStateException("reflected-$token"))
-
-        // When
-        evaluationsManager.updateEvaluationsForContext(context)
-
-        // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
-            "Unable to read the feature flags response."
-        )
-    }
-
-    @Test
     fun `M withhold cross subject fallback W updateEvaluationsForContext() {token request fails}`() {
         // Given
         val token = "header.payload.signature"
