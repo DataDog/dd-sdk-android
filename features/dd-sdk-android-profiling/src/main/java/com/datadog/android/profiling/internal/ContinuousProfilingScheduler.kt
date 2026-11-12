@@ -91,22 +91,21 @@ internal class ContinuousProfilingScheduler(
         // c1 ∈ [0, 1min], otherwise wait for `onAppLaunchProfilingComplete` to be called.
         @Suppress("UnsafeThirdPartyFunctionCall") // range is always valid (0 .. max+1)
         val initialCooldownMs = Random.nextLong(0L, CONTINUOUS_COOLDOWN_DURATION_MS + 1L)
-        logToUser { LOG_INITIAL_COOLDOWN.format(Locale.US, initialCooldownMs) }
         schedulerExecutor.executeSafe(OPERATION_START, sdkCore.internalLogger) {
-            if (isScheduling) scheduleCooldown(initialCooldownMs)
+            if (!isScheduling) return@executeSafe
+            logToUser { LOG_INITIAL_COOLDOWN.format(Locale.US, initialCooldownMs) }
+            scheduleCooldown(initialCooldownMs)
         }
     }
 
     fun stop() {
+        // Timers that fire before the cleanup below runs see isScheduling = false and skip their work.
         isScheduling = false
+        isActive = false
         logToUser { LOG_STOPPED }
-        pendingFuture?.cancel(false)
-        // A timer callback already running on the scheduler thread can schedule another timer or
-        // start the profiler after the cancel above. Clean up again once that callback has finished.
         schedulerExecutor.executeSafe(OPERATION_STOP, sdkCore.internalLogger) {
             pendingFuture?.cancel(false)
             pendingFuture = null
-            if (isActive) profiler.stop()
             state = State.IDLE
             isActive = false
         }
@@ -291,7 +290,7 @@ internal class ContinuousProfilingScheduler(
             // The app went to background before the cycle started; resume on foreground.
             remainingCooldownMs = cooldownMs
             state = State.PAUSED_COOLDOWN
-            logToUser { LOG_BACKGROUND_COOLDOWN_PAUSED.format(Locale.US, cooldownMs) }
+            logToUser { LOG_COOLDOWN_DEFERRED_IN_BACKGROUND.format(Locale.US, cooldownMs) }
             return
         }
         state = State.COOLDOWN
@@ -302,6 +301,9 @@ internal class ContinuousProfilingScheduler(
     /**
      * Replaces the pending timer, so that only one timer is ever scheduled. Must be called on
      * [schedulerExecutor]. The task is skipped if [stop] was called before it fires.
+     *
+     * The task clears [pendingFuture] when it starts, so that a task scheduling the next timer
+     * doesn't cancel its own running future.
      */
     private fun scheduleTimer(operationName: String, delayMs: Long, task: () -> Unit) {
         pendingFuture?.cancel(false)
@@ -311,6 +313,7 @@ internal class ContinuousProfilingScheduler(
             unit = TimeUnit.MILLISECONDS,
             internalLogger = sdkCore.internalLogger
         ) {
+            pendingFuture = null
             if (isScheduling) task()
         }
     }
@@ -413,6 +416,8 @@ internal class ContinuousProfilingScheduler(
             "App backgrounded during active window; grace period started (%sms remaining in active window)."
         internal const val LOG_BACKGROUND_COOLDOWN_PAUSED =
             "App backgrounded during cooldown; cooldown paused (%sms remaining)."
+        internal const val LOG_COOLDOWN_DEFERRED_IN_BACKGROUND =
+            "App in background; continuous profiling cooldown deferred until foreground (%sms)."
         internal const val LOG_FOREGROUND_RESUMED_ACTIVE =
             "App foregrounded; active window resumed."
         internal const val LOG_FOREGROUND_RESUMED_COOLDOWN =

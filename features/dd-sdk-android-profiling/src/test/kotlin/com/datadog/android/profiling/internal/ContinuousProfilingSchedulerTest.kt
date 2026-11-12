@@ -30,6 +30,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -696,7 +697,7 @@ internal class ContinuousProfilingSchedulerTest {
     }
 
     @Test
-    fun `M stop profiler W stop() {active window running}`() {
+    fun `M not stop profiler W stop() {active window running}`() {
         // Given
         openActiveWindow()
 
@@ -704,7 +705,37 @@ internal class ContinuousProfilingSchedulerTest {
         testedScheduler.stop()
 
         // Then
-        verify(mockProfiler).stop()
+        verify(mockProfiler, never()).stop()
+    }
+
+    @Test
+    fun `M mark inactive before cleanup runs W stop() {active window running}`() {
+        // Given
+        openActiveWindow()
+        doNothing().whenever(mockSchedulerExecutor).execute(any<Runnable>())
+
+        // When
+        testedScheduler.stop()
+
+        // Then
+        assertThat(testedScheduler.isActive).isFalse()
+    }
+
+    @Test
+    fun `M not cancel running timer W cooldown timer fires {schedules active window end}`() {
+        // Given
+        testedScheduler.currentSessionSampled = true
+        testedScheduler.start(launchProfilingActive = true)
+        testedScheduler.onAppLaunchProfilingComplete()
+        val runnableCaptor = argumentCaptor<Runnable>()
+        verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
+
+        // When
+        runnableCaptor.firstValue.run()
+
+        // Then
+        verify(mockSchedulerExecutor, times(2)).schedule(any<Runnable>(), any(), any<TimeUnit>())
+        verify(mockFuture, never()).cancel(any())
     }
 
     @Test
