@@ -94,7 +94,7 @@ internal class DatadogRumMonitor(
     internal val appPackageName: String,
     internal val sessionSampler: Sampler<String>,
     internal val backgroundTrackingEnabled: Boolean,
-    internal val trackFrustrations: Boolean,
+    trackFrustrations: Boolean,
     private val writer: DataWriter<Any>,
     internal val handler: Handler,
     internal val telemetryEventHandler: TelemetryEventHandler,

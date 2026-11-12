@@ -33,7 +33,7 @@ internal class RecordedDataQueueHandler(
     private val executorService: ExecutorService,
     internal val recordedDataQueue: Queue<RecordedDataQueueItem>,
     private val timeProvider: TimeProvider,
-    private val telemetrySampleRate: Float = TELEMETRY_SAMPLE_RATE_PERCENT,
+    telemetrySampleRate: Float = TELEMETRY_SAMPLE_RATE_PERCENT,
     private val sampler: RateBasedSampler<Unit> = RateBasedSampler(telemetrySampleRate)
 ) : DataQueueHandler {
 
