@@ -101,7 +101,7 @@ ci-image:
   id_tokens:
     DDSIGN_ID_TOKEN:
       aud: image-integrity
-  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/docker:24.0.4-jammy
+  image: registry.ddbuild.io/images/docker:v152555997-36457c2-24.0.4-jammy@sha256:dbc1f23328df286e896d5587d1f2832e939b86ca9d37fcc52019f805a8516340
   script:
     - METADATA_FILE=$(mktemp)
     - docker buildx build --tag $CI_IMAGE_DOCKER -f ./ci/Dockerfile.gitlab --push --metadata-file ${METADATA_FILE} .
