@@ -7,6 +7,7 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.taskConfig
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -76,12 +77,20 @@ android {
     }
 }
 
+configurations.matching { it.name.endsWith("AndroidTestLintChecksClasspath") }.configureEach {
+    // checkDependencyLicenses resolves every configuration, including AGP's lint check classpaths.
+    // Those don't request a Kotlin platform, so the Compose 1.7 test libraries (Coil 3 raises
+    // Compose to 1.7) resolve to desktop variants that pull in Truth and java-diff-utils.
+    attributes.attribute(KotlinPlatformType.attribute, KotlinPlatformType.androidJvm)
+}
+
 dependencies {
     if (project.hasProperty(com.datadog.gradle.Properties.USE_DESUGARING)) {
         coreLibraryDesugaring(libs.androidDesugaringSdk)
     }
     implementation(project(":features:dd-sdk-android-webview"))
     implementation(project(":features:dd-sdk-android-session-replay"))
+    implementation(project(":features:dd-sdk-android-session-replay-compose"))
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-rum"))
@@ -91,8 +100,10 @@ dependencies {
     implementation(libs.okHttp)
     implementation(libs.cronetPlayServices)
 
-    compileOnly(platform(libs.androidXComposeBom))
-    compileOnly(libs.androidXComposeRuntime)
+    implementation(platform(libs.androidXComposeBom))
+    implementation(libs.androidXComposeMaterial)
+    implementation(libs.coilCompose)
+    implementation(libs.coil3Compose)
 
     implementation(libs.gson)
     implementation(libs.kotlinRuntime)
