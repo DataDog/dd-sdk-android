@@ -56,8 +56,8 @@ abstract class DatadogBuildExtension @Inject constructor(
     /**
      * Declares the Maven publication (POM metadata, sources/javadoc jars) and its signing.
      * @param destination where this module's releases and snapshots are published: Maven Central (through
-     * Sonatype), or an internal binaries.ddbuild.io repository, in which case its Sonatype upload is disabled.
-     * Dogfood versions are published to the dogfood repository whatever the destination.
+     * Sonatype), or the internal binaries.ddbuild.io repositories, in which case its Sonatype upload is disabled.
+     * Dogfood versions are published to the internal releases repository whatever the destination.
      */
     fun applyPublishingConfig(
         projectDescription: String,

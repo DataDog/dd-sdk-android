@@ -67,6 +67,6 @@ datadogBuild {
     applyPublishingConfig(
         projectDescription = "An internal benchmarking tool to measure the overhead of Datadog SDK",
         customArtifactId = "dd-sdk-android-benchmark-internal",
-        destination = PublishingDestination.INTERNAL_BENCHMARK
+        destination = PublishingDestination.INTERNAL
     )
 }

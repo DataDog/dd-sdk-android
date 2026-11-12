@@ -22,10 +22,17 @@ object MavenConfig {
 
     private const val INTERNAL_REPOSITORY_UPLOAD_BASE = "s3://binaries-ddbuild-io-prod/dd-sdk-android"
 
-    const val DOGFOOD_REPOSITORY = "dogfood"
-    const val DOGFOOD_REPOSITORY_URL = "$INTERNAL_REPOSITORY_UPLOAD_BASE/$DOGFOOD_REPOSITORY"
-    const val BENCHMARK_REPOSITORY = "benchmark"
-    const val BENCHMARK_REPOSITORY_URL = "$INTERNAL_REPOSITORY_UPLOAD_BASE/$BENCHMARK_REPOSITORY"
+    /**
+     * Name of the internal binaries.ddbuild.io repository, so its upload task is always
+     * `publishReleasePublicationToInternalRepository`, whatever the URL selected for the version.
+     */
+    const val INTERNAL_REPOSITORY = "internal"
+
+    /** Releases and dogfood builds: any version that isn't a `-SNAPSHOT`. */
+    const val INTERNAL_RELEASES_REPOSITORY_URL = "$INTERNAL_REPOSITORY_UPLOAD_BASE/releases"
+
+    /** Snapshots, kept apart from the releases as they are changing versions. */
+    const val INTERNAL_SNAPSHOTS_REPOSITORY_URL = "$INTERNAL_REPOSITORY_UPLOAD_BASE/snapshots"
 
     /**
      * Task uploading the [PUBLICATION] to the `sonatype` repository, which the root
@@ -39,33 +46,24 @@ enum class PublishingDestination {
     /** Public modules, published to Maven Central through Sonatype. */
     MAVEN_CENTRAL,
 
-    /** Published to the benchmark repository on binaries.ddbuild.io, which is only reachable from Datadog's network. */
-    INTERNAL_BENCHMARK
+    /** Internal modules, published to binaries.ddbuild.io, which is only reachable from Datadog's network. */
+    INTERNAL
 }
 
-internal data class InternalMavenRepository(val name: String, val url: String)
-
 /**
- * Dogfood versions get the dogfood repository whatever the destination, so every module is available there at the
- * same version.
- * @return the internal binaries.ddbuild.io repository registered for a build, or null if there is none.
+ * Dogfood versions go to the internal releases repository whatever the destination, so every module is available
+ * there at the same version.
+ * @return the URL of the internal binaries.ddbuild.io repository a build is published to, or null if there is none.
  */
-internal fun internalRepositoryFor(
+internal fun internalRepositoryUrlFor(
     versionType: Version.Type,
     destination: PublishingDestination
-): InternalMavenRepository? {
+): String? {
     return when {
-        versionType is Version.Type.Dogfood -> InternalMavenRepository(
-            MavenConfig.DOGFOOD_REPOSITORY,
-            MavenConfig.DOGFOOD_REPOSITORY_URL
-        )
-
-        destination == PublishingDestination.INTERNAL_BENCHMARK -> InternalMavenRepository(
-            MavenConfig.BENCHMARK_REPOSITORY,
-            MavenConfig.BENCHMARK_REPOSITORY_URL
-        )
-
-        else -> null
+        versionType is Version.Type.Dogfood -> MavenConfig.INTERNAL_RELEASES_REPOSITORY_URL
+        destination == PublishingDestination.MAVEN_CENTRAL -> null
+        versionType is Version.Type.Snapshot -> MavenConfig.INTERNAL_SNAPSHOTS_REPOSITORY_URL
+        else -> MavenConfig.INTERNAL_RELEASES_REPOSITORY_URL
     }
 }
 
@@ -151,12 +149,12 @@ internal fun Project.publishingConfig(
 
             // Internal builds go to binaries.ddbuild.io (internal only), using the CI runner's IAM role.
             // Only registered when the version and destination allow it, so other builds can't be uploaded there.
-            val internalRepository = internalRepositoryFor(AndroidConfig.VERSION.type, destination)
-            if (internalRepository != null) {
+            val internalRepositoryUrl = internalRepositoryUrlFor(AndroidConfig.VERSION.type, destination)
+            if (internalRepositoryUrl != null) {
                 repositories {
                     maven {
-                        name = internalRepository.name
-                        url = uri(internalRepository.url)
+                        name = MavenConfig.INTERNAL_REPOSITORY
+                        url = uri(internalRepositoryUrl)
                         authentication {
                             create<AwsImAuthentication>("awsIm")
                         }

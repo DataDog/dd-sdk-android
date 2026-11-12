@@ -10,6 +10,7 @@ import com.datadog.gradle.utils.Version
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
@@ -20,52 +21,59 @@ internal class MavenConfigTest {
 
     @ParameterizedTest
     @EnumSource(PublishingDestination::class)
-    fun `M return dogfood repository W internalRepositoryFor() {dogfood version, any destination}`(
+    fun `M return releases repository W internalRepositoryUrlFor() {dogfood version, any destination}`(
         destination: PublishingDestination,
         @StringForgery fakeShortSha: String
     ) {
         // When
-        val repository = internalRepositoryFor(Version.Type.Dogfood(fakeShortSha), destination)
+        val url = internalRepositoryUrlFor(Version.Type.Dogfood(fakeShortSha), destination)
 
         // Then
-        assertThat(repository).isEqualTo(
-            InternalMavenRepository(MavenConfig.DOGFOOD_REPOSITORY, MavenConfig.DOGFOOD_REPOSITORY_URL)
-        )
+        assertThat(url).isEqualTo("s3://binaries-ddbuild-io-prod/dd-sdk-android/releases")
+    }
+
+    @Test
+    fun `M return snapshots repository W internalRepositoryUrlFor() {snapshot version, INTERNAL}`() {
+        // When
+        val url = internalRepositoryUrlFor(Version.Type.Snapshot, PublishingDestination.INTERNAL)
+
+        // Then
+        assertThat(url).isEqualTo("s3://binaries-ddbuild-io-prod/dd-sdk-android/snapshots")
     }
 
     @ParameterizedTest
-    @MethodSource("nonDogfoodVersionTypes")
-    fun `M return benchmark repository W internalRepositoryFor() {non-dogfood version, INTERNAL_BENCHMARK}`(
+    @MethodSource("releaseVersionTypes")
+    fun `M return releases repository W internalRepositoryUrlFor() {non-snapshot version, INTERNAL}`(
         versionType: Version.Type
     ) {
         // When
-        val repository = internalRepositoryFor(versionType, PublishingDestination.INTERNAL_BENCHMARK)
+        val url = internalRepositoryUrlFor(versionType, PublishingDestination.INTERNAL)
 
         // Then
-        assertThat(repository).isEqualTo(
-            InternalMavenRepository(MavenConfig.BENCHMARK_REPOSITORY, MavenConfig.BENCHMARK_REPOSITORY_URL)
-        )
+        assertThat(url).isEqualTo("s3://binaries-ddbuild-io-prod/dd-sdk-android/releases")
     }
 
     @ParameterizedTest
     @MethodSource("nonDogfoodVersionTypes")
-    fun `M return null W internalRepositoryFor() {non-dogfood version, MAVEN_CENTRAL}`(versionType: Version.Type) {
+    fun `M return null W internalRepositoryUrlFor() {non-dogfood version, MAVEN_CENTRAL}`(versionType: Version.Type) {
         // When
-        val repository = internalRepositoryFor(versionType, PublishingDestination.MAVEN_CENTRAL)
+        val url = internalRepositoryUrlFor(versionType, PublishingDestination.MAVEN_CENTRAL)
 
         // Then
-        assertThat(repository).isNull()
+        assertThat(url).isNull()
     }
 
     companion object {
         @JvmStatic
-        fun nonDogfoodVersionTypes(): List<Version.Type> = listOf(
+        fun releaseVersionTypes(): List<Version.Type> = listOf(
             Version.Type.Release,
             Version.Type.ReleaseCandidate(1),
             Version.Type.Beta(2),
             Version.Type.Alpha(3),
-            Version.Type.Dev,
-            Version.Type.Snapshot
+            Version.Type.Dev
         )
+
+        @JvmStatic
+        fun nonDogfoodVersionTypes(): List<Version.Type> = releaseVersionTypes() + Version.Type.Snapshot
     }
 }

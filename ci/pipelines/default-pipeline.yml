@@ -560,7 +560,7 @@ publish:benchmark-internal:
   script:
     - !reference [.snippets, set-publishing-credentials]
     - !reference [.snippets, setup-gradle]
-    - ./gradlew :tools:benchmark:publishReleasePublicationToBenchmarkRepository --no-build-cache
+    - ./gradlew :tools:benchmark:publishReleasePublicationToInternalRepository --no-build-cache
 
 # Publishes every dogfooding build once its pipeline has passed
 publish:dogfooding:
@@ -578,7 +578,7 @@ publish:dogfooding:
     - !reference [.snippets, setup-gradle]
     # Publishing is done by S3 repo, so credentials are managed by IAM from env set in the CI
     # job for the service account. Signing is also not required for internal build.
-    - ./gradlew publishReleasePublicationToDogfoodRepository --stacktrace --no-daemon -Pdd-skip-signing
+    - ./gradlew publishReleasePublicationToInternalRepository --stacktrace --no-daemon -Pdd-skip-signing
 
 
 # SLACK NOTIFICATIONS
