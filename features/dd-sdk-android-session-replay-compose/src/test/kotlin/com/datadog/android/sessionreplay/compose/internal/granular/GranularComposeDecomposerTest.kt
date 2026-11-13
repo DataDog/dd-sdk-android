@@ -42,6 +42,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -53,17 +54,17 @@ internal class GranularComposeDecomposerTest {
 
     private val mockSemanticsUtils: SemanticsUtils = mock()
     private val mockReflectionUtils: ReflectionUtils = mock()
-    private lateinit var testedGate: GranularComposeCompatibilityGate
+    private lateinit var fakeIsIncompatible: AtomicBoolean
     private lateinit var testedDecomposer: GranularComposeDecomposer
     private val mockView: View = mock<AbstractComposeView>()
 
     @BeforeEach
     fun `set up`() {
-        testedGate = GranularComposeCompatibilityGate()
+        fakeIsIncompatible = AtomicBoolean(false)
         testedDecomposer = GranularComposeDecomposer(
             semanticsUtils = mockSemanticsUtils,
             reflectionUtils = mockReflectionUtils,
-            compatibilityGate = testedGate
+            isIncompatible = fakeIsIncompatible
         )
     }
 
@@ -80,9 +81,9 @@ internal class GranularComposeDecomposerTest {
     }
 
     @Test
-    fun `M return false W canDecompose() { gate already tripped }`() {
+    fun `M return false W canDecompose() { already incompatible }`() {
         // Given
-        testedGate.markIncompatible()
+        fakeIsIncompatible.set(true)
 
         // When
         val result = testedDecomposer.canDecompose(mockView)
@@ -93,9 +94,9 @@ internal class GranularComposeDecomposerTest {
     }
 
     @Test
-    fun `M return null W decompose() { gate already tripped }`() {
+    fun `M return null W decompose() { already incompatible }`() {
         // Given
-        testedGate.markIncompatible()
+        fakeIsIncompatible.set(true)
         val request: CompositionHostDecomposeRequest = mock {
             on { shouldContinue } doReturn { true }
         }
@@ -131,7 +132,7 @@ internal class GranularComposeDecomposerTest {
 
         // Then
         assertThat(thrown).isSameAs(fakeError)
-        assertThat(testedGate.isAvailable()).isFalse()
+        assertThat(fakeIsIncompatible.get()).isTrue()
         assertThat(testedDecomposer.canDecompose(mockView)).isFalse()
         assertThat(testedDecomposer.decompose(mockView, request)).isNull()
         verify(mockSemanticsUtils).findRootSemanticsNode(mockView)
@@ -161,7 +162,7 @@ internal class GranularComposeDecomposerTest {
 
         // Then
         assertThat(thrown).isSameAs(fakeError)
-        assertThat(testedGate.isAvailable()).isTrue()
+        assertThat(fakeIsIncompatible.get()).isFalse()
     }
 
     @Test
@@ -216,7 +217,7 @@ internal class GranularComposeDecomposerTest {
 
         // Then
         assertThat(result).isNull()
-        assertThat(testedGate.isAvailable()).isTrue()
+        assertThat(fakeIsIncompatible.get()).isFalse()
     }
 
     @Test
@@ -232,7 +233,7 @@ internal class GranularComposeDecomposerTest {
         assertThat(outsideResult).isNotNull()
         assertThat(outsideResult?.nodes).isEmpty()
         assertThat(outsideResult?.wireframes).isEmpty()
-        assertThat(testedGate.isAvailable()).isTrue()
+        assertThat(fakeIsIncompatible.get()).isFalse()
         verify(mockSemanticsUtils, never()).resolveTextLayoutInfo(eq(stubLeaf), any())
 
         // When
@@ -258,7 +259,7 @@ internal class GranularComposeDecomposerTest {
 
         // Then
         assertThat(result?.nodes).hasSize(2)
-        assertThat(testedGate.isAvailable()).isTrue()
+        assertThat(fakeIsIncompatible.get()).isFalse()
         verify(mockSemanticsUtils).resolveTextLayoutInfo(eq(stubChild), any())
     }
 
@@ -290,7 +291,7 @@ internal class GranularComposeDecomposerTest {
         assertThat(result?.rootChildren).isEmpty()
         assertThat(result?.nodes).isEmpty()
         assertThat(result?.wireframes).isEmpty()
-        assertThat(testedGate.isAvailable()).isTrue()
+        assertThat(fakeIsIncompatible.get()).isFalse()
     }
 
     @Test

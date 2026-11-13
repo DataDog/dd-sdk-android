@@ -93,7 +93,7 @@ internal class GranularComposeContentTest : GranularComposeTestFixture() {
 
         // Then
         assertThat(result).isNull()
-        assertThat(testedGate.isAvailable()).isTrue()
+        assertThat(fakeIsIncompatible.get()).isFalse()
         verify(mockSemanticsUtils, never()).resolveInnerBounds(eq(child), any())
     }
 
@@ -205,7 +205,7 @@ internal class GranularComposeContentTest : GranularComposeTestFixture() {
         // Then
         assertThat(result).isNotNull()
         mockLogger.verifyLog(InternalLogger.Level.WARN, InternalLogger.Target.TELEMETRY, fakeMessage, onlyOnce = true)
-        assertThat(testedGate.isAvailable()).isTrue()
+        assertThat(fakeIsIncompatible.get()).isFalse()
     }
 
     private class FakeGraphicsLayer(private val alpha: Float) : Modifier.Element, InspectableValue {

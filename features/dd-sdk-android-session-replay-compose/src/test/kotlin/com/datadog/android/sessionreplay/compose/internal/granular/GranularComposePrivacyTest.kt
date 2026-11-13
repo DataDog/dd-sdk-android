@@ -191,7 +191,7 @@ internal class GranularComposePrivacyTest : GranularComposeTestFixture() {
         // Then
         assertThat(result).containsEntry(Rect(10, 20, 40, 60), TouchPrivacy.HIDE)
         verify(mockSemanticsUtils, never()).resolveTextLayoutInfo(eq(child), any())
-        assertThat(testedGate.isAvailable()).isTrue()
+        assertThat(fakeIsIncompatible.get()).isFalse()
     }
 
     @ParameterizedTest
@@ -216,7 +216,7 @@ internal class GranularComposePrivacyTest : GranularComposeTestFixture() {
 
         // Then
         assertThat(result).isNull()
-        assertThat(testedGate.isAvailable()).isTrue()
+        assertThat(fakeIsIncompatible.get()).isFalse()
         verify(mockSemanticsUtils, never()).getTouchPrivacyOverride(second)
     }
 
@@ -224,7 +224,7 @@ internal class GranularComposePrivacyTest : GranularComposeTestFixture() {
     fun `M deny touch refresh after incompatibility W readTouchOverrideAreas()`() {
         // Given
         whenever(mockReflectionUtils.isAndroidComposeView(mockHost)).thenReturn(true)
-        testedGate.markIncompatible()
+        fakeIsIncompatible.set(true)
 
         // When
         val result = testedDecomposer.readTouchOverrideAreas(mockHost) { true }

@@ -35,6 +35,7 @@ import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.roundToInt
 
 /**
@@ -66,16 +67,16 @@ internal class GranularComposeDecomposer(
     private val semanticsUtils: SemanticsUtils = SemanticsUtils(),
     private val reflectionUtils: ReflectionUtils = ReflectionUtils(),
     private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter,
-    private val compatibilityGate: GranularComposeCompatibilityGate = GranularComposeCompatibilityGate()
+    private val isIncompatible: AtomicBoolean = AtomicBoolean(false)
 ) : CompositionHostDecomposer {
 
     override fun canDecompose(view: View): Boolean {
-        if (!compatibilityGate.isAvailable()) return false
+        if (isIncompatible.get()) return false
         return disableOnLinkageError { findRoot(view) != null }
     }
 
     override fun decompose(view: View, request: CompositionHostDecomposeRequest): CompositionHostDecomposeResult? {
-        if (!compatibilityGate.isAvailable() || !request.shouldContinue()) return null
+        if (isIncompatible.get() || !request.shouldContinue()) return null
         return disableOnLinkageError { DecomposeSession(view, request).run() }
     }
 
@@ -83,7 +84,7 @@ internal class GranularComposeDecomposer(
     override fun readTouchOverrideAreas(view: View, shouldContinue: () -> Boolean): Map<Rect, TouchPrivacy>? {
         if (!shouldContinue()) return null
         if (view !is AbstractComposeView && !reflectionUtils.isAndroidComposeView(view)) return emptyMap()
-        if (!compatibilityGate.isAvailable()) return null
+        if (isIncompatible.get()) return null
         return disableOnLinkageError {
             val root = findRoot(view)
             if (root == null || !root.hasAvailablePosition()) {
@@ -99,14 +100,15 @@ internal class GranularComposeDecomposer(
         }
     }
 
-    // Disable on incompatible runtime failures, then let the SDK caller report the original
-    // throwable through its SDK-bound logger and perform native fallback. Other failures
-    // propagate without disabling, since they are specific to one capture.
+    // Disable permanently on incompatible runtime failures, then let the SDK caller report the
+    // original throwable through its SDK-bound logger and perform native fallback. Other failures
+    // propagate without disabling, since they are specific to one capture. Each SDK core configures
+    // its own ComposeExtensionSupport, and so its own decomposer and flag.
     private inline fun <T> disableOnLinkageError(block: () -> T): T {
         return try {
             block()
         } catch (error: LinkageError) {
-            compatibilityGate.markIncompatible()
+            isIncompatible.set(true)
             @Suppress("ThrowingInternalException") // The SDK caller reports and contains this original failure.
             throw error
         }

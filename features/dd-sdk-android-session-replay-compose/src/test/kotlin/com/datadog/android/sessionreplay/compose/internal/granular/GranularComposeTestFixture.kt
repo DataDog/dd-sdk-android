@@ -31,6 +31,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal abstract class GranularComposeTestFixture {
     protected val mockSemanticsUtils: SemanticsUtils = mock()
@@ -39,11 +40,11 @@ internal abstract class GranularComposeTestFixture {
     protected val mockHost: View = mock<AbstractComposeView>()
     protected val stubIdentityFactory: CompositionIdentityFactory = mock()
     protected val fakeHostIdentity: CapturedIdentity = mock()
-    protected val testedGate = GranularComposeCompatibilityGate()
+    protected val fakeIsIncompatible = AtomicBoolean(false)
     protected val testedDecomposer = GranularComposeDecomposer(
         semanticsUtils = mockSemanticsUtils,
         reflectionUtils = mockReflectionUtils,
-        compatibilityGate = testedGate
+        isIncompatible = fakeIsIncompatible
     )
     protected lateinit var forge: Forge
 

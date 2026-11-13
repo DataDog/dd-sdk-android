@@ -36,6 +36,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -47,11 +48,11 @@ internal class GranularComposeCancellationTest {
     private val mockSemanticsUtils: SemanticsUtils = mock()
     private val mockReflectionUtils: ReflectionUtils = mock()
     private val mockHostView: View = mock<AbstractComposeView>()
-    private val testedGate = GranularComposeCompatibilityGate()
+    private val fakeIsIncompatible = AtomicBoolean(false)
     private val testedDecomposer = GranularComposeDecomposer(
         semanticsUtils = mockSemanticsUtils,
         reflectionUtils = mockReflectionUtils,
-        compatibilityGate = testedGate
+        isIncompatible = fakeIsIncompatible
     )
 
     @ParameterizedTest
@@ -103,7 +104,7 @@ internal class GranularComposeCancellationTest {
 
         // Then
         assertThat(fakeCancelledResult).isNull()
-        assertThat(testedGate.isAvailable()).isTrue()
+        assertThat(fakeIsIncompatible.get()).isFalse()
         verifyNoInteractions(fakeSecond)
         if (fakeCancellationPoint == CancellationPoint.BEFORE_START) {
             verifyNoInteractions(mockSemanticsUtils, mockReflectionUtils)
@@ -118,7 +119,7 @@ internal class GranularComposeCancellationTest {
 
         // Then
         assertThat(fakeNextResult).isNotNull()
-        assertThat(testedGate.isAvailable()).isTrue()
+        assertThat(fakeIsIncompatible.get()).isFalse()
     }
 
     private fun node(
