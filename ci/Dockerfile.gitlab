@@ -1,5 +1,5 @@
 # This base image is based on a GBI image
-FROM registry.ddbuild.io/images/docker:v152555997-36457c2-24.0.4-jammy@sha256:dbc1f23328df286e896d5587d1f2832e939b86ca9d37fcc52019f805a8516340
+FROM registry.ddbuild.io/images/docker:24.0.4-jammy
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -129,4 +129,4 @@ COPY --from=registry.ddbuild.io/commit-headless:v2.0.1 /commit-headless /usr/loc
 # Install ddsign for image signing
 COPY --from=registry.ddbuild.io/ddsign:v1.11.10@sha256:55784668a612ab22129bb15a665a847819bfa64b9a595c59a03a3a725534ce22 /usr/local/bin/ddsign /usr/local/bin/ddsign
 
-RUN test "$(docker buildx version | cut -d ' ' -f 2)" = "v0.38.2-dd.3"
+RUN docker buildx version
