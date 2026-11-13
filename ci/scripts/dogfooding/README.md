@@ -104,7 +104,7 @@ A separate `publish:dogfooding-depot` job runs in the same stage and publishes t
 
 The Depot job runs `ci/scripts/publish_dogfood_to_depot.py`, which clears `build/dogfood-maven` and runs `publishReleasePublicationToDogfoodStagingRepository` to stage the Depot files. The staging repository is only registered for dogfood versions. Each POM and all files in its version directory are passed to adms, including AARs, sources, Javadoc, Gradle `.module` metadata and checksum sidecars. The repository's version index (`maven-metadata.xml`) and its checksums aren't uploaded because adms doesn't support them.
 
-The Depot job uses a separate image built from `ci/Dockerfile.dogfood-depot`, which adds adms to the existing SDK image. Build `CI_IMAGE_DOGFOOD_DEPOT` with the manual `ci-image:dogfooding-depot` job before running the Depot job. Existing jobs keep their current image. To check publishing behavior locally without uploading artifacts, run:
+The shared SDK CI image includes adms. Build the new `CURRENT_CI_IMAGE` tag with the manual `ci-image` job before running jobs that use it. To check publishing behavior locally without uploading artifacts, run:
 
 ```bash
 python3 -m unittest discover -s ci/scripts -p test_publish_dogfood_to_depot.py

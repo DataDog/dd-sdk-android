@@ -1,7 +1,6 @@
 variables:
-  CURRENT_CI_IMAGE: "32"
+  CURRENT_CI_IMAGE: "34"
   CI_IMAGE_DOCKER: registry.ddbuild.io/ci/dd-sdk-android:$CURRENT_CI_IMAGE
-  CI_IMAGE_DOGFOOD_DEPOT: registry.ddbuild.io/ci/dd-sdk-android:dogfood-depot-1
   GIT_DEPTH: 5
 
   DD_SERVICE: "dd-sdk-android"

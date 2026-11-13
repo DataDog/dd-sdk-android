@@ -124,6 +124,7 @@ RUN set -x \
 
 COPY --from=registry.ddbuild.io/dd-octo-sts:v1.8.2 /usr/local/bin/dd-octo-sts /usr/local/bin/dd-octo-sts
 COPY --from=registry.ddbuild.io/dd-sts:v0.1.7@sha256:dea74bd68e19075b6001a02a2f6121001fbcd84b2512c7f398f7b39bf22f04a8 /usr/local/bin/dd-sts /usr/local/bin/dd-sts
+COPY --from=registry.ddbuild.io/adms-cli:0.0.29@sha256:63408bbd93d7870ece8e70d8b009d9f68bbdd5f0a5708f80540d594b04a7bb76 /usr/local/bin/adms /usr/local/bin/adms
 COPY --from=registry.ddbuild.io/commit-headless:v2.0.1 /commit-headless /usr/local/bin/commit-headless
 
 # Install ddsign for image signing

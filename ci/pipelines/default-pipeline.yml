@@ -110,14 +110,6 @@ ci-image:
     - docker buildx build --tag $CI_IMAGE_DOCKER -f ./ci/Dockerfile.gitlab --push --metadata-file ${METADATA_FILE} .
     - ddsign sign $CI_IMAGE_DOCKER --docker-metadata-file ${METADATA_FILE}
 
-# Build the Depot image separately so existing jobs keep their current image.
-ci-image:dogfooding-depot:
-  extends: ci-image
-  script:
-    - METADATA_FILE=$(mktemp)
-    - docker buildx build --tag $CI_IMAGE_DOGFOOD_DEPOT --build-arg CI_IMAGE_DOCKER=$CI_IMAGE_DOCKER -f ./ci/Dockerfile.dogfood-depot --push --metadata-file ${METADATA_FILE} .
-    - ddsign sign $CI_IMAGE_DOGFOOD_DEPOT --docker-metadata-file ${METADATA_FILE}
-
 # SECURITY
 
 create_key:
@@ -604,7 +596,7 @@ publish:dogfooding-depot:
   tags: [ "arch:amd64" ]
   only:
     - dogfooding
-  image: $CI_IMAGE_DOGFOOD_DEPOT
+  image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
   interruptible: false
