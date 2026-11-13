@@ -71,6 +71,7 @@ detekt = "2.0.0-alpha.6"
 dokka = "2.2.0"
 ktlint = "1.8.0"
 ktlintGradlePlugin = "14.2.0"
+s3BuildCache = "1.9.11"
 unmock = "0.11.0"
 robolectric = "4.4_r1-robolectric-r2"
 androidLint = "31.0.2"
@@ -226,6 +227,7 @@ systemStubsJupiter = { module = "uk.org.webcompere:system-stubs-jupiter", versio
 detektApi = { module = "dev.detekt:detekt-api", version.ref = "detekt" }
 detektTest = { module = "dev.detekt:detekt-test", version.ref = "detekt" }
 ktlintGradlePlugin = { module = "org.jlleitschuh.gradle.ktlint:org.jlleitschuh.gradle.ktlint.gradle.plugin", version.ref = "ktlintGradlePlugin" }
+s3BuildCache = { module = "com.github.burrunan.s3-build-cache:com.github.burrunan.s3-build-cache.gradle.plugin", version.ref = "s3BuildCache" }
 okHttpMock = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okHttp" }
 robolectric = { module = "org.robolectric:android-all", version.ref = "robolectric" }
 androidLintApi = { module = "com.android.tools.lint:lint-api", version.ref = "androidLint" }

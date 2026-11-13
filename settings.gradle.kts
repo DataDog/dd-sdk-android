@@ -18,15 +18,17 @@ pluginManagement {
 
     // Repository definitions shared with build-logic.
     includeBuild("./gradle/settings-plugin")
-
-    // Build logic (convention plugins + build-time code generators) lives in its own build so that
-    // editing it doesn't invalidate the whole project the way a `buildSrc` change does.
-    includeBuild("./build-logic")
+    includeBuild("./build-logic-settings")
 }
 
 plugins {
     id("com.datadog.gradle.repositories")
+    id("com.datadog.gradle.build-cache")
 }
+
+// Build logic (convention plugins + build-time code generators) lives in its own build so that
+// editing it doesn't invalidate the whole project the way a `buildSrc` change does.
+includeBuild("./build-logic")
 
 val datadogRepositories = DatadogRepositories(providers)
 
