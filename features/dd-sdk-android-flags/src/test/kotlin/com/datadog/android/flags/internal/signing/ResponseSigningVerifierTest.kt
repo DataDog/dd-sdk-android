@@ -16,6 +16,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
@@ -114,6 +115,39 @@ internal class ResponseSigningVerifierTest {
                 // Then
                 assertThat(result != null).isEqualTo(vector["expected_accept"].asBoolean)
             }
+        }
+    }
+
+    @TestFactory
+    fun `M decode certificate validity W signingTime()`(): List<DynamicTest> = listOf(
+        Triple(23, "500101000000Z", -631152000L),
+        Triple(23, "700101000000Z", 0L),
+        Triple(23, "490101000000Z", 2493072000L),
+        Triple(24, "20500101000000Z", 2524608000L)
+    ).map { (tag, value, expected) ->
+        DynamicTest.dynamicTest(value) {
+            // Given
+            val der = byteArrayOf(tag.toByte(), value.length.toByte()) + value.toByteArray(Charsets.US_ASCII)
+            // When
+            val actual = signingTime(SigningDer.read(der))
+            // Then
+            assertThat(actual).isEqualTo(expected)
+        }
+    }
+
+    @TestFactory
+    fun `M reject invalid certificate validity W signingTime()`(): List<DynamicTest> = listOf(
+        "20260229000000Z",
+        "20261301000000Z",
+        "20260101240000Z",
+        "20260101000060Z",
+        "00000101000000Z"
+    ).map { value ->
+        DynamicTest.dynamicTest(value) {
+            // Given
+            val der = byteArrayOf(24, value.length.toByte()) + value.toByteArray(Charsets.US_ASCII)
+            // When + Then
+            assertThatThrownBy { signingTime(SigningDer.read(der)) }.isInstanceOf(IllegalArgumentException::class.java)
         }
     }
 

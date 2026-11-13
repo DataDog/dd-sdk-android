@@ -118,7 +118,7 @@ release prerequisites.
 
 The signing fixtures use the existing snapshot importer and weekly update workflow.
 `src/test/resources/response-signing-v1/SOURCE.json` records the central commit and file checksums.
-The native verifier test discovers every manifest-listed suite and checks its checksum and counts.
+The JVM and Android instrumented verifier tests discover every manifest-listed suite and check its checksum and counts.
 It asserts acceptance decisions and exact transcripts for all 66 response vectors.
 The local two-case KeyUsage supplement remains separate. Server-only signing cases are excluded.
 
@@ -126,6 +126,7 @@ The local two-case KeyUsage supplement remains separate. Server-only signing cas
 python3 ci/sync-precomputed-fixtures.py --signing --ref <full-upstream-sha>
 python3 ci/sync-precomputed-fixtures.py --signing --verify
 python3 ci/sync-precomputed-fixtures.py --signing --check
+./gradlew :features:dd-sdk-android-flags:connectedDebugAndroidTest
 ```
 
 #### Disable RUM integration

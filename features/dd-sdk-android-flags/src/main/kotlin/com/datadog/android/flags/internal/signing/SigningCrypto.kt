@@ -10,14 +10,17 @@ import okio.Buffer
 import okio.ByteString
 import okio.ByteString.Companion.decodeHex
 import okio.ByteString.Companion.toByteString
-import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.security.GeneralSecurityException
+import java.security.KeyFactory
 import java.security.ProviderException
 import java.security.PublicKey
 import java.security.Signature
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
+import java.security.spec.X509EncodedKeySpec
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
 internal fun signingCheck(condition: Boolean) {
     if (!condition) signingFailure()
@@ -57,21 +60,44 @@ internal fun signingSlice(value: ByteArray, start: Int, end: Int): ByteArray {
     }
 }
 
-internal fun signingCertificate(bytes: ByteArray): X509Certificate = try {
-    CertificateFactory.getInstance("X.509").generateCertificate(ByteArrayInputStream(bytes)) as X509Certificate
+/** Read the profile directly; Android's X.509 parser rejects valid non-string subject attributes. */
+internal fun signingPublicKey(spki: ByteArray): PublicKey = try {
+    KeyFactory.getInstance("EC").generatePublic(X509EncodedKeySpec(spki))
 } catch (_: GeneralSecurityException) {
+    signingFailure()
+} catch (_: NullPointerException) {
     signingFailure()
 } catch (_: ProviderException) {
     signingFailure()
 }
 
-internal fun verifyCertificate(certificate: X509Certificate, key: PublicKey): Boolean = try {
-    certificate.verify(key)
-    true
-} catch (_: GeneralSecurityException) {
-    false
-} catch (_: ProviderException) {
-    false
+private const val UTC_TIME_TAG = 23
+private const val GENERALIZED_TIME_TAG = 24
+private const val UTC_TIME_CENTURY_CUTOFF = 50
+private const val MILLIS_PER_SECOND = 1000
+
+internal fun signingTime(value: SigningDer): Long = try {
+    signingCheck(value.tag == UTC_TIME_TAG || value.tag == GENERALIZED_TIME_TAG)
+    val encoded = value.value.toString(Charsets.US_ASCII)
+    val full = if (value.tag == UTC_TIME_TAG) {
+        val year = encoded.take(2).toIntOrNull() ?: signingFailure()
+        (if (year >= UTC_TIME_CENTURY_CUTOFF) "19" else "20") + encoded
+    } else {
+        encoded
+    }
+    val format = SimpleDateFormat("yyyyMMddHHmmss'Z'", Locale.US).apply {
+        isLenient = false
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+    val date = format.parse(full) ?: signingFailure()
+    signingCheck(format.format(date) == full)
+    date.time / MILLIS_PER_SECOND
+} catch (_: ParseException) {
+    signingFailure()
+} catch (_: IllegalArgumentException) {
+    signingFailure()
+} catch (_: NullPointerException) {
+    signingFailure()
 }
 
 internal fun verifySignature(key: PublicKey, transcript: ByteArray, signature: ByteArray): Boolean = try {

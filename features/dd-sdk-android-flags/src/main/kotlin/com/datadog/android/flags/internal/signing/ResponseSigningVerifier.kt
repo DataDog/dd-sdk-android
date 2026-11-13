@@ -14,7 +14,7 @@ import okio.Buffer
 import okio.ByteString.Companion.decodeBase64
 import java.io.IOException
 import java.security.GeneralSecurityException
-import java.security.cert.X509Certificate
+import java.security.PublicKey
 import java.util.Locale
 
 internal data class VerifiedResponse(val scope: String, val verifiedAt: Long, val expiresAt: Long)
@@ -66,33 +66,33 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
         signingCheck(leaf.covers(now, issued, expires) && intermediate.covers(now, issued, expires))
         val signature = base64(single(headers, PREFIX + "signature"), 72)
         strictSignature(signature)
-        signingCheck(verifySignature(leaf.native.publicKey, transcript(request, status, headers, body), signature))
+        signingCheck(verifySignature(leaf.publicKey, transcript(request, status, headers, body), signature))
         return VerifiedResponse(scope(request), now, expires)
     }
 
     private class Certificate(
-        val native: X509Certificate,
-        val issuer: ByteArray,
-        val subject: ByteArray,
+        val tbs: SigningDer,
+        val signature: ByteArray,
+        val publicKey: PublicKey,
+        val notBefore: Long,
+        val notAfter: Long,
         val extensions: Map<String, Pair<Boolean, ByteArray>>
     ) {
         fun covers(now: Long, issued: Long, expires: Long): Boolean {
-            val start = native.notBefore.time / 1000
-            val end = native.notAfter.time / 1000
-            return now in start..end && issued >= start && expires <= end
+            return now in notBefore..notAfter && issued >= notBefore && expires <= notAfter
         }
 
         @Suppress("ReturnCount") // Reject each issuer linkage before invoking native cryptography.
         fun issuedBy(parent: Certificate): Boolean {
-            if (!issuer.contentEquals(parent.subject) || native.notBefore.time < parent.native.notBefore.time ||
-                native.notAfter.time > parent.native.notAfter.time
+            if (!tbs.children[3].encoded.contentEquals(parent.tbs.children[5].encoded) ||
+                notBefore < parent.notBefore || notAfter > parent.notAfter
             ) {
                 return false
             }
             val aki = extensions[AUTHORITY_KEY_ID]?.second?.let { identifier(it, true) }
             val ski = parent.extensions[SUBJECT_KEY_ID]?.second?.let { identifier(it, false) }
             if (aki != null && ski != null && !aki.contentEquals(ski)) return false
-            return verifyCertificate(native, parent.native.publicKey)
+            return verifySignature(parent.publicKey, tbs.encoded, signature)
         }
 
         fun restrict(isIntermediate: Boolean) {
@@ -113,7 +113,17 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
         signingCheck(cert.size == 3)
         val tbs = cert[0].sequence()
         signingCheck(tbs.size == 8 && tbs[0].encoded.contentEquals(hex("a003020102")))
-        signingCheck(tbs[1].tag == 2 && tbs[1].value[0].toInt() and 128 == 0)
+        signingCheck(
+            tbs[1].tag == 2 && tbs[1].value.size in 1..20 && tbs[1].value[0].toInt() and 128 == 0 &&
+                tbs[1].value.any { it != 0.toByte() }
+        )
+        validateName(tbs[3])
+        validateName(tbs[5])
+        val validity = tbs[4].sequence()
+        signingCheck(validity.size == 2)
+        val notBefore = signingTime(validity[0])
+        val notAfter = signingTime(validity[1])
+        signingCheck(notBefore < notAfter)
         signingCheck(cert[1].encoded.contentEquals(hex("300a06082a8648ce3d040302")))
         signingCheck(tbs[2].encoded.contentEquals(cert[1].encoded))
         signingCheck(cert[2].tag == 3 && cert[2].value[0] == 0.toByte())
@@ -141,8 +151,24 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
             if (oid == "551d23") identifier(value, true)
             extensions[oid] = critical to value
         }
-        val native = signingCertificate(bytes)
-        return Certificate(native, tbs[3].encoded, tbs[5].encoded, extensions)
+        return Certificate(
+            cert[0],
+            signingSlice(cert[2].value, 1, cert[2].value.size),
+            signingPublicKey(tbs[6].encoded),
+            notBefore,
+            notAfter,
+            extensions
+        )
+    }
+
+    private fun validateName(name: SigningDer) {
+        name.sequence().forEach { rdn ->
+            signingCheck(rdn.tag == 0x31 && rdn.children.isNotEmpty())
+            rdn.children.forEach { attribute ->
+                val pair = attribute.sequence()
+                signingCheck(pair.size == 2 && pair[0].tag == 6)
+            }
+        }
     }
 
     @Suppress("TooManyFunctions") // Protocol encoding and cache identity helpers stay together.
