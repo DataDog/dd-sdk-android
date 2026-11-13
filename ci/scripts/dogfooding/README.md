@@ -88,7 +88,9 @@ Revert, in one PR against `dogfooding`, every merge of a `dogfood-<branch>-<sha>
 
 ## Publishing
 
-Every build of `dogfooding` is published automatically by the `publish:dogfooding` job in GitLab, once the pipeline on `dogfooding` has passed. The version is `<version>-dogfood-<commit short sha>`, for example `3.15.0-dogfood-1a2b3c4d`, published to `https://binaries.ddbuild.io/dd-sdk-android/releases/`, which is only reachable from Datadog's network (VPN on laptops). Builds published before [#3982](https://github.com/DataDog/dd-sdk-android/pull/3982) stay in `https://binaries.ddbuild.io/dd-sdk-android/dogfood/`. Add the repository to the consuming app:
+After the earlier stages of a `dogfooding` pipeline have passed, the `publish:dogfooding` job in GitLab publishes version `<version>-dogfood-<commit short sha>` (for example, `3.15.0-dogfood-1a2b3c4d`) to S3 at `https://binaries.ddbuild.io/dd-sdk-android/releases/`, which is only reachable from Datadog's network (VPN on laptops). Signing is skipped for these internal builds. An S3 upload failure still fails the pipeline.
+
+Builds published before [#3982](https://github.com/DataDog/dd-sdk-android/pull/3982) stay in `https://binaries.ddbuild.io/dd-sdk-android/dogfood/`. Add the releases repository to the consuming app:
 
 ```kotlin
 maven("https://binaries.ddbuild.io/dd-sdk-android/releases/") {
@@ -97,6 +99,16 @@ maven("https://binaries.ddbuild.io/dd-sdk-android/releases/") {
 ```
 
 Then point Shopist or the Datadog app at that exact version. Dynamic versions (`latest.integration`, `latest.release`, `+`) don't work for dogfood builds: for the same base version Gradle ranks `-SNAPSHOT` above `-dogfood-<sha>`, and it orders dogfood builds by commit sha rather than by date, so a dynamic version never reliably resolves to the latest dogfood build.
+
+A separate `publish:dogfooding-depot` job runs in the same stage and publishes the same release publications to Depot with `adms first-party java upload`. It runs independently of the S3 job and has `allow_failure: true`. S3 remains the repository to use for Shopist and the Datadog app: adms currently warns that uploaded Java files can't yet be resolved through Depot's Maven endpoint. If staging or a Depot upload fails, the Depot job fails without failing the pipeline. A failed upload doesn't prevent attempts for the remaining publications.
+
+The Depot job runs `ci/scripts/publish_dogfood_to_depot.py`, which clears `build/dogfood-maven` and runs `publishReleasePublicationToDogfoodStagingRepository` to stage the Depot files. The staging repository is only registered for dogfood versions. Each POM, and all files in its version directory, is passed to adms, including AARs, sources, Javadoc, Gradle `.module` metadata, and checksum sidecars. The repository's version index (`maven-metadata.xml`) and its checksums aren't uploaded because adms doesn't support them.
+
+The shared SDK CI image includes adms. Build the new `CURRENT_CI_IMAGE` tag with the manual `ci-image` job before running jobs that use it. To check publishing behavior locally without uploading artifacts, run:
+
+```bash
+python3 -m unittest discover -s ci/scripts -p test_publish_dogfood_to_depot.py
+```
 
 ## When a script stops
 
@@ -123,4 +135,4 @@ Then point Shopist or the Datadog app at that exact version. Dynamic versions (`
 
 ## Known limits
 
-- The scripts run locally. Running sync and reset from CI is planned for later.
+- The branch management scripts run locally. Running sync and reset from CI is planned for later.

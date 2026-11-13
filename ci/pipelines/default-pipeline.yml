@@ -185,6 +185,7 @@ test:debug:
 test:tools:
   extends: .verification-gradle-job
   script:
+    - python3 -m unittest discover -s ci/scripts -p test_publish_dogfood_to_depot.py
     - ./gradlew :unitTestTools
   artifacts:
     when: always
@@ -585,6 +586,25 @@ publish:dogfooding:
     # Publishing is done by S3 repo, so credentials are managed by IAM from env set in the CI
     # job for the service account. Signing is also not required for internal build.
     - ./gradlew publishReleasePublicationToInternalRepository --stacktrace --no-daemon -Pdd-skip-signing
+
+
+# Runs independently of S3 publishing; a Depot failure must not fail the pipeline.
+publish:dogfooding-depot:
+  extends:
+    - .cpu-memory-intensive-job
+    - .real-sdk-commit-sha-job
+  tags: [ "arch:amd64" ]
+  only:
+    - dogfooding
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  interruptible: false
+  allow_failure: true
+  dependencies: []
+  script:
+    - !reference [.snippets, setup-gradle]
+    - python3 ci/scripts/publish_dogfood_to_depot.py
 
 
 # SLACK NOTIFICATIONS
