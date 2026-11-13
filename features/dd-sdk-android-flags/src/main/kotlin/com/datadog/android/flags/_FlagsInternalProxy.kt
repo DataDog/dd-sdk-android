@@ -6,8 +6,9 @@
 
 package com.datadog.android.flags
 
-import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.DatadogFlagsClient
+import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.UnparsedFlag
@@ -26,8 +27,15 @@ import com.datadog.android.lint.InternalApi
 @InternalApi
 @Suppress("ClassName", "ClassNaming", "UndocumentedPublicFunction", "TooManyFunctions")
 class _FlagsInternalProxy(private val client: FlagsClient) {
-    /** Returns the SDK core that owns a Datadog client, or null for another [FlagsClient]. */
-    fun getSdkCore(): FeatureSdkCore? = (client as? DatadogFlagsClient)?.featureSdkCore
+    /**
+     * Returns the logger of the SDK core that the client was created for. A [FlagsClient] that the application
+     * implements gets [InternalLogger.UNBOUND].
+     */
+    fun getInternalLogger(): InternalLogger = when (client) {
+        is DatadogFlagsClient -> client.featureSdkCore.internalLogger
+        is NoOpFlagsClient -> client.sdkCore.internalLogger
+        else -> InternalLogger.UNBOUND
+    }
 
     fun isExperimentationOptOutEnabled(): Boolean =
         (client as? DatadogFlagsClient)?.experimentationOptOut?.enabled == true

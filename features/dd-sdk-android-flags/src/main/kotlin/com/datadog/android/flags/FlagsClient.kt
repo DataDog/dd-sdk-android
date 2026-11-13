@@ -354,6 +354,7 @@ interface FlagsClient {
                 return NoOpFlagsClient(
                     name = name,
                     reason = "Flags feature not enabled",
+                    sdkCore = sdkCore,
                     logWithPolicy = logWithPolicy
                 )
             }
@@ -415,6 +416,7 @@ interface FlagsClient {
                 return NoOpFlagsClient(
                     name = name,
                     reason = "Flags feature not enabled",
+                    sdkCore = featureCore,
                     logWithPolicy = { message, level ->
                         logger.log(level, InternalLogger.Target.USER, { message })
                     }
@@ -447,6 +449,7 @@ interface FlagsClient {
             return NoOpFlagsClient(
                 name = name,
                 reason = "Client '$name' not found - get() called before build()",
+                sdkCore = sdkCore,
                 logWithPolicy = { message, level ->
                     flagsFeature.logErrorWithPolicy(message, level, shouldCrashInStrict = false)
                 }

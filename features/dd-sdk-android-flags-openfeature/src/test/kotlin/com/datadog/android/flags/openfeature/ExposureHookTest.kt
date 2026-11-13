@@ -87,7 +87,7 @@ internal class ExposureHookTest {
     fun `set up`() {
         fakeContext = LiveContext(fakeTargetingKey, mutableMapOf(fakeAttributeKey to Value.String(fakeAttributeValue)))
         providerMetadata = DatadogProviderMetadata("Datadog", decisions, mockInternalLogger)
-        testedHook = ExposureHook({ evaluations.add(it) }, { mockDefaultLogger })
+        testedHook = ExposureHook({ evaluations.add(it) }, mockDefaultLogger)
     }
 
     @Test
@@ -247,7 +247,7 @@ internal class ExposureHookTest {
                 @Suppress("UNCHECKED_CAST", "DontDowncastCollectionTypes")
                 (evaluation.features as MutableMap<String, Any>).clear()
             },
-            { mockDefaultLogger }
+            mockDefaultLogger
         )
 
         // When
@@ -307,7 +307,7 @@ internal class ExposureHookTest {
     fun `M log the first failure as a warning and later ones at debug level W finallyAfter() {callback throws}`() {
         // Given
         val failure = IllegalStateException("callback failed")
-        testedHook = ExposureHook({ throw failure }, { mockDefaultLogger })
+        testedHook = ExposureHook({ throw failure }, mockDefaultLogger)
 
         // When
         assertDoesNotThrow {
@@ -344,7 +344,7 @@ internal class ExposureHookTest {
     fun `M propagate the error W finallyAfter() {callback throws an Error}`() {
         // Given
         val failure = AssertionError("callback failed")
-        testedHook = ExposureHook({ throw failure }, { mockDefaultLogger })
+        testedHook = ExposureHook({ throw failure }, mockDefaultLogger)
 
         // When
         val thrown = assertThrows<AssertionError> {

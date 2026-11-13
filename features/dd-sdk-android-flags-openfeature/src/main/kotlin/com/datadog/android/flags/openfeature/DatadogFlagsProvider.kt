@@ -6,9 +6,7 @@
 
 package com.datadog.android.flags.openfeature
 
-import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.FlagsStateListener
@@ -84,10 +82,12 @@ import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationCont
  * This provider is thread-safe and all methods can be safely called from any thread.
  * The underlying [FlagsClient] handles thread coordination.
  */
-class DatadogFlagsProvider private constructor(private val flagsClient: FlagsClient, sdkCore: FeatureSdkCore) :
+class DatadogFlagsProvider private constructor(
+    private val flagsClient: FlagsClient,
+    private val internalLogger: InternalLogger
+) :
     FeatureProvider {
 
-    private val internalLogger: InternalLogger = sdkCore.internalLogger
     private val experimentationOptOutEnabled = _FlagsInternalProxy(flagsClient).isExperimentationOptOutEnabled()
     private val evaluationTelemetryOptOutParameterEnabled =
         _FlagsInternalProxy(flagsClient).isEvaluationTelemetryOptOutParameterEnabled()
@@ -322,7 +322,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
 
         internal fun wrap(
             flagsClient: FlagsClient,
-            sdkCore: FeatureSdkCore = Datadog.getInstance() as FeatureSdkCore
-        ): DatadogFlagsProvider = DatadogFlagsProvider(flagsClient, sdkCore)
+            internalLogger: InternalLogger
+        ): DatadogFlagsProvider = DatadogFlagsProvider(flagsClient, internalLogger)
     }
 }

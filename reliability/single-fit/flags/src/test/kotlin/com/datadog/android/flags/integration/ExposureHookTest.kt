@@ -296,6 +296,46 @@ internal class ExposureHookTest {
     }
 
     @Test
+    fun `M log callback failures to the client's core W getBooleanValue() {no-op client on a named core}`(
+        forge: Forge
+    ) {
+        // Given
+        start(forge)
+        val mockLogger = mock<InternalLogger>()
+        val namedCore = FlagsClientTest.createStubSdkCore(forge)
+        val loggingCore = object : InternalSdkCore by namedCore {
+            override val internalLogger = mockLogger
+        }
+        val noOpClient = FlagsClient.Builder("no-flags", loggingCore).build()
+        OpenFeatureAPI.clearHooks()
+        OpenFeatureAPI.addHooks(listOf(ExposureHook { throw IllegalStateException("callback failed") }))
+        runBlocking {
+            OpenFeatureAPI.setProviderAndWait(
+                noOpClient.asOpenFeatureProvider(),
+                ImmutableContext(SUBJECT),
+                Dispatchers.Unconfined
+            )
+        }
+
+        // When
+        val value = OpenFeatureAPI.getClient().getBooleanValue(FLAG, false)
+
+        // Then
+        assertThat(value).isFalse()
+        val messageCaptor = argumentCaptor<() -> String>()
+        verify(mockLogger).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.USER),
+            messageCaptor.capture(),
+            isA<IllegalStateException>(),
+            eq(false),
+            isNull()
+        )
+        assertThat(messageCaptor.firstValue())
+            .isEqualTo("Exposure callback failed; later failures are logged at debug level.")
+    }
+
+    @Test
     fun `M report a non-exposure W getBooleanDetails() {after hook replaces the context}`(forge: Forge) {
         // Given
         lateinit var client: FlagsClient

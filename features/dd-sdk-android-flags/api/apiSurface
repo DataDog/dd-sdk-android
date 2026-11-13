@@ -55,7 +55,7 @@ interface com.datadog.android.flags.StateObservable
   fun removeListener(FlagsStateListener)
 class com.datadog.android.flags._FlagsInternalProxy
   constructor(FlagsClient)
-  fun getSdkCore(): com.datadog.android.api.feature.FeatureSdkCore?
+  fun getInternalLogger(): com.datadog.android.api.InternalLogger
   fun isExperimentationOptOutEnabled(): Boolean
   fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext, EvaluationContextCallback?, Boolean)
   fun isEvaluationTelemetryOptOutParameterEnabled(): Boolean

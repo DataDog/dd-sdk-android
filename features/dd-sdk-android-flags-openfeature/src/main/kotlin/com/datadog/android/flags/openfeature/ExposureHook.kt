@@ -6,9 +6,7 @@
 
 package com.datadog.android.flags.openfeature
 
-import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.openfeature.internal.exposure.DatadogProviderMetadata
 import com.datadog.android.flags.openfeature.internal.exposure.ExposureMetadata
 import dev.openfeature.kotlin.sdk.FlagEvaluationDetails
@@ -43,17 +41,14 @@ import java.util.concurrent.atomic.AtomicBoolean
  * later ones at debug level.
  *
  * @param callback receives each evaluation, on the evaluating thread. It must not do I/O.
- * @param internalLogger provides the logger when the evaluation is not from a Datadog provider.
+ * @param internalLogger logs evaluations that come from a provider other than [DatadogFlagsProvider].
  */
 class ExposureHook internal constructor(
     private val callback: ExposureCallback,
-    private val internalLogger: () -> InternalLogger
+    private val internalLogger: InternalLogger
 ) : Hook<Any> {
 
-    constructor(callback: ExposureCallback) : this(
-        callback,
-        { (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger ?: InternalLogger.UNBOUND }
-    )
+    constructor(callback: ExposureCallback) : this(callback, InternalLogger.UNBOUND)
 
     private val callbackFailed = AtomicBoolean(false)
     private val warnedUnsupportedProvider = AtomicBoolean(false)
@@ -62,7 +57,7 @@ class ExposureHook internal constructor(
         val providerMetadata = ctx.providerMetadata as? DatadogProviderMetadata
         if (providerMetadata == null) {
             if (!warnedUnsupportedProvider.getAndSet(true)) {
-                log(internalLogger(), InternalLogger.Level.WARN) { UNSUPPORTED_PROVIDER_MESSAGE }
+                log(internalLogger, InternalLogger.Level.WARN) { UNSUPPORTED_PROVIDER_MESSAGE }
             }
             return
         }

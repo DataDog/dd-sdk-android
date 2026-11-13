@@ -371,7 +371,7 @@ internal class FlagsInternalProxyTest {
     @Test
     fun `M no-op on fallback W trackFlagExposure() + trackFlagEvaluationEvent() + trackFlagRumEvaluation()`() {
         // Given
-        testedProxy = _FlagsInternalProxy(NoOpFlagsClient("test", "not initialized") { _, _ -> })
+        testedProxy = _FlagsInternalProxy(NoOpFlagsClient("test", "not initialized", mockFeatureSdkCore) { _, _ -> })
 
         // When / Then
         assertDoesNotThrow {

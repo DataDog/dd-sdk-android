@@ -10,7 +10,6 @@
 package com.datadog.android.flags.openfeature
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInitializationTimeoutException
@@ -144,9 +143,6 @@ internal class DatadogFlagsProviderTest {
     lateinit var mockFlagsClient: FlagsClient
 
     @Mock
-    lateinit var mockSdkCore: FeatureSdkCore
-
-    @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
@@ -158,8 +154,6 @@ internal class DatadogFlagsProviderTest {
     @BeforeEach
     @Suppress("UnnecessaryApply") // lenient()'s pending-stub marker must consume the same mock invocation it wraps
     fun setUp() {
-        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
-
         // Use lenient stubbings for mocks that are conditionally used across different tests
         lenient().whenever(mockFlagsClient.state).thenReturn(mockStateObservable)
 
@@ -177,7 +171,7 @@ internal class DatadogFlagsProviderTest {
             Unit
         }
 
-        provider = DatadogFlagsProvider.wrap(mockFlagsClient, mockSdkCore)
+        provider = DatadogFlagsProvider.wrap(mockFlagsClient, mockInternalLogger)
     }
 
     @Test
