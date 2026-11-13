@@ -88,7 +88,9 @@ Revert, in one PR against `dogfooding`, every merge of a `dogfood-<branch>-<sha>
 
 ## Publishing
 
-Every build of `dogfooding` is published automatically by the `publish:dogfooding` job in GitLab, once the pipeline on `dogfooding` has passed. The version is `<version>-dogfood-<commit short sha>`, for example `3.15.0-dogfood-1a2b3c4d`, published to `https://binaries.ddbuild.io/dd-sdk-android/releases/`, which is only reachable from Datadog's network (VPN on laptops). Builds published before [#3982](https://github.com/DataDog/dd-sdk-android/pull/3982) stay in `https://binaries.ddbuild.io/dd-sdk-android/dogfood/`. Add the repository to the consuming app:
+Once the earlier stages of a `dogfooding` pipeline have passed, the `publish:dogfooding` job in GitLab runs `ci/scripts/publish_dogfood.py`. It publishes version `<version>-dogfood-<commit short sha>`, for example `3.15.0-dogfood-1a2b3c4d`, to S3 at `https://binaries.ddbuild.io/dd-sdk-android/releases/`, which is only reachable from Datadog's network (VPN on laptops). Signing is skipped for these internal builds. If the S3 upload fails, the job fails and doesn't attempt to publish to Depot.
+
+Builds published before [#3982](https://github.com/DataDog/dd-sdk-android/pull/3982) stay in `https://binaries.ddbuild.io/dd-sdk-android/dogfood/`. Add the releases repository to the consuming app:
 
 ```kotlin
 maven("https://binaries.ddbuild.io/dd-sdk-android/releases/") {
@@ -98,27 +100,11 @@ maven("https://binaries.ddbuild.io/dd-sdk-android/releases/") {
 
 Then point Shopist or the Datadog app at that exact version. Dynamic versions (`latest.integration`, `latest.release`, `+`) don't work for dogfood builds: for the same base version Gradle ranks `-SNAPSHOT` above `-dogfood-<sha>`, and it orders dogfood builds by commit sha rather than by date, so a dynamic version never reliably resolves to the latest dogfood build.
 
-### CI publication details
+After S3 succeeds, the job also attempts to publish the same release publications to Depot with `adms first-party java upload`. S3 remains the repository to use for Shopist and the Datadog app: adms currently warns that uploaded Java files can't yet be resolved through Depot's Maven endpoint. If staging or a Depot upload fails, the job logs a warning without failing CI. A failed upload doesn't prevent attempts for the remaining publications.
 
-The `publish:dogfooding` CI job runs `ci/scripts/publish_dogfood.py`. It first runs
-`publishReleasePublicationToInternalRepository` with signing skipped. S3 failures
-fail the job. After S3 succeeds, Gradle stages the same release publications in
-`build/dogfood-maven` using `publishReleasePublicationToDogfoodStagingRepository`.
-The staging repository is registered only for dogfood versions and is cleared
-before each run.
+The script runs `publishReleasePublicationToInternalRepository` for S3, then clears `build/dogfood-maven` and runs `publishReleasePublicationToDogfoodStagingRepository` to stage the Depot files. The staging repository is only registered for dogfood versions. Each POM and all files in its version directory are passed to adms, including AARs, sources, Javadoc, Gradle `.module` metadata and checksum sidecars. The repository's version index (`maven-metadata.xml`) and its checksums aren't uploaded because adms doesn't support them.
 
-Each staged POM and all files in its version directory are passed to
-`adms first-party java upload`, including AARs, sources, Javadoc, Gradle `.module`
-metadata, and checksum sidecars. Maven repository discovery metadata is not
-uploaded because adms does not support it. Staging and Depot upload failures warn
-without failing CI; a failed publication does not prevent attempts for other
-publications. Depot is an experimental second destination: adms currently warns
-that uploaded Java files cannot yet be resolved through its Maven endpoint.
-S3 remains the source used by existing dogfood consumers.
-
-When changing the CI image, build the new `CURRENT_CI_IMAGE` tag with the manual
-`ci-image` job before running jobs that use it. Run the publishing regression
-checks without uploads with:
+If you change the CI image, build the new `CURRENT_CI_IMAGE` tag with the manual `ci-image` job before running jobs that use it. To check publishing behavior locally without uploading artifacts, run:
 
 ```bash
 python3 -m unittest discover -s ci/scripts -p test_publish_dogfood.py
@@ -149,4 +135,4 @@ python3 -m unittest discover -s ci/scripts -p test_publish_dogfood.py
 
 ## Known limits
 
-- The scripts run locally. Running sync and reset from CI is planned for later.
+- The branch management scripts run locally. Running sync and reset from CI is planned for later.
