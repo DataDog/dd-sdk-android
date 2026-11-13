@@ -383,6 +383,24 @@ def validate_plans(plans: Sequence[EmulatorPlan]) -> None:
             run_labels.add(run.label)
 
 
+def dump_existing_logcat(adb: Path, serial: str, logcat_path: Path) -> None:
+    try:
+        with logcat_path.open("wb") as logcat_output:
+            logcat = subprocess.run(
+                [adb, "-s", serial, "logcat", "-b", "all", "-d", "-v", "threadtime"],
+                check=False,
+                stdout=logcat_output,
+                stderr=subprocess.STDOUT,
+                timeout=30,
+            )
+        print(
+            f"{serial}: logcat saved to {logcat_path}; exit code {logcat.returncode}",
+            file=sys.stderr,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        print(f"{serial}: logcat collection failed: {error}", file=sys.stderr)
+
+
 def wait_for_boot(adb: Path, serial: str) -> None:
     """An ADB timeout does not prove that Android failed to boot."""
     deadline = time.monotonic() + BOOT_TIMEOUT_SECONDS
@@ -428,6 +446,8 @@ def wait_for_boot(adb: Path, serial: str) -> None:
             f"stdout={error.stdout!r}; stderr={error.stderr!r}",
             file=sys.stderr,
         )
+
+    dump_existing_logcat(adb, serial, Path(f"{serial}-boot-logcat.log"))
     raise RuntimeError(
         f"{serial} did not pass the ADB boot readiness check "
         f"within {BOOT_TIMEOUT_SECONDS} seconds"
@@ -567,6 +587,13 @@ def run_instrumented_apks(
     upload_exit_code = 0
     try:
         install_android_components(tools, configurations, dry_run_only)
+
+        # Start the shared ADB server before emulators or workers can start it concurrently.
+        start_adb_command = [tools.adb, "start-server"]
+        if dry_run_only:
+            print_command(start_adb_command)
+        else:
+            subprocess.run(start_adb_command, check=True, timeout=30)
 
         for plan in plans:
             create_avd(tools, plan, dry_run_only)
