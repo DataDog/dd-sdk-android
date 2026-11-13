@@ -294,11 +294,7 @@ internal class DatadogFlagsClient(
         val details = createSuccessResolution(flag, resolution.value, resolution.observeFullEvaluationData)
         val isExposure = flag.doLog && flag.variationKey.isNotBlank() && flag.allocationKey.isNotBlank()
         return if (isExposure && isCurrentResolutionContext(context)) {
-            val metadata = details.flagMetadata.toMutableMap()
-            metadata[METADATA_DO_LOG] = true
-            flag.serialId?.takeIf { it in Int.MIN_VALUE..Int.MAX_VALUE }
-                ?.let { metadata[METADATA_SPLIT_SERIAL_ID] = it.toInt() }
-            _FlagsInternalProxy.DeferredExposureResolution(details.copy(flagMetadata = metadata), context) {
+            _FlagsInternalProxy.DeferredExposureResolution(details, context) {
                 val isCurrent = isCurrentResolutionContext(context)
                 if (isCurrent) exposureProcessor.processEvent(flagKey, context, flag) else null
             }
@@ -875,8 +871,6 @@ internal class DatadogFlagsClient(
     private companion object {
         const val OBSERVE_FULL_EVALUATION_DATA_METADATA_KEY = "__dd_observe_full_evaluation_data"
         const val RESERVED_METADATA_PREFIX = "__dd_"
-        const val METADATA_DO_LOG = "__dd_do_log"
-        const val METADATA_SPLIT_SERIAL_ID = "__dd_split_serial_id"
 
         // Only the HOOK prefix is a public contract.
         val FEATURE_METADATA_PREFIXES = mapOf(

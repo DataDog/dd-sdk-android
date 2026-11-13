@@ -198,13 +198,12 @@ internal class DatadogFlagsClientExposureTest {
 
         // Then
         assertThat(result.details.value).isTrue()
-        assertThat(result.details.flagMetadata).containsAllEntriesOf(
+        assertThat(result.details.flagMetadata).isEqualTo(
             mapOf(
-                "__dd_do_log" to true,
-                "__dd_split_serial_id" to checkNotNull(fakeFlag.serialId).toInt()
+                "allocationKey" to fakeFlag.allocationKey,
+                "__dd_observe_full_evaluation_data" to false
             )
         )
-        assertThat(result.details.flagMetadata).doesNotContainKey("__dd_exposure_cache_hit")
         assertThat(result.recordExposure as Any?).isNotNull()
         verifyNoInteractions(mockProcessor)
     }

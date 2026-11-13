@@ -19,8 +19,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 @ExtendWith(ForgeExtension::class)
@@ -69,6 +71,34 @@ internal class ExposureDecisionsTest {
         assertThat(withErrorCode).isNull()
         assertThat(withErrorReason).isNull()
         assertThat(recordCount).isZero()
+    }
+
+    @Test
+    fun `M record once W complete() {two threads at once}`() {
+        // Given
+        val metadata = newMetadata()
+        val records = AtomicInteger()
+        val firstInside = CountDownLatch(1)
+        val bothInside = CountDownLatch(2)
+        testedDecisions.register(metadata, emptyMap(), null) {
+            records.incrementAndGet()
+            firstInside.countDown()
+            bothInside.countDown()
+            bothInside.await(1, TimeUnit.SECONDS)
+            false
+        }
+        val executor = Executors.newFixedThreadPool(2)
+
+        // When
+        val first = executor.submit<Boolean?> { testedDecisions.complete(details(metadata)) }
+        check(firstInside.await(5, TimeUnit.SECONDS))
+        val second = executor.submit<Boolean?> { testedDecisions.complete(details(metadata)) }
+        val verdicts = listOf(first.get(5, TimeUnit.SECONDS), second.get(5, TimeUnit.SECONDS))
+        executor.shutdown()
+
+        // Then
+        assertThat(records.get()).isEqualTo(1)
+        assertThat(verdicts).containsExactly(false, false)
     }
 
     @Test

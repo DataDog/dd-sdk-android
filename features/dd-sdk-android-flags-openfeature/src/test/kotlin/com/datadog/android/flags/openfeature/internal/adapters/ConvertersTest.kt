@@ -68,7 +68,7 @@ internal class ConvertersTest {
                 "__dd_feature.text" to "holdout-1",
                 "__dd_feature.number" to 3.0,
                 "__dd_feature.flag" to false,
-                "__dd_split_serial_id" to 42
+                "count" to 42
             )
         )
 
@@ -79,7 +79,7 @@ internal class ConvertersTest {
         assertThat(metadata.getString("__dd_feature.text")).isEqualTo("holdout-1")
         assertThat(metadata.getDouble("__dd_feature.number")).isEqualTo(3.0)
         assertThat(metadata.getBoolean("__dd_feature.flag")).isFalse()
-        assertThat(metadata.getInt("__dd_split_serial_id")).isEqualTo(42)
+        assertThat(metadata.getInt("count")).isEqualTo(42)
     }
 
     @Test

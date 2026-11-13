@@ -20,7 +20,8 @@ import java.util.WeakHashMap
  * OpenFeature drops the evaluation result, so nested evaluations cannot evict it.
  */
 internal class ExposureDecisions(
-    // A decision must not reference its metadata: the map would then never release the entry.
+    // A decision lives as long as its evaluation's metadata is reachable, which spans all hooks of the evaluation.
+    // It must not reference that metadata: the map would then never release the entry.
     private val decisions: MutableMap<EvaluationMetadata, Decision> = WeakHashMap()
 ) {
 
