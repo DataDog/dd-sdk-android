@@ -21,6 +21,7 @@ import com.datadog.android.sample.R
 import timber.log.Timber
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.sqrt
 
 @Suppress("MagicNumber")
@@ -30,9 +31,18 @@ internal class CrashFragment :
 
     private lateinit var viewModel: CrashViewModel
     private lateinit var spinner: AppCompatSpinner
+    private lateinit var oomScenarioSpinner: AppCompatSpinner
     private val mainThreadHandler = Handler(Looper.getMainLooper())
 
-    private val bitmapList = mutableListOf<Bitmap>()
+    // Each leak scenario retains its allocations in its own holder, so the holder
+    // tops Perfetto's "Dominated Object Size" in the resulting heap dump.
+    private val byteArrayLeakHolder = mutableListOf<ByteArray>()
+    private val smallObjectsLeakHolder = mutableListOf<LeakedSmallObject>()
+    private val mapCacheLeakHolder = mutableMapOf<String, ByteArray>()
+    private val bitmapAccumulationHolder = mutableListOf<Bitmap>()
+    private val bitmapJavaHeapPressureHolder = mutableListOf<ByteArray>()
+
+    private val oomScenarioRunning = AtomicBoolean(false)
 
     // region Fragment
 
@@ -59,6 +69,15 @@ internal class CrashFragment :
         )
         arrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinner.adapter = arrayAdapter
+
+        oomScenarioSpinner = rootView.findViewById(R.id.oom_scenario_spinner)
+        val oomAdapter = ArrayAdapter(
+            currentContext,
+            android.R.layout.simple_spinner_item,
+            OomScenario.values()
+        )
+        oomAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        oomScenarioSpinner.adapter = oomAdapter
 
         return rootView
     }
@@ -129,13 +148,72 @@ internal class CrashFragment :
     }
 
     private fun triggerOOM() {
-        Thread {
-            while (true) {
-                bitmapList.add(createBitmap(38400, 21600))
-                Timber.i("OOM: Allocated ${bitmapList.size} bitmaps")
-                Thread.sleep(10)
+        val scenario = oomScenarioSpinner.selectedItem as? OomScenario ?: OomScenario.BYTE_ARRAY_LEAK
+        if (!oomScenarioRunning.compareAndSet(false, true)) {
+            Timber.i("OOM: Scenario already running, ignoring tap for $scenario")
+            return
+        }
+        Thread({
+            Timber.i("OOM: Starting scenario $scenario")
+            when (scenario) {
+                OomScenario.BYTE_ARRAY_LEAK -> leakByteArrays()
+                OomScenario.SMALL_OBJECTS_LEAK -> leakSmallObjects()
+                OomScenario.MAP_CACHE_LEAK -> leakMapCache()
+                OomScenario.BITMAP_ACCUMULATION -> accumulateBitmaps()
+                OomScenario.ONE_OVERSIZED_ALLOCATION -> allocateOversized()
             }
-        }.start()
+        }, "oom-$scenario").start()
+    }
+
+    private fun leakByteArrays() {
+        while (true) {
+            byteArrayLeakHolder.add(ByteArray(10 * MB))
+            Timber.i("OOM: Retained ${byteArrayLeakHolder.size} x 10 MB byte arrays")
+        }
+    }
+
+    private fun leakSmallObjects() {
+        var count = 0L
+        while (true) {
+            smallObjectsLeakHolder.add(LeakedSmallObject(count, "item-$count"))
+            count++
+            if (count % 1_000_000L == 0L) {
+                Timber.i("OOM: Retained $count small objects")
+            }
+        }
+    }
+
+    private fun leakMapCache() {
+        var key = 0
+        while (true) {
+            mapCacheLeakHolder[String.format(Locale.US, "cache-key-%d", key++)] = ByteArray(256 * KB)
+            if (key % 100 == 0) {
+                Timber.i("OOM: Cache holds ${mapCacheLeakHolder.size} x 256 KB entries")
+            }
+        }
+    }
+
+    /**
+     * Since API 26 bitmap pixels live in native memory, so bitmaps alone usually end in a
+     * low-memory-killer kill rather than a Java OOM. Each 1024x1024 bitmap holds 4 MB of
+     * native memory and is paired with an 8 MB Java-heap chunk, so the Java heap fills twice
+     * as fast as native memory and the process ends with an OutOfMemoryError; the dump then
+     * shows both the bitmap holder and its pressure holder.
+     */
+    private fun accumulateBitmaps() {
+        while (true) {
+            bitmapAccumulationHolder.add(createBitmap(1024, 1024))
+            bitmapJavaHeapPressureHolder.add(ByteArray(8 * MB))
+            Timber.i("OOM: Retained ${bitmapAccumulationHolder.size} x 1024x1024 bitmaps")
+        }
+    }
+
+    /**
+     * A single ~3.3 GB allocation fails immediately, so nothing is retained:
+     * the heap dump shows the app at rest, without a visible culprit.
+     */
+    private fun allocateOversized() {
+        createBitmap(38400, 21600)
     }
 
     // endregion
@@ -152,7 +230,22 @@ internal class CrashFragment :
         }
     }
 
+    private class LeakedSmallObject(val id: Long, val label: String)
+
+    private enum class OomScenario(private val label: String) {
+        BYTE_ARRAY_LEAK("Byte array leak"),
+        SMALL_OBJECTS_LEAK("Small objects leak"),
+        MAP_CACHE_LEAK("Map cache leak"),
+        BITMAP_ACCUMULATION("Bitmap accumulation"),
+        ONE_OVERSIZED_ALLOCATION("Oversized allocation (app at rest)");
+
+        override fun toString(): String = label
+    }
+
     companion object {
+
+        private const val KB = 1024
+        private const val MB = 1024 * KB
 
         const val SIGILL = 4 // "Illegal instruction
         const val SIGABRT = 6 // "Abort program"
