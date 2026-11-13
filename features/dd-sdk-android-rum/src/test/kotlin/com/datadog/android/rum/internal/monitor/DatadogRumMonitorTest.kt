@@ -292,7 +292,7 @@ internal class DatadogRumMonitorTest {
         }
         whenever(
             mockRumFeatureScope.withWriteContextSync(
-                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME)),
+                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME, Feature.PROFILING_FEATURE_NAME)),
                 any()
             )
         ) doAnswer {
@@ -1439,7 +1439,7 @@ internal class DatadogRumMonitorTest {
         // Given
         whenever(
             mockRumFeatureScope.withWriteContextSync(
-                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME)),
+                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME, Feature.PROFILING_FEATURE_NAME)),
                 any()
             )
         ) doReturn false
@@ -1466,7 +1466,7 @@ internal class DatadogRumMonitorTest {
         var rootScopeHeldWhileWaiting = true
         whenever(
             mockRumFeatureScope.withWriteContextSync(
-                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME)),
+                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME, Feature.PROFILING_FEATURE_NAME)),
                 any()
             )
         ) doAnswer {

@@ -32,9 +32,9 @@ sealed class ProfilerEvent {
     ) : ProfilerEvent()
 
     /**
-     * Sent by the RUM feature to the profiling feature when an OOM error event
-     * has been successfully written. Allows the profiling feature to correlate
-     * the captured heap histogram with the RUM error event.
+     * Sent by the RUM feature to the profiling feature when a fatal OOM error event is held
+     * until the outcome of its OOM profile is known, and only then. Allows the profiling feature
+     * to correlate the captured heap histogram with the RUM error event.
      *
      * @param id The ID of the corresponding RUM error event.
      * @param timestamp Timestamp in milliseconds since epoch (server time-adjusted).
@@ -44,6 +44,34 @@ sealed class ProfilerEvent {
         val id: String,
         val timestamp: Long,
         val rumContext: ProfilingRumContext
+    ) : ProfilerEvent()
+
+    /**
+     * Sent by the RUM feature to the profiling feature on launch, when a fatal OOM error held by a
+     * previous process is loaded and waits for the outcome of its OOM profile.
+     *
+     * @param id The ID of the held RUM error event.
+     */
+    data class RumHeldOomErrorEvent(
+        val id: String
+    ) : ProfilerEvent()
+
+    /**
+     * Sent by the profiling feature to the RUM feature once it can report OOM profile write results, so
+     * that a held RUM error announced before profiling was registered is announced again.
+     */
+    object OomProfilingReady : ProfilerEvent()
+
+    /**
+     * Sent by the profiling feature to the RUM feature with the outcome of the OOM profile of a
+     * held RUM error, announced with [RumHeldOomErrorEvent].
+     *
+     * @param rumErrorId The ID of the held RUM error event.
+     * @param isWritten Whether the OOM profile of that error was written.
+     */
+    data class OomProfileWriteResult(
+        val rumErrorId: String,
+        val isWritten: Boolean
     ) : ProfilerEvent()
 
     /**

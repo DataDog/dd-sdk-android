@@ -48,6 +48,7 @@ dependencies {
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-profiling")))
     testImplementation(project(":reliability:stub-core"))
+    testImplementation(libs.gson)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)
