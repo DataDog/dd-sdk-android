@@ -272,7 +272,7 @@
       "additionalProperties": {
         "type": "string",
         "description": "additional metadata attributes",
-        "readOnly": true
+        "readOnly": false
       },
       "readOnly": true
     }

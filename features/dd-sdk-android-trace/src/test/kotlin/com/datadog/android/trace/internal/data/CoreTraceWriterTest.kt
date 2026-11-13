@@ -18,7 +18,9 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.event.EventMapper
 import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.log.LogAttributes
+import com.datadog.android.trace.assertj.SpanEventAssert
 import com.datadog.android.trace.internal.RumContextPropagator
+import com.datadog.android.trace.internal.domain.event.COMPUTE_STATS_META_KEY
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.domain.event.FORCE_DROP_SPAN
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
@@ -31,6 +33,7 @@ import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.trace.core.DDSpan
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -121,13 +124,7 @@ internal class CoreTraceWriterTest {
 
         whenever(mockEventMapper.map(any())) doAnswer { it.getArgument(0) }
 
-        testedWriter = CoreTraceWriter(
-            sdkCore = mockSdkCore,
-            ddSpanToSpanEventMapper = mockLegacyMapper,
-            eventMapper = mockEventMapper,
-            serializer = mockSerializer,
-            internalLogger = mockInternalLogger
-        )
+        testedWriter = createWriter(clientSideStatsEnabled = forge.aBool())
     }
 
     @Test
@@ -494,6 +491,91 @@ internal class CoreTraceWriterTest {
 
         verifyNoMoreInteractions(mockSdkCore, mockTracingFeatureScope)
     }
+
+    // region Client side stats
+
+    @Test
+    fun `M set computeStats to 0 W write() { clientSideStatsEnabled, event mapper changes it }`(
+        @StringForgery fakeComputeStats: String,
+        forge: Forge
+    ) {
+        // Given
+        testedWriter = createWriter(clientSideStatsEnabled = true)
+        whenever(mockEventMapper.map(any())) doAnswer {
+            it.getArgument<SpanEvent>(0).apply {
+                meta.additionalProperties[COMPUTE_STATS_META_KEY] = fakeComputeStats
+            }
+        }
+        val ddSpans = createNonEmptyDdSpans(forge, includeDropSamplingPriority = false)
+
+        // When
+        testedWriter.write(ddSpans)
+
+        // Then
+        argumentCaptor<SpanEvent> {
+            verify(mockSerializer, times(ddSpans.size)).serialize(eq(fakeDatadogContext), capture())
+            allValues.forEach { SpanEventAssert.assertThat(it).hasComputeStats("0") }
+        }
+    }
+
+    @Test
+    fun `M remove computeStats W write() { clientSideStatsEnabled is false, event mapper sets it }`(
+        @StringForgery fakeComputeStats: String,
+        forge: Forge
+    ) {
+        // Given
+        testedWriter = createWriter(clientSideStatsEnabled = false)
+        whenever(mockEventMapper.map(any())) doAnswer {
+            it.getArgument<SpanEvent>(0).apply {
+                meta.additionalProperties[COMPUTE_STATS_META_KEY] = fakeComputeStats
+            }
+        }
+        val ddSpans = createNonEmptyDdSpans(forge, includeDropSamplingPriority = false)
+
+        // When
+        testedWriter.write(ddSpans)
+
+        // Then
+        argumentCaptor<SpanEvent> {
+            verify(mockSerializer, times(ddSpans.size)).serialize(eq(fakeDatadogContext), capture())
+            allValues.forEach { SpanEventAssert.assertThat(it).hasComputeStats(null) }
+        }
+    }
+
+    // endregion
+
+    @Test
+    fun `M serialize meta attribute added by event mapper W write()`(
+        @StringForgery fakeKey: String,
+        @StringForgery fakeValue: String,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockEventMapper.map(any())) doAnswer {
+            it.getArgument<SpanEvent>(0).apply {
+                meta.additionalProperties[fakeKey] = fakeValue
+            }
+        }
+        val ddSpans = createNonEmptyDdSpans(forge, includeDropSamplingPriority = false)
+
+        // When
+        testedWriter.write(ddSpans)
+
+        // Then
+        argumentCaptor<SpanEvent> {
+            verify(mockSerializer, times(ddSpans.size)).serialize(eq(fakeDatadogContext), capture())
+            allValues.forEach { assertThat(it.meta.additionalProperties).containsEntry(fakeKey, fakeValue) }
+        }
+    }
+
+    private fun createWriter(clientSideStatsEnabled: Boolean) = CoreTraceWriter(
+        sdkCore = mockSdkCore,
+        ddSpanToSpanEventMapper = mockLegacyMapper,
+        clientSideStatsEnabled = clientSideStatsEnabled,
+        eventMapper = mockEventMapper,
+        serializer = mockSerializer,
+        internalLogger = mockInternalLogger
+    )
 
     private fun createNonEmptyDdSpans(forge: Forge, includeDropSamplingPriority: Boolean): List<DDSpan> {
         val predicate: (DDSpan) -> Boolean = if (includeDropSamplingPriority) {
