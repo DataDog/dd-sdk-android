@@ -340,7 +340,7 @@ test-pyramid:api-coverage:
       - build/reports/test-pyramid/coverage.txt
 
 .instrumented-apk-job:
-  tags: [ "macos:sonoma", "specific:true" ]
+  tags: [ "macos:sequoia", "specific:true" ]
   stage: test-pyramid
   needs:
     - job: test:build-instrumented-apks
