@@ -76,7 +76,7 @@ class ExposureHook internal constructor(
     }
 
     private fun createEvaluation(
-        ctx: HookContext<Any>,
+        hookContext: HookContext<Any>,
         details: FlagEvaluationDetails<Any>,
         providerMetadata: DatadogProviderMetadata
     ): ExposureEvaluation {
@@ -85,20 +85,21 @@ class ExposureHook internal constructor(
         val cacheHit = if (decision?.isExposure == true) decisions.complete(details) else null
         val isExposure = cacheHit != null
         val subject = decision?.context
+        val openFeatureContext = hookContext.ctx
         val context = if (subject != null) {
             ImmutableContext(subject.targetingKey, subject.attributes.mapValues { Value.String(it.value) })
         } else {
-            ctx.ctx?.let { ImmutableContext(it.getTargetingKey(), it.asMap()) }
+            openFeatureContext?.let { ImmutableContext(it.getTargetingKey(), it.asMap()) }
         }
         return ExposureEvaluation(
             flagKey = details.flagKey,
             variant = details.variant,
             allocationKey = details.metadata.getString(ExposureMetadata.ALLOCATION_KEY),
-            targetingKey = (subject?.targetingKey ?: ctx.ctx?.getTargetingKey())?.takeIf { it.isNotEmpty() },
+            targetingKey = (subject?.targetingKey ?: openFeatureContext?.getTargetingKey())?.takeIf { it.isNotEmpty() },
             evaluationContext = context,
             // A mutable copy per callback: Java callers may mutate it, and toMap() returns a fixed map for one entry.
             features = LinkedHashMap(decision?.hookFeatures.orEmpty()),
-            exposure = isExposure,
+            isExposure = isExposure,
             cacheHit = cacheHit
         )
     }

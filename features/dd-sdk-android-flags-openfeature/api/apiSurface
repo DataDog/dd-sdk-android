@@ -14,8 +14,7 @@ class com.datadog.android.flags.openfeature.DatadogFlagsProvider : dev.openfeatu
 interface com.datadog.android.flags.openfeature.ExposureCallback
   fun onEvaluation(ExposureEvaluation)
 class com.datadog.android.flags.openfeature.ExposureEvaluation
-  fun isExposure(): Boolean
-  fun isCacheHit(): Boolean
+  val isCacheHit: Boolean
   fun shouldSend(): Boolean
 class com.datadog.android.flags.openfeature.ExposureHook : dev.openfeature.kotlin.sdk.Hook<Any>
   constructor(ExposureCallback)

@@ -104,9 +104,9 @@ internal class ExposureHookTest {
         fixture.flush()
 
         // Then
-        assertThat(evaluations.map { it.isExposure() }).containsExactly(true, true)
+        assertThat(evaluations.map { it.isExposure }).containsExactly(true, true)
         assertThat(evaluations.map { it.shouldSend() }).containsExactly(true, false)
-        assertThat(evaluations.map { it.isCacheHit() }).containsExactly(false, true)
+        assertThat(evaluations.map { it.isCacheHit }).containsExactly(false, true)
         assertThat(evaluations.map { it.targetingKey }).containsOnly(SUBJECT)
         assertThat(evaluations.map { it.allocationKey }).containsOnly(ALLOCATION)
         assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
@@ -124,7 +124,7 @@ internal class ExposureHookTest {
 
         // Then
         assertThat(evaluations.map { it.shouldSend() }).containsExactly(true, false)
-        assertThat(evaluations.map { it.isCacheHit() }).containsExactly(false, true)
+        assertThat(evaluations.map { it.isCacheHit }).containsExactly(false, true)
         assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).isEmpty()
     }
 
@@ -149,7 +149,7 @@ internal class ExposureHookTest {
 
         // Then
         assertThat(failed.errorCode).isEqualTo(ErrorCode.GENERAL)
-        assertThat(evaluations.map { it.isExposure() }).containsExactly(false, true)
+        assertThat(evaluations.map { it.isExposure }).containsExactly(false, true)
         assertThat(evaluations.map { it.shouldSend() }).containsExactly(false, true)
         assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
     }
@@ -236,7 +236,7 @@ internal class ExposureHookTest {
         // Then
         assertThat(details.errorCode).isNull()
         val outer = evaluations.single { it.flagKey == FLAG }
-        assertThat(outer.isExposure()).isTrue()
+        assertThat(outer.isExposure).isTrue()
         assertThat(outer.shouldSend()).isTrue()
         assertThat(outer.features).containsEntry("holdout.key", "holdout-1")
         val outerEvents = fixture.events(Feature.FLAGS_FEATURE_NAME)
@@ -264,7 +264,7 @@ internal class ExposureHookTest {
 
         // Then
         assertThat(evaluations.map { it.shouldSend() }).containsExactly(true, false)
-        assertThat(evaluations.map { it.isCacheHit() }).containsExactly(false, true)
+        assertThat(evaluations.map { it.isCacheHit }).containsExactly(false, true)
         assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
     }
 
@@ -317,7 +317,7 @@ internal class ExposureHookTest {
 
         // Then
         assertThat(details.errorCode).isNull()
-        assertThat(evaluations.single().isExposure()).isFalse()
+        assertThat(evaluations.single().isExposure).isFalse()
         assertThat(evaluations.single().shouldSend()).isFalse()
         assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).isEmpty()
     }

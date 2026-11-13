@@ -229,10 +229,12 @@ internal class DatadogFlagsProviderTest {
 
     @Test
     fun `M give each evaluation its own decision id W getBooleanEvaluation() twice {split features}`(
-        @StringForgery flagKey: String
+        @StringForgery flagKey: String,
+        @StringForgery fakeFeatureValue: String
     ) {
         // Given
-        val resolution = ResolutionDetails(value = true, flagMetadata = mapOf("__dd_feature.holdout.key" to "h"))
+        val resolution =
+            ResolutionDetails(value = true, flagMetadata = mapOf("__dd_feature.holdout.key" to fakeFeatureValue))
         whenever(mockFlagsClient.resolve(flagKey, false)).thenReturn(resolution)
 
         // When
@@ -243,15 +245,16 @@ internal class DatadogFlagsProviderTest {
         val firstId = checkNotNull(first.metadata.getInt("__dd_exposure_decision"))
         val secondId = checkNotNull(second.metadata.getInt("__dd_exposure_decision"))
         assertThat(firstId).isNotEqualTo(secondId)
-        assertThat(first.metadata.getString("__dd_feature.holdout.key")).isEqualTo("h")
+        assertThat(first.metadata.getString("__dd_feature.holdout.key")).isEqualTo(fakeFeatureValue)
     }
 
     @Test
     fun `M add no decision id W getBooleanEvaluation() {no features and no exposure}`(
-        @StringForgery flagKey: String
+        @StringForgery flagKey: String,
+        @StringForgery fakeAllocationKey: String
     ) {
         // Given
-        val resolution = ResolutionDetails(value = true, flagMetadata = mapOf("allocationKey" to "a"))
+        val resolution = ResolutionDetails(value = true, flagMetadata = mapOf("allocationKey" to fakeAllocationKey))
         whenever(mockFlagsClient.resolve(flagKey, false)).thenReturn(resolution)
 
         // When

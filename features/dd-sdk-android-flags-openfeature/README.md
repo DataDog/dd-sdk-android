@@ -234,9 +234,9 @@ OpenFeatureAPI.addHooks(
 
 | Member | Meaning |
 |---|---|
-| `isExposure()` | The evaluation succeeded and selected an allocation that logs exposures. Repeats are included. |
-| `isCacheHit()` | The subject was already exposed to the same allocation, variant and split. |
-| `shouldSend()` | `isExposure()` for a new or changed exposure. The SDK sends this exposure to Datadog when `trackExposures` is on. |
+| `isExposure` | The evaluation succeeded and selected an allocation that logs exposures. Repeats are included. |
+| `isCacheHit` | The subject was already exposed to the same allocation, variant and split. |
+| `shouldSend()` | `isExposure` for a new or changed exposure. The SDK sends this exposure to Datadog when `trackExposures` is on. |
 | `features` | The features of the selected split for application hooks, for example `holdout.key`, `holdout.assignment_group` and `holdout.should_include_in_holdout_analysis`. A value is a `String`, `Double` or `Boolean`. |
 | `flagKey`, `variant`, `allocationKey`, `targetingKey` | The evaluated flag and the selected assignment. |
 | `evaluationContext` | A copy of the evaluation context. |
@@ -247,7 +247,7 @@ To stop sending exposures to Datadog and keep only your own, use `FlagsConfigura
 
 Keep in mind:
 
-- The provider records the exposure in the final hook stage, after the provider and every `before` and `after` hook succeed. A failure in those stages prevents the exposure. Provider hooks run first in the final stage. If a later `finallyAfter` hook throws, the exposure stays recorded, OpenFeature Kotlin 0.6.2 rethrows the exception to the caller, and it skips the `finallyAfter` hooks after the failing one. An `ExposureHook` registered with `OpenFeatureAPI.addHooks` runs last in that stage, so OpenFeature skips its callback for that evaluation.
+- The provider records the exposure in the final hook stage, after the provider and every `before` and `after` hook succeed. A failure in those stages prevents the exposure. Provider hooks run first in the final stage. If a later `finallyAfter` hook throws, the exposure stays recorded, OpenFeature rethrows the exception to the caller, and it skips the `finallyAfter` hooks after the failing one. An `ExposureHook` registered with `OpenFeatureAPI.addHooks` runs last in that stage, so OpenFeature skips its callback for that evaluation.
 - `FlagsClient` evaluations record exposures directly, in the same exposure cache as the provider, and reach Datadog without `ExposureHook`. A later OpenFeature evaluation of the same flag for the same subject is then a repeat while the same allocation, variant and split stay cached.
 - With experimentation opt-out enabled, the provider checks the evaluation context again when it records the exposure. An evaluation whose context a newer context replaced is a non-exposure for both Datadog and `ExposureHook`.
 - The provider records exposures in its own hook. Evaluate flags through an OpenFeature client: a direct call to a provider `get...Evaluation` method records no exposure.

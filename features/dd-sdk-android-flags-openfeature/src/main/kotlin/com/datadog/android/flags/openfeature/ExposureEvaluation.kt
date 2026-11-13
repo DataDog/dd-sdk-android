@@ -21,6 +21,8 @@ import dev.openfeature.kotlin.sdk.EvaluationContext
  * @property features the `HOOK` features of the selected split, keyed by feature key, for example
  * `holdout.key`. Each value is a [String], [Double] or [Boolean]. Empty when the split has none. Each callback
  * gets its own copy.
+ * @property isExposure true when the evaluation succeeded and selected an allocation that logs exposures,
+ * including repeats for this subject.
  */
 class ExposureEvaluation internal constructor(
     val flagKey: String,
@@ -29,21 +31,16 @@ class ExposureEvaluation internal constructor(
     val targetingKey: String?,
     val evaluationContext: EvaluationContext?,
     val features: Map<String, Any>,
-    private val exposure: Boolean,
+    val isExposure: Boolean,
     private val cacheHit: Boolean?
 ) {
     /**
-     * True when the evaluation succeeded and selected an allocation that logs exposures,
-     * whether or not this subject was already exposed.
+     * True when this exposure repeats one already recorded for this subject, with the same allocation, variant
+     * and split. True requires [isExposure].
      */
-    fun isExposure(): Boolean = exposure
-
-    /**
-     * True when this exposure repeats one already recorded for this subject:
-     * same allocation, variant and split. False for a new or changed exposure, and when [isExposure] is false.
-     */
-    fun isCacheHit(): Boolean = exposure && cacheHit == true
+    val isCacheHit: Boolean
+        get() = isExposure && cacheHit == true
 
     /** True for a new or changed exposure. The SDK sends it to Datadog when exposure tracking is on. */
-    fun shouldSend(): Boolean = exposure && cacheHit == false
+    fun shouldSend(): Boolean = isExposure && cacheHit == false
 }

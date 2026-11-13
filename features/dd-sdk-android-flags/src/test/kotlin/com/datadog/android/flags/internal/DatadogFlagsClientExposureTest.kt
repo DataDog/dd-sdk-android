@@ -121,7 +121,7 @@ internal class DatadogFlagsClientExposureTest {
         val result = testedClient.resolve(fakeFlagKey, false)
 
         // Then
-        assertThat(result.flagMetadata).containsExactlyInAnyOrderEntriesOf(
+        assertThat(result.flagMetadata).isEqualTo(
             mapOf(
                 "allocationKey" to fakeFlag.allocationKey,
                 "__dd_observe_full_evaluation_data" to false,

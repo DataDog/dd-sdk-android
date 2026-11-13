@@ -78,7 +78,7 @@ internal fun Map<String, Any>.toEvaluationMetadata(): EvaluationMetadata {
  */
 internal fun ResolutionDetails<*>.hookFeatures(): Map<String, Any> {
     if (flagMetadata.keys.none { it.startsWith(ExposureMetadata.FEATURE_PREFIX) }) return emptyMap()
-    val features = LinkedHashMap<String, Any>()
+    val features = mutableMapOf<String, Any>()
     flagMetadata.forEach { (key, value) ->
         if (key.startsWith(ExposureMetadata.FEATURE_PREFIX)) {
             features[key.removePrefix(ExposureMetadata.FEATURE_PREFIX)] = value

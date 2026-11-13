@@ -65,6 +65,21 @@ internal class ExposureHookTest {
     @StringForgery
     lateinit var fakeTargetingKey: String
 
+    @StringForgery
+    lateinit var fakeFeatureValue: String
+
+    @StringForgery
+    lateinit var fakeAllocationKey: String
+
+    @StringForgery
+    lateinit var fakeVariant: String
+
+    @StringForgery
+    lateinit var fakeAttributeKey: String
+
+    @StringForgery
+    lateinit var fakeAttributeValue: String
+
     private val evaluations = mutableListOf<ExposureEvaluation>()
     private var decisionId = 0
     private val decisions = ExposureDecisions()
@@ -74,7 +89,7 @@ internal class ExposureHookTest {
 
     @BeforeEach
     fun `set up`() {
-        fakeContext = LiveContext(fakeTargetingKey, mutableMapOf("plan" to Value.String("pro")))
+        fakeContext = LiveContext(fakeTargetingKey, mutableMapOf(fakeAttributeKey to Value.String(fakeAttributeValue)))
         providerMetadata = DatadogProviderMetadata("Datadog", decisions, mockInternalLogger)
         testedHook = ExposureHook({ evaluations.add(it) }, { mockDefaultLogger })
     }
@@ -82,21 +97,21 @@ internal class ExposureHookTest {
     @Test
     fun `M report a new exposure W finallyAfter() {exposure not recorded}`() {
         // Given
-        val details = exposureDetails(isRecorded = false, features = mapOf("holdout.key" to "holdout-1"))
+        val details = exposureDetails(isRecorded = false, features = mapOf("holdout.key" to fakeFeatureValue))
 
         // When
         testedHook.finallyAfter(hookContext(), details, emptyMap())
 
         // Then
         val evaluation = evaluations.single()
-        assertThat(evaluation.isExposure()).isTrue()
+        assertThat(evaluation.isExposure).isTrue()
         assertThat(evaluation.shouldSend()).isTrue()
-        assertThat(evaluation.isCacheHit()).isFalse()
+        assertThat(evaluation.isCacheHit).isFalse()
         assertThat(evaluation.flagKey).isEqualTo(fakeFlagKey)
-        assertThat(evaluation.variant).isEqualTo("on")
-        assertThat(evaluation.allocationKey).isEqualTo("allocation")
+        assertThat(evaluation.variant).isEqualTo(fakeVariant)
+        assertThat(evaluation.allocationKey).isEqualTo(fakeAllocationKey)
         assertThat(evaluation.targetingKey).isEqualTo(fakeTargetingKey)
-        assertThat(evaluation.features).containsExactlyEntriesOf(mapOf("holdout.key" to "holdout-1"))
+        assertThat(evaluation.features).containsExactlyEntriesOf(mapOf("holdout.key" to fakeFeatureValue))
     }
 
     @Test
@@ -109,8 +124,8 @@ internal class ExposureHookTest {
 
         // Then
         val evaluation = evaluations.single()
-        assertThat(evaluation.isExposure()).isTrue()
-        assertThat(evaluation.isCacheHit()).isTrue()
+        assertThat(evaluation.isExposure).isTrue()
+        assertThat(evaluation.isCacheHit).isTrue()
         assertThat(evaluation.shouldSend()).isFalse()
     }
 
@@ -123,7 +138,7 @@ internal class ExposureHookTest {
         testedHook.finallyAfter(hookContext(), details, emptyMap())
 
         // Then
-        assertThat(evaluations.single().isCacheHit()).isTrue()
+        assertThat(evaluations.single().isCacheHit).isTrue()
     }
 
     @Test
@@ -136,16 +151,22 @@ internal class ExposureHookTest {
             false
         }
         val details =
-            FlagEvaluationDetails<Any>(fakeFlagKey, true, "on", errorCode = ErrorCode.GENERAL, metadata = metadata)
+            FlagEvaluationDetails<Any>(
+                fakeFlagKey,
+                true,
+                fakeVariant,
+                errorCode = ErrorCode.GENERAL,
+                metadata = metadata
+            )
 
         // When
         testedHook.finallyAfter(hookContext(), details, emptyMap())
 
         // Then
         val evaluation = evaluations.single()
-        assertThat(evaluation.isExposure()).isFalse()
+        assertThat(evaluation.isExposure).isFalse()
         assertThat(evaluation.shouldSend()).isFalse()
-        assertThat(evaluation.isCacheHit()).isFalse()
+        assertThat(evaluation.isCacheHit).isFalse()
         assertThat(recorded).isFalse()
     }
 
@@ -155,28 +176,28 @@ internal class ExposureHookTest {
         val details = FlagEvaluationDetails<Any>(
             fakeFlagKey,
             true,
-            "on",
-            metadata = EvaluationMetadata.builder().putString("allocationKey", "allocation").build()
+            fakeVariant,
+            metadata = EvaluationMetadata.builder().putString("allocationKey", fakeAllocationKey).build()
         )
 
         // When
         testedHook.finallyAfter(hookContext(), details, emptyMap())
 
         // Then
-        assertThat(evaluations.single().isExposure()).isFalse()
+        assertThat(evaluations.single().isExposure).isFalse()
         assertThat(evaluations.single().features).isEmpty()
     }
 
     @Test
     fun `M report no exposure W finallyAfter() {exposure keys in metadata without a decision}`() {
         // Given
-        val details = FlagEvaluationDetails<Any>(fakeFlagKey, true, "on", metadata = exposureMetadata(false))
+        val details = FlagEvaluationDetails<Any>(fakeFlagKey, true, fakeVariant, metadata = exposureMetadata(false))
 
         // When
         testedHook.finallyAfter(hookContext(), details, emptyMap())
 
         // Then
-        assertThat(evaluations.single().isExposure()).isFalse()
+        assertThat(evaluations.single().isExposure).isFalse()
         assertThat(evaluations.single().shouldSend()).isFalse()
     }
 
@@ -186,9 +207,10 @@ internal class ExposureHookTest {
     ) {
         // Given
         val metadata = exposureMetadata(false)
-        val assignmentContext = DatadogEvaluationContext(fakeAssignmentKey, mapOf("plan" to "pro"))
+        val assignmentContext =
+            DatadogEvaluationContext(fakeAssignmentKey, mapOf(fakeAttributeKey to fakeAttributeValue))
         decisions.register(metadata, emptyMap(), assignmentContext) { false }
-        val details = FlagEvaluationDetails<Any>(fakeFlagKey, true, "on", metadata = metadata)
+        val details = FlagEvaluationDetails<Any>(fakeFlagKey, true, fakeVariant, metadata = metadata)
 
         // When
         testedHook.finallyAfter(hookContext(), details, emptyMap())
@@ -198,7 +220,7 @@ internal class ExposureHookTest {
         assertThat(evaluation.targetingKey).isEqualTo(fakeAssignmentKey)
         val context = checkNotNull(evaluation.evaluationContext)
         assertThat(context.getTargetingKey()).isEqualTo(fakeAssignmentKey)
-        assertThat(context.getValue("plan")).isEqualTo(Value.String("pro"))
+        assertThat(context.getValue(fakeAttributeKey)).isEqualTo(Value.String(fakeAttributeValue))
     }
 
     @Test
@@ -206,22 +228,22 @@ internal class ExposureHookTest {
         // Given
         val metadata = exposureMetadata(false)
         decisions.register(metadata, emptyMap(), null) { null }
-        val details = FlagEvaluationDetails<Any>(fakeFlagKey, true, "on", metadata = metadata)
+        val details = FlagEvaluationDetails<Any>(fakeFlagKey, true, fakeVariant, metadata = metadata)
 
         // When
         testedHook.finallyAfter(hookContext(), details, emptyMap())
 
         // Then
         val evaluation = evaluations.single()
-        assertThat(evaluation.isExposure()).isFalse()
+        assertThat(evaluation.isExposure).isFalse()
         assertThat(evaluation.shouldSend()).isFalse()
-        assertThat(evaluation.isCacheHit()).isFalse()
+        assertThat(evaluation.isCacheHit).isFalse()
     }
 
     @Test
     fun `M give each callback its own features W finallyAfter() {two hooks, first changes its map}`() {
         // Given
-        val details = exposureDetails(isRecorded = false, features = mapOf("holdout.key" to "holdout-1"))
+        val details = exposureDetails(isRecorded = false, features = mapOf("holdout.key" to fakeFeatureValue))
         val firstFeatures = mutableListOf<Map<String, Any>>()
         val changingHook = ExposureHook(
             { evaluation ->
@@ -238,7 +260,7 @@ internal class ExposureHookTest {
 
         // Then
         assertThat(firstFeatures.single()).isEmpty()
-        assertThat(evaluations.single().features).containsExactlyEntriesOf(mapOf("holdout.key" to "holdout-1"))
+        assertThat(evaluations.single().features).containsExactlyEntriesOf(mapOf("holdout.key" to fakeFeatureValue))
         assertThat(evaluations.single().features).isNotSameAs(firstFeatures.single())
         verifyNoInteractions(mockInternalLogger)
     }
@@ -250,11 +272,11 @@ internal class ExposureHookTest {
         testedHook.finallyAfter(hookContext(), details, emptyMap())
 
         // When
-        fakeContext.attributes["plan"] = Value.String("free")
+        fakeContext.attributes[fakeAttributeKey] = Value.String(fakeAttributeValue + "-changed")
 
         // Then
-        assertThat(checkNotNull(evaluations.single().evaluationContext).getValue("plan"))
-            .isEqualTo(Value.String("pro"))
+        assertThat(checkNotNull(evaluations.single().evaluationContext).getValue(fakeAttributeKey))
+            .isEqualTo(Value.String(fakeAttributeValue))
     }
 
     @Test
@@ -352,11 +374,11 @@ internal class ExposureHookTest {
     ): FlagEvaluationDetails<Any> {
         val metadata = exposureMetadata(provisionalIsRecorded)
         decisions.register(metadata, features, null) { isRecorded }
-        return FlagEvaluationDetails(fakeFlagKey, true, "on", metadata = metadata)
+        return FlagEvaluationDetails(fakeFlagKey, true, fakeVariant, metadata = metadata)
     }
 
     private fun exposureMetadata(provisionalIsRecorded: Boolean) = EvaluationMetadata.builder()
-        .putString("allocationKey", "allocation")
+        .putString("allocationKey", fakeAllocationKey)
         .putBoolean("__dd_do_log", true)
         .putBoolean("__dd_exposure_cache_hit", provisionalIsRecorded)
         .putInt("__dd_exposure_decision", ++decisionId)
