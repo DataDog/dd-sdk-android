@@ -15,6 +15,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -24,6 +25,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -101,6 +103,20 @@ internal class WebPImageCompressionTest {
 
         // Then
         assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `M propagate allocation failure W compressBitmap { encoder allocation fails }`() {
+        // Given
+        val fakeFailure = OutOfMemoryError()
+        whenever(mockBitmap.compress(any(), any(), any())).thenThrow(fakeFailure)
+
+        // When
+        val actualFailure = assertThrows<OutOfMemoryError> { testedImageCompression.compressBitmap(mockBitmap) }
+
+        // Then
+        assertThat(actualFailure).isSameAs(fakeFailure)
+        verifyNoInteractions(logger)
     }
 
     // endregion
