@@ -129,6 +129,7 @@ dependencies {
     testImplementation(libs.systemStubsJupiter)
     testImplementation(libs.ktorClientMock)
     testImplementation(libs.coroutinesTest)
+    testImplementation(testFixtures(project(":dd-sdk-android-core")))
 }
 
 datadogBuild {

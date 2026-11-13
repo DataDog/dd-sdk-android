@@ -12,6 +12,9 @@ import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.config.SyntheticsRun
 import com.datadog.benchmark.sample.config.SyntheticsScenario
+import com.datadog.benchmark.sample.network.rickandmorty.fallback.RickAndMortyFallbackInterceptor
+import com.datadog.benchmark.sample.network.rickandmorty.fallback.RickAndMortyFallbackListener
+import com.datadog.benchmark.sample.network.rickandmorty.fallback.RickAndMortyLocalServer
 import dagger.Lazy
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -37,6 +40,12 @@ internal class NetworkModuleTest {
     @Mock
     lateinit var mockSdkCore: SdkCore
 
+    @Mock
+    lateinit var mockLocalServer: RickAndMortyLocalServer
+
+    @Mock
+    lateinit var mockFallbackListener: RickAndMortyFallbackListener
+
     @TempDir
     lateinit var tempDir: File
 
@@ -59,6 +68,36 @@ internal class NetworkModuleTest {
         assertThat(client.interceptors).anyMatch { it is DatadogInterceptor }
     }
 
+    @ParameterizedTest
+    @EnumSource(SyntheticsRun::class)
+    fun `M add fallback interceptor before Datadog interceptor W provideOkHttpClient() {timeseries}`(
+        run: SyntheticsRun
+    ) {
+        // Given
+        val config = BenchmarkConfig(run = run, scenario = SyntheticsScenario.Timeseries)
+
+        // When
+        val client = provideOkHttpClient(config)
+
+        // Then
+        val fallbackIndex = client.interceptors.indexOfFirst { it is RickAndMortyFallbackInterceptor }
+        val datadogIndex = client.interceptors.indexOfFirst { it is DatadogInterceptor }
+        assertThat(fallbackIndex).isNotNegative().isLessThan(datadogIndex)
+    }
+
+    @ParameterizedTest
+    @EnumSource(SyntheticsScenario::class, names = ["Timeseries"], mode = EnumSource.Mode.EXCLUDE)
+    fun `M not add fallback interceptor W provideOkHttpClient() {not timeseries}`(scenario: SyntheticsScenario) {
+        // Given
+        val config = BenchmarkConfig(run = SyntheticsRun.Instrumented, scenario = scenario)
+
+        // When
+        val client = provideOkHttpClient(config)
+
+        // Then
+        assertThat(client.interceptors).noneMatch { it is RickAndMortyFallbackInterceptor }
+    }
+
     @Test
     fun `M not add Datadog interceptor W provideOkHttpClient() {rumAuto, baseline}`() {
         // Given
@@ -74,6 +113,8 @@ internal class NetworkModuleTest {
     private fun provideOkHttpClient(config: BenchmarkConfig) = NetworkModule.provideOkHttpClient(
         context = mockContext,
         config = config,
-        sdkCore = Lazy { mockSdkCore }
+        sdkCore = Lazy { mockSdkCore },
+        rickAndMortyLocalServer = Lazy { mockLocalServer },
+        rickAndMortyFallbackListener = Lazy { mockFallbackListener }
     )
 }

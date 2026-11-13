@@ -14,6 +14,11 @@ import com.datadog.benchmark.sample.config.SyntheticsRun
 import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
 import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkServiceImpl
+import com.datadog.benchmark.sample.network.rickandmorty.fallback.AssetsRickAndMortySnapshotSource
+import com.datadog.benchmark.sample.network.rickandmorty.fallback.RickAndMortyFallbackInterceptor
+import com.datadog.benchmark.sample.network.rickandmorty.fallback.RickAndMortyFallbackListener
+import com.datadog.benchmark.sample.network.rickandmorty.fallback.RickAndMortyLocalServer
+import com.datadog.benchmark.sample.network.rickandmorty.fallback.RumRickAndMortyFallbackListener
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -34,16 +39,37 @@ internal interface NetworkModule {
     @Singleton
     fun bindRickAndMortyNetworkService(impl: RickAndMortyNetworkServiceImpl): RickAndMortyNetworkService
 
+    @Binds
+    @Singleton
+    fun bindRickAndMortyFallbackListener(impl: RumRickAndMortyFallbackListener): RickAndMortyFallbackListener
+
     companion object {
+        @Provides
+        @Singleton
+        fun provideRickAndMortyLocalServer(context: Context): RickAndMortyLocalServer {
+            return RickAndMortyLocalServer(AssetsRickAndMortySnapshotSource(context))
+        }
+
         @Provides
         @Singleton
         fun provideOkHttpClient(
             context: Context,
             config: BenchmarkConfig,
-            sdkCore: dagger.Lazy<SdkCore>
+            sdkCore: dagger.Lazy<SdkCore>,
+            rickAndMortyLocalServer: dagger.Lazy<RickAndMortyLocalServer>,
+            rickAndMortyFallbackListener: dagger.Lazy<RickAndMortyFallbackListener>
         ): OkHttpClient {
             return OkHttpClient.Builder().apply {
                 cache(Cache(File(context.cacheDir, "okhttp-cache"), OKHTTP_CACHE_SIZE_BYTES))
+
+                if (config.scenario == SyntheticsScenario.Timeseries) {
+                    // Added before DatadogInterceptor, so both the failed call and the local retry are tracked
+                    val fallbackInterceptor = RickAndMortyFallbackInterceptor(
+                        localPortProvider = { rickAndMortyLocalServer.get().start() },
+                        listener = rickAndMortyFallbackListener.get()
+                    )
+                    addInterceptor(fallbackInterceptor)
+                }
 
                 // Timeseries Baseline runs RUM too, so resources are tracked in both runs
                 val isResourceTrackingEnabled = config.scenario == SyntheticsScenario.Timeseries ||

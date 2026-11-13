@@ -20,7 +20,13 @@ import com.datadog.benchmark.sample.activities.scenarios.SessionReplayScenarioAc
 import com.datadog.benchmark.sample.benchmarkAppComponent
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.config.SyntheticsScenario
+import com.datadog.benchmark.sample.network.rickandmorty.fallback.RickAndMortyFallbackListener
+import com.datadog.benchmark.sample.network.rickandmorty.fallback.RickAndMortyLocalServer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
+import java.io.IOException
 import javax.inject.Inject
 
 @SuppressLint("CustomSplashScreen")
@@ -33,6 +39,12 @@ internal class LaunchActivity : BaseBenchmarkActivity() {
 
     @Inject
     internal lateinit var okHttpClient: dagger.Lazy<OkHttpClient>
+
+    @Inject
+    internal lateinit var rickAndMortyLocalServer: dagger.Lazy<RickAndMortyLocalServer>
+
+    @Inject
+    internal lateinit var rickAndMortyFallbackListener: dagger.Lazy<RickAndMortyFallbackListener>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +64,10 @@ internal class LaunchActivity : BaseBenchmarkActivity() {
 
         initializeCoil()
 
+        if (config.scenario == SyntheticsScenario.Timeseries) {
+            startRickAndMortyLocalServer()
+        }
+
         openScenarioActivity(config)
 
         finish()
@@ -59,6 +75,19 @@ internal class LaunchActivity : BaseBenchmarkActivity() {
 
     private fun initializeCoil() {
         Coil.setImageLoader(ImageLoader(applicationContext).newBuilder().okHttpClient(okHttpClient.get()).build())
+    }
+
+    // Not tied to the activity lifecycle: this activity finishes right away, while the server lives for the process.
+    private fun startRickAndMortyLocalServer() {
+        val server = rickAndMortyLocalServer.get()
+        val listener = rickAndMortyFallbackListener.get()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                server.start()
+            } catch (e: IOException) {
+                listener.onFallbackFailed(e)
+            }
+        }
     }
 
     private fun openScenarioActivity(config: BenchmarkConfig) {
