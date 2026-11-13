@@ -74,7 +74,7 @@ internal class ViewOnDrawInterceptor(
         decorOnDrawListeners.entries.forEach { (decorView, listener) ->
             stopInterceptingSafe(decorView, listener)
         }
-        decorOnDrawListeners.values.toSet().forEach { it.cancelPendingCapture() }
+        snapshotListeners().forEach { it.cancelPendingCapture() }
         decorOnDrawListeners.clear()
     }
 
@@ -85,7 +85,7 @@ internal class ViewOnDrawInterceptor(
     @MainThread
     fun requestCapture(): CaptureRequestResult {
         // Copy before callbacks because a capture may change the registered listener collection.
-        val listeners = decorOnDrawListeners.values.toSet()
+        val listeners = snapshotListeners()
         if (listeners.isEmpty()) {
             return CaptureRequestResult.NOT_INTERCEPTING
         }
@@ -101,7 +101,7 @@ internal class ViewOnDrawInterceptor(
 
     @MainThread
     fun scheduleCapture() {
-        decorOnDrawListeners.values.toSet().forEach { it.scheduleCapture() }
+        snapshotListeners().forEach { it.scheduleCapture() }
     }
 
     /**
@@ -116,6 +116,13 @@ internal class ViewOnDrawInterceptor(
 
         /** Listeners are registered, but none of them could produce a snapshot right now. */
         NOT_CAPTURED
+    }
+
+    @MainThread
+    private fun snapshotListeners(): Set<OnDemandCaptureListener> {
+        // Weak keys can disappear after size is read; toSet() assumes size == 1 guarantees an element.
+        @Suppress("UnsafeThirdPartyFunctionCall") // Main-thread iteration and identity hashing in a local set.
+        return decorOnDrawListeners.values.toCollection(linkedSetOf())
     }
 
     @MainThread

@@ -4,20 +4,48 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import com.datadog.gradle.repositories.DatadogRepositories
+
 pluginManagement {
-    repositories {
-        // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
-        listOf("gradlePluginProxy", "mavenRepositoryProxy")
-            .mapNotNull { providers.gradleProperty(it).orNull?.takeIf { url -> url.isNotBlank() } }
-            .forEach { url -> maven(url) }
-        gradlePluginPortal()
-        google()
-        mavenCentral()
+    resolutionStrategy {
+        eachPlugin {
+            // Unmock doesn't publish a plugin marker artifact, so map its id to the implementation module.
+            if (requested.id.id == "de.mobilej.unmock" && requested.version != null) {
+                useModule("com.github.bjoernq:unmockplugin:${requested.version}")
+            }
+        }
     }
 
-    // Build logic (convention plugins + build-time code generators) lives in its own build so that
-    // editing it doesn't invalidate the whole project the way a `buildSrc` change does.
-    includeBuild("./build-logic")
+    // Repository definitions shared with build-logic.
+    includeBuild("./gradle/settings-plugin")
+    includeBuild("./build-logic-settings")
+}
+
+plugins {
+    id("com.datadog.gradle.repositories")
+    id("com.datadog.gradle.build-cache")
+}
+
+// Build logic (convention plugins + build-time code generators) lives in its own build so that
+// editing it doesn't invalidate the whole project the way a `buildSrc` change does.
+includeBuild("./build-logic")
+
+val datadogRepositories = DatadogRepositories(providers)
+
+pluginManagement.repositories {
+    datadogRepositories.gradlePluginPortalDepotProxied(this)
+    datadogRepositories.googleConstrained(this)
+    datadogRepositories.mavenCentralDepotProxied(this)
+}
+
+dependencyResolutionManagement {
+    @Suppress("UnstableApiUsage")
+    repositories {
+        repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+        datadogRepositories.mavenCentralDepotProxied(this)
+        datadogRepositories.googleConstrained(this)
+        datadogRepositories.jitpackConstrained(this)
+    }
 }
 
 // CORE LIBRARY
@@ -83,6 +111,7 @@ include(":instrumented:integration")
 
 // SAMPLE PROJECTS
 include(":sample:kotlin")
+include(":sample:kotlin:sqldelight")
 include(":sample:tv")
 include(":sample:wear")
 include(":sample:vendor-lib")

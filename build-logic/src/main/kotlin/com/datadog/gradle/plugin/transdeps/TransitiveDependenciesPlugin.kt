@@ -17,20 +17,20 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 class TransitiveDependenciesPlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
-        target.tasks.register<GenerateTransitiveDependenciesTask>(TASK_GEN_TRANSITIVE_DEPS) {
-            dependenciesFile.set(target.layout.projectDirectory.file(FILE_NAME))
-            resolvedArtifacts.from(
-                target.configurations.named("releaseCompileClasspath").map {
-                    it.incoming.artifactView {
-                        componentFilter { it !is ProjectComponentIdentifier }
-                    }.files
-                }
-            )
-        }
+        val generateTransitiveDependenciesTask = target.tasks
+            .register<GenerateTransitiveDependenciesTask>(TASK_GEN_TRANSITIVE_DEPS) {
+                dependenciesFile.set(target.layout.projectDirectory.file(FILE_NAME))
+                resolvedArtifacts.from(
+                    target.configurations.named("releaseCompileClasspath").map {
+                        it.incoming.artifactView {
+                            componentFilter { it !is ProjectComponentIdentifier }
+                        }.files
+                    }
+                )
+            }
 
         target.tasks.register<CheckTransitiveDependenciesTask>(TASK_CHECK_TRANSITIVE_DEPS) {
-            dependenciesFile.set(target.layout.projectDirectory.file(FILE_NAME))
-            dependsOn(TASK_GEN_TRANSITIVE_DEPS)
+            dependenciesFile.set(generateTransitiveDependenciesTask.flatMap { it.dependenciesFile })
         }
 
         target.taskConfig<KotlinCompilationTask<KotlinJvmCompilerOptions>> {

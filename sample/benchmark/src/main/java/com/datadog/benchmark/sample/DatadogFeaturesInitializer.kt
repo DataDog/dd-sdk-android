@@ -190,7 +190,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         val rumConfig = createRumConfiguration(config)
         Rum.enable(rumConfig, sdkCore = sdkCore.get())
 
-        /**
+        /*
          * We set synthetic test attributes now instead of waiting for them to be automatically
          * extracted by the sdk because the Activity for the test scenario will not have
          * the necessary attributes in the intent.

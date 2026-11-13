@@ -593,6 +593,7 @@ class NoOpFactorySymbolProcessor(
     }
 
     // TODO RUMM-0000 There is some duplication in the function vs property statement declaration code
+
     /**
      * Generates the initialization for a given property.
      *

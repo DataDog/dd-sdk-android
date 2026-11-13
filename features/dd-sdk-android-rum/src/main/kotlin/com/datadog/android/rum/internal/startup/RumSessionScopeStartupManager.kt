@@ -162,7 +162,7 @@ internal class RumSessionScopeStartupManagerImpl(
         )
 
         if (ttfdReportedForScenario) {
-            /**
+            /*
              * [com.datadog.android.rum.RumMonitor.reportAppFullyDisplayed] was called earlier than TTID
              * was computed, reporting TTID value also as TTFD.
              */

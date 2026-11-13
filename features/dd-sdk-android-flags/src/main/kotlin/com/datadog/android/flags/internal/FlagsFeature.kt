@@ -21,6 +21,10 @@ import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.evaluation.InitializationTimeoutScheduler
 import com.datadog.android.flags.internal.net.ExposuresRequestFactory
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
+import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
+import com.datadog.android.flags.internal.selection.FlagSelectionCanonicalizer
+import com.datadog.android.flags.internal.selection.FlagSelectionResult
+import com.datadog.android.flags.internal.selection.logDroppedFlagSelection
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.flags.internal.storage.RecordWriter
@@ -76,10 +80,16 @@ internal class FlagsFeature(
 
     // region Domain Objects
 
+    private val flagSelectionResult = FlagSelectionCanonicalizer.canonicalize(flagsConfiguration.flagSelection)
+
+    internal val flagSelection: CanonicalFlagSelection? =
+        (flagSelectionResult as? FlagSelectionResult.Selected)?.selection
+
     internal val precomputedRequestFactory =
         PrecomputedAssignmentsRequestFactory(
             internalLogger = sdkCore.internalLogger,
-            customFlagEndpoint = flagsConfiguration.customFlagEndpoint
+            customFlagEndpoint = flagsConfiguration.customFlagEndpoint,
+            flagSelection = flagSelection
         )
 
     internal val initializationTimeoutScheduler = InitializationTimeoutScheduler { timeoutMs, action ->
@@ -123,6 +133,9 @@ internal class FlagsFeature(
         }
         isDebugBuild = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
         isInitialized = true
+        (flagSelectionResult as? FlagSelectionResult.Dropped)?.let {
+            sdkCore.internalLogger.logDroppedFlagSelection(it.error)
+        }
         dataWriter = createDataWriter()
         processor = ExposureEventsProcessor(
             writer = dataWriter,

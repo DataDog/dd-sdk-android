@@ -6,7 +6,7 @@
 
 package com.datadog.android.flags.internal.model
 
-import com.datadog.android.flags.model.UnparsedFlag
+import com.datadog.android.flags.model.UnparsedFlagWithConsent
 import org.json.JSONObject
 
 internal data class PrecomputedFlag(
@@ -17,5 +17,6 @@ internal data class PrecomputedFlag(
     override val variationKey: String,
     override val extraLogging: JSONObject,
     override val reason: String,
-    override val serialId: Long? = null
-) : UnparsedFlag
+    override val serialId: Long? = null,
+    override val observeFullEvaluationData: Boolean = false
+) : UnparsedFlagWithConsent

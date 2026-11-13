@@ -779,7 +779,7 @@ class ManualTrackingAlwaysFullViewRumTest {
     ) {
         // Given
         val userAdditionalAttributes = forge.aMap {
-            Pair(this.anAlphabeticalString(), this.anAlphabeticalString())
+            Pair("custom_${this.anAlphabeticalString()}", this.anAlphabeticalString())
         }
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore) as AdvancedNetworkRumMonitor
         stubSdkCore.setUserInfo(
@@ -826,7 +826,7 @@ class ManualTrackingAlwaysFullViewRumTest {
     ) {
         // Given
         val accountExtraInfo = forge.aMap {
-            Pair(this.anAlphabeticalString(), this.anAlphabeticalString())
+            Pair("custom_${this.anAlphabeticalString()}", this.anAlphabeticalString())
         }
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore) as AdvancedNetworkRumMonitor
         stubSdkCore.setAccountInfo(fakeAccountId, fakeAccountName, accountExtraInfo)

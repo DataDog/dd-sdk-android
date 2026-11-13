@@ -10,8 +10,10 @@ import android.os.Handler
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
+import com.datadog.android.internal.utils.AllStackTracesProvider
 import com.datadog.android.internal.utils.asString
 import com.datadog.android.internal.utils.loggableStackTrace
+import com.datadog.android.internal.utils.safeGetAllStackTraces
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -27,7 +29,8 @@ internal class ANRDetectorRunnable(
     private val sdkCore: FeatureSdkCore,
     private val handler: Handler,
     private val anrThresholdMs: Long = ANR_THRESHOLD_MS,
-    private val anrTestDelayMs: Long = ANR_TEST_DELAY_MS
+    private val anrTestDelayMs: Long = ANR_TEST_DELAY_MS,
+    private val allStackTracesProvider: AllStackTracesProvider = ::safeGetAllStackTraces
 ) : Runnable {
 
     @Volatile
@@ -83,15 +86,14 @@ internal class ANRDetectorRunnable(
                 stack = anrException.loggableStackTrace(),
                 crashed = false
             )
-        ) + safeGetAllStacktraces()
+        ) + captureAllStackTraces()
             .filterKeys { it != anrThread }
             .filterValues { it.isNotEmpty() }
-            .map {
-                val thread = it.key
+            .map { (thread, stack) ->
                 ThreadDump(
                     name = thread.name,
                     state = thread.state.asString(),
-                    stack = thread.stackTrace.loggableStackTrace(),
+                    stack = stack.loggableStackTrace(),
                     crashed = false
                 )
             }
@@ -126,18 +128,15 @@ internal class ANRDetectorRunnable(
         }
     }
 
-    private fun safeGetAllStacktraces(): Map<Thread, Array<StackTraceElement>> {
-        return try {
-            Thread.getAllStackTraces()
-        } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-            // coroutines machinery can throw errors here
+    private fun captureAllStackTraces(): Map<Thread, Array<StackTraceElement>> {
+        return allStackTracesProvider { message, throwable ->
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                { "Failed to get all stack traces." },
-                t
+                { message },
+                throwable,
+                onlyOnce = true
             )
-            emptyMap()
         }
     }
 

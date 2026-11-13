@@ -34,10 +34,10 @@ internal interface StateMachine<in Action, out State> {
 }
 
 private class StateMachineImpl<in Action, out State>(
-    private val scope: CoroutineScope,
-    private val initialState: State,
-    private val dispatcher: CoroutineDispatcher,
-    private val processAction: suspend (prev: State, action: Action) -> State
+    scope: CoroutineScope,
+    initialState: State,
+    dispatcher: CoroutineDispatcher,
+    processAction: suspend (prev: State, action: Action) -> State
 ) : StateMachine<Action, State> {
     private val actions = Channel<Action>(UNLIMITED)
 

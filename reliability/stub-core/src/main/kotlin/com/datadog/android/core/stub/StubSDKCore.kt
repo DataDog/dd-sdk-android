@@ -54,7 +54,7 @@ import java.util.concurrent.TimeUnit
  */
 @Suppress("UnsafeThirdPartyFunctionCall")
 class StubSDKCore(
-    private val forge: Forge,
+    forge: Forge,
     // Default mocks are stub-only, so they don't record every invocation: those would reference the
     // registered features (and this core), which Mockito's inline mock maker would never release.
     // Stub-only mocks still keep their last invocation, which can still reference this core.

@@ -65,6 +65,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.same
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -1039,23 +1040,133 @@ internal class RumViewManagerScopeTest {
     // endregion
 
     @Test
-    fun `M renew all the child scopes W renewViewScopes`(forge: Forge) {
+    fun `M return last active view and remove all views W stopViewsForSessionRenewal()`(
+        forge: Forge
+    ) {
         // Given
-        repeat(forge.aSmallInt()) {
-            testedScope.handleEvent(
-                forge.startViewEvent(fakeEventTime),
+        testedScope.handleEvent(
+            forge.startViewEvent(fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        testedScope.handleEvent(forge.startResourceEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            forge.startViewEvent(fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        assertThat(testedScope.childrenScopes).hasSize(2)
+        assertThat(testedScope.childrenScopes[0].isActive()).isFalse()
+        assertThat(testedScope.childrenScopes[1].isActive()).isTrue()
+        val activeView = testedScope.childrenScopes[1]
+
+        // When
+        val result = testedScope.stopViewsForSessionRenewal(
+            fakeEventTime,
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        assertThat(result).isSameAs(activeView)
+        assertThat(activeView.isActive()).isFalse()
+        assertThat(testedScope.childrenScopes).isEmpty()
+    }
+
+    @Test
+    fun `M stop active view W stopViewsForSessionRenewal()`() {
+        // Given
+        val mockActiveView = mock<RumViewScope>()
+        whenever(mockActiveView.isActive()) doReturn true
+        testedScope.childrenScopes.add(mockActiveView)
+
+        // When
+        testedScope.stopViewsForSessionRenewal(
+            fakeEventTime,
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        verify(mockActiveView).handleEvent(
+            eq(RumRawEvent.StopSession(fakeEventTime)),
+            same(fakeDatadogContext),
+            same(mockEventWriteScope),
+            same(mockWriter)
+        )
+    }
+
+    @Test
+    fun `M add a new view with same key W carryOverView()`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(
+            forge.startViewEvent(fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        val previousView = checkNotNull(
+            testedScope.stopViewsForSessionRenewal(
+                fakeEventTime,
                 fakeDatadogContext,
                 mockEventWriteScope,
                 mockWriter
             )
-        }
+        )
 
         // When
-        val oldScopes = testedScope.childrenScopes.toList()
-        testedScope.renewViewScopes(fakeEventTime)
+        testedScope.carryOverView(previousView, fakeEventTime)
 
         // Then
-        assertThat(testedScope.childrenScopes).isNotEqualTo(oldScopes)
+        assertThat(testedScope.childrenScopes).hasSize(1)
+        val renewedView = testedScope.childrenScopes.single()
+        assertThat(renewedView.isActive()).isTrue()
+        assertThat(renewedView.key).isEqualTo(previousView.key)
+        assertThat(renewedView).isNotSameAs(previousView)
+    }
+
+    @Test
+    fun `M return null and remove all views W stopViewsForSessionRenewal() {no active view}`(forge: Forge) {
+        // Given
+        testedScope.handleEvent(
+            forge.startViewEvent(fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        testedScope.handleEvent(forge.startResourceEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
+        testedScope.handleEvent(
+            forge.startViewEvent(fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        testedScope.handleEvent(
+            RumRawEvent.StopView(testedScope.childrenScopes.last().key, emptyMap(), fakeEventTime),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        assertThat(testedScope.childrenScopes).isNotEmpty()
+        assertThat(testedScope.childrenScopes).noneMatch { it.isActive() }
+
+        // When
+        val result = testedScope.stopViewsForSessionRenewal(
+            fakeEventTime,
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+
+        // Then
+        assertThat(result).isNull()
+        assertThat(testedScope.childrenScopes).isEmpty()
     }
 
     // region Active view

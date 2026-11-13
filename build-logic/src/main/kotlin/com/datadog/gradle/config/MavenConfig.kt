@@ -19,15 +19,69 @@ import org.gradle.plugins.signing.SigningExtension
 object MavenConfig {
     const val GROUP_ID = "com.datadoghq"
     const val PUBLICATION = "release"
-    const val DOGFOOD_REPOSITORY = "dogfood"
-    const val DOGFOOD_REPOSITORY_URL = "s3://binaries-ddbuild-io-prod/dd-sdk-android/dogfood"
+
+    private const val INTERNAL_REPOSITORY_UPLOAD_BASE = "s3://binaries-ddbuild-io-prod/dd-sdk-android"
+
+    /**
+     * Name of the internal binaries.ddbuild.io repository, so its upload task is always
+     * `publishReleasePublicationToInternalRepository`, whatever the URL selected for the version.
+     */
+    const val INTERNAL_REPOSITORY = "internal"
+
+    /** Releases and dogfood builds: any version that isn't a `-SNAPSHOT`. */
+    const val INTERNAL_RELEASES_REPOSITORY_URL = "$INTERNAL_REPOSITORY_UPLOAD_BASE/releases"
+
+    /** Snapshots, kept apart from the releases as they are changing versions. */
+    const val INTERNAL_SNAPSHOTS_REPOSITORY_URL = "$INTERNAL_REPOSITORY_UPLOAD_BASE/snapshots"
+
+    /**
+     * Task uploading the [PUBLICATION] to the `sonatype` repository, which the root
+     * `io.github.gradle-nexus.publish-plugin` adds to every published module.
+     */
+    const val SONATYPE_PUBLISH_TASK = "publishReleasePublicationToSonatypeRepository"
+}
+
+/** Where the releases and snapshots of a module are published. */
+enum class PublishingDestination {
+    /** Public modules, published to Maven Central through Sonatype. */
+    MAVEN_CENTRAL,
+
+    /** Internal modules, published to binaries.ddbuild.io, which is only reachable from Datadog's network. */
+    INTERNAL
+}
+
+/**
+ * Dogfood versions go to the internal releases repository whatever the destination, so every module is available
+ * there at the same version.
+ * @return the URL of the internal binaries.ddbuild.io repository a build is published to, or null if there is none.
+ */
+internal fun internalRepositoryUrlFor(
+    versionType: Version.Type,
+    destination: PublishingDestination
+): String? {
+    return when {
+        versionType is Version.Type.Dogfood -> MavenConfig.INTERNAL_RELEASES_REPOSITORY_URL
+        destination == PublishingDestination.MAVEN_CENTRAL -> null
+        versionType is Version.Type.Snapshot -> MavenConfig.INTERNAL_SNAPSHOTS_REPOSITORY_URL
+        else -> MavenConfig.INTERNAL_RELEASES_REPOSITORY_URL
+    }
 }
 
 internal fun Project.publishingConfig(
     projectDescription: String,
-    customArtifactId: String = name
+    customArtifactId: String = name,
+    destination: PublishingDestination = PublishingDestination.MAVEN_CENTRAL
 ) {
     val projectName = name
+
+    if (destination != PublishingDestination.MAVEN_CENTRAL) {
+        // The root nexus plugin adds the Sonatype repository to every published module and has no opt-out,
+        // so the upload task is disabled instead. Matching by name keeps this lazy and independent of the
+        // order in which the task is registered.
+        tasks.named { it == MavenConfig.SONATYPE_PUBLISH_TASK }.configureEach {
+            enabled = false
+        }
+    }
 
     val androidExtension =
         extensions.findByType(LibraryExtension::class.java)
@@ -93,13 +147,14 @@ internal fun Project.publishingConfig(
                 }
             }
 
-            // Dogfood builds go to binaries.ddbuild.io (internal only), using the CI runner's IAM role.
-            // Only registered for dogfood versions, so other builds can't be uploaded there.
-            if (AndroidConfig.VERSION.type is Version.Type.Dogfood) {
+            // Internal builds go to binaries.ddbuild.io (internal only), using the CI runner's IAM role.
+            // Only registered when the version and destination allow it, so other builds can't be uploaded there.
+            val internalRepositoryUrl = internalRepositoryUrlFor(AndroidConfig.VERSION.type, destination)
+            if (internalRepositoryUrl != null) {
                 repositories {
                     maven {
-                        name = MavenConfig.DOGFOOD_REPOSITORY
-                        url = uri(MavenConfig.DOGFOOD_REPOSITORY_URL)
+                        name = MavenConfig.INTERNAL_REPOSITORY
+                        url = uri(internalRepositoryUrl)
                         authentication {
                             create<AwsImAuthentication>("awsIm")
                         }

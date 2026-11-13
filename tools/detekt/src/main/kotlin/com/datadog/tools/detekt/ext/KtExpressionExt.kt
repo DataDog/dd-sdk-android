@@ -32,5 +32,5 @@ internal fun KtExpression.isContainingEntryPointPublic(): Boolean {
 }
 
 internal fun KaSession.resolveCalledFunction(expression: KtCallExpression): KaFunctionSymbol? {
-    return expression.resolveToCall()?.successfulFunctionCallOrNull()?.partiallyAppliedSymbol?.signature?.symbol
+    return expression.resolveToCall()?.successfulFunctionCallOrNull()?.signature?.symbol
 }

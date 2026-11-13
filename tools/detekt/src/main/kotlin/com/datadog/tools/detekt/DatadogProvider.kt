@@ -15,7 +15,10 @@ import com.datadog.tools.detekt.rules.sdk.ThreadSafety
 import com.datadog.tools.detekt.rules.sdk.ThrowingInternalException
 import com.datadog.tools.detekt.rules.sdk.TodoWithoutTask
 import com.datadog.tools.detekt.rules.sdk.UnsafeThirdPartyFunctionCall
+import dev.detekt.api.Config
+import dev.detekt.api.Rule
 import dev.detekt.api.RuleSet
+import dev.detekt.api.RuleSetId
 import dev.detekt.api.RuleSetProvider
 
 /**
@@ -23,12 +26,12 @@ import dev.detekt.api.RuleSetProvider
  */
 class DatadogProvider : RuleSetProvider {
 
-    override val ruleSetId: RuleSet.Id = RuleSet.Id("datadog")
+    override val ruleSetId: RuleSetId = RuleSetId("datadog")
 
     override fun instance(): RuleSet {
         return RuleSet(
             ruleSetId,
-            listOf(
+            listOf<(Config) -> Rule>(
                 ::CheckInternal,
                 ::InvalidStringFormat,
                 ::PackageNameVisibility,

@@ -7,12 +7,14 @@
 package com.datadog.android.core.integration.tests.utils
 
 import com.google.gson.JsonParser
+import okhttp3.HttpUrl
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import okhttp3.mockwebserver.SocketPolicy
 import java.net.HttpURLConnection
+import java.net.InetAddress
 
 class MockWebServerWrapper {
 
@@ -20,7 +22,8 @@ class MockWebServerWrapper {
     private val requests = mutableListOf<HandledRequest>()
 
     fun start() {
-        mockWebServer.start()
+        // Avoid the emulator resolver when binding the local test server.
+        mockWebServer.start(InetAddress.getByAddress(byteArrayOf(127, 0, 0, 1)), 0)
         mockWebServer.dispatcher =
             object : Dispatcher() {
                 override fun dispatch(request: RecordedRequest): MockResponse {
@@ -40,7 +43,12 @@ class MockWebServerWrapper {
     }
 
     fun getServerUrl(path: String = "/"): String {
-        return mockWebServer.url(path).toString()
+        val baseUrl = HttpUrl.Builder()
+            .scheme("http")
+            .host("127.0.0.1")
+            .port(mockWebServer.port)
+            .build()
+        return checkNotNull(baseUrl.resolve(path)).toString()
     }
 
     fun getHandledRequests(): List<HandledRequest> {

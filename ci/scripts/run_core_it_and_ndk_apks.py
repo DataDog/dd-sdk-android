@@ -4,7 +4,7 @@
 # This product includes software developed at Datadog (https://www.datadoghq.com/).
 # Copyright 2016-Present Datadog, Inc.
 
-"""Run core-it on all supported API levels and NDK tests on the latest API."""
+"""Run core-it and Flags privacy on all supported APIs, and NDK on the latest API."""
 
 import sys
 
@@ -24,6 +24,11 @@ def main() -> int:
         test_apk_directory="reliability/core-it/build/outputs/apk/androidTest/debug",
         instrumentation_package="com.datadog.android.core.integration.test",
     )
+    flags_privacy_run = InstrumentationRun(
+        label="flags-privacy",
+        test_apk_directory="reliability/single-fit/flags/build/outputs/apk/androidTest/release",
+        instrumentation_package="com.datadog.android.flags.integration.test",
+    )
     ndk_run = InstrumentationRun(
         label="ndk",
         test_apk_directory="features/dd-sdk-android-ndk/build/outputs/apk/androidTest/debug",
@@ -34,17 +39,17 @@ def main() -> int:
             emulator_for_api_level(
                 label="api-23",
                 api_level=23,
-                runs=(core_it_run,),
+                runs=(core_it_run, flags_privacy_run),
             ),
             emulator_for_api_level(
                 label="api-28",
                 api_level=28,
-                runs=(core_it_run,),
+                runs=(core_it_run, flags_privacy_run),
             ),
             emulator_for_api_level(
                 label="api-37",
                 api_level=37,
-                runs=(core_it_run, ndk_run),
+                runs=(core_it_run, flags_privacy_run, ndk_run),
             ),
         ),
         dry_run_only=arguments.dry_run,

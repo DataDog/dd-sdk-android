@@ -213,7 +213,6 @@ data class com.datadog.android.trace.model.SpanEvent
       fun fromJson(kotlin.String): SimCarrier
       fun fromJsonObject(com.google.gson.JsonObject): SimCarrier
   enum Type
-    constructor(kotlin.String)
     - MOBILE
     - DESKTOP
     - TABLET
