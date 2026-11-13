@@ -40,7 +40,8 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
         errorMessage: String?,
         observeFullEvaluationData: Boolean = false,
         telemetryTargetingKey: String? = context?.targetingKey,
-        preparedTargetingKey: EvaluationTargetingKey? = null
+        preparedTargetingKey: EvaluationTargetingKey? = null,
+        features: Map<String, Any> = emptyMap()
     ): List<EvaluationAggregationStats> {
         val safeErrorCode = EvaluationPrivacy.errorCode(errorCode, errorMessage)
         val key = EvaluationAggregationKey(
@@ -53,7 +54,8 @@ internal class EvaluationAggregator(private val maxAggregations: Int) {
                 ).value,
             viewName = rumViewName,
             errorCode = safeErrorCode,
-            observeFullEvaluationData = observeFullEvaluationData
+            observeFullEvaluationData = observeFullEvaluationData,
+            features = features
         )
 
         val drained = mapLock.withLock {

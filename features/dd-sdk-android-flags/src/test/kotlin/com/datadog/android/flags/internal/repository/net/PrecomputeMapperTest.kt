@@ -26,6 +26,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
+import org.mockito.Mockito.mockingDetails
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -70,6 +71,61 @@ internal class PrecomputeMapperTest {
     fun `set up`() {
         testedMapper = PrecomputeMapper(mockInternalLogger)
     }
+
+    @Test
+    fun `M warn once per response and unknown destination W map() twice {split features}`() {
+        // Given
+        val features = """[{"key":"a","value":"x","destinations":["HOOK","FUTURE"]},""" +
+            """{"key":"b","value":1,"destinations":["FUTURE","OTHER"]},{"key":"c","value":{}}]"""
+        val response = """{"data":{"attributes":{"flags":{"first":${assignmentJson(features)},""" +
+            """"second":${assignmentJson(features)}}}}}"""
+
+        // When
+        val result = checkNotNull(testedMapper.map(response))
+        testedMapper.map(response)
+
+        // Then
+        assertThat(result.flags.values.map { it.features.map { feature -> feature.key } })
+            .containsOnly(listOf("a", "b"))
+        assertThat(loggedMessages(InternalLogger.Target.MAINTAINER))
+            .containsExactly("Ignoring unknown feature destinations: FUTURE, OTHER")
+        assertThat(loggedMessages(InternalLogger.Target.TELEMETRY))
+            .containsOnly("Ignoring unknown feature destinations")
+        assertThat(telemetryOnlyOnce()).containsOnly(true)
+    }
+
+    @Test
+    fun `M stop listing destinations W map() {more unknown destinations than the warning cap}`() {
+        // Given
+        val destinations = (0..64).joinToString(",") { "\"FUTURE_$it\"" }
+        val response = """{"data":{"attributes":{"flags":{"flag":""" +
+            """${assignmentJson("""[{"key":"a","value":"x","destinations":[$destinations]}]""")}}}}}"""
+
+        // When
+        testedMapper.map(response)
+        testedMapper.map(response)
+
+        // Then
+        val message = loggedMessages(InternalLogger.Target.MAINTAINER).single()
+        assertThat(message.removePrefix("Ignoring unknown feature destinations: ").split(", "))
+            .hasSize(64)
+            .contains("FUTURE_63")
+            .doesNotContain("FUTURE_64")
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun loggedMessages(target: InternalLogger.Target): List<String> =
+        mockingDetails(mockInternalLogger).invocations
+            .filter { it.arguments[0] == InternalLogger.Level.WARN && it.arguments[1] == target }
+            .map { (it.arguments[2] as () -> String)() }
+
+    private fun telemetryOnlyOnce(): List<Any?> = mockingDetails(mockInternalLogger).invocations
+        .filter { it.arguments[1] == InternalLogger.Target.TELEMETRY }
+        .map { it.arguments[4] }
+
+    private fun assignmentJson(features: String) =
+        """{"variationType":"boolean","variationValue":true,"doLog":true,"allocationKey":"allocation",""" +
+            """"variationKey":"on","extraLogging":{},"reason":"TARGETING_MATCH","features":$features}"""
 
     // region Valid JSON Parsing
 

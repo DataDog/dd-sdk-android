@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsClientEventListener
@@ -30,11 +31,13 @@ import org.json.JSONObject
  *
  * @param name The client name this NoOpClient represents.
  * @param reason The reason why this client is a NoOp (e.g., "Flags feature not enabled").
+ * @param sdkCore The SDK core this client was requested for.
  * @param logWithPolicy Function to log messages according to the graceful mode policy.
  */
 internal class NoOpFlagsClient(
     private val name: String,
     private val reason: String,
+    internal val sdkCore: FeatureSdkCore,
     private val logWithPolicy: LogWithPolicy
 ) : FlagsClient {
 

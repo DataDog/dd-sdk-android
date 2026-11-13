@@ -10,7 +10,6 @@
 package com.datadog.android.flags.openfeature
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInitializationTimeoutException
@@ -22,6 +21,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
+import com.datadog.android.flags.openfeature.internal.exposure.ExposureAdmissionHook
 import com.datadog.tools.unit.forge.BaseConfigurator
 import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.OpenFeatureAPI
@@ -143,9 +143,6 @@ internal class DatadogFlagsProviderTest {
     lateinit var mockFlagsClient: FlagsClient
 
     @Mock
-    lateinit var mockSdkCore: FeatureSdkCore
-
-    @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
@@ -157,8 +154,6 @@ internal class DatadogFlagsProviderTest {
     @BeforeEach
     @Suppress("UnnecessaryApply") // lenient()'s pending-stub marker must consume the same mock invocation it wraps
     fun setUp() {
-        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
-
         // Use lenient stubbings for mocks that are conditionally used across different tests
         lenient().whenever(mockFlagsClient.state).thenReturn(mockStateObservable)
 
@@ -176,7 +171,7 @@ internal class DatadogFlagsProviderTest {
             Unit
         }
 
-        provider = DatadogFlagsProvider.wrap(mockFlagsClient, mockSdkCore)
+        provider = DatadogFlagsProvider.wrap(mockFlagsClient, mockInternalLogger)
     }
 
     @Test
@@ -189,12 +184,12 @@ internal class DatadogFlagsProviderTest {
     }
 
     @Test
-    fun `M return empty hooks list W hooks()`() {
+    fun `M return the exposure admission hook W hooks()`() {
         // When
         val hooks = provider.hooks
 
         // Then
-        assertThat(hooks).isEmpty()
+        assertThat(hooks).singleElement().isInstanceOf(ExposureAdmissionHook::class.java)
     }
 
     // region Primitive Type Evaluations
@@ -224,6 +219,43 @@ internal class DatadogFlagsProviderTest {
         assertThat(result.reason).isEqualTo(resolution.reason?.name)
         assertThat(result.errorCode).isNull()
         assertThat(result.errorMessage).isNull()
+    }
+
+    @Test
+    fun `M give each evaluation its own decision id W getBooleanEvaluation() twice {split features}`(
+        @StringForgery flagKey: String,
+        @StringForgery fakeFeatureValue: String
+    ) {
+        // Given
+        val resolution =
+            ResolutionDetails(value = true, flagMetadata = mapOf("__dd_feature.holdout.key" to fakeFeatureValue))
+        whenever(mockFlagsClient.resolve(flagKey, false)).thenReturn(resolution)
+
+        // When
+        val first = provider.getBooleanEvaluation(flagKey, false, null)
+        val second = provider.getBooleanEvaluation(flagKey, false, null)
+
+        // Then
+        val firstId = checkNotNull(first.metadata.getInt("__dd_exposure_decision"))
+        val secondId = checkNotNull(second.metadata.getInt("__dd_exposure_decision"))
+        assertThat(firstId).isNotEqualTo(secondId)
+        assertThat(first.metadata.getString("__dd_feature.holdout.key")).isEqualTo(fakeFeatureValue)
+    }
+
+    @Test
+    fun `M add no decision id W getBooleanEvaluation() {no features and no exposure}`(
+        @StringForgery flagKey: String,
+        @StringForgery fakeAllocationKey: String
+    ) {
+        // Given
+        val resolution = ResolutionDetails(value = true, flagMetadata = mapOf("allocationKey" to fakeAllocationKey))
+        whenever(mockFlagsClient.resolve(flagKey, false)).thenReturn(resolution)
+
+        // When
+        val result = provider.getBooleanEvaluation(flagKey, false, null)
+
+        // Then
+        assertThat(result.metadata.getInt("__dd_exposure_decision")).isNull()
     }
 
     @Test

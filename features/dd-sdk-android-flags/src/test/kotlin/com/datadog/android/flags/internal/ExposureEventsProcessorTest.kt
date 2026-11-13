@@ -8,6 +8,7 @@ package com.datadog.android.flags.internal
 
 import com.datadog.android.flags.internal.model.ExposureEvent
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.SplitFeature
 import com.datadog.android.flags.internal.storage.RecordWriter
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionReason
@@ -30,6 +31,7 @@ import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.atMost
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
@@ -68,6 +70,123 @@ internal class ExposureEventsProcessorTest {
             allocationKey = fakeAllocationKey,
             variationKey = fakeVariationKey
         )
+    }
+
+    @Test
+    fun `M report a new exposure then a repeat W processEvent() twice`() {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+
+        // When
+        val first = testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
+        val second = testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
+
+        // Then
+        assertThat(first).isFalse()
+        assertThat(second).isTrue()
+        verify(mockRecordWriter).write(any())
+    }
+
+    @Test
+    fun `M report a new exposure W processEvent() {variant or serial id changes}`() {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        val fakeFlagWithSerial = fakeFlag.copy(serialId = 1L)
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlagWithSerial)
+
+        // When
+        val variantChanged = testedProcessor.processEvent(
+            fakeFlagKey,
+            fakeContext,
+            fakeFlagWithSerial.copy(variationKey = fakeVariationKey + "-changed")
+        )
+        val serialChanged = testedProcessor.processEvent(
+            fakeFlagKey,
+            fakeContext,
+            fakeFlagWithSerial.copy(variationKey = fakeVariationKey + "-changed", serialId = 2L)
+        )
+
+        // Then
+        assertThat(variantChanged).isFalse()
+        assertThat(serialChanged).isFalse()
+        verify(mockRecordWriter, times(3)).write(any())
+    }
+
+    @Test
+    fun `M record without building events W processEvent() twice {writeEvents false}`() {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        testedProcessor = ExposureEventsProcessor(mockRecordWriter, mockTimeProvider, writeEvents = false)
+
+        // When
+        val first = testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
+        val second = testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlag)
+
+        // Then
+        assertThat(first).isFalse()
+        assertThat(second).isTrue()
+        verifyNoInteractions(mockRecordWriter, mockTimeProvider)
+    }
+
+    @Test
+    fun `M write only EXPOSURE features W processEvent() {split features}`() {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        val flag = fakeFlag.copy(
+            features = listOf(
+                SplitFeature("hook", "h", listOf("HOOK")),
+                SplitFeature("exposure", 2.0, listOf("EXPOSURE", "FUTURE")),
+                SplitFeature("both", true, listOf("HOOK", "EXPOSURE")),
+                SplitFeature("evaluation", "e", listOf("EVALUATION"))
+            )
+        )
+
+        // When
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flag)
+
+        // Then
+        val eventCaptor = argumentCaptor<ExposureEvent>()
+        verify(mockRecordWriter).write(eventCaptor.capture())
+        assertThat(eventCaptor.firstValue.features?.additionalProperties)
+            .containsExactlyEntriesOf(mapOf("exposure" to 2.0, "both" to true))
+    }
+
+    @Test
+    fun `M write no features W processEvent() {no EXPOSURE features}`() {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        val flag = fakeFlag.copy(features = listOf(SplitFeature("hook", "h", listOf("HOOK"))))
+
+        // When
+        testedProcessor.processEvent(fakeFlagKey, fakeContext, flag)
+
+        // Then
+        val eventCaptor = argumentCaptor<ExposureEvent>()
+        verify(mockRecordWriter).write(eventCaptor.capture())
+        assertThat(eventCaptor.firstValue.features).isNull()
+        assertThat(eventCaptor.firstValue.toJson().asJsonObject.has("features")).isFalse()
+    }
+
+    @Test
+    fun `M report a repeat W processEvent() {only features change}`() {
+        // Given
+        val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
+        testedProcessor.processEvent(
+            fakeFlagKey,
+            fakeContext,
+            fakeFlag.copy(features = listOf(SplitFeature("exposure", "a", listOf("EXPOSURE"))))
+        )
+
+        // When
+        val isRecorded = testedProcessor.processEvent(
+            fakeFlagKey,
+            fakeContext,
+            fakeFlag.copy(features = listOf(SplitFeature("exposure", "b", listOf("EXPOSURE"))))
+        )
+
+        // Then
+        assertThat(isRecorded).isTrue()
+        verify(mockRecordWriter).write(any())
     }
 
     // region processEvent

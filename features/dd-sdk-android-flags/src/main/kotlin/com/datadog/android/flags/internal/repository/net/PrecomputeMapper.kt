@@ -13,6 +13,7 @@ import com.datadog.android.flags.internal.evaluation.wireValue
 import com.datadog.android.flags.internal.model.AssignmentsResponse
 import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.SplitFeature
 import com.datadog.android.flags.internal.serialization.FlagsJson
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -25,6 +26,8 @@ internal class PrecomputeMapper(
     private val internalLogger: InternalLogger,
     private val experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED
 ) {
+    private val warnedDestinations = mutableSetOf<String>()
+
     internal fun map(
         rawJson: String,
         experimentationOptOut: ExperimentationOptOut.Request? = null
@@ -41,15 +44,13 @@ internal class PrecomputeMapper(
             val observeFullEvaluationData = FlagsJson.readConsent(metadata)
             val flags = attributes.flags.additionalProperties
             if (obfuscation != null) FlagsJson.validateKeys(flags.keys.iterator())
-            PrecomputedAssignments(
-                flags.mapValues {
-                    FlagsJson.readAssignment(FlagsJson.objectValue(it.value)).copy(
-                        observeFullEvaluationData = observeFullEvaluationData
-                    )
-                },
-                obfuscation,
-                observeFullEvaluationData
-            )
+            val assignments = flags.mapValues {
+                FlagsJson.readAssignment(FlagsJson.objectValue(it.value)).copy(
+                    observeFullEvaluationData = observeFullEvaluationData
+                )
+            }
+            warnUnknownDestinations(assignments.values)
+            PrecomputedAssignments(assignments, obfuscation, observeFullEvaluationData)
         } else {
             internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -86,6 +87,31 @@ internal class PrecomputeMapper(
         null
     }
 
+    private fun warnUnknownDestinations(flags: Collection<PrecomputedFlag>) {
+        val unknown = mutableSetOf<String>()
+        flags.forEach { flag ->
+            flag.features.forEach { feature ->
+                feature.destinations.forEach { if (it !in SplitFeature.KNOWN_DESTINATIONS) unknown.add(it) }
+            }
+        }
+        if (unknown.isEmpty()) return
+        val newDestinations = synchronized(warnedDestinations) {
+            unknown.filter { warnedDestinations.size < MAX_WARNED_DESTINATIONS && warnedDestinations.add(it) }
+        }
+        if (newDestinations.isEmpty()) return
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            { "Ignoring unknown feature destinations: ${newDestinations.joinToString()}" }
+        )
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.TELEMETRY,
+            { "Ignoring unknown feature destinations" },
+            onlyOnce = true
+        )
+    }
+
     private fun acknowledgesOptOut(options: JsonObject?, request: ExperimentationOptOut.Request?): Boolean {
         val mode = options?.get("experimentation_opt_out_mode")
         val acknowledgedMode = mode?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }?.asString
@@ -110,6 +136,8 @@ internal class PrecomputeMapper(
     }
 
     private companion object {
+        // Bounds the warnings a configuration can trigger.
+        const val MAX_WARNED_DESTINATIONS = 64
         const val ERROR_FAILED_TO_PARSE_RESPONSE = "Failed to parse precomputed response"
     }
 }

@@ -7,6 +7,7 @@
 package com.datadog.android.flags.openfeature
 
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags._FlagsInternalProxy
 import dev.openfeature.kotlin.sdk.FeatureProvider
 
 /**
@@ -51,4 +52,6 @@ import dev.openfeature.kotlin.sdk.FeatureProvider
  * @return A [FeatureProvider] that delegates to this [FlagsClient]
  * @see FlagsClient.Builder for configuring the underlying flags client
  */
-fun FlagsClient.asOpenFeatureProvider(): FeatureProvider = DatadogFlagsProvider.wrap(this)
+fun FlagsClient.asOpenFeatureProvider(): FeatureProvider {
+    return DatadogFlagsProvider.wrap(this, _FlagsInternalProxy(this).getInternalLogger())
+}

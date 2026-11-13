@@ -8,13 +8,24 @@ package com.datadog.android.flags.internal
 
 import androidx.collection.LruCache
 import com.datadog.android.flags.internal.model.ExposureEvent
+import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.SplitFeature
+import com.datadog.android.flags.internal.model.forDestination
 import com.datadog.android.flags.internal.storage.RecordWriter
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.internal.time.TimeProvider
 
-internal class ExposureEventsProcessor(private val writer: RecordWriter, private val timeProvider: TimeProvider) :
-    EventsProcessor {
+/**
+ * @param writer receives the exposure events to send.
+ * @param timeProvider provides event timestamps.
+ * @param writeEvents false to record exposures in the cache without building or writing events.
+ */
+internal class ExposureEventsProcessor(
+    private val writer: RecordWriter,
+    private val timeProvider: TimeProvider,
+    private val writeEvents: Boolean = true
+) : EventsProcessor {
 
     private data class CacheKey(
         val targetingKey: String,
@@ -30,27 +41,26 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter, private
     @Suppress("UnsafeThirdPartyFunctionCall") // maxSize > 0
     private val exposuresSentCache = LruCache<CacheKey, CacheValue>(MAX_CACHE_ENTRIES)
 
-    override fun processEvent(flagKey: String, context: EvaluationContext, data: UnparsedFlag) {
-        val cacheKey = CacheKey(
-            targetingKey = context.targetingKey,
-            flagKey = flagKey
-        )
-        val cacheValue = CacheValue(
-            allocationKey = data.allocationKey,
-            variationKey = data.variationKey,
-            serialId = data.serialId
-        )
+    override fun processEvent(flagKey: String, context: EvaluationContext, data: UnparsedFlag): Boolean {
+        val cacheKey = CacheKey(targetingKey = context.targetingKey, flagKey = flagKey)
+        val cacheValue = data.toCacheValue()
 
         synchronized(exposuresSentCache) {
-            val lastSentValue = exposuresSentCache[cacheKey]
-            if (lastSentValue != cacheValue) {
-                val event = buildExposureEvent(flagKey, context, data)
-                writeExposureEvent(event)
+            val isRecorded = exposuresSentCache[cacheKey] == cacheValue
+            if (!isRecorded) {
+                if (writeEvents) writeExposureEvent(buildExposureEvent(flagKey, context, data))
                 @Suppress("UnsafeThirdPartyFunctionCall") // safe - non-null key and value
                 exposuresSentCache.put(cacheKey, cacheValue)
             }
+            return isRecorded
         }
     }
+
+    private fun UnparsedFlag.toCacheValue() = CacheValue(
+        allocationKey = allocationKey,
+        variationKey = variationKey,
+        serialId = serialId
+    )
 
     private fun buildExposureEvent(flagKey: String, context: EvaluationContext, data: UnparsedFlag): ExposureEvent {
         val now = timeProvider.getDeviceTimestampMillis()
@@ -65,7 +75,11 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter, private
                     additionalProperties = context.attributes.toMutableMap()
                 )
             ),
-            serialId = data.serialId
+            serialId = data.serialId,
+            features = (data as? PrecomputedFlag)?.features
+                ?.forDestination(SplitFeature.DESTINATION_EXPOSURE)
+                ?.takeIf { it.isNotEmpty() }
+                ?.let { ExposureEvent.Features(it.toMutableMap<String, Any?>()) }
         )
     }
 

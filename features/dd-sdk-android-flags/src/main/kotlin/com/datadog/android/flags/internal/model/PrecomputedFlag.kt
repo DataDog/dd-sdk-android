@@ -18,5 +18,6 @@ internal data class PrecomputedFlag(
     override val extraLogging: JSONObject,
     override val reason: String,
     override val serialId: Long? = null,
-    override val observeFullEvaluationData: Boolean = false
+    override val observeFullEvaluationData: Boolean = false,
+    val features: List<SplitFeature> = emptyList()
 ) : UnparsedFlagWithConsent

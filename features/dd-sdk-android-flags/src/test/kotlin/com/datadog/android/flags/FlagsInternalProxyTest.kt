@@ -149,11 +149,7 @@ internal class FlagsInternalProxyTest {
         testedProxy.trackFlagEvaluationEvent(fakeFlagKey, null, fakeContext, "FLAG_NOT_FOUND")
 
         // Then
-        if (trackExposures) {
-            verify(mockExposureProcessor).processEvent(fakeFlagKey, fakeContext, fakeFlag)
-        } else {
-            verifyNoInteractions(mockExposureProcessor)
-        }
+        verify(mockExposureProcessor).processEvent(fakeFlagKey, fakeContext, fakeFlag)
         if (trackEvaluations) {
             verify(mockEvaluationsFeature).processEvaluation(
                 fakeFlagKey,
@@ -343,7 +339,7 @@ internal class FlagsInternalProxyTest {
         val identityCaptor = argumentCaptor<EvaluationTargetingKey>()
         verify(mockEvaluationsFeature, times(4)).processEvaluation(
             eq(fakeFlagKey), eq(fakeContext), isNull(), isNull(), isNull(), isNull(),
-            eq(false), eq(fakeContext.targetingKey), identityCaptor.capture()
+            eq(false), eq(fakeContext.targetingKey), identityCaptor.capture(), eq(emptyMap())
         )
         assertThat(identityCaptor.allValues[0]).isSameAs(identityCaptor.allValues[1])
         assertThat(identityCaptor.allValues[2]).isSameAs(identityCaptor.allValues[3])
@@ -375,7 +371,7 @@ internal class FlagsInternalProxyTest {
     @Test
     fun `M no-op on fallback W trackFlagExposure() + trackFlagEvaluationEvent() + trackFlagRumEvaluation()`() {
         // Given
-        testedProxy = _FlagsInternalProxy(NoOpFlagsClient("test", "not initialized") { _, _ -> })
+        testedProxy = _FlagsInternalProxy(NoOpFlagsClient("test", "not initialized", mockFeatureSdkCore) { _, _ -> })
 
         // When / Then
         assertDoesNotThrow {
