@@ -26,7 +26,7 @@ flowchart TD
 Each SDK adopts a pinned snapshot independently. Updates become consistent after each consumer passes its tests and merges.
 The workflow waits while an update PR is open. It does not merge PRs or release SDKs.
 
-[Java example](https://github.com/DataDog/dd-trace-java/pull/13347): a fixture bump led to stronger event assertions, then merged.
+[Java example](https://github.com/DataDog/dd-trace-java/pull/13347): a fixture bump led to stronger fixture assertions, then merged.
 
 ### Review checklist (to be filled by reviewers)
 
