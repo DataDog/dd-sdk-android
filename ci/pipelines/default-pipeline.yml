@@ -185,6 +185,7 @@ test:debug:
 test:tools:
   extends: .verification-gradle-job
   script:
+    - python3 -m unittest discover -s ci/scripts -p test_publish_dogfood.py
     - ./gradlew :unitTestTools
   artifacts:
     when: always
@@ -582,9 +583,8 @@ publish:dogfooding:
   interruptible: false
   script:
     - !reference [.snippets, setup-gradle]
-    # Publishing is done by S3 repo, so credentials are managed by IAM from env set in the CI
-    # job for the service account. Signing is also not required for internal build.
-    - ./gradlew publishReleasePublicationToInternalRepository --stacktrace --no-daemon -Pdd-skip-signing
+    # S3 remains required; local staging and Depot uploads are best effort. IAM provides credentials.
+    - python3 ci/scripts/publish_dogfood.py
 
 
 # SLACK NOTIFICATIONS

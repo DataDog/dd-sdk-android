@@ -20,6 +20,9 @@ object MavenConfig {
     const val GROUP_ID = "com.datadoghq"
     const val PUBLICATION = "release"
 
+    const val DOGFOOD_STAGING_REPOSITORY = "dogfoodStaging"
+    const val DOGFOOD_STAGING_DIRECTORY = "dogfood-maven"
+
     private const val INTERNAL_REPOSITORY_UPLOAD_BASE = "s3://binaries-ddbuild-io-prod/dd-sdk-android"
 
     /**
@@ -143,6 +146,17 @@ internal fun Project.publishingConfig(
                         url.set("https://github.com/DataDog/dd-sdk-android/")
                         connection.set("scm:git:git@github.com:Datadog/dd-sdk-android.git")
                         developerConnection.set("scm:git:git@github.com:Datadog/dd-sdk-android.git")
+                    }
+                }
+            }
+
+            if (AndroidConfig.VERSION.type is Version.Type.Dogfood) {
+                repositories {
+                    maven {
+                        name = MavenConfig.DOGFOOD_STAGING_REPOSITORY
+                        val stagingDirectory = rootProject.layout.buildDirectory
+                            .dir(MavenConfig.DOGFOOD_STAGING_DIRECTORY)
+                        url = stagingDirectory.get().asFile.toURI()
                     }
                 }
             }
