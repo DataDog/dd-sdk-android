@@ -10,25 +10,17 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-import publish_dogfood
+import publish_dogfood_to_depot
 
 
-class PublishDogfoodTest(unittest.TestCase):
-    def test_s3_failure_is_fatal_and_skips_depot(self):
-        with patch.object(subprocess, "run", return_value=subprocess.CompletedProcess([], 17)) as run:
-            self.assertEqual(publish_dogfood.main(), 17)
-        self.assertEqual(run.call_count, 1)
-        self.assertEqual(run.call_args.args[0], [
-            "./gradlew", "publishReleasePublicationToInternalRepository",
-            "--stacktrace", "--no-daemon", "-Pdd-skip-signing",
-        ])
+class PublishDogfoodToDepotTest(unittest.TestCase):
+    def test_successful_publication_succeeds(self):
+        with patch.object(publish_dogfood_to_depot, "publish_to_depot", return_value=True):
+            self.assertEqual(publish_dogfood_to_depot.main(), 0)
 
-    def test_depot_staging_failure_only_warns_after_s3(self):
-        with patch.object(subprocess, "run", return_value=subprocess.CompletedProcess([], 0)), patch.object(
-            publish_dogfood, "publish_to_depot", side_effect=OSError("staging failed")
-        ), patch.object(publish_dogfood, "warn") as warn:
-            self.assertEqual(publish_dogfood.main(), 0)
-        warn.assert_called_once()
+    def test_upload_failure_fails_the_job(self):
+        with patch.object(publish_dogfood_to_depot, "publish_to_depot", return_value=False):
+            self.assertEqual(publish_dogfood_to_depot.main(), 1)
 
     def test_complete_publications_and_continue_after_upload_failure(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -61,42 +53,42 @@ class PublishDogfoodTest(unittest.TestCase):
                         raise subprocess.CalledProcessError(1, command)
                 return subprocess.CompletedProcess(command, 0)
 
-            with patch.object(publish_dogfood, "STAGING_DIRECTORY", staging), patch.object(
+            with patch.object(publish_dogfood_to_depot, "STAGING_DIRECTORY", staging), patch.object(
                 subprocess, "run", side_effect=run
-            ), patch.object(publish_dogfood, "warn") as warn:
-                publish_dogfood.publish_to_depot()
+            ), patch.object(publish_dogfood_to_depot, "report_error") as report_error:
+                self.assertFalse(publish_dogfood_to_depot.publish_to_depot())
             self.assertEqual(selected, expected)
-            warn.assert_called_once()
+            report_error.assert_called_once()
 
-    def test_staging_task_failure_only_warns(self):
+    def test_staging_task_failure_fails_the_job(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(
-            publish_dogfood, "STAGING_DIRECTORY", Path(directory) / "maven"
+            publish_dogfood_to_depot, "STAGING_DIRECTORY", Path(directory) / "maven"
         ), patch.object(subprocess, "run", side_effect=[
-            subprocess.CompletedProcess([], 0), subprocess.CalledProcessError(1, ["./gradlew"])
-        ]), patch.object(publish_dogfood, "warn") as warn:
-            self.assertEqual(publish_dogfood.main(), 0)
-        warn.assert_called_once()
+            subprocess.CalledProcessError(1, ["./gradlew"])
+        ]), patch.object(publish_dogfood_to_depot, "report_error") as report_error:
+            self.assertEqual(publish_dogfood_to_depot.main(), 1)
+        report_error.assert_called_once()
 
-    def test_missing_adms_only_warns(self):
+    def test_missing_adms_fails_the_job(self):
         with tempfile.TemporaryDirectory() as directory:
             staging = Path(directory)
             (staging / "artifact.pom").write_text("pom")
-            with patch.object(publish_dogfood, "STAGING_DIRECTORY", staging), patch.object(
-                publish_dogfood.shutil, "rmtree"
+            with patch.object(publish_dogfood_to_depot, "STAGING_DIRECTORY", staging), patch.object(
+                publish_dogfood_to_depot.shutil, "rmtree"
             ), patch.object(subprocess, "run", side_effect=[
                 subprocess.CompletedProcess([], 0), FileNotFoundError("adms")
-            ]), patch.object(publish_dogfood, "warn") as warn:
-                publish_dogfood.publish_to_depot()
-            warn.assert_called_once()
+            ]), patch.object(publish_dogfood_to_depot, "report_error") as report_error:
+                self.assertFalse(publish_dogfood_to_depot.publish_to_depot())
+            report_error.assert_called_once()
 
-    def test_empty_staging_only_warns(self):
+    def test_empty_staging_fails_the_job(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(
-            publish_dogfood, "STAGING_DIRECTORY", Path(directory) / "maven"
+            publish_dogfood_to_depot, "STAGING_DIRECTORY", Path(directory) / "maven"
         ), patch.object(subprocess, "run", return_value=subprocess.CompletedProcess([], 0)), patch.object(
-            publish_dogfood, "warn"
-        ) as warn:
-            self.assertEqual(publish_dogfood.main(), 0)
-        warn.assert_called_once_with("Gradle staged no publications")
+            publish_dogfood_to_depot, "report_error"
+        ) as report_error:
+            self.assertEqual(publish_dogfood_to_depot.main(), 1)
+        report_error.assert_called_once_with("Gradle staged no publications")
 
 
 if __name__ == "__main__":

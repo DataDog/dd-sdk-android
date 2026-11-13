@@ -110,6 +110,14 @@ ci-image:
     - docker buildx build --tag $CI_IMAGE_DOCKER -f ./ci/Dockerfile.gitlab --push --metadata-file ${METADATA_FILE} .
     - ddsign sign $CI_IMAGE_DOCKER --docker-metadata-file ${METADATA_FILE}
 
+# Build the Depot image separately so existing jobs keep their current image.
+ci-image:dogfooding-depot:
+  extends: ci-image
+  script:
+    - METADATA_FILE=$(mktemp)
+    - docker buildx build --tag $CI_IMAGE_DOGFOOD_DEPOT --build-arg CI_IMAGE_DOCKER=$CI_IMAGE_DOCKER -f ./ci/Dockerfile.dogfood-depot --push --metadata-file ${METADATA_FILE} .
+    - ddsign sign $CI_IMAGE_DOGFOOD_DEPOT --docker-metadata-file ${METADATA_FILE}
+
 # SECURITY
 
 create_key:
@@ -185,7 +193,7 @@ test:debug:
 test:tools:
   extends: .verification-gradle-job
   script:
-    - python3 -m unittest discover -s ci/scripts -p test_publish_dogfood.py
+    - python3 -m unittest discover -s ci/scripts -p test_publish_dogfood_to_depot.py
     - ./gradlew :unitTestTools
   artifacts:
     when: always
@@ -583,8 +591,28 @@ publish:dogfooding:
   interruptible: false
   script:
     - !reference [.snippets, setup-gradle]
-    # S3 remains required; local staging and Depot uploads are best effort. IAM provides credentials.
-    - python3 ci/scripts/publish_dogfood.py
+    # Publishing is done by S3 repo, so credentials are managed by IAM from env set in the CI
+    # job for the service account. Signing is also not required for internal build.
+    - ./gradlew publishReleasePublicationToInternalRepository --stacktrace --no-daemon -Pdd-skip-signing
+
+
+# Runs independently of S3 publishing; a Depot failure must not fail the pipeline.
+publish:dogfooding-depot:
+  extends:
+    - .cpu-memory-intensive-job
+    - .real-sdk-commit-sha-job
+  tags: [ "arch:amd64" ]
+  only:
+    - dogfooding
+  image: $CI_IMAGE_DOGFOOD_DEPOT
+  stage: publish
+  timeout: 30m
+  interruptible: false
+  allow_failure: true
+  dependencies: []
+  script:
+    - !reference [.snippets, setup-gradle]
+    - python3 ci/scripts/publish_dogfood_to_depot.py
 
 
 # SLACK NOTIFICATIONS

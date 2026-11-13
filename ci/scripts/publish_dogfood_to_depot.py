@@ -3,7 +3,7 @@
 # This product includes software developed at Datadog (https://www.datadoghq.com/).
 # Copyright 2016-Present Datadog, Inc.
 
-"""Publish dogfood builds to S3, then best-effort to Depot from a local Maven repository."""
+"""Stage dogfood publications locally and upload them to Depot."""
 
 import shutil
 import subprocess
@@ -14,8 +14,8 @@ STAGING_DIRECTORY = Path("build/dogfood-maven")
 GRADLE_OPTIONS = ["--stacktrace", "--no-daemon", "-Pdd-skip-signing"]
 
 
-def warn(message):
-    print(f"WARNING: Depot dogfood publication: {message}", flush=True)
+def report_error(message):
+    print(f"ERROR: Depot dogfood publication: {message}", flush=True)
 
 
 def publish_to_depot():
@@ -29,6 +29,7 @@ def publish_to_depot():
     poms = sorted(STAGING_DIRECTORY.rglob("*.pom"))
     if not poms:
         raise RuntimeError("Gradle staged no publications")
+    failed = False
     for pom in poms:
         # Gradle puts the complete publication in its Maven version directory.
         # Artifact-level maven-metadata.xml lives above it and is unsupported by adms.
@@ -39,21 +40,17 @@ def publish_to_depot():
                 check=True,
             )
         except (OSError, subprocess.CalledProcessError) as error:
-            warn(f"{pom}: {error}")
+            report_error(f"{pom}: {error}")
+            failed = True
+    return not failed
 
 
 def main():
-    result = subprocess.run(
-        ["./gradlew", "publishReleasePublicationToInternalRepository", *GRADLE_OPTIONS],
-        check=False,
-    )
-    if result.returncode:
-        return result.returncode
     try:
-        publish_to_depot()
+        return 0 if publish_to_depot() else 1
     except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
-        warn(str(error))
-    return 0
+        report_error(str(error))
+        return 1
 
 
 if __name__ == "__main__":

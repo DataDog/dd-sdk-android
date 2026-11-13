@@ -1,0 +1,5 @@
+# Add Depot publishing tools without changing the image used by existing SDK jobs.
+ARG CI_IMAGE_DOCKER
+FROM ${CI_IMAGE_DOCKER}
+
+COPY --from=registry.ddbuild.io/adms-cli:0.0.29@sha256:63408bbd93d7870ece8e70d8b009d9f68bbdd5f0a5708f80540d594b04a7bb76 /usr/local/bin/adms /usr/local/bin/adms
