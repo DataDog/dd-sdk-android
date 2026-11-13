@@ -123,6 +123,15 @@
             app:layout_constraintTop_toBottomOf="@+id/action_anr_lock" />
 
 
+        <androidx.appcompat.widget.AppCompatSpinner
+            android:id="@+id/oom_scenario_spinner"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            app:layout_constraintEnd_toStartOf="@id/action_oom"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/oom" />
+
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/action_oom"
             android:layout_width="0dp"
@@ -130,7 +139,7 @@
             android:layout_margin="8dp"
             android:text="@string/button_oom"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toEndOf="@id/oom_scenario_spinner"
             app:layout_constraintTop_toBottomOf="@id/oom" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
