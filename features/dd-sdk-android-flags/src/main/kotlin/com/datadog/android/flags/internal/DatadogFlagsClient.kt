@@ -629,8 +629,8 @@ internal class DatadogFlagsClient(
         }
         metadata[OBSERVE_FULL_EVALUATION_DATA_METADATA_KEY] = observeFullEvaluationData
         precomputedFlag.features.forEach { feature ->
-            feature.destinations.forEach { destination ->
-                FEATURE_METADATA_PREFIXES[destination]?.let { metadata[it + feature.key] = feature.value }
+            if (SplitFeature.DESTINATION_HOOK in feature.destinations) {
+                metadata[HOOK_FEATURE_METADATA_PREFIX + feature.key] = feature.value
             }
         }
         return metadata
@@ -871,12 +871,6 @@ internal class DatadogFlagsClient(
     private companion object {
         const val OBSERVE_FULL_EVALUATION_DATA_METADATA_KEY = "__dd_observe_full_evaluation_data"
         const val RESERVED_METADATA_PREFIX = "__dd_"
-
-        // Only the HOOK prefix is a public contract.
-        val FEATURE_METADATA_PREFIXES = mapOf(
-            SplitFeature.DESTINATION_HOOK to "__dd_feature.",
-            SplitFeature.DESTINATION_EXPOSURE to "__dd_exposure_feature.",
-            SplitFeature.DESTINATION_EVALUATION to "__dd_evaluation_feature."
-        )
+        const val HOOK_FEATURE_METADATA_PREFIX = "__dd_feature."
     }
 }

@@ -78,8 +78,8 @@ internal class ExposureHookTest {
         assertThat(details.metadata.getString("__dd_feature.holdout.key")).isEqualTo("holdout-1")
         assertThat(details.metadata.getBoolean("__dd_feature.holdout.should_include_in_holdout_analysis"))
             .isFalse()
-        assertThat(details.metadata.getString("__dd_exposure_feature.exposure.key")).isEqualTo("exposed")
-        assertThat(details.metadata.getDouble("__dd_evaluation_feature.evaluation.key")).isEqualTo(3.0)
+        assertThat(details.metadata.getString("__dd_exposure_feature.exposure.key")).isNull()
+        assertThat(details.metadata.getDouble("__dd_evaluation_feature.evaluation.key")).isNull()
         assertThat(details.metadata.getString("__dd_feature.exposure.key")).isNull()
         assertThat(details.metadata.getString("__dd_feature.unknown.key")).isNull()
         assertThat(evaluations.single().features).containsExactlyEntriesOf(

@@ -127,8 +127,6 @@ internal class DatadogFlagsClientExposureTest {
                 "__dd_observe_full_evaluation_data" to false,
                 "__dd_feature.holdout.key" to "holdout-1",
                 "__dd_feature.holdout.should_include_in_holdout_analysis" to false,
-                "__dd_exposure_feature.exposure" to 2.0,
-                "__dd_evaluation_feature.evaluation" to "e",
                 "__dd_feature.evaluation" to "e"
             )
         )

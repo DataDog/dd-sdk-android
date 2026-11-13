@@ -38,8 +38,8 @@ internal class ConvertersTest {
                 "allocationKey" to "allocation",
                 "__dd_feature.holdout.key" to "holdout-1",
                 "__dd_feature.ratio" to 0.5,
-                "__dd_exposure_feature.exposure" to "e",
-                "__dd_evaluation_feature.evaluation" to "v"
+                "__dd_internal.exposure" to "e",
+                "__dd_observe_full_evaluation_data" to true
             )
         )
 
