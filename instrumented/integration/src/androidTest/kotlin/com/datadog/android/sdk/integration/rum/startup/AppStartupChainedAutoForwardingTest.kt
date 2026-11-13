@@ -67,7 +67,7 @@ internal class AppStartupChainedAutoForwardingTest :
 
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
-                docVersion = 2
+                docVersion = 3
             )
         )
 

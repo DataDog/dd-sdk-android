@@ -28,7 +28,7 @@ internal abstract class FragmentTrackingTest :
 
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
-                docVersion = 2
+                docVersion = 3
             )
         )
 

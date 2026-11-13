@@ -69,7 +69,7 @@ internal class KioskTrackingTest :
 
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
-                docVersion = 2
+                docVersion = 3
             )
         )
 
