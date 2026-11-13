@@ -252,7 +252,7 @@ Keep in mind:
 - With experimentation opt-out enabled, the provider checks the evaluation context again when it records the exposure. An evaluation whose context a newer context replaced is a non-exposure for both Datadog and `ExposureHook`.
 - The provider records exposures in its own hook. Evaluate flags through an OpenFeature client: a direct call to a provider `get...Evaluation` method records no exposure.
 - The callback runs on the evaluating thread. Do not do I/O in it: hand the data to a background queue.
-- An exception from the callback does not affect the evaluation. The SDK logs the first one as a warning, and later ones at debug level.
+- An exception from the callback does not affect the evaluation. The SDK logs the first one as a warning, and later ones at debug level. An `Error` from the callback reaches the caller of the evaluation, with the exposure already recorded.
 - Exposures need the `DatadogFlagsProvider` as the OpenFeature provider, or a provider that wraps it and returns its `hooks` and its `metadata`. The provider records exposures in its `hooks`, and `ExposureHook` finds each decision through its `metadata`. A wrapper that returns the `metadata` and drops the `hooks` records an exposure when an `ExposureHook` callback runs. Earlier SDK versions recorded exposures inside the `get...Evaluation` calls, so this applies to existing wrappers too. A composed provider such as `MultiProvider` skips provider hooks, so the SDK records no exposures under it.
 - Repeats are detected for recent subjects and flags in the current process only. After a restart, the first evaluation of each flag is a new exposure.
 

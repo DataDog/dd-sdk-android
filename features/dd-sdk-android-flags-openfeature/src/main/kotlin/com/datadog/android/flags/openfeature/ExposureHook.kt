@@ -38,7 +38,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  * providers such as `MultiProvider` skip provider hooks, so the SDK records no exposures under them.
  *
  * An exception from the callback does not affect the evaluation. The first one is logged as a warning,
- * later ones at debug level.
+ * later ones at debug level. An `Error` from the callback reaches the caller of the evaluation, with the exposure
+ * already recorded.
  *
  * @param callback receives each evaluation, on the evaluating thread. It must not do I/O.
  * @param internalLogger logs evaluations that come from a provider other than [DatadogFlagsProvider].
