@@ -12,32 +12,6 @@ None of them change `dogfooding` directly: each one pushes a side branch and ope
 
 Requirements: `git`, and the [GitHub CLI](https://cli.github.com/) (`gh`) logged in with push access to `DataDog/dd-sdk-android`. Run the scripts from the root of your `dd-sdk-android` checkout.
 
-## Publishing builds
-
-The `publish:dogfooding` CI job runs `ci/scripts/publish_dogfood.py`. It first runs
-`publishReleasePublicationToInternalRepository` with signing skipped. S3 failures
-fail the job. After S3 succeeds, Gradle stages the same release publications in
-`build/dogfood-maven` using `publishReleasePublicationToDogfoodStagingRepository`.
-The staging repository is registered only for dogfood versions and is cleared
-before each run.
-
-Each staged POM and all files in its version directory are passed to
-`adms first-party java upload`, including AARs, sources, Javadoc, Gradle `.module`
-metadata, and checksum sidecars. Maven repository discovery metadata is not
-uploaded because adms does not support it. Staging and Depot upload failures warn
-without failing CI; a failed publication does not prevent attempts for other
-publications. Depot is an experimental second destination: adms currently warns
-that uploaded Java files cannot yet be resolved through its Maven endpoint.
-S3 remains the source used by existing dogfood consumers.
-
-When changing the CI image, build the new `CURRENT_CI_IMAGE` tag with the manual
-`ci-image` job before running jobs that use it. Run the publishing regression
-checks without uploads with:
-
-```bash
-python3 -m unittest discover -s ci/scripts -p test_publish_dogfood.py
-```
-
 ## Rules
 
 - **Features only reach `dogfooding` through `feature.sh`.** Never open a PR from a feature branch straight into `dogfooding`: see [Dogfood a feature](#dogfood-a-feature).
@@ -123,6 +97,32 @@ maven("https://binaries.ddbuild.io/dd-sdk-android/releases/") {
 ```
 
 Then point Shopist or the Datadog app at that exact version. Dynamic versions (`latest.integration`, `latest.release`, `+`) don't work for dogfood builds: for the same base version Gradle ranks `-SNAPSHOT` above `-dogfood-<sha>`, and it orders dogfood builds by commit sha rather than by date, so a dynamic version never reliably resolves to the latest dogfood build.
+
+### CI publication details
+
+The `publish:dogfooding` CI job runs `ci/scripts/publish_dogfood.py`. It first runs
+`publishReleasePublicationToInternalRepository` with signing skipped. S3 failures
+fail the job. After S3 succeeds, Gradle stages the same release publications in
+`build/dogfood-maven` using `publishReleasePublicationToDogfoodStagingRepository`.
+The staging repository is registered only for dogfood versions and is cleared
+before each run.
+
+Each staged POM and all files in its version directory are passed to
+`adms first-party java upload`, including AARs, sources, Javadoc, Gradle `.module`
+metadata, and checksum sidecars. Maven repository discovery metadata is not
+uploaded because adms does not support it. Staging and Depot upload failures warn
+without failing CI; a failed publication does not prevent attempts for other
+publications. Depot is an experimental second destination: adms currently warns
+that uploaded Java files cannot yet be resolved through its Maven endpoint.
+S3 remains the source used by existing dogfood consumers.
+
+When changing the CI image, build the new `CURRENT_CI_IMAGE` tag with the manual
+`ci-image` job before running jobs that use it. Run the publishing regression
+checks without uploads with:
+
+```bash
+python3 -m unittest discover -s ci/scripts -p test_publish_dogfood.py
+```
 
 ## When a script stops
 
