@@ -568,6 +568,13 @@ def run_instrumented_apks(
     try:
         install_android_components(tools, configurations, dry_run_only)
 
+        # Start the shared ADB server before emulators or workers can start it concurrently.
+        start_adb_command = [tools.adb, "start-server"]
+        if dry_run_only:
+            print_command(start_adb_command)
+        else:
+            subprocess.run(start_adb_command, check=True, timeout=30)
+
         for plan in plans:
             create_avd(tools, plan, dry_run_only)
             process, log = launch_emulator(tools, plan, dry_run_only)
