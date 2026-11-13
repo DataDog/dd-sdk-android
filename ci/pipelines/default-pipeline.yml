@@ -540,12 +540,15 @@ publish:release-all:
     - !reference [.snippets, setup-gradle]
     # Keep compilation parallel and publishing serialized.
     - ./gradlew signReleasePublication generateVerificationXml --parallel --no-build-cache
-    - ./gradlew publishToSonatype closeSonatypeStagingRepository --no-build-cache --no-parallel --max-workers=1
+    - |
+      ./gradlew publishToSonatype closeSonatypeStagingRepository \
+        --no-build-cache --no-parallel --max-workers=1 --profile --info --console=plain
   artifacts:
-    when: on_success
+    when: always
     expire_in: 7 days
     paths:
       - "**/verification-metadata.xml"
+      - build/reports/profile/
 
 # tools/benchmark is internal: it skips Sonatype and goes to binaries.ddbuild.io instead (see MavenConfig).
 # A separate job, so that a failed upload can be retried on its own without publishing to Sonatype again.
