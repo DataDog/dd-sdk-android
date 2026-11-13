@@ -26,22 +26,18 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
-import org.mockito.kotlin.isA
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
-import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import com.datadog.android.flags.model.EvaluationContext as DatadogEvaluationContext
 
@@ -345,17 +341,19 @@ internal class ExposureHookTest {
     }
 
     @Test
-    fun `M not throw W finallyAfter() {callback and logger throw}`() {
+    fun `M propagate the error W finallyAfter() {callback throws an Error}`() {
         // Given
-        whenever(
-            mockInternalLogger.log(any(), isA<InternalLogger.Target>(), any(), anyOrNull(), any(), anyOrNull())
-        ) doThrow IllegalStateException("logger failed")
-        testedHook = ExposureHook({ throw IllegalStateException("callback failed") }, { mockDefaultLogger })
+        val failure = AssertionError("callback failed")
+        testedHook = ExposureHook({ throw failure }, { mockDefaultLogger })
 
-        // When / Then
-        assertDoesNotThrow {
+        // When
+        val thrown = assertThrows<AssertionError> {
             testedHook.finallyAfter(hookContext(), exposureDetails(isRecorded = false), emptyMap())
         }
+
+        // Then
+        assertThat(thrown).isSameAs(failure)
+        verifyNoInteractions(mockInternalLogger)
     }
 
     @Test

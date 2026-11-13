@@ -66,10 +66,10 @@ class ExposureHook internal constructor(
             }
             return
         }
-        @Suppress("TooGenericExceptionCaught") // The callback is application code.
+        @Suppress("TooGenericExceptionCaught") // The callback is application code; an Error propagates.
         try {
             callback.onEvaluation(createEvaluation(ctx, details, providerMetadata))
-        } catch (e: Throwable) {
+        } catch (e: Exception) {
             val level = if (callbackFailed.getAndSet(true)) InternalLogger.Level.DEBUG else InternalLogger.Level.WARN
             log(providerMetadata.internalLogger, level, e) { CALLBACK_FAILED_MESSAGE }
         }
@@ -110,12 +110,7 @@ class ExposureHook internal constructor(
         throwable: Throwable? = null,
         message: () -> String
     ) {
-        @Suppress("TooGenericExceptionCaught") // Logging must not fail the evaluation either.
-        try {
-            logger.log(level, InternalLogger.Target.USER, message, throwable)
-        } catch (ignored: Throwable) {
-            // Nothing else can report it.
-        }
+        logger.log(level, InternalLogger.Target.USER, message, throwable)
     }
 
     private companion object {
