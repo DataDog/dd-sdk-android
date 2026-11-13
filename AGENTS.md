@@ -5,7 +5,9 @@ Use the [documentation map](docs/README.md) to select current SDK guidance and
 Foundation validation commands. Follow the module rules and validation tasks below.
 
 Include necessary documentation with each implementation change. Review accuracy,
-reader purpose, navigation, and instruction scope. Record actual validation evidence.
+reader purpose, navigation, and instruction scope. Record actual validation evidence
+in task output or reports. Include validation in PR descriptions only when relevant
+to review, following the [PR preparation skill](ai/skills/sdk-pr-prepare/SKILL.md).
 For staged documentation validation, use a provisioned FactoryKit environment:
 
 ```sh

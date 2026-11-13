@@ -62,6 +62,4 @@ The commit body and the GitHub PR description serve different audiences and must
 
 Add a body when the change is non-trivial and a one-line header does not fully capture the intent. A body is NOT needed for tiny, obviously self-explanatory changes.
 
-If the branch name encodes a ticket (`RUM-xxxx`), add `Ref: RUM-xxxx` on its own line in the body so GitHub/Jira auto-links it. The header prefix alone is not enough for some integrations.
-
 Commit bodies are always in English, regardless of session language.
