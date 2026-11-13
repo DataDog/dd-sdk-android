@@ -10,10 +10,13 @@ import com.datadog.android.flags.internal.model.Assignment
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsState
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.VariationType
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import org.json.JSONObject
+
+internal class UnsupportedVariationTypeException : JsonParseException("Unsupported assignment variation type")
 
 /** Generated model adapters, legacy JSON conversions, and encoding validation. */
 internal object FlagsJson {
@@ -23,6 +26,7 @@ internal object FlagsJson {
     }
 
     @Throws(JsonParseException::class)
+    @Suppress("ThrowsCount") // Validate required fields and isolate unsupported variation types.
     fun readAssignment(json: JsonObject): PrecomputedFlag {
         // Preserve JSONObject's string conversion, including JSON variants and explicit null.
         STRING_FIELDS.forEach { field ->
@@ -39,7 +43,13 @@ internal object FlagsJson {
         val serialId = json.get("serialId")
         if (serialId?.isJsonPrimitive != true || !serialId.asJsonPrimitive.isNumber) json.remove("serialId")
 
+        if (!json.has("extraLogging")) json.add("extraLogging", JsonObject())
         val assignment = Assignment.fromJsonObject(json)
+
+        val unsupportedType = VariationType.entries.none { it.value == assignment.variationType }
+        if (unsupportedType) {
+            throw UnsupportedVariationTypeException()
+        }
 
         @Suppress("UnsafeThirdPartyFunctionCall") // Generated JSON is a valid object.
         val extraLogging = JSONObject(assignment.extraLogging.toJson().toString())
