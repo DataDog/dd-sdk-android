@@ -215,8 +215,9 @@ If the push fails due to non-fast-forward (someone force-pushed upstream), surfa
    - `PULL_REQUEST_TEMPLATE.md` at repo root
    - Any file under `.github/PULL_REQUEST_TEMPLATE/`
 4. Draft the PR body — **mandatory, never empty**:
-   - If a template exists: fill every section; do NOT delete or reorder any heading; write `N/A` for inapplicable sections. Following the template structure is not optional.
-   - Otherwise: 2–4 sentences in English covering **what changed**, **why**, and **notes** (tests, migration, ticket reference). Append `Ref: <TICKET-ID>` on its own line when derivable from the branch name.
+   - If a template exists: follow its prompts and keep applicable sections and the review checklist in order.
+   - Otherwise: 2–4 sentences in English covering **what changed**, **why**, and any relevant reviewer context.
+   - Include validation only when it adds relevant context beyond pipeline results, such as an investigation with temporary tests or a custom harness, a manual check in an app or backend, or emitted data verified through Datadog MCP. Summarize the scenario, method, and observed result. Mention failures or coverage limitations when they affect confidence in the change. Keep routine successful build, test, lint, and generated-file checks in task output or reports.
    - An empty or placeholder-only body is never acceptable — the user may edit wording but **may not approve a blank description**.
 5. Derive the PR title from the last commit on the branch (or from the ticket ID + short description). English, ≤72 chars. Same rules as `sdk-commit`'s header section.
 6. Show title + body to the user via `AskUserQuestion` (Approve / Edit / Abort) before creating the PR.
