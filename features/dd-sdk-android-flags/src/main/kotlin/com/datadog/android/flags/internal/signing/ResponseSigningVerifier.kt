@@ -66,11 +66,7 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
         signingCheck(leaf.covers(now, issued, expires) && intermediate.covers(now, issued, expires))
         val signature = base64(single(headers, PREFIX + "signature"), 72)
         strictSignature(signature)
-        val transcript = requestTranscript(request)
-        transcript.writeShort(status).writeLong(issued).writeLong(expires).writeLong(body.size.toLong())
-        transcript.write(body.signingBytes().sha256())
-        transcript.write(leafBytes.signingBytes().sha256()).write(intermediateBytes.signingBytes().sha256())
-        signingCheck(verifySignature(leaf.native.publicKey, transcript.signingBytes(), signature))
+        signingCheck(verifySignature(leaf.native.publicKey, transcript(request, status, headers, body), signature))
         return VerifiedResponse(scope(request), now, expires)
     }
 
@@ -138,7 +134,7 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
             val critical = fields.size == 3
             if (critical) signingCheck(fields[1].encoded.contentEquals(hex("0101ff")))
             signingCheck(!critical || oid in setOf("551d13", "551d0f", "551d25", "551d0e", "551d23"))
-            signingCheck(oid !in setOf("551d1e", "551d24", "551d36"))
+            signingCheck(oid !in setOf("551d1e", "551d21", "551d24", "551d36"))
             val value = fields[fields.size - 1].value
             SigningDer.read(value)
             if (oid == "551d0e") identifier(value, false)
@@ -160,6 +156,18 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
         private const val MAX_REQUEST_BYTES = 1024 * 1024
         private val SEMANTIC_HEADERS =
             listOf("content-type", "dd-application-id", "x-rkyv", "x-use-cache", "x-dd-feature-flags-capabilities")
+
+        fun transcript(request: Request, status: Int, headers: Headers, body: ByteArray): ByteArray {
+            val issued = seconds(single(headers, PREFIX + "issued-at"))
+            val expires = seconds(single(headers, PREFIX + "expires-at"))
+            val leaf = base64(single(headers, PREFIX + "signing-certificate"), 4096)
+            val intermediate = base64(single(headers, PREFIX + "signing-intermediate"), 4096)
+            return requestTranscript(request).apply {
+                writeShort(status).writeLong(issued).writeLong(expires).writeLong(body.size.toLong())
+                write(body.signingBytes().sha256())
+                write(leaf.signingBytes().sha256()).write(intermediate.signingBytes().sha256())
+            }.signingBytes()
+        }
 
         fun matchesRequest(expected: Request, actual: Request): Boolean = try {
             scope(expected) == scope(actual) &&
@@ -294,7 +302,7 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
                 return node.value
             }
             val fields = node.sequence()
-            signingCheck(fields.size <= 1)
+            signingCheck(fields.size == 1)
             return fields.firstOrNull()?.also { signingCheck(it.tag == 0x80 && it.value.isNotEmpty()) }?.value
         }
 

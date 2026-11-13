@@ -50,6 +50,7 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
                 flags = flags,
                 lastUpdateTimestamp = state.lastUpdateTimestamp,
                 obfuscation = obfuscation,
+                observeFullEvaluationData = state.observeFullEvaluationData == true,
                 flagSelection = state.flagSelection?.let { CanonicalFlagSelection(it.tags, it.keyPatterns) }
             )
         }

@@ -72,18 +72,24 @@ internal class PrecomputeMapperTest {
         testedMapper = PrecomputeMapper(mockInternalLogger)
     }
 
-    @Test
-    fun `M warn once and preserve valid flags W map() {unsupported variation type}`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M warn once and preserve valid flags W map() {unsupported variation type}`(fakeConsent: Boolean) {
         // Given
         val unknown = buildFlagJson("future-type", true)
         val valid = buildFlagJson(VariationType.BOOLEAN.value, true)
-        val json = buildValidJson(mapOf("unknown" to unknown, fakeFlagKey to valid))
+        val json = JSONObject(buildValidJson(mapOf("unknown" to unknown, fakeFlagKey to valid))).apply {
+            getJSONObject("data").getJSONObject("attributes").put("observeFullEvaluationData", fakeConsent)
+        }.toString()
 
         // When
         val result = testedMapper.map(json)
 
         // Then
-        assertThat(result?.flags?.keys).containsExactly(fakeFlagKey)
+        val assignments = checkNotNull(result)
+        assertThat(assignments.flags.keys).containsExactly(fakeFlagKey)
+        assertThat(assignments.observeFullEvaluationData).isEqualTo(fakeConsent)
+        assertThat(assignments.flags.getValue(fakeFlagKey).observeFullEvaluationData).isEqualTo(fakeConsent)
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
@@ -170,6 +176,23 @@ internal class PrecomputeMapperTest {
         // Then
         assertThat(result.serialId).isNull()
         assertThat(result.variationValue).isEqualTo("true")
+    }
+
+    @Test
+    fun `M opt in only for literal true W map()`() {
+        // Given
+        val fakeConsentValues = listOf(true, false, JSONObject.NULL, "true", 1, JSONObject(), null)
+
+        // When
+        val results = fakeConsentValues.map { consent ->
+            val attributes = JSONObject().put("flags", JSONObject()).put("observeFullEvaluationData", consent)
+            testedMapper.map(JSONObject().put("data", JSONObject().put("attributes", attributes)).toString())
+        }
+
+        // Then
+        assertThat(results.map { checkNotNull(it).observeFullEvaluationData })
+            .containsExactly(true, false, false, false, false, false, false)
+        assertThat(results.map { checkNotNull(it).flags }).allMatch { it.isEmpty() }
     }
 
     @Test

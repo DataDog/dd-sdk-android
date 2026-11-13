@@ -36,7 +36,7 @@ internal class ResourceResolver(
     private val webPImageCompression: ImageCompression,
     private val logger: InternalLogger,
     private val md5HashGenerator: MD5HashGenerator,
-    private val recordedDataQueueHandler: DataQueueHandler,
+    recordedDataQueueHandler: DataQueueHandler,
     private val alpha8BitmapConverter: BitmapConverter = Alpha8BitmapConverter(logger),
     private val alpha8ResourceCache: Alpha8ResourceCache = DefaultAlpha8ResourceCache(
         signatureGenerator = DefaultBitmapSignatureGenerator()

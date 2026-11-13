@@ -14,6 +14,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.ByteString.Companion.decodeBase64
+import okio.ByteString.Companion.toByteString
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
@@ -61,27 +62,48 @@ internal class ResponseSigningVerifierTest {
     }
 
     @TestFactory
-    fun `M match frozen independent vectors W verify()`(): List<DynamicTest> {
-        val corpus = resource("corpus.json")
-        val cases = corpus.getAsJsonArray("cases")
-        check(cases.size() == 46)
-        check(cases.count { it.asJsonObject["expected_accept"].asBoolean } == 6)
-        return cases.map { entry ->
-            val vector = entry.asJsonObject
-            DynamicTest.dynamicTest(vector["id"].asString) {
-                // Given
-                val testedVerifier = ResponseSigningVerifier(listOf(corpus["anchor_der_base64"].asString))
-                // When
-                val result = verify(testedVerifier, vector)
-                // Then
-                assertThat(result != null).isEqualTo(vector["expected_accept"].asBoolean)
+    fun `M match every central manifest vector W verify()`(): List<DynamicTest> {
+        // Given
+        val manifest = resource("manifest.json")
+        check(manifest["schema_version"].asInt == 1)
+        val suites = manifest.getAsJsonObject("files")
+        check(suites.size() > 0)
+        return suites.keySet().sorted().flatMap { name ->
+            val metadata = suites.getAsJsonObject(name)
+            val raw = resourceBytes("response-signing-v1/$name")
+            check(raw.toByteString().sha256().hex() == metadata["sha256"].asString)
+            val corpus = JsonParser.parseString(raw.toString(Charsets.UTF_8)).asJsonObject
+            val cases = corpus.getAsJsonArray("cases")
+            check(cases.size() == metadata["response_cases"].asInt)
+            check(cases.count { it.asJsonObject["expected_accept"].asBoolean } == metadata["accepted"].asInt)
+            cases.map { entry ->
+                val vector = entry.asJsonObject
+                DynamicTest.dynamicTest("$name: ${vector["id"].asString}") {
+                    val testedVerifier = ResponseSigningVerifier(listOf(corpus["anchor_der_base64"].asString))
+                    // When
+                    val result = verify(testedVerifier, vector)
+                    // Then
+                    assertThat(result != null).isEqualTo(vector["expected_accept"].asBoolean)
+                    if (vector["expected_accept"].asBoolean) {
+                        val response = vector.getAsJsonObject("response")
+                        val transcript = ResponseSigningVerifier.transcript(
+                            request(vector),
+                            response["status"].asInt,
+                            headers(response.getAsJsonArray("headers")),
+                            bytes(response["body_base64"].asString)
+                        )
+                        assertThat(transcript.toByteString().base64()).isEqualTo(vector["transcript_base64"].asString)
+                    }
+                }
             }
         }
     }
 
     @TestFactory
     fun `M reject nonminimal named bits W verify()`(): List<DynamicTest> {
-        val corpus = resource("key-usage-supplement.json")
+        val corpus = JsonParser.parseString(
+            resourceBytes("response-signing-key-usage.json").toString(Charsets.UTF_8)
+        ).asJsonObject
         return corpus.getAsJsonArray("cases").map { entry ->
             val vector = entry.asJsonObject
             DynamicTest.dynamicTest(vector["id"].asString) {
@@ -95,34 +117,18 @@ internal class ResponseSigningVerifierTest {
         }
     }
 
-    @TestFactory
-    fun `M match isolated certificate rules W verify()`(): List<DynamicTest> {
-        val corpus = resource("isolated-certificate-rules.json")
-        val cases = corpus.getAsJsonArray("cases")
-        check(cases.size() == 4)
-        check(cases.count { it.asJsonObject["expected_accept"].asBoolean } == 1)
-        return cases.map { entry ->
-            val vector = entry.asJsonObject
-            DynamicTest.dynamicTest(vector["id"].asString) {
-                // Given
-                val testedVerifier = ResponseSigningVerifier(listOf(corpus["anchor_der_base64"].asString))
-                // When
-                val result = verify(testedVerifier, vector)
-                // Then
-                assertThat(result != null).isEqualTo(vector["expected_accept"].asBoolean)
-            }
-        }
-    }
-
-    private fun verify(verifier: ResponseSigningVerifier, vector: JsonObject): VerifiedResponse? {
+    private fun request(vector: JsonObject): Request {
         val input = vector.getAsJsonObject("request")
-        val request = Request.Builder().url(input["url"].asString)
+        return Request.Builder().url(input["url"].asString)
             .headers(headers(input.getAsJsonArray("headers")))
             .method(input["method"].asString, bytes(input["body_base64"].asString).toRequestBody())
             .build()
+    }
+
+    private fun verify(verifier: ResponseSigningVerifier, vector: JsonObject): VerifiedResponse? {
         val response = vector.getAsJsonObject("response")
         return verifier.verify(
-            request,
+            request(vector),
             response["status"].asInt,
             headers(response.getAsJsonArray("headers")),
             bytes(response["body_base64"].asString),
@@ -136,7 +142,9 @@ internal class ResponseSigningVerifierTest {
 
     private fun bytes(value: String): ByteArray = checkNotNull(value.decodeBase64()).toByteArray()
 
-    private fun resource(name: String): JsonObject = checkNotNull(javaClass.classLoader)
-        .getResourceAsStream("response-signing-v1/$name").let { checkNotNull(it) }
-        .bufferedReader().use { JsonParser.parseReader(it).asJsonObject }
+    private fun resource(name: String): JsonObject =
+        JsonParser.parseString(resourceBytes("response-signing-v1/$name").toString(Charsets.UTF_8)).asJsonObject
+
+    private fun resourceBytes(path: String): ByteArray = checkNotNull(javaClass.classLoader)
+        .getResourceAsStream(path).let { checkNotNull(it) }.use { it.readBytes() }
 }

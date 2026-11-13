@@ -295,7 +295,8 @@ internal class EvaluationsManager(
                                     context,
                                     assignments.flags,
                                     assignments.obfuscation,
-                                    response.proof
+                                    response.proof,
+                                    assignments.observeFullEvaluationData
                                 )
                             } else {
                                 null
@@ -416,7 +417,8 @@ internal class EvaluationsManager(
         val installation = flagsRepository.installFlagsAndContext(
             context,
             assignments.flags,
-            assignments.obfuscation
+            assignments.obfuscation,
+            assignments.observeFullEvaluationData
         )
         val result = takeCompletion(initializationCompletion, callback)
         currentState = FlagsClientState.Ready

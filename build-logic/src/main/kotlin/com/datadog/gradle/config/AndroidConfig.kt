@@ -55,10 +55,6 @@ internal fun Project.androidLibraryConfig() {
             java11()
         }
 
-        sourceSets.all {
-            java.directories += "src/$name/kotlin"
-        }
-
         testOptions {
             unitTests.isReturnDefaultValues = true
         }

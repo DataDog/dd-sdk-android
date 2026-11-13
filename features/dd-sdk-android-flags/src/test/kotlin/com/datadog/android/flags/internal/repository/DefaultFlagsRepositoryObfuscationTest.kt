@@ -46,7 +46,6 @@ import org.mockito.quality.Strictness
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@Suppress("DEPRECATION") // These tests retain coverage for the deprecated repository helpers.
 internal class DefaultFlagsRepositoryObfuscationTest {
     private lateinit var testedRepository: DefaultFlagsRepository
     private lateinit var encoding: FlagKeyObfuscation
@@ -105,17 +104,17 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         val testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore, null)
 
         // Then
-        val (flag, context) = checkNotNull(testedRepository.getPrecomputedFlagWithContext(fakeFlagKey))
+        val (flag, context) = checkNotNull(testedRepository.getEvaluationSnapshot(fakeFlagKey))
         assertThat(context).isEqualTo(fakeContext)
         checkNotNull(flag)
         assertThat(flag.variationValue).isEqualTo(fakeFlag.variationValue)
         assertThat(flag.reason).isEqualTo(ResolutionReason.CACHED.name)
-        assertThat(testedRepository.getPrecomputedFlag(encodedKey)).isNull()
+        assertThat(testedRepository.getEvaluationSnapshot(encodedKey)?.flag).isNull()
     }
 
     @ParameterizedTest
     @MethodSource("cacheInitializations")
-    fun `M gate cached assignments W getPrecomputedFlag() {synchronous source and delayed disk}`(
+    fun `M gate cached assignments W getEvaluationSnapshot() {synchronous source and delayed disk}`(
         source: String,
         encoded: Boolean
     ) {
@@ -131,7 +130,7 @@ internal class DefaultFlagsRepositoryObfuscationTest {
 
         // When
         checkNotNull(diskCallback).onSuccess(DataStoreContent(0, entry))
-        val result = testedRepository.getPrecomputedFlag(fakeFlagKey)
+        val result = testedRepository.getEvaluationSnapshot(fakeFlagKey)?.flag
 
         // Then
         val readable = !encoded || source == "android"
@@ -139,8 +138,14 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         assertThat(testedRepository.hasConfiguration()).isEqualTo(readable)
         assertThat(testedRepository.hasConfigurationForContext(fakeContext)).isEqualTo(readable)
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(if (readable) fakeContext else null)
-        assertThat(testedRepository.getPrecomputedFlagWithContext(fakeFlagKey) != null).isEqualTo(readable)
-        assertThat(testedRepository.getFlagsSnapshot().isEmpty()).isEqualTo(encoded)
+        assertThat(testedRepository.getEvaluationSnapshot(fakeFlagKey) != null).isEqualTo(readable)
+        val snapshot = testedRepository.getAssignmentsSnapshot()
+        if (readable) {
+            assertThat(checkNotNull(snapshot).context).isEqualTo(fakeContext)
+            assertThat(snapshot.flags.isEmpty()).isEqualTo(encoded)
+        } else {
+            assertThat(snapshot).isNull()
+        }
         assertThat(firstFlags).hasSize(if (readable) 1 else 0)
         if (readable) {
             assertThat(firstFlags.single()).isEqualTo(if (encoded) emptyList() else listOf(fakeFlagKey))
@@ -149,7 +154,7 @@ internal class DefaultFlagsRepositoryObfuscationTest {
     }
 
     @Test
-    fun `M notify first flags W setFlagsAndContext() { encoded network response }`() {
+    fun `M notify first flags W installFlagsAndContext() + complete() { encoded network response }`() {
         // Given
         val firstFlags = mutableListOf<List<String>>()
         testedRepository.firstFlags.whenComplete { firstFlags.add(it) }
@@ -160,11 +165,11 @@ internal class DefaultFlagsRepositoryObfuscationTest {
 
         // Then
         assertThat(firstFlags).containsExactly(emptyList())
-        assertThat(testedRepository.getPrecomputedFlag(fakeFlagKey) != null).isTrue()
+        assertThat(testedRepository.getEvaluationSnapshot(fakeFlagKey)?.flag != null).isTrue()
     }
 
     @Test
-    fun `M notify first readable flags W setFlagsAndContext() { wrapper replaces encoded cache }`() {
+    fun `M notify first readable flags W installFlagsAndContext() + complete() { wrapper replaces encoded cache }`() {
         // Given
         val entry = cachedEntry(encoded = true)
         whenever(mockSdkCore.source) doReturn "react-native"
@@ -180,19 +185,19 @@ internal class DefaultFlagsRepositoryObfuscationTest {
 
         // Then
         assertThat(firstFlags).containsExactly(listOf(fakeFlagKey))
-        assertThat(testedRepository.getFlagsSnapshot()).containsOnlyKeys(fakeFlagKey)
+        assertThat(checkNotNull(testedRepository.getAssignmentsSnapshot()).flags).containsOnlyKeys(fakeFlagKey)
     }
 
     private fun cachedEntry(encoded: Boolean): FlagsStateEntry = FlagsStateEntry(
         fakeContext,
         mapOf((if (encoded) encodedKey else fakeFlagKey) to fakeFlag),
         fakeTimestamp,
-        encoding.takeIf { encoded }
+        obfuscation = encoding.takeIf { encoded }
     )
 
     private fun install(encoded: Boolean) {
         val entry = cachedEntry(encoded)
-        testedRepository.setFlagsAndContext(entry.evaluationContext, entry.flags, entry.obfuscation)
+        testedRepository.installFlagsAndContext(entry.evaluationContext, entry.flags, entry.obfuscation).complete {}
     }
 
     companion object {

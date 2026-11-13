@@ -27,7 +27,7 @@ internal class DefaultAndroidInfoProvider(
     rawDeviceModel: String,
     rawDeviceId: String,
     rawOsVersion: String,
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
+    buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : AndroidInfoProvider {
 
     constructor(appContext: Context) : this(

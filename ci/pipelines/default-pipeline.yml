@@ -8,10 +8,10 @@ default:
 
 workflow:
   rules:
-    - if: "$CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH !~ /^(develop|master)$|^feature\//"
+    - if: "$CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH !~ /^develop$|^feature\//"
       auto_cancel:
         on_new_commit: interruptible # short-lived branches cancel on new commits
-    - when: always # develop, master, feature/*, tags: never auto-canceled
+    - when: always # develop, feature/*, tags: never auto-canceled
       auto_cancel:
         on_new_commit: none
 
@@ -23,7 +23,6 @@ stages:
   - publish
   - notify
   - post-release
-  - post
 
 .snippets:
   source-secrets:
@@ -45,7 +44,7 @@ stages:
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - |
       gradle_jvm_args=(
-        "-Xmx4096m"
+        "-Xmx8g"
         "-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG"
       )
 
@@ -255,11 +254,27 @@ test:build-instrumented-apks:
         ./gradlew
         -Puse-api21-java-backport
         -Puse-desugaring
+        :features:dd-sdk-android-flags:assembleRelease
+        :features:dd-sdk-android-flags-openfeature:assembleRelease
+    - mkdir -p build/flags-device-artifacts
+    - cp features/dd-sdk-android-flags/build/outputs/aar/dd-sdk-android-flags-release.aar build/flags-device-artifacts/
+    - cp features/dd-sdk-android-flags-openfeature/build/outputs/aar/dd-sdk-android-flags-openfeature-release.aar build/flags-device-artifacts/
+    - >-
+        ./gradlew
+        -PflagsArtifactDirectory="$CI_PROJECT_DIR/build/flags-device-artifacts"
+        -Puse-api21-java-backport
+        -Puse-desugaring
         :reliability:core-it:assembleDebug
         :reliability:core-it:assembleDebugAndroidTest
         :instrumented:integration:assembleDebug
         :instrumented:integration:assembleDebugAndroidTest
         :features:dd-sdk-android-ndk:assembleDebugAndroidTest
+        :reliability:single-fit:flags:assembleReleaseAndroidTest
+    - >-
+        sha256sum build/flags-device-artifacts/*.aar
+        reliability/single-fit/flags/build/outputs/apk/androidTest/release/*.apk
+        > build/flags-device-artifacts/SHA256SUMS
+    - cat build/flags-device-artifacts/SHA256SUMS
   artifacts:
     expire_in: 1 week
     paths:
@@ -268,6 +283,8 @@ test:build-instrumented-apks:
       - "instrumented/integration/build/outputs/apk/debug/*.apk"
       - "instrumented/integration/build/outputs/apk/androidTest/debug/*.apk"
       - "features/dd-sdk-android-ndk/build/outputs/apk/androidTest/debug/*.apk"
+      - "reliability/single-fit/flags/build/outputs/apk/androidTest/release/*.apk"
+      - "build/flags-device-artifacts/"
 
 test:single-fit-logs:
   extends: .single-fit-job
@@ -343,6 +360,7 @@ test-pyramid:api-coverage:
 test-pyramid:core-it-and-ndk:
   extends: .instrumented-apk-job
   script:
+    - shasum -a 256 -c build/flags-device-artifacts/SHA256SUMS
     - python3 ci/scripts/run_core_it_and_ndk_apks.py
 
 test-pyramid:legacy-integration-instrumented-min-api:
@@ -517,7 +535,9 @@ publish:release-all:
   script:
     - !reference [.snippets, set-publishing-credentials]
     - !reference [.snippets, setup-gradle]
-    - ./gradlew publishToSonatype closeSonatypeStagingRepository --no-build-cache
+    # Keep compilation parallel and publishing serialized.
+    - ./gradlew signReleasePublication generateVerificationXml --parallel --no-build-cache
+    - ./gradlew publishToSonatype closeSonatypeStagingRepository --no-build-cache --no-parallel --max-workers=1
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -608,38 +628,6 @@ notify:dogfood-app:
     - pip3 install GitPython requests
     - python3 ./ci/scripts/dogfood.py -v $CI_COMMIT_TAG -t app
 
-notify:dogfood-demo:
-  tags: [ "arch:amd64" ]
-  interruptible: false
-  only:
-    - tags
-  image: $CI_IMAGE_DOCKER
-  id_tokens:
-    DDOCTOSTS_ID_TOKEN:
-      aud: dd-octo-sts
-  stage: notify
-  when: on_success
-  script:
-    - export GITHUB_TOKEN=$(dd-octo-sts token --scope DataDog/shopist-android --policy all.gitlab.pr)
-    - pip3 install GitPython requests
-    - python3 ./ci/scripts/dogfood.py -v $CI_COMMIT_TAG -t demo
-
-notify:dogfood-gradle-plugin:
-  tags: [ "arch:amd64" ]
-  interruptible: false
-  only:
-    - tags
-  image: $CI_IMAGE_DOCKER
-  id_tokens:
-    DDOCTOSTS_ID_TOKEN:
-      aud: dd-octo-sts
-  stage: notify
-  when: on_success
-  script:
-    - export GITHUB_TOKEN=$(dd-octo-sts token --scope DataDog/dd-sdk-android-gradle-plugin --policy all.gitlab.pr)
-    - pip3 install GitPython requests
-    - python3 ./ci/scripts/dogfood.py -v $CI_COMMIT_TAG -t gradle-plugin
-
 notify:merge-verification-metadata:
   tags: [ "arch:amd64" ]
   interruptible: false
@@ -703,12 +691,3 @@ post-release:merge-develop:
   script:
     - export GITHUB_TOKEN=$(dd-octo-sts token --scope DataDog/dd-sdk-android --policy self.gitlab.release.create-release)
     - bash ./ci/scripts/merge-release-develop.sh "$CI_COMMIT_TAG"
-
-# This job runs at the end of every successful pipeline. GitHub can require this single status
-# instead of tracking every CI job separately.
-Sync GH Checks:
-  tags: [ "arch:amd64" ]
-  image: registry.ddbuild.io/images/mirror/alpine:3.22.1
-  stage: post
-  script:
-    - echo "All good"

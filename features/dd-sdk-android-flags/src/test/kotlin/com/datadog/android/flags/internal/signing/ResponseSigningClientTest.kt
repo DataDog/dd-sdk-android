@@ -89,6 +89,7 @@ internal class ResponseSigningClientTest {
     private var cancelledChecks = 0
     private val requests = mutableListOf<Request>()
     private var responseKind = "valid"
+    private var observeFullEvaluationData = false
     private var endpoint = "https://flags.example.test/assignments?dd_env=test"
     private var beforeResponse: () -> Unit = {}
     private lateinit var testedClient: DatadogFlagsClient
@@ -233,7 +234,7 @@ internal class ResponseSigningClientTest {
         assertThat(actual).isFalse()
         assertThat(repository.hasConfiguration()).isFalse()
         assertThat(repository.getAssignmentsSnapshot()).isNull()
-        assertThat(repository.getPrecomputedFlag("critical-demo")).isNull()
+        assertThat(repository.getEvaluationSnapshot("critical-demo")?.flag).isNull()
         assertThat(repository.getEvaluationContext()).isNull()
         assertThat(repository.hasConfigurationForContext(EvaluationContext("subject"))).isFalse()
         verifyNoInteractions(mockStore)
@@ -450,6 +451,27 @@ internal class ResponseSigningClientTest {
         assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
     }
 
+    @ParameterizedTest
+    @EnumSource(ResponseSigningMode::class)
+    fun `M retain response consent W setEvaluationContext() {signed and unsigned}`(mode: ResponseSigningMode) {
+        // Given
+        create(mode)
+        // When
+        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        queue.removeFirst().run()
+        // Then
+        assertThat(repository.getEvaluationSnapshot("critical-demo")?.observeFullEvaluationData).isFalse()
+        assertThat(repository.getEvaluationSnapshot("missing")?.observeFullEvaluationData).isFalse()
+
+        // When
+        observeFullEvaluationData = true
+        testedClient.setEvaluationContext(EvaluationContext("other-subject"), null)
+        queue.removeFirst().run()
+        // Then
+        assertThat(repository.getEvaluationSnapshot("critical-demo")?.observeFullEvaluationData).isTrue()
+        assertThat(repository.getEvaluationSnapshot("missing")?.observeFullEvaluationData).isTrue()
+    }
+
     private fun updateApp(applicationId: String, sessionId: String = "session") {
         val context = mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(applicationId, sessionId))
         fakeDatadogContext = fakeDatadogContext.copy(featuresContext = mapOf(Feature.RUM_FEATURE_NAME to context))
@@ -505,7 +527,7 @@ internal class ResponseSigningClientTest {
 
     private fun response(request: Request): Response {
         val json = """
-            {"data":{"attributes":{"flags":{"critical-demo":{
+            {"data":{"attributes":{"observeFullEvaluationData":$observeFullEvaluationData,"flags":{"critical-demo":{
               "variationType":"boolean","variationValue":"true","doLog":false,
               "allocationKey":"test","variationKey":"on","reason":"TARGETING_MATCH","extraLogging":{}
             }}}}}

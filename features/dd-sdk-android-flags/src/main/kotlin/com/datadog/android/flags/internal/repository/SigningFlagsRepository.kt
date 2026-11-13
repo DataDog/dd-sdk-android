@@ -7,6 +7,8 @@
 package com.datadog.android.flags.internal.repository
 
 import com.datadog.android.flags.ResponseSigningMode
+import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKey
+import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.signing.ResponseSigningState
@@ -24,8 +26,11 @@ internal class SigningFlagsRepository(
         val context: EvaluationContext,
         val flags: Map<String, PrecomputedFlag>,
         val obfuscation: FlagKeyObfuscation?,
-        val proof: VerifiedResponse
-    )
+        val proof: VerifiedResponse,
+        val observeFullEvaluationData: Boolean
+    ) {
+        val telemetryTargetingKey = EvaluationTargetingKey.create(context.targetingKey, observeFullEvaluationData)
+    }
     private val verified = AtomicReference<VerifiedFlags?>(null)
     private val required = signing.configuration.mode == ResponseSigningMode.REQUIRED
     override val firstFlags = FirstFlagsLatch()
@@ -55,29 +60,23 @@ internal class SigningFlagsRepository(
     override fun installFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
-        obfuscation: FlagKeyObfuscation?
+        obfuscation: FlagKeyObfuscation?,
+        observeFullEvaluationData: Boolean
     ): FlagsInstallation = if (required) {
         FlagsInstallation { }
     } else {
-        ordinary().installFlagsAndContext(context, flags, obfuscation)
+        ordinary().installFlagsAndContext(context, flags, obfuscation, observeFullEvaluationData)
     }
-
-    @Deprecated("Use installFlagsAndContext instead")
-    override fun setFlagsAndContext(
-        context: EvaluationContext,
-        flags: Map<String, PrecomputedFlag>,
-        obfuscation: FlagKeyObfuscation?,
-        onInstalled: () -> Unit
-    ) = installFlagsAndContext(context, flags, obfuscation).complete(onInstalled)
 
     override fun installSignedFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
         obfuscation: FlagKeyObfuscation?,
-        proof: VerifiedResponse?
+        proof: VerifiedResponse?,
+        observeFullEvaluationData: Boolean
     ): FlagsInstallation? {
         if (proof != null && signing.permits(context, proof)) {
-            verified.set(VerifiedFlags(context, flags, obfuscation, proof))
+            verified.set(VerifiedFlags(context, flags, obfuscation, proof, observeFullEvaluationData))
         } else if (required) {
             return null
         }
@@ -87,26 +86,30 @@ internal class SigningFlagsRepository(
                 firstFlags.complete(if (obfuscation == null) flags.keys else emptySet(), deliverFirstFlags)
             }
         } else {
-            ordinary().installFlagsAndContext(context, flags, obfuscation)
+            ordinary().installFlagsAndContext(context, flags, obfuscation, observeFullEvaluationData)
         }
     }
 
     override fun restoreVerifiedFlags(): FlagsInstallation? = if (required) {
         null
     } else {
-        current()?.let { ordinary().installFlagsAndContext(it.context, it.flags, it.obfuscation) }
+        current()?.let {
+            ordinary().installFlagsAndContext(it.context, it.flags, it.obfuscation, it.observeFullEvaluationData)
+        }
     }
 
     @Suppress("ReturnCount") // Stop before resolving a flag when no admissible snapshot exists.
-    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>? {
-        if (!required) return ordinary().getPrecomputedFlagWithContext(key)
+    override fun getEvaluationSnapshot(key: String): FlagEvaluationSnapshot? {
+        if (!required) return ordinary().getEvaluationSnapshot(key)
         val state = current() ?: return null
         val encodedKey = state.obfuscation?.encode(key) ?: if (state.obfuscation == null) key else return null
-        return state.flags[encodedKey] to state.context
+        return FlagEvaluationSnapshot(
+            state.flags[encodedKey],
+            state.context,
+            state.observeFullEvaluationData,
+            state.telemetryTargetingKey
+        )
     }
-
-    override fun getPrecomputedFlag(key: String): PrecomputedFlag? =
-        if (required) getPrecomputedFlagWithContext(key)?.first else ordinary().getPrecomputedFlag(key)
 
     override fun getEvaluationContext(): EvaluationContext? =
         if (required) current()?.context else ordinary().getEvaluationContext()
@@ -116,16 +119,6 @@ internal class SigningFlagsRepository(
     } else {
         ordinary().getAssignmentsSnapshot()
     }
-
-    @Deprecated("Use getAssignmentsSnapshot instead")
-    override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> =
-        if (required) {
-            current()?.takeIf {
-                it.obfuscation == null
-            }?.flags ?: emptyMap()
-        } else {
-            ordinary().getAssignmentsSnapshot()?.flags ?: emptyMap()
-        }
 
     override fun hasConfiguration(): Boolean = if (required) current() != null else ordinary().hasConfiguration()
 
