@@ -37,20 +37,28 @@ Start reasons (`internal/ProfilingStartReason.kt`): `APPLICATION_LAUNCH`, `CONTI
 
 **Continuous**: `internal/ContinuousProfilingScheduler.kt` alternates ~60 s active windows and
 ~60 s cooldowns (±20 % jitter, random initial cooldown), waits for launch profiling to finish,
-samples per RUM session with `DeterministicSampler`, and pauses on background after a 10 s grace
-period (`ProfilingLifecycleCallback`). A window result is written with the RUM events buffered
+samples per RUM session with `DeterministicSampler`, and reacts to background
+(`ProfilingLifecycleCallback`): an active window keeps running for a 10 s grace period before it
+stops; a cooldown pauses immediately and resumes with its remaining duration on foreground. A window result is written with the RUM events buffered
 during it (`PendingRumEventsBuffer`).
 
 **ANR trigger**: `internal/trigger/ProfilingManagerTriggerRegistrar.kt` registers a `ProfilingManager`
 ANR trigger. The result and the RUM ANR event are paired in `PendingTriggerProfileStorage`
 (30 s expiry), then written via `ProfilingWriter.writeTriggerProfile` if quota allows.
 
-**Recording**: `internal/perfetto/PerfettoProfiler.kt` builds a `StackSamplingRequest`
-(201 Hz launch, 101 Hz continuous, 5 MB buffer), reports results through `ProfilerCallback`, and
-discards traces without stack samples (`PerfettoStackSampleDetector`).
+**Recording**: `internal/perfetto/PerfettoProfiler.kt` builds a stack-sampling
+`ProfilingRequest` with `StackSamplingRequestBuilder` (201 Hz launch, 101 Hz continuous, 5 MB buffer)
+and reports results through `ProfilerCallback`. Launch and continuous traces without stack samples
+are deleted and reported as failures (`PerfettoStackSampleDetector`), but only when the
+`com.google.android.profiling` package version is known and below 373040100
+(`internal/utils/ProfilingModuleVersion.kt`); unknown (0) or fixed versions skip the check.
 
-**Quota**: `internal/quota/ProfilingQuotaChecker.kt` performs one HTTP check per tracked RUM session
-(5 s timeout); results for past sessions are discarded.
+**Quota**: `internal/quota/ProfilingQuotaChecker.kt` runs an HTTP quota check (5 s timeout).
+`ProfilingFeature` requests it at session renewal only for tracked sessions that are sampled for
+continuous profiling or own the launch profile; otherwise a trigger profile matched in the current
+session requests it when no decision exists yet. Checks are deduplicated per current session
+(same session id is a no-op, a new id cancels the in-flight check), and results for past sessions
+are discarded.
 
 **Write and upload**: `internal/ProfilingDataWriter.kt` builds a batch event with the
 `perfetto.proto` and `rum-mobile-events.json` attachments; `internal/ProfilingRequestFactory.kt`
@@ -77,8 +85,10 @@ Remote configuration overrides the three sample-rate/ANR settings at `enable` ti
   sample rate, tracked state).
 - Writes to its feature context (`FeatureContextKeys`): `PROFILING_SAMPLE_RATE`,
   `PROFILING_APPLICATION_LAUNCH_SAMPLE_RATE`, `PROFILING_ANR_ENABLED`, `PROFILER_IS_RUNNING`,
-  and `PROFILING_QUOTA_REASON` / `PROFILING_QUOTA_SESSION_ID` when quota is denied. RUM reads them
-  in `rum/internal/profiling/ProfilingFeatureContext.kt`.
+  and `PROFILING_QUOTA_REASON` / `PROFILING_QUOTA_SESSION_ID` when quota is denied.
+- RUM readers: `rum/internal/profiling/ProfilingFeatureContext.kt` reads `PROFILER_IS_RUNNING` and the
+  quota reason/session pair; `telemetry/internal/TelemetryEventHandler.kt` reads the three
+  configuration keys for configuration telemetry.
 - Sends `ProfilingAnrDetectedEvent` to the RUM feature on ANR.
 
 ## 5. Generated models
