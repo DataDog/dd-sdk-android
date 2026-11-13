@@ -86,3 +86,9 @@ dependencies {
 datadogBuild {
     applyKotlinConfig()
 }
+
+tasks.register("lintRelease") {
+    group = "verification"
+    description = "Runs release lint on the US1 sample flavor."
+    dependsOn("lintUs1Release")
+}

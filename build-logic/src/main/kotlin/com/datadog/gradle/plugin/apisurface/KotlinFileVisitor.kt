@@ -6,16 +6,17 @@
 
 package com.datadog.gradle.plugin.apisurface
 
-import org.jetbrains.kotlin.CoreEnvironmentDeprecation
-import org.jetbrains.kotlin.cli.create
-import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
-import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
+import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreApplicationEnvironment
+import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreApplicationEnvironmentMode
+import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreProjectEnvironment
+import org.jetbrains.kotlin.cli.jvm.compiler.setupIdeaStandaloneExecution
 import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
 import org.jetbrains.kotlin.com.intellij.psi.PsiComment
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.com.intellij.psi.PsiWhiteSpace
-import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.parsing.KotlinParserDefinition
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -487,19 +488,22 @@ class KotlinFileVisitor {
         private const val INDENT = "  "
 
         /**
-         * The compiler environment sets up an IntelliJ application, which is a per-process
-         * singleton, so it is built once and kept for the life of the JVM. It holds no
-         * per-file state: every parsed file becomes garbage as soon as we are done with it.
+         * Share the PSI application and project for the lifetime of the isolated worker classloader.
+         * Only the parser is registered: no compiler configuration, source roots, dependency
+         * classpath or Analysis API session is needed. The factory creates non-physical files
+         * without an analysis context, so parsed files are not retained between visits.
          */
-        // Kotlin marks this environment factory as deprecated compiler infrastructure.
-        // We only use its project to initialize PSI parsing; no semantic analysis is performed.
-        @OptIn(CoreEnvironmentDeprecation::class)
         private val PSI_FACTORY: KtPsiFactory by lazy {
-            val environment = KotlinCoreEnvironment.createForProduction(
-                Disposer.newDisposable("KotlinFileVisitor"),
-                CompilerConfiguration.create(),
-                EnvironmentConfigFiles.JVM_CONFIG_FILES
-            )
+            val disposable = Disposer.newDisposable("KotlinFileVisitor")
+            setupIdeaStandaloneExecution()
+            val applicationEnvironment = KotlinCoreApplicationEnvironment.create(
+                disposable,
+                KotlinCoreApplicationEnvironmentMode.Production
+            ).apply {
+                registerParserDefinition(KotlinParserDefinition())
+                registerFileType(KotlinFileType.INSTANCE, KotlinFileType.EXTENSION)
+            }
+            val environment = KotlinCoreProjectEnvironment(disposable, applicationEnvironment)
             KtPsiFactory(environment.project, markGenerated = false)
         }
 

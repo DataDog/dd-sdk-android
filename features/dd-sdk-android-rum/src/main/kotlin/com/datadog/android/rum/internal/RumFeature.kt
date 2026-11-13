@@ -157,7 +157,7 @@ internal class RumFeature(
     private val sdkCore: FeatureSdkCore,
     internal val applicationId: String,
     internal val configuration: Configuration,
-    private val lateCrashReporterFactory: (InternalSdkCore) -> LateCrashReporter = {
+    lateCrashReporterFactory: (InternalSdkCore) -> LateCrashReporter = {
         DatadogLateCrashReporter(it)
     },
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,

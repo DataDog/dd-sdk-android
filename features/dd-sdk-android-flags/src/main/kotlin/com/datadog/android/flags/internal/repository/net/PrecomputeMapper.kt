@@ -39,18 +39,22 @@ internal class PrecomputeMapper(
         val options = metadata.get("evaluation_options")?.takeIf { it.isJsonObject }?.asJsonObject
         if (acknowledgesOptOut(options, experimentationOptOut)) {
             val obfuscation = FlagsJson.readObfuscation(metadata)
+            val observeFullEvaluationData = FlagsJson.readConsent(metadata)
             val flags = attributes.flags.additionalProperties
             if (obfuscation != null) FlagsJson.validateKeys(flags.keys.iterator())
             PrecomputedAssignments(
                 flags.mapNotNull { (key, value) ->
                     try {
-                        key to FlagsJson.readAssignment(FlagsJson.objectValue(value))
+                        key to FlagsJson.readAssignment(FlagsJson.objectValue(value)).copy(
+                            observeFullEvaluationData = observeFullEvaluationData
+                        )
                     } catch (_: UnsupportedVariationTypeException) {
                         warnUnsupportedType()
                         null
                     }
                 }.toMap(),
-                obfuscation
+                obfuscation,
+                observeFullEvaluationData
             )
         } else {
             internalLogger.log(

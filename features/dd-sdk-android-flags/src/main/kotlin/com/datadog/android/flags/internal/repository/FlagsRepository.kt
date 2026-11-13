@@ -6,38 +6,27 @@
 
 package com.datadog.android.flags.internal.repository
 
+import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
 
 internal interface FlagsRepository {
-    fun getPrecomputedFlag(key: String): PrecomputedFlag?
     fun getEvaluationContext(): EvaluationContext?
 
     /** Installs memory only. The caller must complete storage and notifications outside its locks. */
     fun installFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
-        obfuscation: FlagKeyObfuscation? = null
-    ): FlagsInstallation
-
-    /**
-     * Runs [onInstalled] after attempting storage submission, including when submission fails.
-     * For the first installation, it runs before publishing the first-flags result to listeners.
-     */
-    @Deprecated("Use installFlagsAndContext instead")
-    fun setFlagsAndContext(
-        context: EvaluationContext,
-        flags: Map<String, PrecomputedFlag>,
         obfuscation: FlagKeyObfuscation? = null,
-        onInstalled: () -> Unit = {}
-    )
+        observeFullEvaluationData: Boolean = false
+    ): FlagsInstallation
 
     /** Waits for initial persistence loading, up to the repository's timeout. Call without holding locks. */
     fun waitForPersistenceLoad()
 
     // Nonblocking snapshot. Missing flags retain their context from the same atomic state read.
-    fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>?
+    fun getEvaluationSnapshot(key: String): FlagEvaluationSnapshot?
     val firstFlags: FirstFlagsLatch
 
     /** True once a configuration is installed, including a valid configuration with zero flags. */
@@ -46,8 +35,6 @@ internal interface FlagsRepository {
     /** True when the installed configuration is for [context], including a valid configuration with zero flags. */
     fun hasConfigurationForContext(context: EvaluationContext): Boolean
 
-    @Deprecated("Use getAssignmentsSnapshot instead")
-    fun getFlagsSnapshot(): Map<String, PrecomputedFlag>
     fun getAssignmentsSnapshot(): FlagsAssignmentsSnapshot?
 }
 

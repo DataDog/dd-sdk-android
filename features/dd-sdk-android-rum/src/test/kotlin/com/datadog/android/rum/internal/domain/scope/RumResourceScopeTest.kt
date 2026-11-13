@@ -1292,6 +1292,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasTimestamp(resolveExpectedTimestamp() + RESOURCE_DURATION_MS, offset = 0L)
                     hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)
@@ -1463,6 +1464,7 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
                 .apply {
+                    hasTimestamp(resolveExpectedTimestamp() + RESOURCE_DURATION_MS, offset = 0L)
                     hasErrorId()
                     hasMessage(message)
                     hasErrorSource(source)

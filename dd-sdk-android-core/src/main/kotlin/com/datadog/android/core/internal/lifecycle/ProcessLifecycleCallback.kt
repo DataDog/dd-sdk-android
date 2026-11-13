@@ -12,22 +12,16 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.cancelUploadWorker
 import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.internal.lifecycle.ProcessLifecycleMonitor
-import java.lang.ref.Reference
-import java.lang.ref.WeakReference
 
 internal class ProcessLifecycleCallback(
-    appContext: Context,
+    private val appContext: Context,
     internal val instanceName: String,
     private val internalLogger: InternalLogger
 ) : ProcessLifecycleMonitor.Callback {
 
-    internal val contextWeakRef: Reference<Context> = WeakReference(appContext)
-
     override fun onStarted() {
-        contextWeakRef.get()?.let {
-            if (WorkManager.isInitialized()) {
-                cancelUploadWorker(it, instanceName, internalLogger)
-            }
+        if (WorkManager.isInitialized()) {
+            cancelUploadWorker(appContext, instanceName, internalLogger)
         }
     }
 
@@ -36,10 +30,8 @@ internal class ProcessLifecycleCallback(
     }
 
     override fun onStopped() {
-        contextWeakRef.get()?.let {
-            if (WorkManager.isInitialized()) {
-                triggerUploadWorker(it, instanceName, internalLogger)
-            }
+        if (WorkManager.isInitialized()) {
+            triggerUploadWorker(appContext, instanceName, internalLogger)
         }
     }
 

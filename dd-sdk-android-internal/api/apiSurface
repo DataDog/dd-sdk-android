@@ -400,6 +400,9 @@ fun android.view.View.isValidTapTarget(): Boolean
 fun Thread.safeGetThreadId(): Long
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String
+typealias StackTraceErrorHandler = (String, Throwable) -> Unit
+typealias AllStackTracesProvider = (StackTraceErrorHandler) -> Map<Thread, Array<StackTraceElement>>
+fun safeGetAllStackTraces(StackTraceErrorHandler): Map<Thread, Array<StackTraceElement>>
 fun Throwable.loggableStackTrace(): String
 fun Throwable.loggableMessage(): String?
 fun formatIsoUtc(Long): String

@@ -656,7 +656,7 @@ internal class KotlinFileVisitorTest {
     }
 
     @Test
-    fun `describes overriden functions`() {
+    fun `describes overridden functions`() {
         tempFile.writeText(
             """
             package foo.bar
@@ -1115,6 +1115,31 @@ internal class KotlinFileVisitorTest {
         assertThat(
             testedVisitor.description.toString()
         ).isEqualTo("fun doSomething(String = \"a  b\", String = \"not /* a */ comment\")\n")
+    }
+
+    @Test
+    fun `M parse current contents without previous file context W visitFile() {same path}`() {
+        // Given
+        tempFile.writeText(
+            """
+            package foo.bar
+            import unavailable.library.Widget
+            class First(val widget: Widget)
+            """.trimIndent()
+        )
+        testedVisitor.visitFile(tempFile)
+        tempFile.writeText("class Second(val widget: Widget)")
+
+        // When
+        testedVisitor.visitFile(tempFile)
+
+        // Then
+        assertThat(testedVisitor.description.toString()).isEqualTo(
+            "class foo.bar.First\n" +
+                "  constructor(unavailable.library.Widget)\n" +
+                "class Second\n" +
+                "  constructor(Widget)\n"
+        )
     }
 
     companion object {

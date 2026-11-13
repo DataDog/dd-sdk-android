@@ -290,7 +290,7 @@ val maxRetries = client.resolveIntValue("max-retry-count", 3)
 val discountPercentage = client.resolveDoubleValue("discount-rate", 0.0)
 ```
 
-Any numeric flag can be read with either method. `resolveIntValue` accepts whole original values within `Int` range, such as `5` or `5.0`. Fractional or out-of-range values return the default with `TYPE_MISMATCH`. `resolveDoubleValue` rounds fractional values to the nearest finite `Double`, such as `1.20000000000000001` to `1.2`; whole values must be represented exactly. `9007199254740993` and `1e300` therefore return `TYPE_MISMATCH`, as do overflow and nonzero underflow. Malformed numeric text, including `NaN` and `Infinity`, reports `PARSE_ERROR`. Decimal parsing is bounded to 64 characters per value; longer values report `PARSE_ERROR`. These rules apply to `integer`, `float`, and `number` flags, including cached assignments.
+Any numeric flag can be read with either method. `resolveIntValue` returns the value only when it is a whole number within `Int` range, such as `5` or `5.0`. Otherwise, it returns the default value: `resolve()` reports `TYPE_MISMATCH` when the value is fractional, such as `1.2`, or outside `Int` range, such as `2147483648`, and `PARSE_ERROR` when the value can't be parsed. To bound parsing work, a value longer than 64 characters is not parsed unless it is a plain integer within `Int` range, so it reports `PARSE_ERROR`. `resolveDoubleValue` returns a fractional value as the nearest `Double`, such as `1.2`. It returns a whole value only when the `Double` has exactly that value. For other whole values, such as `9007199254740993` or `1e300`, `resolve()` reports `TYPE_MISMATCH`. It also reports `TYPE_MISMATCH` for a nonzero value that rounds to zero, such as `1e-400`. `NaN` and `Infinity` report `PARSE_ERROR`. The same applies to a value longer than 64 characters whose `Double` is zero or 2^53 or more in magnitude.
 
 **Structured flags**
 ```kotlin
@@ -423,6 +423,27 @@ and `FlagsSubscription.unsubscribe`.
 
 The [Kotlin sample](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/SampleApplication.kt)
 registers an application-lifetime callback, logs keys, and evaluates `"my-flag-key"` with default `false`.
+
+## Evaluation telemetry privacy
+
+Evaluation telemetry protects targeting keys by default. Only a literal boolean `true` in the
+assignment response's `data.attributes.observeFullEvaluationData` enables raw targeting keys.
+Absent, false, null, or malformed consent values keep protection enabled without rejecting the
+assignments. Consent is cached with the assignments and changes on normal configuration refresh.
+Evaluations queued before a refresh retain the consent of the configuration they used.
+Experimentation opt-out does not change this consent setting. Errors for a pending or invalid
+requested context use consent from the latest accepted assignments response and the requested
+subject's targeting key. Before any accepted configuration is available, protection defaults to enabled.
+
+Protected nonempty targeting keys are SHA-256 hashes of the exact UTF-8 text, prefixed with
+`sha256_`. Empty keys remain empty; missing keys and malformed Unicode are omitted without losing
+the evaluation in both consent modes. Valid Unicode is preserved exactly, without normalization.
+Android continues to omit `context.evaluation` in both modes. The consent setting does
+not change evaluation inputs, assignment requests, exposure events, or RUM integration.
+
+Evaluation telemetry error messages contain stable error codes in both consent modes, with
+`GENERAL` for unknown failures. `trackEvaluations(false)` disables this track. Assignment `doLog`
+controls exposures independently.
 
 ## Integration with RUM
 

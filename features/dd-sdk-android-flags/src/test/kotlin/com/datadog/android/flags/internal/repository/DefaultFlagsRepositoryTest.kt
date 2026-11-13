@@ -12,8 +12,9 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.ExperimentationOptOutMode
+import com.datadog.android.flags.internal.aggregation.EvaluationPrivacy
+import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.FlagsStateEntry
-import com.datadog.android.flags.internal.model.PrecomputedAssignments
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.internal.selection.FlagSelection
@@ -60,7 +61,6 @@ import java.util.concurrent.atomic.AtomicReference
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-@Suppress("DEPRECATION") // These tests retain coverage for the deprecated repository helpers.
 internal class DefaultFlagsRepositoryTest {
 
     @Mock
@@ -140,19 +140,7 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
-    fun `M store generated assignments W setFlagsAndContext() { forged assignments }`(forge: Forge) {
-        // Given
-        val assignments = forge.getForgery<PrecomputedAssignments>()
-
-        // When
-        testedRepository.setFlagsAndContext(testContext, assignments.flags, assignments.obfuscation)
-
-        // Then
-        assertThat(testedRepository.getFlagsSnapshot()).isEqualTo(assignments.flags)
-    }
-
-    @Test
-    fun `M return snapshot without waiting W getPrecomputedFlagWithContext() {persistence pending}`(forge: Forge) {
+    fun `M return snapshot without waiting W getEvaluationSnapshot() {persistence pending}`(forge: Forge) {
         // Given
         doAnswer { null }.whenever(mockDataStore).value<FlagsStateEntry>(
             key = any(),
@@ -172,8 +160,8 @@ internal class DefaultFlagsRepositoryTest {
 
         try {
             // When
-            val snapshot = executor.submit<Pair<PrecomputedFlag?, EvaluationContext>?> {
-                testedRepository.getPrecomputedFlagWithContext(fakeKey)
+            val snapshot = executor.submit<FlagEvaluationSnapshot?> {
+                testedRepository.getEvaluationSnapshot(fakeKey)
             }
 
             // Then
@@ -185,16 +173,112 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
-    fun `M retain context W getPrecomputedFlagWithContext() {flag missing}`(forge: Forge) {
+    fun `M retain context W getEvaluationSnapshot() {flag missing}`(forge: Forge) {
         // Given
-        testedRepository.setFlagsAndContext(testContext, emptyMap())
+        testedRepository.installFlagsAndContext(testContext, emptyMap()).complete {}
 
         // When
-        val result = testedRepository.getPrecomputedFlagWithContext(forge.anAlphabeticalString())
+        val result = testedRepository.getEvaluationSnapshot(forge.anAlphabeticalString())
 
         // Then
-        assertThat(result?.first).isNull()
-        assertThat(result?.second).isEqualTo(testContext)
+        assertThat(result?.flag).isNull()
+        assertThat(result?.context).isEqualTo(testContext)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M reuse telemetry identity across flags W getEvaluationSnapshot()`(fakeConsent: Boolean, forge: Forge) {
+        // Given
+        testedRepository.installFlagsAndContext(
+            testContext,
+            multipleFlagsMap,
+            observeFullEvaluationData = fakeConsent
+        ).complete {
+        }
+        val fakeMissingKey = forge.anAlphabeticalString() + multipleFlagsMap.keys.joinToString()
+
+        // When
+        val snapshots = (multipleFlagsMap.keys + fakeMissingKey).map {
+            checkNotNull(testedRepository.getEvaluationSnapshot(it))
+        }
+        val repeated = checkNotNull(testedRepository.getEvaluationSnapshot(multipleFlagsMap.keys.first()))
+
+        // Then
+        val preparedIdentity = snapshots.first().telemetryTargetingKey
+        assertThat(preparedIdentity.value)
+            .isEqualTo(EvaluationPrivacy.targetingKey(testContext.targetingKey, fakeConsent))
+        snapshots.forEach { assertThat(it.telemetryTargetingKey).isSameAs(preparedIdentity) }
+        assertThat(repeated.telemetryTargetingKey).isSameAs(preparedIdentity)
+        assertThat(snapshots.last().flag).isNull()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M replace telemetry identity and retain old snapshots W installFlagsAndContext() + complete()`(
+        fakeConsent: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val fakeKey = multipleFlagsMap.keys.first()
+        val fakeNextContext = testContext.copy(targetingKey = testContext.targetingKey + forge.anAlphabeticalString())
+        testedRepository.installFlagsAndContext(
+            testContext,
+            multipleFlagsMap,
+            observeFullEvaluationData = fakeConsent
+        ).complete {
+        }
+        val initial = checkNotNull(testedRepository.getEvaluationSnapshot(fakeKey))
+
+        // When
+        testedRepository.installFlagsAndContext(
+            testContext,
+            multipleFlagsMap,
+            observeFullEvaluationData = !fakeConsent
+        ).complete {
+        }
+        val consentChanged = checkNotNull(testedRepository.getEvaluationSnapshot(fakeKey))
+        testedRepository.installFlagsAndContext(
+            fakeNextContext,
+            multipleFlagsMap,
+            observeFullEvaluationData = !fakeConsent
+        ).complete {
+        }
+        val contextChanged = checkNotNull(testedRepository.getEvaluationSnapshot(fakeKey))
+
+        // Then
+        assertThat(initial.telemetryTargetingKey.value)
+            .isEqualTo(EvaluationPrivacy.targetingKey(testContext.targetingKey, fakeConsent))
+        assertThat(initial.observeFullEvaluationData).isEqualTo(fakeConsent)
+        assertThat(consentChanged.telemetryTargetingKey.value)
+            .isEqualTo(EvaluationPrivacy.targetingKey(testContext.targetingKey, !fakeConsent))
+        assertThat(consentChanged.telemetryTargetingKey).isNotSameAs(initial.telemetryTargetingKey)
+        assertThat(contextChanged.telemetryTargetingKey.value)
+            .isEqualTo(EvaluationPrivacy.targetingKey(fakeNextContext.targetingKey, !fakeConsent))
+        assertThat(contextChanged.telemetryTargetingKey).isNotSameAs(consentChanged.telemetryTargetingKey)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M prepare reusable restored identity W getEvaluationSnapshot() {cached state}`(
+        fakeConsent: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val callback = preparePersistenceLoad(forge)
+        val fakeEntry = FlagsStateEntry(testContext, multipleFlagsMap, forge.aLong(), fakeConsent)
+        callback.onSuccess(DataStoreContent(forge.anInt(), fakeEntry))
+
+        // When
+        val snapshots = multipleFlagsMap.keys.map { checkNotNull(testedRepository.getEvaluationSnapshot(it)) }
+
+        // Then
+        val identity = snapshots.first().telemetryTargetingKey
+        assertThat(identity.value).isEqualTo(EvaluationPrivacy.targetingKey(testContext.targetingKey, fakeConsent))
+        snapshots.forEach {
+            assertThat(it.telemetryTargetingKey).isSameAs(identity)
+            assertThat(it.observeFullEvaluationData).isEqualTo(fakeConsent)
+            assertThat(checkNotNull(it.flag).reason).isEqualTo(ResolutionReason.CACHED.name)
+        }
     }
 
     @Test
@@ -204,7 +288,7 @@ internal class DefaultFlagsRepositoryTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = mapOf("env" to "test")
         )
-        testedRepository.setFlagsAndContext(context, emptyMap())
+        testedRepository.installFlagsAndContext(context, emptyMap()).complete {}
 
         // When
         val result = testedRepository.getEvaluationContext()
@@ -247,102 +331,6 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
-    fun `M wait for async persistence callback W getPrecomputedFlag() { persistence fails within timeout }`(
-        forge: Forge
-    ) {
-        // Given
-        val flagKey = forge.anAlphabeticalString()
-        val callbackBarrier = CountDownLatch(1)
-        var capturedCallback: DataStoreReadCallback<FlagsStateEntry>? = null
-        doAnswer {
-            capturedCallback = it.getArgument(2)
-            null
-        }.whenever(mockDataStore).value<FlagsStateEntry>(
-            key = any(),
-            version = anyOrNull(),
-            callback = any(),
-            deserializer = any()
-        )
-        val testedRepository = DefaultFlagsRepository(
-            featureSdkCore = mockFeatureSdkCore,
-            dataStore = mockDataStore,
-            flagSelection = null,
-            instanceName = "async"
-        )
-        val asyncThread = Thread {
-            callbackBarrier.await()
-            capturedCallback?.onFailure()
-        }
-
-        // When
-        asyncThread.start()
-        callbackBarrier.countDown()
-        val result = testedRepository.getPrecomputedFlag(flagKey)
-        asyncThread.join()
-
-        // Then
-        assertThat(result).isNull()
-    }
-
-    @Test
-    fun `M return null W getPrecomputedFlag() { persistence never loads }`(forge: Forge) {
-        // Given
-        val flagKey = forge.anAlphabeticalString()
-        doAnswer {
-            null
-        }.whenever(mockDataStore).value<FlagsStateEntry>(
-            key = any(),
-            version = anyOrNull(),
-            callback = any(),
-            deserializer = any()
-        )
-        val testedRepository = DefaultFlagsRepository(
-            featureSdkCore = mockFeatureSdkCore,
-            dataStore = mockDataStore,
-            flagSelection = null,
-            instanceName = "timeout",
-            persistenceLoadTimeoutMs = 1L
-        )
-
-        // When
-        val result = testedRepository.getPrecomputedFlag(flagKey)
-
-        // Then
-        assertThat(result).isNull()
-    }
-
-    @Test
-    fun `M return immediately without blocking W getPrecomputedFlag() { setFlagsAndContext already called }`(
-        forge: Forge
-    ) {
-        // Given
-        val flagKey = forge.anAlphabeticalString()
-        val flagValue = forge.anAlphabeticalString()
-        val context = EvaluationContext(
-            targetingKey = forge.anAlphabeticalString(),
-            attributes = mapOf("env" to "test")
-        )
-        val flags = mapOf(
-            flagKey to PrecomputedFlag(
-                variationType = "string",
-                variationValue = flagValue,
-                doLog = false,
-                allocationKey = forge.anAlphabeticalString(),
-                variationKey = forge.anAlphabeticalString(),
-                extraLogging = JSONObject(),
-                reason = "DEFAULT"
-            )
-        )
-        testedRepository.setFlagsAndContext(context, flags)
-
-        // When
-        val result = testedRepository.getPrecomputedFlag(flagKey)
-
-        // Then
-        assertThat(result?.variationValue).isEqualTo(flagValue)
-    }
-
-    @Test
     fun `M mark restored assignments cached W initial disk read completes`(forge: Forge) {
         val context = forge.getForgery<EvaluationContext>()
         val flags = forge.aList(size = forge.anInt(min = 1, max = 5)) {
@@ -352,12 +340,11 @@ internal class DefaultFlagsRepositoryTest {
 
         callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong())))
 
-        val snapshot = testedRepository.getFlagsSnapshot()
+        val snapshot = checkNotNull(testedRepository.getAssignmentsSnapshot()).flags
         flags.forEach { (key, originalFlag) ->
             assertThat(snapshot[key]).isEqualTo(originalFlag.copy(reason = ResolutionReason.CACHED.name))
-            assertThat(testedRepository.getPrecomputedFlag(key)).isSameAs(snapshot[key])
-            assertThat(testedRepository.getPrecomputedFlagWithContext(key))
-                .isEqualTo(snapshot[key] to context)
+            assertThat(testedRepository.getEvaluationSnapshot(key))
+                .isEqualTo(FlagEvaluationSnapshot(snapshot[key], context, false))
         }
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(context)
         assertThat(flags.values.map { it.reason }).doesNotContain(ResolutionReason.CACHED.name)
@@ -378,11 +365,11 @@ internal class DefaultFlagsRepositoryTest {
         }.toMap()
         val callback = preparePersistenceLoad(forge)
         callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong())))
-        val cachedSnapshot = testedRepository.getFlagsSnapshot()
+        val cachedSnapshot = checkNotNull(testedRepository.getAssignmentsSnapshot()).flags
 
-        testedRepository.setFlagsAndContext(context, flags)
+        testedRepository.installFlagsAndContext(context, flags).complete {}
 
-        assertThat(testedRepository.getFlagsSnapshot()).isSameAs(flags)
+        assertThat(checkNotNull(testedRepository.getAssignmentsSnapshot()).flags).isSameAs(flags)
         assertThat(cachedSnapshot.values.map { it.reason }).containsOnly(ResolutionReason.CACHED.name)
         val entry = argumentCaptor<FlagsStateEntry>()
         verify(mockDataStore).setValue(
@@ -404,11 +391,11 @@ internal class DefaultFlagsRepositoryTest {
         val callback = preparePersistenceLoad(forge)
         val networkContext = forge.getForgery<EvaluationContext>()
         val networkFlags = mapOf(forge.anAlphabeticalString() to forge.getForgery<PrecomputedFlag>())
-        testedRepository.setFlagsAndContext(networkContext, networkFlags)
+        testedRepository.installFlagsAndContext(networkContext, networkFlags).complete {}
 
         callback.onSuccess(DataStoreContent(forge.anInt(), FlagsStateEntry(context, flags, forge.aLong())))
 
-        assertThat(testedRepository.getFlagsSnapshot()).isSameAs(networkFlags)
+        assertThat(checkNotNull(testedRepository.getAssignmentsSnapshot()).flags).isSameAs(networkFlags)
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(networkContext)
     }
 
@@ -423,7 +410,7 @@ internal class DefaultFlagsRepositoryTest {
 
         // Then
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(context)
-        assertThat(testedRepository.getFlagsSnapshot()).isEmpty()
+        assertThat(checkNotNull(testedRepository.getAssignmentsSnapshot()).flags).isEmpty()
         assertThat(testedRepository.hasConfiguration()).isTrue()
         verify(mockDataStore, never()).setValue<FlagsStateEntry>(
             key = any(),
@@ -448,15 +435,15 @@ internal class DefaultFlagsRepositoryTest {
         if (diskFirst) {
             callback.onSuccess(diskContent)
         }
-        testedRepository.setFlagsAndContext(networkContext, emptyMap())
+        testedRepository.installFlagsAndContext(networkContext, emptyMap()).complete {}
         if (!diskFirst) {
             callback.onSuccess(diskContent)
         }
 
         // Then
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(networkContext)
-        assertThat(testedRepository.getFlagsSnapshot()).isEmpty()
-        assertThat(testedRepository.getPrecomputedFlag(diskFlags.keys.single())).isNull()
+        assertThat(checkNotNull(testedRepository.getAssignmentsSnapshot()).flags).isEmpty()
+        assertThat(testedRepository.getEvaluationSnapshot(diskFlags.keys.single())?.flag).isNull()
         val entry = argumentCaptor<FlagsStateEntry>()
         verify(mockDataStore).setValue(
             key = any(),
@@ -512,8 +499,12 @@ internal class DefaultFlagsRepositoryTest {
         assertThat(testedRepository.hasConfiguration()).isFalse()
     }
 
-    @Test
-    fun `M install persisted state W initial disk read completes { same flag selection }`(forge: Forge) {
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M install persisted state W initial disk read completes { same flag selection }`(
+        fakeConsent: Boolean,
+        forge: Forge
+    ) {
         // Given
         val context = forge.getForgery<EvaluationContext>()
         val flagKey = forge.anAlphabeticalString()
@@ -527,6 +518,7 @@ internal class DefaultFlagsRepositoryTest {
                     context,
                     mapOf(flagKey to forge.getForgery<PrecomputedFlag>()),
                     forge.aLong(),
+                    observeFullEvaluationData = fakeConsent,
                     flagSelection = CanonicalFlagSelection(listOf("mobile"), listOf("checkout-*"))
                 )
             )
@@ -534,7 +526,11 @@ internal class DefaultFlagsRepositoryTest {
 
         // Then
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(context)
-        assertThat(testedRepository.getPrecomputedFlag(flagKey)).isNotNull()
+        assertThat(testedRepository.getEvaluationSnapshot(flagKey)?.flag).isNotNull()
+        val snapshot = checkNotNull(testedRepository.getEvaluationSnapshot(flagKey))
+        assertThat(snapshot.observeFullEvaluationData).isEqualTo(fakeConsent)
+        assertThat(snapshot.telemetryTargetingKey.value)
+            .isEqualTo(EvaluationPrivacy.targetingKey(context.targetingKey, fakeConsent))
     }
 
     @Test
@@ -561,11 +557,11 @@ internal class DefaultFlagsRepositoryTest {
 
         // Then
         assertThat(testedRepository.getEvaluationContext()).isEqualTo(context)
-        assertThat(testedRepository.getPrecomputedFlag(flagKey)).isNotNull()
+        assertThat(testedRepository.getEvaluationSnapshot(flagKey)?.flag).isNotNull()
     }
 
     @Test
-    fun `M persist the state under the selection key W setFlagsAndContext() { flag selection }`(
+    fun `M persist the state under the selection key W installFlagsAndContext() + complete() { flag selection }`(
         @StringForgery(regex = "fake-[a-z]{4,8}") fakeInstanceName: String,
         forge: Forge
     ) {
@@ -578,7 +574,7 @@ internal class DefaultFlagsRepositoryTest {
         )
 
         // When
-        testedRepository.setFlagsAndContext(forge.getForgery(), emptyMap())
+        testedRepository.installFlagsAndContext(forge.getForgery(), emptyMap()).complete {}
 
         // Then
         verify(mockDataStore).setValue<FlagsStateEntry>(
@@ -598,7 +594,7 @@ internal class DefaultFlagsRepositoryTest {
     }
 
     @Test
-    fun `M persist the state under the unselected key W setFlagsAndContext() { no flag selection }`(
+    fun `M persist the state under the unselected key W installFlagsAndContext() + complete() { no flag selection }`(
         @StringForgery(regex = "fake-[a-z]{4,8}") fakeInstanceName: String,
         forge: Forge
     ) {
@@ -606,7 +602,7 @@ internal class DefaultFlagsRepositoryTest {
         testedRepository = DefaultFlagsRepository(mockFeatureSdkCore, fakeInstanceName, mockDataStore, null)
 
         // When
-        testedRepository.setFlagsAndContext(forge.getForgery(), emptyMap())
+        testedRepository.installFlagsAndContext(forge.getForgery(), emptyMap()).complete {}
 
         // Then
         verify(mockDataStore).setValue<FlagsStateEntry>(
@@ -666,7 +662,7 @@ internal class DefaultFlagsRepositoryTest {
         "FUTURE_EXPERIMENTS_ONLY,false,flags-future-v1-state,flags-selection-future-v1-state",
         "FUTURE_EXPERIMENTS_ONLY,true,flags-selection-future-v1-state,flags-future-v1-state"
     )
-    fun `M use the opt-out mode key for the selection W init and setFlagsAndContext()`(
+    fun `M use the opt-out mode key for the selection W init and installFlagsAndContext() + complete()`(
         mode: ExperimentationOptOutMode,
         selected: Boolean,
         expectedKeyPrefix: String,
@@ -686,7 +682,7 @@ internal class DefaultFlagsRepositoryTest {
         )
 
         // When
-        testedRepository.setFlagsAndContext(forge.getForgery(), emptyMap())
+        testedRepository.installFlagsAndContext(forge.getForgery(), emptyMap()).complete {}
 
         // Then
         verify(mockDataStore).value<FlagsStateEntry>(
@@ -712,14 +708,23 @@ internal class DefaultFlagsRepositoryTest {
         )
     }
 
-    @Test
-    fun `M persist the configured flag selection W setFlagsAndContext()`(forge: Forge) {
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M persist the configured flag selection and consent W installFlagsAndContext() + complete()`(
+        fakeConsent: Boolean,
+        forge: Forge
+    ) {
         // Given
         val flagSelection = CanonicalFlagSelection(listOf("mobile"), listOf("checkout-*"))
         preparePersistenceLoad(forge, flagSelection)
 
         // When
-        testedRepository.setFlagsAndContext(forge.getForgery(), emptyMap())
+        testedRepository.installFlagsAndContext(
+            forge.getForgery(),
+            emptyMap(),
+            observeFullEvaluationData = fakeConsent
+        ).complete {
+        }
 
         // Then
         val entry = argumentCaptor<FlagsStateEntry>()
@@ -731,26 +736,27 @@ internal class DefaultFlagsRepositoryTest {
             serializer = any()
         )
         assertThat(entry.firstValue.flagSelection).isEqualTo(flagSelection)
+        assertThat(entry.firstValue.observeFullEvaluationData).isEqualTo(fakeConsent)
     }
 
     @Test
-    fun `M return no flag with the context W getPrecomputedFlagWithContext() { empty flags map }`(forge: Forge) {
+    fun `M return no flag with the context W getEvaluationSnapshot() { empty flags map }`(forge: Forge) {
         // Given
         val context = forge.getForgery<EvaluationContext>()
-        testedRepository.setFlagsAndContext(context, emptyMap())
+        testedRepository.installFlagsAndContext(context, emptyMap()).complete {}
 
         // When
-        val result = testedRepository.getPrecomputedFlagWithContext(forge.anAlphabeticalString())
+        val result = testedRepository.getEvaluationSnapshot(forge.anAlphabeticalString())
 
         // Then
-        assertThat(result).isEqualTo(null to context)
+        assertThat(result).isEqualTo(FlagEvaluationSnapshot(null, context, false))
     }
 
     @Test
     fun `M return true W hasConfigurationForContext() { empty flags map for the same context }`(forge: Forge) {
         // Given
         val context = forge.getForgery<EvaluationContext>()
-        testedRepository.setFlagsAndContext(context, emptyMap())
+        testedRepository.installFlagsAndContext(context, emptyMap()).complete {}
 
         // When / Then
         assertThat(testedRepository.hasConfigurationForContext(context)).isTrue()
@@ -760,7 +766,7 @@ internal class DefaultFlagsRepositoryTest {
     fun `M return false W hasConfigurationForContext() { different context }`(forge: Forge) {
         // Given
         val context = forge.getForgery<EvaluationContext>()
-        testedRepository.setFlagsAndContext(context, singleFlagMap)
+        testedRepository.installFlagsAndContext(context, singleFlagMap).complete {}
 
         // When / Then
         assertThat(
@@ -800,10 +806,10 @@ internal class DefaultFlagsRepositoryTest {
     @Test
     fun `M return true W hasConfiguration() { empty flags map }`(forge: Forge) {
         // Given
-        testedRepository.setFlagsAndContext(
+        testedRepository.installFlagsAndContext(
             EvaluationContext(forge.anAlphabeticalString(), emptyMap()),
             emptyMap()
-        )
+        ).complete {}
 
         // When + Then
         assertThat(testedRepository.hasConfiguration()).isTrue()
@@ -812,7 +818,7 @@ internal class DefaultFlagsRepositoryTest {
     @Test
     fun `M return true W hasConfiguration() { single flag }`() {
         // Given
-        testedRepository.setFlagsAndContext(testContext, singleFlagMap)
+        testedRepository.installFlagsAndContext(testContext, singleFlagMap).complete {}
 
         // When + Then
         assertThat(testedRepository.hasConfiguration()).isTrue()
@@ -821,7 +827,7 @@ internal class DefaultFlagsRepositoryTest {
     @Test
     fun `M return true W hasConfiguration() { multiple flags }`() {
         // Given
-        testedRepository.setFlagsAndContext(testContext, multipleFlagsMap)
+        testedRepository.installFlagsAndContext(testContext, multipleFlagsMap).complete {}
 
         // When + Then
         assertThat(testedRepository.hasConfiguration()).isTrue()
@@ -906,22 +912,6 @@ internal class DefaultFlagsRepositoryTest {
 
         // Then
         assertThat(result).isFalse()
-    }
-
-    // endregion
-
-    // region getFlagsSnapshot
-
-    @Test
-    fun `M return flags map W getFlagsSnapshot() { flags state set }`() {
-        // Given
-        testedRepository.setFlagsAndContext(testContext, multipleFlagsMap)
-
-        // When
-        val result = testedRepository.getFlagsSnapshot()
-
-        // Then
-        assertThat(result).isEqualTo(multipleFlagsMap)
     }
 
     // endregion

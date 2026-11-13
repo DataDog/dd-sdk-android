@@ -27,7 +27,7 @@ import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 
 internal class RootSemanticsNodeMapper(
-    private val colorStringFormatter: ColorStringFormatter,
+    colorStringFormatter: ColorStringFormatter,
     private val semanticsUtils: SemanticsUtils = SemanticsUtils(),
     private val semanticsNodeMapper: Map<Role, SemanticsNodeMapper> = mapOf(
         Role.RadioButton to RadioButtonSemanticsNodeMapper(colorStringFormatter, semanticsUtils),

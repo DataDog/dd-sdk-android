@@ -42,7 +42,7 @@ internal sealed interface RumAutoLocationDetailsAction {
 @RumAutoLocationDetailsScope
 internal class RumAutoLocationDetailsViewModel @Inject constructor(
     private val navigator: RumAutoScenarioNavigator,
-    private val location: Location,
+    location: Location,
     @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default) private val defaultDispatcher: CoroutineDispatcher,
     private val viewModelScope: CoroutineScope,
     private val rickAndMortyNetworkService: RickAndMortyNetworkService

@@ -20,6 +20,11 @@ internal class UnsupportedVariationTypeException : JsonParseException("Unsupport
 
 /** Generated model adapters, legacy JSON conversions, and encoding validation. */
 internal object FlagsJson {
+    fun readConsent(json: JsonObject): Boolean {
+        val value = json.get(OBSERVE_FULL_EVALUATION_DATA)
+        return value?.isJsonPrimitive == true && value.asJsonPrimitive.isBoolean && value.asBoolean
+    }
+
     @Throws(JsonParseException::class)
     @Suppress("ThrowsCount") // Validate required fields and isolate unsupported variation types.
     fun readAssignment(json: JsonObject): PrecomputedFlag {
@@ -82,6 +87,7 @@ internal object FlagsJson {
             @Suppress("ThrowingInternalException") // Caught by the cache deserializer.
             throw JsonParseException("Invalid persisted flag timestamp")
         }
+        json.addProperty(OBSERVE_FULL_EVALUATION_DATA, readConsent(json))
         return FlagsState.fromJsonObject(json)
     }
 
@@ -134,4 +140,5 @@ internal object FlagsJson {
 
     private val STRING_FIELDS = listOf("variationType", "variationValue", "allocationKey", "variationKey", "reason")
     private const val DIGEST_HEX_LENGTH = 64
+    private const val OBSERVE_FULL_EVALUATION_DATA = "observeFullEvaluationData"
 }
