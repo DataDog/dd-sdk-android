@@ -19,7 +19,6 @@ val datadogRepositories = DatadogRepositories(providers)
 pluginManagement.repositories {
     datadogRepositories.gradlePluginPortalDepotProxied(this)
     datadogRepositories.mavenCentralDepotProxied(this)
-    datadogRepositories.googleConstrained(this)
 }
 
 dependencyResolutionManagement {
@@ -33,8 +32,6 @@ dependencyResolutionManagement {
         repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
         datadogRepositories.mavenCentralDepotProxied(this)
         datadogRepositories.gradlePluginPortalDepotProxied(this)
-        datadogRepositories.googleConstrained(this)
-        datadogRepositories.jitpackConstrained(this)
     }
 }
 
