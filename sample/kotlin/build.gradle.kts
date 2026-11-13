@@ -192,6 +192,8 @@ dependencies {
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
     implementation(libs.bundles.androidXCompose)
+    implementation(libs.androidXComposeUiToolingPreview)
+    debugImplementation(libs.androidXComposeUiTooling)
     implementation(libs.androidXLifecycleCompose)
     implementation(libs.material3Android)
     implementation(libs.googleAccompanistAppCompatTheme)

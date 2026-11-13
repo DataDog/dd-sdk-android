@@ -20,9 +20,6 @@ androidx.compose.ui:ui-android:1.5.4                            :    4 Mb
 androidx.compose.ui:ui-geometry-android:1.5.4                   :   36 Kb
 androidx.compose.ui:ui-graphics-android:1.5.4                   : 1422 Kb
 androidx.compose.ui:ui-text-android:1.5.4                       :  770 Kb
-androidx.compose.ui:ui-tooling-android:1.5.4                    :  222 Kb
-androidx.compose.ui:ui-tooling-data-android:1.5.4               :   36 Kb
-androidx.compose.ui:ui-tooling-preview-android:1.5.4            :   13 Kb
 androidx.compose.ui:ui-unit-android:1.5.4                       :   64 Kb
 androidx.core:core-ktx:1.2.0                                    :  155 Kb
 androidx.core:core:1.8.0                                        : 1052 Kb
