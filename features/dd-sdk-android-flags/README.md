@@ -517,6 +517,7 @@ Use `--source <local-checkout> --ref <commit>` to test an upstream fixture branc
 `--verify` checks local integrity without networking. `--check` also compares the recorded upstream commit.
 
 The weekly `Precomputed flag fixtures` workflow opens a draft update PR when fixture content changes.
+Scheduled and manual updates on `develop` share one concurrency group.
 It uses a short-lived token restricted to the default branch and this workflow.
 It waits when an update PR is already open. Normal SDK CI must pass before merge.
 Merge the upstream fixture contract before merging its consumer PRs.
