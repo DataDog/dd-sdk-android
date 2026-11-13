@@ -7,7 +7,9 @@
 package com.datadog.android.flags
 
 import com.datadog.android.flags.internal.DatadogFlagsClient
+import com.datadog.android.flags.internal.evaluation.EvaluationContextOutcomeCallback
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.lint.InternalApi
 
@@ -22,7 +24,7 @@ import com.datadog.android.lint.InternalApi
  * are not considered part of the public interface of the Datadog SDK.
  */
 @InternalApi
-@Suppress("ClassName", "ClassNaming", "UndocumentedPublicFunction")
+@Suppress("ClassName", "ClassNaming", "UndocumentedPublicFunction", "TooManyFunctions")
 class _FlagsInternalProxy(private val client: FlagsClient) {
     fun isExperimentationOptOutEnabled(): Boolean =
         (client as? DatadogFlagsClient)?.experimentationOptOut?.enabled == true
@@ -31,6 +33,27 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
         callback: EvaluationContextCallback?,
         telemetryOptedOut: Boolean
     ) {
+        if (client is DatadogFlagsClient) {
+            client.setEvaluationContext(context, callback, telemetryOptedOut)
+        } else {
+            client.setEvaluationContext(context, callback)
+        }
+    }
+
+    fun setEvaluationContext(
+        context: EvaluationContext,
+        telemetryOptedOut: Boolean?,
+        completion: (FlagsClientState, Throwable?) -> Unit
+    ) {
+        val callback = object : EvaluationContextOutcomeCallback {
+            override fun onSuccess(state: FlagsClientState) = completion(state, null)
+
+            override fun onFailure(error: Throwable, state: FlagsClientState) = completion(state, error)
+
+            override fun onSuccess() = completion(client.state.getCurrentState(), null)
+
+            override fun onFailure(error: Throwable) = completion(client.state.getCurrentState(), error)
+        }
         if (client is DatadogFlagsClient) {
             client.setEvaluationContext(context, callback, telemetryOptedOut)
         } else {

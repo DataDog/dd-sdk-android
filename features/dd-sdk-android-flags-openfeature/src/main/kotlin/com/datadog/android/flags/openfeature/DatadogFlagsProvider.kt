@@ -14,6 +14,7 @@ import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.FlagsClientState
+import com.datadog.android.flags.openfeature.internal.ContextUpdateOutcome
 import com.datadog.android.flags.openfeature.internal.adapters.convertToValue
 import com.datadog.android.flags.openfeature.internal.adapters.toDatadogEvaluationContext
 import com.datadog.android.flags.openfeature.internal.adapters.toEvaluationMetadata
@@ -30,6 +31,7 @@ import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import java.util.concurrent.CancellationException
 import com.datadog.android.flags.model.EvaluationContext as DatadogEvaluationContext
 import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
 
@@ -104,8 +106,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      * The method suspends while the [FlagsClient] in turn, takes the context and fetches the flags from the server.
      *
      * @param initialContext The initial evaluation context to set (optional)
-     * @throws java.util.concurrent.CancellationException in enabled experimentation opt-out modes, if a newer
-     * context replaces this request before its result is processed.
+     * @throws java.util.concurrent.CancellationException as internal OpenFeature control flow if a newer context
+     * replaces this request before its result is processed, or matching cached assignments leave the provider stale.
      * @throws OpenFeatureError if initialization fails or reaches the configured Flags initialization timeout
      * without matching cached assignments
      */
@@ -124,8 +126,8 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
      *
      * @param oldContext The previous evaluation context
      * @param newContext The new evaluation context to set
-     * @throws java.util.concurrent.CancellationException in enabled experimentation opt-out modes, if a newer
-     * context replaces this request before its result is processed.
+     * @throws java.util.concurrent.CancellationException as internal OpenFeature control flow if a newer context
+     * replaces this request before its result is processed, or matching cached assignments leave the provider stale.
      * @throws OpenFeatureError if the provider is unable to set the new context.
      */
     override suspend fun onContextSet(
@@ -253,6 +255,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         }
     }
 
+    @Throws(CancellationException::class)
     private suspend fun setEvaluationContext(context: OpenFeatureEvaluationContext?) {
         val datadogContext = targetingContext(context)
         val telemetryOptedOut = if (evaluationTelemetryOptOutParameterEnabled) {
@@ -260,7 +263,15 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         } else {
             null
         }
-        flagsClient.setEvaluationContextSuspend(datadogContext, telemetryOptedOut)
+        val outcome = flagsClient.setEvaluationContextSuspend(datadogContext, telemetryOptedOut)
+        if (outcome == ContextUpdateOutcome.STALE) {
+            // OpenFeature Kotlin 0.6.2 unconditionally publishes Ready when initialize() or onContextSet()
+            // returns. Cancellation is the only completion path that skips that overwrite, leaving the
+            // ProviderStale event emitted by observe() as the public state.
+            @Suppress("UnsafeThirdPartyFunctionCall", "ThrowingInternalException")
+            // Deliberate public control flow documented by initialize() and onContextSet().
+            throw CancellationException("Context completed with stale assignments")
+        }
     }
 
     private fun targetingContext(context: OpenFeatureEvaluationContext?): DatadogEvaluationContext =

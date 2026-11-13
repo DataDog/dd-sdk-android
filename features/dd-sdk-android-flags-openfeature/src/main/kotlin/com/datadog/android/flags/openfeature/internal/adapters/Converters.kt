@@ -25,12 +25,21 @@ internal fun OpenFeatureEvaluationContext.toDatadogEvaluationContext(
     val targetingKey = this.getTargetingKey()
 
     val stringAttributes = this.asMap()
-        .mapValues { (key, value) ->
-            if (experimentationOptOutEnabled && key == "dd_experimentation_opt_out_at" && value !is Value.String) {
+        .mapNotNull { (key, value) ->
+            if (key == ASSIGNMENT_TOKEN_ATTRIBUTE && value == Value.Null) {
+                null
+            } else if (key == ASSIGNMENT_TOKEN_ATTRIBUTE && value !is Value.String) {
+                // Native validation removes this reserved field and emits the same safe warning as native callers.
+                key to INVALID_ASSIGNMENT_TOKEN_SENTINEL
+            } else if (
+                experimentationOptOutEnabled &&
+                key == "dd_experimentation_opt_out_at" &&
+                value !is Value.String
+            ) {
                 // Preserve invalid typed input as an invalid timestamp for native validation.
-                ""
+                key to ""
             } else {
-                when (value) {
+                key to when (value) {
                     is Value.String -> value.asString() ?: value.toString()
                     is Value.Boolean -> value.asBoolean()?.toString() ?: value.toString()
                     is Value.Integer -> value.asInteger()?.toString() ?: value.toString()
@@ -39,6 +48,7 @@ internal fun OpenFeatureEvaluationContext.toDatadogEvaluationContext(
                 }
             }
         }
+        .toMap()
 
     return EvaluationContext(
         targetingKey = targetingKey,
@@ -76,6 +86,9 @@ internal fun Map<String, Any>.toEvaluationMetadata(): EvaluationMetadata {
  * Converts a Datadog [ErrorCode] to an OpenFeature [ErrorCode].
  */
 internal fun ErrorCode.toOpenFeatureErrorCode(): OpenFeatureErrorCode = when (this) {
+    ErrorCode.GENERAL ->
+        OpenFeatureErrorCode.GENERAL
+
     ErrorCode.INVALID_CONTEXT ->
         OpenFeatureErrorCode.INVALID_CONTEXT
 
@@ -91,3 +104,6 @@ internal fun ErrorCode.toOpenFeatureErrorCode(): OpenFeatureErrorCode = when (th
     ErrorCode.TYPE_MISMATCH ->
         OpenFeatureErrorCode.TYPE_MISMATCH
 }
+
+private const val ASSIGNMENT_TOKEN_ATTRIBUTE = "dd_assignment_token"
+private const val INVALID_ASSIGNMENT_TOKEN_SENTINEL = "\u0000"

@@ -15,6 +15,8 @@ import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.internal.aggregation.EvaluationTargetingKey
+import com.datadog.android.flags.internal.evaluation.AssignmentAuthorization
+import com.datadog.android.flags.internal.evaluation.EvaluationContextOutcomeCallback
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
@@ -27,6 +29,8 @@ import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientEvent
+import com.datadog.android.flags.model.FlagsClientState
+import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.utils.verifyLog
@@ -237,6 +241,187 @@ internal class DatadogFlagsClientTest {
         verify(mockRepository).getEvaluationSnapshot(fakeJsonKey)
         verify(mockRepository, never()).getEvaluationContext()
         verify(mockRepository).waitForPersistenceLoad()
+    }
+
+    @Test
+    fun `M return general error and default W resolve() {protected cross subject assignments}`(forge: Forge) {
+        // Given
+        val flag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = "true",
+            doLog = true
+        )
+        val installedContext = EvaluationContext("installed")
+        val experimentationOptOut = ExperimentationOptOut()
+        val assignmentAuthorization = AssignmentAuthorization(
+            mockInternalLogger,
+            experimentationOptOut.stateLock
+        )
+        assignmentAuthorization.prepare(
+            EvaluationContext(
+                "requested",
+                mapOf(AssignmentAuthorization.ATTRIBUTE to "header.payload.signature")
+            )
+        )
+        whenever(mockFlagsRepository.getEvaluationSnapshot(fakeJsonKey)) doReturn
+            FlagEvaluationSnapshot(flag, installedContext, false)
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore,
+            mockEvaluationsManager,
+            mockFlagsRepository,
+            FlagsConfiguration.Builder().trackExposures(true).build(),
+            mockRumEvaluationLogger,
+            mockProcessor,
+            null,
+            mockFlagsStateManager,
+            false,
+            experimentationOptOut,
+            assignmentAuthorization
+        )
+
+        // When
+        val result = testedClient.resolve(fakeJsonKey, false)
+
+        // Then
+        assertThat(result.value).isFalse()
+        assertThat(result.errorCode).isEqualTo(ErrorCode.GENERAL)
+        assertThat(result.errorMessage)
+            .isEqualTo("Flag '$fakeJsonKey': ${AssignmentAuthorization.AUTHORIZATION_FAILED}")
+        verifyNoInteractions(mockProcessor)
+    }
+
+    @Test
+    fun `M not return previous subject value W resolve() {authorized subject switch completes during read}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = "true"
+        )
+        val fakeInstalledContext = EvaluationContext("installed-subject")
+        val experimentationOptOut = ExperimentationOptOut()
+        val assignmentAuthorization = AssignmentAuthorization(
+            mockInternalLogger,
+            experimentationOptOut.stateLock
+        )
+        val authorizationRequest = assignmentAuthorization.prepare(
+            EvaluationContext(
+                "requested-subject",
+                mapOf(AssignmentAuthorization.ATTRIBUTE to "header.payload.signature")
+            )
+        )
+        val snapshotRead = CountDownLatch(1)
+        val releaseSnapshot = CountDownLatch(1)
+        val switchStarted = CountDownLatch(1)
+        val switchCompleted = CountDownLatch(1)
+        whenever(mockFlagsRepository.getEvaluationSnapshot(fakeJsonKey)).thenAnswer {
+            snapshotRead.countDown()
+            check(releaseSnapshot.await(5, TimeUnit.SECONDS))
+            FlagEvaluationSnapshot(fakeFlag, fakeInstalledContext, false)
+        }
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore,
+            mockEvaluationsManager,
+            mockFlagsRepository,
+            FlagsConfiguration.Builder().build(),
+            mockRumEvaluationLogger,
+            mockProcessor,
+            null,
+            mockFlagsStateManager,
+            false,
+            experimentationOptOut,
+            assignmentAuthorization
+        )
+        val executor = Executors.newFixedThreadPool(2)
+
+        try {
+            // When
+            val resolution = executor.submit<ResolutionDetails<Boolean>> {
+                testedClient.resolve(fakeJsonKey, false)
+            }
+            assertThat(snapshotRead.await(5, TimeUnit.SECONDS)).isTrue()
+            val subjectSwitch = executor.submit {
+                switchStarted.countDown()
+                assignmentAuthorization.onAssignmentsAccepted(authorizationRequest)
+                switchCompleted.countDown()
+            }
+            assertThat(switchStarted.await(5, TimeUnit.SECONDS)).isTrue()
+            val switchCompletedBeforeSnapshot = switchCompleted.await(250, TimeUnit.MILLISECONDS)
+            releaseSnapshot.countDown()
+            val result = resolution.get(5, TimeUnit.SECONDS)
+            subjectSwitch.get(5, TimeUnit.SECONDS)
+
+            // Then
+            assertThat(switchCompletedBeforeSnapshot).isFalse()
+            assertThat(result.value).isFalse()
+            assertThat(result.errorCode).isEqualTo(ErrorCode.GENERAL)
+        } finally {
+            releaseSnapshot.countDown()
+            executor.shutdownNow()
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue()
+        }
+    }
+
+    @Test
+    fun `M exclude assignment token W trackFlagExposure()`(forge: Forge) {
+        // Given
+        val token = "header.payload.signature"
+        val context = EvaluationContext(
+            "subject",
+            mapOf(AssignmentAuthorization.ATTRIBUTE to token, "plan" to "premium")
+        )
+        val flag = forge.getForgery<PrecomputedFlag>().copy(doLog = true)
+        val capturedContext = argumentCaptor<EvaluationContext>()
+
+        // When
+        testedClient.trackFlagExposure(fakeJsonKey, flag, context)
+
+        // Then
+        verify(mockProcessor).processEvent(eq(fakeJsonKey), capturedContext.capture(), eq(flag))
+        assertThat(capturedContext.firstValue.attributes).isEqualTo(mapOf("plan" to "premium"))
+    }
+
+    @Test
+    fun `M exclude assignment token W trackFlagEvaluationEvent()`(forge: Forge) {
+        // Given
+        val token = "header.payload.signature"
+        val context = EvaluationContext(
+            "subject",
+            mapOf(AssignmentAuthorization.ATTRIBUTE to token, "plan" to "premium")
+        )
+        val flag = forge.getForgery<PrecomputedFlag>()
+        val mockEvaluationsFeature = mock<EvaluationsFeature>()
+        val capturedContext = argumentCaptor<EvaluationContext>()
+        testedClient = DatadogFlagsClient(
+            mockFeatureSdkCore,
+            mockEvaluationsManager,
+            mockFlagsRepository,
+            FlagsConfiguration.Builder().trackEvaluations(true).build(),
+            mockRumEvaluationLogger,
+            mockProcessor,
+            mockEvaluationsFeature,
+            mockFlagsStateManager,
+            false,
+            ExperimentationOptOut()
+        )
+
+        // When
+        testedClient.trackFlagEvaluationEvent(fakeJsonKey, flag, context, null)
+
+        // Then
+        verify(mockEvaluationsFeature).processEvaluation(
+            eq(fakeJsonKey),
+            capturedContext.capture(),
+            eq(flag.variationKey),
+            eq(flag.allocationKey),
+            isNull(),
+            isNull(),
+            eq(flag.observeFullEvaluationData),
+            eq(context.targetingKey),
+            any()
+        )
+        assertThat(capturedContext.firstValue.attributes).isEqualTo(mapOf("plan" to "premium"))
     }
 
     @ParameterizedTest
@@ -2304,6 +2489,36 @@ internal class DatadogFlagsClientTest {
     // endregion
 
     // region Internal APIs exposed through _FlagsInternalProxy
+
+    @Test
+    fun `M report request outcome W setEvaluationContext() {internal proxy}`(forge: Forge) {
+        // Given
+        val fakeContext = EvaluationContext(forge.anAlphabeticalString())
+        val fakeError = RuntimeException(forge.anAlphabeticalString())
+        var completionState: FlagsClientState? = null
+        var completionError: Throwable? = null
+        val testedProxy = _FlagsInternalProxy(testedClient)
+
+        // When
+        testedProxy.setEvaluationContext(fakeContext, null) { state, error ->
+            completionState = state
+            completionError = error
+        }
+        val callbackCaptor = argumentCaptor<EvaluationContextCallback>()
+        verify(mockEvaluationsManager).updateEvaluationsForContext(
+            eq(fakeContext),
+            callbackCaptor.capture(),
+            any()
+        )
+        val callback = checkNotNull(callbackCaptor.firstValue as? EvaluationContextOutcomeCallback) {
+            "Expected a state-aware callback"
+        }
+        callback.onFailure(fakeError, FlagsClientState.Stale)
+
+        // Then
+        assertThat(completionState).isEqualTo(FlagsClientState.Stale)
+        assertThat(completionError).isSameAs(fakeError)
+    }
 
     @ParameterizedTest
     @EnumSource(ExperimentationOptOutMode::class)

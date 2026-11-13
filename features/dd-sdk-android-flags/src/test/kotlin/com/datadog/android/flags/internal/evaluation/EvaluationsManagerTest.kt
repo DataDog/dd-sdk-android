@@ -16,6 +16,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.ExperimentationOptOutMode
+import com.datadog.android.flags.FlagsAssignmentAuthorizationException
 import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
 import com.datadog.android.flags.FlagsInvalidContextException
@@ -32,7 +33,9 @@ import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.net.NetworkRequestFailedException
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsResponse
+import com.datadog.android.flags.internal.net.PrecomputedAssignmentsResult
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
+import com.datadog.android.flags.internal.repository.FlagsAssignmentsSnapshot
 import com.datadog.android.flags.internal.repository.FlagsInstallation
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
@@ -859,6 +862,135 @@ internal class EvaluationsManagerTest {
         }
     }
 
+    @Test
+    fun `M report failed refresh with stale outcome W updateEvaluationsForContext() {token request fails}`() {
+        // Given
+        val token = "header.payload.signature"
+        val requestedContext = EvaluationContext(
+            "subject",
+            mapOf(AssignmentAuthorization.ATTRIBUTE to token, "version" to "new")
+        )
+        val sanitizedContext = EvaluationContext("subject", mapOf("version" to "new"))
+        val cachedContext = EvaluationContext("subject", mapOf("version" to "old"))
+        var callbackState: FlagsClientState? = null
+        var callbackError: Throwable? = null
+        val callback = object : EvaluationContextOutcomeCallback {
+            override fun onSuccess(state: FlagsClientState) {
+                fail<Unit>("onSuccess should not be called")
+            }
+
+            override fun onFailure(error: Throwable, state: FlagsClientState) {
+                callbackError = error
+                callbackState = state
+            }
+
+            override fun onSuccess() {
+                fail<Unit>("state-aware onSuccess should be called")
+            }
+
+            override fun onFailure(error: Throwable) {
+                fail<Unit>("state-aware onFailure should be called")
+            }
+        }
+        whenever(mockFlagsRepository.hasConfiguration()).thenReturn(true)
+        whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(cachedContext)
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(sanitizedContext),
+                eq(fakeDatadogContext),
+                any(),
+                eq(token)
+            )
+        ).thenReturn(null)
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(requestedContext, callback)
+
+        // Then
+        verify(mockFlagsStateManager).updateState(FlagsClientState.Stale)
+        assertThat(callbackState).isEqualTo(FlagsClientState.Stale)
+        assertThat(callbackError).isInstanceOf(NetworkRequestFailedException::class.java)
+    }
+
+    @Test
+    fun `M install sanitized context W updateEvaluationsForContext() {token request succeeds}`() {
+        // Given
+        val token = "header.payload.signature"
+        val publicContext = EvaluationContext(
+            "subject",
+            mapOf(AssignmentAuthorization.ATTRIBUTE to token, "plan" to "premium")
+        )
+        val sanitizedContext = EvaluationContext("subject", mapOf("plan" to "premium"))
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(sanitizedContext),
+                eq(fakeDatadogContext),
+                any(),
+                eq(token)
+            )
+        ).thenReturn(PrecomputedAssignmentsResponse(EMPTY_FLAGS_RESPONSE_JSON, null))
+        whenever(
+            mockPrecomputeMapper.map(EMPTY_FLAGS_RESPONSE_JSON, null, redactErrors = true)
+        ).thenReturn(PrecomputedAssignments(emptyMap()))
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(publicContext)
+
+        // Then
+        verify(mockFlagsRepository).installFlagsAndContext(sanitizedContext, emptyMap(), null, false)
+    }
+
+    @Test
+    fun `M withhold cross subject fallback W updateEvaluationsForContext() {token request fails}`() {
+        // Given
+        val token = "header.payload.signature"
+        val requestedContext = EvaluationContext(
+            "requested",
+            mapOf(AssignmentAuthorization.ATTRIBUTE to token)
+        )
+        val callback = mock<EvaluationContextCallback>()
+        whenever(mockFlagsRepository.hasConfiguration()).thenReturn(true)
+        whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(EvaluationContext("installed"))
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(requestedContext, callback)
+
+        // Then
+        verify(mockFlagsStateManager).updateState(isA<FlagsClientState.Error>())
+        verify(callback).onFailure(isA<NetworkRequestFailedException>())
+        verify(callback, never()).onSuccess()
+    }
+
+    @Test
+    fun `M use same subject fallback W updateEvaluationsForContext() {typed rejection without token}`() {
+        // Given
+        val requestedContext = EvaluationContext("subject", mapOf("version" to "new"))
+        val cachedContext = EvaluationContext("subject", mapOf("version" to "old"))
+        val callback = mock<EvaluationContextCallback>()
+        whenever(mockFlagsRepository.hasConfiguration()).thenReturn(true)
+        whenever(mockFlagsRepository.getEvaluationContext()).thenReturn(cachedContext)
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(requestedContext),
+                eq(fakeDatadogContext),
+                any()
+            )
+        ).thenReturn(PrecomputedAssignmentsResult.AuthorizationRejected)
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(requestedContext, callback)
+
+        // Then
+        verify(mockFlagsStateManager).updateState(FlagsClientState.Stale)
+        verify(callback).onFailure(isA<FlagsAssignmentAuthorizationException>())
+        verify(callback, never()).onSuccess()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            AssignmentAuthorization.AUTHORIZATION_FAILED
+        )
+    }
+
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
     fun `M install consent and invoke onSuccess W updateEvaluationsForContext() { empty flags }`(
@@ -1101,6 +1233,152 @@ internal class EvaluationsManagerTest {
 
         // Then
         assertThat(stateAtTimeoutCallback).isEqualTo(FlagsClientState.Stale)
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "DISABLED,true,false,true",
+        "DISABLED,false,false,false",
+        "IMMEDIATE,true,false,false",
+        "FUTURE_EXPERIMENTS_ONLY,true,false,false",
+        "IMMEDIATE,true,true,true",
+        "FUTURE_EXPERIMENTS_ONLY,true,true,true"
+    )
+    fun `M select cached state W updateEvaluationsForContext() {authorization timeout before fetch starts}`(
+        mode: ExperimentationOptOutMode,
+        sameSubject: Boolean,
+        exactContext: Boolean,
+        expectStale: Boolean
+    ) {
+        // Given
+        val attributes = mutableMapOf("plan" to "requested")
+        if (mode != ExperimentationOptOutMode.DISABLED) {
+            attributes[ExperimentationOptOut.ATTRIBUTE] = "2026-10-21T12:00:00Z"
+        }
+        val sanitizedContext = EvaluationContext("requested-subject", attributes)
+        val requestedContext = sanitizedContext.copy(
+            attributes = attributes + (AssignmentAuthorization.ATTRIBUTE to "header.payload.signature")
+        )
+        val installedContext = when {
+            exactContext -> sanitizedContext
+            sameSubject -> sanitizedContext.copy(attributes = attributes + ("plan" to "cached"))
+            else -> sanitizedContext.copy(targetingKey = "installed-subject")
+        }
+        val stateManager = FlagsStateManager(
+            DDCoreStateHolder.create(
+                initialState = FlagsClientState.NotReady,
+                onStateChanged = FlagsStateListener::onStateChanged
+            )
+        )
+        val callback = mock<EvaluationContextCallback>()
+        var timeoutAction: (() -> Unit)? = null
+        whenever(mockExecutorService.execute(any())).thenAnswer { null }
+        whenever(mockFlagsRepository.getAssignmentsSnapshot()) doReturn
+            FlagsAssignmentsSnapshot(emptyMap(), installedContext)
+        val testedManager = EvaluationsManager(
+            sdkCore = mockSdkCore,
+            executorService = mockExecutorService,
+            internalLogger = mockInternalLogger,
+            flagsRepository = mockFlagsRepository,
+            assignmentsReader = mockAssignmentsDownloader,
+            precomputeMapper = mockPrecomputeMapper,
+            flagStateManager = stateManager,
+            initializationTimeoutMs = 2_500L,
+            initializationTimeoutScheduler = { _, action ->
+                timeoutAction = action
+                {}
+            },
+            experimentationOptOut = ExperimentationOptOut(mode)
+        )
+
+        // When
+        testedManager.updateEvaluationsForContext(requestedContext, callback)
+        checkNotNull(timeoutAction).invoke()
+
+        // Then
+        if (expectStale) {
+            assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        } else {
+            assertThat(stateManager.getCurrentState()).isInstanceOf(FlagsClientState.Error::class.java)
+        }
+        verify(callback).onFailure(isA<FlagsInitializationTimeoutException>())
+        verify(mockFlagsRepository).getAssignmentsSnapshot()
+        verify(mockFlagsRepository, never()).getEvaluationContext()
+    }
+
+    @Test
+    fun `M keep STALE W updateEvaluationsForContext() {same-subject timeout then request fails}`() {
+        // Given
+        val token = "header.payload.signature"
+        val requestedContext = EvaluationContext(
+            "subject",
+            mapOf(AssignmentAuthorization.ATTRIBUTE to token, "plan" to "requested")
+        )
+        val sanitizedContext = EvaluationContext("subject", mapOf("plan" to "requested"))
+        val installedContext = EvaluationContext("subject", mapOf("plan" to "cached"))
+        val stateManager = FlagsStateManager(
+            DDCoreStateHolder.create(
+                initialState = FlagsClientState.NotReady,
+                onStateChanged = FlagsStateListener::onStateChanged
+            )
+        )
+        val stateListener = mock<FlagsStateListener>()
+        val callback = mock<EvaluationContextCallback>()
+        val operations = mutableListOf<Runnable>()
+        lateinit var timeoutAction: () -> Unit
+        stateManager.addListener(stateListener)
+        whenever(mockExecutorService.execute(any())).thenAnswer {
+            operations += it.getArgument<Runnable>(0)
+            null
+        }
+        whenever(mockFlagsRepository.getAssignmentsSnapshot()) doReturn
+            FlagsAssignmentsSnapshot(emptyMap(), installedContext)
+        whenever(mockFlagsRepository.hasConfiguration()) doReturn true
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn installedContext
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(sanitizedContext),
+                eq(fakeDatadogContext),
+                any(),
+                eq(token)
+            )
+        ).thenReturn(null)
+        val testedManager = EvaluationsManager(
+            sdkCore = mockSdkCore,
+            executorService = mockExecutorService,
+            internalLogger = mockInternalLogger,
+            flagsRepository = mockFlagsRepository,
+            assignmentsReader = mockAssignmentsDownloader,
+            precomputeMapper = mockPrecomputeMapper,
+            flagStateManager = stateManager,
+            initializationTimeoutMs = 2_500L,
+            initializationTimeoutScheduler = { _, action ->
+                timeoutAction = action
+                {}
+            },
+            experimentationOptOut = ExperimentationOptOut()
+        )
+
+        // When
+        testedManager.updateEvaluationsForContext(requestedContext, callback)
+        timeoutAction()
+
+        // Then
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        verify(callback).onFailure(isA<FlagsInitializationTimeoutException>())
+
+        // When
+        operations.single().run()
+
+        // Then
+        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        inOrder(stateListener) {
+            verify(stateListener).onStateChanged(FlagsClientState.NotReady)
+            verify(stateListener).onStateChanged(FlagsClientState.Reconciling)
+            verify(stateListener).onStateChanged(FlagsClientState.Stale)
+        }
+        verifyNoMoreInteractions(stateListener)
+        verifyNoMoreInteractions(callback)
     }
 
     @Test
