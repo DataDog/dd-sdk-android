@@ -40,6 +40,9 @@ stages:
     - export DATADOG_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)
 
   setup-gradle:
+    # Rewrite only the CI checkout; retain the wrapper's version and distribution type.
+    - |
+      sed -i -E "s#^distributionUrl=.*services\.gradle\.org/distributions/gradle-(.*)-(all|bin)\.zip\$#distributionUrl=${GRADLE_DISTRIBUTION_MIRROR}/v\1/gradle-\1-\2.zip#" gradle/wrapper/gradle-wrapper.properties
     - export GRADLE_USER_HOME="cache/"
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - |
