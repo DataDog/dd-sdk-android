@@ -35,7 +35,8 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
             observeFullEvaluationData = model.observeFullEvaluationData,
             obfuscated = true.takeIf { model.obfuscation != null },
             obfuscation = model.obfuscation?.let { FlagsState.Obfuscation(FlagKeyObfuscation.SCHEME, it.salt) },
-            flagSelection = model.flagSelection?.let { FlagsState.FlagSelection(it.tags, it.keyPatterns) }
+            flagSelection = model.flagSelection?.let { FlagsState.FlagSelection(it.tags, it.keyPatterns) },
+            responseSigningCacheScope = model.responseSigningCacheScope
         ).toJson().toString()
         json.escapeUnpairedSurrogates()
     } catch (e: JsonParseException) {

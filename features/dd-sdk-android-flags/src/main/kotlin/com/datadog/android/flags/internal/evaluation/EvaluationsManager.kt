@@ -149,7 +149,18 @@ internal class EvaluationsManager(
         callback: EvaluationContextCallback?,
         onFetchFinished: () -> Unit
     ) {
-        val generation = signing?.begin(request.context)
+        var generation: Long? = null
+        if (signing != null && !experimentationOptOut.ifLatest(request) {
+                generation = signing.begin(request.context)
+            }
+        ) {
+            synchronized(initializationTerminalLock) {
+                enqueueCompletion(InitializationResult(callback), FlagsContextSupersededException(SUPERSEDED_MESSAGE))
+            }
+            effects.drain()
+            onFetchFinished()
+            return
+        }
         if (request.invalid) {
             val error = FlagsInvalidContextException(ExperimentationOptOut.INVALID_CONTEXT_MESSAGE)
             synchronized(initializationTerminalLock) {
@@ -165,8 +176,9 @@ internal class EvaluationsManager(
             onFetchFinished()
             return
         }
-        if (signing != null && generation != null) {
-            fetchSignedEvaluations(request, generation, callback, onFetchFinished, signing)
+        val registeredGeneration = generation
+        if (signing != null && registeredGeneration != null) {
+            fetchSignedEvaluations(request, registeredGeneration, callback, onFetchFinished, signing)
         } else {
             fetchEvaluations(request, callback, onFetchFinished)
         }

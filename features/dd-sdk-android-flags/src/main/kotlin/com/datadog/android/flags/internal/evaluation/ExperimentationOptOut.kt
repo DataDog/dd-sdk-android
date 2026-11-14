@@ -36,6 +36,12 @@ internal class ExperimentationOptOut(
         return request
     }
 
+    fun ifLatest(request: Request, action: () -> Unit): Boolean = synchronized(stateLock) {
+        if (currentRequest !== request) return false
+        action()
+        true
+    }
+
     fun currentValidRequest(): Request? = synchronized(stateLock) { currentRequest?.takeUnless { it.invalid } }
 
     fun ifCurrent(request: Request, action: () -> Unit): Boolean = synchronized(stateLock) {

@@ -495,7 +495,7 @@ interface FlagsClient {
             }
             val datastore = featureSdkCore.getFeature(FLAGS_FEATURE_NAME)
                 ?.dataStore
-            val ordinaryRepository: (String) -> FlagsRepository = { instanceName ->
+            val ordinaryRepository: (String, String?) -> FlagsRepository = { instanceName, scope ->
                 if (datastore != null) {
                     DefaultFlagsRepository(
                         featureSdkCore = featureSdkCore,
@@ -503,7 +503,8 @@ interface FlagsClient {
                         instanceName = instanceName,
                         flagSelection = flagsFeature.flagSelection,
                         experimentationOptOutMode = experimentationOptOutMode,
-                        deliverFirstFlags = deliverFirstFlags
+                        deliverFirstFlags = deliverFirstFlags,
+                        responseSigningCacheScope = scope
                     )
                 } else {
                     NoOpFlagsRepository()
@@ -511,11 +512,11 @@ interface FlagsClient {
             }
             val flagsRepository = signing?.let {
                 SigningFlagsRepository(
-                    { scope -> ordinaryRepository("$name-signing-v1-observe-$scope") },
+                    { scope -> ordinaryRepository("$name-signing-v1-observe", scope) },
                     it,
                     deliverFirstFlags
                 )
-            } ?: ordinaryRepository(name)
+            } ?: ordinaryRepository(name, null)
 
             val callFactory = if (signing == null) {
                 featureSdkCore.createOkHttpCallFactory()

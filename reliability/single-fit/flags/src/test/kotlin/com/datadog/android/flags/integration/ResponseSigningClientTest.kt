@@ -4,110 +4,82 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.flags.internal.signing
+package com.datadog.android.flags.integration
 
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.core.persistence.Serializer
+import com.datadog.android.core.stub.StubDataStoreHandler
+import com.datadog.android.core.stub.StubExecutorService
+import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.flags.Flags
+import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
-import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.ResponseSigningMode
-import com.datadog.android.flags.internal.DatadogFlagsClient
-import com.datadog.android.flags.internal.FlagsStateManager
-import com.datadog.android.flags.internal.evaluation.EvaluationsManager
-import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
-import com.datadog.android.flags.internal.model.FlagsStateEntry
-import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
-import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
-import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
-import com.datadog.android.flags.internal.repository.FlagsRepository
-import com.datadog.android.flags.internal.repository.SigningFlagsRepository
-import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
+import com.datadog.android.flags.integration.FlagsClientTest.Companion.createStubSdkCore
+import com.datadog.android.flags.integration.tests.elmyr.FlagsIntegrationForgeConfigurator
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.model.FlagsClientState
-import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.time.TimeProvider
-import com.datadog.android.internal.utils.DDCoreStateHolder
-import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
 import okhttp3.Headers
+import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
-import okio.ByteString.Companion.decodeBase64
-import okio.ByteString.Companion.decodeHex
-import okio.ByteString.Companion.toByteString
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
-import org.mockito.kotlin.whenever
-import java.io.ByteArrayOutputStream
-import java.io.DataOutputStream
-import java.security.KeyFactory
-import java.security.MessageDigest
-import java.security.Signature
-import java.security.spec.PKCS8EncodedKeySpec
 import java.util.concurrent.ExecutorService
 
 @ExtendWith(ForgeExtension::class)
-@ForgeConfiguration(ForgeConfigurator::class)
+@ForgeConfiguration(FlagsIntegrationForgeConfigurator::class)
 internal class ResponseSigningClientTest {
     @Forgery lateinit var fakeDatadogContext: DatadogContext
-    private val mockLogger: InternalLogger = mock()
-    private val mockCore: InternalSdkCore = mock()
-    private val mockStore: DataStoreHandler = mock()
-    private val mockExecutor: ExecutorService = mock()
+    private lateinit var stubCore: StubSDKCore
+    private val store = RecordingStore()
     private val queue = ArrayDeque<Runnable>()
-    private val corpus = resource()
-    private val vector = corpus.getAsJsonArray("cases")[0].asJsonObject
-    private val originalNow = vector["now"].asLong
-    private var now = originalNow
-    private val coreSigningContext = ResponseSigningContext()
+    private var now = CanonicalResponseSigner.now
     private var cancelledChecks = 0
     private val requests = mutableListOf<Request>()
     private var responseKind = "valid"
     private var observeFullEvaluationData = false
     private var endpoint = "https://flags.example.test/assignments?dd_env=test"
     private var beforeResponse: () -> Unit = {}
-    private lateinit var testedClient: DatadogFlagsClient
-    private lateinit var repository: FlagsRepository
+    private lateinit var testedClient: FlagsClient
 
     @BeforeEach
-    fun `set up`() {
-        fakeDatadogContext = fakeDatadogContext.copy(source = "android")
-        whenever(mockCore.internalLogger) doReturn mockLogger
-        val mockTimeProvider = mock<TimeProvider> {
-            on { getDeviceTimestampMillis() } doAnswer { now * 1000 }
+    fun `set up`(forge: Forge) {
+        stubCore = createStubSdkCore(forge)
+        fakeDatadogContext = fakeDatadogContext.copy(source = "android", featuresContext = emptyMap())
+        stubCore.stubDataStore(Feature.FLAGS_FEATURE_NAME, store)
+        stubCore.stubNetworkResponses { request ->
+            requests.add(request)
+            beforeResponse()
+            response(request)
         }
-        whenever(mockCore.timeProvider) doReturn mockTimeProvider
-        whenever(mockCore.getFeature(Feature.FLAGS_FEATURE_NAME)) doReturn mock<FeatureScope>()
-        whenever(mockCore.getDatadogContext(setOf(Feature.RUM_FEATURE_NAME))) doAnswer { fakeDatadogContext }
-        whenever(mockCore.source) doReturn "android"
-        whenever(mockExecutor.execute(any())) doAnswer { queue.add(it.getArgument(0)); Unit }
     }
+
+    @AfterEach
+    fun `tear down`() { stubCore.stopFeatures() }
 
     @ParameterizedTest
     @EnumSource(ResponseSigningMode::class)
@@ -120,11 +92,11 @@ internal class ResponseSigningClientTest {
         // Then
         assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
         assertThat(requests).hasSize(1)
-        assertThat(requests.single().header(ResponseSigningVerifier.PREFIX + "signature-version"))
+        assertThat(requests.single().header(PREFIX + "signature-version"))
             .isEqualTo(if (mode == ResponseSigningMode.OFF) null else "1")
         assertThat(requests.single().header("X-stream"))
             .isEqualTo(if (mode == ResponseSigningMode.OFF) null else "false")
-        if (mode == ResponseSigningMode.REQUIRED) verifyNoInteractions(mockStore)
+        if (mode == ResponseSigningMode.REQUIRED) assertThat(store.operations).isZero()
     }
 
     @ParameterizedTest
@@ -197,7 +169,6 @@ internal class ResponseSigningClientTest {
         attributes["plan"] = "after"
         queue.removeFirst().run()
         // Then
-        assertThat(repository.getEvaluationContext()?.attributes).containsEntry("plan", "before")
         val body = Buffer().also { requests.single().body?.writeTo(it) }.readUtf8()
         assertThat(body).contains("before").doesNotContain("after")
     }
@@ -214,10 +185,8 @@ internal class ResponseSigningClientTest {
         testedClient.setEvaluationContext(EvaluationContext("old-subject"), null)
         queue.removeFirst().run()
         // Then
-        assertThat(repository.getEvaluationContext()).isNull()
         assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
         queue.removeFirst().run()
-        assertThat(repository.getEvaluationContext()?.targetingKey).isEqualTo("new-subject")
         assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
     }
 
@@ -232,12 +201,7 @@ internal class ResponseSigningClientTest {
         val actual = testedClient.resolveBooleanValue("critical-demo", false)
         // Then
         assertThat(actual).isFalse()
-        assertThat(repository.hasConfiguration()).isFalse()
-        assertThat(repository.getAssignmentsSnapshot()).isNull()
-        assertThat(repository.getEvaluationSnapshot("critical-demo")?.flag).isNull()
-        assertThat(repository.getEvaluationContext()).isNull()
-        assertThat(repository.hasConfigurationForContext(EvaluationContext("subject"))).isFalse()
-        verifyNoInteractions(mockStore)
+        assertThat(store.operations).isZero()
     }
 
     @Test
@@ -265,7 +229,7 @@ internal class ResponseSigningClientTest {
         // Then
         assertThat(requests).isEmpty()
         assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
-        verifyNoInteractions(mockStore)
+        assertThat(store.operations).isZero()
     }
 
     @Test
@@ -316,7 +280,7 @@ internal class ResponseSigningClientTest {
         val actual = testedClient.resolveBooleanValue("critical-demo", false)
         // Then
         assertThat(actual).isFalse()
-        verifyNoInteractions(mockStore)
+        assertThat(store.operations).isZero()
     }
 
     @Test
@@ -327,26 +291,24 @@ internal class ResponseSigningClientTest {
         val actual = testedClient.resolveBooleanValue("critical-demo", false)
         // Then
         assertThat(actual).isFalse()
-        verifyNoInteractions(mockStore)
+        assertThat(store.operations).isZero()
     }
 
     @Test
-    fun `M scope persistence without nonce churn W setEvaluationContext() {observe environment changes}`() {
+    fun `M bound persistence W setEvaluationContext() {attributes and environment change}`() {
         // Given
         create(ResponseSigningMode.OBSERVE)
-        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
-        queue.removeFirst().run()
-        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
-        queue.removeFirst().run()
-        fakeDatadogContext = fakeDatadogContext.copy(env = "other-environment")
         // When
-        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        repeat(3) { index ->
+            testedClient.setEvaluationContext(EvaluationContext("subject", mapOf("counter" to "$index")))
+            queue.removeFirst().run()
+        }
+        fakeDatadogContext = fakeDatadogContext.copy(env = "other-environment")
+        testedClient.setEvaluationContext(EvaluationContext("subject"))
         queue.removeFirst().run()
         // Then
-        val keys = argumentCaptor<String>()
-        verify(mockStore, times(2)).value<FlagsStateEntry>(keys.capture(), anyOrNull(), any(), any())
-        assertThat(keys.allValues).hasSize(2).doesNotHaveDuplicates()
-        assertThat(keys.allValues).allMatch { it.startsWith("flags-state-signing-test-") && it.length > 64 }
+        assertThat(store.values).hasSize(1)
+        assertThat(store.writtenScopes.toSet()).hasSize(4)
     }
 
     @ParameterizedTest
@@ -415,13 +377,12 @@ internal class ResponseSigningClientTest {
     fun `M discard stopped feature response W setEvaluationContext()`() {
         // Given
         create(ResponseSigningMode.REQUIRED)
-        beforeResponse = { coreSigningContext.stop() }
+        beforeResponse = { stubCore.stopFeatures() }
         // When
         testedClient.setEvaluationContext(EvaluationContext("subject"), null)
         queue.removeFirst().run()
         // Then
         assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
-        assertThat(repository.getAssignmentsSnapshot()).isNull()
     }
 
     @ParameterizedTest
@@ -441,7 +402,7 @@ internal class ResponseSigningClientTest {
     @Test
     fun `M retain configured anchor W setEvaluationContext() {caller clears original list}`() {
         // Given
-        val roots = mutableListOf(corpus["anchor_der_base64"].asString)
+        val roots = mutableListOf(CanonicalResponseSigner.root)
         create(ResponseSigningMode.REQUIRED, roots)
         roots.clear()
         // When
@@ -451,78 +412,91 @@ internal class ResponseSigningClientTest {
         assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
     }
 
-    @ParameterizedTest
-    @EnumSource(ResponseSigningMode::class)
-    fun `M retain response consent W setEvaluationContext() {signed and unsigned}`(mode: ResponseSigningMode) {
+    @Test
+    fun `M retain response consent W setEvaluationContext() {observe persistence}`() {
         // Given
-        create(mode)
+        create(ResponseSigningMode.OBSERVE)
         // When
-        testedClient.setEvaluationContext(EvaluationContext("subject"), null)
+        testedClient.setEvaluationContext(EvaluationContext("subject"))
         queue.removeFirst().run()
         // Then
-        assertThat(repository.getEvaluationSnapshot("critical-demo")?.observeFullEvaluationData).isFalse()
-        assertThat(repository.getEvaluationSnapshot("missing")?.observeFullEvaluationData).isFalse()
-
+        assertThat(store.values.values.single()).contains("\"observeFullEvaluationData\":false")
         // When
         observeFullEvaluationData = true
-        testedClient.setEvaluationContext(EvaluationContext("other-subject"), null)
+        testedClient.setEvaluationContext(EvaluationContext("other-subject"))
         queue.removeFirst().run()
         // Then
-        assertThat(repository.getEvaluationSnapshot("critical-demo")?.observeFullEvaluationData).isTrue()
-        assertThat(repository.getEvaluationSnapshot("missing")?.observeFullEvaluationData).isTrue()
+        assertThat(store.values.values.single()).contains("\"observeFullEvaluationData\":true")
+    }
+
+    @Test
+    fun `M restore only matching trust scope W setEvaluationContext() {observe restart}`() {
+        // Given
+        create(ResponseSigningMode.OBSERVE)
+        testedClient.setEvaluationContext(EvaluationContext("subject"))
+        queue.removeFirst().run()
+        assertThat(store.values).hasSize(1)
+        responseKind = "403"
+        // When
+        create(ResponseSigningMode.OBSERVE)
+        testedClient.setEvaluationContext(EvaluationContext("subject"))
+        queue.removeFirst().run()
+        // Then
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isTrue()
+        // When
+        fakeDatadogContext = fakeDatadogContext.copy(clientToken = "different-token")
+        create(ResponseSigningMode.OBSERVE)
+        testedClient.setEvaluationContext(EvaluationContext("subject"))
+        queue.removeFirst().run()
+        // Then
+        assertThat(testedClient.resolveBooleanValue("critical-demo", false)).isFalse()
+        assertThat(store.values).hasSize(1)
     }
 
     private fun updateApp(applicationId: String, sessionId: String = "session") {
         val context = mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(applicationId, sessionId))
         fakeDatadogContext = fakeDatadogContext.copy(featuresContext = mapOf(Feature.RUM_FEATURE_NAME to context))
-        coreSigningContext.onContextUpdate(Feature.RUM_FEATURE_NAME, context)
+        stubCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, false) { it.putAll(context) }
     }
 
-    private fun create(mode: ResponseSigningMode, roots: List<String> = listOf(corpus["anchor_der_base64"].asString)) {
-        val configuration = FlagsConfiguration.Builder().trackExposures(false).trackEvaluations(false)
-            .rumIntegrationEnabled(false).responseSigning(mode, roots).build()
-        val signing = if (mode ==
-            ResponseSigningMode.OFF
-        ) {
-            null
-        } else {
-            ResponseSigningState(configuration.responseSigning, mockLogger, coreSigningContext) { now }
-        }
-        fun ordinary(scope: String): FlagsRepository = DefaultFlagsRepository(
-            mockCore,
-            "signing-test-$scope",
-            mockStore,
-            flagSelection = null,
-            persistenceLoadTimeoutMs = 0
-        )
-        repository = signing?.let { SigningFlagsRepository(::ordinary, it, Runnable::run) } ?: ordinary("off")
-
-        val transport = Call.Factory { request ->
-            requests.add(request)
-            mock<Call> {
-                on { execute() } doAnswer { beforeResponse(); response(request) }
-                on { isCanceled() } doAnswer { responseKind == "cancelled" && ++cancelledChecks > 1 }
+    private fun create(mode: ResponseSigningMode, roots: List<String> = listOf(CanonicalResponseSigner.root)) {
+        val core = object : InternalSdkCore by stubCore {
+            override fun getDatadogContext(withFeatureContexts: Set<String>) = fakeDatadogContext
+            override fun setContextUpdateReceiver(listener: FeatureContextUpdateReceiver) {
+                stubCore.setContextUpdateReceiver(listener)
+                fakeDatadogContext.featuresContext[Feature.RUM_FEATURE_NAME]?.let {
+                    listener.onContextUpdate(Feature.RUM_FEATURE_NAME, it)
+                }
+            }
+            override val timeProvider = object : TimeProvider by stubCore.timeProvider {
+                override fun getDeviceTimestampMillis() = now * 1000
+            }
+            override fun createSingleThreadExecutorService(executorContext: String): ExecutorService {
+                val executor = StubExecutorService(executorContext)
+                return if (executorContext == "flags-network") {
+                    object : ExecutorService by executor {
+                        override fun execute(command: Runnable) { queue.add(command) }
+                    }
+                } else {
+                    executor
+                }
+            }
+            override fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit): Call.Factory {
+                val factory = stubCore.createOkHttpCallFactory(block)
+                return Call.Factory { request ->
+                    val call = factory.newCall(request)
+                    object : Call by call {
+                        override fun isCanceled() = responseKind == "cancelled" && ++cancelledChecks > 1
+                    }
+                }
             }
         }
-        val reader = PrecomputedAssignmentsDownloader(
-            transport,
-            mockLogger,
-            PrecomputedAssignmentsRequestFactory(mockLogger, endpoint, null),
-            signing
+        Flags.enable(
+            FlagsConfiguration.Builder().trackExposures(false).trackEvaluations(false).rumIntegrationEnabled(false)
+                .useCustomFlagEndpoint(endpoint).responseSigning(mode, roots).build(),
+            core
         )
-        val stateManager =
-            FlagsStateManager(DDCoreStateHolder.create(FlagsClientState.NotReady, FlagsStateListener::onStateChanged))
-        val optOut = ExperimentationOptOut(stateLock = signing?.lock ?: Any())
-        val manager = EvaluationsManager(
-            mockCore, mockExecutor, mockLogger, repository, reader, PrecomputeMapper(mockLogger), stateManager,
-            initializationTimeoutMs = null,
-            signing = signing,
-            experimentationOptOut = optOut,
-            initializationTimeoutScheduler = { _, _ -> {} }
-        )
-        testedClient = DatadogFlagsClient(
-            mockCore, manager, repository, configuration, mock(), mock(), null, stateManager, false, optOut
-        )
+        testedClient = FlagsClient.Builder(sdkCore = core).build()
     }
 
     private fun response(request: Request): Response {
@@ -532,7 +506,7 @@ internal class ResponseSigningClientTest {
               "allocationKey":"test","variationKey":"on","reason":"TARGETING_MATCH","extraLogging":{}
             }}}}}
         """.trimIndent()
-        val headers = signedHeaders(request, json.toByteArray())
+        val headers = CanonicalResponseSigner.response(request, json).headers
         val response = Response.Builder().request(request).protocol(Protocol.HTTP_1_1).message("test")
             .code(if (responseKind == "403") 403 else 200)
             .headers(if (responseKind.startsWith("unsigned")) Headers.Builder().build() else headers)
@@ -554,60 +528,45 @@ internal class ResponseSigningClientTest {
         return response.build()
     }
 
-    private fun signedHeaders(request: Request, body: ByteArray): Headers {
-        if (request.header(ResponseSigningVerifier.PREFIX + "request-nonce") == null) return Headers.Builder().build()
-        val credential = vector.getAsJsonObject("credential")
-        val leaf = bytes(credential["certificate_der_base64"].asString)
-        val intermediate = bytes(credential["intermediate_der_base64"].asString)
-        val output = ByteArrayOutputStream()
-        val transcript = DataOutputStream(output)
-        transcript.write("datadog.feature-flags.precomputed-assignments.v1\u0000".toByteArray())
-        fun lp(bytes: ByteArray) { transcript.writeInt(bytes.size); transcript.write(bytes) }
-        val url = request.url
-        listOf(request.method, url.scheme, url.host, url.encodedPath, url.encodedQuery?.let { "?$it" } ?: "")
-            .forEach { lp(it.toByteArray()) }
-        lp(checkNotNull(request.header(ResponseSigningVerifier.PREFIX + "request-nonce")).decodeHex().toByteArray())
-        transcript.write(sha(Buffer().also { request.body?.writeTo(it) }.readByteArray()))
-        transcript.write(sha(checkNotNull(request.header("dd-client-token")).toByteArray()))
-        listOf(
-            "content-type",
-            "dd-application-id",
-            "x-rkyv",
-            "x-use-cache",
-            "x-dd-feature-flags-capabilities"
-        ).forEach {
-            val header = request.header(it)
-            transcript.writeByte(if (header == null) 0 else 1)
-            if (header != null) lp(header.toByteArray())
+    private class RecordingStore(
+        private val delegate: DataStoreHandler = StubDataStoreHandler()
+    ) : DataStoreHandler by delegate {
+        val values = mutableMapOf<String, String>()
+        val writtenScopes = mutableListOf<String>()
+        var operations = 0
+        override fun <T : Any> setValue(
+            key: String,
+            data: T,
+            version: Int,
+            callback: DataStoreWriteCallback?,
+            serializer: Serializer<T>
+        ) {
+            operations++
+            serializer.serialize(data)?.let { json ->
+                values[key] = json
+                JsonParser.parseString(json).asJsonObject["responseSigningCacheScope"]?.let {
+                    writtenScopes.add(it.asString)
+                }
+            }
+            delegate.setValue(key, data, version, callback, serializer)
         }
-        transcript.writeByte(0)
-        transcript.writeShort(200)
-        transcript.writeLong(originalNow)
-        transcript.writeLong(originalNow + 300)
-        transcript.writeLong(body.size.toLong())
-        transcript.write(sha(body)); transcript.write(sha(leaf)); transcript.write(sha(intermediate))
-        val key = KeyFactory.getInstance(
-            "EC"
-        ).generatePrivate(PKCS8EncodedKeySpec(bytes(credential["private_key_pkcs8_der_base64"].asString)))
-        val signature = Signature.getInstance("SHA256withECDSA").apply {
-            initSign(key); update(output.toByteArray())
-        }.sign()
-        return Headers.Builder()
-            .add(ResponseSigningVerifier.PREFIX + "signature-version", "1")
-            .add(ResponseSigningVerifier.PREFIX + "signing-certificate", credential["certificate_der_base64"].asString)
-            .add(
-                ResponseSigningVerifier.PREFIX + "signing-intermediate",
-                credential["intermediate_der_base64"].asString
-            )
-            .add(ResponseSigningVerifier.PREFIX + "certificate-id", sha(leaf).toByteString().hex())
-            .add(ResponseSigningVerifier.PREFIX + "issued-at", originalNow.toString())
-            .add(ResponseSigningVerifier.PREFIX + "expires-at", (originalNow + 300).toString())
-            .add(ResponseSigningVerifier.PREFIX + "signature", signature.toByteString().base64()).build()
+        override fun <T : Any> value(
+            key: String,
+            version: Int?,
+            callback: DataStoreReadCallback<T>,
+            deserializer: Deserializer<String, T>
+        ) {
+            operations++
+            delegate.value(key, version, callback, deserializer)
+        }
+        override fun removeValue(key: String, callback: DataStoreWriteCallback?) {
+            operations++
+            values.remove(key)
+            delegate.removeValue(key, callback)
+        }
     }
 
-    private fun sha(bytes: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(bytes)
-    private fun bytes(value: String): ByteArray = checkNotNull(value.decodeBase64()).toByteArray()
-    private fun resource(): JsonObject = checkNotNull(javaClass.classLoader)
-        .getResourceAsStream("response-signing-v1/corpus.json").let { checkNotNull(it) }.bufferedReader()
-        .use { JsonParser.parseReader(it).asJsonObject }
+    private companion object {
+        const val PREFIX = "x-datadog-feature-flags-"
+    }
 }

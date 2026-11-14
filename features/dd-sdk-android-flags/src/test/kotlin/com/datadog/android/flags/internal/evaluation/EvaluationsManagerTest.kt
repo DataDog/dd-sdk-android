@@ -37,6 +37,7 @@ import com.datadog.android.flags.internal.repository.FlagsInstallation
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
+import com.datadog.android.flags.internal.signing.ResponseSigningState
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
@@ -94,6 +95,35 @@ import java.util.concurrent.atomic.AtomicReference
 @ForgeConfiguration(ForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class EvaluationsManagerTest {
+    @ParameterizedTest
+    @EnumSource(ExperimentationOptOutMode::class)
+    fun `M keep latest signing generation W updatePreparedEvaluations() {registration reordered}`(
+        mode: ExperimentationOptOutMode,
+        @Mock mockSigning: ResponseSigningState,
+        @Mock mockCallback: EvaluationContextCallback
+    ) {
+        // Given
+        val policy = ExperimentationOptOut(mode)
+        val older = policy.prepare(EvaluationContext("older"))
+        val newer = policy.prepare(EvaluationContext("newer"))
+        whenever(mockSigning.begin(newer.context)) doReturn 1L
+        val manager = EvaluationsManager(
+            mockSdkCore, mockExecutorService, mockInternalLogger, mockFlagsRepository,
+            mockAssignmentsDownloader, mockPrecomputeMapper, mockFlagsStateManager,
+            initializationTimeoutMs = null, initializationTimeoutScheduler = { _, _ -> {} },
+            signing = mockSigning, experimentationOptOut = policy
+        )
+        var finished = false
+        // When
+        manager.updatePreparedEvaluations(newer, null) {}
+        manager.updatePreparedEvaluations(older, mockCallback) { finished = true }
+        // Then
+        verify(mockSigning).begin(newer.context)
+        verify(mockSigning, never()).begin(older.context)
+        verify(mockExecutorService).execute(any())
+        verify(mockCallback).onFailure(isA<FlagsContextSupersededException>())
+        assertThat(finished).isTrue()
+    }
 
     @ParameterizedTest
     @EnumSource(ExperimentationOptOutMode::class)
