@@ -48,6 +48,8 @@ internal class ContinuousProfilingScheduler(
     @Volatile
     private var launchSessionExtended = false
 
+    // be careful with calling .cancel on this one. If executor has loggingAfterExecute call, like
+    // LoggingScheduledThreadPoolExecutor does, CancellationException will be reported to telemetry.
     @Volatile
     private var pendingFuture: ScheduledFuture<*>? = null
 
@@ -65,6 +67,9 @@ internal class ContinuousProfilingScheduler(
 
     @Volatile
     private var remainingCooldownMs: Long = 0L
+
+    // Accessed only on schedulerExecutor.
+    private var isInBackground = false
 
     @Volatile
     internal var lastQuotaResult: QuotaResult? = null
@@ -86,16 +91,24 @@ internal class ContinuousProfilingScheduler(
         // c1 ∈ [0, 1min], otherwise wait for `onAppLaunchProfilingComplete` to be called.
         @Suppress("UnsafeThirdPartyFunctionCall") // range is always valid (0 .. max+1)
         val initialCooldownMs = Random.nextLong(0L, CONTINUOUS_COOLDOWN_DURATION_MS + 1L)
-        logToUser { LOG_INITIAL_COOLDOWN.format(Locale.US, initialCooldownMs) }
-        scheduleCooldown(initialCooldownMs)
+        schedulerExecutor.executeSafe(OPERATION_START, sdkCore.internalLogger) {
+            if (!isScheduling) return@executeSafe
+            logToUser { LOG_INITIAL_COOLDOWN.format(Locale.US, initialCooldownMs) }
+            scheduleCooldown(initialCooldownMs)
+        }
     }
 
     fun stop() {
+        // Timers that fire before the cleanup below runs see isScheduling = false and skip their work.
         isScheduling = false
-        logToUser { LOG_STOPPED }
-        pendingFuture?.cancel(false)
-        state = State.IDLE
         isActive = false
+        logToUser { LOG_STOPPED }
+        schedulerExecutor.executeSafe(OPERATION_STOP, sdkCore.internalLogger) {
+            pendingFuture?.cancel(false)
+            pendingFuture = null
+            state = State.IDLE
+            isActive = false
+        }
     }
 
     fun onActiveWindowEnded() {
@@ -103,9 +116,12 @@ internal class ContinuousProfilingScheduler(
     }
 
     fun onAppLaunchProfilingComplete() {
-        if (!isScheduling) return
-        logToUser { LOG_LAUNCH_COMPLETE }
-        scheduleCooldown(jitter(CONTINUOUS_COOLDOWN_DURATION_MS))
+        schedulerExecutor.executeSafe(OPERATION_LAUNCH_COMPLETE, sdkCore.internalLogger) {
+            // Only the first completion starts the cycle; a cycle that is already running keeps its timer.
+            if (!isScheduling || state != State.IDLE) return@executeSafe
+            logToUser { LOG_LAUNCH_COMPLETE }
+            scheduleCooldown(jitter(CONTINUOUS_COOLDOWN_DURATION_MS))
+        }
     }
 
     fun onRumSessionRenewed(sessionId: String, rumSessionSampleRate: Float) {
@@ -145,17 +161,13 @@ internal class ContinuousProfilingScheduler(
      */
     fun onBackground() {
         schedulerExecutor.executeSafe(OPERATION_ON_BACKGROUND, sdkCore.internalLogger) {
+            isInBackground = true
             if (!isScheduling) return@executeSafe
             when (state) {
                 State.ACTIVE -> {
-                    pendingFuture?.cancel(false)
-                    pendingFuture = schedulerExecutor.scheduleSafe(
-                        operationName = OPERATION_GRACE_PERIOD,
-                        delay = BACKGROUND_GRACE_PERIOD_MS,
-                        unit = TimeUnit.MILLISECONDS,
-                        internalLogger = sdkCore.internalLogger,
-                        runnable = ::onGracePeriodExpired
-                    )
+                    scheduleTimer(OPERATION_GRACE_PERIOD, BACKGROUND_GRACE_PERIOD_MS) {
+                        onGracePeriodExpired()
+                    }
                     state = State.GRACE_PERIOD
                     val remaining = max(0L, activeWindowEndMs - timeProvider.getDeviceTimestampMillis())
                     logToUser { LOG_BACKGROUND_GRACE_PERIOD.format(Locale.US, remaining) }
@@ -190,10 +202,10 @@ internal class ContinuousProfilingScheduler(
      */
     fun onForeground() {
         schedulerExecutor.executeSafe(OPERATION_ON_FOREGROUND, sdkCore.internalLogger) {
+            isInBackground = false
             if (!isScheduling) return@executeSafe
             when (state) {
                 State.GRACE_PERIOD -> {
-                    pendingFuture?.cancel(false)
                     val remaining = max(0L, activeWindowEndMs - timeProvider.getDeviceTimestampMillis())
                     scheduleActiveWindowEnd(remaining)
                     state = State.ACTIVE
@@ -266,29 +278,44 @@ internal class ContinuousProfilingScheduler(
 
     private fun scheduleActiveWindowEnd(delayMs: Long) {
         activeWindowEndMs = timeProvider.getDeviceTimestampMillis() + delayMs
-        pendingFuture = schedulerExecutor.scheduleSafe(
-            operationName = OPERATION_ACTIVE_WINDOW_END,
-            delay = delayMs,
-            unit = TimeUnit.MILLISECONDS,
-            internalLogger = sdkCore.internalLogger,
-            runnable = {
-                val cooldownMs = jitter(CONTINUOUS_COOLDOWN_DURATION_MS)
-                logToUser { LOG_ACTIVE_WINDOW_ENDED.format(Locale.US, cooldownMs) }
-                scheduleCooldown(cooldownMs)
-            }
-        )
+        scheduleTimer(OPERATION_ACTIVE_WINDOW_END, delayMs) {
+            val cooldownMs = jitter(CONTINUOUS_COOLDOWN_DURATION_MS)
+            logToUser { LOG_ACTIVE_WINDOW_ENDED.format(Locale.US, cooldownMs) }
+            scheduleCooldown(cooldownMs)
+        }
     }
 
     private fun scheduleCooldown(cooldownMs: Long) {
+        if (isInBackground) {
+            // The app went to background before the cycle started; resume on foreground.
+            remainingCooldownMs = cooldownMs
+            state = State.PAUSED_COOLDOWN
+            logToUser { LOG_COOLDOWN_DEFERRED_IN_BACKGROUND.format(Locale.US, cooldownMs) }
+            return
+        }
         state = State.COOLDOWN
         cooldownWindowEndMs = timeProvider.getDeviceTimestampMillis() + cooldownMs
+        scheduleTimer(OPERATION_COOLDOWN_END, cooldownMs) { scheduleNextCycle() }
+    }
+
+    /**
+     * Replaces the pending timer, so that only one timer is ever scheduled. Must be called on
+     * [schedulerExecutor]. The task is skipped if [stop] was called before it fires.
+     *
+     * The task clears [pendingFuture] when it starts, so that a task scheduling the next timer
+     * doesn't cancel its own running future.
+     */
+    private fun scheduleTimer(operationName: String, delayMs: Long, task: () -> Unit) {
+        pendingFuture?.cancel(false)
         pendingFuture = schedulerExecutor.scheduleSafe(
-            operationName = OPERATION_COOLDOWN_END,
-            delay = cooldownMs,
+            operationName = operationName,
+            delay = delayMs,
             unit = TimeUnit.MILLISECONDS,
-            internalLogger = sdkCore.internalLogger,
-            runnable = ::scheduleNextCycle
-        )
+            internalLogger = sdkCore.internalLogger
+        ) {
+            pendingFuture = null
+            if (isScheduling) task()
+        }
     }
 
     private fun jitter(base: Long): Long {
@@ -365,6 +392,9 @@ internal class ContinuousProfilingScheduler(
         private const val OPERATION_GRACE_PERIOD = "continuous_profiling_grace_period"
         private const val OPERATION_ON_BACKGROUND = "continuous_profiling_on_background"
         private const val OPERATION_ON_FOREGROUND = "continuous_profiling_on_foreground"
+        private const val OPERATION_START = "continuous_profiling_start"
+        private const val OPERATION_STOP = "continuous_profiling_stop"
+        private const val OPERATION_LAUNCH_COMPLETE = "continuous_profiling_launch_complete"
 
         internal const val LOG_DISABLED =
             "Continuous profiling disabled (continuousSampleRate=0)."
@@ -386,6 +416,8 @@ internal class ContinuousProfilingScheduler(
             "App backgrounded during active window; grace period started (%sms remaining in active window)."
         internal const val LOG_BACKGROUND_COOLDOWN_PAUSED =
             "App backgrounded during cooldown; cooldown paused (%sms remaining)."
+        internal const val LOG_COOLDOWN_DEFERRED_IN_BACKGROUND =
+            "App in background; continuous profiling cooldown deferred until foreground (%sms)."
         internal const val LOG_FOREGROUND_RESUMED_ACTIVE =
             "App foregrounded; active window resumed."
         internal const val LOG_FOREGROUND_RESUMED_COOLDOWN =

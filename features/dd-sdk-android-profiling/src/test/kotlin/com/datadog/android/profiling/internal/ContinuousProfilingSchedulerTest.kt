@@ -28,7 +28,9 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.clearInvocations
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -643,8 +645,8 @@ internal class ContinuousProfilingSchedulerTest {
         // When
         testedScheduler.stop()
 
-        // Then — pendingFuture is cancelled directly (no executor dispatch needed)
-        verify(mockFuture).cancel(false)
+        // Then
+        verify(mockFuture, atLeastOnce()).cancel(false)
     }
 
     @Test
@@ -660,9 +662,148 @@ internal class ContinuousProfilingSchedulerTest {
         verify(mockFuture, atLeastOnce()).cancel(false)
     }
 
+    @Test
+    fun `M not start profiler W stop() {cooldown timer already fired}`() {
+        // Given
+        testedScheduler.currentSessionSampled = true
+        testedScheduler.start(launchProfilingActive = true)
+        testedScheduler.onAppLaunchProfilingComplete()
+        val runnableCaptor = argumentCaptor<Runnable>()
+        verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
+
+        // When
+        testedScheduler.stop()
+        runnableCaptor.firstValue.run()
+
+        // Then
+        verify(mockProfiler, never()).start(any(), any(), any(), any())
+        verify(mockSchedulerExecutor).schedule(any<Runnable>(), any(), any<TimeUnit>())
+    }
+
+    @Test
+    fun `M not schedule cooldown W stop() {active window timer already fired}`() {
+        // Given
+        openActiveWindow()
+        val runnableCaptor = argumentCaptor<Runnable>()
+        verify(mockSchedulerExecutor, times(2)).schedule(runnableCaptor.capture(), any(), any())
+
+        // When
+        testedScheduler.stop()
+        runnableCaptor.lastValue.run()
+
+        // Then
+        verify(mockSchedulerExecutor, times(2)).schedule(any<Runnable>(), any(), any<TimeUnit>())
+        assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.IDLE)
+    }
+
+    @Test
+    fun `M not stop profiler W stop() {active window running}`() {
+        // Given
+        openActiveWindow()
+
+        // When
+        testedScheduler.stop()
+
+        // Then
+        verify(mockProfiler, never()).stop()
+    }
+
+    @Test
+    fun `M mark inactive before cleanup runs W stop() {active window running}`() {
+        // Given
+        openActiveWindow()
+        doNothing().whenever(mockSchedulerExecutor).execute(any<Runnable>())
+
+        // When
+        testedScheduler.stop()
+
+        // Then
+        assertThat(testedScheduler.isActive).isFalse()
+    }
+
+    @Test
+    fun `M not cancel running timer W cooldown timer fires {schedules active window end}`() {
+        // Given
+        testedScheduler.currentSessionSampled = true
+        testedScheduler.start(launchProfilingActive = true)
+        testedScheduler.onAppLaunchProfilingComplete()
+        val runnableCaptor = argumentCaptor<Runnable>()
+        verify(mockSchedulerExecutor).schedule(runnableCaptor.capture(), any(), any())
+
+        // When
+        runnableCaptor.firstValue.run()
+
+        // Then
+        verify(mockSchedulerExecutor, times(2)).schedule(any<Runnable>(), any(), any<TimeUnit>())
+        verify(mockFuture, never()).cancel(any())
+    }
+
+    @Test
+    fun `M not start profiler W onAppLaunchProfilingComplete() {after stop()}`() {
+        // Given
+        testedScheduler.start(launchProfilingActive = true)
+        testedScheduler.stop()
+
+        // When
+        testedScheduler.onAppLaunchProfilingComplete()
+
+        // Then
+        verify(mockSchedulerExecutor, never()).schedule(any<Runnable>(), any(), any<TimeUnit>())
+    }
+
+    // endregion
+
+    // region single timer
+
+    @Test
+    fun `M not schedule second cycle W onAppLaunchProfilingComplete() {cycle already scheduled}`() {
+        // Given
+        testedScheduler.start(launchProfilingActive = false)
+
+        // When
+        testedScheduler.onAppLaunchProfilingComplete()
+
+        // Then
+        verify(mockSchedulerExecutor).schedule(any<Runnable>(), any(), any<TimeUnit>())
+    }
+
     // endregion
 
     // region lifecycle — onBackground / onForeground
+
+    @Test
+    fun `M pause cooldown W onAppLaunchProfilingComplete() {app in background}`() {
+        // Given
+        testedScheduler.start(launchProfilingActive = true)
+        testedScheduler.onBackground()
+
+        // When
+        testedScheduler.onAppLaunchProfilingComplete()
+
+        // Then
+        verify(mockSchedulerExecutor, never()).schedule(any<Runnable>(), any(), any<TimeUnit>())
+        assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.PAUSED_COOLDOWN)
+    }
+
+    @Test
+    fun `M resume jittered cooldown W onForeground() {launch completed in background}`() {
+        // Given
+        testedScheduler.start(launchProfilingActive = true)
+        testedScheduler.onBackground()
+        testedScheduler.onAppLaunchProfilingComplete()
+        val delayCaptor = argumentCaptor<Long>()
+        whenever(
+            mockSchedulerExecutor.schedule(any<Runnable>(), delayCaptor.capture(), any<TimeUnit>())
+        ) doReturn mockFuture
+
+        // When
+        testedScheduler.onForeground()
+
+        // Then
+        val cooldownBase = ContinuousProfilingScheduler.CONTINUOUS_COOLDOWN_DURATION_MS
+        assertThat(delayCaptor.firstValue)
+            .isBetween((cooldownBase * 0.8).toLong(), (cooldownBase * 1.2).toLong())
+    }
 
     @Test
     fun `M start grace period timer W onBackground() {active window running}`() {
@@ -685,6 +826,7 @@ internal class ContinuousProfilingSchedulerTest {
     fun `M cancel active window timer W onBackground() {active window running}`() {
         // Given
         openActiveWindow()
+        clearInvocations(mockFuture)
 
         // When
         testedScheduler.onBackground()
@@ -816,13 +958,14 @@ internal class ContinuousProfilingSchedulerTest {
         // Given
         openActiveWindow()
         testedScheduler.onBackground() // → GRACE_PERIOD
+        clearInvocations(mockFuture)
 
         // When
         testedScheduler.onBackground()
 
         // Then
         assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.GRACE_PERIOD)
-        verify(mockFuture, times(1)).cancel(false)
+        verify(mockFuture, never()).cancel(any())
     }
 
     @Test
