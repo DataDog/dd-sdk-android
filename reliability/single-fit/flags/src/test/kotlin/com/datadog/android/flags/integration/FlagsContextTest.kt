@@ -374,11 +374,63 @@ internal class FlagsContextTest {
         assertThat(testedClient.resolve(fakeFlagKey, !fakeValue).reason).isEqualTo(ResolutionReason.CACHED)
     }
 
-    private fun buildClient() {
+    @Test
+    fun `M recover cache for new context W setEvaluationContext() {previous request failed}`(forge: Forge) {
+        // Given
+        restartWithPendingCache(forge)
+        stubFailure(FetchFailure.NETWORK)
+        testedClient.setEvaluationContext(EvaluationContext(forge.anAlphabeticalString()))
+        stubSdkCore.stubNetworkResponses {
+            fakeDataStore.completeReads()
+            null
+        }
+
+        // When
+        testedClient.setEvaluationContext(fakeContext)
+
+        // Then
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        assertThat(testedClient.resolveBooleanValue(fakeFlagKey, !fakeValue)).isEqualTo(fakeValue)
+        assertThat(firstFlags).containsExactly(listOf(fakeFlagKey))
+    }
+
+    @Test
+    fun `M reject mismatched cache after timeout W setEvaluationContext() + completeReads()`(forge: Forge) {
+        // Given
+        installFlags()
+        fakeDataStore.deferReads = true
+        restartSdkCore(forge)
+        buildClient(timeoutMs = 1_000)
+        val nextContext = EvaluationContext(forge.anAlphabeticalString())
+        var stateAfterCache: FlagsClientState? = null
+        var firstFlagsAfterCache: List<List<String>?>? = null
+        var valueAfterCache: Boolean? = null
+        stubSdkCore.stubNetworkResponses {
+            stubSdkCore.advanceTimeBy(1_000)
+            fakeDataStore.completeReads()
+            stateAfterCache = testedClient.state.getCurrentState()
+            firstFlagsAfterCache = firstFlags.toList()
+            valueAfterCache = testedClient.resolveBooleanValue(fakeFlagKey, !fakeValue)
+            httpResponse(it, body = precomputedAssignmentsBody(mapOf(fakeFlagKey to fakeAssignment)))
+        }
+
+        // When
+        testedClient.setEvaluationContext(nextContext)
+
+        // Then
+        assertThat(stateAfterCache).isInstanceOf(FlagsClientState.Error::class.java)
+        assertThat(firstFlagsAfterCache).isEmpty()
+        assertThat(valueAfterCache).isEqualTo(!fakeValue)
+        assertThat(testedClient.state.getCurrentState()).isEqualTo(FlagsClientState.Ready)
+        assertThat(testedClient.resolveBooleanValue(fakeFlagKey, !fakeValue)).isEqualTo(fakeValue)
+        assertThat(firstFlags).containsExactly(listOf(fakeFlagKey))
+    }
+
+    private fun buildClient(timeoutMs: Long = 0) {
         stubSdkCore.stubDataStore(Feature.FLAGS_FEATURE_NAME, fakeDataStore)
         Flags.enable(
             FlagsConfiguration.Builder().useCustomFlagEndpoint(fakeEndpoint)
-                .initializationTimeout(0).trackEvaluations(false).trackExposures(false).build(),
+                .initializationTimeout(timeoutMs).trackEvaluations(false).trackExposures(false).build(),
             stubSdkCore
         )
         testedClient = FlagsClient.Builder(sdkCore = stubSdkCore).build()

@@ -94,7 +94,7 @@ internal class DatadogRumMonitor(
     internal val appPackageName: String,
     internal val sessionSampler: Sampler<String>,
     internal val backgroundTrackingEnabled: Boolean,
-    internal val trackFrustrations: Boolean,
+    trackFrustrations: Boolean,
     private val writer: DataWriter<Any>,
     internal val handler: Handler,
     internal val telemetryEventHandler: TelemetryEventHandler,
@@ -112,9 +112,9 @@ internal class DatadogRumMonitor(
     accessibilityInfoProvider: InfoProvider<AccessibilityInfo>,
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
+    rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager,
     insightsCollector: InsightsCollector,
-    private val viewEventMapper: ViewEventMapper,
+    viewEventMapper: ViewEventMapper,
     viewEventWriteConfig: ViewEventWriteConfig,
     heatmapIdentifierRegistry: HeatmapIdentifierRegistry?,
     timeseriesCollector: TimeseriesCollector
@@ -567,12 +567,6 @@ internal class DatadogRumMonitor(
         handleEvent(RumRawEvent.WebViewEvent(now()))
     }
 
-    override fun resetSession() {
-        handleEvent(
-            RumRawEvent.ResetSession(now())
-        )
-    }
-
     override fun start() {
         val processImportance = DdRumContentProvider.processImportance
         val isAppInForeground = processImportance ==
@@ -644,9 +638,9 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun addLongTask(durationNs: Long, target: String) {
+    override fun addLongTask(durationNs: Long, target: String, attributes: Map<String, Any?>) {
         handleEvent(
-            RumRawEvent.AddLongTask(durationNs, target, now())
+            RumRawEvent.AddLongTask(durationNs, target, now(), attributes.toMap())
         )
     }
 
@@ -941,7 +935,7 @@ internal class DatadogRumMonitor(
 
     override fun stop() {
         synchronized(rootScope) {
-            /**
+            /*
              * Stops the timeseries collector on the currently active session, if any.
              *
              * Must be called from [RumFeature.onStop] **before** [GlobalRumMonitor.unregister], so that

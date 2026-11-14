@@ -16,7 +16,6 @@ import com.datadog.benchmark.sample.ui.rumauto.screens.locations.di.RumAutoLocat
 import com.datadog.benchmark.sample.utils.BenchmarkAsyncTask
 import com.datadog.benchmark.sample.utils.StateMachine
 import com.datadog.benchmark.sample.utils.indexOfFirstOrNull
-import com.datadog.benchmark.sample.utils.recycler.BaseRecyclerViewItem
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -46,9 +45,9 @@ internal sealed interface RumAutoLocationsAction {
         val task: RumAutoLocationsState.PageLoadingTask
     ) : RumAutoLocationsAction
 
-    data class VisibleItemsChanged(val items: List<BaseRecyclerViewItem>) : RumAutoLocationsAction {
+    data class VisibleItemsChanged(val items: List<RumAutoLocationItem>) : RumAutoLocationsAction {
         val itemsSet: Set<Int> by lazy {
-            items.filterIsInstance<RumAutoLocationItem>().map { it.locationId }.toSet()
+            items.map { it.locationId }.toSet()
         }
     }
 }
@@ -80,7 +79,7 @@ internal class RumAutoLocationsViewModel @Inject constructor(
         stateMachine.dispatch(action)
     }
 
-    val state: Flow<List<BaseRecyclerViewItem>>
+    val state: Flow<List<RumAutoLocationItem>>
         get() = stateMachine.state.map {
             withContext(defaultDispatcher) {
                 it.toViewState()
@@ -182,15 +181,14 @@ internal class RumAutoLocationsViewModel @Inject constructor(
         }
     }
 
-    private fun RumAutoLocationsState.toViewState(): List<BaseRecyclerViewItem> {
+    private fun RumAutoLocationsState.toViewState(): List<RumAutoLocationItem> {
         return allLocations
             .map { location ->
                 RumAutoLocationItem(
                     title = location.name,
                     firstSubtitle = location.type,
                     secondSubtitle = location.dimension,
-                    locationId = location.id,
-                    key = location.id.toString()
+                    locationId = location.id
                 )
             }
     }

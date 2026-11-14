@@ -132,6 +132,12 @@ interface FlagsClient {
     /**
      * Resolves a numeric flag value.
      *
+     * Any numeric flag type is accepted. A fractional value, such as `1.2`, resolves to the nearest [Double]. A
+     * whole value resolves only when the [Double] has exactly that value. A value such as `9007199254740993` or
+     * `1e300` returns the default value. So does a nonzero value that rounds to zero, such as `1e-400`, a value
+     * that can't be parsed, such as `NaN`, and a value longer than 64 characters whose [Double] is zero or 2^53 or
+     * more in magnitude.
+     *
      * @param flagKey The unique identifier of the flag to resolve.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return The numeric value of the flag as a double, or the default value if unavailable.
@@ -140,6 +146,10 @@ interface FlagsClient {
 
     /**
      * Resolves an integer flag value.
+     *
+     * Any numeric flag resolves when its value is a whole number within [Int] range, such as `5` or `5.0`. A fractional
+     * value, such as `1.2`, or a value outside [Int] range returns the default value. So does a value longer than
+     * 64 characters, unless it is a plain integer within [Int] range.
      *
      * @param flagKey The unique identifier of the flag to resolve.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
@@ -472,6 +482,7 @@ interface FlagsClient {
                     featureSdkCore = featureSdkCore,
                     dataStore = datastore,
                     instanceName = name,
+                    flagSelection = flagsFeature.flagSelection,
                     experimentationOptOutMode = experimentationOptOutMode,
                     deliverFirstFlags = { delivery ->
                         val worker = featureSdkCore.createSingleThreadExecutorService(FLAGS_FIRST_FLAGS_EXECUTOR_NAME)
@@ -494,6 +505,7 @@ interface FlagsClient {
                     PrecomputedAssignmentsRequestFactory(
                         featureSdkCore.internalLogger,
                         configuration.customFlagEndpoint,
+                        flagSelection = flagsFeature.flagSelection,
                         experimentationOptOutMode = experimentationOptOutMode
                     )
                 } else {

@@ -66,7 +66,7 @@ class InvalidStringFormat(
         // check receiver type
         val explicitReceiver = explicitReceiver(
             expression,
-            call.partiallyAppliedSymbol.signature.symbol,
+            call.signature.symbol,
             treatGenericAsSuper = true,
             includeTypeArguments = true
         )
@@ -90,10 +90,10 @@ class InvalidStringFormat(
         val stringExpression = when (explicitReceiver) {
             is ExplicitReceiver.Qualifier -> {
                 // String.format(…)
-                val formatParameter = call.partiallyAppliedSymbol.signature.valueParameters.firstOrNull {
+                val formatParameter = call.signature.valueParameters.firstOrNull {
                     fqTypeName(it.returnType) == STRING_CLASS
                 }
-                val arguments = call.argumentMapping.filterValues { it.symbol == formatParameter?.symbol }.keys
+                val arguments = call.valueArgumentMapping.filterValues { it.symbol == formatParameter?.symbol }.keys
                 if (formatParameter != null && arguments.size == 1) {
                     arguments.first()
                 } else {
@@ -152,12 +152,12 @@ class InvalidStringFormat(
         call: KaFunctionCall<*>,
         explicitReceiver: ExplicitReceiver
     ): List<String?> {
-        val formatParameter = call.partiallyAppliedSymbol.signature.valueParameters.lastOrNull()
+        val formatParameter = call.signature.valueParameters.lastOrNull()
             ?.takeIf { it.symbol.isVararg }
 
         val rawTypes = expression.valueArguments
             .mapNotNull { it.getArgumentExpression() }
-            .filter { formatParameter != null && call.argumentMapping[it]?.symbol == formatParameter.symbol }
+            .filter { formatParameter != null && call.valueArgumentMapping[it]?.symbol == formatParameter.symbol }
             .map { argument -> argument.expressionType?.lowerBoundIfFlexible()?.let { fqTypeName(it) } }
         return if (explicitReceiver is ExplicitReceiver.Qualifier && rawTypes.firstOrNull() == LOCALE_CLASS) {
             rawTypes.drop(1)

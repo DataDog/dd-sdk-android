@@ -23,7 +23,7 @@ from instrumentation_to_junit import convert_stream
 
 
 FIRST_EMULATOR_PORT = 5554
-BOOT_TIMEOUT_SECONDS = 360
+BOOT_TIMEOUT_SECONDS = 120
 ANDROID_ARCH = "arm64-v8a"
 AVD_NAME_PREFIX = "android_emulator"
 ANDROID_API_COMPONENTS = {
@@ -383,7 +383,26 @@ def validate_plans(plans: Sequence[EmulatorPlan]) -> None:
             run_labels.add(run.label)
 
 
+def dump_existing_logcat(adb: Path, serial: str, logcat_path: Path) -> None:
+    try:
+        with logcat_path.open("wb") as logcat_output:
+            logcat = subprocess.run(
+                [adb, "-s", serial, "logcat", "-b", "all", "-d", "-v", "threadtime"],
+                check=False,
+                stdout=logcat_output,
+                stderr=subprocess.STDOUT,
+                timeout=30,
+            )
+        print(
+            f"{serial}: logcat saved to {logcat_path}; exit code {logcat.returncode}",
+            file=sys.stderr,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        print(f"{serial}: logcat collection failed: {error}", file=sys.stderr)
+
+
 def wait_for_boot(adb: Path, serial: str) -> None:
+    """An ADB timeout does not prove that Android failed to boot."""
     deadline = time.monotonic() + BOOT_TIMEOUT_SECONDS
     while time.monotonic() < deadline:
         try:
@@ -394,12 +413,45 @@ def wait_for_boot(adb: Path, serial: str) -> None:
                 text=True,
                 timeout=10,
             )
-            if result.stdout.strip() == "1":
+            if result.returncode == 0 and result.stdout.strip() == "1":
                 return
-        except subprocess.TimeoutExpired:
-            pass
+            probe_error = (
+                f"exit code {result.returncode}; "
+                f"stdout={result.stdout!r}; stderr={result.stderr!r}"
+            )
+        except subprocess.TimeoutExpired as error:
+            probe_error = (
+                f"ADB command timed out after 10 seconds; "
+                f"stdout={error.stdout!r}; stderr={error.stderr!r}"
+            )
+        print(f"{serial}: boot readiness probe: {probe_error}", file=sys.stderr)
         time.sleep(2)
-    raise RuntimeError(f"{serial} did not finish booting")
+
+    try:
+        devices = subprocess.run(
+            [adb, "devices", "-l"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        print(
+            f"{serial}: adb devices -l: exit code {devices.returncode}; "
+            f"stdout={devices.stdout!r}; stderr={devices.stderr!r}",
+            file=sys.stderr,
+        )
+    except subprocess.TimeoutExpired as error:
+        print(
+            f"{serial}: adb devices -l timed out after 10 seconds; "
+            f"stdout={error.stdout!r}; stderr={error.stderr!r}",
+            file=sys.stderr,
+        )
+
+    dump_existing_logcat(adb, serial, Path(f"{serial}-boot-logcat.log"))
+    raise RuntimeError(
+        f"{serial} did not pass the ADB boot readiness check "
+        f"within {BOOT_TIMEOUT_SECONDS} seconds"
+    )
 
 
 def install_apks(
@@ -472,6 +524,13 @@ def run_on_emulator(
 ) -> int:
     if not dry_run_only:
         wait_for_boot(adb, serial)
+    hide_error_dialogs_command = [
+        adb, "-s", serial, "shell", "settings", "put", "global", "hide_error_dialogs", "1"
+    ]
+    if dry_run_only:
+        print_command(hide_error_dialogs_command)
+    else:
+        subprocess.run(hide_error_dialogs_command, check=True)
     exit_code = 0
     for run in configuration.runs:
         if run_tests(run, configuration.label, adb, serial, dry_run_only) != 0:
@@ -528,6 +587,13 @@ def run_instrumented_apks(
     upload_exit_code = 0
     try:
         install_android_components(tools, configurations, dry_run_only)
+
+        # Start the shared ADB server before emulators or workers can start it concurrently.
+        start_adb_command = [tools.adb, "start-server"]
+        if dry_run_only:
+            print_command(start_adb_command)
+        else:
+            subprocess.run(start_adb_command, check=True, timeout=30)
 
         for plan in plans:
             create_avd(tools, plan, dry_run_only)

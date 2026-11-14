@@ -48,6 +48,7 @@ internal class LogsFeature(
     private val attributes = ConcurrentHashMap<String, Any?>()
 
     // region Context Information (attributes)
+
     /**
      * Add a custom attribute to all logs sent by any logger created from this feature.
      *

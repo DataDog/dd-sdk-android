@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay
 
-/**
+/*
  * Constants for MobileSegment record and wireframe types.
  */
 

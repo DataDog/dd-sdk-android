@@ -363,6 +363,7 @@ internal constructor(internal var handler: LogHandler) {
     // endregion
 
     // region Context Information (attributes, tags)
+
     /**
      * Add a custom attribute to all future logs sent by this logger.
      *

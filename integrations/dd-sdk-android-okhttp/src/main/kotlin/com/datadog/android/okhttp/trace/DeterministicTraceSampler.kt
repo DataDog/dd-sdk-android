@@ -12,13 +12,6 @@ import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.okhttp.internal.utils.SpanSamplingIdProvider
 import com.datadog.android.trace.api.span.DatadogSpan
 
-@Deprecated(
-    "Use com.datadog.android.trace.DeterministicTraceSampler instead.",
-    replaceWith = ReplaceWith(
-        "DeterministicTraceSampler",
-        imports = ["com.datadog.android.trace.DeterministicTraceSampler"]
-    )
-)
 /**
  * Deprecated. Use [com.datadog.android.trace.DeterministicTraceSampler] instead.
  *
@@ -28,6 +21,13 @@ import com.datadog.android.trace.api.span.DatadogSpan
  * the sampling decision needs to be made. All the values should be in the range [0;100].
  */
 // TODO RUM-13454 Remove with SDK v4 release.
+@Deprecated(
+    "Use com.datadog.android.trace.DeterministicTraceSampler instead.",
+    replaceWith = ReplaceWith(
+        "DeterministicTraceSampler",
+        imports = ["com.datadog.android.trace.DeterministicTraceSampler"]
+    )
+)
 open class DeterministicTraceSampler(
     sampleRateProvider: () -> Float
 ) : DeterministicSampler<DatadogSpan>(

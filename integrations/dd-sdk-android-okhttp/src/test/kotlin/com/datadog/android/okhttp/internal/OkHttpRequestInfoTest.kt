@@ -10,10 +10,10 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.instrumentation.network.HttpBodySnapshot
 import com.datadog.android.okhttp.internal.OkHttpRequestInfo.Companion.ERROR_PEEK_REQUEST_BODY
 import com.datadog.android.tests.elmyr.URL_FORGERY_PATTERN
-import com.datadog.android.tests.elmyr.exhaustiveAttributes
 import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
+import com.datadog.tools.unit.forge.anHttpHeaderMap
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -83,7 +83,7 @@ internal class OkHttpRequestInfoTest {
     @Test
     fun `M delegate W headers property`(forge: Forge) {
         // Given
-        val fakeHeaders = forge.exhaustiveAttributes().mapValues { listOf(it.value.toString()) }
+        val fakeHeaders = forge.anHttpHeaderMap().mapValues { listOf(it.value) }
         val mockHeaders = mock<Headers> { on { toMultimap() } doReturn fakeHeaders }
         val mockRequest = mock<Request> { on { headers } doReturn mockHeaders }
 

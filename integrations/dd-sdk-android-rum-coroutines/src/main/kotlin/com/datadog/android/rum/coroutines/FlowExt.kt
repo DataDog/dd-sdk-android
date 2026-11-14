@@ -25,7 +25,7 @@ internal const val ERROR_FLOW: String = "Coroutine Flow error"
  *
  *  @return the new [Flow] instance.
  */
-@Suppress("TooGenericExceptionCaught")
+@Suppress("TooGenericExceptionCaught", "SuspendFunSwallowedCancellation")
 fun <T> Flow<T>.sendErrorToDatadog(sdkCore: SdkCore = Datadog.getInstance()): Flow<T> {
     return flow {
         try {

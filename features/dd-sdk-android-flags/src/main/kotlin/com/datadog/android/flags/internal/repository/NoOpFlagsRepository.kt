@@ -6,48 +6,37 @@
 
 package com.datadog.android.flags.internal.repository
 
+import com.datadog.android.flags.internal.model.FlagEvaluationSnapshot
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.model.EvaluationContext
 
 /** Keeps context-operation bookkeeping running when no flag storage is available. */
 internal class NoOpFlagsRepository : FlagsRepository {
-    override fun getPrecomputedFlag(key: String): PrecomputedFlag? = null
-
     override fun getEvaluationContext(): EvaluationContext? = null
 
     override fun installFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
-        obfuscation: FlagKeyObfuscation?
-    ) = FlagsInstallation { onInstalled -> onInstalled() }
-
-    @Deprecated("Use installFlagsAndContext instead")
-    override fun setFlagsAndContext(
-        context: EvaluationContext,
-        flags: Map<String, PrecomputedFlag>,
         obfuscation: FlagKeyObfuscation?,
-        onInstalled: () -> Unit
-    ) {
-        onInstalled()
-    }
+        observeFullEvaluationData: Boolean
+    ) = FlagsInstallation { onInstalled -> onInstalled() }
 
     override fun waitForPersistenceLoad() = Unit
 
-    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag?, EvaluationContext>? = null
+    override fun getEvaluationSnapshot(key: String): FlagEvaluationSnapshot? = null
+
+    override fun retargetInvalidatedContext(context: EvaluationContext) = Unit
 
     override fun clearFlagsIfContextChanged(context: EvaluationContext) = Unit
 
-    override val cachedFlagsLoaded = FirstFlagsLatch()
+    override val cachedFlagsLoaded = FirstFlagsLatch().apply { complete(emptyList()) }
 
     override val firstFlags = FirstFlagsLatch()
 
-    override fun hasFlags(): Boolean = false
+    override fun hasConfiguration(): Boolean = false
 
-    override fun hasLoadedFlagsForContext(context: EvaluationContext): Boolean = false
+    override fun hasConfigurationForContext(context: EvaluationContext): Boolean = false
 
     override fun getAssignmentsSnapshot(): FlagsAssignmentsSnapshot? = null
-
-    @Deprecated("Use getAssignmentsSnapshot instead")
-    override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> = emptyMap()
 }

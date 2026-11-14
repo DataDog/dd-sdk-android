@@ -5,24 +5,21 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.depotProxied
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.taskConfig
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
+    // Apply ktlint before AGP: built-in Kotlin otherwise causes duplicate ktlint tasks.
+    id("ktlint")
+
     // Build
     id("com.android.application")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    kotlin("android")
     alias(libs.plugins.composeCompilerPlugin)
     id("datadogBuildConfig")
 }
 
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION")
 android {
 
     compileSdk = AndroidConfig.TARGET_SDK
@@ -49,16 +46,6 @@ android {
 
     testOptions {
         unitTests.isReturnDefaultValues = true
-    }
-
-    sourceSets.named("main") {
-        java.srcDir("src/main/kotlin")
-    }
-    sourceSets.named("test") {
-        java.srcDir("src/test/kotlin")
-    }
-    sourceSets.named("androidTest") {
-        java.srcDir("src/androidTest/kotlin")
     }
 
     compileOptions {
@@ -90,10 +77,11 @@ android {
     }
 }
 
-repositories.depotProxied(providers) {
-    google()
-    mavenLocal()
-    mavenCentral()
+configurations.matching { it.name.endsWith("AndroidTestLintChecksClasspath") }.configureEach {
+    // checkDependencyLicenses resolves every configuration, including AGP's lint check classpaths.
+    // Those don't request a Kotlin platform, so the Compose 1.7 test libraries (Coil 3 raises
+    // Compose to 1.7) resolve to desktop variants that pull in Truth and java-diff-utils.
+    attributes.attribute(KotlinPlatformType.attribute, KotlinPlatformType.androidJvm)
 }
 
 dependencies {
@@ -102,6 +90,7 @@ dependencies {
     }
     implementation(project(":features:dd-sdk-android-webview"))
     implementation(project(":features:dd-sdk-android-session-replay"))
+    implementation(project(":features:dd-sdk-android-session-replay-compose"))
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-rum"))
@@ -111,8 +100,10 @@ dependencies {
     implementation(libs.okHttp)
     implementation(libs.cronetPlayServices)
 
-    compileOnly(platform(libs.androidXComposeBom))
-    compileOnly(libs.androidXComposeRuntime)
+    implementation(platform(libs.androidXComposeBom))
+    implementation(libs.androidXComposeMaterial)
+    implementation(libs.coilCompose)
+    implementation(libs.coil3Compose)
 
     implementation(libs.gson)
     implementation(libs.kotlinRuntime)

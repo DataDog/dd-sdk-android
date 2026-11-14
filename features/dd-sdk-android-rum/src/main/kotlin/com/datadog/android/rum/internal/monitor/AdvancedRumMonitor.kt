@@ -27,8 +27,6 @@ import com.datadog.tools.annotation.NoOpImplementation
 @NoOpImplementation
 internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
 
-    fun resetSession()
-
     fun start()
 
     fun stop()
@@ -53,7 +51,7 @@ internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
 
     fun sendWebViewEvent()
 
-    fun addLongTask(durationNs: Long, target: String)
+    fun addLongTask(durationNs: Long, target: String, attributes: Map<String, Any?> = emptyMap())
 
     fun addSessionReplaySkippedFrame()
 

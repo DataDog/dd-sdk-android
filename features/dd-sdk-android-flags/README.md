@@ -93,6 +93,26 @@ val flagsConfig = FlagsConfiguration.Builder()
     .build()
 ```
 
+#### Load only selected flags
+
+To load only the flags that your app uses, set a flag selection. The SDK sends it with the flag request, and the server returns only the flags that have any of the tags or whose key matches any of the key patterns:
+
+```kotlin
+val flagsConfig = FlagsConfiguration.Builder()
+    .flagSelection(
+        tags = listOf("mobile"),
+        keyPatterns = listOf("checkout-*")
+    )
+    .build()
+```
+
+- Tags match exactly and are case-sensitive. A key pattern matches the whole flag key, and only `*` is a wildcard.
+- Each list accepts at most 31 values, and each value is at most 200 UTF-8 bytes. The SDK does not send a selection that is over a limit. It logs an error and loads the full flag configuration.
+- When the server applies the selection, evaluating a flag outside it returns the default value with `ErrorCode.FLAG_NOT_FOUND`.
+- The flag selection is fixed when the Flags feature is enabled and applies to every `FlagsClient`. Flags cached under a different selection are not loaded at startup; until the next successful fetch, a client starts without cached flags.
+- If the server ignores a selection, the SDK loads the full flag configuration and logs an error with the reason. A reason that the SDK does not know is reported as `unknown`.
+- With a custom flag endpoint, the proxy must forward the `DD-Flag-Selection-Ignored` response header. Otherwise, the SDK cannot report a selection that the server ignored.
+
 ## Use the Feature Flags SDK
 
 ### Create a Flags client
@@ -140,7 +160,7 @@ A newer context can replace the assignments before a callback runs. In enabled m
 before its result is processed fails with `FlagsContextSupersededException`, unless its timeout already completed it.
 Treat this exception as cancellation. OpenFeature maps it to coroutine cancellation instead of a provider error.
 This applies whether the superseded fetch succeeds or fails. A result processed before replacement keeps its original outcome.
-In `DISABLED`, previous assignments remain available and superseded requests retain their ordinary completion behavior.
+In `DISABLED`, previous assignments remain available while a fetch is pending. Superseded requests retain their ordinary completion behavior.
 
 | Mode | Behavior when the subject timestamp is present |
 | --- | --- |
@@ -168,11 +188,12 @@ Future mode requires the matching mode and exact cutoff in the acknowledgement.
 In either enabled mode, assignments from a different context are unavailable, including for subjects without the timestamp attribute.
 At startup, call `setEvaluationContext` with the matching context before the client can use persisted assignments.
 Until matching assignments are available, evaluation returns the application default with `PROVIDER_NOT_READY`.
-A malformed timestamp returns `INVALID_CONTEXT` instead. With `DISABLED`, persisted and previous assignments remain available.
+A malformed timestamp returns `INVALID_CONTEXT` instead. With `DISABLED`, previous assignments remain available while a fetch is pending.
 Previously accepted assignments can be reused only for the same context, cutoff, and mode.
 Each mode retains a separate disk cache. Changing modes does not delete another mode's cache.
 Switching back can reuse that mode's older snapshot. In `DISABLED`, it is served as soon as persisted state loads,
-for whichever subject it belonged to, until a successful context fetch replaces it. A failed fetch keeps it.
+for its original subject while a context fetch is pending. After failure, only assignments matching the requested context remain available (`Stale`).
+Assignments for another context become unavailable. The per-mode disk caches remain unchanged.
 Call `setEvaluationContext` for the active subject; mode changes do not provide cache eviction.
 `onFirstFlags` can report cached keys before an enabled-mode client has a matching requested context.
 Those keys do not indicate readable values, and setting the context does not emit a second first-flags notification.
@@ -276,6 +297,8 @@ val maxRetries = client.resolveIntValue("max-retry-count", 3)
 val discountPercentage = client.resolveDoubleValue("discount-rate", 0.0)
 ```
 
+Any numeric flag can be read with either method. `resolveIntValue` returns the value only when it is a whole number within `Int` range, such as `5` or `5.0`. Otherwise, it returns the default value: `resolve()` reports `TYPE_MISMATCH` when the value is fractional, such as `1.2`, or outside `Int` range, such as `2147483648`, and `PARSE_ERROR` when the value can't be parsed. To bound parsing work, a value longer than 64 characters is not parsed unless it is a plain integer within `Int` range, so it reports `PARSE_ERROR`. `resolveDoubleValue` returns a fractional value as the nearest `Double`, such as `1.2`. It returns a whole value only when the `Double` has exactly that value. For other whole values, such as `9007199254740993` or `1e300`, `resolve()` reports `TYPE_MISMATCH`. It also reports `TYPE_MISMATCH` for a nonzero value that rounds to zero, such as `1e-400`. `NaN` and `Infinity` report `PARSE_ERROR`. The same applies to a value longer than 64 characters whose `Double` is zero or 2^53 or more in magnitude.
+
 **Structured flags**
 ```kotlin
 val defaultConfig = JSONObject("""{"timeout": 30, "retries": 3}""")
@@ -333,7 +356,7 @@ if (result.errorCode != null) {
 ##### Error codes
 - `FLAG_NOT_FOUND` - The flag could not be found
 - `PARSE_ERROR` - Error parsing the flag value
-- `TYPE_MISMATCH` - The flag type doesn't match the expected type
+- `TYPE_MISMATCH` - The flag value's type doesn't match the expected type, such as a fractional value read with `resolveIntValue`
 - `TARGETING_KEY_MISSING` - No targeting key was provided
 - `INVALID_CONTEXT` - The evaluation context is invalid
 - `PROVIDER_NOT_READY` - The provider is not yet ready
@@ -407,6 +430,27 @@ and `FlagsSubscription.unsubscribe`.
 
 The [Kotlin sample](../../sample/kotlin/src/main/kotlin/com/datadog/android/sample/SampleApplication.kt)
 registers an application-lifetime callback, logs keys, and evaluates `"my-flag-key"` with default `false`.
+
+## Evaluation telemetry privacy
+
+Evaluation telemetry protects targeting keys by default. Only a literal boolean `true` in the
+assignment response's `data.attributes.observeFullEvaluationData` enables raw targeting keys.
+Absent, false, null, or malformed consent values keep protection enabled without rejecting the
+assignments. Consent is cached with the assignments and changes on normal configuration refresh.
+Evaluations queued before a refresh retain the consent of the configuration they used.
+Experimentation opt-out does not change this consent setting. Errors for a pending or invalid
+requested context use consent from the latest accepted assignments response and the requested
+subject's targeting key. Before any accepted configuration is available, protection defaults to enabled.
+
+Protected nonempty targeting keys are SHA-256 hashes of the exact UTF-8 text, prefixed with
+`sha256_`. Empty keys remain empty; missing keys and malformed Unicode are omitted without losing
+the evaluation in both consent modes. Valid Unicode is preserved exactly, without normalization.
+Android continues to omit `context.evaluation` in both modes. The consent setting does
+not change evaluation inputs, assignment requests, exposure events, or RUM integration.
+
+Evaluation telemetry error messages contain stable error codes in both consent modes, with
+`GENERAL` for unknown failures. `trackEvaluations(false)` disables this track. Assignment `doLog`
+controls exposures independently.
 
 ## Integration with RUM
 

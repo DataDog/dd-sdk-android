@@ -9,27 +9,6 @@ plugins {
     alias(libs.plugins.ktlintGradlePlugin)
 }
 
-buildscript {
-    repositories {
-        // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
-        listOf("gradlePluginProxy", "mavenRepositoryProxy")
-            .mapNotNull { providers.gradleProperty(it).orNull?.takeIf { url -> url.isNotBlank() } }
-            .forEach { url -> maven { setUrl(url) } }
-        mavenCentral()
-    }
-}
-
-repositories {
-    // Magic Mirror Depot proxy (only set in CI via `.gitlab-ci.yml`).
-    listOf("gradlePluginProxy", "mavenRepositoryProxy")
-        .mapNotNull { providers.gradleProperty(it).orNull?.takeIf { url -> url.isNotBlank() } }
-        .forEach { url -> maven { setUrl(url) } }
-    mavenCentral()
-    google()
-    gradlePluginPortal()
-    maven { setUrl("https://jitpack.io") }
-}
-
 dependencies {
 
     // Plugins whose types are only referenced when configuring a consuming project. They are
@@ -41,6 +20,7 @@ dependencies {
     compileOnly(libs.dokkaGradlePlugin)
     compileOnly(libs.detektGradlePlugin)
     compileOnly(libs.ktlintGradlePlugin)
+    compileOnly(libs.binaryCompatibilityValidator)
 
     // Kotlin PSI, used by the API surface generator to parse sources. Kept off the plugin runtime
     // classpath on purpose: KGP warns (and misbehaves) when a second `kotlin-compiler-embeddable`
@@ -104,23 +84,9 @@ ktlint {
     }
 }
 
-tasks {
-    val copyTestRes = register<Copy>("copyTestRes") {
-        from("$projectDir/src/test/kotlin/com/example/model")
-        into("$projectDir/src/test/resources/output")
-    }
-
-    val deleteTestRes = register<Delete>("deleteTestRes") {
-        delete("$projectDir/src/test/resources/output/")
-    }
-
-    named("processTestResources") {
-        dependsOn(copyTestRes)
-    }
-
-    named("test") {
-        dependsOn(copyTestRes)
-        finalizedBy(deleteTestRes)
+tasks.named<Copy>("processTestResources") {
+    from(layout.projectDirectory.dir("src/test/kotlin/com/example/model")) {
+        into("output")
     }
 }
 
