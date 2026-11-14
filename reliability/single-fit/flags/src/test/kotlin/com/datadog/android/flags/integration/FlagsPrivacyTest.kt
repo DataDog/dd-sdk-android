@@ -428,7 +428,8 @@ internal class FlagsPrivacyTest {
             stubAssignments(fakeConsent)
             client.setEvaluationContext(EvaluationContext(CONTEXT_CANARY))
         }
-        val expectedConsent = fakeConsent == true
+        // Invalid admission retains the snapshot; a failed context switch invalidates it.
+        val expectedConsent = fakeInvalid && fakeConsent == true
         val provider = client.asOpenFeatureProvider()
         val attributes = if (fakeInvalid) mapOf("dd_experimentation_opt_out_at" to "invalid") else emptyMap()
         val expectedError = if (fakeInvalid) "INVALID_CONTEXT" else "PROVIDER_NOT_READY"

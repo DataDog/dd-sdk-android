@@ -25,12 +25,15 @@ internal class ExperimentationOptOut(val mode: ExperimentationOptOutMode = Exper
     val stateLock = Any()
     private var currentRequest: Request? = null
 
-    fun prepare(context: EvaluationContext): Request {
+    fun prepare(context: EvaluationContext, beforeCommit: (Request) -> Unit = {}): Request {
         val snapshot = context.copy(attributes = context.attributes.toMap())
         val supplied = enabled && snapshot.attributes.containsKey(ATTRIBUTE)
         val invalid = supplied && !isValidTimestamp(snapshot.attributes[ATTRIBUTE])
         val request = Request(snapshot, supplied && !invalid, invalid, mode)
-        synchronized(stateLock) { currentRequest = request }
+        synchronized(stateLock) {
+            beforeCommit(request)
+            currentRequest = request
+        }
         return request
     }
 

@@ -84,7 +84,7 @@ internal class DatadogFlagsClient(
             try {
                 listener.onEvent(event)
             } catch (
-                // Callbacks must not break other registrations or the delivering thread.
+                // Callback exceptions must not break other registrations or the delivering thread.
                 @Suppress("TooGenericExceptionCaught")
                 exception: Exception
             ) {
@@ -136,7 +136,7 @@ internal class DatadogFlagsClient(
             if (telemetryOptedOut != null) subjectOptOut[context.targetingKey] = telemetryOptedOut
             requestedSubject = context.targetingKey
             pendingSubjects[context.targetingKey] = (pendingSubjects[context.targetingKey] ?: 0) + 1
-            experimentationOptOut.prepare(context)
+            experimentationOptOut.prepare(context, evaluationsManager::prepareRequest)
         }
         evaluationsManager.updatePreparedEvaluations(request, callback) {
             synchronized(telemetryLock) {

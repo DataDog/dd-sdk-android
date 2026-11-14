@@ -117,12 +117,38 @@ internal class EvaluationsManager(
     private val effects = EvaluationEffects(initializationTerminalLock, internalLogger)
     private var currentState: FlagsClientState = FlagsClientState.NotReady
 
+    internal var cacheRecovery: Pair<Long, ExperimentationOptOut.Request>? = null
+        private set
+    private var cacheReadCompleted = false
+
+    init {
+        flagsRepository.cachedFlagsLoaded.whenComplete {
+            synchronized(initializationTerminalLock) {
+                cacheReadCompleted = true
+                val recovery = cacheRecovery
+                cacheRecovery = null
+                if (recovery == null) return@synchronized
+                val error = currentState as? FlagsClientState.Error ?: return@synchronized
+                val matches = flagsRepository.hasConfigurationForContext(recovery.second.context)
+                val authoritative = experimentationOptOut.enabled || recovery.first == fetchSequence.get()
+                if (matches && authoritative && currentState === error) {
+                    experimentationOptOut.ifCurrent(recovery.second) {
+                        cacheRecovery = null
+                        currentState = FlagsClientState.Stale
+                        effects.enqueue { flagStateManager.recoverFromError(error) }
+                    }
+                }
+            }
+            effects.drain()
+        }
+    }
+
     /**
      * Processes a new evaluation context by fetching flags and storing atomically.
      *
      * This method asynchronously fetches precomputed flag evaluations for the given context
      * and atomically updates the context, flag data, and encoding descriptor in the repository. A failed or unreadable
-     * response keeps the last known good flags and their context.
+     * response retains assignments only when their context matches the failed request. Disk caches remain unchanged.
      *
      * The operation is performed on the configured executor service and will not block the
      * calling thread. Errors are logged but do not propagate to the caller.
@@ -137,7 +163,13 @@ internal class EvaluationsManager(
         callback: EvaluationContextCallback? = null,
         onFetchFinished: () -> Unit = {}
     ) {
-        updatePreparedEvaluations(experimentationOptOut.prepare(context), callback, onFetchFinished)
+        updatePreparedEvaluations(experimentationOptOut.prepare(context, ::prepareRequest), callback, onFetchFinished)
+    }
+
+    // Called by prepare under the policy lock, before the request becomes current.
+    fun prepareRequest(request: ExperimentationOptOut.Request) {
+        cacheRecovery = null
+        if (!request.invalid) flagsRepository.retargetInvalidatedContext(request.context)
     }
 
     fun updatePreparedEvaluations(
@@ -148,7 +180,10 @@ internal class EvaluationsManager(
         if (request.invalid) {
             val error = FlagsInvalidContextException(ExperimentationOptOut.INVALID_CONTEXT_MESSAGE)
             synchronized(initializationTerminalLock) {
-                experimentationOptOut.ifCurrent(request) { enqueueState(FlagsClientState.Error(error)) }
+                experimentationOptOut.ifCurrent(request) {
+                    cacheRecovery = null
+                    enqueueState(FlagsClientState.Error(error))
+                }
                 enqueueCompletion(InitializationResult(callback), error)
             }
             effects.drain()
@@ -170,22 +205,33 @@ internal class EvaluationsManager(
         onFetchFinished: () -> Unit
     ) {
         val context = request.context
-        val sequence = fetchSequence.incrementAndGet()
+        val sequence = synchronized(initializationTerminalLock) {
+            fetchSequence.incrementAndGet().also {
+                experimentationOptOut.ifCurrent(request) {
+                    cacheRecovery = null
+                    flagsRepository.retargetInvalidatedContext(context)
+                }
+            }
+        }
         val diagnostics = Diagnostics(
             Sdk(instanceId),
             Fetch(sequence, if (sequence == 1L) Trigger.INITIALIZATION else Trigger.CONTEXT_CHANGE)
         )
         val matchingCachedAssignments = AtomicBoolean(false)
-        val initializationCompletion = startInitializationTimeout(request, callback, matchingCachedAssignments) {
-            experimentationOptOut.ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
-            effects.drain()
-        }
+        val initializationCompletion =
+            startInitializationTimeout(request, sequence, callback, matchingCachedAssignments) {
+                experimentationOptOut.ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
+                effects.drain()
+            }
         if (initializationCompletion == null) {
             experimentationOptOut.ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
             effects.drain()
         }
 
-        completionAwareExecutor(onFetchFinished).executeSafe(FETCH_AND_STORE_OPERATION_NAME, internalLogger) {
+        completionAwareExecutor(
+            executorService,
+            onFetchFinished
+        ).executeSafe(FETCH_AND_STORE_OPERATION_NAME, internalLogger) {
             try {
                 // Read on the fetch executor so unavailable core context still releases pending telemetry state.
                 // withContext can silently skip its callback after shutdown or rejected dispatch.
@@ -220,6 +266,7 @@ internal class EvaluationsManager(
                 } else {
                     handleRequestFailure(
                         request,
+                        sequence,
                         initializationCompletion,
                         callback,
                         matchingCachedAssignments.get(),
@@ -233,21 +280,9 @@ internal class EvaluationsManager(
         }
     }
 
-    // Executor construction does not run the task. Rejection is rethrown only
-    // to executeSafe, which logs it without exposing it to the caller.
-    @Suppress("UnsafeThirdPartyFunctionCall", "ThrowingInternalException")
-    private fun completionAwareExecutor(onFetchFinished: () -> Unit): Executor = Executor { task ->
-        try {
-            @Suppress("UnsafeThirdPartyFunctionCall") // Rejection releases request state before executeSafe logs it.
-            executorService.execute(task)
-        } catch (exception: RejectedExecutionException) {
-            onFetchFinished()
-            throw exception
-        }
-    }
-
     private fun handleRequestFailure(
         request: ExperimentationOptOut.Request,
+        sequence: Long,
         initializationCompletion: InitializationCompletion?,
         callback: EvaluationContextCallback?,
         matchingCachedAssignments: Boolean,
@@ -259,10 +294,13 @@ internal class EvaluationsManager(
         synchronized(initializationTerminalLock) {
             val result = takeCompletion(initializationCompletion, callback)
             val current = experimentationOptOut.ifCurrent(request) {
-                // Lifecycle is Stale only when retained flags match the requested context.
-                if (matchingCachedAssignments) {
+                if (!experimentationOptOut.enabled && sequence != fetchSequence.get()) return@ifCurrent
+                flagsRepository.clearFlagsIfContextChanged(request.context)
+                // Cache loading can finish while the failed request is being handled.
+                if (matchingCachedAssignments || flagsRepository.hasConfigurationForContext(request.context)) {
                     enqueueState(FlagsClientState.Stale)
                 } else {
+                    if (!cacheReadCompleted) cacheRecovery = sequence to request
                     enqueueState(FlagsClientState.Error(throwable))
                 }
             }
@@ -317,6 +355,7 @@ internal class EvaluationsManager(
             assignments.observeFullEvaluationData
         )
         val result = takeCompletion(initializationCompletion, callback)
+        cacheRecovery = null
         currentState = FlagsClientState.Ready
         effects.enqueue {
             installation.complete {
@@ -328,6 +367,7 @@ internal class EvaluationsManager(
 
     private fun startInitializationTimeout(
         request: ExperimentationOptOut.Request,
+        sequence: Long,
         callback: EvaluationContextCallback?,
         matchingCachedAssignments: AtomicBoolean,
         beforeScheduling: () -> Unit
@@ -350,15 +390,9 @@ internal class EvaluationsManager(
                     val newerFailed = target !== request && currentState is FlagsClientState.Error
                     if (target != null && !newerFailed) {
                         if (currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale) {
-                            val hasMatchingCachedAssignments =
-                                (target === request && matchingCachedAssignments.get()) ||
-                                    flagsRepository.hasConfigurationForContext(target.context)
-                            val timeoutState = if (hasMatchingCachedAssignments) {
-                                FlagsClientState.Stale
-                            } else {
-                                FlagsClientState.Error(error)
-                            }
-                            enqueueState(timeoutState)
+                            enqueueState(
+                                timeoutState(target, request, sequence, matchingCachedAssignments.get(), error)
+                            )
                         }
                     }
                     enqueueCompletion(claimedResult, error)
@@ -369,8 +403,30 @@ internal class EvaluationsManager(
         }
     }
 
+    private fun timeoutState(
+        target: ExperimentationOptOut.Request,
+        request: ExperimentationOptOut.Request,
+        sequence: Long,
+        matchingCachedAssignments: Boolean,
+        error: FlagsInitializationTimeoutException
+    ): FlagsClientState {
+        flagsRepository.clearFlagsIfContextChanged(target.context)
+        val hasMatchingCache = (target === request && matchingCachedAssignments) ||
+            flagsRepository.hasConfigurationForContext(target.context)
+        if (hasMatchingCache) {
+            cacheRecovery = null
+            return FlagsClientState.Stale
+        }
+        val targetSequence = if (target === request) sequence else fetchSequence.get()
+        if (!cacheReadCompleted && (experimentationOptOut.enabled || targetSequence == fetchSequence.get())) {
+            cacheRecovery = targetSequence to target
+        }
+        return FlagsClientState.Error(error)
+    }
+
     // Called under the policy lock. State delivery must not acquire the state-holder lock here.
     private fun enqueueState(state: FlagsClientState) {
+        if (state !is FlagsClientState.Error) cacheRecovery = null
         currentState = state
         effects.enqueue { flagStateManager.updateState(state) }
     }
@@ -406,5 +462,21 @@ internal class EvaluationsManager(
         private const val INVALID_RESPONSE_MESSAGE = "Unable to read the feature flags response."
         private const val NETWORK_REQUEST_FAILED_MESSAGE =
             "Unable to fetch feature flags. Please check your network connection."
+    }
+}
+
+// Executor construction does not run the task. Rejection is rethrown only
+// to executeSafe, which logs it without exposing it to the caller.
+@Suppress("UnsafeThirdPartyFunctionCall", "ThrowingInternalException")
+private fun completionAwareExecutor(
+    executorService: ExecutorService,
+    onFetchFinished: () -> Unit
+): Executor = Executor { task ->
+    try {
+        @Suppress("UnsafeThirdPartyFunctionCall") // Rejection releases request state before executeSafe logs it.
+        executorService.execute(task)
+    } catch (exception: RejectedExecutionException) {
+        onFetchFinished()
+        throw exception
     }
 }

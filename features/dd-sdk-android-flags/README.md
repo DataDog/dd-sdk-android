@@ -160,7 +160,7 @@ A newer context can replace the assignments before a callback runs. In enabled m
 before its result is processed fails with `FlagsContextSupersededException`, unless its timeout already completed it.
 Treat this exception as cancellation. OpenFeature maps it to coroutine cancellation instead of a provider error.
 This applies whether the superseded fetch succeeds or fails. A result processed before replacement keeps its original outcome.
-In `DISABLED`, previous assignments remain available and superseded requests retain their ordinary completion behavior.
+In `DISABLED`, previous assignments remain available while a fetch is pending. Superseded requests retain their ordinary completion behavior.
 
 | Mode | Behavior when the subject timestamp is present |
 | --- | --- |
@@ -188,11 +188,12 @@ Future mode requires the matching mode and exact cutoff in the acknowledgement.
 In either enabled mode, assignments from a different context are unavailable, including for subjects without the timestamp attribute.
 At startup, call `setEvaluationContext` with the matching context before the client can use persisted assignments.
 Until matching assignments are available, evaluation returns the application default with `PROVIDER_NOT_READY`.
-A malformed timestamp returns `INVALID_CONTEXT` instead. With `DISABLED`, persisted and previous assignments remain available.
+A malformed timestamp returns `INVALID_CONTEXT` instead. With `DISABLED`, previous assignments remain available while a fetch is pending.
 Previously accepted assignments can be reused only for the same context, cutoff, and mode.
 Each mode retains a separate disk cache. Changing modes does not delete another mode's cache.
 Switching back can reuse that mode's older snapshot. In `DISABLED`, it is served as soon as persisted state loads,
-for whichever subject it belonged to, until a successful context fetch replaces it. A failed fetch keeps it.
+for its original subject while a context fetch is pending. After failure, only assignments matching the requested context remain available (`Stale`).
+Assignments for another context become unavailable. The per-mode disk caches remain unchanged.
 Call `setEvaluationContext` for the active subject; mode changes do not provide cache eviction.
 `onFirstFlags` can report cached keys before an enabled-mode client has a matching requested context.
 Those keys do not indicate readable values, and setting the context does not emit a second first-flags notification.
@@ -250,6 +251,12 @@ val context = EvaluationContext(
 
 client.setEvaluationContext(context)
 ```
+
+If the fetch fails or its response is invalid, assignments from another context become unavailable. Matching assignments remain available.
+If matching cached assignments finish loading after a failure or initialization timeout, the client recovers to `Stale`.
+This includes valid cached configurations with no flags. An older request failure does not replace a newer request’s state or assignments.
+This also applies when another context succeeded while the startup cache read was pending.
+Cache recovery does not repeat an `onFirstFlags` notification that was already delivered.
 
 **Notes**
 - The targeting key must be consistent for the same user or entity to ensure consistent flag evaluation across requests. Common targeting keys include user ID, device ID, or session ID.

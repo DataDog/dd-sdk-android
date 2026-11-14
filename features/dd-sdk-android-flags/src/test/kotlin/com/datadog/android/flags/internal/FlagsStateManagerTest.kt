@@ -8,7 +8,6 @@ package com.datadog.android.flags.internal
 
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags.model.FlagsClientState
-import com.datadog.android.internal.utils.DDCoreStateHolder
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,7 +37,7 @@ internal class FlagsStateManagerTest {
     @BeforeEach
     fun `set up`() {
         testedManager = FlagsStateManager(
-            stateHolder = DDCoreStateHolder.create(
+            stateHolder = FlagsStateHolder.create(
                 initialState = FlagsClientState.NotReady,
                 onStateChanged = FlagsStateListener::onStateChanged
             )

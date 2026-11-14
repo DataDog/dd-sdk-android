@@ -38,7 +38,9 @@ internal class DefaultFlagsRepository(
         val context: EvaluationContext,
         val flags: Map<String, PrecomputedFlag>,
         val obfuscation: FlagKeyObfuscation?,
-        val observeFullEvaluationData: Boolean
+        val observeFullEvaluationData: Boolean,
+        val hasAcceptedConfiguration: Boolean = true,
+        val isTombstone: Boolean = false
     ) {
         val telemetryTargetingKey = EvaluationTargetingKey.create(context.targetingKey, observeFullEvaluationData)
 
@@ -55,6 +57,7 @@ internal class DefaultFlagsRepository(
     private val persistenceLoadedLatch = CountDownLatch(1)
 
     override val firstFlags = FirstFlagsLatch()
+    override val cachedFlagsLoaded = FirstFlagsLatch()
 
     private val persistenceManager = FlagsPersistenceManager(
         dataStore = dataStore,
@@ -77,13 +80,17 @@ internal class DefaultFlagsRepository(
                     },
                     it.obfuscation,
                     it.observeFullEvaluationData
-                ).takeIf { state -> atomicState.compareAndSet(null, state) }
+                ).takeIf { state -> installPersistedState(state) }
             }
         } finally {
             persistenceLoadedLatch.countDown()
         }
-        if (cachedState != null && persistedState != null) {
-            publishFirstFlags(cachedState, persistedState.flags.keys)
+        try {
+            cachedFlagsLoaded.complete(emptyList())
+        } finally {
+            if (cachedState != null && persistedState != null) {
+                publishFirstFlags(cachedState, persistedState.flags.keys)
+            }
         }
     }
 
@@ -96,7 +103,7 @@ internal class DefaultFlagsRepository(
         val newState = FlagsState(context, flags, obfuscation, observeFullEvaluationData)
 
         val previousState = atomicState.getAndSet(newState)
-        val firstInstallation = previousState == null ||
+        val firstInstallation = previousState?.hasAcceptedConfiguration != true ||
             (previousState.obfuscation != null && !obfuscationSupported)
         persistenceLoadedLatch.countDown()
 
@@ -151,25 +158,50 @@ internal class DefaultFlagsRepository(
     }
 
     override fun getAssignmentsSnapshot(): FlagsAssignmentsSnapshot? {
-        val state = readableState ?: return null
+        val state = readableState?.takeUnless { it.isTombstone } ?: return null
         return FlagsAssignmentsSnapshot(if (state.obfuscation == null) state.flags else emptyMap(), state.context)
+    }
+
+    override fun retargetInvalidatedContext(context: EvaluationContext) {
+        do {
+            val currentState = atomicState.get() ?: return
+            if (!currentState.isTombstone || currentState.context == context) return
+            val retargetedState = currentState.copy(context = context)
+        } while (!atomicState.compareAndSet(currentState, retargetedState))
+    }
+
+    override fun clearFlagsIfContextChanged(context: EvaluationContext) {
+        do {
+            val currentState = atomicState.get()
+            if (currentState?.context == context) return
+            // Reject late cache reads without accepting or persisting an empty configuration.
+            val clearedState = FlagsState(
+                context,
+                emptyMap(),
+                obfuscation = null,
+                observeFullEvaluationData = false,
+                hasAcceptedConfiguration = currentState?.hasAcceptedConfiguration == true &&
+                    (currentState.obfuscation == null || obfuscationSupported),
+                isTombstone = true
+            )
+        } while (!atomicState.compareAndSet(currentState, clearedState))
     }
 
     override fun getEvaluationContext(): EvaluationContext? {
         waitForPersistenceLoad()
-        return readableState?.context
+        return readableState?.takeUnless { it.isTombstone }?.context
     }
 
     override fun hasConfiguration(): Boolean {
         waitForPersistenceLoad()
-        return readableState != null
+        return readableState?.isTombstone == false
     }
 
     override fun hasConfigurationForContext(context: EvaluationContext): Boolean =
-        readableState?.context == context
+        readableState?.let { it.context == context && !it.isTombstone } == true
 
     override fun getEvaluationSnapshot(key: String): FlagEvaluationSnapshot? {
-        val state = readableState ?: return null
+        val state = readableState?.takeUnless { it.isTombstone } ?: return null
         val flag = state[key]
         return FlagEvaluationSnapshot(flag, state.context, state.observeFullEvaluationData, state.telemetryTargetingKey)
     }
@@ -181,6 +213,18 @@ internal class DefaultFlagsRepository(
             @Suppress("UnsafeThirdPartyFunctionCall") // Safe: self-interruption is always permitted
             Thread.currentThread().interrupt()
         }
+    }
+
+    private fun installPersistedState(persistedState: FlagsState): Boolean {
+        do {
+            val currentState = atomicState.get()
+            if (currentState != null &&
+                (!currentState.isTombstone || currentState.context != persistedState.context)
+            ) {
+                return false
+            }
+        } while (!atomicState.compareAndSet(currentState, persistedState))
+        return true
     }
 
     private fun publishFirstFlags(state: FlagsState, installedKeys: Collection<String>) {
