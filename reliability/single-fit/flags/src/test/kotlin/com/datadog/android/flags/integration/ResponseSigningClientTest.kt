@@ -453,6 +453,25 @@ internal class ResponseSigningClientTest {
         assertThat(store.values).hasSize(1)
     }
 
+    @ParameterizedTest
+    @EnumSource(ResponseSigningMode::class)
+    fun `M preserve response consent W resolve() {assigned and missing flags}`(mode: ResponseSigningMode) {
+        // Given
+        create(mode)
+        for (consent in listOf(false, true)) {
+            observeFullEvaluationData = consent
+            testedClient.setEvaluationContext(EvaluationContext("subject"))
+            queue.removeFirst().run()
+            // When
+            val assigned = testedClient.resolve("critical-demo", false)
+            val missing = testedClient.resolve("missing", false)
+            // Then
+            assertThat(assigned.value).isTrue()
+            assertThat(assigned.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", consent)
+            assertThat(missing.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", consent)
+        }
+    }
+
     private fun updateApp(applicationId: String, sessionId: String = "session") {
         val context = mapOf(FeatureContextKeys.RUM_CONTEXT to RumContext(applicationId, sessionId))
         fakeDatadogContext = fakeDatadogContext.copy(featuresContext = mapOf(Feature.RUM_FEATURE_NAME to context))
