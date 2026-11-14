@@ -28,6 +28,8 @@ The workflow waits while an update PR is open. It does not merge PRs or release 
 
 [Java example](https://github.com/DataDog/dd-trace-java/pull/13347): a fixture bump led to stronger fixture assertions, then merged.
 
+Signing fixtures use central commit `SIGNING_COMMIT`. The native verifier runs every manifest-listed suite.
+
 ### Review checklist (to be filled by reviewers)
 
 - [ ] Feature or bugfix MUST have appropriate tests (unit, integration, e2e)

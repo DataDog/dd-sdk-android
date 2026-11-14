@@ -7,6 +7,7 @@
 package com.datadog.android.flags
 
 import com.datadog.android.flags.internal.selection.FlagSelection
+import com.datadog.android.flags.internal.signing.ResponseSigningConfiguration
 import com.datadog.android.flags.model.ErrorCode
 
 private const val DEFAULT_INITIALIZATION_TIMEOUT_MS = 5_000L
@@ -25,6 +26,7 @@ data class FlagsConfiguration internal constructor(
     internal val rumIntegrationEnabled: Boolean,
     internal val gracefulModeEnabled: Boolean,
     internal val initializationTimeoutMs: Long?,
+    internal val responseSigning: ResponseSigningConfiguration = ResponseSigningConfiguration(),
     internal val flagSelection: FlagSelection?
 ) {
     /**
@@ -51,12 +53,14 @@ data class FlagsConfiguration internal constructor(
         rumIntegrationEnabled = rumIntegrationEnabled,
         gracefulModeEnabled = gracefulModeEnabled,
         initializationTimeoutMs = initializationTimeoutMs,
+        responseSigning = responseSigning,
         flagSelection = flagSelection
     )
 
     /**
      * A Builder class for a [FlagsConfiguration].
      */
+    @Suppress("TooManyFunctions") // Each public option has one builder method.
     class Builder {
         private var trackExposures: Boolean = true
         private var trackEvaluations: Boolean = true
@@ -67,6 +71,21 @@ data class FlagsConfiguration internal constructor(
         private var rumIntegrationEnabled: Boolean = true
         private var gracefulModeEnabled: Boolean = true
         private var initializationTimeoutMs: Long? = DEFAULT_INITIALIZATION_TIMEOUT_MS
+        private var responseSigning = ResponseSigningConfiguration()
+
+        /**
+         * Opts into assignment response verification. No production trust anchor is bundled.
+         *
+         * @param mode OFF by default; OBSERVE accepts unverified data, REQUIRED uses verified memory only.
+         * @param trustedRootCertificates Explicit trusted public root certificates as padded base64 DER.
+         * An empty list selects bundled trust only for the exact staging endpoint.
+         * Explicit roots replace bundled trust. Invalid or unavailable roots cannot verify responses.
+         * @return this builder.
+         */
+        fun responseSigning(mode: ResponseSigningMode, trustedRootCertificates: List<String>): Builder {
+            responseSigning = ResponseSigningConfiguration(mode, trustedRootCertificates.toList())
+            return this
+        }
         private var flagSelection: FlagSelection? = null
 
         /**
@@ -254,6 +273,7 @@ data class FlagsConfiguration internal constructor(
             rumIntegrationEnabled = rumIntegrationEnabled,
             gracefulModeEnabled = gracefulModeEnabled,
             initializationTimeoutMs = initializationTimeoutMs,
+            responseSigning = responseSigning,
             flagSelection = flagSelection
         )
 

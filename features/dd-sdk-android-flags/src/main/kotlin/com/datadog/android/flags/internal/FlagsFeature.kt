@@ -18,6 +18,7 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.internal.evaluation.InitializationTimeoutScheduler
 import com.datadog.android.flags.internal.net.ExposuresRequestFactory
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
@@ -25,6 +26,7 @@ import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.internal.selection.FlagSelectionCanonicalizer
 import com.datadog.android.flags.internal.selection.FlagSelectionResult
 import com.datadog.android.flags.internal.selection.logDroppedFlagSelection
+import com.datadog.android.flags.internal.signing.ResponseSigningContext
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.flags.internal.storage.RecordWriter
@@ -65,6 +67,12 @@ internal class FlagsFeature(
      * This map stores all clients created for this feature instance.
      */
     private val registeredClients: MutableMap<String, FlagsClient> = mutableMapOf()
+
+    internal val signingContext = if (flagsConfiguration.responseSigning.mode == ResponseSigningMode.OFF) {
+        null
+    } else {
+        ResponseSigningContext()
+    }
 
     // region Storage Feature
 
@@ -133,6 +141,10 @@ internal class FlagsFeature(
         }
         isDebugBuild = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
         isInitialized = true
+        signingContext?.let {
+            it.start()
+            sdkCore.setContextUpdateReceiver(it)
+        }
         (flagSelectionResult as? FlagSelectionResult.Dropped)?.let {
             sdkCore.internalLogger.logDroppedFlagSelection(it.error)
         }
@@ -144,6 +156,10 @@ internal class FlagsFeature(
     }
 
     override fun onStop() {
+        signingContext?.let {
+            it.stop()
+            sdkCore.removeContextUpdateReceiver(it)
+        }
         dataWriter = NoOpRecordWriter()
         isInitialized = false // Allow re-initialization if feature is restarted
         synchronized(registeredClients) {

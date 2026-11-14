@@ -23,6 +23,9 @@ plugins {
 
 android {
     namespace = "com.datadog.android.flags.integration"
+    sourceSets.getByName("test").resources.srcDir(
+        rootProject.file("features/dd-sdk-android-flags/src/test/resources")
+    )
     testBuildType = "release"
     defaultConfig {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

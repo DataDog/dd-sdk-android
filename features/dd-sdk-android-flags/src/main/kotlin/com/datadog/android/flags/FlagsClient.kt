@@ -29,8 +29,11 @@ import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
+import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
+import com.datadog.android.flags.internal.repository.SigningFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
+import com.datadog.android.flags.internal.signing.ResponseSigningState
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
@@ -382,6 +385,7 @@ interface FlagsClient {
      * ensuring thread-safe access and proper lifecycle management.
      */
     companion object {
+        private const val SIGNING_MILLIS_PER_SECOND = 1000
         private const val DEFAULT_CLIENT_NAME = "default"
 
         /**
@@ -469,33 +473,59 @@ interface FlagsClient {
             experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
             evaluationTelemetryOptOutParameterEnabled: Boolean
         ): FlagsClient {
-            val experimentationOptOut = ExperimentationOptOut(experimentationOptOutMode)
+            val experimentationOptOut = ExperimentationOptOut(
+                experimentationOptOutMode,
+                flagsFeature.signingContext?.lock ?: Any()
+            )
             val networkExecutorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_NETWORK_EXECUTOR_NAME
             )
+            val signing = flagsFeature.signingContext?.let {
+                ResponseSigningState(configuration.responseSigning, featureSdkCore.internalLogger, context = it) {
+                    featureSdkCore.timeProvider.getDeviceTimestampMillis() / SIGNING_MILLIS_PER_SECOND
+                }
+            }
+            val deliverFirstFlags: (Runnable) -> Unit = { delivery ->
+                val worker = featureSdkCore.createSingleThreadExecutorService(FLAGS_FIRST_FLAGS_EXECUTOR_NAME)
+                try {
+                    worker.executeSafe("Deliver first flags", featureSdkCore.internalLogger, delivery)
+                } finally {
+                    worker.shutdown()
+                }
+            }
             val datastore = featureSdkCore.getFeature(FLAGS_FEATURE_NAME)
                 ?.dataStore
-            val flagsRepository = if (datastore != null) {
-                DefaultFlagsRepository(
-                    featureSdkCore = featureSdkCore,
-                    dataStore = datastore,
-                    instanceName = name,
-                    flagSelection = flagsFeature.flagSelection,
-                    experimentationOptOutMode = experimentationOptOutMode,
-                    deliverFirstFlags = { delivery ->
-                        val worker = featureSdkCore.createSingleThreadExecutorService(FLAGS_FIRST_FLAGS_EXECUTOR_NAME)
-                        try {
-                            worker.executeSafe("Deliver first flags", featureSdkCore.internalLogger, delivery)
-                        } finally {
-                            worker.shutdown()
-                        }
-                    }
-                )
-            } else {
-                NoOpFlagsRepository()
+            val ordinaryRepository: (String, String?) -> FlagsRepository = { instanceName, scope ->
+                if (datastore != null) {
+                    DefaultFlagsRepository(
+                        featureSdkCore = featureSdkCore,
+                        dataStore = datastore,
+                        instanceName = instanceName,
+                        flagSelection = flagsFeature.flagSelection,
+                        experimentationOptOutMode = experimentationOptOutMode,
+                        deliverFirstFlags = deliverFirstFlags,
+                        responseSigningCacheScope = scope
+                    )
+                } else {
+                    NoOpFlagsRepository()
+                }
             }
+            val flagsRepository = signing?.let {
+                SigningFlagsRepository(
+                    { scope -> ordinaryRepository("$name-signing-v1-observe", scope) },
+                    it,
+                    deliverFirstFlags
+                )
+            } ?: ordinaryRepository(name, null)
 
-            val callFactory = featureSdkCore.createOkHttpCallFactory()
+            val callFactory = if (signing == null) {
+                featureSdkCore.createOkHttpCallFactory()
+            } else {
+                featureSdkCore.createOkHttpCallFactory {
+                    followRedirects(false)
+                    followSslRedirects(false)
+                }
+            }
             val assignmentsDownloader = PrecomputedAssignmentsDownloader(
                 internalLogger = featureSdkCore.internalLogger,
                 callFactory = callFactory,
@@ -508,7 +538,8 @@ interface FlagsClient {
                     )
                 } else {
                     flagsFeature.precomputedRequestFactory
-                }
+                },
+                signing = signing
             )
 
             val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger, experimentationOptOutMode)
@@ -530,6 +561,7 @@ interface FlagsClient {
                 flagStateManager = flagStateManager,
                 initializationTimeoutMs = configuration.initializationTimeoutMs,
                 initializationTimeoutScheduler = flagsFeature.initializationTimeoutScheduler,
+                signing = signing,
                 experimentationOptOut = experimentationOptOut,
                 callbackExecutor = EvaluationCallbackDispatcher(featureSdkCore.internalLogger) {
                     featureSdkCore.createSingleThreadExecutorService(FLAGS_CALLBACK_EXECUTOR_NAME)

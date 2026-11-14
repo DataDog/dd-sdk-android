@@ -46,6 +46,10 @@ createJsonModelsGenerationTask("generateFlagsInternalModelsFromJson") {
 
 android {
     namespace = "com.datadog.android.flags"
+    defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+    sourceSets.getByName("androidTest").assets.srcDir("src/test/resources")
 }
 
 dependencies {
@@ -58,6 +62,10 @@ dependencies {
     implementation(libs.okHttp)
     implementation(libs.androidXAnnotation)
     implementation(libs.androidXCollection)
+
+    androidTestImplementation(libs.androidXTestCore)
+    androidTestImplementation(libs.androidXTestRunner)
+    androidTestImplementation(libs.androidXTestJUnitExt)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))

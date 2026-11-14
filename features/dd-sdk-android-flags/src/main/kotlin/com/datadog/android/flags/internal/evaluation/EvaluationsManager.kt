@@ -27,6 +27,7 @@ import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.internal.selection.logIgnoredFlagSelection
+import com.datadog.android.flags.internal.signing.ResponseSigningState
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import java.util.concurrent.Executor
@@ -93,6 +94,7 @@ private class InitializationCompletion(private var callback: EvaluationContextCa
  * @param flagStateManager channel for notifying state change listeners
  * @param initializationTimeoutMs optional maximum duration of the first context operation
  * @param initializationTimeoutScheduler schedules the first context timeout
+ * @param signing verifies proof lifetime and request scope before admission
  * @param experimentationOptOut validates contexts and prevents superseded installations
  * @param callbackExecutor delivers customer callbacks outside state delivery and network operations
  */
@@ -107,7 +109,9 @@ internal class EvaluationsManager(
     private val flagStateManager: FlagsStateManager,
     private val initializationTimeoutMs: Long?,
     private val initializationTimeoutScheduler: InitializationTimeoutScheduler,
-    private val experimentationOptOut: ExperimentationOptOut,
+    private val signing: ResponseSigningState? = null,
+    private val experimentationOptOut: ExperimentationOptOut =
+        ExperimentationOptOut(stateLock = signing?.lock ?: Any()),
     private val callbackExecutor: Executor = InlineExecutor
 ) {
     private val instanceId = UUIDv7Generator.generate(sdkCore.timeProvider.getDeviceTimestampMillis()).toString()
@@ -145,6 +149,18 @@ internal class EvaluationsManager(
         callback: EvaluationContextCallback?,
         onFetchFinished: () -> Unit
     ) {
+        var generation: Long? = null
+        if (signing != null && !experimentationOptOut.ifLatest(request) {
+                generation = signing.begin(request.context)
+            }
+        ) {
+            synchronized(initializationTerminalLock) {
+                enqueueCompletion(InitializationResult(callback), FlagsContextSupersededException(SUPERSEDED_MESSAGE))
+            }
+            effects.drain()
+            onFetchFinished()
+            return
+        }
         if (request.invalid) {
             val error = FlagsInvalidContextException(ExperimentationOptOut.INVALID_CONTEXT_MESSAGE)
             synchronized(initializationTerminalLock) {
@@ -160,7 +176,12 @@ internal class EvaluationsManager(
             onFetchFinished()
             return
         }
-        fetchEvaluations(request, callback, onFetchFinished)
+        val registeredGeneration = generation
+        if (signing != null && registeredGeneration != null) {
+            fetchSignedEvaluations(request, registeredGeneration, callback, onFetchFinished, signing)
+        } else {
+            fetchEvaluations(request, callback, onFetchFinished)
+        }
     }
 
     @Suppress("LongMethod") // Keep diagnostics and opt-out checks with the fetch lifecycle.
@@ -228,6 +249,101 @@ internal class EvaluationsManager(
                 }
             } finally {
                 // Timeouts complete the public callback but do not stop this fetch.
+                onFetchFinished()
+            }
+        }
+    }
+
+    // Keep proof, cancellation and context gates atomic with installation.
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
+    private fun fetchSignedEvaluations(
+        request: ExperimentationOptOut.Request,
+        generation: Long,
+        callback: EvaluationContextCallback?,
+        onFetchFinished: () -> Unit,
+        signing: ResponseSigningState
+    ) {
+        val context = request.context
+        val sequence = fetchSequence.incrementAndGet()
+        val diagnostics = Diagnostics(
+            Sdk(instanceId),
+            Fetch(sequence, if (sequence == 1L) Trigger.INITIALIZATION else Trigger.CONTEXT_CHANGE)
+        )
+        val cached = AtomicBoolean(false)
+        val completion = startInitializationTimeout(request, callback, cached, { signing.isCurrent(generation) }) {
+            experimentationOptOut.ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
+            effects.drain()
+        }
+        if (completion == null) {
+            experimentationOptOut.ifCurrent(request) { enqueueState(FlagsClientState.Reconciling) }
+            effects.drain()
+        }
+        completionAwareExecutor(onFetchFinished).executeSafe(FETCH_AND_STORE_OPERATION_NAME, internalLogger) {
+            try {
+                val datadogContext = if (sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME) != null) {
+                    (sdkCore as? InternalSdkCore)?.getDatadogContext(setOf(Feature.RUM_FEATURE_NAME))
+                } else {
+                    null
+                }
+                val response = datadogContext?.let {
+                    assignmentsReader.readSignedPrecomputedFlags(context, it, diagnostics, generation) {
+                        flagsRepository.waitForPersistenceLoad()
+                    }
+                }
+                val assignments = response?.json?.let {
+                    precomputeMapper.map(it, request.takeIf { candidate -> candidate.optedOut })
+                }
+                    ?.takeIf { it.obfuscation == null || datadogContext.source == "android" }
+                val error = NetworkRequestFailedException(
+                    if (response == null) NETWORK_REQUEST_FAILED_MESSAGE else INVALID_RESPONSE_MESSAGE
+                )
+                val eligible = assignments != null && sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME) != null
+                val admitted = signing.admit(generation) {
+                    synchronized(initializationTerminalLock) {
+                        val result = takeCompletion(completion, callback)
+                        val current = experimentationOptOut.ifCurrent(request) {
+                            val installation = if (eligible && !response.isCancelled()) {
+                                flagsRepository.installSignedFlagsAndContext(
+                                    context,
+                                    assignments.flags,
+                                    assignments.obfuscation,
+                                    response.proof,
+                                    assignments.observeFullEvaluationData
+                                )
+                            } else {
+                                null
+                            }
+                            if (installation != null) {
+                                currentState = FlagsClientState.Ready
+                                effects.enqueue {
+                                    installation.complete {
+                                        effects.notifySafely { flagStateManager.updateState(FlagsClientState.Ready) }
+                                        complete(result)
+                                    }
+                                    response?.flagSelectionIgnoredReason?.let {
+                                        internalLogger.logIgnoredFlagSelection(it)
+                                    }
+                                }
+                            } else {
+                                val restoration = flagsRepository.restoreVerifiedFlags()
+                                restoration?.let { effects.enqueue { it.complete {} } }
+                                cached.set(flagsRepository.hasConfigurationForContext(context))
+                                enqueueState(
+                                    if (cached.get()) FlagsClientState.Stale else FlagsClientState.Error(error)
+                                )
+                                enqueueCompletion(result, error)
+                            }
+                        }
+                        if (!current) enqueueCompletion(result, FlagsContextSupersededException(SUPERSEDED_MESSAGE))
+                    }
+                }
+                if (!admitted) {
+                    synchronized(initializationTerminalLock) {
+                        enqueueCompletion(takeCompletion(completion, callback), error)
+                    }
+                }
+                effects.drain()
+            } finally {
                 onFetchFinished()
             }
         }
@@ -326,10 +442,12 @@ internal class EvaluationsManager(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod") // One terminal decision covers timeout, context and proof generation.
     private fun startInitializationTimeout(
         request: ExperimentationOptOut.Request,
         callback: EvaluationContextCallback?,
         matchingCachedAssignments: AtomicBoolean,
+        isCurrent: () -> Boolean = { true },
         beforeScheduling: () -> Unit
     ): InitializationCompletion? {
         val timeoutMs = initializationTimeoutMs
@@ -348,7 +466,7 @@ internal class EvaluationsManager(
                         request
                     }
                     val newerFailed = target !== request && currentState is FlagsClientState.Error
-                    if (target != null && !newerFailed) {
+                    if (isCurrent() && target != null && !newerFailed) {
                         if (currentState != FlagsClientState.Ready && currentState != FlagsClientState.Stale) {
                             val hasMatchingCachedAssignments =
                                 (target === request && matchingCachedAssignments.get()) ||

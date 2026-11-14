@@ -18,11 +18,13 @@ import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
 /** Keeps the requested context separate from the last accepted assignments. */
-internal class ExperimentationOptOut(val mode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED) {
+internal class ExperimentationOptOut(
+    val mode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
+    val stateLock: Any = Any()
+) {
     val enabled: Boolean = mode != ExperimentationOptOutMode.DISABLED
 
     // Shared by DatadogFlagsClient and EvaluationsManager to coordinate requests, installs, and resolution.
-    val stateLock = Any()
     private var currentRequest: Request? = null
 
     fun prepare(context: EvaluationContext): Request {
@@ -32,6 +34,12 @@ internal class ExperimentationOptOut(val mode: ExperimentationOptOutMode = Exper
         val request = Request(snapshot, supplied && !invalid, invalid, mode)
         synchronized(stateLock) { currentRequest = request }
         return request
+    }
+
+    fun ifLatest(request: Request, action: () -> Unit): Boolean = synchronized(stateLock) {
+        if (currentRequest !== request) return false
+        action()
+        true
     }
 
     fun currentValidRequest(): Request? = synchronized(stateLock) { currentRequest?.takeUnless { it.invalid } }

@@ -10,6 +10,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.ResponseSigningMode
 import com.datadog.android.flags.integration.FlagsClientTest.Companion.createStubSdkCore
 import com.datadog.android.flags.integration.tests.elmyr.FlagsIntegrationForgeConfigurator
 import com.datadog.android.flags.integration.tests.utils.httpResponse
@@ -37,11 +38,12 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(FlagsIntegrationForgeConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class CanonicalPrecomputedTest {
-    @ParameterizedTest(name = "{0}, restored={1}")
+    @ParameterizedTest(name = "{0}, restored={1}, signed={2}")
     @MethodSource("fixtures")
     fun `M satisfy canonical contract W setEvaluationContext() and resolve()`(
         path: String,
         restored: Boolean,
+        signed: Boolean,
         forge: Forge
     ) {
         // Given
@@ -54,9 +56,17 @@ internal class CanonicalPrecomputedTest {
         }
         var core = createStubSdkCore(forge)
         val store = core.stubDataStore(Feature.FLAGS_FEATURE_NAME)
-        core.stubNetworkResponses { httpResponse(it, body = fixture["response"].toString()) }
+        val responseBody = checkNotNull(javaClass.getResource("/precomputed/responses/$path")).readText()
+        if (signed) core.advanceTimeBy(CanonicalResponseSigner.now * 1000)
+        core.stubNetworkResponses {
+            if (signed) CanonicalResponseSigner.response(it, responseBody) else httpResponse(it, body = responseBody)
+        }
         Flags.enable(
-            FlagsConfiguration.Builder().useCustomFlagEndpoint("https://fixture.test/precompute-assignments").build(),
+            FlagsConfiguration.Builder().useCustomFlagEndpoint("https://fixture.test/precompute-assignments")
+                .responseSigning(
+                    if (signed) ResponseSigningMode.REQUIRED else ResponseSigningMode.OFF,
+                    listOf(CanonicalResponseSigner.root)
+                ).build(),
             core
         )
         var client = FlagsClient.Builder(sdkCore = core).build()
@@ -184,7 +194,7 @@ internal class CanonicalPrecomputedTest {
                 } else {
                     listOf(false)
                 }
-                modes.map { Arguments.of(path, it) }
+                modes.map { Arguments.of(path, it, false) } + Arguments.of(path, false, true)
             }
         }
     }

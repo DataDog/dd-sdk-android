@@ -180,6 +180,7 @@ datadog:
       - "java.text.SimpleDateFormat.format(java.util.Date?):java.lang.NullPointerException"
       - "java.text.SimpleDateFormat.format(kotlin.Any):java.lang.IllegalArgumentException,java.lang.NullPointerException"
       - "java.text.SimpleDateFormat.parse(kotlin.String):java.text.ParseException,java.lang.NullPointerException"
+      - "java.text.SimpleDateFormat.parse(kotlin.String?):java.text.ParseException,java.lang.NullPointerException"
       - "java.text.SimpleDateFormat.parse(kotlin.String?, java.text.ParsePosition?):java.lang.NullPointerException"
       - "java.util.TimeZone.getTimeZone(kotlin.String?):java.lang.NullPointerException"
       # endregion
@@ -295,4 +296,18 @@ datadog:
       # region SQLDelight
       - "com.squareup.sqldelight.transaction(kotlin.Boolean, kotlin.Function1):java.lang.IllegalStateException"
       - "com.squareup.sqldelight.transactionWithResult(kotlin.Boolean, kotlin.Function1):java.lang.IllegalStateException"
+      # endregion
+      # region Response signing v1
+      - "java.security.SecureRandom.nextBytes(kotlin.ByteArray?):java.security.ProviderException"
+      - "java.security.Signature.getInstance(kotlin.String?):java.security.NoSuchAlgorithmException"
+      - "java.security.Signature.initVerify(java.security.PublicKey?):java.security.InvalidKeyException"
+      - "java.security.Signature.update(kotlin.ByteArray?):java.security.SignatureException"
+      - "java.security.Signature.verify(kotlin.ByteArray?):java.security.SignatureException"
+      - "java.security.KeyFactory.getInstance(kotlin.String?):java.security.NoSuchAlgorithmException"
+      - "java.security.KeyFactory.generatePublic(java.security.spec.KeySpec?):java.security.spec.InvalidKeySpecException"
+      - "java.security.spec.X509EncodedKeySpec.constructor(kotlin.ByteArray?):java.lang.NullPointerException"
+      - "kotlin.ByteArray.toByteString(kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException,java.lang.IllegalArgumentException"
+      - "kotlin.String.decodeHex():java.lang.IllegalArgumentException"
+      - "okhttp3.ResponseBody.bytes():java.io.IOException"
+      - "okio.BufferedSource.request(kotlin.Long):java.io.IOException,java.lang.IllegalArgumentException"
       # endregion

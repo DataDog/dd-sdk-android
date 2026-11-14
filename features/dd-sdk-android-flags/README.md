@@ -60,6 +60,75 @@ Flags.enable(flagsConfig)
 
 The `FlagsConfiguration.Builder` supports the following options:
 
+#### Response signing (experimental draft)
+
+Signing-enabled requests set `X-stream: false` because whole-body proofs require buffered delivery.
+Both observe and required modes apply this override. Signing-off requests keep their ordinary transport selection.
+
+The first public response-signing protocol is v1. The SDK advertises
+`response-signing-v1`, sends signature version `1`, and verifies the
+`datadog.feature-flags.precomputed-assignments.v1` transcript. Earlier POC v1/v2
+and draft v3 labels are not supported public versions; public v1 rejects their proofs.
+X.509 v3 certificate encoding is unchanged.
+
+Response signing is disabled by default. This draft enables a staging-only mobile pilot
+using the same public root as the browser SDK. Production endpoints have no bundled root.
+
+```kotlin
+val flagsConfig = FlagsConfiguration.Builder()
+    .useCustomFlagEndpoint("https://preview.ff-cdn.datad0g.com/precompute-assignments")
+    .responseSigning(ResponseSigningMode.REQUIRED, emptyList())
+    .build()
+```
+
+An empty root list selects bundled trust only for `https://preview.ff-cdn.datad0g.com`
+on port 443. The effective request endpoint selects trust, including a custom endpoint.
+The application's `env` value does not select a root. A nonempty list replaces bundled
+trust with explicitly configured public root certificates encoded as padded base64 DER.
+Never put a private key in SDK configuration. No roots are downloaded.
+
+Use required mode for the staging pilot; keep production signing off. Fresh sessions
+provide observations across rotations without adding polling. The root stays fixed while
+responses carry the current leaf and intermediate certificates. Routine rotation needs
+no SDK update or prior successful fetch. Root validity still bounds unchanged SDK support.
+
+- `OFF` preserves existing transport and persistence and performs no signing work.
+- `OBSERVE` reports bounded verified/unverified telemetry and accepts otherwise-valid
+  responses when optional verification fails. Authentication, transport, redirect, and
+  JSON errors remain failures. Signed and unsigned requests are never retried as a downgrade.
+- `REQUIRED` accepts only valid proofs. Invalid or unavailable roots yield evaluation defaults;
+  an endpoint without a configured or bundled root fails locally before a request. Verified assignments are held only
+  in memory and are checked against their original expiry on every evaluation. Restart,
+  expiry, a changed request scope, or a clock earlier than admission causes defaults.
+  A live RUM application-ID change or stopping the Flags feature immediately invalidates
+  prior proofs and prevents in-flight responses from restoring them.
+
+Observe mode keeps unverified persistence in a new namespace scoped to the emitted token,
+endpoint and query, environment, application ID, evaluation context, and semantic headers.
+It reads that namespace only after forming the request, so the first opt-in is a cold start.
+Old client-name-only cache entries are not imported. A valid proof also creates a separate
+verified memory fallback, which unsigned observations cannot overwrite or extend.
+Persisted entries are never treated as verified.
+
+The draft verifies complete buffered JSON assignment responses over HTTPS, before parsing
+or installing them. It does not introduce a streaming protocol. The shared conformance
+corpus and native host-JVM tests are development evidence; Android device/provider tests,
+iOS API review, production anchor provisioning, and operational rollout approval remain
+release prerequisites.
+
+The signing fixtures use the existing snapshot importer and weekly update workflow.
+`src/test/resources/response-signing-v1/SOURCE.json` records the central commit and file checksums.
+The JVM and Android instrumented verifier tests discover every manifest-listed suite and check its checksum and counts.
+It asserts acceptance decisions and exact transcripts for all 66 response vectors.
+The local two-case KeyUsage supplement remains separate. Server-only signing cases are excluded.
+
+```shell
+python3 ci/sync-precomputed-fixtures.py --signing --ref <full-upstream-sha>
+python3 ci/sync-precomputed-fixtures.py --signing --verify
+python3 ci/sync-precomputed-fixtures.py --signing --check
+./gradlew :features:dd-sdk-android-flags:connectedDebugAndroidTest
+```
+
 #### Disable RUM integration
 
 By default, flag evaluations are automatically sent to RUM (Real User Monitoring) and attached to the current view if RUM is enabled. You can disable this integration:
@@ -495,7 +564,7 @@ Upstream CI requires a generated obfuscated companion for each applicable plain 
 
 Cases cover values, defaults, errors, reasons, variants, emission gates, duplicate evaluations, and numeric boundaries.
 Obfuscation cases cover fixed digests, salts, Unicode, whitespace, malformed metadata, and plaintext event identity.
-The suite uses the feature integration harness. Each valid fixture also runs after cache restoration without networking. It checks public getters, response rejection, and real exposure and evaluation records.
+The suite uses the feature integration harness. Each fixture also runs through required signature verification. Valid unsigned fixtures run after cache restoration without networking. It checks public getters, response rejection, and real exposure and evaluation records.
 
 Run from the repository root:
 
