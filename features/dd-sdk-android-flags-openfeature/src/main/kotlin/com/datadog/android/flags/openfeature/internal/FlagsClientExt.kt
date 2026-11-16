@@ -30,7 +30,8 @@ import kotlin.coroutines.resumeWithException
  *
  * @param context The evaluation context to set
  * @param telemetryOptedOut The typed subject decision, or null to preserve native telemetry configuration.
- * @param isCurrentGeneration Whether this provider update is still the latest update.
+ * @param isCurrentOperation Whether this provider update is still the latest update.
+ * @param admitUpdate Atomically checks whether the update is current and, if so, registers the native request.
  * @return [ContextUpdateOutcome.STALE] when matching cached assignments remain usable, otherwise
  * [ContextUpdateOutcome.READY].
  * @throws [CancellationException] if a newer provider update replaces this update, or if native request ordering
@@ -41,32 +42,41 @@ import kotlin.coroutines.resumeWithException
 internal suspend fun FlagsClient.setEvaluationContextSuspend(
     context: EvaluationContext,
     telemetryOptedOut: Boolean? = null,
-    isCurrentGeneration: () -> Boolean = { true }
+    isCurrentOperation: () -> Boolean = { true },
+    admitUpdate: ((() -> Unit) -> Boolean) = { registration ->
+        registration()
+        true
+    }
 ): ContextUpdateOutcome {
     @Suppress("UnsafeThirdPartyFunctionCall")
     return suspendCancellableCoroutine { continuation ->
-        _FlagsInternalProxy(this).setEvaluationContextWithOutcome(context, telemetryOptedOut) { state, error ->
-            if (!continuation.isActive) return@setEvaluationContextWithOutcome
-            when {
-                !isCurrentGeneration() -> {
-                    continuation.cancel(CancellationException(OBSOLETE_UPDATE_MESSAGE))
-                }
-                error is FlagsContextSupersededException -> {
-                    continuation.cancel(CancellationException(error.message))
-                }
-                else -> {
-                    val completionState = if (error is FlagsInitializationTimeoutException) {
-                        this.state.getCurrentState()
-                    } else {
-                        state
-                    }
-                    if (!isCurrentGeneration()) {
+        val admitted = admitUpdate {
+            _FlagsInternalProxy(this).setEvaluationContextWithOutcome(context, telemetryOptedOut) { state, error ->
+                if (!continuation.isActive) return@setEvaluationContextWithOutcome
+                when {
+                    !isCurrentOperation() -> {
                         continuation.cancel(CancellationException(OBSOLETE_UPDATE_MESSAGE))
-                    } else {
-                        continuation.complete(completionState, error)
+                    }
+                    error is FlagsContextSupersededException -> {
+                        continuation.cancel(CancellationException(error.message))
+                    }
+                    else -> {
+                        val completionState = if (error is FlagsInitializationTimeoutException) {
+                            this.state.getCurrentState()
+                        } else {
+                            state
+                        }
+                        if (!isCurrentOperation()) {
+                            continuation.cancel(CancellationException(OBSOLETE_UPDATE_MESSAGE))
+                        } else {
+                            continuation.complete(completionState, error)
+                        }
                     }
                 }
             }
+        }
+        if (!admitted && continuation.isActive) {
+            continuation.cancel(CancellationException(OBSOLETE_UPDATE_MESSAGE))
         }
     }
 }

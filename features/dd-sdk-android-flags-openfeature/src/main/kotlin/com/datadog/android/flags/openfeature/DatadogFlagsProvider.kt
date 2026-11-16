@@ -14,6 +14,7 @@ import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.FlagsStateListener
 import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.FlagsClientState
+import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.openfeature.internal.ContextUpdateOutcome
 import com.datadog.android.flags.openfeature.internal.adapters.convertToValue
 import com.datadog.android.flags.openfeature.internal.adapters.toDatadogEvaluationContext
@@ -23,6 +24,7 @@ import com.datadog.android.flags.openfeature.internal.adapters.toProviderEvaluat
 import com.datadog.android.flags.openfeature.internal.setEvaluationContextSuspend
 import dev.openfeature.kotlin.sdk.FeatureProvider
 import dev.openfeature.kotlin.sdk.Hook
+import dev.openfeature.kotlin.sdk.OpenFeatureAPI
 import dev.openfeature.kotlin.sdk.ProviderEvaluation
 import dev.openfeature.kotlin.sdk.ProviderMetadata
 import dev.openfeature.kotlin.sdk.Value
@@ -32,9 +34,9 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import java.util.concurrent.CancellationException
-import java.util.concurrent.atomic.AtomicLong
 import com.datadog.android.flags.model.EvaluationContext as DatadogEvaluationContext
 import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
+import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 
 /**
  * OpenFeature [FeatureProvider] implementation backed by Datadog Feature Flags.
@@ -85,7 +87,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     FeatureProvider {
 
     private val internalLogger: InternalLogger = sdkCore.internalLogger
-    private val contextUpdateGeneration = AtomicLong(0)
+    private val contextUpdateAdmission = ContextUpdateAdmission(this)
     private val experimentationOptOutEnabled = _FlagsInternalProxy(flagsClient).isExperimentationOptOutEnabled()
     private val evaluationTelemetryOptOutParameterEnabled =
         _FlagsInternalProxy(flagsClient).isEvaluationTelemetryOptOutParameterEnabled()
@@ -142,61 +144,61 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     override fun getBooleanEvaluation(
         key: String,
         defaultValue: Boolean,
-        @Suppress("UNUSED_PARAMETER") context: OpenFeatureEvaluationContext?
-    ): ProviderEvaluation<Boolean> = flagsClient.resolve(key, defaultValue).toProviderEvaluation()
+        context: OpenFeatureEvaluationContext?
+    ): ProviderEvaluation<Boolean> = contextNotReadyEvaluation(defaultValue, context)
+        ?: flagsClient.resolve(key, defaultValue).toProviderEvaluation()
 
     override fun getStringEvaluation(
         key: String,
         defaultValue: String,
-        @Suppress("UNUSED_PARAMETER") context: OpenFeatureEvaluationContext?
-    ): ProviderEvaluation<String> = flagsClient.resolve(key, defaultValue).toProviderEvaluation()
+        context: OpenFeatureEvaluationContext?
+    ): ProviderEvaluation<String> = contextNotReadyEvaluation(defaultValue, context)
+        ?: flagsClient.resolve(key, defaultValue).toProviderEvaluation()
 
     override fun getIntegerEvaluation(
         key: String,
         defaultValue: Int,
-        @Suppress("UNUSED_PARAMETER") context: OpenFeatureEvaluationContext?
-    ): ProviderEvaluation<Int> = flagsClient.resolve(key, defaultValue).toProviderEvaluation()
+        context: OpenFeatureEvaluationContext?
+    ): ProviderEvaluation<Int> = contextNotReadyEvaluation(defaultValue, context)
+        ?: flagsClient.resolve(key, defaultValue).toProviderEvaluation()
 
     override fun getDoubleEvaluation(
         key: String,
         defaultValue: Double,
-        @Suppress("UNUSED_PARAMETER") context: OpenFeatureEvaluationContext?
-    ): ProviderEvaluation<Double> = flagsClient.resolve(key, defaultValue).toProviderEvaluation()
+        context: OpenFeatureEvaluationContext?
+    ): ProviderEvaluation<Double> = contextNotReadyEvaluation(defaultValue, context)
+        ?: flagsClient.resolve(key, defaultValue).toProviderEvaluation()
 
     override fun getObjectEvaluation(
         key: String,
         defaultValue: Value,
-        @Suppress("UNUSED_PARAMETER") context: OpenFeatureEvaluationContext?
-    ): ProviderEvaluation<Value> {
-        // Use sentinel to avoid unnecessary conversion of user's default value
-        val resolutionDetails = flagsClient.resolve(key, SENTINEL_DEFAULT_MAP)
-
-        // If we got the sentinel back (via reference equality), return the user's original default
-        // This happens when: flag not found, provider not ready, or any error occurs
-        if (resolutionDetails.value === SENTINEL_DEFAULT_MAP) {
-            return ProviderEvaluation(
-                value = defaultValue,
-                variant = resolutionDetails.variant,
-                reason = resolutionDetails.reason?.name,
-                errorCode = resolutionDetails.errorCode?.toOpenFeatureErrorCode(),
-                errorMessage = resolutionDetails.errorMessage,
-                metadata = resolutionDetails.flagMetadata.toEvaluationMetadata()
-            )
+        context: OpenFeatureEvaluationContext?
+    ): ProviderEvaluation<Value> = contextNotReadyEvaluation(defaultValue, context)
+        ?: flagsClient.resolve(key, SENTINEL_DEFAULT_MAP).let { resolutionDetails ->
+            // If we got the sentinel back (via reference equality), return the user's original default.
+            // This happens when the flag is missing, the provider is not ready, or an error occurs.
+            if (resolutionDetails.value === SENTINEL_DEFAULT_MAP) {
+                ProviderEvaluation(
+                    value = defaultValue,
+                    variant = resolutionDetails.variant,
+                    reason = resolutionDetails.reason?.name,
+                    errorCode = resolutionDetails.errorCode?.toOpenFeatureErrorCode(),
+                    errorMessage = resolutionDetails.errorMessage,
+                    metadata = resolutionDetails.flagMetadata.toEvaluationMetadata()
+                )
+            } else {
+                ProviderEvaluation(
+                    value = Value.Structure(
+                        resolutionDetails.value.mapValues { (_, v) -> convertToValue(v, internalLogger) }
+                    ),
+                    variant = resolutionDetails.variant,
+                    reason = resolutionDetails.reason?.name,
+                    errorCode = null,
+                    errorMessage = null,
+                    metadata = resolutionDetails.flagMetadata.toEvaluationMetadata()
+                )
+            }
         }
-
-        val resultValue = Value.Structure(
-            resolutionDetails.value.mapValues { (_, v) -> convertToValue(v, internalLogger) }
-        )
-
-        return ProviderEvaluation(
-            value = resultValue,
-            variant = resolutionDetails.variant,
-            reason = resolutionDetails.reason?.name,
-            errorCode = null,
-            errorMessage = null,
-            metadata = resolutionDetails.flagMetadata.toEvaluationMetadata()
-        )
-    }
 
     override fun shutdown() {
         // No-op: FlagsClient lifecycle is managed separately
@@ -245,7 +247,9 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
                         )
                     }
                 }
-                providerEvent?.let { trySend(it) }
+                contextUpdateAdmission.publishStateIfAdmitted {
+                    providerEvent?.let { trySend(it) }
+                }
             }
         }
 
@@ -259,16 +263,19 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
 
     @Throws(CancellationException::class)
     private suspend fun setEvaluationContext(context: OpenFeatureEvaluationContext?) {
-        val generation = contextUpdateGeneration.incrementAndGet()
+        val operation = contextUpdateAdmission.begin(context)
         val datadogContext = targetingContext(context)
         val telemetryOptedOut = if (evaluationTelemetryOptOutParameterEnabled) {
             context?.asMap()?.get(EVALUATION_TELEMETRY_OPT_OUT) == Value.Boolean(true)
         } else {
             null
         }
-        val outcome = flagsClient.setEvaluationContextSuspend(datadogContext, telemetryOptedOut) {
-            contextUpdateGeneration.get() == generation
-        }
+        val outcome = flagsClient.setEvaluationContextSuspend(
+            datadogContext,
+            telemetryOptedOut,
+            isCurrentOperation = { contextUpdateAdmission.isCurrent(operation) },
+            admitUpdate = { registration -> contextUpdateAdmission.admit(operation, registration) }
+        )
         if (outcome == ContextUpdateOutcome.STALE) {
             // OpenFeature Kotlin 0.6.2 unconditionally publishes Ready when initialize() or onContextSet()
             // returns. Cancellation is the only completion path that skips that overwrite, leaving the
@@ -281,6 +288,111 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
 
     private fun targetingContext(context: OpenFeatureEvaluationContext?): DatadogEvaluationContext =
         context?.toDatadogEvaluationContext(experimentationOptOutEnabled) ?: DatadogEvaluationContext.EMPTY
+
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    private fun <T> contextNotReadyEvaluation(
+        defaultValue: T,
+        context: OpenFeatureEvaluationContext?
+    ): ProviderEvaluation<T>? = if (contextUpdateAdmission.canEvaluate(context)) {
+        null
+    } else {
+        ProviderEvaluation(
+            value = defaultValue,
+            reason = ResolutionReason.ERROR.name,
+            errorCode = OpenFeatureErrorCode.PROVIDER_NOT_READY,
+            errorMessage = "The current OpenFeature context is not ready."
+        )
+    }
+
+    private data class ContextUpdateOperation(
+        val generation: Long,
+        val context: OpenFeatureEvaluationContext?,
+        val globallyRegistered: Boolean
+    )
+
+    private class ContextUpdateAdmission(private val provider: DatadogFlagsProvider) {
+        // begin() and admit() share this lock so a newer operation cannot start between the
+        // freshness check and native callback registration.
+        private val lock = Any()
+        private var generation: Long = 0
+        private var hasAdmittedContext = false
+        private var admittedContext: OpenFeatureEvaluationContext? = null
+        private var registrationInProgress = false
+        private val deferredStatePublications = mutableListOf<() -> Unit>()
+
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        fun begin(context: OpenFeatureEvaluationContext?): ContextUpdateOperation = synchronized(lock) {
+            ContextUpdateOperation(
+                generation = ++generation,
+                context = context,
+                globallyRegistered = OpenFeatureAPI.getProvider() === provider
+            )
+        }
+
+        fun admit(operation: ContextUpdateOperation, registration: () -> Unit): Boolean = synchronized(lock) {
+            if (isCurrentLocked(operation)) {
+                // Registration returns after queuing native work; the lock is not held while awaiting its result.
+                registrationInProgress = true
+                try {
+                    registration()
+                    admittedContext = operation.context
+                    hasAdmittedContext = true
+                    if (canPublishStateLocked()) {
+                        deferredStatePublications.forEach { it() }
+                    }
+                } finally {
+                    registrationInProgress = false
+                    deferredStatePublications.clear()
+                }
+                true
+            } else {
+                false
+            }
+        }
+
+        fun isCurrent(operation: ContextUpdateOperation): Boolean = synchronized(lock) {
+            isCurrentLocked(operation)
+        }
+
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        fun canEvaluate(context: OpenFeatureEvaluationContext?): Boolean = synchronized(lock) {
+            OpenFeatureAPI.getProvider() !== provider || hasAdmittedGlobalContextLocked(context)
+        }
+
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        fun publishStateIfAdmitted(publish: () -> Unit) = synchronized(lock) {
+            if (canPublishStateLocked()) {
+                publish()
+            } else if (registrationInProgress) {
+                // A synchronous native callback belongs to the registration in progress. Publish it only
+                // after that context crosses the native admission boundary.
+                deferredStatePublications += publish
+            }
+        }
+
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        private fun hasAdmittedGlobalContextLocked(
+            context: OpenFeatureEvaluationContext?
+        ): Boolean =
+            hasAdmittedContext &&
+                admittedContext == context &&
+                OpenFeatureAPI.getEvaluationContext() == context
+
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        private fun canPublishStateLocked(): Boolean =
+            OpenFeatureAPI.getProvider() !== provider || hasAdmittedGlobalContextLocked(admittedContext)
+
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        private fun isCurrentLocked(operation: ContextUpdateOperation): Boolean =
+            operation.generation == generation &&
+                (
+                    !operation.globallyRegistered ||
+                        (
+                            OpenFeatureAPI.getProvider() === provider &&
+                                operation.context == OpenFeatureAPI.getEvaluationContext()
+                            )
+                    )
+    }
 
     companion object {
         private const val PROVIDER_NAME = "Datadog Feature Flags Provider"

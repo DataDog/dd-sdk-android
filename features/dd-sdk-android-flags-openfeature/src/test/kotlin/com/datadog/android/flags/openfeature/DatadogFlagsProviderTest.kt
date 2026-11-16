@@ -34,7 +34,9 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -57,9 +59,15 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 
 @Extensions(
@@ -145,6 +153,9 @@ internal class DatadogFlagsProviderTest {
 
     @Mock
     lateinit var mockStateObservable: StateObservable
+
+    @Mock
+    lateinit var mockDelayedContext: OpenFeatureEvaluationContext
 
     private lateinit var provider: DatadogFlagsProvider
     private var capturedStateListener: FlagsStateListener? = null
@@ -501,9 +512,10 @@ internal class DatadogFlagsProviderTest {
     }
 
     @Test
-    fun `M delegate to FlagsClient W onContextSet()`() = runTest {
+    fun `M delegate to FlagsClient W onContextSet() {provider not globally registered}`() = runTest {
         // Given
         val newContext = ImmutableContext(targetingKey = "user-456")
+        assertThat(OpenFeatureAPI.getProvider()).isNotSameAs(provider)
 
         // When
         provider.onContextSet(null, newContext)
@@ -512,6 +524,264 @@ internal class DatadogFlagsProviderTest {
         val contextCaptor = argumentCaptor<EvaluationContext>()
         verify(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
         assertThat(contextCaptor.firstValue.targetingKey).isEqualTo("user-456")
+    }
+
+    @Test
+    fun `M register only current context W setEvaluationContextAndWait() {older conversion resumes last}`() = runTest {
+        // Given
+        val conversionStarted = CountDownLatch(1)
+        val releaseConversion = CountDownLatch(1)
+        val registrations = CopyOnWriteArrayList<String>()
+        whenever(mockDelayedContext.getTargetingKey()).thenReturn("first-subject")
+        whenever(mockDelayedContext.asMap()).thenAnswer {
+            conversionStarted.countDown()
+            check(releaseConversion.await(5, TimeUnit.SECONDS))
+            emptyMap<String, Value>()
+        }
+        val secondContext = ImmutableContext(targetingKey = "second-subject")
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            registrations += invocation.getArgument<EvaluationContext>(0).targetingKey
+            invocation.getArgument<EvaluationContextCallback>(1).onSuccess()
+        }
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "initial-subject")
+        )
+        registrations.clear()
+
+        try {
+            // When
+            val firstUpdate = launch(Dispatchers.Default) {
+                OpenFeatureAPI.setEvaluationContextAndWait(mockDelayedContext)
+            }
+            assertThat(conversionStarted.await(5, TimeUnit.SECONDS)).isTrue()
+            val secondUpdate = launch(Dispatchers.Default) {
+                OpenFeatureAPI.setEvaluationContextAndWait(secondContext)
+            }
+            secondUpdate.join()
+            releaseConversion.countDown()
+            firstUpdate.join()
+
+            // Then
+            assertThat(OpenFeatureAPI.getEvaluationContext()).isSameAs(secondContext)
+            assertThat(registrations).containsExactly("second-subject")
+        } finally {
+            releaseConversion.countDown()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @ParameterizedTest
+    @EnumSource(ContextUpdateApi::class)
+    fun `M return default W public context update {authorized conversion pending}`(
+        contextUpdateApi: ContextUpdateApi
+    ) = runTest {
+        // Given
+        val flagKey = "flag"
+        val defaultValue = false
+        val conversionStarted = CountDownLatch(1)
+        val releaseConversion = CountDownLatch(1)
+        val registrationCompleted = CountDownLatch(1)
+        whenever(mockDelayedContext.getTargetingKey()).thenReturn("second-subject")
+        whenever(mockDelayedContext.asMap()).thenAnswer {
+            conversionStarted.countDown()
+            check(releaseConversion.await(5, TimeUnit.SECONDS))
+            mapOf("dd_assignment_token" to Value.String("header.payload.signature"))
+        }
+        whenever(mockFlagsClient.resolve(flagKey, defaultValue)).thenReturn(
+            ResolutionDetails(value = true, reason = ResolutionReason.TARGETING_MATCH)
+        )
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "first-subject"),
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
+        testScheduler.runCurrent()
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            invocation.getArgument<EvaluationContextCallback>(1).onSuccess()
+            registrationCompleted.countDown()
+        }
+        val executor = Executors.newFixedThreadPool(2)
+        val dispatcher = executor.asCoroutineDispatcher()
+
+        try {
+            // When
+            val waitUpdate = when (contextUpdateApi) {
+                ContextUpdateApi.ASYNC -> {
+                    OpenFeatureAPI.setEvaluationContext(mockDelayedContext, dispatcher)
+                    null
+                }
+                ContextUpdateApi.WAIT -> launch(dispatcher) {
+                    OpenFeatureAPI.setEvaluationContextAndWait(mockDelayedContext)
+                }
+            }
+            assertThat(conversionStarted.await(5, TimeUnit.SECONDS)).isTrue()
+
+            // Then
+            assertThat(OpenFeatureAPI.getEvaluationContext()).isSameAs(mockDelayedContext)
+            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Reconciling)
+
+            // When
+            val pendingDetails = OpenFeatureAPI.getClient().getBooleanDetails(flagKey, defaultValue)
+
+            // Then
+            assertThat(pendingDetails.value).isEqualTo(defaultValue)
+            assertThat(pendingDetails.reason).isEqualTo(ResolutionReason.ERROR.name)
+            assertThat(pendingDetails.errorCode).isEqualTo(OpenFeatureErrorCode.PROVIDER_NOT_READY)
+            verify(mockFlagsClient, never()).resolve(flagKey, defaultValue)
+
+            // When
+            checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Ready)
+            testScheduler.runCurrent()
+
+            // Then
+            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Reconciling)
+
+            // When
+            releaseConversion.countDown()
+            assertThat(registrationCompleted.await(5, TimeUnit.SECONDS)).isTrue()
+            waitUpdate?.join()
+            dispatcher.close()
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue()
+            val admittedDetails = OpenFeatureAPI.getClient().getBooleanDetails(flagKey, defaultValue)
+
+            // Then
+            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Ready)
+            assertThat(admittedDetails.value).isTrue()
+            verify(mockFlagsClient).resolve(flagKey, defaultValue)
+        } finally {
+            releaseConversion.countDown()
+            dispatcher.close()
+            executor.shutdownNow()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `M keep equivalent admitted context ready W equal context instance replaces global context`() = runTest {
+        // Given
+        val flagKey = "flag"
+        val defaultValue = false
+        val attributes = mapOf("plan" to Value.String("pro"))
+        val admittedContext = ImmutableContext(targetingKey = "subject", attributes = attributes)
+        val equalReplacement = ImmutableContext(targetingKey = "subject", attributes = attributes)
+        whenever(mockFlagsClient.resolve(flagKey, defaultValue)).thenReturn(
+            ResolutionDetails(value = true, reason = ResolutionReason.TARGETING_MATCH)
+        )
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = admittedContext,
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
+        testScheduler.runCurrent()
+
+        // When
+        OpenFeatureAPI.setEvaluationContextAndWait(equalReplacement)
+        val details = OpenFeatureAPI.getClient().getBooleanDetails(flagKey, defaultValue)
+
+        // Then
+        assertThat(OpenFeatureAPI.getEvaluationContext()).isSameAs(equalReplacement)
+        assertThat(details.value).isTrue()
+        assertThat(details.errorCode).isNull()
+        verify(mockFlagsClient).resolve(flagKey, defaultValue)
+    }
+
+    @Test
+    fun `M admit context W equal context instance replaces global during conversion`() = runTest {
+        // Given
+        val flagKey = "flag"
+        val defaultValue = false
+        val conversionStarted = CountDownLatch(1)
+        val releaseConversion = CountDownLatch(1)
+        val attributes = mapOf("plan" to Value.String("pro"))
+        val updatingContext = TestEvaluationContext(
+            delegate = ImmutableContext(targetingKey = "subject", attributes = attributes),
+            conversionStarted = conversionStarted,
+            releaseConversion = releaseConversion
+        )
+        val equalReplacement = TestEvaluationContext(
+            delegate = ImmutableContext(targetingKey = "subject", attributes = attributes)
+        )
+        whenever(mockFlagsClient.resolve(flagKey, defaultValue)).thenReturn(
+            ResolutionDetails(value = true, reason = ResolutionReason.TARGETING_MATCH)
+        )
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "initial-subject")
+        )
+        val executor = Executors.newSingleThreadExecutor()
+        val dispatcher = executor.asCoroutineDispatcher()
+
+        try {
+            val updating = launch(dispatcher) {
+                OpenFeatureAPI.setEvaluationContextAndWait(updatingContext)
+            }
+            assertThat(conversionStarted.await(5, TimeUnit.SECONDS)).isTrue()
+
+            // When
+            OpenFeatureAPI.setEvaluationContextAndWait(equalReplacement)
+            releaseConversion.countDown()
+            updating.join()
+            val details = OpenFeatureAPI.getClient().getBooleanDetails(flagKey, defaultValue)
+
+            // Then
+            assertThat(OpenFeatureAPI.getEvaluationContext()).isSameAs(equalReplacement)
+            assertThat(details.value).isTrue()
+            assertThat(details.errorCode).isNull()
+            verify(mockFlagsClient).resolve(flagKey, defaultValue)
+        } finally {
+            releaseConversion.countDown()
+            dispatcher.close()
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `M register only current context W setEvaluationContext() {older conversion resumes last}`() = runTest {
+        // Given
+        val conversionStarted = CountDownLatch(1)
+        val releaseConversion = CountDownLatch(1)
+        val secondRegistered = CountDownLatch(1)
+        val registrations = CopyOnWriteArrayList<String>()
+        whenever(mockDelayedContext.getTargetingKey()).thenReturn("first-subject")
+        whenever(mockDelayedContext.asMap()).thenAnswer {
+            conversionStarted.countDown()
+            check(releaseConversion.await(5, TimeUnit.SECONDS))
+            emptyMap<String, Value>()
+        }
+        val secondContext = ImmutableContext(targetingKey = "second-subject")
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            val targetingKey = invocation.getArgument<EvaluationContext>(0).targetingKey
+            registrations += targetingKey
+            invocation.getArgument<EvaluationContextCallback>(1).onSuccess()
+            if (targetingKey == "second-subject") secondRegistered.countDown()
+        }
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "initial-subject")
+        )
+        registrations.clear()
+        val executor = Executors.newFixedThreadPool(2)
+        val dispatcher = executor.asCoroutineDispatcher()
+
+        try {
+            // When
+            OpenFeatureAPI.setEvaluationContext(mockDelayedContext, dispatcher)
+            assertThat(conversionStarted.await(5, TimeUnit.SECONDS)).isTrue()
+            OpenFeatureAPI.setEvaluationContext(secondContext, dispatcher)
+            assertThat(secondRegistered.await(5, TimeUnit.SECONDS)).isTrue()
+            releaseConversion.countDown()
+            dispatcher.close()
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue()
+
+            // Then
+            assertThat(OpenFeatureAPI.getEvaluationContext()).isSameAs(secondContext)
+            assertThat(registrations).containsExactly("second-subject")
+        } finally {
+            releaseConversion.countDown()
+            dispatcher.close()
+            executor.shutdownNow()
+        }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -654,6 +924,23 @@ internal class DatadogFlagsProviderTest {
     enum class ContextUpdateApi {
         ASYNC,
         WAIT
+    }
+
+    private class TestEvaluationContext(
+        private val delegate: ImmutableContext,
+        private val conversionStarted: CountDownLatch? = null,
+        private val releaseConversion: CountDownLatch? = null
+    ) : OpenFeatureEvaluationContext by delegate {
+        override fun asMap(): Map<String, Value> {
+            conversionStarted?.countDown()
+            releaseConversion?.let { check(it.await(5, TimeUnit.SECONDS)) }
+            return delegate.asMap()
+        }
+
+        override fun equals(other: Any?): Boolean =
+            other is TestEvaluationContext && delegate == other.delegate
+
+        override fun hashCode(): Int = delegate.hashCode()
     }
 
     // region Provider Events
