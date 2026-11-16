@@ -20,6 +20,7 @@ import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetryEvent
 import com.datadog.android.profiling.internal.trigger.ProfilingManagerTriggerRegistrar
 import com.datadog.android.profiling.internal.trigger.ProfilingTriggerListener
 import com.datadog.android.profiling.internal.utils.ThreadDumper
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -295,14 +296,80 @@ internal class ProfilingManagerTriggerRegistrarTest {
         // Then
         verify(mockService, never()).addProfilingTriggers(any())
         verify(mockService, never()).registerForAllProfilingResults(any(), any())
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.WARN),
-            eq(InternalLogger.Target.MAINTAINER),
-            any<() -> String>(),
-            isNull(),
-            eq(false),
-            isNull()
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.MAINTAINER,
+            message = ProfilingManagerTriggerRegistrar.LOG_NO_MANAGER
         )
+    }
+
+    @Test
+    fun `M log user warning and stay unregistered W register() {getSystemService throws LinkageError}`() {
+        // Given
+        val error = NoClassDefFoundError("android.os.ProfilingManager")
+        whenever(mockContext.getSystemService(ProfilingManager::class.java)).thenThrow(error)
+
+        // When
+        testedRegistrar.register(mockContext, mockListener)
+
+        // Then
+        verify(mockService, never()).addProfilingTriggers(any())
+        verify(mockService, never()).registerForAllProfilingResults(any(), any())
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.USER,
+            message = ProfilingManagerTriggerRegistrar.LOG_MANAGER_FAILED,
+            throwable = error
+        )
+    }
+
+    @Test
+    fun `M log user warning and stay unregistered W register() {getSystemService throws RuntimeException}`(
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        val error = SecurityException(fakeMessage)
+        whenever(mockContext.getSystemService(ProfilingManager::class.java)).thenThrow(error)
+
+        // When
+        testedRegistrar.register(mockContext, mockListener)
+
+        // Then
+        verify(mockService, never()).addProfilingTriggers(any())
+        verify(mockService, never()).registerForAllProfilingResults(any(), any())
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.USER,
+            message = ProfilingManagerTriggerRegistrar.LOG_MANAGER_FAILED,
+            throwable = error
+        )
+    }
+
+    @Test
+    fun `M log user warning and keep registered W unregister() {getSystemService throws}`(
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        testedRegistrar.register(mockContext, mockListener)
+        val error = IllegalStateException(fakeMessage)
+        whenever(mockContext.getSystemService(ProfilingManager::class.java)).thenThrow(error)
+
+        // When
+        testedRegistrar.unregister(mockContext)
+
+        // Then
+        verify(mockService, never()).removeProfilingTriggersByType(any())
+        verify(mockService, never()).unregisterForAllProfilingResults(any())
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.USER,
+            message = ProfilingManagerTriggerRegistrar.LOG_MANAGER_FAILED,
+            throwable = error
+        )
+        // Still registered: once the service is reachable again, unregister actually runs.
+        doReturn(mockService).whenever(mockContext).getSystemService(ProfilingManager::class.java)
+        testedRegistrar.unregister(mockContext)
+        verify(mockService).removeProfilingTriggersByType(any())
     }
 
     @Test
@@ -316,13 +383,10 @@ internal class ProfilingManagerTriggerRegistrarTest {
 
         // Then
         verify(mockService, never()).removeProfilingTriggersByType(any())
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.WARN),
-            eq(InternalLogger.Target.MAINTAINER),
-            any<() -> String>(),
-            isNull(),
-            eq(false),
-            isNull()
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.MAINTAINER,
+            message = ProfilingManagerTriggerRegistrar.LOG_NO_MANAGER
         )
         // Retry path open: once the service is reachable again, unregister actually runs.
         reset(mockInternalLogger)
