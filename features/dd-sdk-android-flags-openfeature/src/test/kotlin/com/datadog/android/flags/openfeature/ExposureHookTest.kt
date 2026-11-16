@@ -19,7 +19,6 @@ import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.ProviderMetadata
 import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -30,8 +29,6 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -237,40 +234,6 @@ internal class ExposureHookTest {
         assertThat(evaluation.isExposure).isFalse()
         assertThat(evaluation.shouldSend()).isFalse()
         assertThat(evaluation.isCacheHit).isFalse()
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = [0, 1, 2])
-    fun `M give each callback its own mutable features W finallyAfter() {first callback mutates its map}`(
-        featureCount: Int,
-        forge: Forge
-    ) {
-        // Given
-        val features = List(featureCount) { index -> "feature.$index" to forge.anAlphabeticalString() }.toMap()
-        val details = exposureDetails(isRecorded = false, features = features)
-        val completedSteps = mutableListOf<String>()
-        val mutatingHook = ExposureHook(
-            { evaluation ->
-                @Suppress("UNCHECKED_CAST", "DontDowncastCollectionTypes")
-                val received = evaluation.features as MutableMap<String, Any>
-                received[forge.anAlphabeticalString()] = true
-                completedSteps.add("put")
-                received.remove(features.keys.firstOrNull())
-                completedSteps.add("remove")
-                received.clear()
-                completedSteps.add("clear")
-            },
-            mockDefaultLogger
-        )
-
-        // When
-        mutatingHook.finallyAfter(hookContext(), details, emptyMap())
-        testedHook.finallyAfter(hookContext(), details, emptyMap())
-
-        // Then
-        assertThat(completedSteps).containsExactly("put", "remove", "clear")
-        assertThat(evaluations.single().features).isEqualTo(features)
-        verifyNoInteractions(mockInternalLogger, mockDefaultLogger)
     }
 
     @Test

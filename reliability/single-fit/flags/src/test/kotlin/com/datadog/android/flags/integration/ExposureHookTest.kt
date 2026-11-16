@@ -414,27 +414,6 @@ internal class ExposureHookTest {
     }
 
     @Test
-    fun `M give each callback its own features W getBooleanValue() {earlier callback edits its map}`(
-        forge: Forge
-    ) {
-        // Given
-        var editedFeatures: Map<String, Any>? = null
-        val editingHook = ExposureHook { evaluation ->
-            @Suppress("UNCHECKED_CAST")
-            (evaluation.features as MutableMap<String, Any>).clear()
-            editedFeatures = evaluation.features
-        }
-        start(forge, hooksBefore = listOf(editingHook))
-
-        // When
-        OpenFeatureAPI.getClient().getBooleanValue(FLAG, false)
-
-        // Then
-        assertThat(checkNotNull(editedFeatures)).isEmpty()
-        assertThat(evaluations.single().features).isEqualTo(hookFeatures())
-    }
-
-    @Test
     fun `M record the exposure once W getObjectDetails() twice {split features}`(forge: Forge) {
         // Given
         start(forge)

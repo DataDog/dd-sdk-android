@@ -19,8 +19,8 @@ import dev.openfeature.kotlin.sdk.EvaluationContext
  * assignment was fetched for: it identifies the exposed subject, and its attribute values are strings, as sent to
  * Datadog. Otherwise a copy of the OpenFeature evaluation context, or null if none was set.
  * @property features the `HOOK` features of the selected split, keyed by feature key, for example
- * `holdout.key`. Each value is a [String], [Double] or [Boolean]. Empty when the split has none. Each callback
- * gets its own copy.
+ * `holdout.key`. Each value is a [String], [Double] or [Boolean]. Empty when the split has none. Every callback
+ * receives the same read-only map.
  * @property isExposure true when the evaluation succeeded and selected an allocation that logs exposures,
  * including repeats for this subject.
  */

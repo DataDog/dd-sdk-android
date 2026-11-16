@@ -93,8 +93,7 @@ class ExposureHook internal constructor(
             allocationKey = details.metadata.getString(ExposureMetadata.ALLOCATION_KEY),
             targetingKey = (subject?.targetingKey ?: openFeatureContext?.getTargetingKey())?.takeIf { it.isNotEmpty() },
             evaluationContext = context,
-            // A mutable copy per callback: Java callers may mutate it, and toMap() returns a fixed map for one entry.
-            features = LinkedHashMap(decision?.hookFeatures.orEmpty()),
+            features = decision?.hookFeatures.orEmpty(),
             isExposure = isExposure,
             cacheHit = cacheHit
         )
