@@ -19,6 +19,7 @@ import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedBackgroundShapeStyleResolver
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEditTextMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedPixelFallbackMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedTextViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewGroupFallbackMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
@@ -213,8 +214,11 @@ internal class DefaultCompositionPipelineFactory(
                         )
                     )
                 ),
-                fallbackMapper = CapturedViewGroupFallbackMapper(
-                    backgroundShapeStyleResolver = backgroundResolver
+                fallbackMapper = CapturedPixelFallbackMapper(
+                    fallbackMapper = CapturedViewGroupFallbackMapper(
+                        backgroundShapeStyleResolver = backgroundResolver
+                    ),
+                    internalLogger = internalLogger
                 ),
                 internalLogger = internalLogger
             )

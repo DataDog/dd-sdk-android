@@ -242,8 +242,9 @@ internal class AndroidWindowTraversal(
     ) {
         if (children != null) {
             pushChildren(children, parentIndex, parent, inheritedPrivacy, stack, state)
-        } else if (isTouchOnly && view is ViewGroup) {
-            // Content left out of the replay still allows descendant touch overrides; WebView internals remain opaque.
+        } else if ((isTouchOnly || parent.viewData.isPixelFallbackTerminal) && view is ViewGroup) {
+            // Content left out of the replay or baked into a pixel capture still allows descendant touch
+            // overrides; WebView internals remain opaque.
             pushTouchChildren(view, stack)
         }
     }
