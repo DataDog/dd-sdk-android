@@ -342,11 +342,7 @@ internal class EvaluationsManager(
                 if (authorizationRejected) {
                     assignmentAuthorization.onAuthorizationRejected(request.assignmentAuthorization)
                 }
-                val installedContext = if (timeoutFallback == null) {
-                    cachedContext
-                } else {
-                    fallbackContext(request, capturedContext = null)
-                }
+                val installedContext = fallbackContext(request, cachedContext)
                 val fallback = assignmentAuthorization.fallback(
                     request.assignmentAuthorization,
                     installedContext,
@@ -499,7 +495,7 @@ internal class EvaluationsManager(
         request: ExperimentationOptOut.Request,
         capturedContext: EvaluationContext?
     ): EvaluationContext? {
-        val installedContext = capturedContext ?: flagsRepository.getAssignmentsSnapshot()?.context
+        val installedContext = flagsRepository.getAssignmentsSnapshot()?.context ?: capturedContext
         return when {
             installedContext != null -> installedContext
             flagsRepository.hasConfigurationForContext(request.context) -> request.context

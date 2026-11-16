@@ -2138,6 +2138,60 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
+    fun `M notify STALE W updateEvaluationsForContext() { persistence finishes during failed fetch }`(
+        @Mock mockDataStore: DataStoreHandler,
+        @Mock mockCallback: EvaluationContextCallback
+    ) {
+        // Given
+        val context = EvaluationContext(fakeTargetingKey)
+        val persistedEntry = FlagsStateEntry(
+            evaluationContext = context,
+            flags = emptyMap(),
+            lastUpdateTimestamp = 0L,
+            flagSelection = null
+        )
+        lateinit var persistenceCallback: DataStoreReadCallback<FlagsStateEntry>
+        whenever(
+            mockDataStore.value<FlagsStateEntry>(
+                key = any(),
+                version = anyOrNull(),
+                callback = any(),
+                deserializer = any()
+            )
+        ).doAnswer {
+            persistenceCallback = it.getArgument(2)
+            null
+        }
+        val testedRepository = DefaultFlagsRepository(
+            featureSdkCore = mockSdkCore,
+            dataStore = mockDataStore,
+            flagSelection = null,
+            instanceName = "late-persistence",
+            internalLogger = mockInternalLogger,
+            persistenceLoadTimeoutMs = 1
+        )
+        whenever(
+            mockAssignmentsDownloader.readPrecomputedFlags(
+                eq(context),
+                eq(fakeDatadogContext),
+                isA<Diagnostics>()
+            )
+        ).thenAnswer {
+            persistenceCallback.onSuccess(DataStoreContent(versionCode = 0, data = persistedEntry))
+            null
+        }
+        val testedManager = createManagerWithRepository(testedRepository)
+
+        // When
+        testedManager.updateEvaluationsForContext(context, mockCallback)
+
+        // Then
+        assertThat(testedRepository.getAssignmentsSnapshot()?.context).isEqualTo(context)
+        verify(mockFlagsStateManager).updateState(FlagsClientState.Stale)
+        verify(mockCallback).onFailure(isA<NetworkRequestFailedException>())
+    }
+
+    @Test
     fun `M notify STALE W updateEvaluationsForContext() { cold start network failure, cached flags match context }`() {
         // Given
         val context = EvaluationContext(fakeTargetingKey, emptyMap())
