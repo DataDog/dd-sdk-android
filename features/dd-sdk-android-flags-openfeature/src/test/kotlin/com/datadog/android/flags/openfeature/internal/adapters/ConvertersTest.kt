@@ -14,6 +14,8 @@ import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.Value
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.DoubleForgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -30,15 +32,20 @@ import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 internal class ConvertersTest {
 
     @Test
-    fun `M return only HOOK features W hookFeatures()`() {
+    fun `M return only HOOK features W hookFeatures()`(
+        @StringForgery fakeAllocationKey: String,
+        @StringForgery fakeFeatureValue: String,
+        @DoubleForgery fakeRatio: Double,
+        @StringForgery fakeInternalValue: String
+    ) {
         // Given
         val details = ResolutionDetails(
             value = true,
             flagMetadata = mapOf(
-                "allocationKey" to "allocation",
-                "__dd_feature.holdout.key" to "holdout-1",
-                "__dd_feature.ratio" to 0.5,
-                "__dd_internal.exposure" to "e",
+                "allocationKey" to fakeAllocationKey,
+                "__dd_feature.holdout.key" to fakeFeatureValue,
+                "__dd_feature.ratio" to fakeRatio,
+                "__dd_internal.exposure" to fakeInternalValue,
                 "__dd_observe_full_evaluation_data" to true
             )
         )
@@ -47,28 +54,34 @@ internal class ConvertersTest {
         val features = details.hookFeatures()
 
         // Then
-        assertThat(features).containsExactlyEntriesOf(mapOf("holdout.key" to "holdout-1", "ratio" to 0.5))
+        assertThat(features).isEqualTo(mapOf("holdout.key" to fakeFeatureValue, "ratio" to fakeRatio))
     }
 
     @Test
-    fun `M return no features W hookFeatures() {no HOOK features}`() {
+    fun `M return no features W hookFeatures() {no HOOK features}`(@StringForgery fakeAllocationKey: String) {
         // When
-        val features = ResolutionDetails(value = true, flagMetadata = mapOf("allocationKey" to "a")).hookFeatures()
+        val features = ResolutionDetails(value = true, flagMetadata = mapOf("allocationKey" to fakeAllocationKey))
+            .hookFeatures()
 
         // Then
         assertThat(features).isEmpty()
     }
 
     @Test
-    fun `M keep feature value types W toProviderEvaluation() {feature metadata}`() {
+    fun `M keep feature value types W toProviderEvaluation() {feature metadata}`(
+        @StringForgery fakeText: String,
+        @DoubleForgery fakeNumber: Double,
+        @BoolForgery fakeFlag: Boolean,
+        @IntForgery fakeCount: Int
+    ) {
         // Given
         val details = ResolutionDetails(
             value = true,
             flagMetadata = mapOf(
-                "__dd_feature.text" to "holdout-1",
-                "__dd_feature.number" to 3.0,
-                "__dd_feature.flag" to false,
-                "count" to 42
+                "__dd_feature.text" to fakeText,
+                "__dd_feature.number" to fakeNumber,
+                "__dd_feature.flag" to fakeFlag,
+                "count" to fakeCount
             )
         )
 
@@ -76,10 +89,10 @@ internal class ConvertersTest {
         val metadata = details.toProviderEvaluation().metadata
 
         // Then
-        assertThat(metadata.getString("__dd_feature.text")).isEqualTo("holdout-1")
-        assertThat(metadata.getDouble("__dd_feature.number")).isEqualTo(3.0)
-        assertThat(metadata.getBoolean("__dd_feature.flag")).isFalse()
-        assertThat(metadata.getInt("count")).isEqualTo(42)
+        assertThat(metadata.getString("__dd_feature.text")).isEqualTo(fakeText)
+        assertThat(metadata.getDouble("__dd_feature.number")).isEqualTo(fakeNumber)
+        assertThat(metadata.getBoolean("__dd_feature.flag")).isEqualTo(fakeFlag)
+        assertThat(metadata.getInt("count")).isEqualTo(fakeCount)
     }
 
     @Test

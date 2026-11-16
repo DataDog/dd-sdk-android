@@ -7,8 +7,11 @@
 package com.datadog.android.flags.internal.aggregation
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.flags.assertj.FlagEvaluationAssert.Companion.assertThatFlagEvaluation
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -103,16 +106,20 @@ internal class EvaluationAggregationStatsTest {
     }
 
     @Test
-    fun `M write the features W toEvaluationEvent() { evaluation features }`() {
+    fun `M write the features W toEvaluationEvent() { evaluation features }`(
+        @StringForgery fakeText: String,
+        @BoolForgery fakeFlag: Boolean,
+        @DoubleForgery fakeNumber: Double
+    ) {
         // Given
-        val stats = createStats(fakeEvaluationAggregationKey.copy(features = mapOf("a" to "x", "b" to false)))
+        val features = mapOf("text" to fakeText, "flag" to fakeFlag, "number" to fakeNumber)
+        val stats = createStats(fakeEvaluationAggregationKey.copy(features = features))
 
         // When
         val event = stats.toEvaluationEvent(fakeDatadogContext)
 
         // Then
-        assertThat(event.features?.additionalProperties).containsExactlyEntriesOf(mapOf("a" to "x", "b" to false))
-        assertThat(event.toJson().asJsonObject.getAsJsonObject("features").get("b").asBoolean).isFalse()
+        assertThatFlagEvaluation(event).hasFeatures(features)
     }
 
     @Test
@@ -121,7 +128,7 @@ internal class EvaluationAggregationStatsTest {
         val event = createStats().toEvaluationEvent(fakeDatadogContext)
 
         // Then
-        assertThat(event.toJson().asJsonObject.has("features")).isFalse()
+        assertThatFlagEvaluation(event).hasNoFeatures()
     }
 
     @Test

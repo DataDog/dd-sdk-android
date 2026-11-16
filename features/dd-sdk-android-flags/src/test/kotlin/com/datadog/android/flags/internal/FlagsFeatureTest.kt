@@ -22,6 +22,7 @@ import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.utils.verifyLog
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
@@ -177,16 +178,28 @@ internal class FlagsFeatureTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `M send exposures only when tracking them W onInitialize() + processEvent()`(trackExposures: Boolean) {
+    fun `M send exposures only when tracking them W onInitialize() + processEvent()`(
+        trackExposures: Boolean,
+        forge: Forge
+    ) {
         // Given
-        val feature = FlagsFeature(mockSdkCore, FlagsConfiguration.Builder().trackExposures(trackExposures).build())
-        val flag = PrecomputedFlag("boolean", "true", true, "allocation", "on", JSONObject(), "TARGETING_MATCH")
-        val context = EvaluationContext("subject")
-        feature.onInitialize(mockContext)
+        testedFeature = FlagsFeature(mockSdkCore, FlagsConfiguration.Builder().trackExposures(trackExposures).build())
+        val flag = PrecomputedFlag(
+            "boolean",
+            "true",
+            true,
+            forge.anAlphabeticalString(),
+            forge.anAlphabeticalString(),
+            JSONObject(),
+            "TARGETING_MATCH"
+        )
+        val context = EvaluationContext(forge.anAlphabeticalString())
+        val flagKey = forge.anAlphabeticalString()
+        testedFeature.onInitialize(mockContext)
 
         // When
-        val first = feature.processor.processEvent("flag", context, flag)
-        val second = feature.processor.processEvent("flag", context, flag)
+        val first = testedFeature.processor.processEvent(flagKey, context, flag)
+        val second = testedFeature.processor.processEvent(flagKey, context, flag)
 
         // Then
         assertThat(first).isFalse()

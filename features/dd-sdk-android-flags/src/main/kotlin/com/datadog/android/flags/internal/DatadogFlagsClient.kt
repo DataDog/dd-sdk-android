@@ -356,7 +356,7 @@ internal class DatadogFlagsClient(
                 observeFullEvaluationData
             ),
             features = (flag as? PrecomputedFlag)?.features?.forDestination(SplitFeature.DESTINATION_EVALUATION)
-                ?: emptyMap()
+                .orEmpty()
         )
     }
 

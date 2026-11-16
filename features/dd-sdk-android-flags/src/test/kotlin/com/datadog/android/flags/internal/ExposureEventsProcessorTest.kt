@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.internal
 
+import com.datadog.android.flags.assertj.ExposureEventAssert.Companion.assertThatExposureEvent
 import com.datadog.android.flags.internal.model.ExposureEvent
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.model.SplitFeature
@@ -15,6 +16,9 @@ import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import com.datadog.android.internal.time.TimeProvider
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.DoubleForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -88,22 +92,28 @@ internal class ExposureEventsProcessorTest {
     }
 
     @Test
-    fun `M report a new exposure W processEvent() {variant or serial id changes}`() {
+    fun `M report a new exposure W processEvent() {variant or serial id changes}`(
+        @StringForgery fakeOtherVariationKey: String,
+        @LongForgery(min = 0L, max = Long.MAX_VALUE - 1) fakeSerialId: Long
+    ) {
         // Given
         val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
-        val fakeFlagWithSerial = fakeFlag.copy(serialId = 1L)
+        val fakeFlagWithSerial = fakeFlag.copy(serialId = fakeSerialId)
         testedProcessor.processEvent(fakeFlagKey, fakeContext, fakeFlagWithSerial)
 
         // When
         val variantChanged = testedProcessor.processEvent(
             fakeFlagKey,
             fakeContext,
-            fakeFlagWithSerial.copy(variationKey = fakeVariationKey + "-changed")
+            fakeFlagWithSerial.copy(variationKey = fakeVariationKey + fakeOtherVariationKey)
         )
         val serialChanged = testedProcessor.processEvent(
             fakeFlagKey,
             fakeContext,
-            fakeFlagWithSerial.copy(variationKey = fakeVariationKey + "-changed", serialId = 2L)
+            fakeFlagWithSerial.copy(
+                variationKey = fakeVariationKey + fakeOtherVariationKey,
+                serialId = fakeSerialId + 1
+            )
         )
 
         // Then
@@ -129,15 +139,20 @@ internal class ExposureEventsProcessorTest {
     }
 
     @Test
-    fun `M write only EXPOSURE features W processEvent() {split features}`() {
+    fun `M write only EXPOSURE features W processEvent() {split features}`(
+        @StringForgery fakeHookValue: String,
+        @DoubleForgery fakeExposureValue: Double,
+        @BoolForgery fakeSharedValue: Boolean,
+        @StringForgery fakeEvaluationValue: String
+    ) {
         // Given
         val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
         val flag = fakeFlag.copy(
             features = listOf(
-                SplitFeature("hook", "h", listOf("HOOK")),
-                SplitFeature("exposure", 2.0, listOf("EXPOSURE", "FUTURE")),
-                SplitFeature("both", true, listOf("HOOK", "EXPOSURE")),
-                SplitFeature("evaluation", "e", listOf("EVALUATION"))
+                SplitFeature("hook", fakeHookValue, listOf("HOOK")),
+                SplitFeature("exposure", fakeExposureValue, listOf("EXPOSURE", "FUTURE")),
+                SplitFeature("both", fakeSharedValue, listOf("HOOK", "EXPOSURE")),
+                SplitFeature("evaluation", fakeEvaluationValue, listOf("EVALUATION"))
             )
         )
 
@@ -147,15 +162,15 @@ internal class ExposureEventsProcessorTest {
         // Then
         val eventCaptor = argumentCaptor<ExposureEvent>()
         verify(mockRecordWriter).write(eventCaptor.capture())
-        assertThat(eventCaptor.firstValue.features?.additionalProperties)
-            .containsExactlyEntriesOf(mapOf("exposure" to 2.0, "both" to true))
+        assertThatExposureEvent(eventCaptor.firstValue)
+            .hasFeatures(mapOf("exposure" to fakeExposureValue, "both" to fakeSharedValue))
     }
 
     @Test
-    fun `M write no features W processEvent() {no EXPOSURE features}`() {
+    fun `M write no features W processEvent() {no EXPOSURE features}`(@StringForgery fakeHookValue: String) {
         // Given
         val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
-        val flag = fakeFlag.copy(features = listOf(SplitFeature("hook", "h", listOf("HOOK"))))
+        val flag = fakeFlag.copy(features = listOf(SplitFeature("hook", fakeHookValue, listOf("HOOK"))))
 
         // When
         testedProcessor.processEvent(fakeFlagKey, fakeContext, flag)
@@ -163,25 +178,27 @@ internal class ExposureEventsProcessorTest {
         // Then
         val eventCaptor = argumentCaptor<ExposureEvent>()
         verify(mockRecordWriter).write(eventCaptor.capture())
-        assertThat(eventCaptor.firstValue.features).isNull()
-        assertThat(eventCaptor.firstValue.toJson().asJsonObject.has("features")).isFalse()
+        assertThatExposureEvent(eventCaptor.firstValue).hasNoFeatures()
     }
 
     @Test
-    fun `M report a repeat W processEvent() {only features change}`() {
+    fun `M report a repeat W processEvent() {only features change}`(
+        @StringForgery fakeFirstValue: String,
+        @StringForgery fakeSecondValue: String
+    ) {
         // Given
         val fakeContext = EvaluationContext(targetingKey = fakeTargetingKey)
         testedProcessor.processEvent(
             fakeFlagKey,
             fakeContext,
-            fakeFlag.copy(features = listOf(SplitFeature("exposure", "a", listOf("EXPOSURE"))))
+            fakeFlag.copy(features = listOf(SplitFeature("exposure", fakeFirstValue, listOf("EXPOSURE"))))
         )
 
         // When
         val isRecorded = testedProcessor.processEvent(
             fakeFlagKey,
             fakeContext,
-            fakeFlag.copy(features = listOf(SplitFeature("exposure", "b", listOf("EXPOSURE"))))
+            fakeFlag.copy(features = listOf(SplitFeature("exposure", fakeSecondValue, listOf("EXPOSURE"))))
         )
 
         // Then

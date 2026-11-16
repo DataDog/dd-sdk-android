@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.aggregation
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -135,11 +136,15 @@ internal class EvaluationAggregatorTest {
     }
 
     @Test
-    fun `M create separate entries W record() { different evaluation features }`() {
+    fun `M create separate entries W record() { different evaluation features }`(
+        @StringForgery fakeFirstText: String,
+        @StringForgery fakeSecondText: String,
+        @DoubleForgery fakeNumber: Double
+    ) {
         // Given
-        record(features = mapOf("a" to "x", "b" to 1.0))
-        record(features = mapOf("b" to 1.0, "a" to "x"))
-        record(features = mapOf("a" to "y", "b" to 1.0))
+        record(features = mapOf("text" to fakeFirstText, "number" to fakeNumber))
+        record(features = mapOf("number" to fakeNumber, "text" to fakeFirstText))
+        record(features = mapOf("text" to fakeSecondText, "number" to fakeNumber))
         record()
 
         // When
@@ -147,8 +152,8 @@ internal class EvaluationAggregatorTest {
 
         // Then
         assertThat(result.map { it.aggregationKey.features to it.count }).containsExactlyInAnyOrder(
-            mapOf("a" to "x", "b" to 1.0) to 2,
-            mapOf("a" to "y", "b" to 1.0) to 1,
+            mapOf("text" to fakeFirstText, "number" to fakeNumber) to 2,
+            mapOf("text" to fakeSecondText, "number" to fakeNumber) to 1,
             emptyMap<String, Any>() to 1
         )
     }

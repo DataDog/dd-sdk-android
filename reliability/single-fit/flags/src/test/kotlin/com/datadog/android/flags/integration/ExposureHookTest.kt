@@ -33,6 +33,8 @@ import dev.openfeature.kotlin.sdk.ProviderMetadata
 import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import kotlinx.coroutines.Dispatchers
@@ -56,6 +58,57 @@ import org.mockito.kotlin.verify
 @ExtendWith(ForgeExtension::class, TestConfigurationExtension::class)
 @ForgeConfiguration(FlagsIntegrationForgeConfigurator::class)
 internal class ExposureHookTest {
+    @StringForgery
+    lateinit var fakeHoldoutValue: String
+
+    @StringForgery
+    lateinit var fakeDuplicateValue: String
+
+    @StringForgery
+    lateinit var fakeExposureValue: String
+
+    @IntForgery
+    var fakeEvaluationValue: Int = 0
+
+    @StringForgery
+    lateinit var fakeUnroutedValue: String
+
+    @StringForgery
+    lateinit var fakeObjectHoldoutValue: String
+
+    @StringForgery
+    lateinit var fakeObjectExposureValue: String
+
+    @StringForgery
+    lateinit var fakeObjectAllocationKey: String
+
+    @StringForgery
+    lateinit var fakeInnerAllocationKey: String
+
+    @StringForgery
+    lateinit var fakeColor: String
+
+    @StringForgery
+    lateinit var fakeVariant: String
+
+    @StringForgery
+    lateinit var fakeClientName: String
+
+    @StringForgery
+    lateinit var fakeWrapperName: String
+
+    @StringForgery
+    lateinit var fakeOtherSubject: String
+
+    @StringForgery
+    lateinit var fakeAttributeKey: String
+
+    @StringForgery
+    lateinit var fakeAttributeValue: String
+
+    @StringForgery
+    lateinit var fakeFailureMessage: String
+
     private lateinit var fixture: FlagsTelemetryTestFixture
     private val evaluations = mutableListOf<ExposureEvaluation>()
 
@@ -75,22 +128,20 @@ internal class ExposureHookTest {
         fixture.flush()
 
         // Then
-        assertThat(details.metadata.getString("__dd_feature.holdout.key")).isEqualTo("holdout-1")
+        assertThat(details.metadata.getString("__dd_feature.holdout.key")).isEqualTo(fakeHoldoutValue)
         assertThat(details.metadata.getBoolean("__dd_feature.holdout.should_include_in_holdout_analysis"))
             .isFalse()
         assertThat(details.metadata.getString("__dd_exposure_feature.exposure.key")).isNull()
         assertThat(details.metadata.getDouble("__dd_evaluation_feature.evaluation.key")).isNull()
         assertThat(details.metadata.getString("__dd_feature.exposure.key")).isNull()
         assertThat(details.metadata.getString("__dd_feature.unknown.key")).isNull()
-        assertThat(evaluations.single().features).containsExactlyEntriesOf(
-            mapOf("holdout.key" to "holdout-1", "holdout.should_include_in_holdout_analysis" to false)
-        )
+        assertThat(evaluations.single().features).isEqualTo(hookFeatures())
         val exposure = fixture.events(Feature.FLAGS_FEATURE_NAME).single()
         assertThat(exposure.getAsJsonObject("features").entrySet().associate { it.key to it.value.asString })
-            .containsExactlyEntriesOf(mapOf("exposure.key" to "exposed"))
+            .isEqualTo(mapOf("exposure.key" to fakeExposureValue))
         val evaluation = fixture.events(Feature.FLAGS_EVALUATIONS_FEATURE_NAME).single()
         assertThat(evaluation.getAsJsonObject("features").entrySet().associate { it.key to it.value.asDouble })
-            .containsExactlyEntriesOf(mapOf("evaluation.key" to 3.0))
+            .isEqualTo(mapOf("evaluation.key" to fakeEvaluationValue.toDouble()))
     }
 
     @Test
@@ -138,7 +189,7 @@ internal class ExposureHookTest {
                 details: FlagEvaluationDetails<Boolean>,
                 hints: Map<String, Any>
             ) {
-                throw IllegalStateException("after hook failed")
+                throw IllegalStateException(fakeFailureMessage)
             }
         }
 
@@ -157,7 +208,7 @@ internal class ExposureHookTest {
     @Test
     fun `M keep the evaluation W getBooleanDetails() {callback throws}`(forge: Forge) {
         // Given
-        start(forge, callback = { throw IllegalStateException("callback failed") })
+        start(forge, callback = { throw IllegalStateException(fakeFailureMessage) })
 
         // When
         val details = OpenFeatureAPI.getClient().getBooleanDetails(FLAG, false)
@@ -181,7 +232,7 @@ internal class ExposureHookTest {
         val context = checkNotNull(evaluations.single().evaluationContext)
         assertThat(context).isNotSameAs(OpenFeatureAPI.getEvaluationContext())
         assertThat(context.getTargetingKey()).isEqualTo(SUBJECT)
-        assertThat(context.getValue("plan")).isEqualTo(Value.String("pro"))
+        assertThat(context.getValue(fakeAttributeKey)).isEqualTo(Value.String(fakeAttributeValue))
     }
 
     @Test
@@ -189,7 +240,7 @@ internal class ExposureHookTest {
         // Given
         start(forge)
         fixture.failAssignments()
-        runBlocking { OpenFeatureAPI.setEvaluationContextAndWait(ImmutableContext("other")) }
+        runBlocking { OpenFeatureAPI.setEvaluationContextAndWait(ImmutableContext(fakeOtherSubject)) }
 
         // When
         OpenFeatureAPI.getClient().getBooleanValue(FLAG, false)
@@ -238,7 +289,7 @@ internal class ExposureHookTest {
         val outer = evaluations.single { it.flagKey == FLAG }
         assertThat(outer.isExposure).isTrue()
         assertThat(outer.shouldSend()).isTrue()
-        assertThat(outer.features).containsEntry("holdout.key", "holdout-1")
+        assertThat(outer.features).isEqualTo(hookFeatures())
         val outerEvents = fixture.events(Feature.FLAGS_FEATURE_NAME)
             .filter { it.getAsJsonObject("flag")["key"].asString == FLAG }
         assertThat(outerEvents).hasSize(if (trackExposures) 1 else 0)
@@ -274,7 +325,7 @@ internal class ExposureHookTest {
         val mockLogger = mock<InternalLogger>()
         start(
             forge,
-            callback = { throw IllegalStateException("callback failed") },
+            callback = { throw IllegalStateException(fakeFailureMessage) },
             clientCore = { core -> object : InternalSdkCore by core { override val internalLogger = mockLogger } }
         )
 
@@ -306,9 +357,9 @@ internal class ExposureHookTest {
         val loggingCore = object : InternalSdkCore by namedCore {
             override val internalLogger = mockLogger
         }
-        val noOpClient = FlagsClient.Builder("no-flags", loggingCore).build()
+        val noOpClient = FlagsClient.Builder(fakeClientName, loggingCore).build()
         OpenFeatureAPI.clearHooks()
-        OpenFeatureAPI.addHooks(listOf(ExposureHook { throw IllegalStateException("callback failed") }))
+        OpenFeatureAPI.addHooks(listOf(ExposureHook { throw IllegalStateException(fakeFailureMessage) }))
         runBlocking {
             OpenFeatureAPI.setProviderAndWait(
                 noOpClient.asOpenFeatureProvider(),
@@ -346,7 +397,7 @@ internal class ExposureHookTest {
                 hints: Map<String, Any>
             ) {
                 fixture.pauseAssignments = true
-                client.setEvaluationContext(EvaluationContext("other"))
+                client.setEvaluationContext(EvaluationContext(fakeOtherSubject))
             }
         }
         client = start(forge, optOutMode = ExperimentationOptOutMode.IMMEDIATE)
@@ -380,7 +431,7 @@ internal class ExposureHookTest {
 
         // Then
         assertThat(checkNotNull(editedFeatures)).isEmpty()
-        assertThat(evaluations.single().features).containsEntry("holdout.key", "holdout-1")
+        assertThat(evaluations.single().features).isEqualTo(hookFeatures())
     }
 
     @Test
@@ -395,12 +446,13 @@ internal class ExposureHookTest {
 
         // Then
         assertThat(details.errorCode).isNull()
-        assertThat(details.value).isEqualTo(Value.Structure(mapOf("color" to Value.String("blue"))))
+        assertThat(details.value).isEqualTo(Value.Structure(mapOf("color" to Value.String(fakeColor))))
         assertThat(evaluations.map { it.shouldSend() }).containsExactly(true, false)
-        assertThat(evaluations.first().features).containsExactlyEntriesOf(mapOf("holdout.key" to "holdout-2"))
+        assertThat(evaluations.first().features).isEqualTo(mapOf("holdout.key" to fakeObjectHoldoutValue))
         val exposure = fixture.events(Feature.FLAGS_FEATURE_NAME).single()
         assertThat(exposure.getAsJsonObject("flag")["key"].asString).isEqualTo(OBJECT_FLAG)
-        assertThat(exposure.getAsJsonObject("features")["exposure.key"].asString).isEqualTo("object-exposed")
+        assertThat(exposure.getAsJsonObject("features").entrySet().associate { it.key to it.value.asString })
+            .isEqualTo(mapOf("exposure.key" to fakeObjectExposureValue))
     }
 
     @Test
@@ -415,7 +467,7 @@ internal class ExposureHookTest {
                 details: FlagEvaluationDetails<Boolean>,
                 hints: Map<String, Any>
             ) {
-                throw IllegalStateException("finallyAfter hook failed")
+                throw IllegalStateException(fakeFailureMessage)
             }
         }
         val client = OpenFeatureAPI.getClient()
@@ -452,9 +504,12 @@ internal class ExposureHookTest {
         assertThat(evaluations).hasSize(expectedCallbacks)
     }
 
+    private fun hookFeatures() =
+        mapOf("holdout.key" to fakeHoldoutValue, "holdout.should_include_in_holdout_analysis" to false)
+
     private fun wrap(inner: FeatureProvider, wrapper: String): FeatureProvider {
         val ownMetadata = object : ProviderMetadata {
-            override val name: String = "wrapper"
+            override val name: String = fakeWrapperName
         }
         return when (wrapper) {
             DELEGATES_ALL -> object : FeatureProvider by inner {}
@@ -491,43 +546,43 @@ internal class ExposureHookTest {
                 FLAG to FakeAssignment(
                     variationType = "boolean",
                     variationValue = true,
-                    variationKey = "on",
+                    variationKey = fakeVariant,
                     allocationKey = ALLOCATION,
                     serialId = 42L,
                     features = JSONArray()
-                        .put(feature("holdout.key", "holdout-1", "HOOK"))
-                        .put(feature("holdout.key", "ignored-duplicate", "HOOK"))
+                        .put(feature("holdout.key", fakeHoldoutValue, "HOOK"))
+                        .put(feature("holdout.key", fakeDuplicateValue, "HOOK"))
                         .put(feature("holdout.should_include_in_holdout_analysis", false, "HOOK"))
-                        .put(feature("exposure.key", "exposed", "EXPOSURE"))
-                        .put(feature("evaluation.key", 3, "EVALUATION"))
-                        .put(feature("unknown.key", "nowhere", "FUTURE"))
+                        .put(feature("exposure.key", fakeExposureValue, "EXPOSURE"))
+                        .put(feature("evaluation.key", fakeEvaluationValue, "EVALUATION"))
+                        .put(feature("unknown.key", fakeUnroutedValue, "FUTURE"))
                         .put(JSONObject().put("key", "invalid.value").put("value", JSONObject()))
                 ),
                 OBJECT_FLAG to FakeAssignment(
                     variationType = "object",
-                    variationValue = JSONObject().put("color", "blue"),
-                    variationKey = "blue",
-                    allocationKey = "object-allocation",
+                    variationValue = JSONObject().put("color", fakeColor),
+                    variationKey = fakeColor,
+                    allocationKey = fakeObjectAllocationKey,
                     features = JSONArray()
-                        .put(feature("holdout.key", "holdout-2", "HOOK"))
-                        .put(feature("exposure.key", "object-exposed", "EXPOSURE"))
+                        .put(feature("holdout.key", fakeObjectHoldoutValue, "HOOK"))
+                        .put(feature("exposure.key", fakeObjectExposureValue, "EXPOSURE"))
                 ),
                 INNER_FLAG to FakeAssignment(
                     variationType = "boolean",
                     variationValue = true,
-                    variationKey = "on",
-                    allocationKey = "inner-allocation"
+                    variationKey = fakeVariant,
+                    allocationKey = fakeInnerAllocationKey
                 )
             )
         )
-        val client = FlagsClient.Builder("exposure-hook", clientCore(fixture.core))
+        val client = FlagsClient.Builder(fakeClientName, clientCore(fixture.core))
             .experimentationOptOutMode(optOutMode)
             .build()
         OpenFeatureAPI.addHooks(if (registerExposureHook) hooksBefore + ExposureHook { callback(it) } else hooksBefore)
         runBlocking {
             OpenFeatureAPI.setProviderAndWait(
                 wrapProvider(client.asOpenFeatureProvider()),
-                ImmutableContext(SUBJECT, mapOf("plan" to Value.String("pro"))),
+                ImmutableContext(SUBJECT, mapOf(fakeAttributeKey to Value.String(fakeAttributeValue))),
                 Dispatchers.Unconfined
             )
         }

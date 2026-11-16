@@ -110,7 +110,7 @@ internal class ExposureHookTest {
         assertThat(evaluation.variant).isEqualTo(fakeVariant)
         assertThat(evaluation.allocationKey).isEqualTo(fakeAllocationKey)
         assertThat(evaluation.targetingKey).isEqualTo(fakeTargetingKey)
-        assertThat(evaluation.features).containsExactlyEntriesOf(mapOf("holdout.key" to fakeFeatureValue))
+        assertThat(evaluation.features).isEqualTo(mapOf("holdout.key" to fakeFeatureValue))
     }
 
     @Test
@@ -274,13 +274,13 @@ internal class ExposureHookTest {
     }
 
     @Test
-    fun `M pass a copy of the context W finallyAfter()`() {
+    fun `M pass a copy of the context W finallyAfter()`(@StringForgery fakeChangedValue: String) {
         // Given
         val details = exposureDetails(isRecorded = false)
         testedHook.finallyAfter(hookContext(), details, emptyMap())
 
         // When
-        fakeContext.attributes[fakeAttributeKey] = Value.String(fakeAttributeValue + "-changed")
+        fakeContext.attributes[fakeAttributeKey] = Value.String(fakeChangedValue)
 
         // Then
         assertThat(checkNotNull(evaluations.single().evaluationContext).getValue(fakeAttributeKey))
@@ -288,10 +288,10 @@ internal class ExposureHookTest {
     }
 
     @Test
-    fun `M ignore the evaluation W finallyAfter() {not a Datadog provider}`() {
+    fun `M ignore the evaluation W finallyAfter() {not a Datadog provider}`(@StringForgery fakeProviderName: String) {
         // Given
         val otherProvider = object : ProviderMetadata {
-            override val name: String = "other"
+            override val name: String = fakeProviderName
         }
 
         // When
@@ -316,9 +316,11 @@ internal class ExposureHookTest {
     }
 
     @Test
-    fun `M log the first failure as a warning and later ones at debug level W finallyAfter() {callback throws}`() {
+    fun `M log the first failure as a warning and later ones at debug level W finallyAfter() {callback throws}`(
+        @StringForgery fakeMessage: String
+    ) {
         // Given
-        val failure = IllegalStateException("callback failed")
+        val failure = IllegalStateException(fakeMessage)
         testedHook = ExposureHook({ throw failure }, mockDefaultLogger)
 
         // When
@@ -353,9 +355,9 @@ internal class ExposureHookTest {
     }
 
     @Test
-    fun `M propagate the error W finallyAfter() {callback throws an Error}`() {
+    fun `M propagate the error W finallyAfter() {callback throws an Error}`(@StringForgery fakeMessage: String) {
         // Given
-        val failure = AssertionError("callback failed")
+        val failure = AssertionError(fakeMessage)
         testedHook = ExposureHook({ throw failure }, mockDefaultLogger)
 
         // When

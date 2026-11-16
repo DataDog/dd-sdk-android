@@ -16,7 +16,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import java.util.concurrent.CountDownLatch
@@ -32,14 +31,15 @@ internal class ExposureDecisionsTest {
     @StringForgery
     lateinit var fakeFlagKey: String
 
+    @StringForgery
+    lateinit var fakeVariant: String
+
+    @StringForgery
+    lateinit var fakeFeatureValue: String
+
     private var recordCount = 0
     private var decisionId = 0
-    private lateinit var testedDecisions: ExposureDecisions
-
-    @BeforeEach
-    fun `set up`() {
-        testedDecisions = ExposureDecisions()
-    }
+    private val testedDecisions = ExposureDecisions()
 
     @Test
     fun `M record once W complete() twice`(@BoolForgery fakeIsRecorded: Boolean) {
@@ -134,20 +134,20 @@ internal class ExposureDecisionsTest {
     }
 
     @Test
-    fun `M survive 17 nested evaluations W register() + complete()`() {
+    fun `M survive more nested evaluations than the old ring buffer held W register() + complete()`() {
         // Given
         val outer = newMetadata()
-        testedDecisions.register(outer, mapOf("holdout.key" to "holdout-1"), null, record(false))
+        testedDecisions.register(outer, mapOf("holdout.key" to fakeFeatureValue), null, record(false))
 
         // When
-        val nested = List(17) { newMetadata() }
+        val nested = List(OLD_RING_BUFFER_CAPACITY + 1) { newMetadata() }
         nested.forEach { testedDecisions.register(it, emptyMap(), null, record(false)) }
         val result = testedDecisions.complete(details(outer))
 
         // Then
         assertThat(result).isFalse()
         assertThat(checkNotNull(testedDecisions.find(details(outer))).hookFeatures)
-            .containsEntry("holdout.key", "holdout-1")
+            .isEqualTo(mapOf("holdout.key" to fakeFeatureValue))
         assertThat(nested.map { testedDecisions.find(details(it)) }).doesNotContainNull()
     }
 
@@ -157,7 +157,7 @@ internal class ExposureDecisionsTest {
         val backingMap = HashMap<EvaluationMetadata, ExposureDecisions.Decision>()
         val decisions = ExposureDecisions(backingMap)
         val metadata = newMetadata()
-        val features = mutableMapOf<String, Any>("holdout.key" to "holdout-1")
+        val features = mutableMapOf<String, Any>("holdout.key" to fakeFeatureValue)
 
         // When
         decisions.register(metadata, features, null, record(false))
@@ -166,24 +166,27 @@ internal class ExposureDecisionsTest {
         // Then
         val stored = checkNotNull(backingMap[metadata])
         assertThat(backingMap.keys).containsExactly(metadata)
-        assertThat(stored.hookFeatures).containsExactlyEntriesOf(mapOf("holdout.key" to "holdout-1"))
+        assertThat(stored.hookFeatures).isEqualTo(mapOf("holdout.key" to fakeFeatureValue))
         assertThat(stored.hookFeatures.values).doesNotContain(metadata)
     }
 
     @Test
-    fun `M keep its own copy of the features W register() {caller changes its map}`() {
+    fun `M keep its own copy of the features W register() {caller changes its map}`(
+        @StringForgery fakeChangedValue: String,
+        @StringForgery fakeExtraKey: String
+    ) {
         // Given
         val metadata = newMetadata()
-        val features = mutableMapOf<String, Any>("holdout.key" to "holdout-1")
+        val features = mutableMapOf<String, Any>("holdout.key" to fakeFeatureValue)
         testedDecisions.register(metadata, features, null, record(false))
 
         // When
-        features["holdout.key"] = "changed"
-        features["extra"] = true
+        features["holdout.key"] = fakeChangedValue
+        features[fakeExtraKey] = true
 
         // Then
         assertThat(checkNotNull(testedDecisions.find(details(metadata))).hookFeatures)
-            .containsExactlyEntriesOf(mapOf("holdout.key" to "holdout-1"))
+            .isEqualTo(mapOf("holdout.key" to fakeFeatureValue))
     }
 
     @Test
@@ -209,7 +212,7 @@ internal class ExposureDecisionsTest {
     fun `M keep hook features W register() + find() {no exposure}`() {
         // Given
         val metadata = newMetadata()
-        val features = mapOf("holdout.key" to "holdout-1")
+        val features = mapOf("holdout.key" to fakeFeatureValue)
 
         // When
         testedDecisions.register(metadata, features, null, null)
@@ -237,10 +240,14 @@ internal class ExposureDecisionsTest {
     }
 
     private fun newMetadata(): EvaluationMetadata = EvaluationMetadata.builder()
-        .putBoolean("__dd_do_log", true)
         .putInt("__dd_exposure_decision", ++decisionId)
         .build()
 
     private fun details(metadata: EvaluationMetadata) =
-        FlagEvaluationDetails(fakeFlagKey, true, variant = "on", metadata = metadata)
+        FlagEvaluationDetails(fakeFlagKey, true, variant = fakeVariant, metadata = metadata)
+
+    private companion object {
+        // The decision store used to be a 16-entry ring buffer, which nested evaluations overflowed.
+        const val OLD_RING_BUFFER_CAPACITY = 16
+    }
 }

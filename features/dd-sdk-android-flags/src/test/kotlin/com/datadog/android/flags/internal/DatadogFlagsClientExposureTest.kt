@@ -22,6 +22,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -82,6 +83,9 @@ internal class DatadogFlagsClientExposureTest {
     @StringForgery
     lateinit var fakeFlagKey: String
 
+    @StringForgery
+    lateinit var fakeFeatureValue: String
+
     private lateinit var fakeContext: EvaluationContext
     private lateinit var fakeFlag: PrecomputedFlag
     private lateinit var testedClient: DatadogFlagsClient
@@ -103,16 +107,20 @@ internal class DatadogFlagsClientExposureTest {
     }
 
     @Test
-    fun `M write one entry per feature and known destination W resolve() {split features}`() {
+    fun `M write one entry per feature and known destination W resolve() {split features}`(
+        @StringForgery fakeEvaluationValue: String,
+        @StringForgery fakeUnroutedValue: String,
+        @DoubleForgery fakeExposureValue: Double
+    ) {
         // Given
         install(
             fakeFlag.copy(
                 features = listOf(
-                    SplitFeature("holdout.key", "holdout-1", listOf("HOOK")),
+                    SplitFeature("holdout.key", fakeFeatureValue, listOf("HOOK")),
                     SplitFeature("holdout.should_include_in_holdout_analysis", false, listOf("HOOK", "FUTURE")),
-                    SplitFeature("exposure", 2.0, listOf("EXPOSURE")),
-                    SplitFeature("evaluation", "e", listOf("EVALUATION", "HOOK")),
-                    SplitFeature("nowhere", "n", listOf("FUTURE"))
+                    SplitFeature("exposure", fakeExposureValue, listOf("EXPOSURE")),
+                    SplitFeature("evaluation", fakeEvaluationValue, listOf("EVALUATION", "HOOK")),
+                    SplitFeature("nowhere", fakeUnroutedValue, listOf("FUTURE"))
                 )
             )
         )
@@ -125,9 +133,9 @@ internal class DatadogFlagsClientExposureTest {
             mapOf(
                 "allocationKey" to fakeFlag.allocationKey,
                 "__dd_observe_full_evaluation_data" to false,
-                "__dd_feature.holdout.key" to "holdout-1",
+                "__dd_feature.holdout.key" to fakeFeatureValue,
                 "__dd_feature.holdout.should_include_in_holdout_analysis" to false,
-                "__dd_feature.evaluation" to "e"
+                "__dd_feature.evaluation" to fakeEvaluationValue
             )
         )
     }
@@ -141,17 +149,19 @@ internal class DatadogFlagsClientExposureTest {
         val result = testedClient.resolve(fakeFlagKey, false)
 
         // Then
-        assertThat(result.flagMetadata).containsOnlyKeys("allocationKey", "__dd_observe_full_evaluation_data")
+        assertThat(result.flagMetadata).isEqualTo(
+            mapOf("allocationKey" to fakeFlag.allocationKey, "__dd_observe_full_evaluation_data" to false)
+        )
     }
 
     @Test
-    fun `M count EVALUATION features W resolve() {split features}`() {
+    fun `M count EVALUATION features W resolve() {split features}`(@DoubleForgery fakeEvaluationValue: Double) {
         // Given
         install(
             fakeFlag.copy(
                 features = listOf(
-                    SplitFeature("hook", "h", listOf("HOOK")),
-                    SplitFeature("evaluation", 1.0, listOf("EVALUATION"))
+                    SplitFeature("hook", fakeFeatureValue, listOf("HOOK")),
+                    SplitFeature("evaluation", fakeEvaluationValue, listOf("EVALUATION"))
                 )
             )
         )
@@ -170,7 +180,7 @@ internal class DatadogFlagsClientExposureTest {
             observeFullEvaluationData = eq(false),
             telemetryTargetingKey = eq(fakeContext.targetingKey),
             preparedTargetingKey = anyOrNull(),
-            features = eq(mapOf("evaluation" to 1.0))
+            features = eq(mapOf("evaluation" to fakeEvaluationValue))
         )
     }
 
@@ -222,14 +232,16 @@ internal class DatadogFlagsClientExposureTest {
     }
 
     @Test
-    fun `M record nothing W resolveDeferringExposure() + recordExposure() {newer context replaced it}`() {
+    fun `M record nothing W resolveDeferringExposure() + recordExposure() {newer context replaced it}`(
+        @StringForgery fakeSuffix: String
+    ) {
         // Given
         val policy = ExperimentationOptOut(ExperimentationOptOutMode.IMMEDIATE)
         policy.prepare(fakeContext)
         testedClient = newClient(policy)
         install(fakeFlag)
         val resolution = testedClient.resolveDeferringExposure(fakeFlagKey, false)
-        policy.prepare(EvaluationContext(fakeContext.targetingKey + "-other"))
+        policy.prepare(EvaluationContext(fakeContext.targetingKey + fakeSuffix))
 
         // When
         val isRecorded = checkNotNull(resolution.recordExposure).invoke()
@@ -250,7 +262,9 @@ internal class DatadogFlagsClientExposureTest {
         val result = testedClient.resolveDeferringExposure(fakeFlagKey, false)
 
         // Then
-        assertThat(result.details.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", fakeConsent)
+        assertThat(result.details.flagMetadata).isEqualTo(
+            mapOf("allocationKey" to fakeFlag.allocationKey, "__dd_observe_full_evaluation_data" to fakeConsent)
+        )
         verify(mockEvaluationsFeature).processEvaluation(
             eq(fakeFlagKey),
             eq(fakeContext),
@@ -294,7 +308,10 @@ internal class DatadogFlagsClientExposureTest {
     }
 
     @Test
-    fun `M drop reserved keys from extra logging W resolve()`() {
+    fun `M drop reserved keys from extra logging W resolve()`(
+        @StringForgery fakeLoggingKey: String,
+        @StringForgery fakeLoggingValue: String
+    ) {
         // Given
         install(
             fakeFlag.copy(
@@ -302,8 +319,8 @@ internal class DatadogFlagsClientExposureTest {
                 extraLogging = JSONObject()
                     .put("__dd_do_log", true)
                     .put("__dd_exposure_cache_hit", false)
-                    .put("__dd_feature.holdout.key", "forged")
-                    .put("custom", "kept")
+                    .put("__dd_feature.holdout.key", fakeFeatureValue)
+                    .put(fakeLoggingKey, fakeLoggingValue)
             )
         )
 
@@ -311,8 +328,13 @@ internal class DatadogFlagsClientExposureTest {
         val result = testedClient.resolve(fakeFlagKey, false)
 
         // Then
-        assertThat(result.flagMetadata).containsEntry("custom", "kept")
-            .doesNotContainKeys("__dd_do_log", "__dd_exposure_cache_hit", "__dd_feature.holdout.key")
+        assertThat(result.flagMetadata).isEqualTo(
+            mapOf(
+                "allocationKey" to fakeFlag.allocationKey,
+                "__dd_observe_full_evaluation_data" to false,
+                fakeLoggingKey to fakeLoggingValue
+            )
+        )
     }
 
     @Test
@@ -330,12 +352,12 @@ internal class DatadogFlagsClientExposureTest {
     }
 
     @Test
-    fun `M return no exposure W resolveDeferringExposure() {type mismatch}`() {
+    fun `M return no exposure W resolveDeferringExposure() {type mismatch}`(@StringForgery fakeDefault: String) {
         // Given
         install(fakeFlag)
 
         // When
-        val result = testedClient.resolveDeferringExposure(fakeFlagKey, "default")
+        val result = testedClient.resolveDeferringExposure(fakeFlagKey, fakeDefault)
 
         // Then
         assertThat(result.details.errorCode).isEqualTo(ErrorCode.TYPE_MISMATCH)
