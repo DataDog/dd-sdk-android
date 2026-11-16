@@ -41,7 +41,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
-import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -214,11 +213,15 @@ internal class ProfilingDataWriterTest {
             .hasLongTaskIds(fakeLongTasks.map { it.id })
 
         val actualMetadata = ProfilingBatchMetadata
-            .fromBytesOrNull(argumentCaptor.firstValue.metadata, mock())
+            .fromBytesOrNull(argumentCaptor.firstValue.metadata)
         checkNotNull(actualMetadata)
-        assertThat(actualMetadata.perfettoBytes).isEqualTo(fakePerfettoBytes)
+        assertThat(
+            actualMetadata.bytes.copyOfRange(actualMetadata.perfettoOffset, actualMetadata.rumMobileEventsOffset)
+        ).isEqualTo(fakePerfettoBytes)
 
-        val actualMetadataEvents = JsonParser.parseString(String(actualMetadata.rumMobileEventsBytes))
+        val actualMetadataEvents = JsonParser.parseString(
+            String(actualMetadata.bytes, actualMetadata.rumMobileEventsOffset, actualMetadata.rumMobileEventsLength)
+        )
             .asJsonArray
             .map {
                 RumMetadataEvent.fromJsonObject(it.asJsonObject)
@@ -450,8 +453,8 @@ internal class ProfilingDataWriterTest {
         // Then
         argumentCaptor<RawBatchEvent> {
             verify(mockEventBatchWriter).write(capture(), isNull(), eq(EventType.DEFAULT))
-            val metadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(firstValue.metadata, mockInternalLogger))
-            assertThat(metadata.perfettoBytes.size.toLong()).isEqualTo(PROFILE_SIZE_LIMIT_BYTES)
+            val metadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(firstValue.metadata))
+            assertThat(metadata.perfettoLength.toLong()).isEqualTo(PROFILE_SIZE_LIMIT_BYTES)
         }
         assertThat(file.exists()).isFalse()
     }
@@ -477,8 +480,8 @@ internal class ProfilingDataWriterTest {
         // Then
         argumentCaptor<RawBatchEvent> {
             verify(mockEventBatchWriter).write(capture(), isNull(), eq(EventType.DEFAULT))
-            val metadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(firstValue.metadata, mockInternalLogger))
-            assertThat(metadata.perfettoBytes.size.toLong()).isEqualTo(PROFILE_SIZE_LIMIT_BYTES)
+            val metadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(firstValue.metadata))
+            assertThat(metadata.perfettoLength.toLong()).isEqualTo(PROFILE_SIZE_LIMIT_BYTES)
         }
         verify(mockInternalLogger).logMetric(
             any(),
@@ -512,9 +515,13 @@ internal class ProfilingDataWriterTest {
         // Then
         argumentCaptor<RawBatchEvent> {
             verify(mockEventBatchWriter).write(capture(), isNull(), eq(EventType.DEFAULT))
-            val metadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(firstValue.metadata, mockInternalLogger))
-            assertThat(metadata.perfettoBytes).isEqualTo(fakePerfettoBytes)
-            val rumEvents = JsonParser.parseString(String(metadata.rumMobileEventsBytes)).asJsonArray
+            val metadata = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(firstValue.metadata))
+            assertThat(
+                metadata.bytes.copyOfRange(metadata.perfettoOffset, metadata.rumMobileEventsOffset)
+            ).isEqualTo(fakePerfettoBytes)
+            val rumEvents = JsonParser.parseString(
+                String(metadata.bytes, metadata.rumMobileEventsOffset, metadata.rumMobileEventsLength)
+            ).asJsonArray
                 .map { RumMetadataEvent.fromJsonObject(it.asJsonObject) }
             assertThat(rumEvents.map { it.id }).containsExactly(fakeErrorId)
         }
@@ -698,10 +705,14 @@ internal class ProfilingDataWriterTest {
             .hasErrorIds(emptyList())
 
         val actualMetadata = ProfilingBatchMetadata
-            .fromBytesOrNull(argumentCaptor.firstValue.metadata, mock())
+            .fromBytesOrNull(argumentCaptor.firstValue.metadata)
         checkNotNull(actualMetadata)
-        assertThat(actualMetadata.perfettoBytes).isEqualTo(fakePerfettoBytes)
-        val actualMetadataEvents = JsonParser.parseString(String(actualMetadata.rumMobileEventsBytes))
+        assertThat(
+            actualMetadata.bytes.copyOfRange(actualMetadata.perfettoOffset, actualMetadata.rumMobileEventsOffset)
+        ).isEqualTo(fakePerfettoBytes)
+        val actualMetadataEvents = JsonParser.parseString(
+            String(actualMetadata.bytes, actualMetadata.rumMobileEventsOffset, actualMetadata.rumMobileEventsLength)
+        )
             .asJsonArray
             .map { RumMetadataEvent.fromJsonObject(it.asJsonObject) }
         val vitalsMetadata = actualMetadataEvents.filter { it.type == RumMetadataEvent.Type.VITAL }

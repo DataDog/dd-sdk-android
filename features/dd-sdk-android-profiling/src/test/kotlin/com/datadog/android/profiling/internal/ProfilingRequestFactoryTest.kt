@@ -150,8 +150,10 @@ class ProfilingRequestFactoryTest {
         val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, null)
 
         // Then
-        assertThat(request.body.containsSubsequence(fakePerfettoBytes)).isTrue()
-        assertThat(request.body.containsSubsequence(fakeRumEventsBytes)).isTrue()
+        val partEnd = "\r\n--".toByteArray()
+        val partStart = "\r\n\r\n".toByteArray()
+        assertThat(request.body.containsSubsequence(partStart + fakePerfettoBytes + partEnd)).isTrue()
+        assertThat(request.body.containsSubsequence(partStart + fakeRumEventsBytes + partEnd)).isTrue()
         assertThat(request.body.containsSubsequence("perfetto.proto".toByteArray())).isTrue()
         assertThat(request.body.containsSubsequence("rum-mobile-events.json".toByteArray())).isTrue()
         assertThat(request.body.containsSubsequence(fakeEventData)).isTrue()

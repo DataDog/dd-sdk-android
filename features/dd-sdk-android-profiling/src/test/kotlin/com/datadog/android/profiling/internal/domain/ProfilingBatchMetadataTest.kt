@@ -15,7 +15,6 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.kotlin.mock
 import java.io.ByteArrayInputStream
 import java.io.FilterInputStream
 import java.io.IOException
@@ -61,7 +60,7 @@ internal class ProfilingBatchMetadataTest {
         val encoded = checkNotNull(ProfilingBatchMetadata.encode(chunkedInput, fakePerfettoBytes.size, ByteArray(0)))
 
         // Then
-        assertThat(checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(encoded, mock())).perfetto())
+        assertThat(checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(encoded)).perfetto())
             .isEqualTo(fakePerfettoBytes)
     }
 
@@ -79,6 +78,24 @@ internal class ProfilingBatchMetadataTest {
 
         // Then
         assertThat(encoded).isNull()
+    }
+
+    @Test
+    fun `M reference the original array W fromBytesOrNull()`(forge: Forge) {
+        // Given
+        val fakePerfettoBytes = forge.aString().toByteArray()
+        val fakeRumBytes = forge.aString().toByteArray()
+        val encoded = encode(fakePerfettoBytes, fakeRumBytes)
+
+        // When
+        val restored = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(encoded))
+
+        // Then
+        assertThat(restored.bytes).isSameAs(encoded)
+        assertThat(restored.perfettoOffset).isEqualTo(8)
+        assertThat(restored.perfettoLength).isEqualTo(fakePerfettoBytes.size)
+        assertThat(restored.rumMobileEventsOffset).isEqualTo(8 + fakePerfettoBytes.size)
+        assertThat(restored.rumMobileEventsLength).isEqualTo(fakeRumBytes.size)
     }
 
     @Test
@@ -120,7 +137,7 @@ internal class ProfilingBatchMetadataTest {
         val original = encode(fakePerfettoBytes, fakeRumBytes)
 
         // When
-        val restored = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(original, mock()))
+        val restored = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(original))
 
         // Then
         assertThat(restored.perfetto()).isEqualTo(fakePerfettoBytes)
@@ -134,7 +151,7 @@ internal class ProfilingBatchMetadataTest {
         val original = encode(fakePerfettoBytes, fakeRumBytes)
 
         // When
-        val restored = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(original, mock()))
+        val restored = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(original))
 
         // Then
         assertThat(restored.rumMobileEvents()).isEqualTo(fakeRumBytes)
@@ -148,7 +165,7 @@ internal class ProfilingBatchMetadataTest {
         val original = encode(fakePerfettoBytes, fakeRumBytes)
 
         // When
-        val restored = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(original, mock()))
+        val restored = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(original))
 
         // Then
         assertThat(restored.perfetto()).isEqualTo(fakePerfettoBytes)
@@ -162,7 +179,7 @@ internal class ProfilingBatchMetadataTest {
         val original = encode(fakePerfettoBytes, ByteArray(0))
 
         // When
-        val restored = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(original, mock()))
+        val restored = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(original))
 
         // Then
         assertThat(restored.perfetto()).isEqualTo(fakePerfettoBytes)
@@ -178,12 +195,12 @@ internal class ProfilingBatchMetadataTest {
         )
 
         // When / Then
-        assertThat(ProfilingBatchMetadata.fromBytesOrNull(metadata, mock())).isNotNull()
+        assertThat(ProfilingBatchMetadata.fromBytesOrNull(metadata)).isNotNull()
     }
 
     @Test
     fun `M return null W fromBytesOrNull {empty bytes}`() {
-        assertThat(ProfilingBatchMetadata.fromBytesOrNull(ByteArray(0), mock())).isNull()
+        assertThat(ProfilingBatchMetadata.fromBytesOrNull(ByteArray(0))).isNull()
     }
 
     @Test
@@ -200,7 +217,7 @@ internal class ProfilingBatchMetadataTest {
             ) + ByteArray(actualPayloadSize)
 
         // When / Then
-        assertThat(ProfilingBatchMetadata.fromBytesOrNull(corrupt, mock())).isNull()
+        assertThat(ProfilingBatchMetadata.fromBytesOrNull(corrupt)).isNull()
     }
 
     @Test
@@ -210,7 +227,7 @@ internal class ProfilingBatchMetadataTest {
         val corrupt = ProfilingBatchMetadata.MAGIC + negativeLength
 
         // When / Then
-        assertThat(ProfilingBatchMetadata.fromBytesOrNull(corrupt, mock())).isNull()
+        assertThat(ProfilingBatchMetadata.fromBytesOrNull(corrupt)).isNull()
     }
 
     @Test
@@ -220,7 +237,7 @@ internal class ProfilingBatchMetadataTest {
         val corrupt = ProfilingBatchMetadata.MAGIC + ByteArray(truncatedAfterMagic)
 
         // When / Then
-        assertThat(ProfilingBatchMetadata.fromBytesOrNull(corrupt, mock())).isNull()
+        assertThat(ProfilingBatchMetadata.fromBytesOrNull(corrupt)).isNull()
     }
 
     @Test
@@ -232,13 +249,15 @@ internal class ProfilingBatchMetadataTest {
         val randomBytes = byteArrayOf(firstByte) + forge.aString().toByteArray()
 
         // When / Then
-        assertThat(ProfilingBatchMetadata.fromBytesOrNull(randomBytes, mock())).isNull()
+        assertThat(ProfilingBatchMetadata.fromBytesOrNull(randomBytes)).isNull()
     }
 
     private fun encode(perfettoBytes: ByteArray, rumBytes: ByteArray): ByteArray =
         checkNotNull(ProfilingBatchMetadata.encode(ByteArrayInputStream(perfettoBytes), perfettoBytes.size, rumBytes))
 
-    private fun ProfilingBatchMetadata.perfetto() = perfettoBytes
+    private fun ProfilingBatchMetadata.perfetto() =
+        bytes.copyOfRange(perfettoOffset, perfettoOffset + perfettoLength)
 
-    private fun ProfilingBatchMetadata.rumMobileEvents() = rumMobileEventsBytes
+    private fun ProfilingBatchMetadata.rumMobileEvents() =
+        bytes.copyOfRange(rumMobileEventsOffset, rumMobileEventsOffset + rumMobileEventsLength)
 }
