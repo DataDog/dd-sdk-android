@@ -32,6 +32,7 @@ internal class FlagsConfigurationTest {
         assertThat(configuration.gracefulModeEnabled).isTrue()
         assertThat(configuration.initializationTimeoutMs).isEqualTo(5_000L)
         assertThat(configuration.flagSelection).isNull()
+        assertThat(configuration.responseProtection).isNull()
     }
 
     @Test
@@ -239,6 +240,80 @@ internal class FlagsConfigurationTest {
 
         // Then
         assertThat(copiedConfiguration.flagSelection).isEqualTo(testedConfiguration.flagSelection)
+    }
+
+    // endregion
+
+    // region Response protection
+
+    @Test
+    fun `M set the response protection W responseProtection()`() {
+        // Given
+        val protection = ResponseProtection.tlsPinning(
+            ResponseProtectionMode.REQUIRED,
+            TlsPinningProfile.DATADOG_STAGING_V1
+        )
+
+        // When
+        val configuration = FlagsConfiguration.Builder()
+            .responseProtection(protection)
+            .build()
+
+        // Then
+        assertThat(configuration.responseProtection).isEqualTo(protection)
+    }
+
+    @Test
+    fun `M preserve the response protection W copy() { legacy parameters }`(
+        @BoolForgery fakeTrackExposures: Boolean
+    ) {
+        // Given
+        val testedConfiguration = FlagsConfiguration.Builder()
+            .responseProtection(
+                ResponseProtection.tlsPinning(ResponseProtectionMode.REQUIRED, TlsPinningProfile.DATADOG_STAGING_V1)
+            )
+            .build()
+
+        // When
+        val copiedConfiguration = testedConfiguration.copy(trackExposures = fakeTrackExposures)
+
+        // Then
+        assertThat(copiedConfiguration.responseProtection).isEqualTo(testedConfiguration.responseProtection)
+    }
+
+    @Test
+    fun `M compare the response protection W equals()`() {
+        // Given
+        val pins = listOf(
+            "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "sha256/AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="
+        )
+        fun build(origin: String) = FlagsConfiguration.Builder()
+            .responseProtection(
+                ResponseProtection.tlsPinning(
+                    ResponseProtectionMode.REQUIRED,
+                    TlsPinningProfile.custom(origin, TlsPinTarget.LEAF, pins)
+                )
+            )
+            .build()
+
+        // When / Then
+        assertThat(build("https://a.example.com")).isEqualTo(build("https://a.example.com"))
+        assertThat(build("https://a.example.com")).isNotEqualTo(build("https://b.example.com"))
+        assertThat(build("https://a.example.com")).isNotEqualTo(FlagsConfiguration.Builder().build())
+    }
+
+    @Test
+    fun `M copy the pins W TlsPinningProfile_custom() { caller mutates the list after the call }`() {
+        // Given
+        val pins = mutableListOf("sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+
+        // When
+        val profile = TlsPinningProfile.custom("https://a.example.com", TlsPinTarget.LEAF, pins)
+        pins.add("sha256/AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=")
+
+        // Then
+        assertThat(profile.pins).containsExactly("sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
     }
 
     // endregion

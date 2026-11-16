@@ -79,6 +79,7 @@ public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public final fun flagSelection (Ljava/util/List;Ljava/util/List;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun gracefulModeEnabled (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun initializationTimeout (J)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
+	public final fun responseProtection (Lcom/datadog/android/flags/ResponseProtection;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun rumIntegrationEnabled (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun trackEvaluations (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun trackExposures (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
@@ -104,10 +105,51 @@ public abstract interface class com/datadog/android/flags/FlagsSubscription {
 	public abstract fun unsubscribe ()V
 }
 
+public abstract class com/datadog/android/flags/ResponseProtection {
+	public static final field Companion Lcom/datadog/android/flags/ResponseProtection$Companion;
+	public abstract fun getMode ()Lcom/datadog/android/flags/ResponseProtectionMode;
+	public static final fun tlsPinning (Lcom/datadog/android/flags/ResponseProtectionMode;Lcom/datadog/android/flags/TlsPinningProfile;)Lcom/datadog/android/flags/ResponseProtection;
+}
+
+public final class com/datadog/android/flags/ResponseProtection$Companion {
+	public final fun tlsPinning (Lcom/datadog/android/flags/ResponseProtectionMode;Lcom/datadog/android/flags/TlsPinningProfile;)Lcom/datadog/android/flags/ResponseProtection;
+}
+
+public final class com/datadog/android/flags/ResponseProtectionMode : java/lang/Enum {
+	public static final field REQUIRED Lcom/datadog/android/flags/ResponseProtectionMode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/flags/ResponseProtectionMode;
+	public static fun values ()[Lcom/datadog/android/flags/ResponseProtectionMode;
+}
+
 public abstract interface class com/datadog/android/flags/StateObservable {
 	public abstract fun addListener (Lcom/datadog/android/flags/FlagsStateListener;)V
 	public abstract fun getCurrentState ()Lcom/datadog/android/flags/model/FlagsClientState;
 	public abstract fun removeListener (Lcom/datadog/android/flags/FlagsStateListener;)V
+}
+
+public final class com/datadog/android/flags/TlsPinTarget : java/lang/Enum {
+	public static final field LEAF Lcom/datadog/android/flags/TlsPinTarget;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/flags/TlsPinTarget;
+	public static fun values ()[Lcom/datadog/android/flags/TlsPinTarget;
+}
+
+public final class com/datadog/android/flags/TlsPinningProfile {
+	public static final field Companion Lcom/datadog/android/flags/TlsPinningProfile$Companion;
+	public static final field DATADOG_STAGING_V1 Lcom/datadog/android/flags/TlsPinningProfile;
+	public static final fun custom (Ljava/lang/String;Lcom/datadog/android/flags/TlsPinTarget;Ljava/util/List;)Lcom/datadog/android/flags/TlsPinningProfile;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getOrigin ()Ljava/lang/String;
+	public final fun getPinTarget ()Lcom/datadog/android/flags/TlsPinTarget;
+	public final fun getPins ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/flags/TlsPinningProfile$Companion {
+	public final fun custom (Ljava/lang/String;Lcom/datadog/android/flags/TlsPinTarget;Ljava/util/List;)Lcom/datadog/android/flags/TlsPinningProfile;
 }
 
 public final class com/datadog/android/flags/_FlagsInternalProxy {

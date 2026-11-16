@@ -261,6 +261,8 @@ datadog:
       - "okhttp3.Response.close():java.lang.IllegalStateException"
       - "okhttp3.Response.peekBody(kotlin.Long):java.io.IOException,java.lang.IllegalArgumentException,java.lang.IllegalStateException"
       - "okhttp3.ResponseBody.string():java.io.IOException"
+      - "okhttp3.CertificatePinner.Builder.add(kotlin.String, kotlin.Array):java.lang.IllegalArgumentException"
+      - "okhttp3.CertificatePinner.pin(java.security.cert.Certificate):java.lang.IllegalArgumentException"
       - "okhttp3.OkHttpClient.Builder.addInterceptor(okhttp3.Interceptor):java.lang.IllegalArgumentException"
       - "okhttp3.OkHttpClient.Builder.addNetworkInterceptor(okhttp3.Interceptor):java.lang.IllegalArgumentException"
       - "okhttp3.OkHttpClient.Builder.dns(okhttp3.Dns):java.lang.IllegalArgumentException"

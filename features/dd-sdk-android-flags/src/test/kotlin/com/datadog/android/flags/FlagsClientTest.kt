@@ -26,6 +26,7 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Call
+import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.api.AfterEach
@@ -191,6 +192,62 @@ internal class FlagsClientTest {
 
         // Then
         assertThat(client.getFlagAssignmentsSnapshot()).containsOnlyKeys(fakeFlagKey)
+    }
+
+    @Test
+    fun `M pin only the assignment client and use the protected key W createInternal() { response protection }`(
+        @StringForgery(regex = "fake-[a-z]{4,8}") fakeClientName: String
+    ) {
+        // Given
+        val mockCore = mock<FeatureSdkCore>()
+        val mockDataStore = mock<DataStoreHandler>()
+        val mockFeatureScope = mock<FeatureScope>()
+        whenever(mockCore.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockCore.timeProvider).thenReturn(mock())
+        whenever(mockCore.createSingleThreadExecutorService(any())).thenReturn(mock<ExecutorService>())
+        whenever(mockCore.createOkHttpCallFactory(any())).thenReturn(mock<Call.Factory>())
+        whenever(mockFeatureScope.dataStore).thenReturn(mockDataStore)
+        whenever(mockCore.getFeature(FLAGS_FEATURE_NAME)).thenReturn(mockFeatureScope)
+        val pins = listOf(
+            "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "sha256/AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="
+        )
+        val configuration = FlagsConfiguration.Builder()
+            .trackEvaluations(false)
+            .responseProtection(
+                ResponseProtection.tlsPinning(
+                    ResponseProtectionMode.REQUIRED,
+                    TlsPinningProfile.custom("https://flags.example.com", TlsPinTarget.LEAF, pins)
+                )
+            )
+            .build()
+        val flagsFeature = FlagsFeature(mockCore, configuration)
+
+        // When
+        FlagsClient.createInternal(
+            configuration = configuration,
+            featureSdkCore = mockCore,
+            flagsFeature = flagsFeature,
+            evaluationsFeature = null,
+            name = fakeClientName,
+            evaluationTelemetryOptOutParameterEnabled = false
+        )
+
+        // Then
+        val blockCaptor = argumentCaptor<OkHttpClient.Builder.() -> Unit>()
+        verify(mockCore).createOkHttpCallFactory(blockCaptor.capture())
+        val assignmentClient = OkHttpClient.Builder().apply(blockCaptor.firstValue).build()
+        assertThat(assignmentClient.certificatePinner.pins.map { it.pattern }).containsOnly("flags.example.com")
+        assertThat(assignmentClient.interceptors).hasSize(1)
+        assertThat(assignmentClient.networkInterceptors).hasSize(1)
+        assertThat(flagsFeature.assignmentEndpoint).isEqualTo("https://flags.example.com/precompute-assignments")
+        val scope = flagsFeature.responseProtection.persistenceScope
+        verify(mockDataStore).value<FlagsStateEntry>(
+            eq("flags-protected-$scope-state-$fakeClientName"),
+            anyOrNull(),
+            any(),
+            any()
+        )
     }
 
     // region Static Flag Resolution Methods

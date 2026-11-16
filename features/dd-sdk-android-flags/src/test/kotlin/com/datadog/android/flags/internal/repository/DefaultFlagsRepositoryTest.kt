@@ -653,6 +653,60 @@ internal class DefaultFlagsRepositoryTest {
         verify(mockDataStore).removeValue(eq("flags-selection-state-$fakeInstanceName"), anyOrNull())
     }
 
+    @Test
+    fun `M use only the protected key W init and installFlagsAndContext() + complete() { protection scope }`(
+        @StringForgery(regex = "fake-[a-z]{4,8}") fakeInstanceName: String,
+        @StringForgery(regex = "tls-[a-f0-9]{16}") fakeProtectionScope: String,
+        forge: Forge
+    ) {
+        // Given
+        val protectedKey = "flags-protected-$fakeProtectionScope-state-$fakeInstanceName"
+        val unprotectedKey = "flags-state-$fakeInstanceName"
+        testedRepository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            instanceName = fakeInstanceName,
+            dataStore = mockDataStore,
+            flagSelection = null,
+            protectionScope = fakeProtectionScope
+        )
+
+        // When
+        testedRepository.installFlagsAndContext(forge.getForgery(), emptyMap()).complete {}
+
+        // Then
+        verify(mockDataStore).value<FlagsStateEntry>(
+            key = eq(protectedKey),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        verify(mockDataStore, never()).value<FlagsStateEntry>(
+            key = eq(unprotectedKey),
+            version = anyOrNull(),
+            callback = any(),
+            deserializer = any()
+        )
+        verify(mockDataStore, never()).removeValue(eq(unprotectedKey), anyOrNull())
+        verify(mockDataStore).removeValue(
+            eq("flags-protected-$fakeProtectionScope-selection-state-$fakeInstanceName"),
+            anyOrNull()
+        )
+        verify(mockDataStore).setValue<FlagsStateEntry>(
+            key = eq(protectedKey),
+            data = any(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
+        verify(mockDataStore, never()).setValue<FlagsStateEntry>(
+            key = eq(unprotectedKey),
+            data = any(),
+            version = any(),
+            callback = anyOrNull(),
+            serializer = any()
+        )
+    }
+
     @ParameterizedTest
     @CsvSource(
         "DISABLED,false,flags-state,flags-selection-state",

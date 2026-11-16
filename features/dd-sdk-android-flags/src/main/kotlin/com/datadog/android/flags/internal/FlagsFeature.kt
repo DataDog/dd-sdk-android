@@ -21,6 +21,9 @@ import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.evaluation.InitializationTimeoutScheduler
 import com.datadog.android.flags.internal.net.ExposuresRequestFactory
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
+import com.datadog.android.flags.internal.protection.ResolvedResponseProtection
+import com.datadog.android.flags.internal.protection.ResponseProtectionResolver
+import com.datadog.android.flags.internal.protection.logResponseProtection
 import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.internal.selection.FlagSelectionCanonicalizer
 import com.datadog.android.flags.internal.selection.FlagSelectionResult
@@ -85,10 +88,21 @@ internal class FlagsFeature(
     internal val flagSelection: CanonicalFlagSelection? =
         (flagSelectionResult as? FlagSelectionResult.Selected)?.selection
 
+    internal val responseProtection: ResolvedResponseProtection = ResponseProtectionResolver.resolve(
+        flagsConfiguration.responseProtection,
+        flagsConfiguration.customFlagEndpoint
+    )
+
+    /**
+     * The flag assignment endpoint: the endpoint selected by the response protection policy, or the custom one.
+     */
+    internal val assignmentEndpoint: String? =
+        responseProtection.assignmentEndpoint ?: flagsConfiguration.customFlagEndpoint
+
     internal val precomputedRequestFactory =
         PrecomputedAssignmentsRequestFactory(
             internalLogger = sdkCore.internalLogger,
-            customFlagEndpoint = flagsConfiguration.customFlagEndpoint,
+            customFlagEndpoint = assignmentEndpoint,
             flagSelection = flagSelection
         )
 
@@ -136,6 +150,7 @@ internal class FlagsFeature(
         (flagSelectionResult as? FlagSelectionResult.Dropped)?.let {
             sdkCore.internalLogger.logDroppedFlagSelection(it.error)
         }
+        sdkCore.internalLogger.logResponseProtection(responseProtection)
         dataWriter = createDataWriter()
         processor = ExposureEventsProcessor(
             writer = dataWriter,

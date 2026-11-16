@@ -39,6 +39,7 @@ data class com.datadog.android.flags.FlagsConfiguration
     fun useCustomFlagEndpoint(String): Builder
     fun initializationTimeout(Long): Builder
     fun flagSelection(List<String>?, List<String>?): Builder
+    fun responseProtection(ResponseProtection): Builder
     fun rumIntegrationEnabled(Boolean): Builder
     fun gracefulModeEnabled(Boolean): Builder
     fun build(): FlagsConfiguration
@@ -49,10 +50,25 @@ interface com.datadog.android.flags.FlagsStateListener
   fun onStateChanged(com.datadog.android.flags.model.FlagsClientState)
 interface com.datadog.android.flags.FlagsSubscription
   fun unsubscribe()
+abstract class com.datadog.android.flags.ResponseProtection
+  abstract val mode: ResponseProtectionMode
+  companion object 
+    fun tlsPinning(ResponseProtectionMode, TlsPinningProfile): ResponseProtection
+enum com.datadog.android.flags.ResponseProtectionMode
+  - REQUIRED
 interface com.datadog.android.flags.StateObservable
   fun getCurrentState(): com.datadog.android.flags.model.FlagsClientState
   fun addListener(FlagsStateListener)
   fun removeListener(FlagsStateListener)
+enum com.datadog.android.flags.TlsPinTarget
+  - LEAF
+class com.datadog.android.flags.TlsPinningProfile
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
+  override fun toString(): String
+  companion object 
+    val DATADOG_STAGING_V1: TlsPinningProfile
+    fun custom(String, TlsPinTarget, List<String>): TlsPinningProfile
 class com.datadog.android.flags._FlagsInternalProxy
   constructor(FlagsClient)
   fun isExperimentationOptOutEnabled(): Boolean

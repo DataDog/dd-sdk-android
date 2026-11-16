@@ -50,4 +50,4 @@ private fun buildFlagsHostString(customerDomain: String, dc: String? = null, tld
     return parts.joinToString(".")
 }
 
-private const val FLAGS_PATH = "/precompute-assignments"
+internal const val FLAGS_PATH = "/precompute-assignments"

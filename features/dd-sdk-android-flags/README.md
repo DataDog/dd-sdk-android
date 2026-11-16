@@ -113,6 +113,33 @@ val flagsConfig = FlagsConfiguration.Builder()
 - If the server ignores a selection, the SDK loads the full flag configuration and logs an error with the reason. A reason that the SDK does not know is reported as `unknown`.
 - With a custom flag endpoint, the proxy must forward the `DD-Flag-Selection-Ignored` response header. Otherwise, the SDK cannot report a selection that the server ignored.
 
+#### Require TLS pinning for flag assignments (preview)
+
+To require TLS public-key pinning on the flag assignment connection, set a response protection:
+
+```kotlin
+val flagsConfig = FlagsConfiguration.Builder()
+    .responseProtection(
+        ResponseProtection.tlsPinning(
+            mode = ResponseProtectionMode.REQUIRED,
+            profile = TlsPinningProfile.custom(
+                origin = "https://flags.example.com",
+                pinTarget = TlsPinTarget.LEAF,
+                pins = listOf("sha256/<active-key-hash>", "sha256/<backup-key-hash>")
+            )
+        )
+    )
+    .build()
+```
+
+- The SDK applies normal TLS validation. Then it requires the SHA-256 hash of the leaf certificate public key (SPKI) to match one of the pins. A pin that matches only an issuer certificate does not satisfy `TlsPinTarget.LEAF`.
+- The SDK rejects a failed check before it sends the HTTP request. It does not fall back to an unprotected connection.
+- The profile defines one exact HTTPS origin. The SDK sends flag assignment requests to `<origin>/precompute-assignments`. A custom flag endpoint must use the same origin. A request or redirect to another origin fails.
+- A profile needs at least two different pins: the active key and a backup key. An invalid profile does not throw. The SDK logs an error and does not fetch flag assignments.
+- The SDK does not load flag assignments that were cached without the same pinning policy. Until the next successful protected fetch, a client starts without cached flags.
+- Only flag assignment requests use the pinning policy. RUM, Logs, exposure, and evaluation uploads keep their current transport.
+- `TlsPinningProfile.DATADOG_STAGING_V1` contains unverified placeholder values. Do not use it until the reviewed staging policy replaces them.
+
 ## Use the Feature Flags SDK
 
 ### Create a Flags client

@@ -25,10 +25,12 @@ data class FlagsConfiguration internal constructor(
     internal val rumIntegrationEnabled: Boolean,
     internal val gracefulModeEnabled: Boolean,
     internal val initializationTimeoutMs: Long?,
-    internal val flagSelection: FlagSelection?
+    internal val flagSelection: FlagSelection?,
+    internal val responseProtection: ResponseProtection? = null
 ) {
     /**
-     * Copies this configuration and preserves the initialization timeout and the flag selection.
+     * Copies this configuration and preserves the initialization timeout, the flag selection, and the response
+     * protection.
      *
      * This overload keeps the public JVM signature that existed before the initialization timeout was added.
      */
@@ -51,12 +53,14 @@ data class FlagsConfiguration internal constructor(
         rumIntegrationEnabled = rumIntegrationEnabled,
         gracefulModeEnabled = gracefulModeEnabled,
         initializationTimeoutMs = initializationTimeoutMs,
-        flagSelection = flagSelection
+        flagSelection = flagSelection,
+        responseProtection = responseProtection
     )
 
     /**
      * A Builder class for a [FlagsConfiguration].
      */
+    @Suppress("TooManyFunctions") // One function per configuration option.
     class Builder {
         private var trackExposures: Boolean = true
         private var trackEvaluations: Boolean = true
@@ -68,6 +72,7 @@ data class FlagsConfiguration internal constructor(
         private var gracefulModeEnabled: Boolean = true
         private var initializationTimeoutMs: Long? = DEFAULT_INITIALIZATION_TIMEOUT_MS
         private var flagSelection: FlagSelection? = null
+        private var responseProtection: ResponseProtection? = null
 
         /**
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint.
@@ -209,6 +214,26 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
+         * Requires protection of the flag assignment responses.
+         *
+         * By default, no response protection is configured, and flag assignments use the ordinary SDK transport.
+         * See [ResponseProtection.tlsPinning] for the TLS pinning behavior.
+         *
+         * The protection is fixed when the feature is enabled and applies to every [FlagsClient]. Under required
+         * protection, the SDK does not load flag assignments that were persisted without the same policy. Until the
+         * next successful protected fetch, a client starts without cached flags.
+         *
+         * An invalid policy does not throw. The SDK logs an error when the feature is enabled and does not fetch flag
+         * assignments. Calling this method again replaces the previous protection.
+         *
+         * @param protection the response protection to require.
+         * @return this [Builder] instance for method chaining.
+         */
+        fun responseProtection(protection: ResponseProtection): Builder = apply {
+            responseProtection = protection
+        }
+
+        /**
          * Sets whether RUM evaluation logging is enabled.
          * This adds the result of evaluating a feature flag to the view.
          * Enabled by default.
@@ -254,7 +279,8 @@ data class FlagsConfiguration internal constructor(
             rumIntegrationEnabled = rumIntegrationEnabled,
             gracefulModeEnabled = gracefulModeEnabled,
             initializationTimeoutMs = initializationTimeoutMs,
-            flagSelection = flagSelection
+            flagSelection = flagSelection,
+            responseProtection = responseProtection
         )
 
         internal companion object {
