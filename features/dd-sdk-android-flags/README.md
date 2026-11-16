@@ -128,7 +128,7 @@ val flagsConfig = FlagsConfiguration.Builder()
     .build()
 ```
 
-`DATADOG_STAGING_V1` sends requests to `https://protected.ff-cdn.datad0g.com`. It pins the issuer keys of the Certainly Intermediate R1, Certainly Root R1, and Certainly Root E1 certificate authorities. The CDN manages the leaf certificate and can change its key at each renewal, so the profile does not pin the leaf. This endpoint is pending provisioning and live validation.
+`DATADOG_STAGING_V1` sends requests to `https://protected.ff-cdn.datad0g.com`. It pins the issuer keys of the Certainly Intermediate R1, Certainly Intermediate E1, Certainly Root R1, and Certainly Root E1 certificate authorities. The CDN manages the leaf certificate and can change its key at each renewal, so the profile does not pin the leaf. This endpoint is pending provisioning and live validation.
 
 For an advanced policy, create a custom profile:
 

@@ -69,6 +69,7 @@ class TlsPinningProfile internal constructor(
          * the CDN manages the leaf certificate and can change its key at each renewal. The pins identify these
          * Certainly certificate authorities:
          * - Certainly Intermediate R1 (RSA)
+         * - Certainly Intermediate E1 (EC)
          * - Certainly Root R1 (RSA)
          * - Certainly Root E1 (EC)
          */
@@ -83,6 +84,8 @@ class TlsPinningProfile internal constructor(
             pins = listOf(
                 // Certainly Intermediate R1 (RSA), valid to 2032-06-21.
                 "sha256/oW7smChMJRcnzTObF7K+HzInReAPTxB/L1h6eZTmw9Q=",
+                // Certainly Intermediate E1 (EC); the copy signed by Root E1 is valid to 2031-04-01.
+                "sha256/XkxTESlVMF59ZsGRFSBQJyCYjYJYNYkLwv/sqaDnMJA=",
                 // Certainly Root R1 (RSA), valid to 2046.
                 "sha256/P5Pz/PedIl0hPu9qSj9Yhc+E/j16ejwRVTUXaIwOIQA=",
                 // Certainly Root E1 (EC), valid to 2046.

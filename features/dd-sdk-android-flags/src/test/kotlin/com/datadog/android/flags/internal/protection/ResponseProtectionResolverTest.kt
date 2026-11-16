@@ -201,7 +201,7 @@ internal class ResponseProtectionResolverTest {
         assertThat(result.origin.host).isEqualTo("protected.ff-cdn.datad0g.com")
         assertThat(result.assignmentEndpoint)
             .isEqualTo("https://protected.ff-cdn.datad0g.com/precompute-assignments")
-        assertThat(result.pins).hasSize(3)
+        assertThat(result.pins).hasSize(4)
     }
 
     @Test

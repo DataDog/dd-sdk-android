@@ -25,6 +25,7 @@ internal class DatadogStagingProfilePinsTest {
         // Given
         val expectedPins = listOf(
             "tls/certainly-intermediate-r1.pem",
+            "tls/certainly-intermediate-e1.pem",
             "tls/certainly-root-r1.pem",
             "tls/certainly-root-e1.pem"
         ).map { CertificatePinner.pin(loadCertificate(it)) }
@@ -43,6 +44,7 @@ internal class DatadogStagingProfilePinsTest {
         // When
         val subjects = listOf(
             "tls/certainly-intermediate-r1.pem",
+            "tls/certainly-intermediate-e1.pem",
             "tls/certainly-root-r1.pem",
             "tls/certainly-root-e1.pem"
         ).map { loadCertificate(it) }
@@ -50,6 +52,7 @@ internal class DatadogStagingProfilePinsTest {
         // Then
         assertThat(subjects.map { it.subjectX500Principal.name }).containsExactly(
             "CN=Certainly Intermediate R1,O=Certainly,C=US",
+            "CN=Certainly Intermediate E1,O=Certainly,C=US",
             "CN=Certainly Root R1,O=Certainly,C=US",
             "CN=Certainly Root E1,O=Certainly,C=US"
         )
