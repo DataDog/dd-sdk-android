@@ -43,6 +43,20 @@ class ComposeExtensionSupportTest {
     }
 
     @Test
+    fun `M return a decomposer per instance W getCompositionHostDecomposer()`() {
+        // Given
+        val otherExtensionSupport = ComposeExtensionSupport()
+
+        // When
+        val decomposer = testedExtensionSupport.getCompositionHostDecomposer()
+        val otherDecomposer = otherExtensionSupport.getCompositionHostDecomposer()
+
+        // Then
+        assertThat(decomposer).isSameAs(testedExtensionSupport.getCompositionHostDecomposer())
+        assertThat(decomposer).isNotSameAs(otherDecomposer)
+    }
+
+    @Test
     fun `M return name W name()`() {
         // When
         val name = testedExtensionSupport.name()

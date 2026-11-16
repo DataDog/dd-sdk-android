@@ -1,0 +1,332 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.sessionreplay.compose.internal.granular
+
+import android.graphics.Rect
+import android.view.View
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.AbstractComposeView
+import androidx.compose.ui.platform.InspectableValue
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
+import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
+import com.datadog.android.internal.sessionreplay.composition.CapturedChild
+import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
+import com.datadog.android.internal.sessionreplay.composition.CapturedLayerKind
+import com.datadog.android.internal.sessionreplay.composition.CapturedModifier
+import com.datadog.android.internal.sessionreplay.composition.CapturedShapeStyle
+import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.TouchPrivacy
+import com.datadog.android.sessionreplay.compose.internal.utils.ReflectionUtils
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
+import com.datadog.android.sessionreplay.compose.internal.utils.resolveComposeWindowOffset
+import com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposeRequest
+import com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposeResult
+import com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposer
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
+import com.datadog.android.sessionreplay.utils.GlobalBounds
+import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.roundToInt
+
+/**
+ * Real implementation of [CompositionHostDecomposer], walking a Compose host's *unmerged* semantics
+ * tree - the same structural basis the legacy mapper-based pipeline
+ * ([com.datadog.android.sessionreplay.compose.internal.mappers.semantics.RootSemanticsNodeMapper])
+ * already relies on to capture backgrounds/shapes for ordinary composables that carry no explicit
+ * semantics of their own, which is the empirical evidence this mirrors the real `LayoutNode`
+ * structure closely enough to use here too - reusing already-proven reflection utilities
+ * ([SemanticsUtils], [ReflectionUtils]) end to end, rather than a fresh, riskier direct
+ * `LayoutNode`/`Owner` walk requiring `@OptIn(InternalComposeUiApi::class)`.
+ *
+ * Deliberately narrow for this initial landing: preserves text content and resolvable
+ * background/shape styling, extracts `graphicsLayer` alpha as [CapturedModifier.Opacity], and hands
+ * embedded interop `View`s back to native traversal. It does not attempt shadow/blur/color-matrix/
+ * saturate/brightness/mask extraction - each needs its own on-device-verified conversion from
+ * Compose's effect model to this module's wire-agnostic one, and does not pixel-capture unsupported
+ * drawing (that capability doesn't exist yet - see the RFC's "Pixel capture and excluded surfaces"
+ * workstream); a node whose own drawing effect can't be resolved as text/shape simply contributes no
+ * wireframe of its own, but its children are still walked, so resolvable content beneath it is not
+ * silently lost.
+ *
+ * In sibling groups with at least 32 nodes, leaves outside the caller's copied host bounds are
+ * omitted before style extraction. The native snapshot builder always clips composition output
+ * to those bounds, so these leaves would contribute no replay pixels. Parents, privacy placeholders,
+ * and native interop retain their existing paths; every capture resolves current geometry.
+ */
+internal class GranularComposeDecomposer(
+    private val semanticsUtils: SemanticsUtils = SemanticsUtils(),
+    private val reflectionUtils: ReflectionUtils = ReflectionUtils(),
+    private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter,
+    private val isIncompatible: AtomicBoolean = AtomicBoolean(false)
+) : CompositionHostDecomposer {
+
+    override fun canDecompose(view: View): Boolean {
+        if (isIncompatible.get()) return false
+        return disableOnLinkageError { findRoot(view) != null }
+    }
+
+    override fun decompose(view: View, request: CompositionHostDecomposeRequest): CompositionHostDecomposeResult? {
+        if (isIncompatible.get() || !request.shouldContinue()) return null
+        return disableOnLinkageError { DecomposeSession(view, request).run() }
+    }
+
+    @Suppress("ReturnCount")
+    override fun readTouchOverrideAreas(view: View, shouldContinue: () -> Boolean): Map<Rect, TouchPrivacy>? {
+        if (!shouldContinue()) return null
+        if (view !is AbstractComposeView && !reflectionUtils.isAndroidComposeView(view)) return emptyMap()
+        if (isIncompatible.get()) return null
+        return disableOnLinkageError {
+            val root = findRoot(view)
+            if (root == null || !root.hasAvailablePosition()) {
+                null
+            } else {
+                val touchPrivacy = GranularComposeTouchPrivacy(
+                    semanticsUtils,
+                    view.resolveComposeWindowOffset(1f),
+                    shouldContinue
+                )
+                if (touchPrivacy.captureSubtree(root)) touchPrivacy.areas else null
+            }
+        }
+    }
+
+    // Disable permanently on incompatible runtime failures, then let the SDK caller report the
+    // original throwable through its SDK-bound logger and perform native fallback. Other failures
+    // propagate without disabling, since they are specific to one capture. Each SDK core configures
+    // its own ComposeExtensionSupport, and so its own decomposer and flag.
+    private inline fun <T> disableOnLinkageError(block: () -> T): T {
+        return try {
+            block()
+        } catch (error: LinkageError) {
+            isIncompatible.set(true)
+            @Suppress("ThrowingInternalException") // The SDK caller reports and contains this original failure.
+            throw error
+        }
+    }
+
+    // Native Views must not reach composition reflection, which fails on them and reports telemetry.
+    private fun findRoot(view: View): SemanticsNode? = when {
+        reflectionUtils.isAndroidComposeView(view) -> reflectionUtils.getSemanticsOwner(view)?.unmergedRootSemanticsNode
+        view is AbstractComposeView -> semanticsUtils.findRootSemanticsNode(view)
+        else -> null
+    }
+
+    /** One [decompose] call's state - a fresh instance per call, so this class itself stays stateless. */
+    private inner class DecomposeSession(
+        private val hostView: View,
+        private val request: CompositionHostDecomposeRequest
+    ) {
+        private val windowOffset = hostView.resolveComposeWindowOffset(request.screenDensity)
+        private val hostClip = request.hostBounds
+        private val nodes = mutableListOf<CapturedLayer>()
+        private val wireframes = mutableListOf<CapturedWireframe>()
+        private val touchPrivacy = GranularComposeTouchPrivacy(semanticsUtils, windowOffset, request.shouldContinue)
+        private val textMapper = GranularComposeTextMapper { convertColor(it) }
+        private var hasCulledLeaf = false
+
+        @Suppress("ReturnCount")
+        fun run(): CompositionHostDecomposeResult? {
+            val root = findRoot(hostView) ?: return null
+            if (!root.hasAvailablePosition()) return null
+            touchPrivacy.captureNode(root)
+            val textPrivacy = semanticsUtils.getTextAndInputPrivacyOverride(root) ?: request.textAndInputPrivacy
+            val rootChildren = mutableListOf<CapturedChild>()
+            if (!walkChildren(root.children, rootChildren, textPrivacy)) return null
+            if (rootChildren.isEmpty() && !hasCulledLeaf) return null
+            return CompositionHostDecomposeResult(rootChildren, nodes, wireframes, touchPrivacy.areas)
+        }
+
+        @Suppress("ReturnCount")
+        private fun walkNode(
+            node: SemanticsNode,
+            parentTextPrivacy: TextAndInputPrivacy,
+            allowCulling: Boolean
+        ): CapturedChild? {
+            if (!node.hasAvailablePosition()) return null
+            val textPrivacy = semanticsUtils.getTextAndInputPrivacyOverride(node) ?: parentTextPrivacy
+            touchPrivacy.captureNode(node)
+            val nodeIdentity = request.identityFactory.composeNode(request.hostIdentity, node.id.toString())
+            val bounds = innerBoundsOf(node)
+
+            if (semanticsUtils.isNodeHidden(node)) {
+                if (!touchPrivacy.captureSubtree(node)) return null
+                return captureHiddenNode(nodeIdentity, bounds)
+            }
+
+            val interopView = reflectionUtils.getInteropView(node)
+            if (interopView != null) {
+                if (!request.nativeViewHandoff(interopView, nodeIdentity)) return null
+                return CapturedChild.Layer(nodeIdentity)
+            }
+
+            // Retain parents for overflowing descendants; privacy and native interop take priority.
+            var resolvedChildren: List<SemanticsNode>? = null
+            if (allowCulling && hostClip != null && isFullyOutsideHostClip(bounds, hostClip)) {
+                resolvedChildren = node.children
+                if (resolvedChildren.isEmpty()) {
+                    hasCulledLeaf = true
+                    return null
+                }
+            }
+
+            val children = mutableListOf<CapturedChild>()
+            resolveBackgroundWireframe(node, nodeIdentity, bounds)?.let { shape ->
+                wireframes += shape
+                children += CapturedChild.Wireframe(shape.identity)
+            }
+            captureText(node, nodeIdentity, bounds, textPrivacy, children)
+            if (!walkChildren(resolvedChildren ?: node.children, children, textPrivacy)) return null
+
+            return registerLayer(nodeIdentity, bounds, children, modifiers = resolveModifiers(node))
+        }
+
+        private fun walkChildren(
+            source: List<SemanticsNode>,
+            destination: MutableList<CapturedChild>,
+            textPrivacy: TextAndInputPrivacy
+        ): Boolean {
+            val allowCulling = hostClip != null && source.size >= MIN_CULLING_SIBLINGS
+            for (child in source) {
+                if (!request.shouldContinue()) return false
+                walkNode(child, textPrivacy, allowCulling)?.let { destination += it }
+            }
+            return request.shouldContinue()
+        }
+
+        private fun captureText(
+            node: SemanticsNode,
+            nodeIdentity: CapturedIdentity,
+            bounds: CapturedBounds,
+            textPrivacy: TextAndInputPrivacy,
+            children: MutableList<CapturedChild>
+        ) {
+            val textLayoutInfo = semanticsUtils.resolveTextLayoutInfo(node, request.internalLogger) ?: return
+            val textIdentity = request.identityFactory.textWireframe(nodeIdentity)
+            val isInput = node.config.contains(SemanticsActions.SetText) ||
+                node.config.contains(SemanticsProperties.EditableText)
+            wireframes += textMapper.map(textIdentity, bounds, textLayoutInfo, textPrivacy, isInput)
+            children += CapturedChild.Wireframe(textIdentity)
+        }
+
+        private fun captureHiddenNode(identity: CapturedIdentity, bounds: CapturedBounds): CapturedChild {
+            val placeholderIdentity = request.identityFactory.placeholderWireframe(identity)
+            wireframes += CapturedWireframe.PrivacyPlaceholder(placeholderIdentity, bounds, label = HIDDEN_LABEL)
+            return registerLayer(identity, bounds, listOf(CapturedChild.Wireframe(placeholderIdentity)))
+        }
+
+        private fun registerLayer(
+            identity: CapturedIdentity,
+            bounds: CapturedBounds,
+            children: List<CapturedChild>,
+            modifiers: List<CapturedModifier> = emptyList()
+        ): CapturedChild {
+            val layer = CapturedLayer(
+                identity = identity,
+                kind = CapturedLayerKind.COMPOSE_NODE,
+                bounds = bounds,
+                children = children,
+                modifiers = modifiers
+            )
+            nodes += layer
+            return CapturedChild.Layer(identity)
+        }
+
+        private fun innerBoundsOf(node: SemanticsNode): CapturedBounds {
+            val globalBounds = semanticsUtils.resolveInnerBounds(node, windowOffset)
+            return CapturedBounds(globalBounds.x, globalBounds.y, globalBounds.width, globalBounds.height)
+        }
+
+        private fun resolveBackgroundWireframe(
+            node: SemanticsNode,
+            nodeIdentity: CapturedIdentity,
+            bounds: CapturedBounds
+        ): CapturedWireframe.Shape? {
+            val rawColor = semanticsUtils.resolveBackgroundColor(node) ?: return null
+            val cornerRadius = semanticsUtils.resolveBackgroundShape(node)?.let { shape ->
+                semanticsUtils.resolveCornerRadius(
+                    shape,
+                    GlobalBounds(bounds.x, bounds.y, bounds.width, bounds.height),
+                    node.layoutInfo.density
+                )
+            }
+            return CapturedWireframe.Shape(
+                identity = request.identityFactory.shapeWireframe(nodeIdentity),
+                bounds = bounds,
+                style = CapturedShapeStyle(
+                    backgroundColor = convertColor(rawColor),
+                    cornerRadius = cornerRadius?.toDouble()
+                )
+            )
+        }
+
+        /**
+         * Both [SemanticsUtils.resolveBackgroundColor] and the `color` carried by
+         * [TextLayoutInfo] are the raw internal `Color.value` bit pattern (as a `Long`), not a
+         * plain packed 0xAARRGGBB value - the same shift-then-reconstruct approach the legacy
+         * mapper pipeline's `AbstractSemanticsNodeMapper.convertColor` already uses in production
+         * for both, reused here verbatim rather than re-derived.
+         */
+        private fun convertColor(rawColorValue: Long): String? {
+            if (rawColorValue == SemanticsUtils.COLOR_UNSPECIFIED) return null
+            val color = Color(rawColorValue shr COMPOSE_COLOR_SHIFT)
+            return colorStringFormatter.formatColorAndAlphaAsHexString(
+                color.toArgb(),
+                (color.alpha * OPAQUE_ALPHA_VALUE).roundToInt()
+            )
+        }
+
+        /**
+         * Only `graphicsLayer`'s fixed-value `alpha` is extracted, read via [InspectableValue] the
+         * same way [com.datadog.android.sessionreplay.compose.internal.utils.BackgroundResolver]
+         * already reads `graphicsLayer`'s `clip`/`shape` properties. Does not cover the animated
+         * lambda overload (`Modifier.graphicsLayer { alpha = ... }`), which exposes no public
+         * readable current value.
+         */
+        private fun resolveModifiers(node: SemanticsNode): List<CapturedModifier> {
+            val modifiers = mutableListOf<CapturedModifier>()
+            for (info in node.layoutInfo.getModifierInfo()) {
+                val modifier = info.modifier
+                if (modifier is InspectableValue && modifier.nameFallback == GRAPHICS_LAYER_NAME_FALLBACK) {
+                    val alpha = modifier.inspectableElements
+                        .firstOrNull { it.name == ALPHA_PROPERTY_NAME }
+                        ?.value as? Float
+                    if (alpha != null && alpha < 1f) {
+                        modifiers += CapturedModifier.Opacity(alpha.toDouble())
+                    }
+                }
+            }
+            return modifiers
+        }
+    }
+
+    private companion object {
+        const val HIDDEN_LABEL = "Hidden"
+        const val GRAPHICS_LAYER_NAME_FALLBACK = "graphicsLayer"
+        const val ALPHA_PROPERTY_NAME = "alpha"
+        const val COMPOSE_COLOR_SHIFT = 32
+        const val MIN_CULLING_SIBLINGS = 32
+    }
+}
+
+private fun isFullyOutsideHostClip(bounds: CapturedBounds, clip: CapturedBounds): Boolean =
+    bounds.width > 0 && bounds.height > 0 && clip.width > 0 && clip.height > 0 &&
+        (
+            isOutsideAxis(bounds.x, bounds.width, clip.x, clip.width) ||
+                isOutsideAxis(bounds.y, bounds.height, clip.y, clip.height)
+            )
+
+private fun isOutsideAxis(start: Long, size: Long, clipStart: Long, clipSize: Long): Boolean {
+    val distance = if (start >= clipStart) start - clipStart else clipStart - start
+    // Overflow makes the proof uncertain; preserve that node rather than lose content.
+    return distance >= 0 && distance >= if (start >= clipStart) clipSize else size
+}
