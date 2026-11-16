@@ -1,17 +1,20 @@
 ---
 name: sdk-feature-knowledge
 description: >-
-  External knowledge for dd-sdk-android features: official docs the codebase does
-  not own, plus example prompts. Use before working on a listed feature.
+  External knowledge for developing, debugging, and reviewing dd-sdk-android
+  features: official platform docs the codebase does not own, plus example
+  prompts pairing them with SDK tasks.
 when_to_use: >-
-  Working on code under features/<module> that has a reference file listed below.
+  Developing, debugging, or reviewing code under features/<module> that has a
+  reference file listed below.
 ---
 
 # dd-sdk-android Feature Knowledge
 
-External references the codebase does not own (platform docs, guides), with example
-prompts that combine them with a task. This is not a spec of the code: for how the SDK
-works, read the code.
+For developing, debugging, and reviewing a feature module: external references the
+codebase does not own (platform docs, guides) for the platform APIs the feature builds on,
+with example prompts pairing them with SDK tasks. This is not a spec of the code: for how
+the SDK works, read the code.
 
 ## Feature index
 
@@ -22,5 +25,5 @@ works, read the code.
 
 ## Rules
 
-- Add only external links (one line on why each matters) and example prompts. Never restate code.
+- Add only external links (one line on why each matters) and SDK-oriented example prompts. Never restate code.
 - Update a reference file when the external docs or links change, not when the code changes.

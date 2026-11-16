@@ -1,7 +1,9 @@
 # Profiling — external references
 
-Official Android docs on `ProfilingManager`, which the Profiling feature builds on.
-For how the SDK uses these, read the code in `features/dd-sdk-android-profiling`.
+Official Android docs on `ProfilingManager`, the platform API the Datadog SDK's Profiling
+feature (`features/dd-sdk-android-profiling`) is built on — for developing, debugging, and
+reviewing that module. The prompts below pair these links with SDK tasks. For how the SDK
+uses the API, read the code.
 
 ## Links
 
@@ -17,6 +19,8 @@ For how the SDK uses these, read the code in `features/dd-sdk-android-profiling`
 
 ## Example prompts
 
-- "Read https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture and https://developer.android.com/topic/performance/tracing/profiling-manager/upload-worker and integrate ProfilingManager ANR trigger collection (`TRIGGER_TYPE_ANR`) into my app at </path/to/codebase>, including registering the result listener after app startup completes and scheduling a WorkManager upload job when a profile is received."
-- "Read https://developer.android.com/topic/performance/tracing/profiling-manager/will-my-profile-always-be-collected and https://developer.android.com/topic/performance/tracing/profiling-manager/debug-mode, then explain why a launch profile from `sample/kotlin` may not be collected and give the `adb` commands to lift rate limiting."
-- "Read https://developer.android.com/topic/performance/tracing/profiling-manager/debugging-anr-example and https://developer.android.com/topic/performance/tracing/profiling-manager/analyze-profiles-with-ai and analyze the Perfetto trace at </path/to/trace> for the ANR root cause."
+- **Developing:** "Read the *Trigger-based profiling* and *Retrieve and upload profiles* pages above, then check how trigger registration and result handling in `features/dd-sdk-android-profiling` align with the documented API contract and lifecycle. Flag deviations."
+- **Debugging:** "Read the *Rate limiting and collection behavior* and *Debug commands for local profiling* pages above, then explain why a profile the SDK requested was not collected (for example from `sample/kotlin`), and give the `adb` commands to lift rate limits for testing."
+- **Reviewing:** "Read the *Overview*, *Trigger-based profiling*, and *Rate limiting and collection behavior* pages above and review this PR to the profiling module for misuse of `ProfilingManager`: callback registration timing, rate-limit assumptions, ANR trigger semantics."
+- **Analysis:** "Read the *Case study: Debug an ANR* and *Analyze profiles with AI* pages above and analyze the Perfetto trace the SDK captured at </path/to/trace> for the ANR root cause."
+
