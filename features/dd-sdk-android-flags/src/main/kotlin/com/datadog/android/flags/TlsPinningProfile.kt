@@ -28,8 +28,7 @@ class TlsPinningProfile internal constructor(
     /** The certificate in the validated chain that the pins identify. */
     val pinTarget: TlsPinTarget,
     /** The approved pins, in the OkHttp format `sha256/<base64>`. */
-    val pins: List<String>,
-    internal val isPlaceholder: Boolean
+    val pins: List<String>
 ) {
 
     /** @inheritDoc */
@@ -39,8 +38,7 @@ class TlsPinningProfile internal constructor(
         return name == other.name &&
             origin == other.origin &&
             pinTarget == other.pinTarget &&
-            pins == other.pins &&
-            isPlaceholder == other.isPlaceholder
+            pins == other.pins
     }
 
     /** @inheritDoc */
@@ -49,7 +47,6 @@ class TlsPinningProfile internal constructor(
         result = HASH_MULTIPLIER * result + origin.hashCode()
         result = HASH_MULTIPLIER * result + pinTarget.hashCode()
         result = HASH_MULTIPLIER * result + pins.hashCode()
-        result = HASH_MULTIPLIER * result + isPlaceholder.hashCode()
         return result
     }
 
@@ -66,27 +63,31 @@ class TlsPinningProfile internal constructor(
         private const val CUSTOM_PROFILE_NAME = "custom"
 
         /**
-         * The proposed Datadog staging profile, version 1.
+         * The Datadog staging profile, version 1. Preview: for staging validation only.
          *
-         * **Placeholder: do not use in production.** The origin and both pins in this profile are unverified
-         * placeholder values. They do not identify a reviewed Datadog trust catalog. The pins do not match any real
-         * key, so required pinning with this profile rejects every assignment connection. The SDK logs a warning when
-         * the feature is enabled with this profile.
-         *
-         * Replace the origin and pins with the reviewed staging policy before activation.
+         * The origin is `https://protected.ff-cdn.datad0g.com`. The profile uses [TlsPinTarget.ISSUER] pins, because
+         * the CDN manages the leaf certificate and can change its key at each renewal. The pins identify these
+         * Certainly certificate authorities:
+         * - Certainly Intermediate R1 (RSA)
+         * - Certainly Root R1 (RSA)
+         * - Certainly Root E1 (EC)
          */
         @JvmField
         val DATADOG_STAGING_V1: TlsPinningProfile = TlsPinningProfile(
             name = "datadog-staging-v1",
-            // Unverified placeholder: replace with the dedicated, reviewed staging hostname before activation.
-            origin = "https://preview.ff-cdn.datad0g.com",
-            pinTarget = TlsPinTarget.LEAF,
-            // Unverified placeholder pins: replace with the reviewed active and backup leaf SPKI pins.
+            // The pins below are the real Certainly CA SPKI hashes. The endpoint is pending provisioning and live
+            // validation (ddoghq/terraform-config PR 62220). Do not add the Starfield Root G2 cross-signing root:
+            // it trusts far more issuers than this endpoint needs.
+            origin = "https://protected.ff-cdn.datad0g.com",
+            pinTarget = TlsPinTarget.ISSUER,
             pins = listOf(
-                "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-                "sha256/AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="
-            ),
-            isPlaceholder = true
+                // Certainly Intermediate R1 (RSA), valid to 2032-06-21.
+                "sha256/oW7smChMJRcnzTObF7K+HzInReAPTxB/L1h6eZTmw9Q=",
+                // Certainly Root R1 (RSA), valid to 2046.
+                "sha256/P5Pz/PedIl0hPu9qSj9Yhc+E/j16ejwRVTUXaIwOIQA=",
+                // Certainly Root E1 (EC), valid to 2046.
+                "sha256/HvZGJdqi5dQz10Sa4xogDRAl4AEqj+z6cJMvi1mbdd0="
+            )
         )
 
         /**
@@ -112,8 +113,7 @@ class TlsPinningProfile internal constructor(
                 name = CUSTOM_PROFILE_NAME,
                 origin = origin,
                 pinTarget = pinTarget,
-                pins = pins.toList(),
-                isPlaceholder = false
+                pins = pins.toList()
             )
     }
 }

@@ -39,7 +39,7 @@ internal class ResponseProtectionResolverTest {
         assertThat(result.assignmentEndpoint).isEqualTo("$ORIGIN/precompute-assignments")
         assertThat(result.pins).containsExactlyInAnyOrder(PIN_A, PIN_B)
         assertThat(result.origin.host).isEqualTo("flags.example.com")
-        assertThat(result.isPlaceholder).isFalse()
+        assertThat(result.pinTarget).isEqualTo(TlsPinTarget.LEAF)
         assertThat(result.persistenceScope).matches("tls-[0-9a-f]{16}")
     }
 
@@ -187,7 +187,7 @@ internal class ResponseProtectionResolverTest {
     }
 
     @Test
-    fun `M resolve a placeholder policy W resolve() { DATADOG_STAGING_V1 }`() {
+    fun `M resolve an issuer policy for the protected host W resolve() { DATADOG_STAGING_V1 }`() {
         // When
         val result = ResponseProtectionResolver.resolve(
             ResponseProtection.tlsPinning(ResponseProtectionMode.REQUIRED, TlsPinningProfile.DATADOG_STAGING_V1),
@@ -196,14 +196,36 @@ internal class ResponseProtectionResolverTest {
 
         // Then
         assertThat(result).isInstanceOf(ResolvedResponseProtection.TlsPinning::class.java)
-        assertThat((result as ResolvedResponseProtection.TlsPinning).isPlaceholder).isTrue()
-        assertThat(result.pins).hasSizeGreaterThanOrEqualTo(ResponseProtectionResolver.MIN_PINS)
+        result as ResolvedResponseProtection.TlsPinning
+        assertThat(result.pinTarget).isEqualTo(TlsPinTarget.ISSUER)
+        assertThat(result.origin.host).isEqualTo("protected.ff-cdn.datad0g.com")
+        assertThat(result.assignmentEndpoint)
+            .isEqualTo("https://protected.ff-cdn.datad0g.com/precompute-assignments")
+        assertThat(result.pins).hasSize(3)
     }
 
-    private fun protection(origin: String, vararg pins: String): ResponseProtection =
+    @Test
+    fun `M produce a different scope W resolve() { same pins, different pin target }`() {
+        // When
+        val leaf = ResponseProtectionResolver.resolve(protection(ORIGIN, PIN_A, PIN_B), null)
+        val issuer = ResponseProtectionResolver.resolve(
+            protection(ORIGIN, PIN_A, PIN_B, pinTarget = TlsPinTarget.ISSUER),
+            null
+        )
+
+        // Then
+        assertThat((issuer as ResolvedResponseProtection.TlsPinning).pinTarget).isEqualTo(TlsPinTarget.ISSUER)
+        assertThat(leaf.persistenceScope).isNotEqualTo(issuer.persistenceScope)
+    }
+
+    private fun protection(
+        origin: String,
+        vararg pins: String,
+        pinTarget: TlsPinTarget = TlsPinTarget.LEAF
+    ): ResponseProtection =
         ResponseProtection.tlsPinning(
             ResponseProtectionMode.REQUIRED,
-            TlsPinningProfile.custom(origin, TlsPinTarget.LEAF, pins.toList())
+            TlsPinningProfile.custom(origin, pinTarget, pins.toList())
         )
 
     companion object {

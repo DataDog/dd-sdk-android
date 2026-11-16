@@ -43,7 +43,7 @@ internal object ResponseProtectionResolver {
     ): ResolvedResponseProtection {
         val profile = protection.profile
         if (protection.mode != ResponseProtectionMode.REQUIRED) return invalid("mode must be REQUIRED")
-        if (profile.pinTarget != TlsPinTarget.LEAF) return invalid("pin target must be LEAF")
+        val pinTarget = profile.pinTarget
 
         val origin = parseOrigin(profile.origin) ?: return invalid("origin must be an exact HTTPS origin")
 
@@ -77,11 +77,11 @@ internal object ResponseProtectionResolver {
         return ResolvedResponseProtection.TlsPinning(
             profileName = profile.name,
             origin = origin,
+            pinTarget = pinTarget,
             pins = pins,
             certificatePinner = certificatePinner,
-            isPlaceholder = profile.isPlaceholder,
             assignmentEndpoint = endpoint,
-            persistenceScope = persistenceScope(origin, pins)
+            persistenceScope = persistenceScope(origin, pinTarget, pins)
         )
     }
 
@@ -113,10 +113,10 @@ internal object ResponseProtectionResolver {
         return if (hash != null && hash.size == SHA256_BYTES) PIN_PREFIX + hash.base64() else null
     }
 
-    private fun persistenceScope(origin: HttpUrl, pins: Set<String>): String {
+    private fun persistenceScope(origin: HttpUrl, pinTarget: TlsPinTarget, pins: Set<String>): String {
         val canonical = listOf(
             SCOPE_FORMAT_VERSION,
-            TlsPinTarget.LEAF.name,
+            pinTarget.name,
             "${origin.host}:${origin.port}",
             pins.sorted().joinToString(",")
         ).joinToString("|")

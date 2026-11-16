@@ -34,17 +34,7 @@ internal fun InternalLogger.logResponseProtection(protection: ResolvedResponsePr
             )
         }
 
-        is ResolvedResponseProtection.TlsPinning -> if (protection.isPlaceholder) {
-            log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                {
-                    "responseProtection uses the TLS pinning profile '${protection.profileName}', which contains " +
-                        "unverified placeholder pins. Flag assignment connections will be rejected."
-                }
-            )
-        }
-
+        is ResolvedResponseProtection.TlsPinning,
         ResolvedResponseProtection.None -> Unit
     }
 }

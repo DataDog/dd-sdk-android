@@ -62,6 +62,7 @@ interface com.datadog.android.flags.StateObservable
   fun removeListener(FlagsStateListener)
 enum com.datadog.android.flags.TlsPinTarget
   - LEAF
+  - ISSUER
 class com.datadog.android.flags.TlsPinningProfile
   override fun equals(Any?): Boolean
   override fun hashCode(): Int

@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.internal.protection
 
+import com.datadog.android.flags.TlsPinTarget
 import okhttp3.CertificatePinner
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -41,23 +42,24 @@ internal sealed interface ResolvedResponseProtection {
     }
 
     /**
-     * Required TLS leaf-key pinning for one exact HTTPS origin.
+     * Required TLS public-key pinning for one exact HTTPS origin.
      *
-     * OkHttp's [CertificatePinner] accepts a pin that matches any certificate of the cleaned (validated) chain, so the
-     * [TlsPinningInterceptor] network interceptor also requires the leaf certificate to match. Both checks run before
-     * OkHttp writes the request headers.
+     * OkHttp's [CertificatePinner] accepts a pin that matches any certificate of the cleaned (validated) chain. It
+     * rejects the handshake before any HTTP data is sent. The [TlsPinningInterceptor] network interceptor then applies
+     * the [pinTarget]: the leaf for [TlsPinTarget.LEAF], or a certificate other than the leaf for
+     * [TlsPinTarget.ISSUER]. Both checks run before OkHttp writes the request headers.
      */
     class TlsPinning(
         val profileName: String,
         val origin: HttpUrl,
+        val pinTarget: TlsPinTarget,
         val pins: Set<String>,
         val certificatePinner: CertificatePinner,
-        val isPlaceholder: Boolean,
         override val assignmentEndpoint: String,
         override val persistenceScope: String
     ) : ResolvedResponseProtection {
         override fun configure(builder: OkHttpClient.Builder) {
-            val interceptor = TlsPinningInterceptor(origin, pins)
+            val interceptor = TlsPinningInterceptor(origin, pinTarget, pins)
             @Suppress("UnsafeThirdPartyFunctionCall") // Safe: the interceptors are not null.
             builder
                 .certificatePinner(certificatePinner)

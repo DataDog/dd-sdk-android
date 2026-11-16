@@ -15,6 +15,23 @@ enum class TlsPinTarget {
      *
      * The SDK compares the SHA-256 hash of the leaf certificate SubjectPublicKeyInfo with the pins.
      * A pin that matches only an issuer certificate in the chain does not satisfy this target.
+     *
+     * Use this target only when you control the server key, because a new key that is not pinned breaks the
+     * connection.
      */
-    LEAF
+    LEAF,
+
+    /**
+     * The pins identify the public key of an issuer certificate: an intermediate or root certificate authority.
+     *
+     * After normal TLS validation, at least one certificate of the validated chain, other than the leaf, must have
+     * a SubjectPublicKeyInfo SHA-256 hash in the pins. The leaf certificate never satisfies this target. The
+     * validated chain is the chain that the platform builds from the server certificate to a trusted root. It is
+     * not the list of certificates that the server sends, so an unrelated certificate appended by the server does
+     * not satisfy this target.
+     *
+     * This target allows routine leaf key changes, for example when a CDN renews a managed certificate. It
+     * accepts any otherwise valid certificate for the origin that a pinned authority issued.
+     */
+    ISSUER
 }
