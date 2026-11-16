@@ -55,6 +55,12 @@ dependencies {
     implementation(project(":dd-sdk-android-internal"))
     implementation(libs.kotlinRuntime)
     implementation(libs.gson)
+    compileOnly(libs.coilComposeBase) {
+        isTransitive = false
+    }
+    compileOnly(libs.coil3ComposeCore) {
+        isTransitive = false
+    }
 
     implementation(platform(libs.androidXComposeBom))
     implementation(libs.bundles.androidXCompose)
@@ -68,6 +74,13 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(libs.coil3Core) {
+        isTransitive = false
+    }
+    testImplementation(libs.coil3ComposeCore) {
+        isTransitive = false
+    }
+    testImplementation(libs.coilCompose)
     unmock(libs.robolectric)
 }
 

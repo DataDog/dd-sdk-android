@@ -8,10 +8,10 @@ default:
 
 workflow:
   rules:
-    - if: "$CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH !~ /^(develop|master)$|^feature\//"
+    - if: "$CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH !~ /^develop$|^feature\//"
       auto_cancel:
         on_new_commit: interruptible # short-lived branches cancel on new commits
-    - when: always # develop, master, feature/*, tags: never auto-canceled
+    - when: always # develop, feature/*, tags: never auto-canceled
       auto_cancel:
         on_new_commit: none
 
@@ -23,7 +23,6 @@ stages:
   - publish
   - notify
   - post-release
-  - post
 
 .snippets:
   source-secrets:
@@ -41,6 +40,9 @@ stages:
     - export DATADOG_API_KEY=$(get_secret $DD_ANDROID_SECRET__API_KEY)
 
   setup-gradle:
+    # Rewrite only the CI checkout; retain the wrapper's version and distribution type.
+    - |
+      sed -i -E "s#^distributionUrl=.*services\.gradle\.org/distributions/gradle-(.*)-(all|bin)\.zip\$#distributionUrl=${GRADLE_DISTRIBUTION_MIRROR}/v\1/gradle-\1-\2.zip#" gradle/wrapper/gradle-wrapper.properties
     - export GRADLE_USER_HOME="cache/"
     - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
     - |
@@ -151,7 +153,7 @@ analysis:ktlint:
   extends: .verification-gradle-job
   timeout: 30m
   script:
-    - ./gradlew ktlintCheck :build-logic:ktlintCheck
+    - ./gradlew ktlintCheck :build-logic:ktlintCheck :build-logic-settings:ktlintCheck
 
 analysis:detekt:
   extends: .verification-gradle-job
@@ -519,7 +521,7 @@ test-pyramid:rum-fit-tests:
     DYNAMIC_BUILD_RENDER_RULES: android
     TARGET_SHA_DD_SDK_ANDROID: $CI_COMMIT_SHA
 
-# PUBLISH ARTIFACTS ON MAVEN
+# PUBLISH ARTIFACTS ON MAVEN (Maven Central, plus binaries.ddbuild.io for internal tools)
 
 publish:release-all:
   extends:
@@ -536,12 +538,32 @@ publish:release-all:
   script:
     - !reference [.snippets, set-publishing-credentials]
     - !reference [.snippets, setup-gradle]
-    - ./gradlew publishToSonatype closeSonatypeStagingRepository --no-build-cache
+    # Keep compilation parallel and publishing serialized.
+    - ./gradlew signReleasePublication generateVerificationXml --parallel --no-build-cache
+    - ./gradlew publishToSonatype closeSonatypeStagingRepository --no-build-cache --no-parallel --max-workers=1
   artifacts:
     when: on_success
     expire_in: 7 days
     paths:
       - "**/verification-metadata.xml"
+
+# tools/benchmark is internal: it skips Sonatype and goes to binaries.ddbuild.io instead (see MavenConfig).
+# A separate job, so that a failed upload can be retried on its own without publishing to Sonatype again.
+publish:benchmark-internal:
+  extends:
+    - .cpu-memory-intensive-job
+  tags: [ "arch:amd64" ]
+  interruptible: false
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [.snippets, set-publishing-credentials]
+    - !reference [.snippets, setup-gradle]
+    - ./gradlew :tools:benchmark:publishReleasePublicationToInternalRepository --no-build-cache
 
 # Publishes every dogfooding build once its pipeline has passed
 publish:dogfooding:
@@ -559,7 +581,7 @@ publish:dogfooding:
     - !reference [.snippets, setup-gradle]
     # Publishing is done by S3 repo, so credentials are managed by IAM from env set in the CI
     # job for the service account. Signing is also not required for internal build.
-    - ./gradlew publishReleasePublicationToDogfoodRepository --stacktrace --no-daemon -Pdd-skip-signing
+    - ./gradlew publishReleasePublicationToInternalRepository --stacktrace --no-daemon -Pdd-skip-signing
 
 
 # SLACK NOTIFICATIONS
@@ -690,12 +712,3 @@ post-release:merge-develop:
   script:
     - export GITHUB_TOKEN=$(dd-octo-sts token --scope DataDog/dd-sdk-android --policy self.gitlab.release.create-release)
     - bash ./ci/scripts/merge-release-develop.sh "$CI_COMMIT_TAG"
-
-# This job runs at the end of every successful pipeline. GitHub can require this single status
-# instead of tracking every CI job separately.
-Sync GH Checks:
-  tags: [ "arch:amd64" ]
-  image: registry.ddbuild.io/images/mirror/alpine:3.22.1
-  stage: post
-  script:
-    - echo "All good"

@@ -50,9 +50,10 @@ RUN set -x \
  && pip install awscli
 
 # Gradle
+ARG GITHUB_RELEASES_BASE=https://depot-read-api-github-releases.us1.ddbuild.io/internal/mirror/github-releases
 RUN \
     cd /usr/local && \
-    curl -L https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip -o gradle-${GRADLE_VERSION}-bin.zip && \
+    curl -fsSL "${GITHUB_RELEASES_BASE}/gradle/gradle-distributions/releases/download/v${GRADLE_VERSION}/gradle-${GRADLE_VERSION}-bin.zip" -o gradle-${GRADLE_VERSION}-bin.zip && \
     unzip gradle-${GRADLE_VERSION}-bin.zip && \
     rm gradle-${GRADLE_VERSION}-bin.zip
 
@@ -84,7 +85,6 @@ ENV PATH $PATH:$ANDROID_HOME/platform-tools
 ENV PATH $PATH:$ANDROID_SDK_ROOT/build-tools/${ANDROID_BUILD_TOOLS}:$ANDROID_NDK
 
 # Install Datadog CI
-ARG GITHUB_RELEASES_BASE=https://depot-read-api-github-releases.us1.ddbuild.io/internal/mirror/github-releases
 ENV DATADOG_CI_VERSION=5.21.2
 ENV DATADOG_CI_SHA256_amd64=b163d332679b677410e05389700874a7e73b8fcb4d29dbc94c904637a9665b79
 ENV DATADOG_CI_SHA256_arm64=526d92541ef6990211f9da96d828394db956a3b12bdadc68a687b114f21918f7

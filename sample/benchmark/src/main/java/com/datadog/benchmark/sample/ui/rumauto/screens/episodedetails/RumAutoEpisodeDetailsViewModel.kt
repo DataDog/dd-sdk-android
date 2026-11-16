@@ -41,7 +41,7 @@ internal sealed interface RumAutoEpisodeDetailsAction {
 
 @RumAutoEpisodeDetailsScope
 internal class RumAutoEpisodeDetailsViewModel @Inject constructor(
-    private val episode: Episode,
+    episode: Episode,
     private val rickAndMortyNetworkService: RickAndMortyNetworkService,
     @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default) private val defaultDispatcher: CoroutineDispatcher,
     private val viewModelScope: CoroutineScope,

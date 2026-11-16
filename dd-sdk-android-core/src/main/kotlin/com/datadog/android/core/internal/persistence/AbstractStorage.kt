@@ -30,7 +30,7 @@ internal class AbstractStorage(
     internal val persistenceStrategyFactory: PersistenceStrategy.Factory,
     private val executorService: ExecutorService,
     private val internalLogger: InternalLogger,
-    internal val storageConfiguration: FeatureStorageConfiguration,
+    storageConfiguration: FeatureStorageConfiguration,
     consentProvider: ConsentProvider
 ) : Storage, TrackingConsentProviderCallback {
 

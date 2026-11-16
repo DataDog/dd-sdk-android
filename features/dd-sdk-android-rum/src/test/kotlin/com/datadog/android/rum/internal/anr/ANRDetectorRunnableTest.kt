@@ -8,15 +8,18 @@ package com.datadog.android.rum.internal.anr
 
 import android.os.Handler
 import android.os.Looper
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -30,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -62,6 +66,9 @@ internal class ANRDetectorRunnableTest {
 
     @Mock
     lateinit var mockLooper: Looper
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`() {
@@ -111,6 +118,71 @@ internal class ANRDetectorRunnableTest {
             verify(mockHandler).post(capture())
             testedRunnable.stop()
             lastValue.run()
+        }
+    }
+
+    @Test
+    fun `M report provided stack traces and log error W run() {ANR detected, capture reports error}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeThread = Thread(forge.anAlphabeticalString())
+        val idleThread = Thread(forge.anAlphabeticalString())
+        val fakeStack = Thread.currentThread().stackTrace
+        val fakeMessage = forge.anAlphabeticalString()
+        val fakeError = SecurityException(forge.anAlphabeticalString())
+        whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
+        val errorReported = CountDownLatch(1)
+        whenever(rumMonitor.mockInstance.addError(any(), any(), any<Throwable>(), any())) doAnswer {
+            errorReported.countDown()
+        }
+        testedRunnable = ANRDetectorRunnable(
+            rumMonitor.mockSdkCore,
+            mockHandler,
+            TEST_ANR_THRESHOLD_MS,
+            TEST_ANR_TEST_DELAY_MS,
+            allStackTracesProvider = { onError ->
+                onError(fakeMessage, fakeError)
+                mapOf(fakeThread to fakeStack, idleThread to emptyArray())
+            }
+        )
+        val runnerThread = Thread(testedRunnable)
+
+        try {
+            // When
+            runnerThread.start()
+            val reported = errorReported.await(TEST_JOIN_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+
+            // Then
+            assertThat(reported).isTrue()
+            argumentCaptor<Map<String, Any?>> {
+                verify(rumMonitor.mockInstance).addError(
+                    message = eq("Application Not Responding"),
+                    source = eq(RumErrorSource.SOURCE),
+                    throwable = any(),
+                    attributes = capture()
+                )
+                @Suppress("UNCHECKED_CAST")
+                val allThreads = lastValue[RumAttributes.INTERNAL_ALL_THREADS] as List<ThreadDump>
+                assertThat(allThreads.map { it.name })
+                    .containsExactly(Thread.currentThread().name, fakeThread.name)
+                val expectedStack = fakeStack.loggableStackTrace()
+                assertThat(allThreads[1].stack).isEqualTo(expectedStack)
+            }
+            mockInternalLogger.verifyLog(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                fakeMessage,
+                fakeError,
+                onlyOnce = true
+            )
+        } finally {
+            testedRunnable.stop()
+            argumentCaptor<Runnable> {
+                verify(mockHandler, atLeast(0)).post(capture())
+                allValues.forEach { it.run() }
+            }
+            runnerThread.join(TEST_JOIN_TIMEOUT_MS)
         }
     }
 

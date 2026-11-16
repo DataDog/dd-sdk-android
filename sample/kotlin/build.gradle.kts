@@ -74,16 +74,6 @@ android {
         }
     }
 
-    sourceSets.named("main") {
-        java.directories += "src/main/kotlin"
-    }
-    sourceSets.named("test") {
-        java.directories += "src/test/kotlin"
-    }
-    sourceSets.named("androidTest") {
-        java.directories += "src/androidTest/kotlin"
-    }
-
     packaging {
         resources {
             excludes += "META-INF/*"
@@ -202,6 +192,8 @@ dependencies {
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
     implementation(libs.bundles.androidXCompose)
+    implementation(libs.androidXComposeUiToolingPreview)
+    debugImplementation(libs.androidXComposeUiTooling)
     implementation(libs.androidXLifecycleCompose)
     implementation(libs.material3Android)
     implementation(libs.googleAccompanistAppCompatTheme)

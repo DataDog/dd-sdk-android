@@ -87,17 +87,6 @@ internal class DefaultFlagsRepository(
         }
     }
 
-    @Deprecated("Use installFlagsAndContext instead")
-    override fun setFlagsAndContext(
-        context: EvaluationContext,
-        flags: Map<String, PrecomputedFlag>,
-        obfuscation: FlagKeyObfuscation?,
-        observeFullEvaluationData: Boolean,
-        onInstalled: () -> Unit
-    ) {
-        installFlagsAndContext(context, flags, obfuscation, observeFullEvaluationData).complete(onInstalled)
-    }
-
     override fun installFlagsAndContext(
         context: EvaluationContext,
         flags: Map<String, PrecomputedFlag>,
@@ -166,36 +155,6 @@ internal class DefaultFlagsRepository(
         return FlagsAssignmentsSnapshot(if (state.obfuscation == null) state.flags else emptyMap(), state.context)
     }
 
-    override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
-        waitForPersistenceLoad()
-        val state = readableState
-        if (state != null) {
-            return state[key]
-        }
-        internalLogger.log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            { WARN_CONTEXT_NOT_SET }
-        )
-        return null
-    }
-
-    @Deprecated("Use getAssignmentsSnapshot instead")
-    override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> {
-        waitForPersistenceLoad()
-        val state = readableState
-        if (state != null) {
-            // The React Native bridge consumes original keys and cannot decode this representation.
-            return if (state.obfuscation == null) state.flags else emptyMap()
-        }
-        internalLogger.log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            { WARN_CONTEXT_NOT_SET }
-        )
-        return emptyMap()
-    }
-
     override fun getEvaluationContext(): EvaluationContext? {
         waitForPersistenceLoad()
         return readableState?.context
@@ -233,8 +192,6 @@ internal class DefaultFlagsRepository(
     }
 
     companion object {
-        const val WARN_CONTEXT_NOT_SET = "You must call FlagsClientManager.get().setEvaluationContext " +
-            "in order to have flags available"
         const val ERROR_SAVING_FLAGS_STATE = "Failed to save flags state to persistent storage"
         private const val PERSISTENCE_LOAD_TIMEOUT_MS = 100L
     }

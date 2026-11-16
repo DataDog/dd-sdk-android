@@ -19,7 +19,7 @@ internal class SessionReplayLifecycleCallback(
     private val onWindowRefreshedCallback: OnWindowRefreshedCallback
 ) : LifecycleCallback, OnWindowRefreshedCallback {
 
-    private val currentActiveWindows = WeakHashMap<Window, Any?>()
+    internal val currentActiveWindows = WeakHashMap<Window, Any?>()
 
     fun setCurrentWindow(activity: Activity) {
         activity.window?.let {
@@ -54,7 +54,9 @@ internal class SessionReplayLifecycleCallback(
     }
 
     override fun getCurrentWindows(): List<Window> {
-        return currentActiveWindows.keys.toList()
+        // Weak keys can disappear after size is read, invalidating toList()'s singleton fast path.
+        @Suppress("UnsafeThirdPartyFunctionCall") // The destination is a local mutable list.
+        return currentActiveWindows.keys.toCollection(ArrayList())
     }
 
     @MainThread

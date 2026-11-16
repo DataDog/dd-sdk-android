@@ -94,7 +94,7 @@ internal class DatadogRumMonitor(
     internal val appPackageName: String,
     internal val sessionSampler: Sampler<String>,
     internal val backgroundTrackingEnabled: Boolean,
-    internal val trackFrustrations: Boolean,
+    trackFrustrations: Boolean,
     private val writer: DataWriter<Any>,
     internal val handler: Handler,
     internal val telemetryEventHandler: TelemetryEventHandler,
@@ -565,12 +565,6 @@ internal class DatadogRumMonitor(
 
     override fun sendWebViewEvent() {
         handleEvent(RumRawEvent.WebViewEvent(now()))
-    }
-
-    override fun resetSession() {
-        handleEvent(
-            RumRawEvent.ResetSession(now())
-        )
     }
 
     override fun start() {

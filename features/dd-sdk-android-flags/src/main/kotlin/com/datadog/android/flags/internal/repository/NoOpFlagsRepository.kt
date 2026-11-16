@@ -13,8 +13,6 @@ import com.datadog.android.flags.model.EvaluationContext
 
 /** Keeps context-operation bookkeeping running when no flag storage is available. */
 internal class NoOpFlagsRepository : FlagsRepository {
-    override fun getPrecomputedFlag(key: String): PrecomputedFlag? = null
-
     override fun getEvaluationContext(): EvaluationContext? = null
 
     override fun installFlagsAndContext(
@@ -23,17 +21,6 @@ internal class NoOpFlagsRepository : FlagsRepository {
         obfuscation: FlagKeyObfuscation?,
         observeFullEvaluationData: Boolean
     ) = FlagsInstallation { onInstalled -> onInstalled() }
-
-    @Deprecated("Use installFlagsAndContext instead")
-    override fun setFlagsAndContext(
-        context: EvaluationContext,
-        flags: Map<String, PrecomputedFlag>,
-        obfuscation: FlagKeyObfuscation?,
-        observeFullEvaluationData: Boolean,
-        onInstalled: () -> Unit
-    ) {
-        onInstalled()
-    }
 
     override fun waitForPersistenceLoad() = Unit
 
@@ -46,7 +33,4 @@ internal class NoOpFlagsRepository : FlagsRepository {
     override fun hasConfigurationForContext(context: EvaluationContext): Boolean = false
 
     override fun getAssignmentsSnapshot(): FlagsAssignmentsSnapshot? = null
-
-    @Deprecated("Use getAssignmentsSnapshot instead")
-    override fun getFlagsSnapshot(): Map<String, PrecomputedFlag> = emptyMap()
 }

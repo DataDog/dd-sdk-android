@@ -67,7 +67,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
         InstrumentationRegistry
             .getInstrumentation()
             .targetContext
-            .cacheDir.deleteRecursively()
+            .cacheDir.deleteRecursivelySafe()
         requests.clear()
         mockWebServer.start()
         mockWebServer.dispatcher = RecordingDispatcher(keepRequests) { request, jsonBody, content ->
@@ -99,7 +99,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
         InstrumentationRegistry
             .getInstrumentation()
             .targetContext
-            .cacheDir.deleteRecursively()
+            .cacheDir.deleteRecursivelySafe()
         GlobalRumMonitor.get().stopSession()
         Datadog.stopInstance()
 
@@ -144,6 +144,16 @@ internal open class MockServerActivityTestRule<T : Activity>(
     // endregion
 
     // region Internal
+
+    private fun File.deleteRecursivelySafe() {
+        try {
+            deleteRecursively()
+        } catch (error: Exception) {
+            Log.w(TAG, "Failed to recursively delete $path", error)
+        } catch (error: AssertionError) {
+            Log.w(TAG, "Failed to recursively delete $path", error)
+        }
+    }
 
     internal fun File.deleteRecursively(onFileDeleted: (fileName: String) -> Unit) {
         walkBottomUp()

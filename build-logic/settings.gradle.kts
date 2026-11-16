@@ -8,10 +8,12 @@ import com.datadog.gradle.repositories.DatadogRepositories
 
 pluginManagement {
     includeBuild("../gradle/settings-plugin")
+    includeBuild("../build-logic-settings")
 }
 
 plugins {
     id("com.datadog.gradle.repositories")
+    id("com.datadog.gradle.build-cache")
 }
 
 val datadogRepositories = DatadogRepositories(providers)
