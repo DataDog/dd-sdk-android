@@ -23,4 +23,3 @@ uses the API, read the code.
 - **Debugging:** "Read the *Rate limiting and collection behavior* and *Debug commands for local profiling* pages above, then explain why a profile the SDK requested was not collected (for example from `sample/kotlin`), and give the `adb` commands to lift rate limits for testing."
 - **Reviewing:** "Read the *Overview*, *Trigger-based profiling*, and *Rate limiting and collection behavior* pages above and review this PR to the profiling module for misuse of `ProfilingManager`: callback registration timing, rate-limit assumptions, ANR trigger semantics."
 - **Analysis:** "Read the *Case study: Debug an ANR* and *Analyze profiles with AI* pages above and analyze the Perfetto trace the SDK captured at </path/to/trace> for the ANR root cause."
-
