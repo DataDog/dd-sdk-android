@@ -5,7 +5,7 @@ For how the SDK uses these, read the code in `features/dd-sdk-android-profiling`
 
 ## Links
 
-- [Overview](https://developer.android.com/topic/performance/tracing/profiling-manager/overview) — what `ProfilingManager` is, supported profile types, and [AI integration](https://developer.android.com/topic/performance/tracing/profiling-manager/overview#integrate-with-ai).
+- [Overview](https://developer.android.com/topic/performance/tracing/profiling-manager/overview) — what `ProfilingManager` is, supported profile types.
 - [App-driven profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture) — requesting stack-sampling and other profiles from app code.
 - [Trigger-based profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture) — system triggers such as `TRIGGER_TYPE_ANR`.
 - [Retrieve and upload profiles](https://developer.android.com/topic/performance/tracing/profiling-manager/upload-worker) — receiving results and uploading them with WorkManager.
