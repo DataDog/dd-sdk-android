@@ -6,36 +6,51 @@
 
 package com.datadog.android.flags.internal.serialization
 
-import com.datadog.android.flags.internal.model.SplitFeature
+import com.datadog.android.flags.internal.model.Assignment
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 
-/** Reads and writes the `features` of a split, in the precomputed response format. */
+/** Prepares the `features` of a split for the generated assignment model. */
 internal object SplitFeaturesJson {
     /**
      * Features never decide a variation, so a malformed list or entry is dropped instead of failing the
      * assignment. An entry needs a non-empty key, a string, number or boolean value and at least one
-     * non-empty destination. On a repeated key the first valid entry wins.
+     * non-empty destination. On a repeated key the first valid entry wins. The generated readers coerce
+     * numbers to strings, so these checks run on the raw JSON. Returns null when no entry is valid.
      */
-    fun read(json: JsonElement?): List<SplitFeature> {
-        if (json !is JsonArray || json.size() == 0) return emptyList()
+    fun normalize(json: JsonElement?): JsonArray? {
+        if (json !is JsonArray) return null
         val keys = mutableSetOf<String>()
-        return json.map { (it as? JsonObject)?.let(::readFeature) }
-            .mapNotNull { feature -> feature?.takeIf { keys.add(it.key) } }
+        val features = json.map { (it as? JsonObject)?.let(::normalizeFeature) }
+            .mapNotNull { feature -> if (feature != null && keys.add(feature.first)) feature.second else null }
+        return if (features.isEmpty()) null else JsonArray().apply { features.forEach { add(it) } }
     }
 
-    private fun readFeature(json: JsonObject): SplitFeature? {
+    /** Returns the [String], [Double] or [Boolean] that a split feature holds. */
+    fun value(value: Assignment.Value): Any = when (value) {
+        is Assignment.Value.String -> value.item
+        is Assignment.Value.Number -> value.item.toDouble()
+        is Assignment.Value.Boolean -> value.item
+    }
+
+    /** Returns the generated value for a split feature [value], a [String], [Double] or [Boolean]. */
+    fun modelValue(value: Any): Assignment.Value = when (value) {
+        is Boolean -> Assignment.Value.Boolean(value)
+        is Number -> Assignment.Value.Number(value)
+        else -> Assignment.Value.String(value.toString())
+    }
+
+    private fun normalizeFeature(json: JsonObject): Pair<String, JsonObject>? {
         val stringOrNull = { element: JsonElement ->
             element.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }?.asString
         }
         val key = json.get(FEATURE_KEY)?.let(stringOrNull)
         val value = (json.get(FEATURE_VALUE) as? JsonPrimitive)?.let {
             when {
-                it.isString -> it.asString
-                it.isBoolean -> it.asBoolean
-                it.isNumber -> it.asDouble.let { number -> if (number.isFinite()) number else null }
+                it.isString || it.isBoolean -> it
+                it.isNumber -> if (it.asDouble.isFinite()) it else null
                 else -> null
             }
         }
@@ -46,23 +61,11 @@ internal object SplitFeaturesJson {
         return if (key.isNullOrEmpty() || value == null || destinations.isEmpty()) {
             null
         } else {
-            SplitFeature(key, value, destinations)
-        }
-    }
-
-    fun write(features: List<SplitFeature>): JsonArray = JsonArray().apply {
-        features.forEach { feature ->
-            add(
-                JsonObject().apply {
-                    addProperty(FEATURE_KEY, feature.key)
-                    when (val value = feature.value) {
-                        is String -> addProperty(FEATURE_VALUE, value)
-                        is Boolean -> addProperty(FEATURE_VALUE, value)
-                        is Number -> addProperty(FEATURE_VALUE, value)
-                    }
-                    add(FEATURE_DESTINATIONS, JsonArray().apply { feature.destinations.forEach { add(it) } })
-                }
-            )
+            key to JsonObject().apply {
+                addProperty(FEATURE_KEY, key)
+                add(FEATURE_VALUE, value)
+                add(FEATURE_DESTINATIONS, JsonArray().apply { destinations.forEach { add(it) } })
+            }
         }
     }
 

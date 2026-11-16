@@ -129,24 +129,39 @@ internal class FlagsJsonTest {
 
     @ParameterizedTest
     @MethodSource("invalidFeatures")
-    fun `M skip the feature W read() {invalid feature}`(feature: String) {
+    fun `M keep the flag and skip the feature W readAssignment() {invalid feature}`(feature: String) {
         // Given
-        val json = JsonParser.parseString("[$feature, $VALID_FEATURE]")
+        val json = assignment("[$feature, $VALID_FEATURE]")
 
         // When
-        val features = SplitFeaturesJson.read(json)
+        val flag = FlagsJson.readAssignment(json)
 
         // Then
-        assertThat(features).containsExactly(SplitFeature("valid", "value", listOf("HOOK")))
+        assertThat(flag.variationKey).isEqualTo(fakeVariationKey)
+        assertThat(flag.features).containsExactly(SplitFeature("valid", "value", listOf("HOOK")))
     }
 
     @Test
-    fun `M keep the first valid feature W read() {repeated key}`(
+    fun `M keep only string destinations W readAssignment() {number and null destinations}`(
+        @StringForgery fakeText: String
+    ) {
+        // Given
+        val json = assignment("""[{"key":"text","value":"$fakeText","destinations":[1,"HOOK",null,true]}]""")
+
+        // When
+        val flag = FlagsJson.readAssignment(json)
+
+        // Then
+        assertThat(flag.features).containsExactly(SplitFeature("text", fakeText, listOf("HOOK")))
+    }
+
+    @Test
+    fun `M keep the first valid feature W readAssignment() {repeated key}`(
         @StringForgery fakeFirstValue: String,
         @StringForgery fakeSecondValue: String
     ) {
         // Given
-        val json = JsonParser.parseString(
+        val json = assignment(
             """[
                 {"key":"holdout.key","value":{},"destinations":["HOOK"]},
                 {"key":"holdout.key","value":"$fakeFirstValue","destinations":["EXPOSURE"]},
@@ -155,14 +170,42 @@ internal class FlagsJsonTest {
         )
 
         // When
-        val features = SplitFeaturesJson.read(json)
+        val flag = FlagsJson.readAssignment(json)
 
         // Then
-        assertThat(features).containsExactly(SplitFeature("holdout.key", fakeFirstValue, listOf("EXPOSURE")))
+        assertThat(flag.features).containsExactly(SplitFeature("holdout.key", fakeFirstValue, listOf("EXPOSURE")))
     }
 
     @Test
-    fun `M read back the features W writeAssignmentJson() + readAssignment()`(
+    fun `M write the features W writeAssignment()`(
+        @StringForgery fakeText: String,
+        @DoubleForgery fakeNumber: Double,
+        @BoolForgery fakeFlag: Boolean
+    ) {
+        // Given
+        val flag = FlagsJson.readAssignment(assignment("[]")).copy(
+            features = listOf(
+                SplitFeature("text", fakeText, listOf("HOOK")),
+                SplitFeature("number", fakeNumber, listOf("EXPOSURE", "FUTURE")),
+                SplitFeature("flag", fakeFlag, listOf("EVALUATION"))
+            )
+        )
+
+        // When
+        val json = FlagsJson.writeAssignment(flag).toJson()
+
+        // Then
+        assertThat(json.asJsonObject.get("features")).isEqualTo(
+            JsonParser.parseString(
+                """[{"key":"text","value":"$fakeText","destinations":["HOOK"]},""" +
+                    """{"key":"number","value":$fakeNumber,"destinations":["EXPOSURE","FUTURE"]},""" +
+                    """{"key":"flag","value":$fakeFlag,"destinations":["EVALUATION"]}]"""
+            )
+        )
+    }
+
+    @Test
+    fun `M read back the features W writeAssignment() + readAssignment()`(
         @DoubleForgery fakeNumber: Double,
         @BoolForgery fakeFlag: Boolean
     ) {
@@ -175,23 +218,28 @@ internal class FlagsJsonTest {
         )
 
         // When
-        val json = FlagsJson.writeAssignmentJson(flag)
+        val json = FlagsJson.writeAssignment(flag).toJson()
 
         // Then
         assertThat(flag.features).hasSize(2)
         assertThat(FlagsJson.readAssignment(json.asJsonObject).features).isEqualTo(flag.features)
     }
 
-    @Test
-    fun `M write no features field W writeAssignmentJson() {no features}`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `M read no features and write no features field W readAssignment() + writeAssignment() {empty or absent}`(
+        isAbsent: Boolean
+    ) {
         // Given
-        val flag = FlagsJson.readAssignment(assignment("[]"))
+        val json = assignment("[]").apply { if (isAbsent) remove("features") }
 
         // When
-        val json = FlagsJson.writeAssignmentJson(flag)
+        val flag = FlagsJson.readAssignment(json)
+        val written = FlagsJson.writeAssignment(flag).toJson()
 
         // Then
-        assertThat(json.asJsonObject.has("features")).isFalse()
+        assertThat(flag.features).isEmpty()
+        assertThat(written.asJsonObject.has("features")).isFalse()
     }
 
     private fun assignment(features: String) = JsonParser.parseString(

@@ -20,7 +20,7 @@ internal class FlagsStateSerializer(private val internalLogger: InternalLogger) 
     override fun serialize(model: FlagsStateEntry): String = try {
         val flags = FlagsState.Flags(
             model.flags.mapValues {
-                FlagsJson.writeAssignmentJson(it.value)
+                FlagsJson.writeAssignment(it.value).toJson()
             }.toMutableMap()
         )
         val json = FlagsState(
