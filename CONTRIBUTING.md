@@ -92,6 +92,26 @@ You can build the SDK using the following Gradle command:
 ./gradlew assembleLibraries
 ```
 
+### Reviewing dependency requirements
+
+Each publishable module's `transitiveDependencies` report follows its external
+dependency trees on the release classpaths, stopping at SDK project references.
+Check those projects' reports for their dependencies. Artifacts appear once,
+labelled `compile`, `runtime`, or `both`. Different resolved versions remain
+separate. Each AAR with a usable declaration has
+`(minCompileSdk=…)` next to its coordinates. Check the highest value across both
+classpaths when reviewing updates. An unannotated artifact has no usable AAR
+declaration; this metadata does not guarantee consumer compatibility.
+
+Compile and runtime size totals overlap, so do not add them. They measure resolved
+artifact sizes, not final APK size after shrinking and packaging.
+
+Regenerate reports after dependency or generator changes:
+
+```shell
+./gradlew generateTransitiveDependenciesList
+```
+
 ### Running the tests
 
 The whole project is covered by a set of static analysis tools, linters and tests. To mimic the steps taken by our CI, you can run the `local_ci.sh` script:
