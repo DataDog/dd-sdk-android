@@ -298,7 +298,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
         verify(mockService, never()).registerForAllProfilingResults(any(), any())
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
-            target = InternalLogger.Target.MAINTAINER,
+            target = InternalLogger.Target.USER,
             message = ProfilingManagerTriggerRegistrar.LOG_NO_MANAGER
         )
     }
@@ -318,7 +318,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             target = InternalLogger.Target.USER,
-            message = ProfilingManagerTriggerRegistrar.LOG_MANAGER_FAILED,
+            message = ProfilingManagerTriggerRegistrar.LOG_NO_MANAGER,
             throwable = error
         )
     }
@@ -340,7 +340,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             target = InternalLogger.Target.USER,
-            message = ProfilingManagerTriggerRegistrar.LOG_MANAGER_FAILED,
+            message = ProfilingManagerTriggerRegistrar.LOG_NO_MANAGER,
             throwable = error
         )
     }
@@ -363,7 +363,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
             target = InternalLogger.Target.USER,
-            message = ProfilingManagerTriggerRegistrar.LOG_MANAGER_FAILED,
+            message = ProfilingManagerTriggerRegistrar.LOG_NO_MANAGER,
             throwable = error
         )
         // Still registered: once the service is reachable again, unregister actually runs.
@@ -385,7 +385,7 @@ internal class ProfilingManagerTriggerRegistrarTest {
         verify(mockService, never()).removeProfilingTriggersByType(any())
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.WARN,
-            target = InternalLogger.Target.MAINTAINER,
+            target = InternalLogger.Target.USER,
             message = ProfilingManagerTriggerRegistrar.LOG_NO_MANAGER
         )
         // Retry path open: once the service is reachable again, unregister actually runs.

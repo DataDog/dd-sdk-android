@@ -95,33 +95,26 @@ internal class ProfilingManagerTriggerRegistrar(
 
     @RequiresApi(Build.VERSION_CODES.BAKLAVA)
     private fun getProfilingManager(appContext: Context): ProfilingManager? {
+        var error: Throwable? = null
         val manager = try {
             appContext.getSystemService(ProfilingManager::class.java)
         } catch (e: LinkageError) {
             // NoClassDefFoundError seen on some API 36 devices whose framework lacks ProfilingManager
-            logManagerUnavailable(e)
+            error = e
             null
         } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
-            logManagerUnavailable(e)
+            error = e
             null
         }
         if (manager == null) {
             internalLogger?.log(
                 InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { LOG_NO_MANAGER }
+                InternalLogger.Target.USER,
+                { LOG_NO_MANAGER },
+                error
             )
         }
         return manager
-    }
-
-    private fun logManagerUnavailable(throwable: Throwable) {
-        internalLogger?.log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            { LOG_MANAGER_FAILED },
-            throwable
-        )
     }
 
     @RequiresApi(Build.VERSION_CODES.BAKLAVA)
@@ -183,7 +176,5 @@ internal class ProfilingManagerTriggerRegistrar(
         const val MAX_CALLBACK_DELAY_MS = 1_000L
         const val LOG_NO_MANAGER =
             "Cannot register ANR profiling trigger: ProfilingManager system service is unavailable."
-        const val LOG_MANAGER_FAILED =
-            "Failed to acquire ProfilingManager, ANR profiling is disabled on this device."
     }
 }
