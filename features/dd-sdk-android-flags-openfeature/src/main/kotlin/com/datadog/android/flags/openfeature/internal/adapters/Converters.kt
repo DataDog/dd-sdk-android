@@ -33,7 +33,7 @@ internal fun OpenFeatureEvaluationContext.toDatadogEvaluationContext(
                 key to INVALID_ASSIGNMENT_TOKEN_SENTINEL
             } else if (
                 experimentationOptOutEnabled &&
-                key == "dd_experimentation_opt_out_at" &&
+                key == EXPERIMENTATION_OPT_OUT_ATTRIBUTE &&
                 value !is Value.String
             ) {
                 // Preserve invalid typed input as an invalid timestamp for native validation.
@@ -106,4 +106,5 @@ internal fun ErrorCode.toOpenFeatureErrorCode(): OpenFeatureErrorCode = when (th
 }
 
 private const val ASSIGNMENT_TOKEN_ATTRIBUTE = "dd_assignment_token"
+private const val EXPERIMENTATION_OPT_OUT_ATTRIBUTE = "dd_experimentation_opt_out_at"
 private const val INVALID_ASSIGNMENT_TOKEN_SENTINEL = "\u0000"
