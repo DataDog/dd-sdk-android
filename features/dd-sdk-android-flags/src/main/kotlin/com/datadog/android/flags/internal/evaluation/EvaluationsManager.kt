@@ -342,9 +342,14 @@ internal class EvaluationsManager(
                 if (authorizationRejected) {
                     assignmentAuthorization.onAuthorizationRejected(request.assignmentAuthorization)
                 }
+                val installedContext = if (timeoutFallback == null) {
+                    cachedContext
+                } else {
+                    fallbackContext(request, capturedContext = null)
+                }
                 val fallback = assignmentAuthorization.fallback(
                     request.assignmentAuthorization,
-                    cachedContext,
+                    installedContext,
                     experimentationOptOut.enabled
                 )
                 if (fallback.usable) {

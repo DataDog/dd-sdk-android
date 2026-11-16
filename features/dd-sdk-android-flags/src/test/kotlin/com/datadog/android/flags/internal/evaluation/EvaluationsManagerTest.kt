@@ -1307,7 +1307,7 @@ internal class EvaluationsManagerTest {
     }
 
     @Test
-    fun `M keep STALE W updateEvaluationsForContext() {same-subject timeout then request fails}`() {
+    fun `M keep timeout fallback accepted W updateEvaluationsForContext() {late authorization rejection}`() {
         // Given
         val token = "header.payload.signature"
         val requestedContext = EvaluationContext(
@@ -1324,17 +1324,16 @@ internal class EvaluationsManagerTest {
         )
         val stateListener = mock<FlagsStateListener>()
         val callback = mock<EvaluationContextCallback>()
-        val operations = mutableListOf<Runnable>()
+        val experimentationOptOut = ExperimentationOptOut()
+        val assignmentAuthorization = AssignmentAuthorization(mockInternalLogger, experimentationOptOut.stateLock)
+        var cacheLoaded = false
         lateinit var timeoutAction: () -> Unit
         stateManager.addListener(stateListener)
-        whenever(mockExecutorService.execute(any())).thenAnswer {
-            operations += it.getArgument<Runnable>(0)
-            null
-        }
-        whenever(mockFlagsRepository.getAssignmentsSnapshot()) doReturn
-            FlagsAssignmentsSnapshot(emptyMap(), installedContext)
-        whenever(mockFlagsRepository.hasConfiguration()) doReturn true
+        whenever(mockFlagsRepository.hasConfiguration()).thenAnswer { cacheLoaded }
         whenever(mockFlagsRepository.getEvaluationContext()) doReturn installedContext
+        whenever(mockFlagsRepository.getAssignmentsSnapshot()).thenAnswer {
+            if (cacheLoaded) FlagsAssignmentsSnapshot(emptyMap(), installedContext) else null
+        }
         whenever(
             mockAssignmentsDownloader.readPrecomputedFlags(
                 eq(sanitizedContext),
@@ -1342,7 +1341,11 @@ internal class EvaluationsManagerTest {
                 any(),
                 eq(token)
             )
-        ).thenReturn(null)
+        ).thenAnswer {
+            cacheLoaded = true
+            timeoutAction()
+            PrecomputedAssignmentsResult.AuthorizationRejected
+        }
         val testedManager = EvaluationsManager(
             sdkCore = mockSdkCore,
             executorService = mockExecutorService,
@@ -1356,22 +1359,18 @@ internal class EvaluationsManagerTest {
                 timeoutAction = action
                 {}
             },
-            experimentationOptOut = ExperimentationOptOut()
+            experimentationOptOut = experimentationOptOut,
+            assignmentAuthorization = assignmentAuthorization
         )
 
         // When
         testedManager.updateEvaluationsForContext(requestedContext, callback)
-        timeoutAction()
+        testedManager.prepare(EvaluationContext("next-subject"))
 
         // Then
         assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Stale)
         verify(callback).onFailure(isA<FlagsInitializationTimeoutException>())
-
-        // When
-        operations.single().run()
-
-        // Then
-        assertThat(stateManager.getCurrentState()).isEqualTo(FlagsClientState.Stale)
+        assertThat(assignmentAuthorization.resolutionContext(installedContext).errorCode).isNull()
         inOrder(stateListener) {
             verify(stateListener).onStateChanged(FlagsClientState.NotReady)
             verify(stateListener).onStateChanged(FlagsClientState.Reconciling)
