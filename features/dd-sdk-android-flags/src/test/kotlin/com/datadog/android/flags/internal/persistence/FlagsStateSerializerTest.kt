@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsStateEntry
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.selection.CanonicalFlagSelection
 import com.datadog.android.flags.model.EvaluationContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -19,6 +20,8 @@ import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 
@@ -36,6 +39,57 @@ internal class FlagsStateSerializerTest {
     @BeforeEach
     fun `set up`() {
         testedSerializer = FlagsStateSerializer(mockInternalLogger)
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["", "jane.doe@datadoghq.com", "é", "e\u0301", "😀", "\uFFFD", "\\uD800"])
+    fun `M preserve valid Unicode bytes W serialize()`(fakeKey: String) {
+        // Given
+        val fakeState = FlagsStateEntry(EvaluationContext(fakeKey), emptyMap(), fakeTimestamp)
+
+        // When
+        val serialized = testedSerializer.serialize(fakeState)
+
+        // Then
+        assertThat(serialized).contains(JSONObject.quote(fakeKey))
+        val restored = checkNotNull(FlagsStateDeserializer(mockInternalLogger).deserialize(serialized))
+        assertThat(restored.evaluationContext.targetingKey).isEqualTo(fakeKey)
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            "", "jane.doe@datadoghq.com", "é", "e\u0301", "😀", "\uFFFD", "\\uD800",
+            "\uD800", "\uDC00", "a\uD800b", "\uD800\uD800", "\uDC00\uD800", "😀\uD800"
+        ]
+    )
+    fun `M preserve context through UTF8 storage W serialize()`(fakeKey: String) {
+        // Given
+        val fakeContext = EvaluationContext(fakeKey, mapOf("value" to fakeKey))
+        val encoding = FlagKeyObfuscation.fromSalt("000102030405060708090a0b0c0d0e0f")
+        val fakeStates = listOf(null, encoding).map { obfuscation ->
+            FlagsStateEntry(
+                fakeContext,
+                emptyMap(),
+                fakeTimestamp,
+                observeFullEvaluationData = true,
+                obfuscation = obfuscation
+            )
+        }
+
+        // When
+        val restored = fakeStates.map { state ->
+            val persistedBytes = testedSerializer.serialize(state).toByteArray(Charsets.UTF_8)
+            checkNotNull(
+                FlagsStateDeserializer(mockInternalLogger).deserialize(persistedBytes.toString(Charsets.UTF_8))
+            )
+        }
+
+        // Then
+        assertThat(restored.map { it.evaluationContext }).containsOnly(fakeContext)
+        assertThat(restored.map { it.observeFullEvaluationData }).containsOnly(true)
+        assertThat(restored.map { it.flags }).allMatch { it.isEmpty() }
+        assertThat(restored.map { it.obfuscation }).containsExactly(null, encoding)
     }
 
     @Test
@@ -57,7 +111,7 @@ internal class FlagsStateSerializerTest {
             EvaluationContext(forge.anAlphabeticalString()),
             mapOf(encodedKey to flag),
             fakeTimestamp,
-            encoding
+            obfuscation = encoding
         )
 
         // When
@@ -187,5 +241,45 @@ internal class FlagsStateSerializerTest {
         // Should still produce valid JSON even in edge cases
         SerializedFlagsStateAssert.assertThatSerializedFlagsState(serialized)
             .hasEmptyFlags()
+    }
+
+    @Test
+    fun `M round trip the flag selection W serialize() + deserialize()`(forge: Forge) {
+        // Given
+        val flagSelection = CanonicalFlagSelection(
+            tags = listOf("mobile", "\u00E9t\u00E9"),
+            keyPatterns = listOf("checkout-*")
+        )
+        val flagsState = FlagsStateEntry(
+            EvaluationContext(forge.anAlphabeticalString(), emptyMap()),
+            emptyMap(),
+            fakeTimestamp,
+            flagSelection = flagSelection
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(flagsState)
+        val deserialized = FlagsStateDeserializer(mockInternalLogger).deserialize(serialized)
+
+        // Then
+        checkNotNull(deserialized)
+        assertThat(deserialized.flagSelection).isEqualTo(flagSelection)
+    }
+
+    @Test
+    fun `M omit the flag selection W serialize() { no flag selection }`(forge: Forge) {
+        // Given
+        val flagsState = FlagsStateEntry(
+            EvaluationContext(forge.anAlphabeticalString(), emptyMap()),
+            emptyMap(),
+            fakeTimestamp,
+            flagSelection = null
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(flagsState)
+
+        // Then
+        assertThat(JSONObject(serialized).has("flagSelection")).isFalse()
     }
 }

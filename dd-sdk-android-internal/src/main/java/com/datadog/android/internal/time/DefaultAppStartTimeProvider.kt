@@ -36,7 +36,7 @@ class DefaultAppStartTimeProvider(
                     contentProviderCreateTimeNs - computedAppStartTimeNs >
                         PROCESS_START_TO_CP_START_DIFF_THRESHOLD_NS
 
-                /**
+                /*
                  * Guard against unexpected values from [Process.getStartUptimeMillis].
                  * Two directions are checked and fall back to [DdRumContentProvider] creation time:
                  * - computedAppStartTimeNs > createTimeNs: app start appears to be after content provider init,

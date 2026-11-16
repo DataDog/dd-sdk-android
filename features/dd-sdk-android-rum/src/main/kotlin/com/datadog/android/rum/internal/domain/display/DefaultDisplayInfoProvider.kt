@@ -18,14 +18,14 @@ import com.datadog.android.rum.internal.domain.InfoProvider
 import kotlin.math.roundToInt
 
 internal class DefaultDisplayInfoProvider(
-    private val applicationContext: Context,
-    private val internalLogger: InternalLogger,
+    applicationContext: Context,
+    internalLogger: InternalLogger,
     private val systemSettingsWrapper: SystemSettingsWrapper = SystemSettingsWrapper(
         applicationContext = applicationContext,
         internalLogger = internalLogger
     ),
     private val contentResolver: ContentResolver = applicationContext.contentResolver,
-    private val handler: Handler = Handler(Looper.getMainLooper())
+    handler: Handler = Handler(Looper.getMainLooper())
 ) : InfoProvider<DisplayInfo> {
 
     @Volatile

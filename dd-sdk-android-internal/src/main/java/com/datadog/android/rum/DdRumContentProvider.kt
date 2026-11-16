@@ -77,7 +77,7 @@ class DdRumContentProvider : ContentProvider() {
                 return currentProcessImportance
             }
 
-            /**
+            /*
              * Do not call this from production code.
              */
             @VisibleForTesting

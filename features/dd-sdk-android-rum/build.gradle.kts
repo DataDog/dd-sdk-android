@@ -12,12 +12,11 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.nio.file.Paths
 
 plugins {
+    // Apply ktlint before AGP: built-in Kotlin otherwise causes duplicate ktlint tasks.
+    id("ktlint")
+
     // Build
     id("com.android.library")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    kotlin("android")
     id("com.google.devtools.ksp")
     id("datadogBuildConfig")
 
@@ -43,8 +42,6 @@ plugins {
     id("test-pyramid-api-surface")
 }
 
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION")
 android {
     defaultConfig {
         consumerProguardFiles(
@@ -98,14 +95,6 @@ dependencies {
     // Test Fixtures
     testFixturesImplementation(testFixtures(project(":dd-sdk-android-core")))
     testFixturesImplementation(testFixtures(project(":dd-sdk-android-internal")))
-    testFixturesImplementation(project(":tools:unit")) {
-        attributes {
-            attribute(
-                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
-                objects.named("jvm")
-            )
-        }
-    }
     testFixturesImplementation(libs.kotlinRuntime)
     testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.okHttp)

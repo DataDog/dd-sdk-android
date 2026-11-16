@@ -50,7 +50,7 @@ internal class RumResourceScope(
     internal val key: Any,
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
-    serverTimeOffsetInMs: Long,
+    private val serverTimeOffsetInMs: Long,
     internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     private val featuresContextResolver: FeaturesContextResolver,
     internal val sampleRate: Float,
@@ -185,7 +185,7 @@ internal class RumResourceScope(
             datadogContext,
             writeScope,
             writer,
-            event.eventTime.nanoTime
+            event.eventTime
         )
     }
 
@@ -212,7 +212,7 @@ internal class RumResourceScope(
             datadogContext,
             writeScope,
             writer,
-            event.eventTime.nanoTime
+            event.eventTime
         )
     }
 
@@ -440,7 +440,7 @@ internal class RumResourceScope(
         datadogContext: DatadogContext,
         writeScope: EventWriteScope,
         writer: DataWriter<Any>,
-        resourceStopTimestampInNanos: Long
+        resourceStopTime: Time
     ) {
         val errorFingerprint = resourceAttributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
         val rumContext = getRumContext()
@@ -474,7 +474,7 @@ internal class RumResourceScope(
             )
             ErrorEvent(
                 buildId = datadogContext.appBuildId,
-                date = eventTimestamp,
+                date = resourceStopTime.timestamp + serverTimeOffsetInMs,
                 error = ErrorEvent.Error(
                     id = UUID.randomUUID().toString(),
                     message = message,
@@ -561,11 +561,11 @@ internal class RumResourceScope(
             .onError {
                 it.eventDropped(
                     rumContext.viewId.orEmpty(),
-                    StorageEvent.Error(resourceId, resourceStopTimestampInNanos)
+                    StorageEvent.Error(resourceId, resourceStopTime.nanoTime)
                 )
             }
             .onSuccess {
-                it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Error(resourceId, resourceStopTimestampInNanos))
+                it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Error(resourceId, resourceStopTime.nanoTime))
             }
             .submit()
 

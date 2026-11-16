@@ -42,30 +42,33 @@ internal class WireframeUtils(private val boundsUtils: BoundsUtils = BoundsUtils
         }
     }
 
+    internal fun resolveWireframe(wireframe: MobileSegment.Wireframe): ResolvedWireframe {
+        return ResolvedWireframe(wireframe, boundsUtils.resolveBounds(wireframe), wireframe.hasOpaqueBackground())
+    }
+
     internal fun checkWireframeIsCovered(
-        wireframe: MobileSegment.Wireframe,
-        topWireframes: List<MobileSegment.Wireframe>
+        resolvedWireframe: ResolvedWireframe,
+        topWireframes: List<ResolvedWireframe>
     ): Boolean {
+        val wireframe = resolvedWireframe.wireframe
         if (wireframe is MobileSegment.Wireframe.EmbeddedContentWireframe &&
             wireframe.isVisible == false
         ) {
             return false
         }
-        val wireframeBounds = boundsUtils.resolveBounds(wireframe)
         return topWireframes.any {
-            val topBounds = boundsUtils.resolveBounds(it)
-            boundsUtils.isCovering(topBounds, wireframeBounds) &&
-                it.hasOpaqueBackground()
+            it.hasOpaqueBackground && boundsUtils.isCovering(it.bounds, resolvedWireframe.bounds)
         }
     }
 
-    internal fun checkWireframeIsValid(wireframe: MobileSegment.Wireframe): Boolean {
+    internal fun checkWireframeIsValid(resolvedWireframe: ResolvedWireframe): Boolean {
+        val wireframe = resolvedWireframe.wireframe
         if (wireframe is MobileSegment.Wireframe.EmbeddedContentWireframe &&
             wireframe.isVisible == false
         ) {
             return true
         }
-        val wireframeBounds = boundsUtils.resolveBounds(wireframe)
+        val wireframeBounds = resolvedWireframe.bounds
         return (
             wireframeBounds.width > 0 &&
                 wireframeBounds.height > 0 &&
@@ -87,4 +90,10 @@ internal class WireframeUtils(private val boundsUtils: BoundsUtils = BoundsUtils
             is MobileSegment.Wireframe.EmbeddedContentWireframe -> this.clip
         }
     }
+
+    internal class ResolvedWireframe(
+        val wireframe: MobileSegment.Wireframe,
+        val bounds: WireframeBounds,
+        val hasOpaqueBackground: Boolean
+    )
 }

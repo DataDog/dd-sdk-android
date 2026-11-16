@@ -8,9 +8,11 @@ package com.datadog.android.sessionreplay.internal.processor
 
 import com.datadog.android.internal.heatmaps.HeatmapIdentifier
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.internal.processor.WireframeUtils.ResolvedWireframe
 import com.datadog.android.sessionreplay.internal.recorder.Node
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -19,11 +21,15 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.LinkedList
@@ -44,6 +50,10 @@ internal class NodeFlattenerTest {
 
     @BeforeEach
     fun `set up`() {
+        val wireframeUtils = WireframeUtils()
+        whenever(mockWireframeUtils.resolveWireframe(any())).thenAnswer { invocation ->
+            wireframeUtils.resolveWireframe(invocation.getArgument(0))
+        }
         whenever(mockWireframeUtils.checkWireframeIsValid(any())).thenReturn(true)
         whenever(mockWireframeUtils.checkWireframeIsCovered(any(), any())).thenReturn(false)
         testedNodeFlattener = NodeFlattener(mockWireframeUtils)
@@ -105,8 +115,9 @@ internal class NodeFlattenerTest {
 
         val randomIndex = forge.anInt(min = 0, max = expectedList.size)
         val excludedWireframe = expectedList.removeAt(randomIndex)
-        whenever(mockWireframeUtils.checkWireframeIsValid(eq(excludedWireframe)))
-            .thenReturn(false)
+        whenever(mockWireframeUtils.checkWireframeIsValid(any())).thenAnswer { invocation ->
+            invocation.getArgument<ResolvedWireframe>(0).wireframe != excludedWireframe
+        }
 
         // When
         val wireframes = testedNodeFlattener.flattenNode(fakeSnapshot)
@@ -126,8 +137,9 @@ internal class NodeFlattenerTest {
 
         val randomIndex = forge.anInt(min = 0, max = expectedList.size)
         val excludedWireframe = expectedList.removeAt(randomIndex)
-        whenever(mockWireframeUtils.checkWireframeIsCovered(eq(excludedWireframe), any()))
-            .thenReturn(true)
+        whenever(mockWireframeUtils.checkWireframeIsCovered(any(), any())).thenAnswer { invocation ->
+            invocation.getArgument<ResolvedWireframe>(0).wireframe == excludedWireframe
+        }
 
         // When
         val wireframes = testedNodeFlattener.flattenNode(fakeSnapshot)
@@ -136,33 +148,231 @@ internal class NodeFlattenerTest {
         assertThat(wireframes).isEqualTo(expectedList)
     }
 
-    @Test
-    fun `M keep covered wireframe W flattenNode { covering embedded content is hidden }`(forge: Forge) {
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M keep hidden embedded wireframes and overlapping content W flattenNode()`(
+        hiddenOnTop: Boolean,
+        forge: Forge
+    ) {
         // Given
-        val fakeBottomWireframe = forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>().copy(
-            x = 0,
-            y = 0,
-            width = 100,
-            height = 100,
-            clip = null,
-            shapeStyle = forge.getForgery()
-        )
+        val fakeBottomWireframe = forge.anOpaqueWireframe()
         val fakeHiddenEmbeddedContent =
             forge.getForgery<MobileSegment.Wireframe.EmbeddedContentWireframe>().copy(
-                x = 0,
-                y = 0,
-                width = 100,
-                height = 100,
+                x = fakeBottomWireframe.x,
+                y = fakeBottomWireframe.y,
+                width = fakeBottomWireframe.width,
+                height = fakeBottomWireframe.height,
                 clip = null,
                 isVisible = false
             )
-        val fakeNode = Node(wireframes = listOf(fakeBottomWireframe, fakeHiddenEmbeddedContent))
+        val fakeWireframes = if (hiddenOnTop) {
+            listOf(fakeBottomWireframe, fakeHiddenEmbeddedContent)
+        } else {
+            listOf(fakeHiddenEmbeddedContent, fakeBottomWireframe)
+        }
+        val fakeNode = Node(wireframes = fakeWireframes)
+        testedNodeFlattener = NodeFlattener()
 
         // When
-        val wireframes = NodeFlattener().flattenNode(fakeNode)
+        val wireframes = testedNodeFlattener.flattenNode(fakeNode)
 
         // Then
-        assertThat(wireframes).containsExactly(fakeBottomWireframe, fakeHiddenEmbeddedContent)
+        assertThat(wireframes).containsExactlyElementsOf(fakeWireframes)
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = [0, 1, 2, 1000])
+    fun `M keep disjoint wireframes in order W flattenNode() { tail boundaries }`(
+        wireframeCount: Int,
+        forge: Forge
+    ) {
+        // Given
+        val fakeWireframe = forge.anOpaqueWireframe()
+        val fakeWireframes = List(wireframeCount) { index ->
+            fakeWireframe.copy(
+                id = fakeWireframe.id + index,
+                x = fakeWireframe.x + index * fakeWireframe.width
+            )
+        }
+        val fakeNode = Node(wireframes = fakeWireframes)
+        testedNodeFlattener = NodeFlattener()
+
+        // When
+        val wireframes = testedNodeFlattener.flattenNode(fakeNode)
+
+        // Then
+        assertThat(wireframes).containsExactlyElementsOf(fakeWireframes)
+    }
+
+    @Test
+    fun `M only remove wireframes covered by later wireframes W flattenNode()`(forge: Forge) {
+        // Given
+        val fakeCoveredWireframe = forge.anOpaqueWireframe()
+        val fakeCoveringWireframe = fakeCoveredWireframe.copy(id = fakeCoveredWireframe.id + 1)
+        val fakeUncoveredWireframe = fakeCoveredWireframe.copy(
+            id = fakeCoveredWireframe.id + 2,
+            x = fakeCoveredWireframe.x + fakeCoveredWireframe.width
+        )
+        val fakeBackground = fakeCoveredWireframe.copy(
+            id = fakeCoveredWireframe.id + 3,
+            width = fakeCoveredWireframe.width * 2
+        )
+        val fakeNode = Node(
+            wireframes = listOf(fakeBackground),
+            children = listOf(
+                Node(wireframes = listOf(fakeCoveredWireframe, fakeCoveringWireframe)),
+                Node(wireframes = listOf(fakeUncoveredWireframe))
+            )
+        )
+        testedNodeFlattener = NodeFlattener()
+
+        // When
+        val wireframes = testedNodeFlattener.flattenNode(fakeNode)
+
+        // Then
+        assertThat(wireframes).containsExactly(fakeBackground, fakeCoveringWireframe, fakeUncoveredWireframe)
+    }
+
+    @Test
+    fun `M keep tail views valid W flattenNode() { source list changes during coverage }`(forge: Forge) {
+        // Given
+        val fakeCoveredWireframe = forge.anOpaqueWireframe()
+        val fakeCoveringWireframe = fakeCoveredWireframe.copy(id = fakeCoveredWireframe.id + 1)
+        val fakeSourceWireframes = mutableListOf(fakeCoveredWireframe, fakeCoveringWireframe)
+        val fakeNode = Node(wireframes = fakeSourceWireframes)
+        val realWireframeUtils = WireframeUtils()
+        whenever(mockWireframeUtils.checkWireframeIsCovered(any(), any())).thenAnswer { invocation ->
+            fakeSourceWireframes.clear()
+            realWireframeUtils.checkWireframeIsCovered(invocation.getArgument(0), invocation.getArgument(1))
+        }
+
+        // When
+        val wireframes = testedNodeFlattener.flattenNode(fakeNode)
+
+        // Then
+        assertThat(fakeSourceWireframes).isEmpty()
+        assertThat(wireframes).containsExactly(fakeCoveringWireframe)
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = [1, 10, 100])
+    fun `M resolve bounds once per wireframe per phase W flattenNode()`(
+        wireframeCount: Int,
+        forge: Forge,
+        @Mock mockBoundsUtils: BoundsUtils
+    ) {
+        // Given
+        val fakeWireframe = forge.anOpaqueWireframe()
+        val fakeWireframes = List(wireframeCount) { index ->
+            fakeWireframe.copy(id = fakeWireframe.id + index, x = fakeWireframe.x + index * fakeWireframe.width)
+        }
+        whenever(mockBoundsUtils.resolveBounds(any())).thenAnswer { invocation ->
+            BoundsUtils.resolveBounds(invocation.getArgument(0))
+        }
+        testedNodeFlattener = NodeFlattener(WireframeUtils(mockBoundsUtils))
+
+        // When
+        val wireframes = testedNodeFlattener.flattenNode(Node(wireframes = fakeWireframes))
+
+        // Then
+        assertThat(wireframes).containsExactlyElementsOf(fakeWireframes)
+        argumentCaptor<MobileSegment.Wireframe>().apply {
+            verify(mockBoundsUtils, times(wireframeCount * 2)).resolveBounds(capture())
+            assertThat(allValues).containsExactlyElementsOf(fakeWireframes + fakeWireframes)
+        }
+    }
+
+    @Test
+    fun `M resolve opacity once per wireframe W flattenNode() { transparent covering wireframes }`(
+        @IntForgery(min = 3, max = 100) fakeWireframeCount: Int,
+        forge: Forge,
+        @Mock mockOpacity: Number
+    ) {
+        // Given
+        whenever(mockOpacity.toFloat()).thenReturn(1f)
+        val fakeWireframe = forge.anOpaqueWireframe()
+        val fakeShapeStyle = forge.getForgery<MobileSegment.ShapeStyle>().copy(
+            backgroundColor = forge.aStringMatching("#[0-9a-f]{6}00"),
+            opacity = mockOpacity
+        )
+        val fakeWireframes = List(fakeWireframeCount) { index ->
+            fakeWireframe.copy(id = fakeWireframe.id + index, shapeStyle = fakeShapeStyle)
+        }
+        testedNodeFlattener = NodeFlattener()
+
+        // When
+        val wireframes = testedNodeFlattener.flattenNode(Node(wireframes = fakeWireframes))
+
+        // Then
+        assertThat(wireframes).containsExactlyElementsOf(fakeWireframes)
+        verify(mockOpacity, times(fakeWireframeCount)).toFloat()
+    }
+
+    @Test
+    fun `M use clipped bounds for coverage W flattenNode()`(forge: Forge) {
+        // Given
+        val fakeBottomWireframe = forge.anOpaqueWireframe().copy(width = forge.aLong(min = 2, max = 1000))
+        val fakeParentWireframe = fakeBottomWireframe.copy(
+            id = fakeBottomWireframe.id + 1,
+            width = fakeBottomWireframe.width / 2
+        )
+        val fakeCoveringWireframe = fakeParentWireframe.copy(id = fakeBottomWireframe.id + 2)
+        val fakeNode = Node(
+            wireframes = listOf(fakeParentWireframe),
+            children = listOf(
+                Node(wireframes = listOf(fakeBottomWireframe), parents = listOf(fakeParentWireframe)),
+                Node(wireframes = listOf(fakeCoveringWireframe), parents = listOf(fakeParentWireframe))
+            )
+        )
+        testedNodeFlattener = NodeFlattener()
+
+        // When
+        val wireframes = testedNodeFlattener.flattenNode(fakeNode)
+
+        // Then
+        assertThat(wireframes).containsExactly(fakeCoveringWireframe)
+    }
+
+    @Test
+    fun `M retain invalid wireframes as coverage candidates W flattenNode()`(forge: Forge) {
+        // Given
+        val fakeBottomWireframe = forge.anOpaqueWireframe()
+        val fakeClippedWireframe = fakeBottomWireframe.copy(
+            clip = MobileSegment.WireframeClip(right = fakeBottomWireframe.width)
+        )
+        val fakeInvalidCoveringWireframe = fakeBottomWireframe.copy(id = fakeBottomWireframe.id + 1, width = 0)
+        val fakeNode = Node(wireframes = listOf(fakeClippedWireframe, fakeInvalidCoveringWireframe))
+        testedNodeFlattener = NodeFlattener()
+
+        // When
+        val wireframes = testedNodeFlattener.flattenNode(fakeNode)
+
+        // Then
+        assertThat(wireframes).isEmpty()
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M resolve coverage afresh W flattenNode() { reused wireframe ids }`(changeBounds: Boolean, forge: Forge) {
+        // Given
+        val fakeBottomWireframe = forge.anOpaqueWireframe()
+        val fakeCoveringWireframe = fakeBottomWireframe.copy(id = fakeBottomWireframe.id + 1)
+        val fakeUpdatedWireframe = if (changeBounds) {
+            fakeCoveringWireframe.copy(x = fakeCoveringWireframe.x + fakeCoveringWireframe.width)
+        } else {
+            fakeCoveringWireframe.copy(shapeStyle = forge.getForgery<MobileSegment.ShapeStyle>().copy(opacity = 0f))
+        }
+        val fakeFirstNode = Node(wireframes = listOf(fakeBottomWireframe, fakeCoveringWireframe))
+        val fakeSecondNode = Node(wireframes = listOf(fakeBottomWireframe, fakeUpdatedWireframe))
+        testedNodeFlattener = NodeFlattener()
+
+        // When
+        val firstWireframes = testedNodeFlattener.flattenNode(fakeFirstNode)
+        val secondWireframes = testedNodeFlattener.flattenNode(fakeSecondNode)
+
+        // Then
+        assertThat(firstWireframes).containsExactly(fakeCoveringWireframe)
+        assertThat(secondWireframes).containsExactly(fakeBottomWireframe, fakeUpdatedWireframe)
     }
 
     @Test
@@ -281,6 +491,20 @@ internal class NodeFlattenerTest {
     // endregion
 
     // region Internals
+
+    private fun Forge.anOpaqueWireframe(): MobileSegment.Wireframe.ShapeWireframe {
+        return getForgery<MobileSegment.Wireframe.ShapeWireframe>().copy(
+            x = aPositiveInt().toLong(),
+            y = aPositiveInt().toLong(),
+            width = aPositiveInt(strict = true).toLong(),
+            height = aPositiveInt(strict = true).toLong(),
+            clip = null,
+            shapeStyle = getForgery<MobileSegment.ShapeStyle>().copy(
+                backgroundColor = aStringMatching("#[0-9a-f]{6}ff"),
+                opacity = 1f
+            )
+        )
+    }
 
     private fun generateFlattenNodeFromList(list: List<MobileSegment.Wireframe>): Node {
         return Node(

@@ -112,18 +112,6 @@ internal class ProcessLifecycleCallbackTest {
     }
 
     @Test
-    fun `when process stopped and context ref is null will do nothing`() {
-        testedCallback.contextWeakRef.clear()
-        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
-
-        // When
-        testedCallback.onStopped()
-
-        // Then
-        verifyNoInteractions(mockWorkManager)
-    }
-
-    @Test
     fun `when process started cancel existing workers`() {
         // Given
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)

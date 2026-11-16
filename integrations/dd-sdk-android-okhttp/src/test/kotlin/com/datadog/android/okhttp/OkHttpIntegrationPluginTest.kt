@@ -10,9 +10,9 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.okhttp.internal.ApmInstrumentationOkHttpAdapter
 import com.datadog.android.okhttp.internal.RegistryTrackingEventListener
 import com.datadog.android.okhttp.internal.RumInstrumentationOkHttpAdapter
+import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.configuration.RumNetworkInstrumentationConfiguration
-import com.datadog.android.tests.config.DatadogSingletonTestConfiguration
 import com.datadog.android.trace.ApmNetworkInstrumentationConfiguration
 import com.datadog.android.trace.ApmNetworkTracingScope
 import com.datadog.android.trace.ExperimentalTraceApi

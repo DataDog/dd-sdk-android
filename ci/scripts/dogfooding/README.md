@@ -88,15 +88,15 @@ Revert, in one PR against `dogfooding`, every merge of a `dogfood-<branch>-<sha>
 
 ## Publishing
 
-Every build of `dogfooding` is published automatically by the `publish:dogfooding` job in GitLab, once the pipeline on `dogfooding` has passed. The version is `<version>-dogfood-<commit short sha>`, for example `3.15.0-dogfood-1a2b3c4d`, published to `https://binaries.ddbuild.io/dd-sdk-android/dogfood/`, which is only reachable from Datadog's network (VPN on laptops). Add that repository to the consuming app:
+Every build of `dogfooding` is published automatically by the `publish:dogfooding` job in GitLab, once the pipeline on `dogfooding` has passed. The version is `<version>-dogfood-<commit short sha>`, for example `3.15.0-dogfood-1a2b3c4d`, published to `https://binaries.ddbuild.io/dd-sdk-android/releases/`, which is only reachable from Datadog's network (VPN on laptops). Builds published before [#3982](https://github.com/DataDog/dd-sdk-android/pull/3982) stay in `https://binaries.ddbuild.io/dd-sdk-android/dogfood/`. Add the repository to the consuming app:
 
 ```kotlin
-maven("https://binaries.ddbuild.io/dd-sdk-android/dogfood/") {
+maven("https://binaries.ddbuild.io/dd-sdk-android/releases/") {
     content { includeGroup("com.datadoghq") }
 }
 ```
 
-Then point Shopist or the Datadog app at that exact version.
+Then point Shopist or the Datadog app at that exact version. Dynamic versions (`latest.integration`, `latest.release`, `+`) don't work for dogfood builds: for the same base version Gradle ranks `-SNAPSHOT` above `-dogfood-<sha>`, and it orders dogfood builds by commit sha rather than by date, so a dynamic version never reliably resolves to the latest dogfood build.
 
 ## When a script stops
 

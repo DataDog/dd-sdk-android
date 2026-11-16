@@ -293,9 +293,8 @@ class SampleApplication : Application() {
                             GlobalRumMonitor.get().addError(
                                 "OpenFeature provider error",
                                 RumErrorSource.SOURCE,
-                                null,
+                                event.error,
                                 mapOf(
-                                    "error" to event.error.toString(),
                                     "component" to "openfeature-provider"
                                 )
                             )

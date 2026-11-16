@@ -616,9 +616,8 @@ Steps:
 2. For each PR branch in the stack:
    - Collect its diff stat: `git diff <parent-branch>...<pr-branch> --stat`
    - Draft a PR description in English:
-     - **If a template exists**: fill it out section by section. Do NOT delete, reorder, or skip any heading — if a section genuinely does not apply write `N/A` (or the repo's equivalent). Following the template structure is not optional.
+     - **If a template exists**: follow its prompts and keep applicable sections and the review checklist in order.
      - **If no template**: write a 2–4 sentence summary covering, in order: what changed (user-visible / behavioural effect), why (motivation: ticket, bug, performance, follow-up), and any relevant notes (caveats, migration steps, test coverage, deliberate omissions).
-   - If the branch name encodes a ticket (`RUM-xxxx`), add `Ref: RUM-xxxx` on its own line at the end so GitHub/Jira auto-links it.
    - Show the drafted description to the user via `AskUserQuestion` (Approve / Edit / Regenerate) before storing it. The user may edit the wording but **may not approve an empty description** — if the user attempts to leave it blank, prompt again.
 3. Store the approved `pr_title` and description per branch in a map `{ "<branch-name>": { "title": "<pr_title>", "body": "<pr-description>" } }` for use in Step 4.4.
 

@@ -152,6 +152,23 @@ internal class PrecomputeMapperTest {
     }
 
     @Test
+    fun `M opt in only for literal true W map()`() {
+        // Given
+        val fakeConsentValues = listOf(true, false, JSONObject.NULL, "true", 1, JSONObject(), null)
+
+        // When
+        val results = fakeConsentValues.map { consent ->
+            val attributes = JSONObject().put("flags", JSONObject()).put("observeFullEvaluationData", consent)
+            testedMapper.map(JSONObject().put("data", JSONObject().put("attributes", attributes)).toString())
+        }
+
+        // Then
+        assertThat(results.map { checkNotNull(it).observeFullEvaluationData })
+            .containsExactly(true, false, false, false, false, false, false)
+        assertThat(results.map { checkNotNull(it).flags }).allMatch { it.isEmpty() }
+    }
+
+    @Test
     fun `M parse single flag with string variation W map() { valid JSON }`() {
         // Given
         val fakeStringValue = "test-value"

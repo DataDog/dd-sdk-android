@@ -54,8 +54,8 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
 
     fun getCurrentViewUrl(): String? = rumMonitor.getCurrentViewUrl()
 
-    fun addLongTask(durationNs: Long, target: String) {
-        rumMonitor.addLongTask(durationNs, target)
+    fun addLongTask(durationNs: Long, target: String, attributes: Map<String, Any?> = emptyMap()) {
+        rumMonitor.addLongTask(durationNs, target, attributes)
     }
 
     fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double) {

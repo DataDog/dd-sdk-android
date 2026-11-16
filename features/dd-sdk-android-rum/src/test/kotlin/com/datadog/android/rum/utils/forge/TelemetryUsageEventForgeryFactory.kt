@@ -7,7 +7,7 @@
 package com.datadog.android.rum.utils.forge
 
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
-import com.datadog.android.tests.elmyr.exhaustiveAttributes
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 

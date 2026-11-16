@@ -2,12 +2,13 @@ Dependencies List
 
 com.squareup.okhttp3:okhttp:4.12.1                              :  773 Kb
 com.squareup.okio:okio-jvm:3.6.0                                :  351 Kb
-io.opentelemetry:opentelemetry-api:1.40.0                       :  138 Kb
-io.opentelemetry:opentelemetry-context:1.40.0                   :   46 Kb
+io.opentelemetry:opentelemetry-api:1.67.0                       :  174 Kb
+io.opentelemetry:opentelemetry-common:1.67.0                    :    5 Kb
+io.opentelemetry:opentelemetry-context:1.67.0                   :   49 Kb
 org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
 org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
 org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
 
-Total transitive dependencies size                              :    2 Mb
+Total transitive dependencies size                              :    3 Mb
 

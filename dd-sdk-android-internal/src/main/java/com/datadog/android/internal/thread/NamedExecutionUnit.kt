@@ -34,7 +34,7 @@ private val SanitizedRegex = "[ :.,]".toRegex()
  * @param name The name to associate with this runnable, will be sanitized for safe usage.
  * @param runnable The actual runnable to be executed when [run] is called.
  */
-class NamedRunnable(name: String, private val runnable: Runnable) : NamedExecutionUnit, Runnable by runnable {
+class NamedRunnable(name: String, runnable: Runnable) : NamedExecutionUnit, Runnable by runnable {
 
     /**
      * Sanitized name after replacing spaces, colons, periods, and commas
@@ -56,7 +56,7 @@ class NamedRunnable(name: String, private val runnable: Runnable) : NamedExecuti
  * @param name The name to associate with this callable, will be sanitized for safe usage.
  * @param callable The actual callable to be executed when [call] is called.
  */
-class NamedCallable<V>(name: String, private val callable: Callable<V>) : NamedExecutionUnit, Callable<V> by callable {
+class NamedCallable<V>(name: String, callable: Callable<V>) : NamedExecutionUnit, Callable<V> by callable {
 
     /**
      * Sanitized name after replacing spaces, colons, periods, and commas

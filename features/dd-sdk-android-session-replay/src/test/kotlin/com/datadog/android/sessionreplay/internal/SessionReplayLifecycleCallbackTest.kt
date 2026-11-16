@@ -17,6 +17,7 @@ import com.datadog.android.sessionreplay.internal.recorder.callback.RecorderFrag
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -31,6 +32,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.lang.ref.Reference
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -99,6 +101,36 @@ internal class SessionReplayLifecycleCallbackTest {
 
         // Then
         assertThat(testedCallback.getCurrentWindows()).isEqualTo(listOf(mockWindow))
+    }
+
+    @Test
+    fun `M return no windows W getCurrentWindows() {last weak key cleared}`() {
+        // Given
+        testedCallback.setCurrentWindow(mockActivity)
+        val weakEntry = testedCallback.currentActiveWindows.entries.single() as Reference<*>
+        // Clearing without enqueueing models GC leaving a stale size of one and no live entries.
+        weakEntry.clear()
+
+        // When
+        val windows = assertDoesNotThrow<List<Window>> { testedCallback.getCurrentWindows() }
+
+        // Then
+        assertThat(windows).isEmpty()
+    }
+
+    @Test
+    fun `M retain live windows W getCurrentWindows() {another weak key cleared}`() {
+        // Given
+        val mockOtherWindow = mock<Window>()
+        testedCallback.onWindowsAdded(listOf(mockWindow, mockOtherWindow))
+        val weakEntry = testedCallback.currentActiveWindows.entries.single { it.key === mockWindow } as Reference<*>
+        weakEntry.clear()
+
+        // When
+        val windows = assertDoesNotThrow<List<Window>> { testedCallback.getCurrentWindows() }
+
+        // Then
+        assertThat(windows).containsExactly(mockOtherWindow)
     }
 
     @Test

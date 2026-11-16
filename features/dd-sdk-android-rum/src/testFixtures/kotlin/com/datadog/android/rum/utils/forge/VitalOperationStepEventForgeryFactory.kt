@@ -6,10 +6,10 @@
 
 package com.datadog.android.rum.utils.forge
 
+import com.datadog.android.internal.tests.elmyr.exhaustiveAttributes
 import com.datadog.android.rum.model.VitalOperationStepEvent
 import com.datadog.android.rum.model.VitalOperationStepEvent.FailureReason
 import com.datadog.android.rum.model.VitalOperationStepEvent.StepType
-import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import fr.xgouchet.elmyr.jvm.ext.aTimestamp

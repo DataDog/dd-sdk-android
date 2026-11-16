@@ -9964,7 +9964,7 @@ internal class RumViewScopeTest {
                 eventTime = Time(
                     timestamp = fakeEventTime.timestamp,
                     nanoTime =
-                    fakeEventTime.nanoTime + fakeViewDurationNs
+                        fakeEventTime.nanoTime + fakeViewDurationNs
                 )
             ),
             fakeDatadogContext,
@@ -9984,7 +9984,7 @@ internal class RumViewScopeTest {
                 eventTime = Time(
                     timestamp = fakeEventTime.timestamp,
                     nanoTime =
-                    fakeEventTime.nanoTime + fakeViewDurationNs
+                        fakeEventTime.nanoTime + fakeViewDurationNs
                 )
             ),
             fakeDatadogContext,
@@ -10136,7 +10136,7 @@ internal class RumViewScopeTest {
             eventTime = Time(
                 timestamp = fakeEventTime.timestamp,
                 nanoTime =
-                fakeEventTime.nanoTime + expectedDuration
+                    fakeEventTime.nanoTime + expectedDuration
             )
         )
         testedScope = newRumViewScope()
@@ -10165,12 +10165,12 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M return a new RumViewScope W renew the current one`() {
+    fun `M return a new RumViewScope W fromExisting()`() {
         // Given
         val expectedTime = Time(timestamp = fakeEventTime.timestamp, nanoTime = fakeEventTime.nanoTime)
 
         // When
-        val newScope = testedScope.renew(expectedTime)
+        val newScope = RumViewScope.fromExisting(testedScope, expectedTime, mock())
 
         assertThat(newScope.key).isEqualTo(testedScope.key)
         assertThat(newScope.firstPartyHostHeaderTypeResolver).isEqualTo(testedScope.firstPartyHostHeaderTypeResolver)
@@ -10197,7 +10197,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M create fresh RumViewEventWriter W renew the current scope`() {
+    fun `M create fresh RumViewEventWriter W fromExisting()`() {
         // Given
         var createdWritersCount = 0
         testedScope = newRumViewScope(
@@ -10208,7 +10208,7 @@ internal class RumViewScopeTest {
         )
 
         // When
-        val newScope = testedScope.renew(fakeEventTime)
+        val newScope = RumViewScope.fromExisting(testedScope, fakeEventTime, mock())
 
         // Then
         assertThat(extractWriter(newScope)).isNotSameAs(extractWriter(testedScope))
