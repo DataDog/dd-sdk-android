@@ -32,6 +32,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
+import java.io.ByteArrayInputStream
 import java.util.Locale
 
 @Extensions(
@@ -135,7 +136,13 @@ class ProfilingRequestFactoryTest {
         // Given — a continuous profile: metadata is a ProfilingBatchMetadata blob
         val fakePerfettoBytes = forge.aString().toByteArray()
         val fakeRumEventsBytes = forge.aString().toByteArray()
-        val metadata = ProfilingBatchMetadata(fakePerfettoBytes, fakeRumEventsBytes).toBytes()
+        val metadata = checkNotNull(
+            ProfilingBatchMetadata.encode(
+                ByteArrayInputStream(fakePerfettoBytes),
+                fakePerfettoBytes.size,
+                fakeRumEventsBytes
+            )
+        )
         val fakeEventData = forge.aString().toByteArray()
         val batchData = listOf(RawBatchEvent(data = fakeEventData, metadata = metadata))
 

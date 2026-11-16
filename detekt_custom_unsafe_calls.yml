@@ -199,6 +199,7 @@ datadog:
       # endregion
       # region Kotlin primitives
       - "kotlin.ByteArray.constructor(kotlin.Int, kotlin.Function1):java.lang.NegativeArraySizeException"
+      - "kotlin.ByteArray.copyInto(kotlin.ByteArray, kotlin.Int, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "kotlin.ByteArray.copyOf(kotlin.Int):java.lang.NegativeArraySizeException"
       - "kotlin.ByteArray.copyOfRange(kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException,java.lang.IllegalArgumentException"
       - "kotlin.ByteArray.get(kotlin.Int):java.lang.IndexOutOfBoundsException"
