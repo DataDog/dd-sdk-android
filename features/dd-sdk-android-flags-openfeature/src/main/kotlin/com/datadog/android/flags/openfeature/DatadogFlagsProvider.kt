@@ -32,6 +32,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import java.util.concurrent.CancellationException
+import java.util.concurrent.atomic.AtomicLong
 import com.datadog.android.flags.model.EvaluationContext as DatadogEvaluationContext
 import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
 
@@ -84,6 +85,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     FeatureProvider {
 
     private val internalLogger: InternalLogger = sdkCore.internalLogger
+    private val contextUpdateGeneration = AtomicLong(0)
     private val experimentationOptOutEnabled = _FlagsInternalProxy(flagsClient).isExperimentationOptOutEnabled()
     private val evaluationTelemetryOptOutParameterEnabled =
         _FlagsInternalProxy(flagsClient).isEvaluationTelemetryOptOutParameterEnabled()
@@ -257,13 +259,16 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
 
     @Throws(CancellationException::class)
     private suspend fun setEvaluationContext(context: OpenFeatureEvaluationContext?) {
+        val generation = contextUpdateGeneration.incrementAndGet()
         val datadogContext = targetingContext(context)
         val telemetryOptedOut = if (evaluationTelemetryOptOutParameterEnabled) {
             context?.asMap()?.get(EVALUATION_TELEMETRY_OPT_OUT) == Value.Boolean(true)
         } else {
             null
         }
-        val outcome = flagsClient.setEvaluationContextSuspend(datadogContext, telemetryOptedOut)
+        val outcome = flagsClient.setEvaluationContextSuspend(datadogContext, telemetryOptedOut) {
+            contextUpdateGeneration.get() == generation
+        }
         if (outcome == ContextUpdateOutcome.STALE) {
             // OpenFeature Kotlin 0.6.2 unconditionally publishes Ready when initialize() or onContextSet()
             // returns. Cancellation is the only completion path that skips that overwrite, leaving the

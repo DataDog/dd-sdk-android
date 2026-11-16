@@ -45,6 +45,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
@@ -513,6 +515,97 @@ internal class DatadogFlagsProviderTest {
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
+    @ParameterizedTest
+    @EnumSource(ContextUpdateApi::class)
+    fun `M keep Stale status W public context update {older completion follows newer stale}`(
+        contextUpdateApi: ContextUpdateApi
+    ) = runTest {
+        // Given
+        val firstTargetingKey = "first-subject"
+        val secondTargetingKey = "second-subject"
+        val firstContext = ImmutableContext(targetingKey = firstTargetingKey)
+        val secondContext = ImmutableContext(targetingKey = secondTargetingKey)
+        val callbacks = mutableMapOf<String, EvaluationContextCallback>()
+        var currentState: FlagsClientState = FlagsClientState.Ready
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "initial-subject"),
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
+        whenever(mockStateObservable.getCurrentState()).thenAnswer { currentState }
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            val context = invocation.getArgument<EvaluationContext>(0)
+            callbacks[context.targetingKey] = invocation.getArgument(1)
+        }
+
+        fun startUpdate(context: ImmutableContext) {
+            when (contextUpdateApi) {
+                ContextUpdateApi.ASYNC -> OpenFeatureAPI.setEvaluationContext(
+                    context,
+                    UnconfinedTestDispatcher(testScheduler)
+                )
+                ContextUpdateApi.WAIT -> launch { OpenFeatureAPI.setEvaluationContextAndWait(context) }
+            }
+        }
+
+        startUpdate(firstContext)
+        testScheduler.runCurrent()
+        startUpdate(secondContext)
+        testScheduler.runCurrent()
+
+        // When
+        currentState = FlagsClientState.Stale
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Stale)
+        testScheduler.runCurrent()
+        assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Stale)
+
+        currentState = FlagsClientState.Ready
+        checkNotNull(callbacks[firstTargetingKey]).onSuccess()
+        testScheduler.runCurrent()
+        currentState = FlagsClientState.Stale
+        checkNotNull(callbacks[secondTargetingKey]).onFailure(RuntimeException("refresh failed"))
+        testScheduler.runCurrent()
+
+        // Then
+        assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Stale)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `M keep Ready status W setProviderAndWait() {timeout callback follows recovery}`() = runTest {
+        // Given
+        val context = ImmutableContext(targetingKey = "subject")
+        val timeout = mock<FlagsInitializationTimeoutException>()
+        lateinit var callback: EvaluationContextCallback
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            callback = invocation.getArgument(1)
+        }
+        val initialization = launch {
+            OpenFeatureAPI.setProviderAndWait(
+                provider = provider,
+                initialContext = context,
+                dispatcher = UnconfinedTestDispatcher(testScheduler)
+            )
+        }
+        testScheduler.runCurrent()
+
+        // When
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Ready)
+        testScheduler.runCurrent()
+        whenever(mockStateObservable.getCurrentState()).thenReturn(
+            FlagsClientState.Error(timeout),
+            FlagsClientState.Ready
+        )
+        callback.onFailure(timeout)
+        testScheduler.runCurrent()
+
+        // Then
+        assertThat(initialization.isCompleted).isTrue()
+        assertThat(initialization.isCancelled).isFalse()
+        assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Ready)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `M keep Stale status W setEvaluationContextAndWait() {failed refresh with same-subject fallback}`() = runTest {
         // Given
@@ -557,6 +650,11 @@ internal class DatadogFlagsProviderTest {
     }
 
     // endregion
+
+    enum class ContextUpdateApi {
+        ASYNC,
+        WAIT
+    }
 
     // region Provider Events
     // Note: These tests verify the provider correctly converts FlagsClient state changes

@@ -40,7 +40,7 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
         }
     }
 
-    fun setEvaluationContext(
+    fun setEvaluationContextWithOutcome(
         context: EvaluationContext,
         telemetryOptedOut: Boolean?,
         completion: (FlagsClientState, Throwable?) -> Unit

@@ -2115,7 +2115,7 @@ internal class DatadogFlagsClientTest {
         val testedProxy = _FlagsInternalProxy(testedClient)
 
         // When
-        testedProxy.setEvaluationContext(fakeContext, null) { state, error ->
+        testedProxy.setEvaluationContextWithOutcome(fakeContext, null) { state, error ->
             completionState = state
             completionError = error
         }

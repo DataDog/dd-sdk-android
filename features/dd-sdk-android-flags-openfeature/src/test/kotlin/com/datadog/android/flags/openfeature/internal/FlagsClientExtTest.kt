@@ -19,6 +19,7 @@ import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -336,6 +337,33 @@ internal class FlagsClientExtTest {
         assertThatThrownBy {
             runBlocking { mockFlagsClient.setEvaluationContextSuspend(context) }
         }.isInstanceOf(CancellationException::class.java)
+    }
+
+    @Test
+    fun `M ignore callback W setEvaluationContextSuspend() {coroutine cancelled}`(
+        @StringForgery targetingKey: String
+    ) = runTest {
+        // Given
+        val context = EvaluationContext(targetingKey = targetingKey)
+        lateinit var callback: EvaluationContextCallback
+        var completed = false
+        whenever(mockFlagsClient.setEvaluationContext(eq(context), any())).doAnswer { invocation ->
+            callback = invocation.getArgument(1)
+        }
+        val update = launch {
+            mockFlagsClient.setEvaluationContextSuspend(context)
+            completed = true
+        }
+        testScheduler.runCurrent()
+
+        // When
+        update.cancel()
+        callback.onSuccess()
+        testScheduler.runCurrent()
+
+        // Then
+        assertThat(update.isCancelled).isTrue()
+        assertThat(completed).isFalse()
     }
 
     companion object {
