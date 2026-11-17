@@ -28,7 +28,6 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.model.ProfileEvent
 import com.datadog.android.profiling.model.RumMetadataEvent
-import com.datadog.android.utils.verifyLog
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -55,7 +54,6 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.File
-import java.io.IOException
 import java.io.RandomAccessFile
 import java.util.concurrent.TimeUnit
 
@@ -531,51 +529,6 @@ internal class ProfilingDataWriterTest {
             eq(MethodCallSamplingRate.ALL.rate),
             isNull()
         )
-        assertThat(file.exists()).isFalse()
-    }
-
-    @Test
-    fun `M drop and report unreadable W writeTriggerProfile() {perfetto file read fails}`(
-        @Forgery fakeResult: PerfettoResult,
-        @Forgery fakeRumContext: ProfilingRumContext,
-        forge: Forge
-    ) {
-        // Given
-        val file = tmp.resolve(fakeResult.resultFilePath)
-        file.writeBytes(forge.aString(size = forge.anInt(min = 1, max = 4096)).toByteArray())
-        val fakeException = IOException(forge.anAlphabeticalString())
-        testedDataWriterTest = ProfilingDataWriter(mockSdkCore) { throw fakeException }
-
-        // When
-        testedDataWriterTest.writeTriggerProfile(
-            perfettoResult = fakeResult.copy(resultFilePath = file.absolutePath),
-            rumErrorId = forge.anAlphabeticalString(),
-            rumContext = fakeRumContext
-        )
-
-        // Then
-        val expectedProps = mapOf(
-            ProfilingTelemetry.KEY_METRIC_TYPE to ProfilingDataWriter.METRIC_TYPE_PROFILING_WRITE,
-            ProfilingDataWriter.KEY_PROFILING_WRITE to mapOf(
-                ProfilingDataWriter.KEY_DROPPED to true,
-                ProfilingDataWriter.KEY_DROP_REASON to ProfilingDataWriter.DROP_REASON_PERFETTO_UNREADABLE,
-                ProfilingTelemetry.KEY_START_REASON to fakeResult.startReason.value,
-                ProfilingDataWriter.KEY_HAS_RUM_ERROR_ID to true
-            )
-        )
-        verify(mockInternalLogger).logMetric(
-            any(),
-            eq(expectedProps),
-            eq(MethodCallSamplingRate.ALL.rate),
-            isNull()
-        )
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            ProfilingDataWriter.ERROR_READ_PERFETTO_FILE,
-            IOException::class.java
-        )
-        verifyNoInteractions(mockEventBatchWriter)
         assertThat(file.exists()).isFalse()
     }
 

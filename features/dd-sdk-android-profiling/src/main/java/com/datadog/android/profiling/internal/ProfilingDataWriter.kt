@@ -27,14 +27,11 @@ import com.datadog.android.profiling.model.RumMetadataEvent
 import com.google.gson.JsonArray
 import java.io.File
 import java.io.IOException
-import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
 internal class ProfilingDataWriter(
-    private val sdkCore: FeatureSdkCore,
-    @Suppress("UnsafeThirdPartyFunctionCall") // exceptions are handled where the stream is opened
-    private val openPerfettoFile: (String) -> InputStream = { path -> File(path).inputStream() }
+    private val sdkCore: FeatureSdkCore
 ) : ProfilingWriter {
     override fun writeManualProfile(
         profilingResult: PerfettoResult,
@@ -436,7 +433,8 @@ internal class ProfilingDataWriter(
 
     private fun readMetadata(perfettoFilePath: String, sizeBytes: Int, rumMobileEventsJson: ByteArray): ByteArray? {
         return try {
-            openPerfettoFile(perfettoFilePath).use {
+            @Suppress("UnsafeThirdPartyFunctionCall") // perfettoFilePath is non-null, File() can't throw NPE
+            File(perfettoFilePath).inputStream().use {
                 ProfilingBatchMetadata.encode(it, sizeBytes, rumMobileEventsJson)
             }
         } catch (e: IOException) {
