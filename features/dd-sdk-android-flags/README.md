@@ -155,8 +155,7 @@ The SDK sends the token only in the reserved `DD-Assignment-Token` request heade
 `dd_assignment_token` from targeting attributes, persisted assignment context, exposure data, evaluation telemetry,
 and SDK logs.
 
-With a custom flag endpoint, the proxy must forward the `DD-Assignment-Token` header. Configure the endpoint's final
-URL because the SDK does not follow redirects for requests that include a token.
+With a custom flag endpoint, the proxy must forward the `DD-Assignment-Token` header.
 
 The SDK does not parse the token or validate its claims. The assignment endpoint validates its signature, expiration,
 and other claims, so validation does not depend on the device clock. The token must contain only printable ASCII

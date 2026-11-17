@@ -504,17 +504,9 @@ interface FlagsClient {
             }
 
             val callFactory = featureSdkCore.createOkHttpCallFactory()
-            // Assignment tokens authorize one subject. OkHttp can retain custom headers across
-            // cross-origin redirects, so credentialed requests must reach only the configured endpoint.
-            // Token-free assignment requests keep the standard redirect behavior.
-            val assignmentAuthorizationCallFactory = featureSdkCore.createOkHttpCallFactory {
-                followRedirects(false)
-                followSslRedirects(false)
-            }
             val assignmentsDownloader = PrecomputedAssignmentsDownloader(
                 internalLogger = featureSdkCore.internalLogger,
                 callFactory = callFactory,
-                assignmentAuthorizationCallFactory = assignmentAuthorizationCallFactory,
                 requestFactory = if (experimentationOptOut.enabled) {
                     PrecomputedAssignmentsRequestFactory(
                         featureSdkCore.internalLogger,
