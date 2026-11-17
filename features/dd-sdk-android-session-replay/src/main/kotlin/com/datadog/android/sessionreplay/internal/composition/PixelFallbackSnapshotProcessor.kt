@@ -7,6 +7,10 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Rect
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedLayer
@@ -15,13 +19,15 @@ import com.datadog.android.internal.sessionreplay.composition.CompositionIdentit
 import com.datadog.android.internal.sessionreplay.composition.PixelResource
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolverCallback
+import com.datadog.android.sessionreplay.recorder.privacy.TextDetectionOutcome
+import com.datadog.android.sessionreplay.recorder.privacy.TextDetector
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * Resolves each [PendingPixelCapture] whose wireframe survived construction: captures that may
- * contain text fail closed to a placeholder, and text-free captures are hashed/encoded/
- * deduped/registered via the existing [ResourceResolver] pipeline. Only ever replaces the exact
+ * Resolves each [PendingPixelCapture] whose wireframe survived construction: text-region
+ * masking (fails closed to a placeholder when text presence can't be verified), then hash/encode/
+ * dedup/register via the existing [ResourceResolver] pipeline. Only ever replaces the exact
  * wireframes/child-references its own pending captures produced - everything else in the snapshot
  * passes through untouched. [cancel] is intentionally a no-op: once a generation expires or is
  * accepted, [CaptureGenerationContext] itself invalidates every [CaptureWorkToken] this processor
@@ -29,7 +35,8 @@ import java.util.concurrent.atomic.AtomicInteger
  * cancellation is enforced by the token, not by this class needing to interrupt in-flight work.
  */
 internal class PixelFallbackSnapshotProcessor(
-    private val resourceResolver: ResourceResolver
+    private val resourceResolver: ResourceResolver,
+    private val textDetector: TextDetector?
 ) : CapturedSnapshotProcessor {
 
     override fun process(
@@ -74,7 +81,22 @@ internal class PixelFallbackSnapshotProcessor(
             return
         }
 
-        onResolved(PixelOutcome.Placeholder(identityFactory.placeholderWireframe(capture.ownerIdentity)))
+        val detector = textDetector
+        if (detector == null) {
+            onResolved(PixelOutcome.Placeholder(identityFactory.placeholderWireframe(capture.ownerIdentity)))
+            return
+        }
+        detector.detectTextRegions(capture.bitmap) { detection ->
+            when (detection) {
+                is TextDetectionOutcome.Unavailable ->
+                    onResolved(PixelOutcome.Placeholder(identityFactory.placeholderWireframe(capture.ownerIdentity)))
+
+                is TextDetectionOutcome.Detected -> {
+                    maskRegions(capture.bitmap, detection.regions)
+                    resolveBitmap(capture.bitmap, identityFactory, capture.ownerIdentity, onResolved)
+                }
+            }
+        }
     }
 
     private fun resolveBitmap(
@@ -95,6 +117,18 @@ internal class PixelFallbackSnapshotProcessor(
                 }
             }
         )
+    }
+
+    /** Painted directly onto the pixels, pre-upload - never a separate overlay wireframe. */
+    private fun maskRegions(bitmap: Bitmap, regions: List<Rect>) {
+        if (regions.isEmpty()) return
+        // bitmap is always produced by a *Rasterizer via Bitmap.createBitmap(...) (mutable by
+        // default), never decoded from a resource/file, so Canvas() can't hit the "immutable
+        // bitmap" IllegalStateException here.
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        val canvas = Canvas(bitmap)
+        val paint = Paint().apply { color = Color.BLACK; style = Paint.Style.FILL }
+        regions.forEach { canvas.drawRect(it, paint) }
     }
 
     private fun finish(

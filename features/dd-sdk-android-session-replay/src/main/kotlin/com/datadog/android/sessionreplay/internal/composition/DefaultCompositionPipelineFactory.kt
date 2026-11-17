@@ -32,12 +32,14 @@ import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreMan
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
+import com.datadog.android.sessionreplay.recorder.privacy.TextDetector
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 
 /**
  * Wires every collaborator scoped to one composition recording session: the orchestrator and its
  * schedulers, the completion queue and its executor, and the draw-signal and touch interception.
  */
+@Suppress("LongParameterList")
 internal class DefaultCompositionPipelineFactory(
     private val sdkCore: FeatureSdkCore,
     private val internalCallback: SessionReplayInternalCallback,
@@ -45,6 +47,7 @@ internal class DefaultCompositionPipelineFactory(
     private val imagePrivacy: ImagePrivacy,
     private val textAndInputPrivacy: TextAndInputPrivacy,
     private val compositionHostDecomposer: CompositionHostDecomposer? = null,
+    private val textDetector: TextDetector? = null,
     private val dynamicOptimizationEnabled: Boolean,
     private val customDrawableMappers: List<DrawableToColorMapper> = emptyList(),
     private val snapshotProducerFactory: (ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer = {
@@ -56,7 +59,11 @@ internal class DefaultCompositionPipelineFactory(
             scopeProvider = DefaultRumViewScopeProvider(rumContextProvider),
             timeProvider = sdkCore.timeProvider,
             traversal = AndroidWindowTraversal(
-                mapperRegistry = builtInCapturedMappers(sdkCore.internalLogger, customDrawableMappers),
+                mapperRegistry = builtInCapturedMappers(
+                    sdkCore.internalLogger,
+                    customDrawableMappers,
+                    canMaskText = textDetector != null
+                ),
                 internalLogger = sdkCore.internalLogger,
                 compositionHostDecomposer = compositionHostDecomposer,
                 textAndInputPrivacy = textAndInputPrivacy,
@@ -109,7 +116,10 @@ internal class DefaultCompositionPipelineFactory(
             producer = snapshotProducerFactory(windowSource, rumContextProvider),
             processor = ChainedCapturedSnapshotProcessor(
                 ExecutorCapturedSnapshotProcessor(constructionExecutor, internalLogger),
-                PixelFallbackSnapshotProcessor(resourceResolverBundle.resourceResolver)
+                PixelFallbackSnapshotProcessor(
+                    resourceResolverBundle.resourceResolver,
+                    textDetector
+                )
             ),
             consumer = completionQueue,
             timeProvider = CaptureTimeProvider { sdkCore.timeProvider.getDeviceElapsedTimeNanos() },
@@ -190,7 +200,8 @@ internal class DefaultCompositionPipelineFactory(
         // Typed mappers resolve in order: EditText must precede its TextView superclass to mask inputs.
         internal fun builtInCapturedMappers(
             internalLogger: InternalLogger,
-            customDrawableMappers: List<DrawableToColorMapper>
+            customDrawableMappers: List<DrawableToColorMapper>,
+            canMaskText: Boolean
         ): CapturedViewMapperRegistry {
             val backgroundResolver = CapturedBackgroundShapeStyleResolver(
                 internalLogger = internalLogger,
@@ -218,7 +229,8 @@ internal class DefaultCompositionPipelineFactory(
                     fallbackMapper = CapturedViewGroupFallbackMapper(
                         backgroundShapeStyleResolver = backgroundResolver
                     ),
-                    internalLogger = internalLogger
+                    internalLogger = internalLogger,
+                    canMaskText = canMaskText
                 ),
                 internalLogger = internalLogger
             )

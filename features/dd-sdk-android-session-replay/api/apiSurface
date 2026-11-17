@@ -98,6 +98,8 @@ class com.datadog.android.sessionreplay.internal.composition.CompositionHostDeco
   constructor(List<com.datadog.android.internal.sessionreplay.composition.CapturedChild>, List<com.datadog.android.internal.sessionreplay.composition.CapturedLayer>, List<com.datadog.android.internal.sessionreplay.composition.CapturedWireframe>, Map<android.graphics.Rect, com.datadog.android.sessionreplay.TouchPrivacy>)
 interface com.datadog.android.sessionreplay.internal.composition.CompositionHostDecomposerProvider : com.datadog.android.sessionreplay.ExtensionSupport
   fun getCompositionHostDecomposer(): CompositionHostDecomposer?
+interface com.datadog.android.sessionreplay.internal.composition.TextDetectorProvider : com.datadog.android.sessionreplay.ExtensionSupport
+  fun getTextDetector(): com.datadog.android.sessionreplay.recorder.privacy.TextDetector?
 interface com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
   fun obfuscate(String): String
   companion object 
@@ -138,6 +140,12 @@ open class com.datadog.android.sessionreplay.recorder.mapper.TextViewMapper<T: a
 interface com.datadog.android.sessionreplay.recorder.mapper.TraverseAllChildrenMapper<T: android.view.ViewGroup> : WireframeMapper<T>
 interface com.datadog.android.sessionreplay.recorder.mapper.WireframeMapper<T: android.view.View>
   fun map(T, com.datadog.android.sessionreplay.recorder.MappingContext, com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback, com.datadog.android.api.InternalLogger): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
+interface com.datadog.android.sessionreplay.recorder.privacy.TextDetector
+  fun detectTextRegions(android.graphics.Bitmap, (TextDetectionOutcome) -> Unit)
+sealed interface com.datadog.android.sessionreplay.recorder.privacy.TextDetectionOutcome
+  class Detected : TextDetectionOutcome
+    constructor(List<android.graphics.Rect>)
+  object Unavailable : TextDetectionOutcome
 class com.datadog.android.sessionreplay.recorder.resources.DefaultDrawableCopier : DrawableCopier
   override fun copy(android.graphics.drawable.Drawable, android.content.res.Resources): android.graphics.drawable.Drawable?
 interface com.datadog.android.sessionreplay.recorder.resources.DrawableCopier

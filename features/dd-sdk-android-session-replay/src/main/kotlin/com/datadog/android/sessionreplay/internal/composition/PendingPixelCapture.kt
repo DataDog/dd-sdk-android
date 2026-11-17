@@ -11,14 +11,14 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 
 /**
  * A raster capture taken synchronously during the main-thread traversal, still awaiting async
- * resource registration (see `PixelFallbackSnapshotProcessor`).
+ * text-region masking and resource registration (see `PixelFallbackSnapshotProcessor`).
  * [wireframeIdentity] is the already-minted, already-referenced identity of the
  * `CapturedWireframe.Pixel` this capture will resolve; [ownerIdentity] is that wireframe's owning
  * layer, needed only if resolution instead has to downgrade to a fresh
  * `CapturedWireframe.PrivacyPlaceholder` identity and fix up the owner's child reference.
- * [isTextFree] marks captures that are structurally guaranteed not to contain text, such as a
- * background drawable rendered on its own. Any other capture could have readable text baked into
- * it, so it fails closed to a placeholder.
+ * [isTextFree] skips text-region detection for captures that are structurally guaranteed not to
+ * contain text, such as a background drawable rendered on its own. Any other capture could have
+ * readable text baked into it, so it fails closed to a placeholder when a detector cannot verify it.
  */
 internal data class PendingPixelCapture(
     val wireframeIdentity: CapturedIdentity,

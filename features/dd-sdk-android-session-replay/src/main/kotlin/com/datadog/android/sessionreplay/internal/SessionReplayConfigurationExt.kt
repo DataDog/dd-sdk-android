@@ -32,6 +32,7 @@ internal fun SessionReplayConfiguration.applyRemoteConfiguration(
     ).also {
         it.adaptiveCaptureSchedulingEnabled = adaptiveCaptureSchedulingEnabled
         it.compositionHostDecomposer = compositionHostDecomposer
+        it.textDetector = textDetector
     }
 }
 
