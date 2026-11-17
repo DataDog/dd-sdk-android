@@ -7,7 +7,9 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
+import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import java.util.concurrent.ExecutorService
 
 /**
@@ -18,20 +20,25 @@ internal class CompositionCapturePipeline(
     private val lifecycle: CompositionCaptureLifecycle,
     private val completionQueue: SnapshotCompletionQueue,
     private val constructionExecutor: ExecutorService,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val resourceResolver: ResourceResolver? = null,
+    private val resourceDataQueueHandler: DataQueueHandler? = null
 ) : Recorder {
     override fun registerCallbacks() {
         lifecycle.registerCallbacks()
+        resourceResolver?.registerCallbacks()
     }
 
     override fun unregisterCallbacks() {
         lifecycle.unregisterCallbacks()
+        resourceResolver?.unregisterCallbacks()
     }
 
     override fun stopProcessingRecords() {
         orchestrator.shutdown()
         constructionExecutor.shutdownNow()
         completionQueue.stop()
+        resourceDataQueueHandler?.clearAndStopProcessingQueue()
     }
 
     override fun resumeRecorders() {
