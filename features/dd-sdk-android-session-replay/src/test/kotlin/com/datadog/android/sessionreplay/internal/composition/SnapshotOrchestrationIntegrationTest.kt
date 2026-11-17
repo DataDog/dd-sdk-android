@@ -62,7 +62,7 @@ internal class SnapshotOrchestrationIntegrationTest {
         assertThat(record.firstValue.applicationId).isEqualTo(fakeApplicationId)
         assertThat(record.firstValue.sessionId).isEqualTo(fakeSessionId)
         assertThat(record.firstValue.viewId).isEqualTo(fakeFixture.fakeTree.scope.value)
-        assertThat(record.firstValue.records).hasSize(1)
+        assertThat(record.firstValue.records).hasSize(3)
     }
 
     private class RecordingFixture(

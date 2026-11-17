@@ -106,7 +106,8 @@ internal class ExecutorCapturedSnapshotProcessorTest {
                 listOf(CapturedChild.Layer(fakeWindow.rootLayer.identity))
             ),
             fakeWindow.layers,
-            fakeWindow.wireframes
+            fakeWindow.wireframes,
+            fakeSnapshot.viewportSize
         )
         val fakeResults = mutableListOf<SnapshotProcessingResult>()
         val testedProcessor = ExecutorCapturedSnapshotProcessor(Executor { task -> task.run() }, mock())

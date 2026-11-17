@@ -582,7 +582,8 @@ internal class CompositionWindowThreadTest {
             timeProvider = mock(),
             traversal = mockTraversal,
             touchPrivacyManager = mockTouchPrivacyManager,
-            viewIdentifierResolver = mockIdentifiers
+            viewIdentifierResolver = mockIdentifiers,
+            resolveViewportSize = { CapturedViewportSize(0L, 0L) }
         )
 
         fun windowResult(window: View): WindowCopyResult.Present {

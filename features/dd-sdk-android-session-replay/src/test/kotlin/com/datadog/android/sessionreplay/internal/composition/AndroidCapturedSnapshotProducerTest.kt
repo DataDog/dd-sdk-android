@@ -46,6 +46,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 
 @Extensions(
@@ -128,7 +129,8 @@ internal class AndroidCapturedSnapshotProducerTest {
     private fun producer(
         windows: List<View>,
         scope: CapturedRumViewScope?,
-        fakeDeviceTimestampMs: Long
+        fakeDeviceTimestampMs: Long,
+        resolveViewportSize: (View) -> CapturedViewportSize = { CapturedViewportSize(0L, 0L) }
     ): AndroidCapturedSnapshotProducer {
         val windowSource = ActiveWindowSource(refreshTouchPrivacyAfterCapture = false).apply { update(windows) }
         val mockTimeProvider: TimeProvider = mock()
@@ -140,7 +142,8 @@ internal class AndroidCapturedSnapshotProducerTest {
             traversal = traversal(),
             touchPrivacyManager = mockTouchPrivacyManager,
             viewIdentifierResolver = mockViewIdentifierResolver,
-            isMainThreadWindow = { true }
+            isMainThreadWindow = { true },
+            resolveViewportSize = resolveViewportSize
         )
     }
 
@@ -206,6 +209,57 @@ internal class AndroidCapturedSnapshotProducerTest {
         assertThat(snapshot.timestamp).isEqualTo(fakeTimestamp + fakeOffset)
         assertThat(snapshot.scope).isEqualTo(RumViewIdentityScope(fakeViewId))
         verify(mockTouchPrivacyManager).replaceCurrentTouchOverrideAreas(emptyMap())
+    }
+
+    @Test
+    fun `M size the viewport from the first window W capture { multiple windows }`(
+        @Forgery fakeFirstBounds: GlobalBounds,
+        @Forgery fakeSecondBounds: GlobalBounds,
+        @StringForgery fakeViewId: String,
+        @LongForgery(min = 0L, max = 10_000L) fakeWidth: Long,
+        @LongForgery(min = 0L, max = 10_000L) fakeHeight: Long,
+        @LongForgery fakeTimestamp: Long
+    ) {
+        // Given
+        val fakeViewportSize = CapturedViewportSize(fakeWidth, fakeHeight)
+        val stubFirstWindow = mockWindow(fakeFirstBounds)
+        val testedProducer = producer(
+            windows = listOf(stubFirstWindow, mockWindow(fakeSecondBounds)),
+            scope = CapturedRumViewScope(RumViewIdentityScope(fakeViewId), 0L),
+            fakeDeviceTimestampMs = fakeTimestamp,
+            resolveViewportSize = { window ->
+                if (window === stubFirstWindow) fakeViewportSize else CapturedViewportSize(0L, 0L)
+            }
+        )
+
+        // When
+        val result = testedProducer.capture(fakeContext).doneValue()
+
+        // Then
+        val snapshot = checkNotNull(result) { "Expected a captured snapshot with the current RUM scope" }
+        assertThat(snapshot.viewportSize).isEqualTo(fakeViewportSize)
+    }
+
+    @Test
+    fun `M return null W capture { every window is filtered out }`(
+        @Forgery fakeBounds: GlobalBounds,
+        @Forgery fakeViewId: UUID,
+        @LongForgery fakeTimestamp: Long
+    ) {
+        // Given
+        val stubHiddenWindow = mockWindow(fakeBounds)
+        whenever(stubHiddenWindow.isShown).thenReturn(false)
+        val testedProducer = producer(
+            windows = listOf(stubHiddenWindow),
+            scope = CapturedRumViewScope(RumViewIdentityScope(fakeViewId.toString()), 0L),
+            fakeDeviceTimestampMs = fakeTimestamp
+        )
+
+        // When
+        val snapshot = testedProducer.capture(fakeContext)
+
+        // Then
+        assertThat(snapshot).isNull()
     }
 
     @Test

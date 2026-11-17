@@ -525,7 +525,8 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
                 listOf(CapturedChild.Layer(present.rootLayer.identity))
             ),
             layers = present.layers,
-            wireframes = present.wireframes
+            wireframes = present.wireframes,
+            viewportSize = CapturedViewportSize(0L, 0L)
         )
         assertThat(DefaultCapturedTreeValidator().validate(snapshot)).isEqualTo(CaptureValidationResult.Valid)
     }
@@ -684,7 +685,7 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
         testedProcessor.process(
             SnapshotProcessingRequest(
                 fakeContext,
-                CapturedNativeSnapshot(1L, identityFactory.scope, listOf(copy.window))
+                CapturedNativeSnapshot(1L, identityFactory.scope, listOf(copy.window), CapturedViewportSize(0L, 0L))
             ),
             { result -> fakeResults.add(result) }
         )
@@ -782,7 +783,7 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
             fakeContext
         ) as WindowCopyResult.Present
         val result = testedBuilder.build(
-            CapturedNativeSnapshot(1L, identityFactory.scope, listOf(copy.window)),
+            CapturedNativeSnapshot(1L, identityFactory.scope, listOf(copy.window), CapturedViewportSize(0L, 0L)),
             fakeContext
         )
 

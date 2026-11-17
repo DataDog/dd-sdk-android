@@ -15,6 +15,7 @@ import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -40,6 +41,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.UUID
 import java.util.concurrent.ExecutorService
 
 @Extensions(
@@ -326,9 +328,308 @@ internal class SnapshotCompletionQueueTest {
                 fakeApplicationId,
                 fakeSessionId,
                 fakeFixture.fakeTree.scope.value,
-                listOf(fakeFixture.mockRecord)
+                listOf(
+                    MobileSegment.MobileRecord.MetaRecord(
+                        timestamp = fakeFixture.fakeTree.snapshot.timestamp,
+                        data = MobileSegment.Data1(
+                            width = fakeFixture.fakeTree.snapshot.viewportSize.width,
+                            height = fakeFixture.fakeTree.snapshot.viewportSize.height
+                        )
+                    ),
+                    MobileSegment.MobileRecord.FocusRecord(
+                        timestamp = fakeFixture.fakeTree.snapshot.timestamp,
+                        data = MobileSegment.Data2(hasFocus = true)
+                    ),
+                    fakeFixture.mockRecord
+                )
             )
         )
+    }
+
+    @Test
+    fun `M write only the mapped snapshot W process() { second capture for the same view }`(
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String,
+        @Forgery fakeTree: CompositionTestTree
+    ) {
+        // Given
+        val mockFirstRecord: MobileSegment.MobileRecord.MobileFullSnapshotRecord = mock()
+        val mockSecondRecord: MobileSegment.MobileRecord.MobileFullSnapshotRecord = mock()
+        val stubWireMapper: CapturedTreeWireMapper = mock()
+        whenever(stubWireMapper.mapFullSnapshot(fakeTree.snapshot))
+            .thenReturn(CaptureWireMappingResult.Success(mockFirstRecord))
+            .thenReturn(CaptureWireMappingResult.Success(mockSecondRecord))
+        val mockRecordWriter: RecordWriter = mock()
+        val testedProcessor = DefaultSnapshotCompletionProcessor(
+            rumContextProvider = mockRumContextProvider(fakeApplicationId, fakeSessionId, fakeTree.scope.value),
+            recordWriter = mockRecordWriter,
+            internalLogger = mock(),
+            wireMapper = stubWireMapper
+        )
+        val fakeClock = FakeClock().apply { nowNs = 9L }
+        testedProcessor.process(CompletedSnapshotCapture(generation(fakeClock, deadlineNs = 10L), fakeTree.snapshot))
+
+        // When
+        testedProcessor.process(
+            CompletedSnapshotCapture(generation(fakeClock, id = 2L, deadlineNs = 10L), fakeTree.snapshot)
+        )
+
+        // Then
+        val recordCaptor = argumentCaptor<EnrichedRecord>()
+        verify(mockRecordWriter, times(2)).write(recordCaptor.capture(), isA())
+        assertThat(recordCaptor.secondValue).isEqualTo(
+            EnrichedRecord(fakeApplicationId, fakeSessionId, fakeTree.scope.value, listOf(mockSecondRecord))
+        )
+    }
+
+    @Test
+    fun `M write a viewport resize before the snapshot W process() { same view, window size changed }`(
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String,
+        @Forgery fakeTree: CompositionTestTree,
+        @LongForgery(min = 1L, max = 1_000L) fakeWidthDelta: Long
+    ) {
+        // Given
+        val fakeViewportSize = fakeTree.snapshot.viewportSize
+        val fakeResizedViewportSize = fakeViewportSize.copy(width = fakeViewportSize.width + fakeWidthDelta)
+        val fakeResizedSnapshot = fakeTree.snapshot.copy(viewportSize = fakeResizedViewportSize)
+        val mockFirstRecord: MobileSegment.MobileRecord.MobileFullSnapshotRecord = mock()
+        val mockResizedRecord: MobileSegment.MobileRecord.MobileFullSnapshotRecord = mock()
+        val stubWireMapper: CapturedTreeWireMapper = mock {
+            on { mapFullSnapshot(fakeTree.snapshot) } doReturn CaptureWireMappingResult.Success(mockFirstRecord)
+            on { mapFullSnapshot(fakeResizedSnapshot) } doReturn CaptureWireMappingResult.Success(mockResizedRecord)
+        }
+        val mockRecordWriter: RecordWriter = mock()
+        val testedProcessor = DefaultSnapshotCompletionProcessor(
+            rumContextProvider = mockRumContextProvider(fakeApplicationId, fakeSessionId, fakeTree.scope.value),
+            recordWriter = mockRecordWriter,
+            internalLogger = mock(),
+            wireMapper = stubWireMapper
+        )
+        val fakeClock = FakeClock().apply { nowNs = 9L }
+        testedProcessor.process(CompletedSnapshotCapture(generation(fakeClock, deadlineNs = 10L), fakeTree.snapshot))
+
+        // When
+        testedProcessor.process(
+            CompletedSnapshotCapture(generation(fakeClock, id = 2L, deadlineNs = 10L), fakeResizedSnapshot)
+        )
+
+        // Then
+        val recordCaptor = argumentCaptor<EnrichedRecord>()
+        verify(mockRecordWriter, times(2)).write(recordCaptor.capture(), isA())
+        assertThat(recordCaptor.secondValue).isEqualTo(
+            EnrichedRecord(
+                fakeApplicationId,
+                fakeSessionId,
+                fakeTree.scope.value,
+                listOf(
+                    MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
+                        timestamp = fakeResizedSnapshot.timestamp,
+                        data = MobileSegment.MobileIncrementalData.ViewportResizeData(
+                            width = fakeResizedViewportSize.width,
+                            height = fakeResizedViewportSize.height
+                        )
+                    ),
+                    mockResizedRecord
+                )
+            )
+        )
+    }
+
+    @Test
+    fun `M write only the mapped snapshot W process() { same view, only root size changed }`(
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String,
+        @Forgery fakeTree: CompositionTestTree,
+        @LongForgery(min = 1L, max = 1_000L) fakeHeightDelta: Long
+    ) {
+        // Given
+        val fakeRootBounds = fakeTree.root.bounds
+        val fakeResizedRoot = fakeTree.root.copy(
+            bounds = fakeRootBounds.copy(
+                height =
+                    fakeRootBounds.height + fakeHeightDelta
+            )
+        )
+        val fakeResizedRootSnapshot = fakeTree.snapshot.copy(root = fakeResizedRoot)
+        val mockFirstRecord: MobileSegment.MobileRecord.MobileFullSnapshotRecord = mock()
+        val mockSecondRecord: MobileSegment.MobileRecord.MobileFullSnapshotRecord = mock()
+        val stubWireMapper: CapturedTreeWireMapper = mock {
+            on { mapFullSnapshot(fakeTree.snapshot) } doReturn CaptureWireMappingResult.Success(mockFirstRecord)
+            on { mapFullSnapshot(fakeResizedRootSnapshot) } doReturn CaptureWireMappingResult.Success(mockSecondRecord)
+        }
+        val mockRecordWriter: RecordWriter = mock()
+        val testedProcessor = DefaultSnapshotCompletionProcessor(
+            rumContextProvider = mockRumContextProvider(fakeApplicationId, fakeSessionId, fakeTree.scope.value),
+            recordWriter = mockRecordWriter,
+            internalLogger = mock(),
+            wireMapper = stubWireMapper
+        )
+        val fakeClock = FakeClock().apply { nowNs = 9L }
+        testedProcessor.process(CompletedSnapshotCapture(generation(fakeClock, deadlineNs = 10L), fakeTree.snapshot))
+
+        // When
+        testedProcessor.process(
+            CompletedSnapshotCapture(generation(fakeClock, id = 2L, deadlineNs = 10L), fakeResizedRootSnapshot)
+        )
+
+        // Then
+        val recordCaptor = argumentCaptor<EnrichedRecord>()
+        verify(mockRecordWriter, times(2)).write(recordCaptor.capture(), isA())
+        assertThat(recordCaptor.secondValue).isEqualTo(
+            EnrichedRecord(fakeApplicationId, fakeSessionId, fakeTree.scope.value, listOf(mockSecondRecord))
+        )
+    }
+
+    @Test
+    fun `M write a ViewEndRecord for the previous view W process() { new view's snapshot completes }`(
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeSessionId: String,
+        @StringForgery fakeOtherViewId: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeTree = forge.aCompositionTestTree()
+        val fakeOtherTree = forge.aCompositionTestTree(scopeValue = fakeOtherViewId)
+        val mockRecord: MobileSegment.MobileRecord.MobileFullSnapshotRecord = mock()
+        val mockOtherRecord: MobileSegment.MobileRecord.MobileFullSnapshotRecord = mock()
+        val stubWireMapper: CapturedTreeWireMapper = mock {
+            on { mapFullSnapshot(fakeTree.snapshot) } doReturn CaptureWireMappingResult.Success(mockRecord)
+            on { mapFullSnapshot(fakeOtherTree.snapshot) } doReturn CaptureWireMappingResult.Success(mockOtherRecord)
+        }
+        val mockRecordWriter: RecordWriter = mock()
+        val stubRumContextProvider = mockRumContextProvider(fakeApplicationId, fakeSessionId, fakeTree.scope.value)
+        val testedProcessor = DefaultSnapshotCompletionProcessor(
+            rumContextProvider = stubRumContextProvider,
+            recordWriter = mockRecordWriter,
+            internalLogger = mock(),
+            wireMapper = stubWireMapper
+        )
+        val fakeClock = FakeClock().apply { nowNs = 9L }
+        testedProcessor.process(CompletedSnapshotCapture(generation(fakeClock, deadlineNs = 10L), fakeTree.snapshot))
+
+        // When
+        whenever(stubRumContextProvider.getRumContext()).thenReturn(
+            SessionReplayRumContext(fakeApplicationId, fakeSessionId, fakeOtherViewId)
+        )
+        testedProcessor.process(
+            CompletedSnapshotCapture(generation(fakeClock, id = 2L, deadlineNs = 10L), fakeOtherTree.snapshot)
+        )
+
+        // Then
+        val recordCaptor = argumentCaptor<EnrichedRecord>()
+        verify(mockRecordWriter, times(3)).write(recordCaptor.capture(), isA())
+        assertThat(recordCaptor.secondValue).isEqualTo(
+            EnrichedRecord(
+                fakeApplicationId,
+                fakeSessionId,
+                fakeTree.scope.value,
+                listOf(MobileSegment.MobileRecord.ViewEndRecord(fakeOtherTree.snapshot.timestamp))
+            )
+        )
+    }
+
+    @Test
+    fun `M keep the current view open W process() { new view's capture misses its deadline }`(
+        @Forgery fakeApplicationId: UUID,
+        @Forgery fakeSessionId: UUID,
+        @Forgery fakeViewId: UUID,
+        @Forgery fakeOtherViewId: UUID,
+        forge: Forge
+    ) {
+        // Given
+        val fakeTree = forge.aCompositionTestTree(scopeValue = fakeViewId.toString())
+        val fakeOtherTree = forge.aCompositionTestTree(scopeValue = fakeOtherViewId.toString())
+        val stubWireMapper: CapturedTreeWireMapper = mock {
+            on { mapFullSnapshot(any()) } doReturn CaptureWireMappingResult.Success(mock())
+        }
+        val mockRecordWriter: RecordWriter = mock()
+        val stubRumContextProvider = mockRumContextProvider(
+            fakeApplicationId.toString(),
+            fakeSessionId.toString(),
+            fakeViewId.toString()
+        )
+        val testedProcessor = DefaultSnapshotCompletionProcessor(
+            rumContextProvider = stubRumContextProvider,
+            recordWriter = mockRecordWriter,
+            internalLogger = mock(),
+            wireMapper = stubWireMapper
+        )
+        val fakeClock = FakeClock().apply { nowNs = 9L }
+        testedProcessor.process(CompletedSnapshotCapture(generation(fakeClock, deadlineNs = 10L), fakeTree.snapshot))
+        whenever(stubRumContextProvider.getRumContext()).thenReturn(
+            SessionReplayRumContext(fakeApplicationId.toString(), fakeSessionId.toString(), fakeOtherViewId.toString())
+        )
+        testedProcessor.process(
+            CompletedSnapshotCapture(generation(fakeClock, id = 2L, deadlineNs = 9L), fakeOtherTree.snapshot)
+        )
+
+        // When
+        testedProcessor.process(
+            CompletedSnapshotCapture(generation(fakeClock, id = 3L, deadlineNs = 10L), fakeOtherTree.snapshot)
+        )
+
+        // Then
+        val recordCaptor = argumentCaptor<EnrichedRecord>()
+        verify(mockRecordWriter, times(3)).write(recordCaptor.capture(), isA())
+        assertThat(recordCaptor.secondValue.records)
+            .containsExactly(MobileSegment.MobileRecord.ViewEndRecord(fakeOtherTree.snapshot.timestamp))
+        assertThat(recordCaptor.thirdValue.viewId).isEqualTo(fakeOtherViewId.toString())
+        assertThat(recordCaptor.thirdValue.records.first())
+            .isInstanceOf(MobileSegment.MobileRecord.MetaRecord::class.java)
+    }
+
+    @Test
+    fun `M close the previous view W process() { same view ID in a new session }`(
+        @Forgery fakeApplicationId: UUID,
+        @Forgery fakeSessionId: UUID,
+        @Forgery fakeOtherSessionId: UUID,
+        @Forgery fakeViewId: UUID,
+        forge: Forge
+    ) {
+        // Given
+        val fakeTree = forge.aCompositionTestTree(scopeValue = fakeViewId.toString())
+        val mockRecord: MobileSegment.MobileRecord.MobileFullSnapshotRecord = mock()
+        val stubWireMapper: CapturedTreeWireMapper = mock {
+            on { mapFullSnapshot(fakeTree.snapshot) } doReturn CaptureWireMappingResult.Success(mockRecord)
+        }
+        val mockRecordWriter: RecordWriter = mock()
+        val stubRumContextProvider = mockRumContextProvider(
+            fakeApplicationId.toString(),
+            fakeSessionId.toString(),
+            fakeViewId.toString()
+        )
+        val testedProcessor = DefaultSnapshotCompletionProcessor(
+            rumContextProvider = stubRumContextProvider,
+            recordWriter = mockRecordWriter,
+            internalLogger = mock(),
+            wireMapper = stubWireMapper
+        )
+        val fakeClock = FakeClock().apply { nowNs = 9L }
+        testedProcessor.process(CompletedSnapshotCapture(generation(fakeClock, deadlineNs = 10L), fakeTree.snapshot))
+        whenever(stubRumContextProvider.getRumContext()).thenReturn(
+            SessionReplayRumContext(fakeApplicationId.toString(), fakeOtherSessionId.toString(), fakeViewId.toString())
+        )
+
+        // When
+        testedProcessor.process(
+            CompletedSnapshotCapture(generation(fakeClock, id = 2L, deadlineNs = 10L), fakeTree.snapshot)
+        )
+
+        // Then
+        val recordCaptor = argumentCaptor<EnrichedRecord>()
+        verify(mockRecordWriter, times(3)).write(recordCaptor.capture(), isA())
+        assertThat(recordCaptor.secondValue).isEqualTo(
+            EnrichedRecord(
+                fakeApplicationId.toString(),
+                fakeSessionId.toString(),
+                fakeViewId.toString(),
+                listOf(MobileSegment.MobileRecord.ViewEndRecord(fakeTree.snapshot.timestamp))
+            )
+        )
+        assertThat(recordCaptor.thirdValue.sessionId).isEqualTo(fakeOtherSessionId.toString())
+        assertThat(recordCaptor.thirdValue.records.first())
+            .isInstanceOf(MobileSegment.MobileRecord.MetaRecord::class.java)
     }
 
     @Test

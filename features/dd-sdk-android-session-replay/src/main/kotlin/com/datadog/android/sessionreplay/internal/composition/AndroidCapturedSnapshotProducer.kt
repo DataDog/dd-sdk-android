@@ -13,6 +13,7 @@ import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.putTouchOverrideArea
+import com.datadog.android.sessionreplay.internal.utils.MiscUtils
 import com.datadog.android.sessionreplay.utils.DefaultViewIdentifierResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
@@ -24,7 +25,8 @@ internal class AndroidCapturedSnapshotProducer(
     private val traversal: AndroidWindowTraversal,
     private val touchPrivacyManager: TouchPrivacyManager,
     private val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver,
-    private val isMainThreadWindow: (View) -> Boolean = { view -> isAttachedToMainLooper(view) }
+    private val isMainThreadWindow: (View) -> Boolean = { view -> isAttachedToMainLooper(view) },
+    private val resolveViewportSize: (View) -> CapturedViewportSize = { window -> resolveWindowViewportSize(window) }
 ) : CapturedSnapshotProducer {
     @MainThread
     @Suppress("ReturnCount")
@@ -69,10 +71,12 @@ internal class AndroidCapturedSnapshotProducer(
                 WindowCopyResult.Aborted -> return null
             }
         }
+        @Suppress("UnsafeThirdPartyFunctionCall") // Non-empty: an empty window list returned above.
         val snapshot = CapturedNativeSnapshot(
             timeProvider.getDeviceTimestampMillis() + rumViewScope.viewTimeOffsetMs,
             rumViewScope.scope,
-            copies
+            copies,
+            resolveViewportSize(windows.first())
         )
         if (!canContinueCapture(context, rumViewScope, windowSnapshot) || windows.any { !isMainThreadWindow(it) }) {
             return null
@@ -81,7 +85,8 @@ internal class AndroidCapturedSnapshotProducer(
         windowSource.publishTouchPrivacy(windowSnapshot, capturedWindows, rumViewScope.scope, touchOverridesByWindow) {
             touchPrivacyManager.replaceCurrentTouchOverrideAreas(touchOverrideAreas)
         }
-        return snapshot
+        // With every window filtered out there is nothing to record.
+        return snapshot.takeIf { copies.isNotEmpty() }
     }
 
     private fun canContinueCapture(
@@ -91,4 +96,10 @@ internal class AndroidCapturedSnapshotProducer(
     ): Boolean = context.shouldContinue() &&
         scopeProvider.currentScope()?.scope == rumViewScope.scope &&
         windowSource.isCurrent(windowSnapshot)
+}
+
+// Same window metrics as the legacy recorder, read from the first window's context like WindowsOnDrawListener.
+private fun resolveWindowViewportSize(window: View): CapturedViewportSize {
+    val screenBounds = MiscUtils.resolveSystemInformation(window.context).screenBounds
+    return CapturedViewportSize(screenBounds.width, screenBounds.height)
 }

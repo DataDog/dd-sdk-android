@@ -272,7 +272,12 @@ internal class CapturedNativeSnapshotBuilderTest {
             }
             nested = CapturedNativeWindow(fakeDensity, views)
         }
-        return CapturedNativeSnapshot(fakeGeneration.id, fakeFactory.scope, listOf(checkNotNull(nested)))
+        return CapturedNativeSnapshot(
+            fakeGeneration.id,
+            fakeFactory.scope,
+            listOf(checkNotNull(nested)),
+            CapturedViewportSize(0L, 0L)
+        )
     }
 
     private fun snapshotInput(
@@ -305,7 +310,8 @@ internal class CapturedNativeSnapshotBuilderTest {
         return CapturedNativeSnapshot(
             fakeGeneration.id,
             fakeFactory.scope,
-            listOf(CapturedNativeWindow(fakeDensity, listOf(root, host)))
+            listOf(CapturedNativeWindow(fakeDensity, listOf(root, host))),
+            CapturedViewportSize(0L, 0L)
         )
     }
 
