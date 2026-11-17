@@ -134,7 +134,7 @@ internal class DefaultRecorderProviderTest {
         val testedProvider = createProvider(
             heatmapsEnabled = false,
             compositionTreeRecordingEnabled = true,
-            compositionPipelineFactory = { recordWriter, rumContextProvider, application ->
+            compositionPipelineFactory = { _, _, recordWriter, rumContextProvider, application, _ ->
                 factoryArguments = Triple(recordWriter, rumContextProvider, application)
                 mock()
             }
@@ -248,7 +248,7 @@ internal class DefaultRecorderProviderTest {
         heatmapsEnabled: Boolean,
         compositionTreeRecordingEnabled: Boolean,
         compositionRecorder: Recorder = mock(),
-        compositionPipelineFactory: CompositionPipelineFactory = CompositionPipelineFactory { _, _, _ ->
+        compositionPipelineFactory: CompositionPipelineFactory = CompositionPipelineFactory { _, _, _, _, _, _ ->
             compositionPipelineConstructions++
             compositionRecorder
         }

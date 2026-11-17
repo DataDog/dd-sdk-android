@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.composition
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
@@ -24,12 +25,17 @@ import com.datadog.android.sessionreplay.model.MobileSegment
  * window size changes within the same view (e.g. a rotation), a
  * [MobileSegment.MobileIncrementalData.ViewportResizeData] record precedes the snapshot, as legacy
  * does for orientation changes.
+ *
+ * Also drains [resourceDataQueueHandler] once per processed capture, like the legacy pipeline's
+ * per-draw-cycle call to [DataQueueHandler.tryToConsumeItems]: resources registered for this
+ * generation's pixel captures are only written once the queue is drained.
  */
 internal class DefaultSnapshotCompletionProcessor(
     private val rumContextProvider: RumContextProvider,
     private val recordWriter: RecordWriter,
     private val internalLogger: InternalLogger,
-    private val wireMapper: CapturedTreeWireMapper = DefaultCapturedTreeWireMapper()
+    private val wireMapper: CapturedTreeWireMapper = DefaultCapturedTreeWireMapper(),
+    private val resourceDataQueueHandler: DataQueueHandler? = null
 ) : SnapshotCompletionProcessor {
 
     // Only ever read/written from SnapshotCompletionQueue's single draining thread - same
@@ -38,6 +44,12 @@ internal class DefaultSnapshotCompletionProcessor(
     private var lastViewportSize: CapturedViewportSize? = null
 
     override fun process(capture: CompletedSnapshotCapture) {
+        // Whatever resources this generation's pixel captures resolved were already queued
+        // upstream, in PixelFallbackSnapshotProcessor, before this callback ever fires -
+        // unconditional and first, so it runs regardless of which branch below this capture
+        // ends up taking (including the early-return/invalid-context guard).
+        resourceDataQueueHandler?.tryToConsumeItems()
+
         val rumContext = rumContextProvider.getRumContext()
         if (!rumContext.isValid() || rumContext.viewId != capture.snapshot.scope.value) {
             capture.generation.expire()

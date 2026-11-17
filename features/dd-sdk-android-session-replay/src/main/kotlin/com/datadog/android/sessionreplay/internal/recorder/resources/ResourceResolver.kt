@@ -13,6 +13,7 @@ import android.graphics.Path
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
+import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
@@ -56,7 +57,7 @@ internal class ResourceResolver(
 
     // region internal
 
-    @MainThread
+    @AnyThread
     internal fun resolveResourceIdFromBitmap(
         bitmap: Bitmap,
         resourceResolverCallback: ResourceResolverCallback

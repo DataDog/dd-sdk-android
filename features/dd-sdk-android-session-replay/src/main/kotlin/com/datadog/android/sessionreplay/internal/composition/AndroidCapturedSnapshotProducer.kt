@@ -53,6 +53,7 @@ internal class AndroidCapturedSnapshotProducer(
         val capturedWindows = mutableListOf<View>()
         val touchOverrideAreas = mutableMapOf<Rect, TouchPrivacy>()
         val touchOverridesByWindow = mutableMapOf<View, Map<Rect, TouchPrivacy>>()
+        val pendingPixelCaptures = mutableListOf<PendingPixelCapture>()
         for (window in windows) {
             if (!canContinueCapture(context, rumViewScope, windowSnapshot) || !isMainThreadWindow(window)) {
                 return null
@@ -62,6 +63,7 @@ internal class AndroidCapturedSnapshotProducer(
                 is WindowCopyResult.Present -> {
                     copies += result.window
                     capturedWindows += window
+                    pendingPixelCaptures += result.window.pendingPixelCaptures
                     result.touchOverrideAreas.forEach { (bounds, privacy) ->
                         touchOverrideAreas.putTouchOverrideArea(bounds, privacy)
                     }
@@ -76,7 +78,9 @@ internal class AndroidCapturedSnapshotProducer(
             timeProvider.getDeviceTimestampMillis() + rumViewScope.viewTimeOffsetMs,
             rumViewScope.scope,
             copies,
-            resolveViewportSize(windows.first())
+            resolveViewportSize(windows.first()),
+            pendingPixelCaptures,
+            identityFactory
         )
         if (!canContinueCapture(context, rumViewScope, windowSnapshot) || windows.any { !isMainThreadWindow(it) }) {
             return null

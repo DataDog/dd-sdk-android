@@ -14,10 +14,11 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.composition.CapturedIdentityFactory
+import com.datadog.android.sessionreplay.internal.composition.PendingPixelCaptureSink
 
 /**
- * Deliberately narrower than the legacy `MappingContext`: no image-helper fields, since
- * image-resource capture is owned by a later workstream, not by View decomposition. During the
+ * Deliberately narrower than the legacy `MappingContext`: instead of image helpers, mappers deposit
+ * pixel captures into [pendingPixelCaptureSink], which are resolved after construction. During the
  * UI-thread copy, [imagePrivacy] and [textAndInputPrivacy] carry the view's effective privacy
  * (after per-view overrides) for mappers that mask while capturing. Contexts rebuilt for
  * worker-side mapping keep the privacy defaults, so masking cannot be deferred to that step.
@@ -29,7 +30,8 @@ internal data class CapturedMappingContext(
     // The native copier supplies geometry once for both the layer and its mapper.
     val bounds: CapturedBounds? = null,
     val imagePrivacy: ImagePrivacy = ImagePrivacy.MASK_ALL,
-    val textAndInputPrivacy: TextAndInputPrivacy = TextAndInputPrivacy.MASK_ALL
+    val textAndInputPrivacy: TextAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
+    val pendingPixelCaptureSink: PendingPixelCaptureSink = PendingPixelCaptureSink.NoOp
 )
 
 internal sealed interface CapturedViewMapperResult {
