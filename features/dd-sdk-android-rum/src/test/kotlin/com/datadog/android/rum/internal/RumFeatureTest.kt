@@ -1380,7 +1380,8 @@ internal class RumFeatureTest {
         }
 
         // Then
-        inOrder(mockHandler, mockParent) {
+        inOrder(mockRumMonitor, mockHandler, mockParent) {
+            verify(mockRumMonitor).setDebugListener(null)
             verify(mockHandler).post(any())
             verify(mockParent).removeView(mockContainer)
         }

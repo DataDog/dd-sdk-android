@@ -623,6 +623,8 @@ internal class RumFeature(
             if (debugActivityLifecycleListener.get() != null && context is Application) {
                 val listener = debugActivityLifecycleListener.get()
                 context.unregisterActivityLifecycleCallbacks(listener)
+                // unsubscribe before a replacement listener can be registered
+                listener.unsubscribe()
                 debugActivityLifecycleListener.set(null)
                 detachDebugListener(listener)
             }

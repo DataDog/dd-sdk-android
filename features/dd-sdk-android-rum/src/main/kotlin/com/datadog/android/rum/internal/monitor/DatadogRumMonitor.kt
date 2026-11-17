@@ -149,6 +149,7 @@ internal class DatadogRumMonitor(
         timeseriesCollector = timeseriesCollector
     )
 
+    @Volatile
     internal var debugListener: RumDebugListener? = null
 
     private val internalProxy = _RumInternalProxy(this)

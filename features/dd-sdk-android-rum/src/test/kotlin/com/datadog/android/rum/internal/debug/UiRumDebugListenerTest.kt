@@ -221,9 +221,9 @@ internal class UiRumDebugListenerTest {
     }
 
     @Test
-    fun `M unregister listener W detach()`() {
+    fun `M unregister listener W unsubscribe()`() {
         // WHEN
-        testedListener.detach()
+        testedListener.unsubscribe()
 
         // THEN
         verify(rumMonitor.mockInstance as AdvancedRumMonitor).setDebugListener(null)
