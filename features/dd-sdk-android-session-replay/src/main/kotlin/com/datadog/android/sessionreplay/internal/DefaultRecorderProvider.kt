@@ -83,8 +83,9 @@ constructor(
         sdkCore = sdkCore,
         internalCallback = internalCallback,
         touchPrivacyManager = touchPrivacyManager,
-        compositionHostDecomposer = compositionHostDecomposer,
+        imagePrivacy = imagePrivacy,
         textAndInputPrivacy = textAndInputPrivacy,
+        compositionHostDecomposer = compositionHostDecomposer,
         dynamicOptimizationEnabled = dynamicOptimizationEnabled,
         customDrawableMappers = customDrawableMappers
     )

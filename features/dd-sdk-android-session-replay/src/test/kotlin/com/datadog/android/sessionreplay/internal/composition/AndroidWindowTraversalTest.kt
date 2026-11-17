@@ -20,11 +20,13 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedChild
 import com.datadog.android.internal.sessionreplay.composition.CapturedClip
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperRegistry
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
@@ -56,6 +58,7 @@ import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.IdentityHashMap
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -179,6 +182,93 @@ internal class AndroidWindowTraversalTest : AndroidWindowTraversalTestFixture() 
         // Then
         val present = result.doneValue() as WindowWalkResult.Present
         assertThat(present.rootLayer.children).isEmpty()
+    }
+
+    @Test
+    fun `M map the root with the configured privacy W traverseWindow()`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        forge: Forge
+    ) {
+        // Given
+        val fakeImagePrivacy = forge.aValueFrom(ImagePrivacy::class.java, exclude = listOf(ImagePrivacy.MASK_ALL))
+        val fakeTextPrivacy = forge.aValueFrom(
+            TextAndInputPrivacy::class.java,
+            exclude = listOf(TextAndInputPrivacy.MASK_ALL)
+        )
+        val mockRoot = mockView(fakeRootBounds)
+        val fakeContexts = IdentityHashMap<View, CapturedMappingContext>()
+
+        // When
+        traversal(
+            fallback = recordingMapper(fakeContexts),
+            rootImagePrivacy = fakeImagePrivacy,
+            textAndInputPrivacy = fakeTextPrivacy
+        ).traverseWindow(mockRoot, identityFactory.window("window"), identityFactory, fakeContext)
+
+        // Then
+        val fakeRootContext = checkNotNull(fakeContexts[mockRoot])
+        assertThat(fakeRootContext.imagePrivacy).isEqualTo(fakeImagePrivacy)
+        assertThat(fakeRootContext.textAndInputPrivacy).isEqualTo(fakeTextPrivacy)
+    }
+
+    @Test
+    fun `M apply a tagged override to the whole subtree W traverseWindow()`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakeGroupBounds: GlobalBounds,
+        @Forgery fakeGrandChildBounds: GlobalBounds
+    ) {
+        // Given
+        val mockRoot = mockViewGroup(fakeRootBounds)
+        val mockGroup = mockViewGroup(fakeGroupBounds)
+        val mockGrandChild = mockView(fakeGrandChildBounds)
+        whenever(mockGroup.getTag(R.id.datadog_image_privacy)).thenReturn(ImagePrivacy.MASK_NONE.toString())
+        whenever(mockGroup.getTag(R.id.datadog_text_and_input_privacy))
+            .thenReturn(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS.toString())
+        mockGroup.withChildren(mockGrandChild)
+        mockRoot.withChildren(mockGroup)
+        val fakeContexts = IdentityHashMap<View, CapturedMappingContext>()
+
+        // When
+        traversal(fallback = recordingMapper(fakeContexts), rootImagePrivacy = ImagePrivacy.MASK_ALL)
+            .traverseWindow(mockRoot, identityFactory.window("window"), identityFactory, fakeContext)
+
+        // Then
+        val fakeRootContext = checkNotNull(fakeContexts[mockRoot])
+        assertThat(fakeRootContext.imagePrivacy).isEqualTo(ImagePrivacy.MASK_ALL)
+        assertThat(fakeRootContext.textAndInputPrivacy).isEqualTo(TextAndInputPrivacy.MASK_ALL)
+        listOf(mockGroup, mockGrandChild).forEach { view ->
+            val fakeViewContext = checkNotNull(fakeContexts[view])
+            assertThat(fakeViewContext.imagePrivacy).isEqualTo(ImagePrivacy.MASK_NONE)
+            assertThat(fakeViewContext.textAndInputPrivacy).isEqualTo(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
+        }
+    }
+
+    @Test
+    fun `M prefer the nearest tagged override W traverseWindow() { nested overrides }`(
+        @Forgery fakeRootBounds: GlobalBounds,
+        @Forgery fakeGroupBounds: GlobalBounds,
+        @Forgery fakeChildBounds: GlobalBounds,
+        @Forgery fakeSiblingBounds: GlobalBounds
+    ) {
+        // Given
+        val mockRoot = mockViewGroup(fakeRootBounds)
+        val mockGroup = mockViewGroup(fakeGroupBounds)
+        val mockChild = mockView(fakeChildBounds)
+        val mockSibling = mockView(fakeSiblingBounds)
+        whenever(mockGroup.getTag(R.id.datadog_image_privacy)).thenReturn(ImagePrivacy.MASK_NONE.toString())
+        whenever(mockChild.getTag(R.id.datadog_image_privacy)).thenReturn(ImagePrivacy.MASK_LARGE_ONLY.toString())
+        mockGroup.withChildren(mockChild)
+        mockRoot.withChildren(mockGroup, mockSibling)
+        val fakeContexts = IdentityHashMap<View, CapturedMappingContext>()
+
+        // When
+        traversal(fallback = recordingMapper(fakeContexts), rootImagePrivacy = ImagePrivacy.MASK_ALL)
+            .traverseWindow(mockRoot, identityFactory.window("window"), identityFactory, fakeContext)
+
+        // Then
+        assertThat(checkNotNull(fakeContexts[mockGroup]).imagePrivacy).isEqualTo(ImagePrivacy.MASK_NONE)
+        assertThat(checkNotNull(fakeContexts[mockChild]).imagePrivacy).isEqualTo(ImagePrivacy.MASK_LARGE_ONLY)
+        assertThat(checkNotNull(fakeContexts[mockSibling]).imagePrivacy).isEqualTo(ImagePrivacy.MASK_ALL)
     }
 
     @Test
@@ -666,6 +756,12 @@ internal class AndroidWindowTraversalTest : AndroidWindowTraversalTestFixture() 
             on { background } doReturn mockDrawable
         }
     }
+
+    private fun recordingMapper(contexts: MutableMap<View, CapturedMappingContext>) =
+        CapturedViewMapper<View> { view, mappingContext ->
+            contexts[view] = mappingContext
+            CapturedViewMapperResult.None
+        }
 
     private class EqualParent : ViewParent by mock<ViewParent>() {
         override fun equals(other: Any?): Boolean = other is EqualParent

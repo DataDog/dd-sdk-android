@@ -81,16 +81,34 @@ internal class GranularComposeDecomposerTest {
     }
 
     @Test
-    fun `M return false W canDecompose() { already incompatible }`() {
+    fun `M claim only the composition owner W canDecompose() { already incompatible }`() {
         // Given
         fakeIsIncompatible.set(true)
+        val stubOwner: View = mock()
+        whenever(mockReflectionUtils.isAndroidComposeViewByName(stubOwner)).thenReturn(true)
 
         // When
-        val result = testedDecomposer.canDecompose(mockView)
+        val ownerResult = testedDecomposer.canDecompose(stubOwner)
+        val composeViewResult = testedDecomposer.canDecompose(mockView)
 
         // Then
-        assertThat(result).isFalse()
+        assertThat(ownerResult).isTrue()
+        assertThat(composeViewResult).isFalse()
         verifyNoInteractions(mockSemanticsUtils)
+    }
+
+    @Test
+    fun `M claim the composition owner W canDecompose() { no root semantics node }`() {
+        // Given
+        val stubOwner: View = mock()
+        whenever(mockReflectionUtils.isAndroidComposeViewByName(stubOwner)).thenReturn(true)
+
+        // When
+        val result = testedDecomposer.canDecompose(stubOwner)
+
+        // Then
+        assertThat(result).isTrue()
+        verify(mockReflectionUtils, never()).getSemanticsOwner(stubOwner)
     }
 
     @Test

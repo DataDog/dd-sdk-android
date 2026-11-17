@@ -39,7 +39,7 @@ internal object ComposeReflection {
         isCritical = false
     )
 
-    val AndroidComposeViewClass = getClassSafe("androidx.compose.ui.platform.AndroidComposeView")
+    val AndroidComposeViewClass = getClassSafe(ANDROID_COMPOSE_VIEW_CLASS_NAME)
     val SemanticsOwner = AndroidComposeViewClass?.getDeclaredFieldSafe("semanticsOwner")
 
     val TextStringSimpleElement = getClassSafe("androidx.compose.foundation.text.modifiers.TextStringSimpleElement")
@@ -305,3 +305,5 @@ private const val LOG_REASON_DEFAULT =
 private const val LOG_REASON_SECURITY = "Security exception"
 private const val LOG_REASON_LINKAGE_ERROR = "Linkage error"
 private const val LOG_REASON_INITIALIZATION_ERROR = "Error in initialization"
+
+internal const val ANDROID_COMPOSE_VIEW_CLASS_NAME = "androidx.compose.ui.platform.AndroidComposeView"

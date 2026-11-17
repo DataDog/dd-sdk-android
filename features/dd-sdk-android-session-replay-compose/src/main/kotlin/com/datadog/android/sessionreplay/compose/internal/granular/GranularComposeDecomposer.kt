@@ -70,9 +70,12 @@ internal class GranularComposeDecomposer(
     private val isIncompatible: AtomicBoolean = AtomicBoolean(false)
 ) : CompositionHostDecomposer {
 
-    override fun canDecompose(view: View): Boolean {
-        if (isIncompatible.get()) return false
-        return disableOnLinkageError { findRoot(view) != null }
+    // The composition owner stays owned without a root or after disabling, so the embedded native
+    // views it hosts are never walked; a ComposeView without a root defers to that child.
+    override fun canDecompose(view: View): Boolean = when {
+        reflectionUtils.isAndroidComposeViewByName(view) -> true
+        isIncompatible.get() -> false
+        else -> disableOnLinkageError { findRoot(view) != null }
     }
 
     override fun decompose(view: View, request: CompositionHostDecomposeRequest): CompositionHostDecomposeResult? {
@@ -101,9 +104,9 @@ internal class GranularComposeDecomposer(
     }
 
     // Disable permanently on incompatible runtime failures, then let the SDK caller report the
-    // original throwable through its SDK-bound logger and perform native fallback. Other failures
-    // propagate without disabling, since they are specific to one capture. Each SDK core configures
-    // its own ComposeExtensionSupport, and so its own decomposer and flag.
+    // original throwable through its SDK-bound logger and capture the host without its content.
+    // Other failures propagate without disabling, since they are specific to one capture. Each SDK
+    // core configures its own ComposeExtensionSupport, and so its own decomposer and flag.
     private inline fun <T> disableOnLinkageError(block: () -> T): T {
         return try {
             block()

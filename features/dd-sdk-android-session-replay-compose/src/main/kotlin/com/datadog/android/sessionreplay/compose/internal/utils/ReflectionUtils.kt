@@ -27,6 +27,7 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsOwner
 import androidx.compose.ui.text.MultiParagraph
+import com.datadog.android.sessionreplay.compose.internal.reflection.ANDROID_COMPOSE_VIEW_CLASS_NAME
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.AlignmentField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.AsyncImagePainter3Class
@@ -82,6 +83,10 @@ internal class ReflectionUtils {
     fun isAndroidComposeView(any: Any): Boolean {
         return ComposeReflection.AndroidComposeViewClass?.isInstance(any) == true
     }
+
+    // AndroidComposeView is final, and comparing its name answers even when composition reflection
+    // cannot initialize.
+    fun isAndroidComposeViewByName(view: View): Boolean = view.javaClass.name == ANDROID_COMPOSE_VIEW_CLASS_NAME
 
     fun isAsyncImagePainter(painter: Painter): Boolean {
         return ComposeReflection.AsyncImagePainterClass?.isInstance(painter) == true ||

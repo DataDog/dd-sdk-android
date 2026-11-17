@@ -4,12 +4,17 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+
 package com.datadog.android.sessionreplay.compose.internal.utils
 
+import android.view.View
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.AndroidComposeView
+import androidx.compose.ui.platform.ComposeView
 import coil.compose.AsyncImagePainter
 import coil.request.SuccessResult
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
@@ -135,4 +140,35 @@ internal class ReflectionUtilsTest {
         // Then
         assertThat(result).isSameAs(mockLoadedPainter)
     }
+
+    // region isAndroidComposeViewByName
+
+    @Test
+    fun `M return true W isAndroidComposeViewByName() { composition owner }`() {
+        // Given
+        val mockOwner = mock<AndroidComposeView>()
+
+        // When
+        val result = testedReflectionUtils.isAndroidComposeViewByName(mockOwner)
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `M return false W isAndroidComposeViewByName() { ComposeView or plain view }`() {
+        // Given
+        val mockComposeView = mock<ComposeView>()
+        val mockView = mock<View>()
+
+        // When
+        val composeViewResult = testedReflectionUtils.isAndroidComposeViewByName(mockComposeView)
+        val viewResult = testedReflectionUtils.isAndroidComposeViewByName(mockView)
+
+        // Then
+        assertThat(composeViewResult).isFalse()
+        assertThat(viewResult).isFalse()
+    }
+
+    // endregion
 }
