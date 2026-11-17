@@ -36,6 +36,7 @@ directory aliases expose those same sources to agent hosts.
 - Writing, editing, or reviewing tests: [`sdk-tests`](ai/skills/sdk-tests/SKILL.md).
 - Reviewing a branch or PR: [`sdk-review`](ai/skills/sdk-review/SKILL.md).
 - Writing commit messages or PR titles: [`sdk-commit`](ai/skills/sdk-commit/SKILL.md).
+- External references and example prompts for feature work: [`sdk-feature-knowledge`](ai/skills/sdk-feature-knowledge/SKILL.md).
 - Running pre-PR checks and regenerating generated files: [`sdk-pr-prepare`](ai/skills/sdk-pr-prepare/SKILL.md).
 - Creating or updating stacked PRs with Graphite: [`sdk-pr-stack`](ai/skills/sdk-pr-stack/SKILL.md).
 - Inspecting events emitted by the sample app: [`android-sdk-event-inspection`](.claude/skills/android-sdk-event-inspection/SKILL.md).
