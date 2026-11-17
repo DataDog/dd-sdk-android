@@ -82,6 +82,8 @@ val flagsConfig = FlagsConfiguration.Builder()
     .build()
 ```
 
+With `trackExposures(false)`, the SDK sends no exposure events to Datadog. It still records which exposures it has seen, so that the OpenFeature `ExposureHook` reports correct exposure decisions. See [Exposures in your own data store](../dd-sdk-android-flags-openfeature/README.md#exposures-in-your-own-data-store).
+
 #### Configure custom endpoints
 
 For testing or proxy purposes, you can configure custom endpoints:
@@ -345,6 +347,10 @@ if (result.errorCode != null) {
 - `errorCode: ErrorCode?` - Optional error code (null indicates success)
 - `errorMessage: String?` - Optional human-readable error message
 - `flagMetadata: Map<String, Any>?` - Optional metadata associated with the flag
+
+##### Split features
+
+When the selected split has features for application hooks, `flagMetadata` contains one entry for each of them, with the key `__dd_feature.<feature key>`. For example, a holdout gives `__dd_feature.holdout.key`, `__dd_feature.holdout.assignment_group` and `__dd_feature.holdout.should_include_in_holdout_analysis`. A value is a `String`, `Double` or `Boolean`. Other `__dd_` entries are internal and can change without notice.
 
 ##### Error codes
 - `FLAG_NOT_FOUND` - The flag could not be found

@@ -130,7 +130,8 @@ internal class EvaluationsFeature(
         errorMessage: String?,
         observeFullEvaluationData: Boolean = false,
         telemetryTargetingKey: String? = context?.targetingKey,
-        preparedTargetingKey: EvaluationTargetingKey? = null
+        preparedTargetingKey: EvaluationTargetingKey? = null,
+        features: Map<String, Any> = emptyMap()
     ) {
         val processor = evaluationProcessor ?: return
         val currentDdContext = rumContext
@@ -146,7 +147,8 @@ internal class EvaluationsFeature(
             errorMessage = errorMessage,
             observeFullEvaluationData = observeFullEvaluationData,
             telemetryTargetingKey = telemetryTargetingKey,
-            preparedTargetingKey = preparedTargetingKey
+            preparedTargetingKey = preparedTargetingKey,
+            features = features
         )
     }
 

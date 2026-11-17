@@ -204,6 +204,58 @@ structured results, including error/default results. It does not emit a second e
 or hash targeting keys itself. Use the provider and Flags artifacts from the same SDK release;
 see the [native privacy behavior](../dd-sdk-android-flags/README.md#evaluation-telemetry-privacy).
 
+## Exposures in your own data store
+
+To record exposures in your own data store, register an `ExposureHook`. Its callback receives each completed evaluation of the `DatadogFlagsProvider` that reaches the hook, with the Datadog exposure decision:
+
+```kotlin
+import com.datadog.android.flags.openfeature.ExposureHook
+
+OpenFeatureAPI.addHooks(
+    listOf(
+        ExposureHook { evaluation ->
+            if (evaluation.shouldSend()) {
+                exposureQueue.add(
+                    MyExposure(
+                        flagKey = evaluation.flagKey,
+                        variant = evaluation.variant,
+                        allocationKey = evaluation.allocationKey,
+                        subject = evaluation.targetingKey,
+                        holdoutKey = evaluation.features["holdout.key"] as? String
+                    )
+                )
+            }
+        }
+    )
+)
+```
+
+`ExposureEvaluation` gives:
+
+| Member | Meaning |
+|---|---|
+| `isExposure` | The evaluation succeeded and selected an allocation that logs exposures. Repeats are included. |
+| `isCacheHit` | The subject was already exposed to the same allocation, variant and split. |
+| `shouldSend()` | `isExposure` for a new or changed exposure. The SDK sends this exposure to Datadog when `trackExposures` is on. |
+| `features` | The features of the selected split for application hooks, for example `holdout.key`, `holdout.assignment_group` and `holdout.should_include_in_holdout_analysis`. A value is a `String`, `Double` or `Boolean`. |
+| `flagKey`, `variant`, `allocationKey`, `targetingKey` | The evaluated flag and the selected assignment. |
+| `evaluationContext` | A copy of the evaluation context. |
+
+The same features are in the flag metadata as `__dd_feature.<feature key>`, so other hooks can read them too. `__dd_feature.<feature key>` is the public metadata contract, and `ExposureHook` is the supported interface for exposure decisions. The other `__dd_` metadata entries are internal and can change.
+
+To stop sending exposures to Datadog and keep only your own, use `FlagsConfiguration.Builder().trackExposures(false)`. The hook still reports the same decisions.
+
+Keep in mind:
+
+- The provider records the exposure in the final hook stage, after the provider and every `before` and `after` hook succeed. A failure in those stages prevents the exposure. Provider hooks run first in the final stage. If a later `finallyAfter` hook throws, the exposure stays recorded, OpenFeature rethrows the exception to the caller, and it skips the `finallyAfter` hooks after the failing one. An `ExposureHook` registered with `OpenFeatureAPI.addHooks` runs last in that stage, so OpenFeature skips its callback for that evaluation.
+- `FlagsClient` evaluations record exposures directly, in the same exposure cache as the provider, and reach Datadog without `ExposureHook`. A later OpenFeature evaluation of the same flag for the same subject is then a repeat while the same allocation, variant and split stay cached.
+- With experimentation opt-out enabled, the provider checks the evaluation context again when it records the exposure. An evaluation whose context a newer context replaced is a non-exposure for both Datadog and `ExposureHook`.
+- The provider records exposures in its own hook. Evaluate flags through an OpenFeature client: a direct call to a provider `get...Evaluation` method records no exposure.
+- The callback runs on the evaluating thread. Do not do I/O in it: hand the data to a background queue.
+- An exception from the callback does not affect the evaluation. The SDK logs the first one as a warning, and later ones at debug level. An `Error` from the callback reaches the caller of the evaluation, with the exposure already recorded.
+- Exposures need the `DatadogFlagsProvider` as the OpenFeature provider, or a provider that wraps it and returns its `hooks` and its `metadata`. The provider records exposures in its `hooks`, and `ExposureHook` finds each decision through its `metadata`. A wrapper that returns the `metadata` and drops the `hooks` records an exposure when an `ExposureHook` callback runs. Earlier SDK versions recorded exposures inside the `get...Evaluation` calls, so this applies to existing wrappers too. A composed provider such as `MultiProvider` skips provider hooks, so the SDK records no exposures under it.
+- Repeats are detected for recent subjects and flags in the current process only. After a restart, the first evaluation of each flag is a new exposure.
+
 ## Integration with RUM
 
 When RUM is enabled in your application and RUM integration is enabled in the Flags configuration (default), flag evaluations are automatically:
