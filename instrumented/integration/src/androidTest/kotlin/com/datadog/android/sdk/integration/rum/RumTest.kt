@@ -67,12 +67,13 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
                             } else if (it.isViewUpdateEventRelatedToApplicationLaunch) {
                                 sentLaunchUpdateEvents += it
                             } else if (it.isViewEvent && !it.isClosingViewEvent && !it.isPeriodicCheckpointFullView) {
-                                // Exclude closing views (is_active=false): they would win in
-                                // reduceViewEvents() and fail the session.is_active=true assertion.
-                                // Exclude periodic checkpoint views (docVersion%4==0, is_active=true):
-                                // they are mid-session snapshots covered by reliability tests.
+                                // Closing views (is_active=false) and periodic checkpoint views
+                                // (docVersion%4==0) are excluded: they would win in reduceViewEvents()
+                                // over the initial view these assertions target.
                                 sentViewEvents += it
-                            } else if (it.isViewUpdateEvent) {
+                            } else if (it.isViewUpdateEvent || it.isViewEvent) {
+                                // Closing and checkpoint full views replace the view_update at their
+                                // docVersion, so they carry the latest state of the view.
                                 sentViewUpdateEvents += it
                             } else if (it.isActionEvent) {
                                 sentActionEvents += it
@@ -223,25 +224,19 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
         }
     }
 
+    // Reduces view_update events together with the closing and checkpoint full views
+    // that replace them, keeping the highest docVersion per viewId.
     private fun List<JsonObject>.reduceViewUpdateEvents(): List<JsonObject> {
         val maxDocVersionByViewId = mutableMapOf<String, Long>()
 
         forEach {
-            if (it.isViewUpdateEvent) {
-                val viewId = it.viewId
-                val documentVersion = it.documentVersion
-                maxDocVersionByViewId[viewId] =
-                    max(maxDocVersionByViewId.getOrDefault(viewId, Long.MIN_VALUE), documentVersion)
-            }
+            val viewId = it.viewId
+            val documentVersion = it.documentVersion
+            maxDocVersionByViewId[viewId] =
+                max(maxDocVersionByViewId.getOrDefault(viewId, Long.MIN_VALUE), documentVersion)
         }
 
-        return filter {
-            if (it.isViewUpdateEvent) {
-                maxDocVersionByViewId[it.viewId] == it.documentVersion
-            } else {
-                true
-            }
-        }
+        return filter { maxDocVersionByViewId[it.viewId] == it.documentVersion }
     }
 
     companion object {
