@@ -170,6 +170,14 @@ class StubSDKCore(
     }
 
     /**
+     * Stubs the tracking consent visible via the SDK Core.
+     * @param trackingConsent the tracking consent
+     */
+    fun stubTrackingConsent(trackingConsent: TrackingConsent) {
+        datadogContext = datadogContext.copy(trackingConsent = trackingConsent)
+    }
+
+    /**
      * Stubs the user info visible via the SDK Core.
      * @param userInfo the user info
      */

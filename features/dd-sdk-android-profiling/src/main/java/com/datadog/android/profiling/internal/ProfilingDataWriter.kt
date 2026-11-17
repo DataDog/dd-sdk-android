@@ -65,10 +65,12 @@ internal class ProfilingDataWriter(
         }
     }
 
+    @Suppress("LongMethod")
     override fun writeTriggerProfile(
         perfettoResult: PerfettoResult,
         rumErrorId: String,
-        rumContext: ProfilingRumContext
+        rumContext: ProfilingRumContext,
+        onWritten: (Boolean) -> Unit
     ) {
         val resultFilePath = perfettoResult.resultFilePath
         val operation = perfettoResult.startReason.value
@@ -76,11 +78,12 @@ internal class ProfilingDataWriter(
         val feature = sdkCore.getFeature(Feature.PROFILING_FEATURE_NAME)
         if (feature == null) {
             fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
+            onWritten(false)
             return
         }
         feature.withWriteContext { context, writeScope ->
             writeScope { writer ->
-                synchronized(this) {
+                val isWritten = synchronized(this) {
                     val profileBytes = readProfilingData(resultFilePath)
                     if (profileBytes == null || profileBytes.isEmpty()) {
                         logWriteResultMetric(
@@ -89,8 +92,7 @@ internal class ProfilingDataWriter(
                             startReason = operation,
                             hasRumErrorId = rumErrorId.isNotEmpty()
                         )
-                        fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
-                        return@synchronized
+                        return@synchronized false
                     }
                     val profileEvent = ProfileEvent(
                         start = formatIsoUtc(detectedAtMs),
@@ -123,8 +125,9 @@ internal class ProfilingDataWriter(
                         batchMetadata = null,
                         eventType = EventType.DEFAULT
                     )
-                    fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
                 }
+                onWritten(isWritten)
+                fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
             }
         }
     }
