@@ -1322,6 +1322,22 @@ internal class RumFeatureTest {
             .unregisterActivityLifecycleCallbacks(listener)
     }
 
+    @Test
+    fun `M disable RUM debugging W onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.enableDebugging(mockRumMonitor)
+        val listener = testedFeature.debugActivityLifecycleListener.get()
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(testedFeature.debugActivityLifecycleListener).hasValue(null)
+        verify(testedFeature.appContext as Application)
+            .unregisterActivityLifecycleCallbacks(listener)
+    }
+
     // region FeatureEventReceiver#onReceive
 
     @Test

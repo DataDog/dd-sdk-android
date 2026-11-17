@@ -438,6 +438,7 @@ internal class RumFeature(
             (appContext as? Application)?.unregisterActivityLifecycleCallbacks(it)
         }
         processLifecycleMonitor = null
+        disableDebugging()
         (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.stop()
 
         dataWriter = NoOpDataWriter()
