@@ -310,6 +310,7 @@ internal class AndroidCapturedSnapshotProducerTest {
         // Given
         val mockWindow = mockWindow(fakeWindowBounds)
         val mockTextView: TextView = mock {
+            on { compoundDrawables } doReturn arrayOfNulls(4)
             on { isShown } doReturn true
             on { width } doReturn fakeTextBounds.width.toInt()
             on { height } doReturn fakeTextBounds.height.toInt()
