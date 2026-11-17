@@ -188,7 +188,7 @@ internal class RumFeature(
     internal var frameRateVitalMonitor: VitalMonitor = NoOpVitalMonitor()
 
     internal var debugActivityLifecycleListener =
-        AtomicReference<Application.ActivityLifecycleCallbacks>(null)
+        AtomicReference<UiRumDebugListener>(null)
     internal var frameStatesAggregator: Application.ActivityLifecycleCallbacks? = null
     internal var processLifecycleMonitor: ProcessLifecycleMonitor? = null
     internal var sessionListener: RumSessionListener = NoOpRumSessionListener()
@@ -624,6 +624,19 @@ internal class RumFeature(
                 val listener = debugActivityLifecycleListener.get()
                 context.unregisterActivityLifecycleCallbacks(listener)
                 debugActivityLifecycleListener.set(null)
+                detachDebugListener(listener)
+            }
+        }
+    }
+
+    private fun detachDebugListener(listener: UiRumDebugListener) {
+        if (isMainThread()) {
+            @Suppress("ThreadSafety") // just verified we are on the main thread
+            listener.detach()
+        } else {
+            handler.post {
+                @Suppress("ThreadSafety") // handler posts to the main looper
+                listener.detach()
             }
         }
     }

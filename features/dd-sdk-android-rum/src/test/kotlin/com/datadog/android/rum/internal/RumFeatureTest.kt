@@ -14,6 +14,8 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.res.Resources
 import android.os.Handler
+import android.view.ViewGroup
+import android.widget.LinearLayout
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.storage.DataWriter
@@ -1320,6 +1322,68 @@ internal class RumFeatureTest {
         assertThat(testedFeature.debugActivityLifecycleListener).hasValue(null)
         verify(testedFeature.appContext as Application)
             .unregisterActivityLifecycleCallbacks(listener)
+    }
+
+    @Test
+    fun `M remove debug overlay W disableDebugging() {on main thread}`() {
+        // Given
+        val mockHandler: Handler = mock()
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter },
+            handler = mockHandler
+        )
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.enableDebugging(mockRumMonitor)
+        val mockParent: ViewGroup = mock()
+        val mockContainer: LinearLayout = mock()
+        whenever(mockContainer.parent) doReturn mockParent
+        testedFeature.debugActivityLifecycleListener.get().rumViewsContainer = mockContainer
+
+        // When
+        testedFeature.disableDebugging()
+
+        // Then
+        verify(mockParent).removeView(mockContainer)
+        verify(mockRumMonitor).setDebugListener(null)
+        verifyNoInteractions(mockHandler)
+    }
+
+    @Test
+    fun `M post debug overlay removal to handler W disableDebugging() {not on main thread}`() {
+        // Given
+        val mockHandler: Handler = mock()
+        whenever(mockHandler.post(any())) doAnswer {
+            it.getArgument(0, Runnable::class.java).run()
+            true
+        }
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter },
+            handler = mockHandler
+        )
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.enableDebugging(mockRumMonitor)
+        val mockParent: ViewGroup = mock()
+        val mockContainer: LinearLayout = mock()
+        whenever(mockContainer.parent) doReturn mockParent
+        testedFeature.debugActivityLifecycleListener.get().rumViewsContainer = mockContainer
+
+        // When
+        Thread { testedFeature.disableDebugging() }.apply {
+            start()
+            join()
+        }
+
+        // Then
+        inOrder(mockHandler, mockParent) {
+            verify(mockHandler).post(any())
+            verify(mockParent).removeView(mockContainer)
+        }
     }
 
     @Test

@@ -202,6 +202,35 @@ internal class UiRumDebugListenerTest {
 
     // endregion
 
+    // region detach
+
+    @Test
+    fun `M remove debug container from its parent W detach()`() {
+        // GIVEN
+        val mockParent = mock<ViewGroup>()
+        val container = mock<LinearLayout>()
+        whenever(container.parent) doReturn mockParent
+        testedListener.rumViewsContainer = container
+
+        // WHEN
+        testedListener.detach()
+
+        // THEN
+        verify(mockParent).removeView(container)
+        assertThat(testedListener.rumViewsContainer).isNull()
+    }
+
+    @Test
+    fun `M unregister listener W detach()`() {
+        // WHEN
+        testedListener.detach()
+
+        // THEN
+        verify(rumMonitor.mockInstance as AdvancedRumMonitor).setDebugListener(null)
+    }
+
+    // endregion
+
     // region RumDebugListener
 
     @Test
