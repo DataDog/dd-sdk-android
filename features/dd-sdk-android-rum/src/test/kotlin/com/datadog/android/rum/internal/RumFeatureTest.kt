@@ -40,6 +40,7 @@ import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITOR
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.InfoProvider
+import com.datadog.android.rum.internal.domain.PendingOomErrorStore
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
@@ -1988,20 +1989,33 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M handle OOM profile messages off the sender's thread W onReceive()`(
-        @StringForgery fakeErrorId: String
+    fun `M forward OOM profile messages to the store without a context-thread hop W onReceive()`(
+        @StringForgery fakeErrorId: String,
+        forge: Forge
     ) {
+        val fakeIsWritten = forge.aBool()
         // Given
         val mockRumScope = mock<FeatureScope>()
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
+        val mockPendingOomErrorStore = mock<PendingOomErrorStore>()
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter },
+            pendingOomErrorStoreFactory = { mockPendingOomErrorStore }
+        )
         testedFeature.onInitialize(appContext.mockInstance)
 
         // When
-        testedFeature.onReceive(ProfilerEvent.OomProfileWriteResult(fakeErrorId, true))
+        testedFeature.onReceive(ProfilerEvent.OomProfileWriteResult(fakeErrorId, fakeIsWritten))
         testedFeature.onReceive(ProfilerEvent.OomProfilingReady)
 
         // Then
-        verify(mockRumScope, times(2)).withContext(any(), any())
+        verify(mockPendingOomErrorStore).onOomProfileWriteResult(fakeErrorId, fakeIsWritten)
+        verify(mockPendingOomErrorStore).onProfilingReady()
+        // The store is lock-protected and doesn't need the context: no hop through the RUM thread.
+        verify(mockRumScope, never()).withContext(any(), any())
     }
 
     @Test

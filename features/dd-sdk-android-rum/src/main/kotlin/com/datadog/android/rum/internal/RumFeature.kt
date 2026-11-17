@@ -163,18 +163,15 @@ internal class RumFeature(
         DatadogLateCrashReporter(it)
     },
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
-    private val handler: Handler = Handler(Looper.getMainLooper())
+    private val handler: Handler = Handler(Looper.getMainLooper()),
+    private val pendingOomErrorStoreFactory: (() -> PendingOomErrorStore)? = null
 ) : StorageBackedFeature, FeatureEventReceiver, HeatmapIdentifierRegistryProvider {
 
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
 
     // Created in onInitialize, shut down in onStop; NoOp before and after, like the vital executor.
     internal var oomErrorExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
-    internal val pendingOomErrorStore = PendingOomErrorStore(
-        sdkCore,
-        { oomErrorExecutorService },
-        { sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.dataStore }
-    ) { dataWriter }
+    internal val pendingOomErrorStore = pendingOomErrorStoreFactory?.invoke() ?: defaultPendingOomErrorStore()
     internal val initialized = AtomicBoolean(false)
 
     internal var sampleRate: Float = 0f
@@ -436,7 +433,6 @@ internal class RumFeature(
 
     override fun onStop() {
         sdkCore.removeEventReceiver(name)
-        pendingOomErrorStore.stop()
 
         rumContextUpdateReceivers.forEach {
             sdkCore.removeContextUpdateReceiver(it)
@@ -535,11 +531,13 @@ internal class RumFeature(
             is InternalTelemetryEvent -> handleTelemetryEvent(event)
             is RumFlagEvaluationMessage -> handleFlagEvaluationEvent(event)
             is ProfilingAnrDetectedEvent -> handleProfilingAnrDetectedEvent(event)
-            is ProfilerEvent.OomProfileWriteResult -> onContextThread {
-                pendingOomErrorStore.onOomProfileWriteResult(event.rumErrorId, event.isWritten)
-            }
 
-            is ProfilerEvent.OomProfilingReady -> onContextThread { pendingOomErrorStore.onProfilingReady() }
+            is ProfilerEvent.OomProfileWriteResult -> pendingOomErrorStore.onOomProfileWriteResult(
+                event.rumErrorId,
+                event.isWritten
+            )
+
+            is ProfilerEvent.OomProfilingReady -> pendingOomErrorStore.onProfilingReady()
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -553,10 +551,6 @@ internal class RumFeature(
     // endregion
 
     // region Internal
-    private fun onContextThread(block: () -> Unit) {
-        sdkCore.getFeature(name)?.withContext { block() }
-    }
-
     private fun handleFlagEvaluationEvent(event: RumFlagEvaluationMessage) {
         (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addFeatureFlagEvaluation(
             name = event.flagKey,
@@ -711,6 +705,12 @@ internal class RumFeature(
         viewTrackingStrategy.register(sdkCore, appContext)
         longTaskTrackingStrategy.register(sdkCore, appContext)
     }
+
+    private fun defaultPendingOomErrorStore() = PendingOomErrorStore(
+        sdkCore,
+        { oomErrorExecutorService },
+        { sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.dataStore }
+    ) { dataWriter }
 
     private fun unregisterTrackingStrategies(appContext: Context?) {
         actionTrackingStrategy.unregister(appContext)

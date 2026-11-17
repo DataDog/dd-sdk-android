@@ -21,13 +21,12 @@ import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import com.datadog.android.internal.profiling.ProfilerEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
-import com.datadog.android.rum.internal.utils.WriteOperation
+import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.ErrorEvent
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 /**
@@ -47,7 +46,6 @@ internal class PendingOomErrorStore(
 
     // All guarded by lock.
     private var isLoaded = false
-    private var timeoutFuture: ScheduledFuture<*>? = null
 
     // The single held error: stored on disk by this process, or loaded from the previous launch.
     private var heldError: ErrorEvent? = null
@@ -70,10 +68,6 @@ internal class PendingOomErrorStore(
         )
     }
 
-    fun stop() {
-        cancelTimeout()
-    }
-
     /**
      * Holds [event] instead of writing it, once the stored error is loaded. The newest error wins:
      * the error held before it, loaded or stored by this process, is written right away, without
@@ -89,9 +83,6 @@ internal class PendingOomErrorStore(
             val store = if (isLoaded) dataStoreProvider() else null
             // TODO RUM-19677: Apply the RUM error event mapper before persisting the held error. Today the unredacted error sits on disk until it is released and mapped on the next launch.
             if (store == null) return false
-            // Cancel the timeout of the error being replaced before the new one is visible, so it
-            // cannot fire between the two and take the new error.
-            cancelTimeout()
             store.setValue(KEY, event, VERSION, holdCallback(event), ErrorEventSerializer(sdkCore.internalLogger))
             heldError.also {
                 heldError = event
@@ -135,9 +126,9 @@ internal class PendingOomErrorStore(
             if (loaded != null) dataStoreProvider()?.removeValue(KEY)
             isLoaded = true
             heldError = loaded
+            if (loaded != null) scheduleTimeout(loaded)
         }
         if (loaded != null) {
-            scheduleTimeout(loaded)
             announce(loaded)
         }
     }
@@ -156,25 +147,18 @@ internal class PendingOomErrorStore(
         val event = synchronized(lock) {
             heldError?.takeIf { it.error.id == rumErrorId }?.also { heldError = null }
         }
-        if (event != null) cancelTimeout()
         return event
     }
 
     private fun write(event: ErrorEvent, status: ErrorEvent.ProfilingStatus?) {
         val toWrite = event.copy(dd = event.dd.copy(profiling = status?.let { ErrorEvent.Profiling(status = it) }))
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext { _, writeScope ->
-            writeScope { batchWriter ->
-                try {
-                    dataWriterProvider().write(batchWriter, toWrite, EventType.CRASH)
-                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                    sdkCore.internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-                        { WriteOperation.WRITE_OPERATION_FAILED_ERROR },
-                        e
-                    )
-                }
-            }
+            sdkCore.newRumEventWriteOperation(
+                writeScope = writeScope,
+                rumDataWriter = dataWriterProvider(),
+                eventType = EventType.CRASH,
+                eventSource = { toWrite }
+            ).submit()
         }
     }
 
@@ -188,21 +172,13 @@ internal class PendingOomErrorStore(
     }
 
     private fun scheduleTimeout(event: ErrorEvent) {
-        val future = executorProvider().scheduleSafe(
+        executorProvider().scheduleSafe(
             OPERATION_TIMEOUT,
             TIMEOUT_MS,
             TimeUnit.MILLISECONDS,
             sdkCore.internalLogger,
             Runnable { onTimeout(event.error.id.orEmpty()) }
         )
-        synchronized(lock) { timeoutFuture = future }
-    }
-
-    private fun cancelTimeout() {
-        synchronized(lock) {
-            timeoutFuture?.cancel(false)
-            timeoutFuture = null
-        }
     }
 
     /** Same attribute sanitization and safe mapping as the RUM event serializer. */

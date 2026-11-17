@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.DdTagsUtils
@@ -931,7 +932,8 @@ internal open class RumViewScope(
         val mayGetOomProfile = isFatalOom &&
             datadogContext.trackingConsent == TrackingConsent.GRANTED &&
             datadogContext.isProfilingOomTriggerRegistered() &&
-            (oomQuotaReason == null || oomQuotaReason == QuotaReason.QUOTA_OK)
+            (oomQuotaReason == null || oomQuotaReason == QuotaReason.QUOTA_OK) &&
+            writer !is NoOpDataWriter
         val pendingOomErrorStore = if (mayGetOomProfile) {
             sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.unwrap<RumFeature>()?.pendingOomErrorStore
         } else {
@@ -940,13 +942,21 @@ internal open class RumViewScope(
 
         // Storing the error only needs the data store: held and signalled outside any write scope. An error
         // that can't be held is written as any other, with no gating event, so no profile is attached.
+        var oomErrorEventSource: (() -> Any)? = null
         val heldErrorEvent = pendingOomErrorStore?.let { store ->
-            buildErrorEvent().takeIf { store.tryHold(it) }
+            val errorEvent = buildErrorEvent()
+            oomErrorEventSource = { errorEvent }
+            errorEvent.takeIf { store.tryHold(errorEvent) }
         }
         if (heldErrorEvent != null) {
             sendRumOomErrorEvent(errorId, event, rumContext)
         } else {
-            sdkCore.newRumEventWriteOperation(writeScope, writer, eventType, buildErrorEvent)
+            sdkCore.newRumEventWriteOperation(
+                writeScope,
+                writer,
+                eventType,
+                oomErrorEventSource ?: buildErrorEvent
+            )
                 .apply {
                     if (!isFatal) {
                         // if fatal, then we don't have time for the notification, app is crashing

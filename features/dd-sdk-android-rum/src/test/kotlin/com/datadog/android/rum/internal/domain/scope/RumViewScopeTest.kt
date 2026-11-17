@@ -4423,10 +4423,40 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(fakeEvent, fakeDatadogContext.withOomTriggerActive(), mockEventWriteScope, mockWriter)
 
         // Then
+        val heldCaptor = argumentCaptor<ErrorEvent>()
+        verify(mockStore).tryHold(heldCaptor.capture())
         argumentCaptor<Any> {
             verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
-            assertThat(firstValue as ErrorEvent).hasNoProfiling()
+            allValues.filterIsInstance<ErrorEvent>().forEach {
+                assertThat(it.dd.profiling).isNull()
+                // Built once: the written error is the very event offered to the hold.
+                assertThat(it).isSameAs(heldCaptor.firstValue)
+            }
         }
+        verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumOomErrorEvent>())
+    }
+
+    @Test
+    fun `M not hold and not send gating event W handleEvent(AddError) {fatal OOM, session not tracked}`(
+        @StringForgery fakeMessage: String,
+        forge: Forge
+    ) {
+        // Given
+        fakeEvent = fatalError(OutOfMemoryError(fakeMessage), forge)
+        // A store that would hold the error if it was asked to.
+        val mockStore = stubPendingOomErrorStore()
+        whenever(mockStore.tryHold(any())) doReturn true
+
+        // When
+        testedScope.handleEvent(
+            fakeEvent,
+            fakeDatadogContext.withOomTriggerActive(),
+            mockEventWriteScope,
+            NoOpDataWriter()
+        )
+
+        // Then
+        verify(mockStore, never()).tryHold(any())
         verify(mockProfilingFeatureScope, never()).sendEvent(isA<ProfilerEvent.RumOomErrorEvent>())
     }
 
