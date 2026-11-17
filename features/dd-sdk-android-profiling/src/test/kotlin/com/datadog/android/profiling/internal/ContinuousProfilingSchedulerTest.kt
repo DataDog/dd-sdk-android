@@ -806,6 +806,21 @@ internal class ContinuousProfilingSchedulerTest {
     }
 
     @Test
+    fun `M schedule cooldown W onAppLaunchProfilingComplete() {app returned to foreground before completion}`() {
+        // Given
+        testedScheduler.start(launchProfilingActive = true)
+        testedScheduler.onBackground()
+        testedScheduler.onForeground()
+
+        // When
+        testedScheduler.onAppLaunchProfilingComplete()
+
+        // Then
+        verify(mockSchedulerExecutor).schedule(any<Runnable>(), any(), any<TimeUnit>())
+        assertThat(testedScheduler.state).isEqualTo(ContinuousProfilingScheduler.State.COOLDOWN)
+    }
+
+    @Test
     fun `M start grace period timer W onBackground() {active window running}`() {
         // Given
         openActiveWindow()

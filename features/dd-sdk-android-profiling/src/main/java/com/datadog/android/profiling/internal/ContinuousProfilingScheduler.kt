@@ -68,9 +68,6 @@ internal class ContinuousProfilingScheduler(
     @Volatile
     private var remainingCooldownMs: Long = 0L
 
-    // Accessed only on schedulerExecutor.
-    private var isInBackground = false
-
     @Volatile
     internal var lastQuotaResult: QuotaResult? = null
 
@@ -117,8 +114,10 @@ internal class ContinuousProfilingScheduler(
 
     fun onAppLaunchProfilingComplete() {
         schedulerExecutor.executeSafe(OPERATION_LAUNCH_COMPLETE, sdkCore.internalLogger) {
-            // Only the first completion starts the cycle; a cycle that is already running keeps its timer.
-            if (!isScheduling || state != State.IDLE) return@executeSafe
+            // Launch profiling can finish during ProfilingFeature.onInitialize() after start(false)
+            // has already begun a cycle; don't restart it.
+            val isWaitingToStart = state == State.IDLE || state == State.PAUSED_IDLE
+            if (!isScheduling || !isWaitingToStart) return@executeSafe
             logToUser { LOG_LAUNCH_COMPLETE }
             scheduleCooldown(jitter(CONTINUOUS_COOLDOWN_DURATION_MS))
         }
@@ -161,9 +160,10 @@ internal class ContinuousProfilingScheduler(
      */
     fun onBackground() {
         schedulerExecutor.executeSafe(OPERATION_ON_BACKGROUND, sdkCore.internalLogger) {
-            isInBackground = true
             if (!isScheduling) return@executeSafe
             when (state) {
+                State.IDLE -> state = State.PAUSED_IDLE
+
                 State.ACTIVE -> {
                     scheduleTimer(OPERATION_GRACE_PERIOD, BACKGROUND_GRACE_PERIOD_MS) {
                         onGracePeriodExpired()
@@ -187,7 +187,7 @@ internal class ContinuousProfilingScheduler(
                 }
 
                 else -> {
-                    /* IDLE / GRACE_PERIOD / PAUSED_* — ignore */
+                    /* GRACE_PERIOD / PAUSED_* — ignore */
                 }
             }
         }
@@ -199,12 +199,14 @@ internal class ContinuousProfilingScheduler(
      * - [State.GRACE_PERIOD]: cancel the grace timer; resume the active window for its remaining time.
      * - [State.PAUSED_COOLDOWN]: resume the cooldown with the remaining time.
      * - [State.PAUSED_AFTER_GRACE]: start a fresh jittered cooldown.
+     * - [State.PAUSED_IDLE]: go back to [State.IDLE] and keep waiting for the first cycle.
      */
     fun onForeground() {
         schedulerExecutor.executeSafe(OPERATION_ON_FOREGROUND, sdkCore.internalLogger) {
-            isInBackground = false
             if (!isScheduling) return@executeSafe
             when (state) {
+                State.PAUSED_IDLE -> state = State.IDLE
+
                 State.GRACE_PERIOD -> {
                     val remaining = max(0L, activeWindowEndMs - timeProvider.getDeviceTimestampMillis())
                     scheduleActiveWindowEnd(remaining)
@@ -286,8 +288,8 @@ internal class ContinuousProfilingScheduler(
     }
 
     private fun scheduleCooldown(cooldownMs: Long) {
-        if (isInBackground) {
-            // The app went to background before the cycle started; resume on foreground.
+        if (state == State.PAUSED_IDLE) {
+            // The first cycle is starting while the app is in background; resume it on foreground.
             remainingCooldownMs = cooldownMs
             state = State.PAUSED_COOLDOWN
             logToUser { LOG_COOLDOWN_DEFERRED_IN_BACKGROUND.format(Locale.US, cooldownMs) }
@@ -335,6 +337,7 @@ internal class ContinuousProfilingScheduler(
     internal enum class State {
         /**
          * Continuous profiler has not started, or it's sampled out. No timer is running.
+         * Backgrounding here transitions to [PAUSED_IDLE].
          */
         IDLE,
 
@@ -370,7 +373,13 @@ internal class ContinuousProfilingScheduler(
          * Grace period expired while still in background. The profiler has been stopped and
          * no timer is running. Foregrounding starts a fresh jittered [COOLDOWN].
          */
-        PAUSED_AFTER_GRACE
+        PAUSED_AFTER_GRACE,
+
+        /**
+         * Was [IDLE]; app is in background. A cycle that starts now goes to [PAUSED_COOLDOWN] instead
+         * of scheduling a timer. Foregrounding returns to [IDLE].
+         */
+        PAUSED_IDLE
     }
 
     companion object {
