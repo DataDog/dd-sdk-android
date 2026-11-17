@@ -30,7 +30,8 @@ internal class PrecomputedAssignmentsRequestFactory(
     private val internalLogger: InternalLogger,
     private val customFlagEndpoint: String?,
     private val flagSelection: CanonicalFlagSelection?,
-    private val experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED
+    private val experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
+    private val defaultService: () -> String? = { null }
 ) {
 
     val sendsFlagSelection: Boolean = flagSelection != null
@@ -91,6 +92,8 @@ internal class PrecomputedAssignmentsRequestFactory(
             datadogContext.rumApplicationId?.let {
                 headersBuilder.add(HEADER_APPLICATION_ID, it)
             }
+
+            addService(headersBuilder, datadogContext.service)
         } catch (e: IllegalArgumentException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -102,6 +105,25 @@ internal class PrecomputedAssignmentsRequestFactory(
         }
 
         return headersBuilder.build()
+    }
+
+    // Core uses the package name when the app sets no service, so that value is treated as unset.
+    // An unknown package name sends nothing, so a default is never sent.
+    private fun addService(headersBuilder: Headers.Builder, service: String) {
+        val defaultService = defaultService() ?: return
+        if (service == defaultService) return
+
+        // OkHttp validates the value. A rejected service drops only this header, not the request.
+        try {
+            headersBuilder.add(HEADER_SERVICE, service)
+        } catch (e: IllegalArgumentException) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { "The service is not a valid HTTP header value, so flag requests do not send it." },
+                e
+            )
+        }
     }
 
     private fun buildRequestBody(
@@ -155,6 +177,7 @@ internal class PrecomputedAssignmentsRequestFactory(
     companion object {
         private const val HEADER_APPLICATION_ID = "dd-application-id"
         private const val HEADER_CLIENT_TOKEN = "dd-client-token"
+        private const val HEADER_SERVICE = "dd-service"
         private const val HEADER_CONTENT_TYPE = "Content-Type"
         private const val CONTENT_TYPE_VND_JSON = "application/vnd.api+json"
         private const val PREVIEW_CUSTOMER_DOMAIN = "preview"

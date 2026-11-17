@@ -61,6 +61,13 @@ internal class FlagsFeature(
     private var isDebugBuild: Boolean = false
 
     /**
+     * The app's package name, which core uses as the service when the app sets none.
+     * Set once during onInitialize().
+     */
+    @Volatile
+    internal var appPackageName: String? = null
+
+    /**
      * Registry of [FlagsClient] instances by name.
      * This map stores all clients created for this feature instance.
      */
@@ -89,7 +96,8 @@ internal class FlagsFeature(
         PrecomputedAssignmentsRequestFactory(
             internalLogger = sdkCore.internalLogger,
             customFlagEndpoint = flagsConfiguration.customFlagEndpoint,
-            flagSelection = flagSelection
+            flagSelection = flagSelection,
+            defaultService = { appPackageName }
         )
 
     internal val initializationTimeoutScheduler = InitializationTimeoutScheduler { timeoutMs, action ->
@@ -132,6 +140,7 @@ internal class FlagsFeature(
             return
         }
         isDebugBuild = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        appPackageName = appContext.packageName
         isInitialized = true
         (flagSelectionResult as? FlagSelectionResult.Dropped)?.let {
             sdkCore.internalLogger.logDroppedFlagSelection(it.error)

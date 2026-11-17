@@ -507,7 +507,8 @@ interface FlagsClient {
                         featureSdkCore.internalLogger,
                         configuration.customFlagEndpoint,
                         flagSelection = flagsFeature.flagSelection,
-                        experimentationOptOutMode = experimentationOptOutMode
+                        experimentationOptOutMode = experimentationOptOutMode,
+                        defaultService = { flagsFeature.appPackageName }
                     )
                 } else {
                     flagsFeature.precomputedRequestFactory
