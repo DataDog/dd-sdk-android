@@ -10,6 +10,7 @@ import subprocess
 from pathlib import Path
 
 
+# Root build directory + MavenConfig.DOGFOOD_STAGING_DIRECTORY in build-logic; keep both in sync.
 STAGING_DIRECTORY = Path("build/dogfood-maven")
 GRADLE_OPTIONS = ["--stacktrace", "--no-daemon", "-Pdd-skip-signing"]
 

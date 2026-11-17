@@ -154,9 +154,7 @@ internal fun Project.publishingConfig(
                 repositories {
                     maven {
                         name = MavenConfig.DOGFOOD_STAGING_REPOSITORY
-                        val stagingDirectory = rootProject.layout.buildDirectory
-                            .dir(MavenConfig.DOGFOOD_STAGING_DIRECTORY)
-                        url = stagingDirectory.get().asFile.toURI()
+                        url = uri(rootProject.layout.buildDirectory.dir(MavenConfig.DOGFOOD_STAGING_DIRECTORY))
                     }
                 }
             }
