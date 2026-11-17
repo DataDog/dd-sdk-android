@@ -34,6 +34,9 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import java.util.concurrent.CancellationException
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import com.datadog.android.flags.model.EvaluationContext as DatadogEvaluationContext
 import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
@@ -313,30 +316,37 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
     private class ContextUpdateAdmission(private val provider: DatadogFlagsProvider) {
         // begin() and admit() share this lock so a newer operation cannot start between the
         // freshness check and native callback registration.
-        private val lock = Any()
+        private val lock = ReentrantLock()
+        private val pendingStatePublications = ConcurrentLinkedQueue<() -> Unit>()
         private var generation: Long = 0
-        private var hasAdmittedContext = false
-        private var admittedContext: OpenFeatureEvaluationContext? = null
+        private data class AdmittedContext(val context: OpenFeatureEvaluationContext?)
+
+        @Volatile
+        private var admittedContext: AdmittedContext? = null
         private var registrationInProgress = false
         private val deferredStatePublications = mutableListOf<() -> Unit>()
 
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        fun begin(context: OpenFeatureEvaluationContext?): ContextUpdateOperation = synchronized(lock) {
+        @Throws(CancellationException::class)
+        @Suppress("UnsafeThirdPartyFunctionCall", "ThrowingInternalException")
+        fun begin(context: OpenFeatureEvaluationContext?): ContextUpdateOperation = withAdmissionLock {
+            val globallyRegistered = OpenFeatureAPI.getProvider() === provider
+            if (globallyRegistered && context != OpenFeatureAPI.getEvaluationContext()) {
+                throw CancellationException("A newer OpenFeature context replaced this update.")
+            }
             ContextUpdateOperation(
                 generation = ++generation,
                 context = context,
-                globallyRegistered = OpenFeatureAPI.getProvider() === provider
+                globallyRegistered = globallyRegistered
             )
         }
 
-        fun admit(operation: ContextUpdateOperation, registration: () -> Unit): Boolean = synchronized(lock) {
+        fun admit(operation: ContextUpdateOperation, registration: () -> Unit): Boolean = withAdmissionLock {
             if (isCurrentLocked(operation)) {
                 // Registration returns after queuing native work; the lock is not held while awaiting its result.
                 registrationInProgress = true
                 try {
                     registration()
-                    admittedContext = operation.context
-                    hasAdmittedContext = true
+                    admittedContext = AdmittedContext(operation.context)
                     if (canPublishStateLocked()) {
                         deferredStatePublications.forEach { it() }
                     }
@@ -350,37 +360,57 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
             }
         }
 
-        fun isCurrent(operation: ContextUpdateOperation): Boolean = synchronized(lock) {
+        fun isCurrent(operation: ContextUpdateOperation): Boolean = withAdmissionLock {
             isCurrentLocked(operation)
         }
 
         @Suppress("UnsafeThirdPartyFunctionCall")
-        fun canEvaluate(context: OpenFeatureEvaluationContext?): Boolean = synchronized(lock) {
-            OpenFeatureAPI.getProvider() !== provider || hasAdmittedGlobalContextLocked(context)
-        }
+        fun canEvaluate(context: OpenFeatureEvaluationContext?): Boolean =
+            OpenFeatureAPI.getProvider() !== provider || hasAdmittedGlobalContext(context)
 
         @Suppress("UnsafeThirdPartyFunctionCall")
-        fun publishStateIfAdmitted(publish: () -> Unit) = synchronized(lock) {
-            if (canPublishStateLocked()) {
-                publish()
-            } else if (registrationInProgress) {
-                // A synchronous native callback belongs to the registration in progress. Publish it only
-                // after that context crosses the native admission boundary.
-                deferredStatePublications += publish
+        fun publishStateIfAdmitted(publish: () -> Unit) {
+            // Native listeners hold the state-holder lock. Never wait for admission from that callback.
+            pendingStatePublications.add(publish)
+            drainStatePublications()
+        }
+
+        private inline fun <T> withAdmissionLock(action: () -> T): T {
+            try {
+                return lock.withLock(action)
+            } finally {
+                drainStatePublications()
+            }
+        }
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // unlock() follows successful tryLock() on this thread.
+        private fun drainStatePublications() {
+            while (pendingStatePublications.isNotEmpty()) {
+                if (!lock.tryLock()) return
+                try {
+                    while (true) {
+                        val publish = pendingStatePublications.poll() ?: break
+                        if (canPublishStateLocked()) {
+                            publish()
+                        } else if (registrationInProgress) {
+                            deferredStatePublications += publish
+                        }
+                    }
+                } finally {
+                    lock.unlock()
+                }
             }
         }
 
         @Suppress("UnsafeThirdPartyFunctionCall")
-        private fun hasAdmittedGlobalContextLocked(
-            context: OpenFeatureEvaluationContext?
-        ): Boolean =
-            hasAdmittedContext &&
-                admittedContext == context &&
-                OpenFeatureAPI.getEvaluationContext() == context
+        private fun hasAdmittedGlobalContext(context: OpenFeatureEvaluationContext?): Boolean {
+            val admitted = admittedContext
+            return admitted != null && admitted.context == context && OpenFeatureAPI.getEvaluationContext() == context
+        }
 
         @Suppress("UnsafeThirdPartyFunctionCall")
         private fun canPublishStateLocked(): Boolean =
-            OpenFeatureAPI.getProvider() !== provider || hasAdmittedGlobalContextLocked(admittedContext)
+            OpenFeatureAPI.getProvider() !== provider || hasAdmittedGlobalContext(admittedContext?.context)
 
         @Suppress("UnsafeThirdPartyFunctionCall")
         private fun isCurrentLocked(operation: ContextUpdateOperation): Boolean =

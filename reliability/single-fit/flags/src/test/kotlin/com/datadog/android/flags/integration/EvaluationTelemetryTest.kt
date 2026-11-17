@@ -48,6 +48,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import java.security.MessageDigest
 import java.util.Locale
+import java.util.concurrent.CancellationException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
@@ -112,7 +113,7 @@ internal class EvaluationTelemetryTest {
 
     @ParameterizedTest
     @MethodSource("interleavedContextUpdates")
-    fun `M bind policy to submitted context W context update() {concurrent conversion}`(
+    fun `M bind policy to latest update W context update() {concurrent conversion}`(
         initializing: Boolean,
         optedOut: Boolean
     ) = runBlocking<Unit> {
@@ -137,19 +138,23 @@ internal class EvaluationTelemetryTest {
 
         try {
             // When
-            if (initializing) provider.initialize(interleaved) else provider.onContextSet(original, interleaved)
+            val update = runCatching {
+                if (initializing) provider.initialize(interleaved) else provider.onContextSet(original, interleaved)
+            }
             val result = provider.getBooleanEvaluation("enabled", false, null)
             fixture.flush()
 
             // Then
+            assertThat(update.exceptionOrNull()).isInstanceOf(CancellationException::class.java)
             assertThat(interleavedUpdates).isPositive()
+            assertThat(fixture.stubCore.requestsSent()).hasSize(2)
             assertThat(result.value).isTrue()
             val attributes = fixture.stubCore.requestsSent().last().bodyAsJson()
                 .getJSONObject("data").getJSONObject("attributes")
                 .getJSONObject("subject").getJSONObject("targeting_attributes")
-            assertThat(attributes.getString(CONTROL)).isEqualTo(optedOut.toString())
-            assertThat(fixture.evaluationCount()).isEqualTo(if (optedOut) 0 else 1)
-            assertThat(fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).hasSize(if (optedOut) 0 else 1)
+            assertThat(attributes.getString(CONTROL)).isEqualTo((!optedOut).toString())
+            assertThat(fixture.evaluationCount()).isEqualTo(if (optedOut) 1 else 0)
+            assertThat(fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).hasSize(if (optedOut) 1 else 0)
             assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
         } finally {
             executor.shutdownNow()
