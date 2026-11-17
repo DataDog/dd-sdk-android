@@ -532,6 +532,31 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
+    fun `M retain ordinary failure W readPrecomputedFlags() {malformed 401}`(
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String,
+        @StringForgery(regex = "[a-z]{1,20}") fakeMalformedBody: String
+    ) {
+        // Given
+        val fakeRequest = Request.Builder().url(fakeUrl).build()
+        val fakeResponse = createUnsuccessfulResponse(401, fakeUrl, fakeMalformedBody)
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics))
+            .doReturn(fakeRequest)
+        whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
+        whenever(mockCall.execute()).doReturn(fakeResponse)
+
+        // When
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext, fakeDatadogContext, fakeDiagnostics)
+
+        // Then
+        assertThat(result).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            "Failed to download flags: 401"
+        )
+    }
+
+    @Test
     fun `M retain ordinary failure W readPrecomputedFlags() {typed error without 401}`(
         @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
     ) {

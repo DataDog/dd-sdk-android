@@ -10,14 +10,14 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.flags.internal.evaluation.AssignmentAuthorization
+import com.datadog.android.flags.internal.model.AssignmentAuthorizationErrorResponse
 import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
 import com.datadog.android.flags.internal.selection.FlagSelectionIgnoredReason
 import com.datadog.android.flags.model.EvaluationContext
+import com.google.gson.JsonParseException
 import okhttp3.Call
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONException
-import org.json.JSONObject
 
 /**
  * Downloads precomputed flag assignments from Datadog Feature Flags service.
@@ -130,13 +130,11 @@ internal class PrecomputedAssignmentsDownloader(
         if (authorizationRejected) PrecomputedAssignmentsResult.AuthorizationRejected else null
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // Bounded JSON parsing is contained by the JSONException fallback.
     private fun isAuthorizationRejection(body: String): Boolean = try {
-        val errors = JSONObject(body).optJSONArray("errors") ?: return false
-        (0 until errors.length()).any { index ->
-            errors.optJSONObject(index)?.optString("code") == AssignmentAuthorization.AUTHORIZATION_FAILED
+        AssignmentAuthorizationErrorResponse.fromJson(body).errors.any {
+            it.code == AssignmentAuthorization.AUTHORIZATION_FAILED
         }
-    } catch (_: JSONException) {
+    } catch (_: JsonParseException) {
         false
     }
 
