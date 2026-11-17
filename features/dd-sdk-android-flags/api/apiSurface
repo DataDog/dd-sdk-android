@@ -57,7 +57,6 @@ interface com.datadog.android.flags.StateObservable
 class com.datadog.android.flags._FlagsInternalProxy
   constructor(FlagsClient)
   fun isExperimentationOptOutEnabled(): Boolean
-  fun setEvaluationContext(com.datadog.android.flags.model.EvaluationContext, EvaluationContextCallback?, Boolean)
   fun setEvaluationContextWithOutcome(com.datadog.android.flags.model.EvaluationContext, Boolean?, (com.datadog.android.flags.model.FlagsClientState, Throwable?) -> Unit)
   fun isEvaluationTelemetryOptOutParameterEnabled(): Boolean
   fun getFlagAssignmentsSnapshot(com.datadog.android.flags.model.EvaluationContext): Map<String, com.datadog.android.flags.model.UnparsedFlag>?

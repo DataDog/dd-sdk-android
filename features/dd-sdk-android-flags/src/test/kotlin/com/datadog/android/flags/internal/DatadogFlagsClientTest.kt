@@ -822,8 +822,8 @@ internal class DatadogFlagsClientTest {
             experimentationOptOut = ExperimentationOptOut()
         )
         val proxy = _FlagsInternalProxy(testedClient)
-        proxy.setEvaluationContext(fakeContext, null, true)
-        proxy.setEvaluationContext(fakeOtherContext, null, false)
+        testedClient.setEvaluationContext(fakeContext, null, true)
+        testedClient.setEvaluationContext(fakeOtherContext, null, false)
 
         // When
         proxy.trackFlagSnapshotEvaluation(fakeFlagKey, fakeFlag, fakeContext, fakeTelemetryTargetingKey)
@@ -864,7 +864,7 @@ internal class DatadogFlagsClientTest {
         )
         val testedProxy = _FlagsInternalProxy(testedClient)
         if (perSubject) {
-            testedProxy.setEvaluationContext(fakeContext, null, telemetryOptedOut)
+            testedClient.setEvaluationContext(fakeContext, null, telemetryOptedOut)
         } else {
             testedClient.setEvaluationTelemetryOptOut(telemetryOptedOut)
         }
@@ -934,8 +934,8 @@ internal class DatadogFlagsClientTest {
             experimentationOptOut = ExperimentationOptOut()
         )
         val testedProxy = _FlagsInternalProxy(testedClient)
-        testedProxy.setEvaluationContext(fakeContext, null, !requestedSubjectOptedOut)
-        testedProxy.setEvaluationContext(fakeNextContext, null, requestedSubjectOptedOut)
+        testedClient.setEvaluationContext(fakeContext, null, !requestedSubjectOptedOut)
+        testedClient.setEvaluationContext(fakeNextContext, null, requestedSubjectOptedOut)
 
         // When
         testedProxy.trackFlagSnapshotEvaluation(fakeKey, fakeFlag, fakeContext)
