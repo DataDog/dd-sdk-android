@@ -55,6 +55,11 @@
     "serial_id": {
       "type": "integer",
       "description": "Serial identifier of the split that the subject was assigned to"
+    },
+    "features": {
+      "type": "object",
+      "description": "Features of the selected split routed to exposure events, keyed by feature key",
+      "additionalProperties": true
     }
   },
   "required": ["timestamp", "allocation", "flag", "variant", "subject"]

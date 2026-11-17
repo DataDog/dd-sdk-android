@@ -6,10 +6,13 @@
 
 package com.datadog.android.flags
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.DatadogFlagsClient
+import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.evaluation.EvaluationContextOutcomeCallback
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
+import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.lint.InternalApi
 
@@ -26,6 +29,16 @@ import com.datadog.android.lint.InternalApi
 @InternalApi
 @Suppress("ClassName", "ClassNaming", "UndocumentedPublicFunction", "TooManyFunctions")
 class _FlagsInternalProxy(private val client: FlagsClient) {
+    /**
+     * Returns the logger of the SDK core that the client was created for. A [FlagsClient] that the application
+     * implements gets [InternalLogger.UNBOUND].
+     */
+    fun getInternalLogger(): InternalLogger = when (client) {
+        is DatadogFlagsClient -> client.featureSdkCore.internalLogger
+        is NoOpFlagsClient -> client.sdkCore.internalLogger
+        else -> InternalLogger.UNBOUND
+    }
+
     fun isExperimentationOptOutEnabled(): Boolean =
         (client as? DatadogFlagsClient)?.experimentationOptOut?.enabled == true
 
@@ -154,4 +167,32 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
             client.trackFlagRumEvaluation(flagKey, variantKey, context)
         }
     }
+
+    /**
+     * Resolves like [FlagsClient.resolve], but does not record the exposure. The caller invokes
+     * [DeferredExposureResolution.recordExposure] once, after the evaluation has succeeded.
+     * A client that is not a Datadog client resolves normally and returns no exposure.
+     */
+    fun <T : Any> resolveDeferringExposure(flagKey: String, defaultValue: T): DeferredExposureResolution<T> =
+        if (client is DatadogFlagsClient) {
+            client.resolveDeferringExposure(flagKey, defaultValue)
+        } else {
+            DeferredExposureResolution(client.resolve(flagKey, defaultValue), null, null)
+        }
+
+    /**
+     * A resolution whose exposure is not recorded yet.
+     *
+     * @param T the type of the flag value.
+     * @property details the resolution.
+     * @property context the evaluation context of the assignments that were read, or null when none were read.
+     * @property recordExposure records the exposure, sends it when exposure tracking is on, and returns whether
+     * it was already recorded. It returns null when a newer evaluation context has replaced the evaluated one.
+     * The property is null for a non-exposure.
+     */
+    class DeferredExposureResolution<T : Any>(
+        val details: ResolutionDetails<T>,
+        val context: EvaluationContext?,
+        val recordExposure: (() -> Boolean?)?
+    )
 }

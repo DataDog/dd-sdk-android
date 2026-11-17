@@ -36,6 +36,7 @@ directory aliases expose those same sources to agent hosts.
 - Writing, editing, or reviewing tests: [`sdk-tests`](ai/skills/sdk-tests/SKILL.md).
 - Reviewing a branch or PR: [`sdk-review`](ai/skills/sdk-review/SKILL.md).
 - Writing commit messages or PR titles: [`sdk-commit`](ai/skills/sdk-commit/SKILL.md).
+- External references and example prompts for feature work: [`sdk-feature-knowledge`](ai/skills/sdk-feature-knowledge/SKILL.md).
 - Running pre-PR checks and regenerating generated files: [`sdk-pr-prepare`](ai/skills/sdk-pr-prepare/SKILL.md).
 - Creating or updating stacked PRs with Graphite: [`sdk-pr-stack`](ai/skills/sdk-pr-stack/SKILL.md).
 - Inspecting events emitted by the sample app: [`android-sdk-event-inspection`](.claude/skills/android-sdk-event-inspection/SKILL.md).
@@ -158,7 +159,7 @@ Exception for shared SDK internals: `dd-sdk-android-internal` is an `implementat
 - Log only via `InternalLogger`, obtained from the relevant SDK core. Never use `android.util.Log`, `println` or `System.err` in SDK code. The sample app uses Timber.
 - Choose the target deliberately, following the rule of thumb in the `InternalLogger` KDoc. `USER` is for messages that are actionable or report the main data-processing steps (tracking, storage, upload). `TELEMETRY` is for events we need to monitor. `MAINTAINER` is for internal details and is visible only in SDK debug builds. Use `onlyOnce = true` for messages that could spam: log and telemetry spam costs customers money and hides real problems.
 - Pass the exception as the `throwable` argument. Don't put `e.message` in the log text, since the logger already prints it.
-- Never throw from SDK code paths that could reach the host app. Catch narrow exception types (e.g. `IOException`), not `Throwable` or `Exception`. Exception to this rule: calls into customer-provided or third-party code (event mappers, serializers, listeners) whose exceptions are unknown: there, a broad catch is intentional; suppress `TooGenericExceptionCaught` at that site and log the exception. Even there, never swallow `Error` (`OutOfMemoryError`, `AssertionError`, …) in order to continue: it signals a state the VM can't recover from, and hiding it masks the real failure. Catch `Exception`, or rethrow `Error` if you catch `Throwable`. Don't create a bare `Throwable` or `Exception`; use a specific subclass.
+- Never throw from SDK code paths that could reach the host app. Catch narrow exception types (e.g. `IOException`), not `Throwable` or `Exception`. Exception to this rule: calls into customer-provided or third-party code (event mappers, serializers, listeners) whose exceptions are unknown: there, a broad catch is intentional; suppress `TooGenericExceptionCaught` at that site and log the exception. Even there, never swallow fatal `Error`s (`VirtualMachineError` such as `OutOfMemoryError` or `StackOverflowError`, `ThreadDeath`) in order to continue: the VM may be in an unrecoverable state, and hiding them masks the real failure. Some `Error`s thrown by such code are recoverable (e.g. `AssertionError`, or a `LinkageError` such as `NoClassDefFoundError`/`NoSuchMethodError` from a dependency version mismatch); catching those explicitly, logging them and continuing is fine. Don't create a bare `Throwable` or `Exception`; use a specific subclass.
 
 ## Static Analysis and Compatibility
 

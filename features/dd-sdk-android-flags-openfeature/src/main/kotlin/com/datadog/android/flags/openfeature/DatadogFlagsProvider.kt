@@ -6,9 +6,7 @@
 
 package com.datadog.android.flags.openfeature
 
-import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.FlagsStateListener
@@ -17,10 +15,15 @@ import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.openfeature.internal.ContextUpdateOutcome
 import com.datadog.android.flags.openfeature.internal.adapters.convertToValue
+import com.datadog.android.flags.openfeature.internal.adapters.hookFeatures
 import com.datadog.android.flags.openfeature.internal.adapters.toDatadogEvaluationContext
 import com.datadog.android.flags.openfeature.internal.adapters.toEvaluationMetadata
 import com.datadog.android.flags.openfeature.internal.adapters.toOpenFeatureErrorCode
 import com.datadog.android.flags.openfeature.internal.adapters.toProviderEvaluation
+import com.datadog.android.flags.openfeature.internal.exposure.DatadogProviderMetadata
+import com.datadog.android.flags.openfeature.internal.exposure.ExposureAdmissionHook
+import com.datadog.android.flags.openfeature.internal.exposure.ExposureDecisions
+import com.datadog.android.flags.openfeature.internal.exposure.ExposureMetadata
 import com.datadog.android.flags.openfeature.internal.setEvaluationContextSuspend
 import dev.openfeature.kotlin.sdk.FeatureProvider
 import dev.openfeature.kotlin.sdk.Hook
@@ -35,6 +38,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import com.datadog.android.flags.model.EvaluationContext as DatadogEvaluationContext
@@ -86,20 +90,23 @@ import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
  * This provider is thread-safe and all methods can be safely called from any thread.
  * The underlying [FlagsClient] handles thread coordination.
  */
-class DatadogFlagsProvider private constructor(private val flagsClient: FlagsClient, sdkCore: FeatureSdkCore) :
+class DatadogFlagsProvider private constructor(
+    private val flagsClient: FlagsClient,
+    private val internalLogger: InternalLogger
+) :
     FeatureProvider {
 
-    private val internalLogger: InternalLogger = sdkCore.internalLogger
     private val contextUpdateAdmission = ContextUpdateAdmission(this)
     private val experimentationOptOutEnabled = _FlagsInternalProxy(flagsClient).isExperimentationOptOutEnabled()
     private val evaluationTelemetryOptOutParameterEnabled =
         _FlagsInternalProxy(flagsClient).isEvaluationTelemetryOptOutParameterEnabled()
 
-    override val metadata: ProviderMetadata = object : ProviderMetadata {
-        override val name: String = PROVIDER_NAME
-    }
+    private val exposureDecisions = ExposureDecisions()
+    private val nextDecisionId = AtomicInteger(0)
 
-    override val hooks: List<Hook<*>> = emptyList()
+    override val metadata: ProviderMetadata = DatadogProviderMetadata(PROVIDER_NAME, exposureDecisions, internalLogger)
+
+    override val hooks: List<Hook<*>> = listOf(ExposureAdmissionHook(exposureDecisions))
 
     /**
      * Initializes the provider with the given evaluation context.
@@ -149,59 +156,67 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         defaultValue: Boolean,
         context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<Boolean> = contextNotReadyEvaluation(defaultValue, context)
-        ?: flagsClient.resolve(key, defaultValue).toProviderEvaluation()
+        ?: evaluate(key, defaultValue)
 
     override fun getStringEvaluation(
         key: String,
         defaultValue: String,
         context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<String> = contextNotReadyEvaluation(defaultValue, context)
-        ?: flagsClient.resolve(key, defaultValue).toProviderEvaluation()
+        ?: evaluate(key, defaultValue)
 
     override fun getIntegerEvaluation(
         key: String,
         defaultValue: Int,
         context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<Int> = contextNotReadyEvaluation(defaultValue, context)
-        ?: flagsClient.resolve(key, defaultValue).toProviderEvaluation()
+        ?: evaluate(key, defaultValue)
 
     override fun getDoubleEvaluation(
         key: String,
         defaultValue: Double,
         context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<Double> = contextNotReadyEvaluation(defaultValue, context)
-        ?: flagsClient.resolve(key, defaultValue).toProviderEvaluation()
+        ?: evaluate(key, defaultValue)
 
     override fun getObjectEvaluation(
         key: String,
         defaultValue: Value,
         context: OpenFeatureEvaluationContext?
     ): ProviderEvaluation<Value> = contextNotReadyEvaluation(defaultValue, context)
-        ?: flagsClient.resolve(key, SENTINEL_DEFAULT_MAP).let { resolutionDetails ->
-            // If we got the sentinel back (via reference equality), return the user's original default.
-            // This happens when the flag is missing, the provider is not ready, or an error occurs.
-            if (resolutionDetails.value === SENTINEL_DEFAULT_MAP) {
-                ProviderEvaluation(
-                    value = defaultValue,
-                    variant = resolutionDetails.variant,
-                    reason = resolutionDetails.reason?.name,
-                    errorCode = resolutionDetails.errorCode?.toOpenFeatureErrorCode(),
-                    errorMessage = resolutionDetails.errorMessage,
-                    metadata = resolutionDetails.flagMetadata.toEvaluationMetadata()
-                )
-            } else {
-                ProviderEvaluation(
-                    value = Value.Structure(
-                        resolutionDetails.value.mapValues { (_, v) -> convertToValue(v, internalLogger) }
-                    ),
-                    variant = resolutionDetails.variant,
-                    reason = resolutionDetails.reason?.name,
-                    errorCode = null,
-                    errorMessage = null,
-                    metadata = resolutionDetails.flagMetadata.toEvaluationMetadata()
-                )
-            }
+        ?: evaluateObject(key, defaultValue)
+
+    private fun evaluateObject(key: String, defaultValue: Value): ProviderEvaluation<Value> {
+        // Use sentinel to avoid unnecessary conversion of user's default value
+        val resolution = _FlagsInternalProxy(flagsClient).resolveDeferringExposure(key, SENTINEL_DEFAULT_MAP)
+        val resolutionDetails = resolution.details
+
+        // If we got the sentinel back (via reference equality), return the user's original default
+        // This happens when: flag not found, provider not ready, or any error occurs
+        if (resolutionDetails.value === SENTINEL_DEFAULT_MAP) {
+            return ProviderEvaluation(
+                value = defaultValue,
+                variant = resolutionDetails.variant,
+                reason = resolutionDetails.reason?.name,
+                errorCode = resolutionDetails.errorCode?.toOpenFeatureErrorCode(),
+                errorMessage = resolutionDetails.errorMessage,
+                metadata = resolutionDetails.flagMetadata.toEvaluationMetadata()
+            )
         }
+
+        val resultValue: Value = Value.Structure(
+            resolutionDetails.value.mapValues { (_, v) -> convertToValue(v, internalLogger) }
+        )
+
+        return ProviderEvaluation(
+            value = resultValue,
+            variant = resolutionDetails.variant,
+            reason = resolutionDetails.reason?.name,
+            errorCode = null,
+            errorMessage = null,
+            metadata = decisionMetadata(resolution).toEvaluationMetadata()
+        ).also { register(it, resolution) }
+    }
 
     override fun shutdown() {
         // No-op: FlagsClient lifecycle is managed separately
@@ -262,6 +277,38 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
         awaitClose {
             flagsClient.state.removeListener(listener)
         }
+    }
+
+    private fun <T : Any> evaluate(key: String, defaultValue: T): ProviderEvaluation<T> {
+        val resolution = _FlagsInternalProxy(flagsClient).resolveDeferringExposure(key, defaultValue)
+        return resolution.details.copy(flagMetadata = decisionMetadata(resolution)).toProviderEvaluation()
+            .also { register(it, resolution) }
+    }
+
+    // A decision id makes each evaluation's metadata unique, so it can key the evaluation's decision.
+    private fun decisionMetadata(resolution: _FlagsInternalProxy.DeferredExposureResolution<*>): Map<String, Any> {
+        val metadata = resolution.details.flagMetadata
+        return if (hasDecision(resolution)) {
+            metadata + (ExposureMetadata.DECISION_ID to nextDecisionId.incrementAndGet())
+        } else {
+            metadata
+        }
+    }
+
+    private fun hasDecision(resolution: _FlagsInternalProxy.DeferredExposureResolution<*>): Boolean =
+        resolution.recordExposure != null || resolution.details.hookFeatures().isNotEmpty()
+
+    private fun register(
+        evaluation: ProviderEvaluation<*>,
+        resolution: _FlagsInternalProxy.DeferredExposureResolution<*>
+    ) {
+        if (!hasDecision(resolution)) return
+        exposureDecisions.register(
+            evaluation.metadata,
+            resolution.details.hookFeatures(),
+            resolution.context,
+            resolution.recordExposure
+        )
     }
 
     @Throws(CancellationException::class)
@@ -440,7 +487,7 @@ class DatadogFlagsProvider private constructor(private val flagsClient: FlagsCli
 
         internal fun wrap(
             flagsClient: FlagsClient,
-            sdkCore: FeatureSdkCore = Datadog.getInstance() as FeatureSdkCore
-        ): DatadogFlagsProvider = DatadogFlagsProvider(flagsClient, sdkCore)
+            internalLogger: InternalLogger
+        ): DatadogFlagsProvider = DatadogFlagsProvider(flagsClient, internalLogger)
     }
 }

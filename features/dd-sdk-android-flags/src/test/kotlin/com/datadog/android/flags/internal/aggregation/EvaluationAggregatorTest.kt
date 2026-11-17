@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.aggregation
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -132,6 +133,29 @@ internal class EvaluationAggregatorTest {
         val events = testedAggregator.drain()
         assertThat(events).hasSize(1)
         assertThat(events.first().count).isEqualTo(10)
+    }
+
+    @Test
+    fun `M create separate entries W record() { different evaluation features }`(
+        @StringForgery fakeFirstText: String,
+        @StringForgery fakeSecondText: String,
+        @DoubleForgery fakeNumber: Double
+    ) {
+        // Given
+        record(features = mapOf("text" to fakeFirstText, "number" to fakeNumber))
+        record(features = mapOf("number" to fakeNumber, "text" to fakeFirstText))
+        record(features = mapOf("text" to fakeSecondText, "number" to fakeNumber))
+        record()
+
+        // When
+        val result = testedAggregator.drain()
+
+        // Then
+        assertThat(result.map { it.aggregationKey.features to it.count }).containsExactlyInAnyOrder(
+            mapOf("text" to fakeFirstText, "number" to fakeNumber) to 2,
+            mapOf("text" to fakeSecondText, "number" to fakeNumber) to 1,
+            emptyMap<String, Any>() to 1
+        )
     }
 
     @Test
@@ -349,7 +373,8 @@ internal class EvaluationAggregatorTest {
         context: EvaluationContext = fakeContext,
         variantKey: String? = fakeVariantKey,
         errorCode: String? = null,
-        errorMessage: String? = null
+        errorMessage: String? = null,
+        features: Map<String, Any> = emptyMap()
     ): List<EvaluationAggregationStats> = testedAggregator.record(
         timestamp = timestamp,
         flagKey = flagKey,
@@ -359,7 +384,8 @@ internal class EvaluationAggregatorTest {
         variantKey = variantKey,
         allocationKey = null,
         errorCode = errorCode,
-        errorMessage = errorMessage
+        errorMessage = errorMessage,
+        features = features
     )
 
     private fun runConcurrently(threadCount: Int, action: (Int) -> Unit) {

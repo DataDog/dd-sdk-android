@@ -229,6 +229,9 @@ internal class ProfilingFeatureTest {
         whenever(mockProfiler.timeProvider) doReturn mockMutableTimeProvider
         whenever(mockSdkCore.createOkHttpCallFactory(any())) doReturn mockCallFactory
         whenever(mockProfiler.scheduledExecutorService) doReturn mockSchedulerExecutor
+        doAnswer {
+            it.getArgument<Runnable>(0).run()
+        }.whenever(mockSchedulerExecutor).execute(any<Runnable>())
         whenever(mockContext.getSystemService(ProfilingManager::class.java)) doReturn (mockService)
         whenever(mockContext.getSharedPreferences(any(), any())) doReturn mockSharedPreferences
         whenever(mockSharedPreferences.edit()) doReturn mockEditor

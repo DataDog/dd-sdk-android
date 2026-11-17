@@ -631,12 +631,38 @@ style:
     forbiddenImports: []
     allowedImports: []
   ForbiddenMethodCall:
-    active: false
+    active: true
+    includes:
+      # Flags public types reach Java callers; see the reason below.
+      - '**/features/dd-sdk-android-flags/src/main/**'
+      - '**/features/dd-sdk-android-flags-openfeature/src/main/**'
     methods:
       - reason: 'print does not allow you to configure the output stream. Use a logger instead.'
         value: 'kotlin.io.print'
       - reason: 'println does not allow you to configure the output stream. Use a logger instead.'
         value: 'kotlin.io.println'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableCollection'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableList'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableMap'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableNavigableMap'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableNavigableSet'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableSequencedCollection'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableSequencedMap'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableSequencedSet'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableSet'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableSortedMap'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableSortedSet'
   ForbiddenSuppress:
     active: false
     rules: []

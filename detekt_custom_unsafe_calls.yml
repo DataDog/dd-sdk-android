@@ -7,6 +7,7 @@ datadog:
       - "android.app.ActivityManager.getMemoryInfo(android.app.ActivityManager.MemoryInfo?):java.lang.RuntimeException"
       - "android.app.ActivityManager.getMyMemoryState(android.app.ActivityManager.RunningAppProcessInfo?):java.lang.RuntimeException"
       - "android.app.ApplicationExitInfo.getTraceInputStream():java.io.IOException"
+      - "android.content.Context.getSystemService(java.lang.Class):java.lang.RuntimeException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, android.content.pm.PackageManager.PackageInfoFlags):android.content.pm.PackageManager.NameNotFoundException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, kotlin.Int):android.content.pm.PackageManager.NameNotFoundException"
       - "android.content.res.AssetManager.open(kotlin.String):java.io.IOException"

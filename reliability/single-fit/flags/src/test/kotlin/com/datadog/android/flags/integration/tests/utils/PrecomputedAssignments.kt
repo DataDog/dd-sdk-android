@@ -12,6 +12,7 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
+import org.json.JSONArray
 import org.json.JSONObject
 
 /**
@@ -25,7 +26,8 @@ data class FakeAssignment(
     val doLog: Boolean = true,
     val reason: String = "TARGETING_MATCH",
     val serialId: Long? = null,
-    val extraLogging: Map<String, Any> = emptyMap()
+    val extraLogging: Map<String, Any> = emptyMap(),
+    val features: JSONArray? = null
 )
 
 /**
@@ -45,6 +47,7 @@ fun precomputedAssignmentsBody(assignments: Map<String, FakeAssignment>): String
                 .put("reason", assignment.reason)
                 .put("extraLogging", JSONObject(assignment.extraLogging))
                 .apply { assignment.serialId?.let { put("serialId", it) } }
+                .apply { assignment.features?.let { put("features", it) } }
         )
     }
     return JSONObject()
