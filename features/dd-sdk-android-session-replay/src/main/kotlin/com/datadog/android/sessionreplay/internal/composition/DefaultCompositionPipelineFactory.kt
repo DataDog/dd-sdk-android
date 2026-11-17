@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.composition
 
 import android.app.Application
 import android.webkit.WebView
+import android.widget.EditText
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -16,6 +17,7 @@ import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedBackgroundShapeStyleResolver
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEditTextMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMapperTypeWrapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedTextViewMapper
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewGroupFallbackMapper
@@ -154,12 +156,13 @@ internal class DefaultCompositionPipelineFactory(
         CaptureTimeBudget.UNLIMITED
     }
 
-    private companion object {
-        const val CONSTRUCTION_EXECUTOR_NAME = "sr-composition-construction"
-        const val COMPLETION_EXECUTOR_NAME = "sr-composition-processing"
-        const val EXPIRY_EXECUTOR_NAME = "sr-composition-expiry"
+    internal companion object {
+        private const val CONSTRUCTION_EXECUTOR_NAME = "sr-composition-construction"
+        private const val COMPLETION_EXECUTOR_NAME = "sr-composition-processing"
+        private const val EXPIRY_EXECUTOR_NAME = "sr-composition-expiry"
 
-        fun builtInCapturedMappers(
+        // Typed mappers resolve in order: EditText must precede its TextView superclass to mask inputs.
+        internal fun builtInCapturedMappers(
             internalLogger: InternalLogger,
             customDrawableMappers: List<DrawableToColorMapper>
         ): CapturedViewMapperRegistry {
@@ -171,8 +174,15 @@ internal class DefaultCompositionPipelineFactory(
                 mappers = listOf(
                     CapturedMapperTypeWrapper(WebView::class.java, CapturedWebViewMapper()),
                     CapturedMapperTypeWrapper(
+                        EditText::class.java,
+                        CapturedEditTextMapper(
+                            backgroundShapeStyleResolver = backgroundResolver,
+                            internalLogger = internalLogger
+                        )
+                    ),
+                    CapturedMapperTypeWrapper(
                         TextView::class.java,
-                        CapturedTextViewMapper(
+                        CapturedTextViewMapper<TextView>(
                             backgroundShapeStyleResolver = backgroundResolver,
                             internalLogger = internalLogger
                         )

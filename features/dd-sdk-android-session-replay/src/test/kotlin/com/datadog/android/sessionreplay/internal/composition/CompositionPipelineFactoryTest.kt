@@ -15,6 +15,8 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
+import android.widget.AutoCompleteTextView
+import android.widget.EditText
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.ImagePrivacy
@@ -22,6 +24,7 @@ import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
+import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedEditTextMapper
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.TimeBank
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
@@ -36,6 +39,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
+import org.mockito.Mockito
 import org.mockito.Mockito.mockConstruction
 import org.mockito.Mockito.mockStatic
 import org.mockito.junit.jupiter.MockitoExtension
@@ -201,6 +205,25 @@ internal class CompositionPipelineFactoryTest {
         // Then
         verify(mockConstructionExecutor).shutdownNow()
         verify(mockCompletionExecutor).shutdownNow()
+    }
+
+    @Test
+    fun `M resolve the input mapper W resolve() { built-in mappers, EditText subclass }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeEditTextClass = forge.anElementFrom(EditText::class.java, AutoCompleteTextView::class.java)
+        val stubEditText = Mockito.mock(fakeEditTextClass)
+        val testedRegistry = DefaultCompositionPipelineFactory.builtInCapturedMappers(
+            mockSdkCore.internalLogger,
+            emptyList()
+        )
+
+        // When
+        val mapper = testedRegistry.resolve(stubEditText)
+
+        // Then
+        assertThat(mapper).isInstanceOf(CapturedEditTextMapper::class.java)
     }
 
     @Test

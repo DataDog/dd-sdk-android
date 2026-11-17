@@ -22,41 +22,43 @@ import com.datadog.android.internal.sessionreplay.composition.CapturedTruncation
 import com.datadog.android.internal.sessionreplay.composition.CapturedVerticalAlignment
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
 import com.datadog.android.internal.utils.densityNormalized
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.composition.toCaptured
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 
 /**
- * The flagship semantic wireframe for this workstream: a real, unmasked text capture. Text/input
- * privacy masking is explicitly out of scope here - it is owned by the pixel-fallback/privacy
- * workstream, which applies masking policy uniformly across text and images before anything is
- * uploadable. Styling follows legacy `TextViewMapper`; relative alignment is resolved using the
- * rendered paragraph direction for text alignment and layout direction for view alignment.
+ * Copies masked text and native styling on the UI thread for wireframe construction on the worker.
+ * Relative alignment follows the rendered paragraph direction for text alignment and the layout
+ * direction for view alignment.
  */
-internal class CapturedTextViewMapper(
+internal open class CapturedTextViewMapper<T : TextView>(
     private val viewBoundsResolver: ViewBoundsResolver = DefaultViewBoundsResolver,
     private val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter,
     private val backgroundShapeStyleResolver: CapturedBackgroundShapeStyleResolver,
     private val internalLogger: InternalLogger
-) : CapturedViewMapper<TextView> {
+) : CapturedViewMapper<T> {
 
     // The mapper belongs to one recording session and is accessed by UI-thread traversal.
     private var hasReportedUnsupportedFont = false
 
-    override fun map(view: TextView, mappingContext: CapturedMappingContext): CapturedViewMapperResult =
+    override fun map(view: T, mappingContext: CapturedMappingContext): CapturedViewMapperResult =
         capture(view, mappingContext).map(mappingContext)
 
-    override fun capture(view: TextView, mappingContext: CapturedMappingContext): CapturedViewData {
+    override fun capture(view: T, mappingContext: CapturedMappingContext): CapturedViewData {
         val layout = view.layout
         val hasLayout = layout != null
+        val capturedText = resolveCapturedText(view, mappingContext.textAndInputPrivacy)
+        val isLayoutRtl = view.layoutDirection == TextView.LAYOUT_DIRECTION_RTL
         return CapturedTextViewData(
             bounds = (
                 mappingContext.bounds
                     ?: viewBoundsResolver.resolveViewGlobalBounds(view, mappingContext.screenDensity).toCaptured()
                 ),
-            text = (layout?.text ?: view.text)?.toString().orEmpty(),
+            text = capturedText.value,
             background = backgroundShapeStyleResolver.capture(view),
             family = resolveFontFamily(view.typeface),
             textSizePx = view.textSize.toLong(),
@@ -78,8 +80,9 @@ internal class CapturedTextViewMapper(
             paddingRightPx = if (hasLayout) view.totalPaddingRight else view.paddingRight,
             textAlignment = view.textAlignment,
             gravity = view.gravity,
-            isParagraphRtl = isParagraphRtl(view),
-            isLayoutRtl = view.layoutDirection == TextView.LAYOUT_DIRECTION_RTL,
+            // Masked text must not reveal its script through alignment.
+            isParagraphRtl = if (capturedText.isMasked) isLayoutRtl else isParagraphRtl(view),
+            isLayoutRtl = isLayoutRtl,
             hasLayout = hasLayout,
             colorStringFormatter = colorStringFormatter
         )
@@ -110,6 +113,18 @@ internal class CapturedTextViewMapper(
         }
     }
 
+    protected open fun resolveCapturedText(view: T, textAndInputPrivacy: TextAndInputPrivacy): CapturedText {
+        val text = resolveLayoutText(view)
+        return when (textAndInputPrivacy) {
+            TextAndInputPrivacy.MASK_SENSITIVE_INPUTS,
+            TextAndInputPrivacy.MASK_ALL_INPUTS -> CapturedText(text, isMasked = false)
+            TextAndInputPrivacy.MASK_ALL -> CapturedText(
+                StringObfuscator.getStringObfuscator().obfuscate(text),
+                isMasked = true
+            )
+        }
+    }
+
     private fun isParagraphRtl(textView: TextView): Boolean {
         val layout = textView.layout
         if (layout != null && layout.lineCount > 0) {
@@ -134,6 +149,9 @@ internal class CapturedTextViewMapper(
         @Suppress("UnsafeThirdPartyFunctionCall") // Range covers the captured string.
         return heuristic.isRtl(text, 0, text.length)
     }
+
+    /** The text copied for replay, and whether it replaces the original. */
+    protected class CapturedText(val value: String, val isMasked: Boolean)
 
     private companion object {
         const val UNSUPPORTED_FONT_FAMILY_MESSAGE = "Unable to resolve text font family; using sans-serif fallback"
