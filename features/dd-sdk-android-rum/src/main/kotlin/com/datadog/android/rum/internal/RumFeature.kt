@@ -284,11 +284,11 @@ internal class RumFeature(
         val frequency = configuration.vitalsMonitorUpdateFrequency
         val vitalsUpdatesRequired = frequency != VitalsUpdateFrequency.NEVER
 
-        // The vital executor backs both the CPU/memory vital monitors and timeseries sampling.
+        // The scheduler executor backs both the CPU/memory vital monitors and timeseries sampling.
         if (vitalsUpdatesRequired || configuration.timeseriesConfiguration != null) initializeSchedulerExecutorService()
 
         if (vitalsUpdatesRequired) {
-            // CPU/memory monitors schedule on the vital executor, so they are only set up when vitals
+            // CPU/memory monitors schedule on the scheduler executor, so they are only set up when vitals
             // are enabled - the same condition that creates the executor above.
             initializeCpuVitalMonitor(frequency)
             initializeMemoryVitalMonitor(frequency)

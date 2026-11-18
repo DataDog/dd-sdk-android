@@ -1063,7 +1063,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M initialize vital executor W initialize { frequency = NEVER and timeseries enabled }`() {
+    fun `M initialize scheduler executor W initialize { frequency = NEVER and timeseries enabled }`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER,
@@ -1135,7 +1135,7 @@ internal class RumFeatureTest {
 
     @ParameterizedTest
     @EnumSource(VitalsUpdateFrequency::class, names = ["NEVER"], mode = EnumSource.Mode.EXCLUDE)
-    fun `M initialize vital executor W initialize { frequency != NEVER }()`(
+    fun `M initialize scheduler executor W initialize { frequency != NEVER }()`(
         fakeFrequency: VitalsUpdateFrequency
     ) {
         // Given
@@ -1166,7 +1166,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M not initialize vital executor W initialize { frequency = NEVER }()`() {
+    fun `M not initialize scheduler executor W initialize { frequency = NEVER }()`() {
         // Given
         fakeConfiguration = fakeConfiguration.copy(
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER,
@@ -1230,7 +1230,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M shut down vital executor W onStop()`() {
+    fun `M shut down scheduler executor W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         val mockSchedulerExecutorService: ScheduledThreadPoolExecutor = mock()
@@ -1244,7 +1244,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `M reset vital executor W onStop()`() {
+    fun `M reset scheduler executor W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
 
