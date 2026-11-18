@@ -6,7 +6,7 @@
 
 package com.datadog.benchmark.internal
 
-internal interface RequestBodyBuilder<T> {
+internal interface RequestBodyBuilder<in T> {
 
     fun build(data: List<T>): String
 }

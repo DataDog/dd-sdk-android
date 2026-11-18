@@ -6,7 +6,7 @@
 
 package com.datadog.android.trace.internal.compat.function
 
-internal interface Consumer<T> {
+internal interface Consumer<in T> {
 
     fun accept(t: T)
 }

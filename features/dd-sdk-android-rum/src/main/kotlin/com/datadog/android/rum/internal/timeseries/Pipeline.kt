@@ -26,7 +26,7 @@ internal class Pipeline<T : Any>(
     private val sdkCore: FeatureSdkCore,
     private val reader: DataPointsReader<T>,
     private val dataWriter: DataWriter<Any>,
-    private val eventFactory: EventFactory<T, *>,
+    private val eventFactory: EventFactory<T, Any>,
     private val insightsCollector: InsightsCollector,
     private val collectedSessionsRegistry: CollectedTimeseriesSessionRegistry
 ) {

@@ -11,7 +11,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
-internal interface FragmentLifecycleCallbacks<T : Activity> {
+internal interface FragmentLifecycleCallbacks<in T : Activity> {
 
     // region Lifecycle
 

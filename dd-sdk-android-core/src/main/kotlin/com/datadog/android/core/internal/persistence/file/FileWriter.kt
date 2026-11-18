@@ -10,7 +10,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.internal.telemetry.TelemetryContext
 import java.io.File
 
-internal interface FileWriter<T> {
+internal interface FileWriter<in T> {
 
     /**
      * Writes data as a [T] into a file.

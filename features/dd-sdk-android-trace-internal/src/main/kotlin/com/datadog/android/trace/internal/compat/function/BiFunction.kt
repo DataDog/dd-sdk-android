@@ -6,7 +6,7 @@
 
 package com.datadog.android.trace.internal.compat.function
 
-internal interface BiFunction<T, U, R> {
+internal interface BiFunction<in T, in U, out R> {
 
     fun apply(t: T, u: U): R
 }

@@ -9,7 +9,7 @@ package com.datadog.android.core.internal.persistence.file.advanced
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 
-internal interface DataMigrator<S : Any> {
+internal interface DataMigrator<in S : Any> {
 
     @WorkerThread
     fun migrateData(
