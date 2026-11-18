@@ -6,7 +6,6 @@
 
 package com.datadog.android.flags.openfeature.internal
 
-import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
 import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
@@ -15,69 +14,105 @@ import com.datadog.android.flags._FlagsInternalProxy
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
 import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
+import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.concurrent.CancellationException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * Extension function to convert callback-based [setEvaluationContext] to suspend function.
  *
- * Wraps the callback API in a [suspendCoroutine], converting success/failure callbacks
- * to [resume]/[resumeWithException].
+ * Wraps the callback API in a cancellation-aware coroutine. The native request continues if the
+ * coroutine is cancelled, but its later callback cannot complete an obsolete provider update.
  *
- * A timeout with matching cached assignments completes successfully and leaves the provider stale.
+ * A failed refresh or timeout with matching cached assignments leaves the provider stale.
  *
  * @param context The evaluation context to set
  * @param telemetryOptedOut The typed subject decision, or null to preserve native telemetry configuration.
- * @throws [CancellationException] in enabled experimentation opt-out modes, if a newer request replaces this
- * request before its result is processed.
- * @throws [OpenFeatureError.GeneralError] if setting the context fails. The first context operation also
- * fails when the configured Flags initialization timeout elapses without matching cached assignments.
+ * @param isCurrentOperation Whether this provider update is still the latest update.
+ * @param admitUpdate Atomically checks whether the update is current and, if so, registers the native request.
+ * @return [ContextUpdateOutcome.STALE] when matching cached assignments remain usable, otherwise
+ * [ContextUpdateOutcome.READY].
+ * @throws [CancellationException] if a newer provider update replaces this update, or if native request ordering
+ * supersedes it while experimentation opt-out or subject authorization is active.
+ * @throws [OpenFeatureError.GeneralError] if setting the context fails without usable cached assignments. The first
+ * context operation also fails when the configured Flags initialization timeout elapses without a usable cache.
  */
 internal suspend fun FlagsClient.setEvaluationContextSuspend(
     context: EvaluationContext,
-    telemetryOptedOut: Boolean? = null
-) {
-    // Subsequent invocation of any resume function will produce
-    // an IllegalStateException, but we are safe here
+    telemetryOptedOut: Boolean? = null,
+    isCurrentOperation: () -> Boolean = { true },
+    admitUpdate: ((() -> Unit) -> Boolean) = { registration ->
+        registration()
+        true
+    }
+): ContextUpdateOutcome {
     @Suppress("UnsafeThirdPartyFunctionCall")
-    suspendCoroutine { continuation ->
-        val callback = object : EvaluationContextCallback {
-            override fun onSuccess() {
-                continuation.resume(Unit)
-            }
-
-            override fun onFailure(error: Throwable) {
-                if (error is FlagsContextSupersededException) {
-                    continuation.resumeWithException(CancellationException(error.message))
-                    return
-                }
-                val isUsableTimeout = error is FlagsInitializationTimeoutException &&
-                    when (state.getCurrentState()) {
-                        FlagsClientState.Ready, FlagsClientState.Stale -> true
-                        else -> false
+    return suspendCancellableCoroutine { continuation ->
+        val admitted = admitUpdate {
+            _FlagsInternalProxy(this).setEvaluationContextWithOutcome(context, telemetryOptedOut) { state, error ->
+                if (!continuation.isActive) return@setEvaluationContextWithOutcome
+                when {
+                    !isCurrentOperation() -> {
+                        continuation.cancel(CancellationException(OBSOLETE_UPDATE_MESSAGE))
                     }
-                if (isUsableTimeout) {
-                    continuation.resume(Unit)
-                } else {
-                    continuation.resumeWithException(
-                        if (error is FlagsInvalidContextException) {
-                            OpenFeatureError.InvalidContextError(error.message ?: "Invalid evaluation context")
+                    error is FlagsContextSupersededException -> {
+                        continuation.cancel(CancellationException(error.message))
+                    }
+                    else -> {
+                        val completionState = if (error is FlagsInitializationTimeoutException) {
+                            this.state.getCurrentState()
                         } else {
-                            OpenFeatureError.GeneralError(
-                                error.message ?: "Unknown error: ${error::class.simpleName}"
-                            )
+                            state
                         }
-                    )
+                        if (!isCurrentOperation()) {
+                            continuation.cancel(CancellationException(OBSOLETE_UPDATE_MESSAGE))
+                        } else {
+                            continuation.complete(completionState, error)
+                        }
+                    }
                 }
             }
         }
-
-        if (telemetryOptedOut == null) {
-            setEvaluationContext(context, callback)
-        } else {
-            _FlagsInternalProxy(this).setEvaluationContext(context, callback, telemetryOptedOut)
+        if (!admitted && continuation.isActive) {
+            continuation.cancel(CancellationException(OBSOLETE_UPDATE_MESSAGE))
         }
     }
 }
+
+@Suppress("UnsafeThirdPartyFunctionCall")
+private fun CancellableContinuation<ContextUpdateOutcome>.complete(
+    state: FlagsClientState,
+    error: Throwable?
+) {
+    if (!isActive) return
+    val outcome = state.toContextUpdateOutcome()
+    when {
+        state == FlagsClientState.Stale ||
+            (error is FlagsInitializationTimeoutException && state == FlagsClientState.Ready) ||
+            error == null -> resume(outcome)
+        else -> {
+            val failure = error
+            resumeWithException(
+                if (failure is FlagsInvalidContextException) {
+                    OpenFeatureError.InvalidContextError(failure.message ?: "Invalid evaluation context")
+                } else {
+                    OpenFeatureError.GeneralError(
+                        failure.message ?: "Unknown error: ${failure::class.simpleName}"
+                    )
+                }
+            )
+        }
+    }
+}
+
+internal enum class ContextUpdateOutcome {
+    READY,
+    STALE
+}
+
+private fun FlagsClientState.toContextUpdateOutcome(): ContextUpdateOutcome =
+    if (this == FlagsClientState.Stale) ContextUpdateOutcome.STALE else ContextUpdateOutcome.READY
+
+private const val OBSOLETE_UPDATE_MESSAGE = "A newer OpenFeature context replaced this update."

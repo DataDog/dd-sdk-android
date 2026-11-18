@@ -76,14 +76,18 @@ internal class FlagsPrivacyTest {
             stubAssignments(consent)
             val key = "flag-$index"
             if (fakeOpenFeature) {
+                val context = ImmutableContext(
+                    TARGETING_KEY,
+                    mapOf("email" to Value.String(CONTEXT_CANARY), "consent_case" to Value.Integer(index))
+                )
                 if (index == 0) {
                     OpenFeatureAPI.setProviderAndWait(
                         provider,
-                        ImmutableContext(TARGETING_KEY, mapOf("email" to Value.String(CONTEXT_CANARY))),
+                        context,
                         UnconfinedTestDispatcher(testScheduler)
                     )
                 } else {
-                    provider.onContextSet(null, ImmutableContext(TARGETING_KEY))
+                    OpenFeatureAPI.setEvaluationContextAndWait(context)
                 }
                 repeat(2) { assertThat(OpenFeatureAPI.getClient().getBooleanValue(key, false)).isTrue() }
             } else {
@@ -96,6 +100,7 @@ internal class FlagsPrivacyTest {
         val events = wire.lineSequence().filter { it.isNotBlank() }.map(::JSONObject).toList()
 
         // Then
+        assertThat(stubSdkCore.requestsSent()).hasSize(5)
         assertThat(events).hasSize(5)
         events.forEachIndexed { index, event ->
             assertThat(event.getString("targeting_key")).isEqualTo(if (index == 4) TARGETING_KEY else HASHED_KEY)

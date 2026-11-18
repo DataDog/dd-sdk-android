@@ -11,6 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.ExperimentationOptOutMode
+import com.datadog.android.flags.internal.evaluation.AssignmentAuthorization
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest
 import com.datadog.android.flags.internal.model.PrecomputedAssignmentsRequest.Diagnostics
@@ -169,6 +170,29 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         assertThat(request.header("dd-client-token")).isEqualTo(fakeDatadogContext.clientToken)
         assertThat(request.header("dd-application-id")).isEqualTo(fakeRumContext.applicationId)
         assertThat(request.header("Content-Type")).isEqualTo("application/vnd.api+json")
+    }
+
+    @Test
+    fun `M send assignment token only in reserved header W create()`() {
+        // Given
+        val token = "header.payload.signature"
+        val context = EvaluationContext(
+            targetingKey = "subject",
+            attributes = mapOf(AssignmentAuthorization.ATTRIBUTE to token, "plan" to "premium")
+        )
+
+        // When
+        val request = checkNotNull(testedFactory.create(context, fakeDatadogContext, fakeDiagnostics, token))
+        val attributes = JSONObject(extractRequestBodyAsString(request))
+            .getJSONObject("data")
+            .getJSONObject("attributes")
+            .getJSONObject("subject")
+            .getJSONObject("targeting_attributes")
+
+        // Then
+        assertThat(request.header(AssignmentAuthorization.HEADER)).isEqualTo(token)
+        assertThat(attributes.has(AssignmentAuthorization.ATTRIBUTE)).isFalse()
+        assertThat(attributes.getString("plan")).isEqualTo("premium")
     }
 
     @Test

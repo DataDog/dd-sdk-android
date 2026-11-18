@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.flags.ExperimentationOptOutMode
+import com.datadog.android.flags.internal.evaluation.AssignmentAuthorization
 import com.datadog.android.flags.internal.evaluation.ExperimentationOptOut
 import com.datadog.android.flags.internal.evaluation.wireValue
 import com.datadog.android.flags.internal.getFlagsEndpoint
@@ -47,6 +48,7 @@ internal class PrecomputedAssignmentsRequestFactory(
      *                for flag evaluation
      * @param datadogContext The [DatadogContext] holding common information about SDK
      * @param diagnostics Snapshot for the logical fetch that created this request.
+     * @param assignmentToken Opaque subject-authorization credential, already validated and removed from [context].
      * @return A fully-formed OkHttp Request ready for execution, or null if the request
      *         cannot be constructed (e.g., invalid endpoint or headers)
      */
@@ -54,13 +56,14 @@ internal class PrecomputedAssignmentsRequestFactory(
     fun create(
         context: EvaluationContext,
         datadogContext: DatadogContext,
-        diagnostics: PrecomputedAssignmentsRequest.Diagnostics
+        diagnostics: PrecomputedAssignmentsRequest.Diagnostics,
+        assignmentToken: String? = null
     ): Request? {
         val url = customFlagEndpoint
             ?: datadogContext.site.getFlagsEndpoint(PREVIEW_CUSTOMER_DOMAIN)
             ?: return null
 
-        val headers = buildHeaders(datadogContext) ?: return null
+        val headers = buildHeaders(datadogContext, assignmentToken) ?: return null
 
         val body = buildRequestBody(context, datadogContext, diagnostics)
 
@@ -72,7 +75,7 @@ internal class PrecomputedAssignmentsRequestFactory(
             .build()
     }
 
-    private fun buildHeaders(datadogContext: DatadogContext): Headers? {
+    private fun buildHeaders(datadogContext: DatadogContext, assignmentToken: String?): Headers? {
         val headersBuilder = Headers.Builder()
 
         try {
@@ -90,6 +93,9 @@ internal class PrecomputedAssignmentsRequestFactory(
 
             datadogContext.rumApplicationId?.let {
                 headersBuilder.add(HEADER_APPLICATION_ID, it)
+            }
+            assignmentToken?.let {
+                headersBuilder.add(AssignmentAuthorization.HEADER, it)
             }
         } catch (e: IllegalArgumentException) {
             internalLogger.log(
@@ -113,7 +119,7 @@ internal class PrecomputedAssignmentsRequestFactory(
         val inputAttributes: Map<out String?, String?> = context.attributes
         val targetingAttributes = mutableMapOf<String, String>()
         for ((key, value) in inputAttributes) {
-            if (key != null && value != null) {
+            if (key != null && key != AssignmentAuthorization.ATTRIBUTE && value != null) {
                 targetingAttributes[key] = value
             }
         }

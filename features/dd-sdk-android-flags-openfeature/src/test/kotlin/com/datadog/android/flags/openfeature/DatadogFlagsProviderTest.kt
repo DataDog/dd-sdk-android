@@ -22,6 +22,7 @@ import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.openfeature.internal.exposure.ExposureAdmissionHook
+import com.datadog.android.internal.utils.DDCoreStateHolder
 import com.datadog.tools.unit.forge.BaseConfigurator
 import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.OpenFeatureAPI
@@ -34,16 +35,26 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
@@ -54,9 +65,17 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.lang.management.ManagementFactory
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import dev.openfeature.kotlin.sdk.EvaluationContext as OpenFeatureEvaluationContext
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 
 @Extensions(
@@ -82,33 +101,29 @@ internal class DatadogFlagsProviderTest {
             errorResolution
         }
 
-        try {
-            OpenFeatureAPI.setProviderAndWait(
-                provider = provider,
-                initialContext = ImmutableContext(targetingKey = "user-123"),
-                dispatcher = UnconfinedTestDispatcher(testScheduler)
-            )
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "user-123"),
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
 
-            // When
-            checkNotNull(capturedStateListener)
-                .onStateChanged(FlagsClientState.Error(RuntimeException("Network request failed")))
-            testScheduler.runCurrent()
-            val errorStatus = OpenFeatureAPI.getStatus()
-            val details = OpenFeatureAPI.getClient().getBooleanDetails("flag", false)
-            OpenFeatureAPI.setEvaluationContextAndWait(ImmutableContext(targetingKey = "user-456"))
+        // When
+        checkNotNull(capturedStateListener)
+            .onStateChanged(FlagsClientState.Error(RuntimeException("Network request failed")))
+        testScheduler.runCurrent()
+        val errorStatus = OpenFeatureAPI.getStatus()
+        val details = OpenFeatureAPI.getClient().getBooleanDetails("flag", false)
+        OpenFeatureAPI.setEvaluationContextAndWait(ImmutableContext(targetingKey = "user-456"))
 
-            // Then
-            assertThat(errorStatus).isInstanceOf(OpenFeatureStatus.Error::class.java)
-            assertThat((errorStatus as OpenFeatureStatus.Error).error)
-                .isInstanceOf(OpenFeatureError.GeneralError::class.java)
-                .hasMessage("Network request failed")
-            assertThat(resolveCalls).isEqualTo(1)
-            assertThat(details.value).isFalse()
-            assertThat(details.errorCode).isEqualTo(OpenFeatureErrorCode.PROVIDER_NOT_READY)
-            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Ready)
-        } finally {
-            OpenFeatureAPI.shutdown()
-        }
+        // Then
+        assertThat(errorStatus).isInstanceOf(OpenFeatureStatus.Error::class.java)
+        assertThat((errorStatus as OpenFeatureStatus.Error).error)
+            .isInstanceOf(OpenFeatureError.GeneralError::class.java)
+            .hasMessage("Network request failed")
+        assertThat(resolveCalls).isEqualTo(1)
+        assertThat(details.value).isFalse()
+        assertThat(details.errorCode).isEqualTo(OpenFeatureErrorCode.PROVIDER_NOT_READY)
+        assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Ready)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -117,26 +132,22 @@ internal class DatadogFlagsProviderTest {
         // Given
         val cause = mock<FlagsInvalidContextException> { on { message } doReturn "Invalid opt-out timestamp" }
 
-        try {
-            OpenFeatureAPI.setProviderAndWait(
-                provider = provider,
-                initialContext = ImmutableContext(targetingKey = "user-123"),
-                dispatcher = UnconfinedTestDispatcher(testScheduler)
-            )
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "user-123"),
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
 
-            // When
-            checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Error(cause))
-            testScheduler.runCurrent()
+        // When
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Error(cause))
+        testScheduler.runCurrent()
 
-            // Then
-            val errorStatus = OpenFeatureAPI.getStatus()
-            assertThat(errorStatus).isInstanceOf(OpenFeatureStatus.Error::class.java)
-            assertThat((errorStatus as OpenFeatureStatus.Error).error)
-                .isInstanceOf(OpenFeatureError.InvalidContextError::class.java)
-                .hasMessage("Invalid opt-out timestamp")
-        } finally {
-            OpenFeatureAPI.shutdown()
-        }
+        // Then
+        val errorStatus = OpenFeatureAPI.getStatus()
+        assertThat(errorStatus).isInstanceOf(OpenFeatureStatus.Error::class.java)
+        assertThat((errorStatus as OpenFeatureStatus.Error).error)
+            .isInstanceOf(OpenFeatureError.InvalidContextError::class.java)
+            .hasMessage("Invalid opt-out timestamp")
     }
 
     @Mock
@@ -147,6 +158,9 @@ internal class DatadogFlagsProviderTest {
 
     @Mock
     lateinit var mockStateObservable: StateObservable
+
+    @Mock
+    lateinit var mockDelayedContext: OpenFeatureEvaluationContext
 
     private lateinit var provider: DatadogFlagsProvider
     private var capturedStateListener: FlagsStateListener? = null
@@ -174,6 +188,11 @@ internal class DatadogFlagsProviderTest {
         provider = DatadogFlagsProvider.wrap(mockFlagsClient, mockInternalLogger)
     }
 
+    @AfterEach
+    fun `tear down`() = runTest {
+        OpenFeatureAPI.shutdown()
+    }
+
     @Test
     fun `M return provider metadata W metadata()`() {
         // When
@@ -181,6 +200,258 @@ internal class DatadogFlagsProviderTest {
 
         // Then
         assertThat(metadata.name).isEqualTo("Datadog Feature Flags Provider")
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M finish initialization W observer registration races native registration`(
+        evaluateFromListener: Boolean
+    ) {
+        // Given
+        val observerEntered = CountDownLatch(1)
+        val nativeRegistrationEntered = CountDownLatch(1)
+        val observerFinished = CountDownLatch(1)
+        val initializationFinished = CountDownLatch(1)
+        val failures = ConcurrentLinkedQueue<Throwable>()
+        if (evaluateFromListener) {
+            whenever(mockFlagsClient.resolve("flag", false)).thenReturn(ResolutionDetails(value = true))
+        }
+        val stateHolder = DDCoreStateHolder
+            .create<FlagsClientState, FlagsStateListener>(FlagsClientState.NotReady) { state ->
+                observerEntered.countDown()
+                check(nativeRegistrationEntered.await(5, TimeUnit.SECONDS))
+                if (evaluateFromListener && state == FlagsClientState.NotReady) {
+                    provider.getBooleanEvaluation("flag", false, null)
+                }
+                onStateChanged(state)
+            }
+        val observable = object : StateObservable {
+            override fun getCurrentState(): FlagsClientState = stateHolder.currentState
+            override fun addListener(listener: FlagsStateListener) = stateHolder.addListener(listener)
+            override fun removeListener(listener: FlagsStateListener) = stateHolder.removeListener(listener)
+        }
+        whenever(mockFlagsClient.state).thenReturn(observable)
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            nativeRegistrationEntered.countDown()
+            stateHolder.updateState(FlagsClientState.Reconciling)
+            invocation.getArgument<EvaluationContextCallback>(1).onSuccess()
+        }
+        val observer = Thread {
+            try {
+                runBlocking { withTimeout(3000) { provider.observe().first() } }
+            } catch (timeout: TimeoutCancellationException) {
+                // The initial NotReady and Reconciling states intentionally produce no event.
+            } catch (error: Throwable) {
+                failures.add(error)
+            } finally {
+                observerFinished.countDown()
+            }
+        }.apply { isDaemon = true; name = "crucible-observer" }
+        val initializer = Thread {
+            try {
+                runBlocking { provider.initialize(ImmutableContext(targetingKey = "subject")) }
+            } catch (error: Throwable) {
+                failures.add(error)
+            } finally {
+                initializationFinished.countDown()
+            }
+        }.apply { isDaemon = true; name = "crucible-initializer" }
+
+        // When
+        observer.start()
+        assertThat(observerEntered.await(5, TimeUnit.SECONDS)).isTrue()
+        initializer.start()
+        val completed = initializationFinished.await(5, TimeUnit.SECONDS)
+
+        // Then
+        if (!completed) {
+            println(
+                ManagementFactory.getThreadMXBean().dumpAllThreads(true, true)
+                    .filter { it.threadName.startsWith("crucible-") }.joinToString("\n")
+            )
+        }
+        assertThat(completed).describedAs("initialization must not deadlock with observer registration").isTrue()
+        assertThat(observerFinished.await(5, TimeUnit.SECONDS)).isTrue()
+        assertThat(failures).isEmpty()
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @ParameterizedTest
+    @EnumSource(PublicationCompletion::class)
+    fun `M release queued publications W registration completes`(completion: PublicationCompletion) = runTest {
+        // Given
+        val events = CopyOnWriteArrayList<OpenFeatureProviderEvents>()
+        val context = ImmutableContext(targetingKey = "subject")
+        OpenFeatureAPI.setProviderAndWait(
+            provider,
+            initialContext = context,
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
+        whenever(mockFlagsClient.resolve("flag", false)).thenReturn(ResolutionDetails(value = true))
+        val observation = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            provider.observe().collect { events += it }
+        }
+        val listener = checkNotNull(capturedStateListener)
+        val registrationEntered = CountDownLatch(1)
+        val releaseRegistration = CountDownLatch(1)
+        val registrationFinished = CountDownLatch(1)
+        val publicationsFinished = CountDownLatch(1)
+        val failures = ConcurrentLinkedQueue<Throwable>()
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            registrationEntered.countDown()
+            check(releaseRegistration.await(10, TimeUnit.SECONDS))
+            if (completion == PublicationCompletion.FAILURE) error("Synthetic registration failure")
+            invocation.getArgument<EvaluationContextCallback>(1).onSuccess()
+        }
+        val initializer = Thread {
+            try {
+                runBlocking { provider.onContextSet(context, context) }
+            } catch (error: Throwable) {
+                failures.add(error)
+            } finally {
+                registrationFinished.countDown()
+            }
+        }.apply { isDaemon = true }
+        val publisher = Thread {
+            try {
+                assertThat(OpenFeatureAPI.getClient().getBooleanValue("flag", false)).isTrue()
+                listener.onStateChanged(FlagsClientState.Stale)
+                listener.onStateChanged(FlagsClientState.Ready)
+            } catch (error: Throwable) {
+                failures.add(error)
+            } finally {
+                publicationsFinished.countDown()
+            }
+        }.apply { isDaemon = true }
+
+        // When
+        initializer.start()
+        try {
+            assertThat(registrationEntered.await(5, TimeUnit.SECONDS)).isTrue()
+            publisher.start()
+            assertThat(publicationsFinished.await(5, TimeUnit.SECONDS)).isTrue()
+            if (completion == PublicationCompletion.CANCEL_OBSERVATION) observation.cancel()
+            testScheduler.runCurrent()
+        } finally {
+            releaseRegistration.countDown()
+        }
+        assertThat(registrationFinished.await(5, TimeUnit.SECONDS)).isTrue()
+        testScheduler.runCurrent()
+
+        // Then
+        if (completion == PublicationCompletion.CANCEL_OBSERVATION) {
+            assertThat(events).isEmpty()
+            verify(mockStateObservable).removeListener(listener)
+        } else {
+            assertThat(events).containsExactly(
+                OpenFeatureProviderEvents.ProviderStale,
+                OpenFeatureProviderEvents.ProviderReady
+            )
+        }
+        if (completion == PublicationCompletion.FAILURE) {
+            assertThat(failures.single()).isInstanceOf(IllegalStateException::class.java)
+            whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+                invocation.getArgument<EvaluationContextCallback>(1).onSuccess()
+            }
+            provider.onContextSet(context, context)
+        } else {
+            assertThat(failures).isEmpty()
+        }
+    }
+
+    enum class PublicationCompletion { SUCCESS, FAILURE, CANCEL_OBSERVATION }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `M admit latest global context W older callback enters provider last`() = runTest {
+        // Given
+        val oldComparisonEntered = CountDownLatch(1)
+        val releaseOldComparison = CountDownLatch(1)
+        val latestConversionEntered = CountDownLatch(1)
+        val releaseLatestConversion = CountDownLatch(1)
+        val olderFinished = CountDownLatch(1)
+        val latestFinished = CountDownLatch(1)
+        val registrations = CopyOnWriteArrayList<String>()
+        val failures = ConcurrentLinkedQueue<Throwable>()
+        val older = ImmutableContext(targetingKey = "older")
+        val initial = object : OpenFeatureEvaluationContext by ImmutableContext(targetingKey = "initial") {
+            override fun equals(other: Any?): Boolean {
+                if (other === older) {
+                    oldComparisonEntered.countDown()
+                    check(releaseOldComparison.await(10, TimeUnit.SECONDS))
+                }
+                return this === other
+            }
+            override fun hashCode(): Int = System.identityHashCode(this)
+        }
+        val latest = object : OpenFeatureEvaluationContext by ImmutableContext(targetingKey = "latest") {
+            override fun asMap(): Map<String, Value> {
+                latestConversionEntered.countDown()
+                check(releaseLatestConversion.await(10, TimeUnit.SECONDS))
+                return emptyMap()
+            }
+            override fun equals(other: Any?): Boolean = this === other
+            override fun hashCode(): Int = System.identityHashCode(this)
+        }
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            registrations += invocation.getArgument<EvaluationContext>(0).targetingKey
+            invocation.getArgument<EvaluationContextCallback>(1).onSuccess()
+        }
+        whenever(mockFlagsClient.resolve("flag", false)).thenReturn(ResolutionDetails(value = true))
+        OpenFeatureAPI.setProviderAndWait(
+            provider,
+            initialContext = initial,
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
+        val olderThread = Thread {
+            try {
+                runBlocking { OpenFeatureAPI.setEvaluationContextAndWait(older) }
+            } catch (error: Throwable) {
+                failures.add(error)
+            } finally {
+                olderFinished.countDown()
+            }
+        }.apply { isDaemon = true }
+        val latestThread = Thread {
+            try {
+                runBlocking { OpenFeatureAPI.setEvaluationContextAndWait(latest) }
+            } catch (error: Throwable) {
+                failures.add(error)
+            } finally {
+                latestFinished.countDown()
+            }
+        }.apply { isDaemon = true }
+
+        try {
+            // When
+            olderThread.start()
+            assertThat(oldComparisonEntered.await(5, TimeUnit.SECONDS)).isTrue()
+            latestThread.start()
+            assertThat(latestConversionEntered.await(5, TimeUnit.SECONDS)).isTrue()
+            releaseOldComparison.countDown()
+            assertThat(olderFinished.await(5, TimeUnit.SECONDS)).isTrue()
+            releaseLatestConversion.countDown()
+            assertThat(latestFinished.await(5, TimeUnit.SECONDS)).isTrue()
+            val details = OpenFeatureAPI.getClient().getBooleanDetails("flag", false)
+
+            // Then
+            assertThat(failures).isEmpty()
+            assertThat(OpenFeatureAPI.getEvaluationContext()).isSameAs(latest)
+            assertThat(registrations)
+                .describedAs(
+                    "status=%s; value=%s; error=%s",
+                    OpenFeatureAPI.getStatus(),
+                    details.value,
+                    details.errorCode
+                )
+                .containsExactly("initial", "latest")
+            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Ready)
+            assertThat(details.value).isTrue()
+            assertThat(details.errorCode).isNull()
+        } finally {
+            releaseOldComparison.countDown()
+            releaseLatestConversion.countDown()
+        }
     }
 
     @Test
@@ -493,51 +764,50 @@ internal class DatadogFlagsProviderTest {
             callback.onFailure(stubTimeoutError)
         }
 
-        try {
-            // When
-            OpenFeatureAPI.setProviderAndWait(
-                provider = provider,
-                initialContext = ImmutableContext(targetingKey = "user-123"),
-                dispatcher = UnconfinedTestDispatcher(testScheduler)
-            )
+        // When
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "user-123"),
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
 
-            // Then
-            val status = OpenFeatureAPI.getStatus()
-            assertThat(status).isInstanceOf(OpenFeatureStatus.Error::class.java)
-            val error = (status as OpenFeatureStatus.Error).error
-            assertThat(error).isInstanceOf(OpenFeatureError.GeneralError::class.java)
-            assertThat(error).hasMessage(timeoutMessage)
-        } finally {
-            OpenFeatureAPI.shutdown()
-        }
+        // Then
+        val status = OpenFeatureAPI.getStatus()
+        assertThat(status).isInstanceOf(OpenFeatureStatus.Error::class.java)
+        val error = (status as OpenFeatureStatus.Error).error
+        assertThat(error).isInstanceOf(OpenFeatureError.GeneralError::class.java)
+        assertThat(error).hasMessage(timeoutMessage)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun `M complete initialization W initialize() {timeout with matching cached assignments}`() = runTest {
+    fun `M keep Stale status W setProviderAndWait() {timeout with matching cached assignments}`() = runTest {
         // Given
-        val fakeTimeoutError = mock<FlagsInitializationTimeoutException>()
+        val stubTimeoutError = mock<FlagsInitializationTimeoutException>()
         whenever(mockStateObservable.getCurrentState()).thenReturn(FlagsClientState.Stale)
         whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Stale)
             val callback = invocation.getArgument<EvaluationContextCallback>(1)
-            callback.onFailure(fakeTimeoutError)
+            callback.onFailure(stubTimeoutError)
         }
 
         // When
-        var initializationError: OpenFeatureError.GeneralError? = null
-        try {
-            provider.initialize(ImmutableContext(targetingKey = "user-123"))
-        } catch (error: OpenFeatureError.GeneralError) {
-            initializationError = error
-        }
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "user-123"),
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
+        testScheduler.runCurrent()
 
         // Then
-        assertThat(initializationError).isNull()
+        assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Stale)
     }
 
     @Test
-    fun `M delegate to FlagsClient W onContextSet()`() = runTest {
+    fun `M delegate to FlagsClient W onContextSet() {provider not globally registered}`() = runTest {
         // Given
         val newContext = ImmutableContext(targetingKey = "user-456")
+        assertThat(OpenFeatureAPI.getProvider()).isNotSameAs(provider)
 
         // When
         provider.onContextSet(null, newContext)
@@ -548,7 +818,422 @@ internal class DatadogFlagsProviderTest {
         assertThat(contextCaptor.firstValue.targetingKey).isEqualTo("user-456")
     }
 
+    @Test
+    fun `M register only current context W setEvaluationContextAndWait() {older conversion resumes last}`() = runTest {
+        // Given
+        val conversionStarted = CountDownLatch(1)
+        val releaseConversion = CountDownLatch(1)
+        val registrations = CopyOnWriteArrayList<String>()
+        whenever(mockDelayedContext.getTargetingKey()).thenReturn("first-subject")
+        whenever(mockDelayedContext.asMap()).thenAnswer {
+            conversionStarted.countDown()
+            check(releaseConversion.await(5, TimeUnit.SECONDS))
+            emptyMap<String, Value>()
+        }
+        val secondContext = ImmutableContext(targetingKey = "second-subject")
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            registrations += invocation.getArgument<EvaluationContext>(0).targetingKey
+            invocation.getArgument<EvaluationContextCallback>(1).onSuccess()
+        }
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "initial-subject")
+        )
+        registrations.clear()
+
+        try {
+            // When
+            val firstUpdate = launch(Dispatchers.Default) {
+                OpenFeatureAPI.setEvaluationContextAndWait(mockDelayedContext)
+            }
+            assertThat(conversionStarted.await(5, TimeUnit.SECONDS)).isTrue()
+            val secondUpdate = launch(Dispatchers.Default) {
+                OpenFeatureAPI.setEvaluationContextAndWait(secondContext)
+            }
+            secondUpdate.join()
+            releaseConversion.countDown()
+            firstUpdate.join()
+
+            // Then
+            assertThat(OpenFeatureAPI.getEvaluationContext()).isSameAs(secondContext)
+            assertThat(registrations).containsExactly("second-subject")
+        } finally {
+            releaseConversion.countDown()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @ParameterizedTest
+    @EnumSource(ContextUpdateApi::class)
+    fun `M return default W public context update {authorized conversion pending}`(
+        contextUpdateApi: ContextUpdateApi
+    ) = runTest {
+        // Given
+        val flagKey = "flag"
+        val defaultValue = false
+        val conversionStarted = CountDownLatch(1)
+        val releaseConversion = CountDownLatch(1)
+        val registrationCompleted = CountDownLatch(1)
+        whenever(mockDelayedContext.getTargetingKey()).thenReturn("second-subject")
+        whenever(mockDelayedContext.asMap()).thenAnswer {
+            conversionStarted.countDown()
+            check(releaseConversion.await(5, TimeUnit.SECONDS))
+            mapOf("dd_assignment_token" to Value.String("header.payload.signature"))
+        }
+        whenever(mockFlagsClient.resolve(flagKey, defaultValue)).thenReturn(
+            ResolutionDetails(value = true, reason = ResolutionReason.TARGETING_MATCH)
+        )
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "first-subject"),
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
+        testScheduler.runCurrent()
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            invocation.getArgument<EvaluationContextCallback>(1).onSuccess()
+            registrationCompleted.countDown()
+        }
+        val executor = Executors.newFixedThreadPool(2)
+        val dispatcher = executor.asCoroutineDispatcher()
+
+        try {
+            // When
+            val waitUpdate = when (contextUpdateApi) {
+                ContextUpdateApi.ASYNC -> {
+                    OpenFeatureAPI.setEvaluationContext(mockDelayedContext, dispatcher)
+                    null
+                }
+                ContextUpdateApi.WAIT -> launch(dispatcher) {
+                    OpenFeatureAPI.setEvaluationContextAndWait(mockDelayedContext)
+                }
+            }
+            assertThat(conversionStarted.await(5, TimeUnit.SECONDS)).isTrue()
+
+            // Then
+            assertThat(OpenFeatureAPI.getEvaluationContext()).isSameAs(mockDelayedContext)
+            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Reconciling)
+
+            // When
+            val pendingDetails = OpenFeatureAPI.getClient().getBooleanDetails(flagKey, defaultValue)
+
+            // Then
+            assertThat(pendingDetails.value).isEqualTo(defaultValue)
+            assertThat(pendingDetails.reason).isEqualTo(ResolutionReason.ERROR.name)
+            assertThat(pendingDetails.errorCode).isEqualTo(OpenFeatureErrorCode.PROVIDER_NOT_READY)
+            verify(mockFlagsClient, never()).resolve(flagKey, defaultValue)
+
+            // When
+            checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Ready)
+            testScheduler.runCurrent()
+
+            // Then
+            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Reconciling)
+
+            // When
+            releaseConversion.countDown()
+            assertThat(registrationCompleted.await(5, TimeUnit.SECONDS)).isTrue()
+            waitUpdate?.join()
+            dispatcher.close()
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue()
+            val admittedDetails = OpenFeatureAPI.getClient().getBooleanDetails(flagKey, defaultValue)
+
+            // Then
+            assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Ready)
+            assertThat(admittedDetails.value).isTrue()
+            verify(mockFlagsClient).resolve(flagKey, defaultValue)
+        } finally {
+            releaseConversion.countDown()
+            dispatcher.close()
+            executor.shutdownNow()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `M keep equivalent admitted context ready W equal context instance replaces global context`() = runTest {
+        // Given
+        val flagKey = "flag"
+        val defaultValue = false
+        val attributes = mapOf("plan" to Value.String("pro"))
+        val admittedContext = ImmutableContext(targetingKey = "subject", attributes = attributes)
+        val equalReplacement = ImmutableContext(targetingKey = "subject", attributes = attributes)
+        whenever(mockFlagsClient.resolve(flagKey, defaultValue)).thenReturn(
+            ResolutionDetails(value = true, reason = ResolutionReason.TARGETING_MATCH)
+        )
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = admittedContext,
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
+        testScheduler.runCurrent()
+
+        // When
+        OpenFeatureAPI.setEvaluationContextAndWait(equalReplacement)
+        val details = OpenFeatureAPI.getClient().getBooleanDetails(flagKey, defaultValue)
+
+        // Then
+        assertThat(OpenFeatureAPI.getEvaluationContext()).isSameAs(equalReplacement)
+        assertThat(details.value).isTrue()
+        assertThat(details.errorCode).isNull()
+        verify(mockFlagsClient).resolve(flagKey, defaultValue)
+    }
+
+    @Test
+    fun `M admit context W equal context instance replaces global during conversion`() = runTest {
+        // Given
+        val flagKey = "flag"
+        val defaultValue = false
+        val conversionStarted = CountDownLatch(1)
+        val releaseConversion = CountDownLatch(1)
+        val attributes = mapOf("plan" to Value.String("pro"))
+        val updatingContext = TestEvaluationContext(
+            delegate = ImmutableContext(targetingKey = "subject", attributes = attributes),
+            conversionStarted = conversionStarted,
+            releaseConversion = releaseConversion
+        )
+        val equalReplacement = TestEvaluationContext(
+            delegate = ImmutableContext(targetingKey = "subject", attributes = attributes)
+        )
+        whenever(mockFlagsClient.resolve(flagKey, defaultValue)).thenReturn(
+            ResolutionDetails(value = true, reason = ResolutionReason.TARGETING_MATCH)
+        )
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "initial-subject")
+        )
+        val executor = Executors.newSingleThreadExecutor()
+        val dispatcher = executor.asCoroutineDispatcher()
+
+        try {
+            val updating = launch(dispatcher) {
+                OpenFeatureAPI.setEvaluationContextAndWait(updatingContext)
+            }
+            assertThat(conversionStarted.await(5, TimeUnit.SECONDS)).isTrue()
+
+            // When
+            OpenFeatureAPI.setEvaluationContextAndWait(equalReplacement)
+            releaseConversion.countDown()
+            updating.join()
+            val details = OpenFeatureAPI.getClient().getBooleanDetails(flagKey, defaultValue)
+
+            // Then
+            assertThat(OpenFeatureAPI.getEvaluationContext()).isSameAs(equalReplacement)
+            assertThat(details.value).isTrue()
+            assertThat(details.errorCode).isNull()
+            verify(mockFlagsClient).resolve(flagKey, defaultValue)
+        } finally {
+            releaseConversion.countDown()
+            dispatcher.close()
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `M register only current context W setEvaluationContext() {older conversion resumes last}`() = runTest {
+        // Given
+        val conversionStarted = CountDownLatch(1)
+        val releaseConversion = CountDownLatch(1)
+        val secondRegistered = CountDownLatch(1)
+        val registrations = CopyOnWriteArrayList<String>()
+        whenever(mockDelayedContext.getTargetingKey()).thenReturn("first-subject")
+        whenever(mockDelayedContext.asMap()).thenAnswer {
+            conversionStarted.countDown()
+            check(releaseConversion.await(5, TimeUnit.SECONDS))
+            emptyMap<String, Value>()
+        }
+        val secondContext = ImmutableContext(targetingKey = "second-subject")
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            val targetingKey = invocation.getArgument<EvaluationContext>(0).targetingKey
+            registrations += targetingKey
+            invocation.getArgument<EvaluationContextCallback>(1).onSuccess()
+            if (targetingKey == "second-subject") secondRegistered.countDown()
+        }
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "initial-subject")
+        )
+        registrations.clear()
+        val executor = Executors.newFixedThreadPool(2)
+        val dispatcher = executor.asCoroutineDispatcher()
+
+        try {
+            // When
+            OpenFeatureAPI.setEvaluationContext(mockDelayedContext, dispatcher)
+            assertThat(conversionStarted.await(5, TimeUnit.SECONDS)).isTrue()
+            OpenFeatureAPI.setEvaluationContext(secondContext, dispatcher)
+            assertThat(secondRegistered.await(5, TimeUnit.SECONDS)).isTrue()
+            releaseConversion.countDown()
+            dispatcher.close()
+            assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue()
+
+            // Then
+            assertThat(OpenFeatureAPI.getEvaluationContext()).isSameAs(secondContext)
+            assertThat(registrations).containsExactly("second-subject")
+        } finally {
+            releaseConversion.countDown()
+            dispatcher.close()
+            executor.shutdownNow()
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @ParameterizedTest
+    @EnumSource(ContextUpdateApi::class)
+    fun `M keep Stale status W public context update {older completion follows newer stale}`(
+        contextUpdateApi: ContextUpdateApi
+    ) = runTest {
+        // Given
+        val firstTargetingKey = "first-subject"
+        val secondTargetingKey = "second-subject"
+        val firstContext = ImmutableContext(targetingKey = firstTargetingKey)
+        val secondContext = ImmutableContext(targetingKey = secondTargetingKey)
+        val callbacks = mutableMapOf<String, EvaluationContextCallback>()
+        var currentState: FlagsClientState = FlagsClientState.Ready
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = ImmutableContext(targetingKey = "initial-subject"),
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
+        whenever(mockStateObservable.getCurrentState()).thenAnswer { currentState }
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            val context = invocation.getArgument<EvaluationContext>(0)
+            callbacks[context.targetingKey] = invocation.getArgument(1)
+        }
+
+        fun startUpdate(context: ImmutableContext) {
+            when (contextUpdateApi) {
+                ContextUpdateApi.ASYNC -> OpenFeatureAPI.setEvaluationContext(
+                    context,
+                    UnconfinedTestDispatcher(testScheduler)
+                )
+                ContextUpdateApi.WAIT -> launch { OpenFeatureAPI.setEvaluationContextAndWait(context) }
+            }
+        }
+
+        startUpdate(firstContext)
+        testScheduler.runCurrent()
+        startUpdate(secondContext)
+        testScheduler.runCurrent()
+
+        // When
+        currentState = FlagsClientState.Stale
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Stale)
+        testScheduler.runCurrent()
+        assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Stale)
+
+        currentState = FlagsClientState.Ready
+        checkNotNull(callbacks[firstTargetingKey]).onSuccess()
+        testScheduler.runCurrent()
+        currentState = FlagsClientState.Stale
+        checkNotNull(callbacks[secondTargetingKey]).onFailure(RuntimeException("refresh failed"))
+        testScheduler.runCurrent()
+
+        // Then
+        assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Stale)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `M keep Ready status W setProviderAndWait() {timeout callback follows recovery}`() = runTest {
+        // Given
+        val context = ImmutableContext(targetingKey = "subject")
+        val timeout = mock<FlagsInitializationTimeoutException>()
+        lateinit var callback: EvaluationContextCallback
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            callback = invocation.getArgument(1)
+        }
+        val initialization = launch {
+            OpenFeatureAPI.setProviderAndWait(
+                provider = provider,
+                initialContext = context,
+                dispatcher = UnconfinedTestDispatcher(testScheduler)
+            )
+        }
+        testScheduler.runCurrent()
+
+        // When
+        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Ready)
+        testScheduler.runCurrent()
+        whenever(mockStateObservable.getCurrentState()).thenReturn(
+            FlagsClientState.Error(timeout),
+            FlagsClientState.Ready
+        )
+        callback.onFailure(timeout)
+        testScheduler.runCurrent()
+
+        // Then
+        assertThat(initialization.isCompleted).isTrue()
+        assertThat(initialization.isCancelled).isFalse()
+        assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Ready)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `M keep Stale status W setEvaluationContextAndWait() {failed refresh with same-subject fallback}`() = runTest {
+        // Given
+        var currentState: FlagsClientState = FlagsClientState.Ready
+        var updateCount = 0
+        whenever(mockStateObservable.getCurrentState()).thenAnswer { currentState }
+        whenever(mockFlagsClient.setEvaluationContext(any(), any())).doAnswer { invocation ->
+            updateCount++
+            currentState = if (updateCount == 1) FlagsClientState.Ready else FlagsClientState.Stale
+            checkNotNull(capturedStateListener).onStateChanged(currentState)
+            val callback = invocation.getArgument<EvaluationContextCallback>(1)
+            if (currentState == FlagsClientState.Ready) {
+                callback.onSuccess()
+            } else {
+                callback.onFailure(RuntimeException("Unable to fetch feature flags"))
+            }
+        }
+        val initialContext = ImmutableContext(
+            targetingKey = "subject",
+            attributes = mapOf("dd_assignment_token" to Value.String("header.payload.signature"))
+        )
+        val refreshedContext = ImmutableContext(
+            targetingKey = "subject",
+            attributes = mapOf(
+                "dd_assignment_token" to Value.String("header.payload.signature"),
+                "plan" to Value.String("requested")
+            )
+        )
+
+        OpenFeatureAPI.setProviderAndWait(
+            provider = provider,
+            initialContext = initialContext,
+            dispatcher = UnconfinedTestDispatcher(testScheduler)
+        )
+
+        // When
+        OpenFeatureAPI.setEvaluationContextAndWait(refreshedContext)
+        testScheduler.runCurrent()
+
+        // Then
+        assertThat(OpenFeatureAPI.getStatus()).isEqualTo(OpenFeatureStatus.Stale)
+    }
+
     // endregion
+
+    enum class ContextUpdateApi {
+        ASYNC,
+        WAIT
+    }
+
+    private class TestEvaluationContext(
+        private val delegate: ImmutableContext,
+        private val conversionStarted: CountDownLatch? = null,
+        private val releaseConversion: CountDownLatch? = null
+    ) : OpenFeatureEvaluationContext by delegate {
+        override fun asMap(): Map<String, Value> {
+            conversionStarted?.countDown()
+            releaseConversion?.let { check(it.await(5, TimeUnit.SECONDS)) }
+            return delegate.asMap()
+        }
+
+        override fun equals(other: Any?): Boolean =
+            other is TestEvaluationContext && delegate == other.delegate
+
+        override fun hashCode(): Int = delegate.hashCode()
+    }
 
     // region Provider Events
     // Note: These tests verify the provider correctly converts FlagsClient state changes
@@ -587,25 +1272,6 @@ internal class DatadogFlagsProviderTest {
         // Then - Ready state is converted to ProviderReady event
         assertThat(events).hasSize(1)
         assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderReady::class.java)
-    }
-
-    @Test
-    fun `M emit ProviderStale event W observe() {state changes to Stale}`() = runTest {
-        // Given
-        val events = mutableListOf<OpenFeatureProviderEvents>()
-
-        // When
-        val job = launch {
-            provider.observe().collect { events.add(it) }
-        }
-        testScheduler.runCurrent()
-        checkNotNull(capturedStateListener).onStateChanged(FlagsClientState.Stale)
-        testScheduler.runCurrent()
-        job.cancel()
-
-        // Then - Stale state is converted to ProviderStale event
-        assertThat(events).hasSize(1)
-        assertThat(events[0]).isInstanceOf(OpenFeatureProviderEvents.ProviderStale::class.java)
     }
 
     @Test

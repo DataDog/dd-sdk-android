@@ -19,7 +19,19 @@ internal interface PrecomputedAssignmentsReader {
         context: EvaluationContext,
         datadogContext: DatadogContext,
         diagnostics: Diagnostics
-    ): PrecomputedAssignmentsResponse?
+    ): PrecomputedAssignmentsResult?
+
+    @WorkerThread
+    fun readPrecomputedFlags(
+        context: EvaluationContext,
+        datadogContext: DatadogContext,
+        diagnostics: Diagnostics,
+        assignmentToken: String
+    ): PrecomputedAssignmentsResult?
+}
+
+internal sealed interface PrecomputedAssignmentsResult {
+    data object AuthorizationRejected : PrecomputedAssignmentsResult
 }
 
 /**
@@ -28,4 +40,4 @@ internal interface PrecomputedAssignmentsReader {
 internal data class PrecomputedAssignmentsResponse(
     val body: String,
     val flagSelectionIgnoredReason: String?
-)
+) : PrecomputedAssignmentsResult
