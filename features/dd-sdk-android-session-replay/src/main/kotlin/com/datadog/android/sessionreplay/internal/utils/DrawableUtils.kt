@@ -15,12 +15,13 @@ import android.util.DisplayMetrics
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ThreadPoolExecutor
 import kotlin.math.sqrt
 
 internal class DrawableUtils(
@@ -55,13 +56,7 @@ internal class DrawableUtils(
             resizeBitmapCallback = object : ResizeBitmapCallback {
                 @WorkerThread
                 override fun onSuccess(bitmap: Bitmap) {
-                    executorService.executeSafe("drawOnCanvas", internalLogger) {
-                        drawOnCanvas(
-                            bitmap,
-                            drawable,
-                            bitmapCreationCallback
-                        )
-                    }
+                    submitDrawing(bitmap, drawable, bitmapCreationCallback)
                 }
 
                 @WorkerThread
@@ -96,6 +91,41 @@ internal class DrawableUtils(
 
         @WorkerThread
         fun onFailure()
+    }
+
+    @WorkerThread
+    private fun submitDrawing(
+        bitmap: Bitmap,
+        drawable: Drawable,
+        bitmapCreationCallback: ResourceResolver.BitmapCreationCallback
+    ) {
+        // SDK executors drop tasks silently when full, which would never complete the capture.
+        @Suppress("UnsafeThirdPartyFunctionCall") // SDK executor queues have a non-throwing capacity query.
+        if ((executorService as? ThreadPoolExecutor)?.queue?.remainingCapacity() == 0) {
+            bitmapCreationCallback.onFailure()
+            return
+        }
+        val task = Runnable {
+            var isCompleted = false
+            try {
+                drawOnCanvas(bitmap, drawable, bitmapCreationCallback)
+                isCompleted = true
+            } finally {
+                if (!isCompleted) bitmapCreationCallback.onFailure()
+            }
+        }
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // Rejection fails the capture below.
+            executorService.execute(task)
+        } catch (e: RejectedExecutionException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { DRAWING_TASK_REJECTED },
+                e
+            )
+            bitmapCreationCallback.onFailure()
+        }
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -210,6 +240,7 @@ internal class DrawableUtils(
         private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
         internal const val FAILED_TO_CREATE_SCALED_BITMAP_ERROR =
             "Failed to create a scaled bitmap from the drawable"
+        private const val DRAWING_TASK_REJECTED = "Unable to schedule Session Replay image drawing"
         internal const val DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION =
             "Drawable.draw call finished with an exception. Drawable type is"
     }

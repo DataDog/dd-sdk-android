@@ -21,8 +21,10 @@ import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.internal.utils.PathUtils
 import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
+import java.lang.ref.WeakReference
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -43,7 +45,9 @@ internal class ResourceResolver(
     ),
     private val resourceItemCreationHandler: ResourceItemCreationHandler = ResourceItemCreationHandler(
         recordedDataQueueHandler = recordedDataQueueHandler
-    )
+    ),
+    private val pendingDrawableRequests: PendingDrawableRequests = PendingDrawableRequests(),
+    private val drawableReferenceFactory: (Drawable) -> WeakReference<Drawable> = { WeakReference(it) }
 ) {
 
     internal fun registerCallbacks() {
@@ -140,8 +144,8 @@ internal class ResourceResolver(
     ) {
         bitmapCachesManager.registerCallbacks(applicationContext)
 
-        val resourceId =
-            tryToGetResourceFromCache(drawable = originalDrawable, customResourceIdCacheKey = customResourceIdCacheKey)
+        val resourceKey = customResourceIdCacheKey ?: generateKey(originalDrawable)
+        val resourceId = resourceKey?.let { bitmapCachesManager.getFromResourceCache(it) }
 
         if (resourceId != null) {
             // if we got here it means we saw the bitmap before,
@@ -150,15 +154,29 @@ internal class ResourceResolver(
             return
         }
 
+        val request = pendingDrawableRequests.start(
+            key = resourceKey,
+            byteCount = estimatePendingBytes(originalDrawable, drawableWidth, drawableHeight),
+            callback = resourceResolverCallback
+        ) ?: return
+        // Queued work must not keep alive a drawable the application has since replaced; that work is skipped.
+        val drawableReference = drawableReferenceFactory(originalDrawable)
+
         // do in the background
-        threadPoolExecutor.executeSafe(RESOURCE_RESOLVER_ALIAS, logger) {
+        executeDrawableTask(request) {
+            val capturedDrawable = drawableReference.get()
+            if (capturedDrawable == null) {
+                request.onFailure()
+                return@executeDrawableTask
+            }
+
             // Copy the drawable on work thread in order to avoid the new MaterialShapeDrawable
             // instance to reuse the singleton of `ShapeAppearancePathProvider` from main thread,
             // causing UI thread drawing crash.
-            val copiedDrawable = drawableCopier.copy(originalDrawable, resources)
+            val copiedDrawable = drawableCopier.copy(capturedDrawable, resources)
             if (copiedDrawable == null) {
-                resourceResolverCallback.onFailure()
-                return@executeSafe
+                request.onFailure()
+                return@executeDrawableTask
             }
 
             val bitmapFromDrawable =
@@ -168,8 +186,9 @@ internal class ResourceResolver(
                     null
                 }
 
+            @Suppress("ThreadSafety") // This task runs on the resource executor.
             createBitmapFromDrawable(
-                drawable = originalDrawable,
+                drawable = capturedDrawable,
                 copiedDrawable = copiedDrawable,
                 drawableWidth = drawableWidth,
                 drawableHeight = drawableHeight,
@@ -179,11 +198,11 @@ internal class ResourceResolver(
                 resolveResourceCallback = object : ResolveResourceCallback {
                     override fun onResolved(resourceId: String, resourceData: ByteArray) {
                         resourceItemCreationHandler.queueItem(resourceId, resourceData)
-                        resourceResolverCallback.onSuccess(resourceId)
+                        request.onSuccess(resourceId)
                     }
 
                     override fun onFailed() {
-                        resourceResolverCallback.onFailure()
+                        request.onFailure()
                     }
                 }
             )
@@ -512,6 +531,44 @@ internal class ResourceResolver(
         }
     }
 
+    private fun executeDrawableTask(request: ResourceResolverCallback, action: () -> Unit) {
+        val task = Runnable {
+            var isHandedOff = false
+            try {
+                action()
+                isHandedOff = true
+            } finally {
+                // An escaping throwable must not leave the captures waiting forever; it still propagates.
+                if (!isHandedOff) request.onFailure()
+            }
+        }
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // Rejection fails the captures below.
+            threadPoolExecutor.execute(task)
+        } catch (e: RejectedExecutionException) {
+            logger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                { RESOURCE_TASK_REJECTED },
+                e
+            )
+            request.onFailure()
+        }
+    }
+
+    // The source pixels of a bitmap drawable are held while they are compressed; other drawables are rasterized.
+    private fun estimatePendingBytes(drawable: Drawable, drawableWidth: Int, drawableHeight: Int): Long {
+        val bitmap = (drawable as? BitmapDrawable)?.bitmap
+        return if (bitmap != null && !bitmap.isRecycled) {
+            bitmap.allocationByteCount.toLong()
+        } else {
+            minOf(
+                drawableWidth.toLong() * drawableHeight * ARGB_8888_PIXEL_SIZE_BYTES,
+                DrawableUtils.MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT.toLong()
+            )
+        }
+    }
+
     private fun shouldUseDrawableBitmap(drawable: BitmapDrawable): Boolean {
         return drawable.bitmap != null &&
             !drawable.bitmap.isRecycled &&
@@ -537,6 +594,8 @@ internal class ResourceResolver(
         private const val CORE_DEFAULT_POOL_SIZE = 1
         private const val MAX_THREAD_COUNT = 10
         private const val RESOURCE_RESOLVER_ALIAS = "resolveResourceId"
+        private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
+        private const val RESOURCE_TASK_REJECTED = "Unable to schedule Session Replay image processing"
 
         @Suppress("UnsafeThirdPartyFunctionCall") // all parameters are non-negative and queue is not null
         private val THREADPOOL_EXECUTOR = ThreadPoolExecutor(
