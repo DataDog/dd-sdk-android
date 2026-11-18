@@ -15,6 +15,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.AnyThread
+import androidx.annotation.GuardedBy
 import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
@@ -188,7 +189,7 @@ internal class RumFeature(
 
     private val debugListenerLock = Any()
 
-    // guarded by debugListenerLock
+    @GuardedBy("debugListenerLock")
     internal var debugActivityLifecycleListener: UiRumDebugListener? = null
     internal var frameStatesAggregator: Application.ActivityLifecycleCallbacks? = null
     internal var processLifecycleMonitor: ProcessLifecycleMonitor? = null
