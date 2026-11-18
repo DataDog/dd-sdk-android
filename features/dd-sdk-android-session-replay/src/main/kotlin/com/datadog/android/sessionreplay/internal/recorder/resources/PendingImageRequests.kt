@@ -10,10 +10,10 @@ import androidx.annotation.MainThread
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 
 /**
- * Tracks the drawable captures waiting to be resolved. A capture of an image that is already being resolved waits for
- * that work instead of repeating it, and new work is refused while the pixels of pending work exceed a budget.
+ * Tracks the image captures waiting to be resolved. A capture of an image that is already being resolved waits for that
+ * work instead of repeating it, and new work is refused while the pixels of pending work exceed a budget.
  */
-internal class PendingDrawableRequests(
+internal class PendingImageRequests(
     buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     maxHeapBytes: Long = Runtime.getRuntime().maxMemory()
 ) {

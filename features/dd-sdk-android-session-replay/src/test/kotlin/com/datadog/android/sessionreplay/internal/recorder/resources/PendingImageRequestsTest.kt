@@ -8,8 +8,8 @@ package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import com.datadog.android.internal.system.BuildSdkVersionProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.recorder.resources.PendingDrawableRequests.Companion.HEAP_FRACTION
-import com.datadog.android.sessionreplay.internal.recorder.resources.PendingDrawableRequests.Companion.MAX_PENDING_BYTES
+import com.datadog.android.sessionreplay.internal.recorder.resources.PendingImageRequests.Companion.HEAP_FRACTION
+import com.datadog.android.sessionreplay.internal.recorder.resources.PendingImageRequests.Companion.MAX_PENDING_BYTES
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -36,9 +36,9 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class PendingDrawableRequestsTest {
+internal class PendingImageRequestsTest {
 
-    private lateinit var testedRequests: PendingDrawableRequests
+    private lateinit var testedRequests: PendingImageRequests
 
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
@@ -61,7 +61,7 @@ internal class PendingDrawableRequestsTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockBuildSdkVersionProvider.isAtLeastO).thenReturn(true)
-        testedRequests = PendingDrawableRequests(mockBuildSdkVersionProvider, maxHeapBytes = Long.MAX_VALUE)
+        testedRequests = PendingImageRequests(mockBuildSdkVersionProvider, maxHeapBytes = Long.MAX_VALUE)
     }
 
     @Test
@@ -213,7 +213,7 @@ internal class PendingDrawableRequestsTest {
     @Test
     fun `M let a completed capture start new work W onSuccess() { callback captures the same image }`() {
         // Given
-        var restartedRequest: PendingDrawableRequests.Request? = null
+        var restartedRequest: PendingImageRequests.Request? = null
         doAnswer {
             restartedRequest = testedRequests.start(fakeKey, fakeByteCount, mockOtherCallback)
         }.whenever(mockCallback).onSuccess(fakeResourceId)
@@ -234,7 +234,7 @@ internal class PendingDrawableRequestsTest {
     ) {
         // Given
         whenever(mockBuildSdkVersionProvider.isAtLeastO).thenReturn(false)
-        testedRequests = PendingDrawableRequests(mockBuildSdkVersionProvider, fakeMaxHeapBytes)
+        testedRequests = PendingImageRequests(mockBuildSdkVersionProvider, fakeMaxHeapBytes)
         startRequest(fakeKey, fakeMaxHeapBytes / HEAP_FRACTION, mockCallback)
 
         // When
@@ -249,7 +249,7 @@ internal class PendingDrawableRequestsTest {
         key: String?,
         byteCount: Long,
         callback: ResourceResolverCallback
-    ): PendingDrawableRequests.Request {
+    ): PendingImageRequests.Request {
         return checkNotNull(testedRequests.start(key, byteCount, callback)) { "Expected the capture to start work" }
     }
 }
