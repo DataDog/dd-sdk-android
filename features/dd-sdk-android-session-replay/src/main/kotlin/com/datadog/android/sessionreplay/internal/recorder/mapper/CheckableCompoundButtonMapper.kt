@@ -19,7 +19,7 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
-internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
+internal abstract class CheckableCompoundButtonMapper<in T : CompoundButton>(
     textWireframeMapper: TextViewMapper<T>,
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,

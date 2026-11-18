@@ -6,4 +6,4 @@
 
 package com.datadog.android.rum.internal.timeseries
 
-internal data class DataPoint<T : Any>(val timestampNs: Long, val value: T)
+internal data class DataPoint<out T : Any>(val timestampNs: Long, val value: T)

@@ -11,7 +11,7 @@ import com.datadog.android.api.context.DatadogContext
 /**
  * A class which can transform an object of type [T] into a formatted String.
  */
-internal interface ContextAwareSerializer<T : Any> {
+internal interface ContextAwareSerializer<in T : Any> {
     /**
      * Serializes the data into a String.
      * @return the String representing the data or null if any exception occurs
