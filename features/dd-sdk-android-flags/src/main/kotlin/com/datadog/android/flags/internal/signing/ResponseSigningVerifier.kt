@@ -210,7 +210,7 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
         private const val KEY_USAGE = "551d0f"
         private const val EXTENDED_KEY_USAGE = "551d25"
 
-        // PLACEHOLDER: identity-core must assign the production FFE assignment-signing EKU OID before merge.
+        // PLACEHOLDER: Datadog must assign the production FFE assignment-signing EKU OID before merge.
         // OID contents (without tag and length) of the placeholder 1.3.6.1.4.1.99999.1.1.
         private const val FFE_ASSIGNMENT_SIGNING_EKU = "2b06010401868d1f0101"
 

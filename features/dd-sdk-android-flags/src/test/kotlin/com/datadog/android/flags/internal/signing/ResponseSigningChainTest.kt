@@ -38,24 +38,24 @@ import java.security.spec.PKCS8EncodedKeySpec
  * Response signing v1 with a certificate chain (1 to 3 intermediates in `x-datadog-feature-flags-signing-chain`).
  * The test signs synthetic responses with an independent transcript encoder, so it does not reuse SDK encoding.
  *
- * `response-signing-chain/` holds test-only credentials from a local Vault dev server. Their keys sign nothing
+ * `response-signing-chain/` holds test-only credentials from a local test CA. Their keys sign nothing
  * outside tests. The test clock follows each leaf, so the 72-hour leaf validity does not expire the test.
  */
 internal class ResponseSigningChainTest {
 
-    // region Vault fixtures
+    // region Test CA fixtures
 
     @TestFactory
-    fun `M match expected results W verify() {Vault-issued fixtures}`(): List<DynamicTest> = listOf(
-        Triple("lukas-valid", listOf("root-a"), true),
-        Triple("lukas-backup-root", listOf("root-b"), true),
-        Triple("lukas-backup-root", listOf("root-a", "root-b"), true),
-        Triple("lukas-backup-root", listOf("root-a"), false),
-        Triple("lukas-rotated", listOf("root-a"), true),
+    fun `M match expected results W verify() {test-CA-issued fixtures}`(): List<DynamicTest> = listOf(
+        Triple("two-intermediates", listOf("root-a"), true),
+        Triple("backup-root", listOf("root-b"), true),
+        Triple("backup-root", listOf("root-a", "root-b"), true),
+        Triple("backup-root", listOf("root-a"), false),
+        Triple("rotated-lower-intermediate", listOf("root-a"), true),
         Triple("other-product", listOf("root-a"), false),
-        Triple("missing-dc-int", listOf("root-a"), false),
-        Triple("single-int-ffe", listOf("root-a"), true),
-        Triple("v1-codesigning", listOf("root-a"), false),
+        Triple("missing-upper-intermediate", listOf("root-a"), false),
+        Triple("one-intermediate", listOf("root-a"), true),
+        Triple("codesigning-leaf", listOf("root-a"), false),
         Triple("unrelated-root", listOf("root-a", "root-b"), false)
     ).map { (name, roots, expected) ->
         DynamicTest.dynamicTest("$name with $roots -> ${if (expected) "accept" else "reject"}") {
@@ -80,7 +80,7 @@ internal class ResponseSigningChainTest {
     @Test
     fun `M encode v1 domain and every intermediate hash W transcript()`() {
         // Given
-        val credential = credential("lukas-valid")
+        val credential = credential("two-intermediates")
         val now = credential.leafNotBefore + 60
         val request = request()
         val headers = credential.sign(request, BODY, now)
@@ -99,7 +99,7 @@ internal class ResponseSigningChainTest {
     @Test
     fun `M reject reordered intermediates W verify()`() {
         // Given
-        val credential = credential("lukas-valid")
+        val credential = credential("two-intermediates")
         val reordered = credential.copy(chain = credential.chain.reversed())
         val now = credential.leafNotBefore + 60
         val request = request()
@@ -114,7 +114,7 @@ internal class ResponseSigningChainTest {
 
     @TestFactory
     fun `M reject malformed proof headers W verify()`(): List<DynamicTest> {
-        val credential = credential("lukas-valid")
+        val credential = credential("two-intermediates")
         val now = credential.leafNotBefore + 60
         val chain = credential.chain.map { it.toByteString().base64() }
         val cases = mapOf<String, (Headers.Builder) -> Unit>(
@@ -149,7 +149,7 @@ internal class ResponseSigningChainTest {
     @Test
     fun `M reject prototype request W verify() {signature version 2 request}`() {
         // Given
-        val credential = credential("lukas-valid")
+        val credential = credential("two-intermediates")
         val now = credential.leafNotBefore + 60
         val request = request().newBuilder().header(PREFIX + "signature-version", "2").build()
         val headers = credential.sign(request, BODY, now)
@@ -190,7 +190,7 @@ internal class ResponseSigningChainTest {
     @Test
     fun `M verify W verify() {explicit default port 443}`() {
         // Given
-        val credential = credential("lukas-valid")
+        val credential = credential("two-intermediates")
         val now = credential.leafNotBefore + 60
         val request = request("https://preview.ff-cdn.datad0g.com:443/precompute-assignments")
         val headers = credential.sign(request, BODY, now)
@@ -205,7 +205,7 @@ internal class ResponseSigningChainTest {
     @Test
     fun `M reject W verify() {plain HTTP}`() {
         // Given
-        val credential = credential("lukas-valid")
+        val credential = credential("two-intermediates")
         val now = credential.leafNotBefore + 60
         val request = request("http://localhost:7676/precompute-assignments")
         val headers = credential.sign(request, BODY, now)

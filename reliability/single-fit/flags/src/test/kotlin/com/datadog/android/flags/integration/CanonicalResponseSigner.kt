@@ -24,16 +24,16 @@ import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.spec.PKCS8EncodedKeySpec
 
-/** Signs canonical v1 chain response bytes with the Vault fixture key, independently of the SDK verifier. */
+/** Signs canonical v1 chain response bytes with the test CA fixture key, independently of the SDK verifier. */
 internal object CanonicalResponseSigner {
     private const val PREFIX = "x-datadog-feature-flags-"
     private val credential = JsonParser.parseString(
-        checkNotNull(javaClass.getResource("/response-signing-chain/credentials/lukas-valid.json")).readText()
+        checkNotNull(javaClass.getResource("/response-signing-chain/credentials/two-intermediates.json")).readText()
     ).asJsonObject
     private val leaf = bytes(credential["certificate_der_base64"].asString)
     private val intermediates = credential.getAsJsonArray("intermediates_der_base64").map { it.asString }
 
-    // Vault leaves live 72 hours; derive the clock from the fixture so refreshed credentials keep working.
+    // Test leaves live 72 hours; derive the clock from the fixture so refreshed credentials keep working.
     val now = (
         CertificateFactory.getInstance("X.509").generateCertificate(leaf.inputStream()) as X509Certificate
         ).notBefore.time / 1000 + 60

@@ -79,7 +79,7 @@ rejects a response that has only the old `x-datadog-feature-flags-signing-interm
 header. The transcript ends with `SHA256(leaf)`, one count byte, and the SHA-256 of each
 intermediate in header order. The leaf extended key usage must contain the FFE
 assignment-signing purpose and must not contain `anyExtendedKeyUsage`. The purpose OID
-is a placeholder until identity-core assigns the production value. An intermediate at
+is a placeholder until Datadog assigns the production value. An intermediate at
 index `i` must have a path length of at least `i`. An intermediate or root extended key
 usage, if present, must contain the FFE purpose or `anyExtendedKeyUsage`. A root path
 length, if present, must admit every intermediate.
@@ -136,7 +136,7 @@ They assert acceptance decisions and exact transcripts for every response vector
 A case `anchor_der_base64` replaces the file anchor for that case.
 Clients do not run the `signing_cases`, because they hold no signing keys.
 `rejection_reason` is a rule code; the tests do not compare native error messages.
-`ResponseSigningChainTest` adds Vault-issued chains and minted profile cases, including
+`ResponseSigningChainTest` adds test-CA-issued chains and minted profile cases, including
 nonminimal KeyUsage named bits, with test-only credentials in `src/test/resources/response-signing-chain/`.
 
 ```shell
