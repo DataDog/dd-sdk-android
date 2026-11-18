@@ -455,8 +455,7 @@ controls exposures independently.
 
 Flag requests send the SDK's `service` in the `dd-service` header, so Usage Attribution can split Feature Flags
 usage by `service`. It is the same service RUM reports: the one set in the core `Configuration`, or else the
-package name. Use printable ASCII without spaces: other values, for example `Checkout API` or `café-api`, are not
-attributed correctly. A service that is not a valid HTTP header value is not sent, and the request still goes out.
+package name. A service that is not a valid HTTP header value is not sent, and the request still goes out.
 
 ## Integration with RUM
 
