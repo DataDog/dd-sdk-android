@@ -20,16 +20,20 @@ import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.internal.utils.PathUtils
 import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
+import org.mockito.Mockito.mockingDetails
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -43,9 +47,11 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.lang.ref.WeakReference
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
+import java.util.concurrent.RejectedExecutionException
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -115,6 +121,9 @@ internal class ResourceResolverTest {
 
     @Mock
     lateinit var mockAlpha8ResourceCache: Alpha8ResourceCache
+
+    @Mock
+    lateinit var mockPendingDrawableRequests: PendingDrawableRequests
 
     private var fakeBitmapWidth: Int = 1
 
@@ -1034,7 +1043,10 @@ internal class ResourceResolverTest {
         verify(mockBitmapCachesManager).putInResourceCache(fakeCacheKey, fakeResourceId)
     }
 
-    private fun createResourceResolver(): ResourceResolver = ResourceResolver(
+    private fun createResourceResolver(
+        pendingDrawableRequests: PendingDrawableRequests = PendingDrawableRequests(),
+        drawableReferenceFactory: (Drawable) -> WeakReference<Drawable> = { WeakReference(it) }
+    ): ResourceResolver = ResourceResolver(
         applicationContext = mockApplicationContext,
         logger = mockLogger,
         pathUtils = mockPathUtils,
@@ -1045,8 +1057,38 @@ internal class ResourceResolverTest {
         recordedDataQueueHandler = mockRecordedDataQueueHandler,
         bitmapCachesManager = mockBitmapCachesManager,
         alpha8BitmapConverter = mockAlpha8BitmapConverter,
-        alpha8ResourceCache = mockAlpha8ResourceCache
+        alpha8ResourceCache = mockAlpha8ResourceCache,
+        pendingDrawableRequests = pendingDrawableRequests,
+        drawableReferenceFactory = drawableReferenceFactory
     )
+
+    private fun captureTasks(): MutableList<Runnable> {
+        val tasks = mutableListOf<Runnable>()
+        whenever(mockExecutorService.execute(any())).then {
+            tasks += it.getArgument<Runnable>(0)
+            null
+        }
+        return tasks
+    }
+
+    private fun resolveDrawable(
+        callback: ResourceResolverCallback,
+        drawable: Drawable = mockDrawable,
+        drawableWidth: Int = 0,
+        drawableHeight: Int = 0
+    ) {
+        testedResourceResolver.resolveResourceIdFromDrawable(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            originalDrawable = drawable,
+            drawableCopier = mockDrawableCopier,
+            drawableWidth = drawableWidth,
+            drawableHeight = drawableHeight,
+            customResourceIdCacheKey = null,
+            resourceResolverCallback = callback
+        )
+    }
 
     @Test
     fun `M use original drawable for cache write W resolveResourceId() { cache miss }`(
@@ -1107,56 +1149,147 @@ internal class ResourceResolverTest {
     @Test
     fun `M only copy the drawable in work thread W resolveResourceIdFromDrawable`() {
         // Given
-        whenever(
-            mockExecutorService.execute(
-                any()
-            )
-        ).then {
-            // do nothing to simulate that work thread doesn't execute the task.
-            mock<Future<Boolean>>()
-        }
+        val tasks = captureTasks()
 
         // When
-        testedResourceResolver.resolveResourceIdFromDrawable(
-            resources = mockResources,
-            applicationContext = mockApplicationContext,
-            displayMetrics = mockDisplayMetrics,
-            originalDrawable = mockDrawable,
-            drawableCopier = mockDrawableCopier,
-            drawableWidth = mockDrawable.intrinsicWidth,
-            drawableHeight = mockDrawable.intrinsicHeight,
-            customResourceIdCacheKey = null,
-            resourceResolverCallback = mockSerializerCallback
-        )
+        resolveDrawable(mockSerializerCallback)
+        val copiedBeforeTheTaskRan = mockingDetails(mockDrawableCopier).invocations.isNotEmpty()
+        tasks.single().run()
 
         // Then
-        verifyNoInteractions(mockDrawableCopier)
-
-        // Given
-        whenever(
-            mockExecutorService.execute(
-                any()
-            )
-        ).then {
-            (it.arguments[0] as Runnable).run()
-            mock<Future<Boolean>>()
-        }
-
-        // When
-        testedResourceResolver.resolveResourceIdFromDrawable(
-            resources = mockResources,
-            applicationContext = mockApplicationContext,
-            displayMetrics = mockDisplayMetrics,
-            originalDrawable = mockDrawable,
-            drawableCopier = mockDrawableCopier,
-            drawableWidth = mockDrawable.intrinsicWidth,
-            drawableHeight = mockDrawable.intrinsicHeight,
-            customResourceIdCacheKey = null,
-            resourceResolverCallback = mockSerializerCallback
-        )
-
-        // Then
+        assertThat(copiedBeforeTheTaskRan).isFalse()
         verify(mockDrawableCopier).copy(mockDrawable, mockResources)
+    }
+
+    @Test
+    fun `M fail without copying W resolveResourceIdFromDrawable() { drawable released before the task runs }`() {
+        // Given
+        testedResourceResolver = createResourceResolver(drawableReferenceFactory = { WeakReference(null) })
+
+        // When
+        resolveDrawable(mockSerializerCallback)
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+        verifyNoInteractions(mockDrawableCopier)
+    }
+
+    @Test
+    fun `M resolve the image once for both captures W resolveResourceIdFromDrawable() { image in flight }`(
+        @Mock mockOtherCallback: ResourceResolverCallback
+    ) {
+        // Given
+        val tasks = captureTasks()
+
+        // When
+        resolveDrawable(mockSerializerCallback)
+        resolveDrawable(mockOtherCallback)
+        tasks.toList().forEach { it.run() }
+
+        // Then
+        assertThat(tasks).hasSize(1)
+        verify(mockDrawableCopier).copy(mockDrawable, mockResources)
+        verify(mockSerializerCallback).onSuccess(fakeResourceId)
+        verify(mockOtherCallback).onSuccess(fakeResourceId)
+    }
+
+    @Test
+    fun `M fail the capture W resolveResourceIdFromDrawable() { task rejected }`() {
+        // Given
+        val fakeRejection = RejectedExecutionException()
+        whenever(mockExecutorService.execute(any())).thenThrow(fakeRejection)
+
+        // When
+        resolveDrawable(mockSerializerCallback)
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            "Unable to schedule Session Replay image processing",
+            throwable = fakeRejection
+        )
+    }
+
+    @Test
+    fun `M fail the capture and propagate W resolveResourceIdFromDrawable() { copying throws }`() {
+        // Given
+        val fakeError = IllegalStateException()
+        whenever(mockDrawableCopier.copy(mockDrawable, mockResources)).thenThrow(fakeError)
+
+        // When
+        val actualError = assertThrows<IllegalStateException> { resolveDrawable(mockSerializerCallback) }
+
+        // Then
+        assertThat(actualError).isSameAs(fakeError)
+        verify(mockSerializerCallback).onFailure()
+    }
+
+    @Test
+    fun `M not schedule work W resolveResourceIdFromDrawable() { capture joined or refused }`() {
+        // Given
+        testedResourceResolver = createResourceResolver(pendingDrawableRequests = mockPendingDrawableRequests)
+
+        // When
+        resolveDrawable(mockSerializerCallback)
+
+        // Then
+        verify(mockPendingDrawableRequests).start(eq(fakeResourceKey), any(), eq(mockSerializerCallback))
+        verifyNoInteractions(mockExecutorService)
+    }
+
+    @Test
+    fun `M reserve the source pixels W resolveResourceIdFromDrawable() { bitmap drawable }`(
+        @IntForgery(min = 1) fakeAllocationByteCount: Int
+    ) {
+        // Given
+        whenever(mockBitmap.allocationByteCount).thenReturn(fakeAllocationByteCount)
+        whenever(mockBitmapCachesManager.generateResourceKeyFromDrawable(mockBitmapDrawable))
+            .thenReturn(fakeResourceKey)
+        testedResourceResolver = createResourceResolver(pendingDrawableRequests = mockPendingDrawableRequests)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawable = mockBitmapDrawable)
+
+        // Then
+        verify(mockPendingDrawableRequests)
+            .start(fakeResourceKey, fakeAllocationByteCount.toLong(), mockSerializerCallback)
+    }
+
+    @Test
+    fun `M reserve the drawn pixels W resolveResourceIdFromDrawable() { other drawable }`(
+        @IntForgery(min = 1, max = 1000) fakeWidth: Int,
+        @IntForgery(min = 1, max = 1000) fakeHeight: Int
+    ) {
+        // Given
+        testedResourceResolver = createResourceResolver(pendingDrawableRequests = mockPendingDrawableRequests)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawableWidth = fakeWidth, drawableHeight = fakeHeight)
+
+        // Then
+        verify(mockPendingDrawableRequests)
+            .start(fakeResourceKey, fakeWidth.toLong() * fakeHeight * 4, mockSerializerCallback)
+    }
+
+    @Test
+    fun `M reserve at most the drawing limit W resolveResourceIdFromDrawable() { large drawable }`(
+        @IntForgery(min = 2000, max = 100_000) fakeWidth: Int,
+        @IntForgery(min = 2000, max = 100_000) fakeHeight: Int
+    ) {
+        // Given
+        testedResourceResolver = createResourceResolver(pendingDrawableRequests = mockPendingDrawableRequests)
+
+        // When
+        resolveDrawable(mockSerializerCallback, drawableWidth = fakeWidth, drawableHeight = fakeHeight)
+
+        // Then
+        verify(mockPendingDrawableRequests).start(
+            fakeResourceKey,
+            DrawableUtils.MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT.toLong(),
+            mockSerializerCallback
+        )
     }
 
     // region Alpha8 bitmap tests

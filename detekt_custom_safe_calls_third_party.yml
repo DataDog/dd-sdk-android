@@ -350,6 +350,7 @@ datadog:
       - "java.lang.ref.WeakReference.clear()"
       - "java.lang.ref.WeakReference.constructor(android.app.Activity?)"
       - "java.lang.ref.WeakReference.constructor(android.content.Context?)"
+      - "java.lang.ref.WeakReference.constructor(android.graphics.drawable.Drawable?)"
       - "java.lang.ref.WeakReference.constructor(android.view.View?)"
       - "java.lang.ref.WeakReference.constructor(android.view.Window?)"
       - "java.lang.ref.WeakReference.constructor(com.datadog.android.api.SdkCore?)"

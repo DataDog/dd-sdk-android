@@ -30,6 +30,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
@@ -41,13 +42,17 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.stream.Stream
 
 @Extensions(
@@ -123,13 +128,7 @@ internal class DrawableUtilsTest {
             runnable.run()
         }
 
-        testedDrawableUtils = DrawableUtils(
-            bitmapWrapper = mockBitmapWrapper,
-            canvasWrapper = mockCanvasWrapper,
-            bitmapCachesManager = mockBitmapCachesManager,
-            executorService = mockExecutorService,
-            internalLogger = mockLogger
-        )
+        testedDrawableUtils = createDrawableUtils(mockExecutorService)
     }
 
     // region createBitmap
@@ -478,6 +477,77 @@ internal class DrawableUtilsTest {
 
         // Then
         verify(mockCanvas).drawColor(eq(Color.TRANSPARENT), eq(PorterDuff.Mode.CLEAR))
+    }
+
+    @Test
+    fun `M fail the capture W createBitmapOfApproxSizeFromDrawable() { drawing queue full }`(
+        @Mock mockDrawingExecutor: ThreadPoolExecutor,
+        @Mock mockDrawingQueue: BlockingQueue<Runnable>
+    ) {
+        // Given
+        whenever(mockDrawingExecutor.queue).thenReturn(mockDrawingQueue)
+        whenever(mockDrawingQueue.remainingCapacity()).thenReturn(0)
+        testedDrawableUtils = createDrawableUtils(mockDrawingExecutor)
+
+        // When
+        drawBitmap()
+
+        // Then
+        verify(mockBitmapCreationCallback).onFailure()
+        verify(mockDrawingExecutor, never()).execute(any())
+    }
+
+    @Test
+    fun `M fail the capture W createBitmapOfApproxSizeFromDrawable() { drawing rejected }`() {
+        // Given
+        val fakeRejection = RejectedExecutionException()
+        whenever(mockExecutorService.execute(any())).thenThrow(fakeRejection)
+
+        // When
+        drawBitmap()
+
+        // Then
+        verify(mockBitmapCreationCallback).onFailure()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            "Unable to schedule Session Replay image drawing",
+            throwable = fakeRejection
+        )
+    }
+
+    @Test
+    fun `M fail the capture and propagate W createBitmapOfApproxSizeFromDrawable() { drawing throws error }`() {
+        // Given
+        val fakeError = StackOverflowError()
+        doThrow(fakeError).whenever(mockDrawable).setBounds(any(), any(), any(), any())
+
+        // When
+        val actualError = assertThrows<StackOverflowError> { drawBitmap() }
+
+        // Then
+        assertThat(actualError).isSameAs(fakeError)
+        verify(mockBitmapCreationCallback).onFailure()
+        verify(mockBitmapCreationCallback, never()).onReady(any())
+    }
+
+    private fun createDrawableUtils(executorService: ExecutorService): DrawableUtils = DrawableUtils(
+        bitmapWrapper = mockBitmapWrapper,
+        canvasWrapper = mockCanvasWrapper,
+        bitmapCachesManager = mockBitmapCachesManager,
+        executorService = executorService,
+        internalLogger = mockLogger
+    )
+
+    private fun drawBitmap() {
+        testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            drawable = mockDrawable,
+            drawableWidth = 1,
+            drawableHeight = 1,
+            displayMetrics = mockDisplayMetrics,
+            config = mockConfig,
+            bitmapCreationCallback = mockBitmapCreationCallback
+        )
     }
 
     companion object {
