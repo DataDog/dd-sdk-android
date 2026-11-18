@@ -187,7 +187,7 @@ class CrossFeatureTest {
     }
 
     @Test
-    fun tracesAndLogsMustLinkToRumWithoutViewIdWhenCalledBeforeActiveRumView() {
+    fun tracesAndLogsMustLinkToApplicationLaunchBeforeFirstTrackedView() {
         // Given
         val fakeOperationName = forge.aString()
         val fakeRumViewName = forge.aString()
@@ -207,7 +207,7 @@ class CrossFeatureTest {
         ConditionWatcher {
             val viewEvent = rumEvents.filter { it.get("type").asString == "view" }
                 .map { ViewEvent.fromJsonObject(it) }
-                .firstOrNull { it.view.name == fakeRumViewName }
+                .firstOrNull { it.view.name == "ApplicationLaunch" }
             val spanEvent = spanEvents.firstOrNull { it.get("name").asString == fakeOperationName }
                 ?.let { SpanEvent.fromJsonObject(it) }
             val logEvent = logEvents.firstOrNull { it.get("message").asString == fakeLogMessage }
@@ -222,11 +222,11 @@ class CrossFeatureTest {
             SpanEventAssert.assertThat(spanEvent)
                 .hasApplicationId(viewEvent.application.id)
                 .hasSessionId(viewEvent.session.id)
-                .hasNoViewId()
+                .hasViewId(viewEvent.view.id)
             LogEventAssert.assertThat(logEvent)
                 .hasApplicationId(viewEvent.application.id)
                 .hasSessionId(viewEvent.session.id)
-                .hasNoViewId()
+                .hasViewId(viewEvent.view.id)
                 .hasNoActionId()
                 .hasTraceId(spanEvent.meta.additionalProperties["_dd.p.id"] + spanEvent.traceId)
                 .hasSpanId(spanEvent.spanId.toLong(radix = 16).toString())
