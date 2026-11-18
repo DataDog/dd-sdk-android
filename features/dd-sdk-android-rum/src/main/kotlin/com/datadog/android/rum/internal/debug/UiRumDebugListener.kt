@@ -130,6 +130,24 @@ internal class UiRumDebugListener(
 
     // endregion
 
+    @AnyThread
+    internal fun unsubscribe() {
+        advancedRumMonitor.setDebugListener(null)
+    }
+
+    /**
+     * Removes the overlay, since [onActivityPaused] won't be called once this listener is
+     * unregistered from the [Application].
+     */
+    @MainThread
+    internal fun detach() {
+        rumViewsContainer?.let { container ->
+            (container.parent as? ViewGroup)?.removeView(container)
+        }
+        rumViewsContainer = null
+        viewsSnapshot.clear()
+    }
+
     // region private
 
     @Suppress("MagicNumber")
