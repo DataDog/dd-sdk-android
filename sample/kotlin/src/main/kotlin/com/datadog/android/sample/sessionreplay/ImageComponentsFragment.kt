@@ -24,6 +24,11 @@ import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.R
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.setSessionReplayImagePrivacy
+import com.datadog.android.sessionreplay.setSessionReplayTextAndInputPrivacy
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 internal interface ImageLoadedCallback {
     fun onImageLoaded(resource: Drawable)
@@ -51,6 +56,8 @@ internal class ImageComponentsFragment : Fragment() {
         imageViewRemote = rootView.findViewById(R.id.imageView_remote)
         imageButtonRemote = rootView.findViewById(R.id.imageButtonRemote)
         appCompatButtonRemote = rootView.findViewById(R.id.appCompatImageButtonRemote)
+
+        setupFloatingActionButtons(rootView)
 
         setupStateListButton(
             rootView = rootView,
@@ -80,6 +87,23 @@ internal class ImageComponentsFragment : Fragment() {
     }
 
     // internal region
+
+    private fun setupFloatingActionButtons(rootView: View) {
+        val section = rootView.findViewById<View>(R.id.fab_capture_comparison)
+        section.setSessionReplayImagePrivacy(ImagePrivacy.MASK_NONE)
+        section.setSessionReplayTextAndInputPrivacy(TextAndInputPrivacy.MASK_SENSITIVE_INPUTS)
+
+        listOf(R.id.fab_bordered, R.id.fab_borderless).forEach { id ->
+            val button = rootView.findViewById<FloatingActionButton>(id)
+            val counterId = if (id == R.id.fab_bordered) R.id.fab_bordered_taps else R.id.fab_borderless_taps
+            val counter = rootView.findViewById<TextView>(counterId)
+            var tapCount = 0
+            counter.text = getString(R.string.fab_tap_count, tapCount)
+            button.setOnClickListener {
+                counter.text = getString(R.string.fab_tap_count, ++tapCount)
+            }
+        }
+    }
 
     private fun loadRemoteViews() {
         loadImageView()

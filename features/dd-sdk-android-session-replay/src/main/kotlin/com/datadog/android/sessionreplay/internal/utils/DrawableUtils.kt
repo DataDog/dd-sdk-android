@@ -114,12 +114,11 @@ internal class DrawableUtils(
             // needed because overdrawing an already used bitmap causes unusual visual artifacts
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
 
-            drawable.setBounds(0, 0, canvas.width, canvas.height)
-
             try {
+                drawable.setBounds(0, 0, canvas.width, canvas.height)
                 drawable.draw(canvas)
             } catch (e: RuntimeException) {
-                logDrawableDrawException(drawable, e)
+                logDrawableRenderingException(drawable, e)
                 bitmapCreationCallback.onFailure()
                 return
             }
@@ -128,15 +127,16 @@ internal class DrawableUtils(
         }
     }
 
-    private fun logDrawableDrawException(
+    private fun logDrawableRenderingException(
         drawable: Drawable,
         runtimeException: RuntimeException
     ) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
-            { "$DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION ${drawable.resolveClassName()}" },
-            runtimeException
+            { "$DRAWABLE_RENDERING_FAILED ${drawable.resolveClassName()}" },
+            runtimeException,
+            onlyOnce = true
         )
     }
 
@@ -211,7 +211,7 @@ internal class DrawableUtils(
         private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
         internal const val FAILED_TO_CREATE_SCALED_BITMAP_ERROR =
             "Failed to create a scaled bitmap from the drawable"
-        internal const val DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION =
-            "Drawable.draw call finished with an exception. Drawable type is"
+        internal const val DRAWABLE_RENDERING_FAILED =
+            "Drawable rendering failed. Drawable type is"
     }
 }

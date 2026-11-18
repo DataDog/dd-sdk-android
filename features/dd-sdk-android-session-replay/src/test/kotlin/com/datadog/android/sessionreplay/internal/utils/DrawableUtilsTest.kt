@@ -19,7 +19,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
-import com.datadog.android.sessionreplay.internal.utils.DrawableUtils.Companion.DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION
+import com.datadog.android.sessionreplay.internal.utils.DrawableUtils.Companion.DRAWABLE_RENDERING_FAILED
 import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
 import com.datadog.android.utils.verifyLog
@@ -27,6 +27,7 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -42,6 +43,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -397,6 +399,39 @@ internal class DrawableUtilsTest {
         assertThat(actualBitmap).isEqualTo(mockScaledBitmap)
     }
 
+    @Test
+    fun `M fail capture without throwing W createBitmapOfApproxSizeFromDrawable() { setBounds throws }`(
+        @IntForgery(min = 1, max = 1000) fakeWidth: Int,
+        @IntForgery(min = 1, max = 1000) fakeHeight: Int
+    ) {
+        // Given
+        val fakeException = AndroidRuntimeException("Only the original thread can touch its views")
+        whenever(mockDrawable.setBounds(any(), any(), any(), any())).thenThrow(fakeException)
+
+        // When
+        assertDoesNotThrow {
+            testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+                drawable = mockDrawable,
+                drawableWidth = fakeWidth,
+                drawableHeight = fakeHeight,
+                displayMetrics = mockDisplayMetrics,
+                bitmapCreationCallback = mockBitmapCreationCallback
+            )
+        }
+
+        // Then
+        verify(mockBitmapCreationCallback).onFailure()
+        verify(mockBitmapCreationCallback, never()).onReady(any())
+        verify(mockDrawable, never()).draw(any())
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            "$DRAWABLE_RENDERING_FAILED ${mockDrawable.javaClass.canonicalName}",
+            throwable = fakeException,
+            onlyOnce = true
+        )
+    }
+
     @ParameterizedTest
     @MethodSource("exceptionTypes")
     fun `M call onFailure W createBitmapOfApproxSizeFromDrawable { drawable draw throws runtime exception }`(
@@ -423,8 +458,9 @@ internal class DrawableUtilsTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
-            { it == "$DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION ${mockDrawable.javaClass.canonicalName}" },
-            exceptionType
+            { it == "$DRAWABLE_RENDERING_FAILED ${mockDrawable.javaClass.canonicalName}" },
+            exceptionType,
+            onlyOnce = true
         )
     }
 
