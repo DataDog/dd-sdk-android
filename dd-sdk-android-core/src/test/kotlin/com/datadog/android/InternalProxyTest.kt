@@ -22,7 +22,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.argumentCaptor
@@ -65,11 +64,11 @@ internal class InternalProxyTest {
     @Test
     fun `M forward telemetry attributes W debug()`(
         @StringForgery fakeMessage: String,
-        @StringForgery fakeReason: String,
-        @Mock mockSdkCore: DatadogCore,
-        @Mock mockRumFeatureScope: FeatureScope
+        @StringForgery fakeReason: String
     ) {
         // Given
+        val mockSdkCore = mock<DatadogCore>()
+        val mockRumFeatureScope = mock<FeatureScope>()
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         val testedProxy = _InternalProxy(mockSdkCore)
         val fakeAttributes = mapOf("reason" to fakeReason, "nullable" to null)
