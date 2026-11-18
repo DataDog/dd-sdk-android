@@ -16,6 +16,7 @@ import android.graphics.drawable.Drawable.ConstantState
 import android.util.AndroidRuntimeException
 import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.thread.NamedExecutionUnit
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
@@ -477,6 +478,18 @@ internal class DrawableUtilsTest {
 
         // Then
         verify(mockCanvas).drawColor(eq(Color.TRANSPARENT), eq(PorterDuff.Mode.CLEAR))
+    }
+
+    @Test
+    fun `M name the drawing task W createBitmapOfApproxSizeFromDrawable()`() {
+        // When
+        drawBitmap()
+
+        // Then
+        argumentCaptor<Runnable> {
+            verify(mockExecutorService).execute(capture())
+            assertThat((firstValue as NamedExecutionUnit).name).isEqualTo("drawoncanvas")
+        }
     }
 
     @Test

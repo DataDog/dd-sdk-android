@@ -12,9 +12,9 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
-import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.thread.NamedRunnable
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
@@ -99,13 +99,13 @@ internal class DrawableUtils(
         drawable: Drawable,
         bitmapCreationCallback: ResourceResolver.BitmapCreationCallback
     ) {
-        // SDK executors drop tasks silently when full, which would never complete the capture.
-        @Suppress("UnsafeThirdPartyFunctionCall") // SDK executor queues have a non-throwing capacity query.
+        // SDK executors drop tasks silently when full, which would never complete the capture. Only the single
+        // resource worker submits here, so the queue cannot fill between this check and the submission.
         if ((executorService as? ThreadPoolExecutor)?.queue?.remainingCapacity() == 0) {
             bitmapCreationCallback.onFailure()
             return
         }
-        val task = Runnable {
+        val task = NamedRunnable(DRAWING_TASK_NAME) {
             var isCompleted = false
             try {
                 drawOnCanvas(bitmap, drawable, bitmapCreationCallback)
@@ -115,7 +115,7 @@ internal class DrawableUtils(
             }
         }
         try {
-            @Suppress("UnsafeThirdPartyFunctionCall") // Rejection fails the capture below.
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here; rejection is handled below.
             executorService.execute(task)
         } catch (e: RejectedExecutionException) {
             internalLogger.log(
@@ -235,11 +235,11 @@ internal class DrawableUtils(
             )
 
     internal companion object {
-        @VisibleForTesting
         internal const val MAX_BITMAP_SIZE_BYTES_WITH_RESOURCE_ENDPOINT = 10 * 1024 * 1024 // 10mb
         private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
         internal const val FAILED_TO_CREATE_SCALED_BITMAP_ERROR =
             "Failed to create a scaled bitmap from the drawable"
+        private const val DRAWING_TASK_NAME = "drawOnCanvas"
         private const val DRAWING_TASK_REJECTED = "Unable to schedule Session Replay image drawing"
         internal const val DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION =
             "Drawable.draw call finished with an exception. Drawable type is"

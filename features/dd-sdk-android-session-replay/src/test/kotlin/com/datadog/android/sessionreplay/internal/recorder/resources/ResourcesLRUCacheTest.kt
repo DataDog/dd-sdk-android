@@ -10,6 +10,7 @@ import androidx.collection.LruCache
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourcesLRUCache.Companion.MAX_CACHE_MEMORY_SIZE_BYTES
 import com.datadog.android.sessionreplay.internal.utils.InvocationUtils
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -69,5 +70,22 @@ internal class ResourcesLRUCacheTest {
 
         // Then
         assertThat(cacheItem).isEqualTo(fakeResourceIdByteArray)
+    }
+
+    @Test
+    fun `M count keys towards the size limit W put() { long keys }`(forge: Forge) {
+        // Given
+        val testedDefaultCache = ResourcesLRUCache()
+        val fakeFirstKey = forge.anAlphabeticalString(size = MAX_CACHE_MEMORY_SIZE_BYTES / 2)
+        val fakeSecondKey = forge.anAlphabeticalString(size = MAX_CACHE_MEMORY_SIZE_BYTES / 2)
+        val fakeResourceId = forge.anAlphabeticalString().toByteArray()
+
+        // When
+        testedDefaultCache.put(fakeFirstKey, fakeResourceId)
+        testedDefaultCache.put(fakeSecondKey, fakeResourceId)
+
+        // Then
+        assertThat(testedDefaultCache.get(fakeFirstKey)).isNull()
+        assertThat(testedDefaultCache.get(fakeSecondKey)).isEqualTo(fakeResourceId)
     }
 }

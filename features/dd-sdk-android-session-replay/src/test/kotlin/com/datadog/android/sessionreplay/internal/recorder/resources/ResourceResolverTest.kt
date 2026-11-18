@@ -147,7 +147,7 @@ internal class ResourceResolverTest {
         whenever(mockDrawableCopier.copy(eq(mockBitmapDrawable), any())).thenReturn(
             mockBitmapDrawable
         )
-        whenever(mockBitmapCachesManager.generateResourceKeyFromDrawable(mockDrawable)).thenReturn(fakeResourceKey)
+        whenever(mockBitmapCachesManager.generateResourceKeyFromDrawable(any())).thenReturn(fakeResourceKey)
         whenever(mockDrawableCopier.copy(eq(mockDrawable), any())).thenReturn(mockDrawable)
         fakeImageCompressionByteArray = forge.aString().toByteArray()
 
@@ -1429,6 +1429,55 @@ internal class ResourceResolverTest {
         // Then
         verify(mockSerializerCallback).onFailure()
         verifyNoInteractions(mockExecutorService)
+    }
+
+    @Test
+    fun `M register the cache for memory callbacks W resolveResourceIdFromBitmap()`() {
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockBitmapCachesManager).registerCallbacks(mockApplicationContext)
+    }
+
+    @Test
+    fun `M fail the capture W resolveResourceIdFromBitmap() { task rejected }`() {
+        // Given
+        val fakeRejection = RejectedExecutionException()
+        whenever(mockExecutorService.execute(any())).thenThrow(fakeRejection)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            "Unable to schedule Session Replay image processing",
+            throwable = fakeRejection
+        )
+    }
+
+    @Test
+    fun `M fail the capture and report W resolveResourceIdFromBitmap() { copy throws }`(forge: Forge) {
+        // Given
+        val fakeError = forge.anElementFrom(IllegalArgumentException(), IllegalStateException())
+        whenever(mockBitmap.copy(Bitmap.Config.ARGB_8888, false)).thenThrow(fakeError)
+
+        // When
+        resolveBitmap(mockSerializerCallback)
+
+        // Then
+        verify(mockSerializerCallback).onFailure()
+        verifyNoInteractions(mockExecutorService)
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            "Unable to copy a bitmap for Session Replay",
+            throwable = fakeError,
+            onlyOnce = true
+        )
     }
 
     @Test

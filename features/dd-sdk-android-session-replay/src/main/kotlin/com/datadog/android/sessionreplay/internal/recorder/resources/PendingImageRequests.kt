@@ -33,10 +33,10 @@ internal class PendingImageRequests(
      * capture's [callback] has already failed.
      */
     @MainThread
-    fun start(key: String?, byteCount: Long, callback: ResourceResolverCallback): Request? {
+    fun start(key: String, byteCount: Long, callback: ResourceResolverCallback): Request? {
         var isRefused = false
         val request = synchronized(lock) {
-            val existing = key?.let { inFlight[it] }
+            val existing = inFlight[key]
             when {
                 existing != null -> {
                     existing.join(callback)
@@ -50,7 +50,7 @@ internal class PendingImageRequests(
                 }
 
                 else -> Request(key, byteCount, callback).also { request ->
-                    if (key != null) inFlight[key] = request
+                    inFlight[key] = request
                     pendingBytes += byteCount
                 }
             }
@@ -61,7 +61,7 @@ internal class PendingImageRequests(
 
     /** Completes every capture waiting on this request and releases its budget, once, whichever path ends it. */
     internal inner class Request internal constructor(
-        private val key: String?,
+        private val key: String,
         private val byteCount: Long,
         callback: ResourceResolverCallback
     ) : ResourceResolverCallback {
@@ -78,7 +78,6 @@ internal class PendingImageRequests(
         }
 
         internal fun join(callback: ResourceResolverCallback) {
-            @Suppress("UnsafeThirdPartyFunctionCall") // SDK-owned mutable list.
             callbacks.add(callback)
         }
 
@@ -88,7 +87,7 @@ internal class PendingImageRequests(
             isCompleted = true
             pendingBytes -= byteCount
             // While this request is in flight no other request can be registered under its key.
-            if (key != null) inFlight.remove(key)
+            inFlight.remove(key)
             callbacks.toList()
         }
     }
