@@ -78,7 +78,7 @@ internal class ResponseSigningState(
         val request = original.newBuilder()
             .header("X-stream", "false")
             .header("x-dd-feature-flags-capabilities", capabilities.sorted().joinToString(","))
-            .header(ResponseSigningVerifier.PREFIX + "signature-version", "1")
+            .header(ResponseSigningVerifier.PREFIX + "signature-version", ResponseSigningVerifier.SIGNATURE_VERSION)
             .header(ResponseSigningVerifier.PREFIX + "request-nonce", nonce.signingBytes().hex())
             .build()
         signingCheck(original.header("dd-application-id") == identity.applicationId)

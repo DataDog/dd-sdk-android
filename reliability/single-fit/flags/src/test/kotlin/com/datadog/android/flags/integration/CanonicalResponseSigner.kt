@@ -20,32 +20,39 @@ import java.io.DataOutputStream
 import java.security.KeyFactory
 import java.security.MessageDigest
 import java.security.Signature
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import java.security.spec.PKCS8EncodedKeySpec
 
-/** Signs canonical response bytes with the public fixture key, independently of the SDK verifier. */
+/** Signs canonical v1 chain response bytes with the Vault fixture key, independently of the SDK verifier. */
 internal object CanonicalResponseSigner {
     private const val PREFIX = "x-datadog-feature-flags-"
-    private val corpus = JsonParser.parseString(
-        checkNotNull(javaClass.getResource("/response-signing-v1/corpus.json")).readText()
+    private val credential = JsonParser.parseString(
+        checkNotNull(javaClass.getResource("/response-signing-chain/credentials/lukas-valid.json")).readText()
     ).asJsonObject
-    private val vector = corpus.getAsJsonArray("cases")[0].asJsonObject
-    val now = vector["now"].asLong
-    val root = corpus["anchor_der_base64"].asString
+    private val leaf = bytes(credential["certificate_der_base64"].asString)
+    private val intermediates = credential.getAsJsonArray("intermediates_der_base64").map { it.asString }
+
+    // Vault leaves live 72 hours; derive the clock from the fixture so refreshed credentials keep working.
+    val now = (
+        CertificateFactory.getInstance("X.509").generateCertificate(leaf.inputStream()) as X509Certificate
+        ).notBefore.time / 1000 + 60
+    val root = checkNotNull(javaClass.getResource("/response-signing-chain/roots/root-a.pem")).readText()
+        .lines().filter { it.isNotBlank() && !it.startsWith("-----") }.joinToString("")
 
     fun response(request: Request, body: String): Response = httpResponse(request, body = body).newBuilder()
         .headers(signedHeaders(request, body.toByteArray(Charsets.UTF_8))).build()
 
     private fun signedHeaders(request: Request, body: ByteArray): Headers {
         if (request.header(PREFIX + "request-nonce") == null) return Headers.Builder().build()
-        val credential = vector.getAsJsonObject("credential")
-        val leaf = bytes(credential["certificate_der_base64"].asString)
-        val intermediate = bytes(credential["intermediate_der_base64"].asString)
         val output = ByteArrayOutputStream()
         val transcript = DataOutputStream(output)
         transcript.write("datadog.feature-flags.precomputed-assignments.v1\u0000".toByteArray())
         fun lp(bytes: ByteArray) { transcript.writeInt(bytes.size); transcript.write(bytes) }
         val url = request.url
-        listOf(request.method, url.scheme, url.host, url.encodedPath, url.encodedQuery?.let { "?$it" } ?: "")
+        val defaultPort = mapOf("https" to 443, "http" to 80)[url.scheme]
+        val authority = url.host + if (url.port == defaultPort) "" else ":${url.port}"
+        listOf(request.method, url.scheme, authority, url.encodedPath, url.encodedQuery?.let { "?$it" } ?: "")
             .forEach { lp(it.toByteArray()) }
         lp(checkNotNull(request.header(PREFIX + "request-nonce")).decodeHex().toByteArray())
         transcript.write(sha(Buffer().also { request.body?.writeTo(it) }.readByteArray()))
@@ -66,7 +73,9 @@ internal object CanonicalResponseSigner {
         transcript.writeLong(now)
         transcript.writeLong(now + 300)
         transcript.writeLong(body.size.toLong())
-        transcript.write(sha(body)); transcript.write(sha(leaf)); transcript.write(sha(intermediate))
+        transcript.write(sha(body)); transcript.write(sha(leaf))
+        transcript.writeByte(intermediates.size)
+        intermediates.forEach { transcript.write(sha(bytes(it))) }
         val key = KeyFactory.getInstance(
             "EC"
         ).generatePrivate(PKCS8EncodedKeySpec(bytes(credential["private_key_pkcs8_der_base64"].asString)))
@@ -76,10 +85,7 @@ internal object CanonicalResponseSigner {
         return Headers.Builder()
             .add(PREFIX + "signature-version", "1")
             .add(PREFIX + "signing-certificate", credential["certificate_der_base64"].asString)
-            .add(
-                PREFIX + "signing-intermediate",
-                credential["intermediate_der_base64"].asString
-            )
+            .add(PREFIX + "signing-chain", intermediates.joinToString(","))
             .add(PREFIX + "certificate-id", sha(leaf).toByteString().hex())
             .add(PREFIX + "issued-at", now.toString())
             .add(PREFIX + "expires-at", (now + 300).toString())

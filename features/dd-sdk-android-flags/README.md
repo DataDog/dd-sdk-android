@@ -71,6 +71,19 @@ The first public response-signing protocol is v1. The SDK advertises
 and draft v3 labels are not supported public versions; public v1 rejects their proofs.
 X.509 v3 certificate encoding is unchanged.
 
+A v1 response carries the leaf in `x-datadog-feature-flags-signing-certificate` and
+1 to 3 intermediates in `x-datadog-feature-flags-signing-chain`. The chain value is
+standard base64 DER entries joined by `,` without spaces. Index 0 issued the leaf, each
+next entry issued the previous one, and a pinned root issued the last entry. The SDK
+rejects a response that has only the old `x-datadog-feature-flags-signing-intermediate`
+header. The transcript ends with `SHA256(leaf)`, one count byte, and the SHA-256 of each
+intermediate in header order. The leaf extended key usage must contain the FFE
+assignment-signing purpose and must not contain `anyExtendedKeyUsage`. The purpose OID
+is a placeholder until identity-core assigns the production value. An intermediate at
+index `i` must have a path length of at least `i`. An intermediate or root extended key
+usage, if present, must contain the FFE purpose or `anyExtendedKeyUsage`. A root path
+length, if present, must admit every intermediate.
+
 Response signing is disabled by default. This draft enables a staging-only mobile pilot
 using the same public root as the browser SDK. Production endpoints have no bundled root.
 
@@ -89,7 +102,7 @@ Never put a private key in SDK configuration. No roots are downloaded.
 
 Use required mode for the staging pilot; keep production signing off. Fresh sessions
 provide observations across rotations without adding polling. The root stays fixed while
-responses carry the current leaf and intermediate certificates. Routine rotation needs
+responses carry the current leaf and intermediate chain. Routine rotation needs
 no SDK update or prior successful fetch. Root validity still bounds unchanged SDK support.
 
 - `OFF` preserves existing transport and persistence and performs no signing work.
@@ -119,8 +132,12 @@ release prerequisites.
 The signing fixtures use the existing snapshot importer and weekly update workflow.
 `src/test/resources/response-signing-v1/SOURCE.json` records the central commit and file checksums.
 The JVM and Android instrumented verifier tests discover every manifest-listed suite and check its checksum and counts.
-It asserts acceptance decisions and exact transcripts for all 66 response vectors.
+They assert acceptance decisions and exact transcripts for every response vector.
 The local two-case KeyUsage supplement remains separate. Server-only signing cases are excluded.
+The current snapshot carries single-intermediate proofs, so these suites are disabled.
+`ffe-system-test-data` regenerates them for the chain format. A follow-up commit updates
+the pin and enables the suites. Until then, `ResponseSigningChainTest` covers the chain
+contract with test-only Vault credentials in `src/test/resources/response-signing-chain/`.
 
 ```shell
 python3 ci/sync-precomputed-fixtures.py --signing --ref <full-upstream-sha>

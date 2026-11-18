@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal.signing
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import okhttp3.Headers
+import okhttp3.HttpUrl
 import okhttp3.Request
 import okio.Buffer
 import okio.ByteString.Companion.decodeBase64
@@ -40,21 +41,24 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
         now: Long
     ): VerifiedResponse {
         signingCheck(status == 200 && body.size <= MAX_RESPONSE_BYTES)
-        signingCheck(single(headers, PREFIX + "signature-version") == "1")
+        signingCheck(single(headers, PREFIX + "signature-version") == SIGNATURE_VERSION)
         val leafBytes = base64(single(headers, PREFIX + "signing-certificate"), 4096)
-        val intermediateBytes = base64(single(headers, PREFIX + "signing-intermediate"), 4096)
+        val chainBytes = chain(headers)
         signingCheck(single(headers, PREFIX + "certificate-id") == leafBytes.signingBytes().sha256().hex())
         val issued = seconds(single(headers, PREFIX + "issued-at"))
         val expires = seconds(single(headers, PREFIX + "expires-at"))
         signingCheck(now >= 0 && issued <= now + 30 && expires > now && expires > issued && expires - issued <= 300)
         val leaf = certificate(leafBytes)
-        val intermediate = certificate(intermediateBytes)
-        leaf.restrict(false)
-        intermediate.restrict(true)
+        // Index 0 issued the leaf; each next intermediate issued the previous one.
+        val intermediates = chainBytes.map { certificate(it) }
+        leaf.restrictLeaf()
+        intermediates.forEachIndexed { index, intermediate -> intermediate.restrictIntermediate(index) }
+        val last = intermediates[intermediates.size - 1]
         val anchor = ResponseSigningTrustRoots.forEndpoint(request.url, trustedRoots).asSequence().mapNotNull { root ->
             try {
                 certificate(base64(root, 4096)).takeIf { parent ->
-                    parent.covers(now, issued, expires) && intermediate.issuedBy(parent)
+                    parent.covers(now, issued, expires) && parent.admitsChain(intermediates.size) &&
+                        last.issuedBy(parent)
                 }
             } catch (_: GeneralSecurityException) {
                 null
@@ -62,8 +66,9 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
                 null
             }
         }.firstOrNull()
-        signingCheck(anchor != null && leaf.issuedBy(intermediate))
-        signingCheck(leaf.covers(now, issued, expires) && intermediate.covers(now, issued, expires))
+        signingCheck(anchor != null && leaf.issuedBy(intermediates[0]))
+        signingCheck(intermediates.zipWithNext().all { (child, parent) -> child.issuedBy(parent) })
+        signingCheck(leaf.covers(now, issued, expires) && intermediates.all { it.covers(now, issued, expires) })
         val signature = base64(single(headers, PREFIX + "signature"), 72)
         strictSignature(signature)
         signingCheck(verifySignature(leaf.publicKey, transcript(request, status, headers, body), signature))
@@ -95,14 +100,35 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
             return verifySignature(parent.publicKey, tbs.encoded, signature)
         }
 
-        fun restrict(isIntermediate: Boolean) {
-            val basic = extensions["551d13"] ?: signingFailure()
-            val usage = extensions["551d0f"] ?: signingFailure()
+        fun restrictLeaf() {
+            val basic = extensions[BASIC_CONSTRAINTS] ?: signingFailure()
+            val usage = extensions[KEY_USAGE] ?: signingFailure()
             signingCheck(basic.first && usage.first)
-            signingCheck(basic.second.contentEquals(hex(if (isIntermediate) "30060101ff020100" else "3000")))
-            signingCheck(usage.second.contentEquals(hex(if (isIntermediate) "03020106" else "03020780")))
-            val eku = extensions["551d25"]?.second
-            signingCheck((isIntermediate && eku == null) || eku?.contentEquals(hex("300a06082b06010505070303")) == true)
+            signingCheck(basic.second.contentEquals(hex("3000")))
+            signingCheck(usage.second.contentEquals(hex("03020780")))
+            val eku = extendedKeyUsages(extensions[EXTENDED_KEY_USAGE]?.second ?: signingFailure())
+            signingCheck(FFE_ASSIGNMENT_SIGNING_EKU in eku && ANY_EXTENDED_KEY_USAGE !in eku)
+        }
+
+        fun restrictIntermediate(index: Int) {
+            val basic = extensions[BASIC_CONSTRAINTS] ?: signingFailure()
+            val usage = extensions[KEY_USAGE] ?: signingFailure()
+            signingCheck(basic.first && usage.first)
+            val fields = SigningDer.read(basic.second).sequence()
+            signingCheck(fields.size == 2 && fields[0].encoded.contentEquals(hex("0101ff")))
+            signingCheck(pathLength(fields[1]) >= index)
+            signingCheck(usage.second.contentEquals(hex("03020106")))
+            val eku = extensions[EXTENDED_KEY_USAGE]?.second?.let { extendedKeyUsages(it) }
+            signingCheck(eku == null || FFE_ASSIGNMENT_SIGNING_EKU in eku || ANY_EXTENDED_KEY_USAGE in eku)
+        }
+
+        /** A pinned root may omit EKU and path length; when present, they must admit this chain. */
+        fun admitsChain(count: Int): Boolean {
+            val length = extensions[BASIC_CONSTRAINTS]?.second
+                ?.let { basic -> SigningDer.read(basic).sequence().firstOrNull { it.tag == 2 } }
+            val eku = extensions[EXTENDED_KEY_USAGE]?.second?.let { extendedKeyUsages(it) }
+            return (length == null || pathLength(length) >= count) &&
+                (eku == null || FFE_ASSIGNMENT_SIGNING_EKU in eku || ANY_EXTENDED_KEY_USAGE in eku)
         }
     }
 
@@ -176,22 +202,40 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
         const val PREFIX = "x-datadog-feature-flags-"
         private const val NONCE_HEADER = PREFIX + "request-nonce"
         const val CAPABILITY = "response-signing-v1"
+        const val SIGNATURE_VERSION = "1"
+        private const val DOMAIN = "datadog.feature-flags.precomputed-assignments.v1"
+        private const val MAX_INTERMEDIATES = 3
+        private const val MAX_CERTIFICATE_BYTES = 4096
+        private const val BASIC_CONSTRAINTS = "551d13"
+        private const val KEY_USAGE = "551d0f"
+        private const val EXTENDED_KEY_USAGE = "551d25"
+
+        // PLACEHOLDER: identity-core must assign the production FFE assignment-signing EKU OID before merge.
+        // OID contents (without tag and length) of the placeholder 1.3.6.1.4.1.99999.1.1.
+        private const val FFE_ASSIGNMENT_SIGNING_EKU = "2b06010401868d1f0101"
+
+        // OID contents (without tag and length) of anyExtendedKeyUsage 2.5.29.37.0.
+        private const val ANY_EXTENDED_KEY_USAGE = "551d2500"
         const val MAX_RESPONSE_BYTES = 2 * 1024 * 1024
         private const val AUTHORITY_KEY_ID = "551d23"
         private const val SUBJECT_KEY_ID = "551d0e"
         private const val MAX_REQUEST_BYTES = 1024 * 1024
+        private const val HTTPS_PORT = 443
+        private const val HTTP_PORT = 80
         private val SEMANTIC_HEADERS =
             listOf("content-type", "dd-application-id", "x-rkyv", "x-use-cache", "x-dd-feature-flags-capabilities")
 
         fun transcript(request: Request, status: Int, headers: Headers, body: ByteArray): ByteArray {
             val issued = seconds(single(headers, PREFIX + "issued-at"))
             val expires = seconds(single(headers, PREFIX + "expires-at"))
-            val leaf = base64(single(headers, PREFIX + "signing-certificate"), 4096)
-            val intermediate = base64(single(headers, PREFIX + "signing-intermediate"), 4096)
+            val leaf = base64(single(headers, PREFIX + "signing-certificate"), MAX_CERTIFICATE_BYTES)
+            val intermediates = chain(headers)
             return requestTranscript(request).apply {
                 writeShort(status).writeLong(issued).writeLong(expires).writeLong(body.size.toLong())
                 write(body.signingBytes().sha256())
-                write(leaf.signingBytes().sha256()).write(intermediate.signingBytes().sha256())
+                write(leaf.signingBytes().sha256())
+                writeByte(intermediates.size)
+                intermediates.forEach { write(it.signingBytes().sha256()) }
             }.signingBytes()
         }
 
@@ -227,7 +271,7 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
                     request.method == "POST" && url.isHttps && url.username.isEmpty() && url.password.isEmpty() &&
                         url.fragment == null
                 )
-                signingCheck(single(request.headers, PREFIX + "signature-version") == "1")
+                signingCheck(single(request.headers, PREFIX + "signature-version") == SIGNATURE_VERSION)
                 signingCheck(nonce.matches(Regex("[0-9a-f]{32}")))
                 val capabilities = single(request.headers, "x-dd-feature-flags-capabilities")
                 signingCheck(CAPABILITY in capabilities.split(',').map { it.trim() })
@@ -239,13 +283,11 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
                 signingFailure()
             }
             signingCheck(!validateSigning || body.size <= MAX_REQUEST_BYTES)
-            val result = Buffer().writeUtf8("datadog.feature-flags.precomputed-assignments.v1").writeByte(0)
-            val host = if (url.host.contains(':')) "[${url.host}]" else url.host
-            val authority = host + if (url.port == 443) "" else ":${url.port}"
+            val result = Buffer().writeUtf8(DOMAIN).writeByte(0)
             listOf(
                 request.method.uppercase(Locale.US),
                 url.scheme,
-                authority,
+                authority(url),
                 url.encodedPath,
                 url.encodedQuery?.let { "?$it" } ?: ""
             )
@@ -272,6 +314,13 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
             return result
         }
 
+        /** Lowercase host, IPv6 in brackets, and the port only when it is not the default port of the scheme. */
+        fun authority(url: HttpUrl): String {
+            val host = if (url.host.contains(':')) "[${url.host}]" else url.host
+            val defaultPort = if (url.isHttps) HTTPS_PORT else HTTP_PORT
+            return host + if (url.port == defaultPort) "" else ":${url.port}"
+        }
+
         // Diagnostics identify a fetch, not an assignment scope. Signature verification still hashes every wire byte.
         private fun withoutDiagnostics(body: ByteArray): ByteArray = try {
             val json = JsonParser.parseString(body.toString(Charsets.UTF_8))
@@ -288,6 +337,35 @@ internal class ResponseSigningVerifier(private val trustedRoots: List<String>) {
         private fun Buffer.lp(bytes: ByteArray) {
             writeInt(bytes.size)
             write(bytes)
+        }
+
+        /** Intermediates in header order: 1 to 3 strict base64 DER entries joined by commas without spaces. */
+        private fun chain(headers: Headers): List<ByteArray> {
+            val value = single(headers, PREFIX + "signing-chain")
+            val maxEntry = ((MAX_CERTIFICATE_BYTES + 2) / 3) * 4
+            signingCheck(value.length <= MAX_INTERMEDIATES * (maxEntry + 1))
+            val entries = value.split(',')
+            signingCheck(entries.size in 1..MAX_INTERMEDIATES)
+            return entries.map { base64(it, MAX_CERTIFICATE_BYTES) }
+        }
+
+        // RFC 5280 requires at least one purpose; other purposes stay allowed.
+        private fun extendedKeyUsages(bytes: ByteArray): Set<String> {
+            val purposes = SigningDer.read(bytes).sequence()
+            signingCheck(purposes.isNotEmpty())
+            return purposes.map {
+                signingCheck(it.tag == 6)
+                it.value.signingBytes().hex()
+            }.toSet()
+        }
+
+        // Decode a non-negative DER INTEGER; values beyond Long saturate because they admit any chain depth.
+        private fun pathLength(node: SigningDer): Long {
+            signingCheck(node.tag == 2 && node.value[0].toInt() and 128 == 0)
+            if (node.value.size > 8) return Long.MAX_VALUE
+            var value = 0L
+            for (byte in node.value) value = (value shl 8) or (byte.toInt() and 255).toLong()
+            return value
         }
 
         private fun single(headers: Headers, name: String): String {
