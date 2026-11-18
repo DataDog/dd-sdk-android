@@ -1279,9 +1279,9 @@ internal class RumFeatureTest {
         testedFeature.enableDebugging(mockRumMonitor)
 
         // Then
-        assertThat(testedFeature.debugActivityLifecycleListener.get()).isNotNull
+        assertThat(testedFeature.debugActivityLifecycleListener).isNotNull
         verify(testedFeature.appContext as Application)
-            .registerActivityLifecycleCallbacks(testedFeature.debugActivityLifecycleListener.get())
+            .registerActivityLifecycleCallbacks(testedFeature.debugActivityLifecycleListener)
     }
 
     @Test
@@ -1294,9 +1294,9 @@ internal class RumFeatureTest {
         testedFeature.enableDebugging(mockRumMonitor)
 
         // Then
-        assertThat(testedFeature.debugActivityLifecycleListener.get()).isNotNull
+        assertThat(testedFeature.debugActivityLifecycleListener).isNotNull
         verify(testedFeature.appContext as Application)
-            .registerActivityLifecycleCallbacks(testedFeature.debugActivityLifecycleListener.get())
+            .registerActivityLifecycleCallbacks(testedFeature.debugActivityLifecycleListener)
     }
 
     @Test
@@ -1305,7 +1305,7 @@ internal class RumFeatureTest {
         testedFeature.enableDebugging(mockRumMonitor)
 
         // Then
-        assertThat(testedFeature.debugActivityLifecycleListener).hasValue(null)
+        assertThat(testedFeature.debugActivityLifecycleListener).isNull()
     }
 
     @Test
@@ -1313,13 +1313,13 @@ internal class RumFeatureTest {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         testedFeature.enableDebugging(mockRumMonitor)
-        val listener = testedFeature.debugActivityLifecycleListener.get()
+        val listener = testedFeature.debugActivityLifecycleListener
 
         // When
         testedFeature.disableDebugging()
 
         // Then
-        assertThat(testedFeature.debugActivityLifecycleListener).hasValue(null)
+        assertThat(testedFeature.debugActivityLifecycleListener).isNull()
         verify(testedFeature.appContext as Application)
             .unregisterActivityLifecycleCallbacks(listener)
     }
@@ -1340,7 +1340,7 @@ internal class RumFeatureTest {
         val mockParent: ViewGroup = mock()
         val mockContainer: LinearLayout = mock()
         whenever(mockContainer.parent) doReturn mockParent
-        testedFeature.debugActivityLifecycleListener.get().rumViewsContainer = mockContainer
+        checkNotNull(testedFeature.debugActivityLifecycleListener).rumViewsContainer = mockContainer
 
         // When
         testedFeature.disableDebugging()
@@ -1371,7 +1371,7 @@ internal class RumFeatureTest {
         val mockParent: ViewGroup = mock()
         val mockContainer: LinearLayout = mock()
         whenever(mockContainer.parent) doReturn mockParent
-        testedFeature.debugActivityLifecycleListener.get().rumViewsContainer = mockContainer
+        checkNotNull(testedFeature.debugActivityLifecycleListener).rumViewsContainer = mockContainer
 
         // When
         Thread { testedFeature.disableDebugging() }.apply {
@@ -1392,13 +1392,13 @@ internal class RumFeatureTest {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         testedFeature.enableDebugging(mockRumMonitor)
-        val listener = testedFeature.debugActivityLifecycleListener.get()
+        val listener = testedFeature.debugActivityLifecycleListener
 
         // When
         testedFeature.onStop()
 
         // Then
-        assertThat(testedFeature.debugActivityLifecycleListener).hasValue(null)
+        assertThat(testedFeature.debugActivityLifecycleListener).isNull()
         verify(testedFeature.appContext as Application)
             .unregisterActivityLifecycleCallbacks(listener)
     }

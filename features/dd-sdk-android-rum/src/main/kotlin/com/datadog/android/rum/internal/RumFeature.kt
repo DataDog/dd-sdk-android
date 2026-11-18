@@ -147,7 +147,6 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * RUM feature class, which needs to be registered with Datadog SDK instance.
@@ -187,8 +186,10 @@ internal class RumFeature(
     internal var memoryVitalMonitor: VitalMonitor = NoOpVitalMonitor()
     internal var frameRateVitalMonitor: VitalMonitor = NoOpVitalMonitor()
 
-    internal var debugActivityLifecycleListener =
-        AtomicReference<UiRumDebugListener>(null)
+    private val debugListenerLock = Any()
+
+    // guarded by debugListenerLock
+    internal var debugActivityLifecycleListener: UiRumDebugListener? = null
     internal var frameStatesAggregator: Application.ActivityLifecycleCallbacks? = null
     internal var processLifecycleMonitor: ProcessLifecycleMonitor? = null
     internal var sessionListener: RumSessionListener = NoOpRumSessionListener()
@@ -607,10 +608,10 @@ internal class RumFeature(
             return
         }
         val context = appContext
-        synchronized(debugActivityLifecycleListener) {
-            if (context is Application && debugActivityLifecycleListener.get() == null) {
+        synchronized(debugListenerLock) {
+            if (context is Application && debugActivityLifecycleListener == null) {
                 val listener = UiRumDebugListener(sdkCore, advancedRumMonitor)
-                debugActivityLifecycleListener.set(listener)
+                debugActivityLifecycleListener = listener
                 context.registerActivityLifecycleCallbacks(listener)
             }
         }
@@ -619,13 +620,13 @@ internal class RumFeature(
     @AnyThread
     internal fun disableDebugging() {
         val context = appContext
-        synchronized(debugActivityLifecycleListener) {
-            if (debugActivityLifecycleListener.get() != null && context is Application) {
-                val listener = debugActivityLifecycleListener.get()
+        synchronized(debugListenerLock) {
+            val listener = debugActivityLifecycleListener
+            if (listener != null && context is Application) {
                 context.unregisterActivityLifecycleCallbacks(listener)
                 // unsubscribe before a replacement listener can be registered
                 listener.unsubscribe()
-                debugActivityLifecycleListener.set(null)
+                debugActivityLifecycleListener = null
                 detachDebugListener(listener)
             }
         }
