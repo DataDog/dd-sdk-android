@@ -7,9 +7,11 @@
 package com.datadog.android.flags.internal.aggregation
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.flags.assertj.FlagEvaluationAssert.Companion.assertThatFlagEvaluation
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
-import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -104,6 +106,32 @@ internal class EvaluationAggregationStatsTest {
     }
 
     @Test
+    fun `M write the features W toEvaluationEvent() { evaluation features }`(
+        @StringForgery fakeText: String,
+        @BoolForgery fakeFlag: Boolean,
+        @DoubleForgery fakeNumber: Double
+    ) {
+        // Given
+        val features = mapOf("text" to fakeText, "flag" to fakeFlag, "number" to fakeNumber)
+        val stats = createStats(fakeEvaluationAggregationKey.copy(features = features))
+
+        // When
+        val event = stats.toEvaluationEvent(fakeDatadogContext)
+
+        // Then
+        assertThatFlagEvaluation(event).hasFeatures(features)
+    }
+
+    @Test
+    fun `M write no features W toEvaluationEvent() { no evaluation features }`() {
+        // When
+        val event = createStats().toEvaluationEvent(fakeDatadogContext)
+
+        // Then
+        assertThatFlagEvaluation(event).hasNoFeatures()
+    }
+
+    @Test
     fun `M set runtime default true W toEvaluationEvent() { null variantKey }`() {
         // Given - null variantKey indicates runtime default was used
         val keyWithoutVariant = fakeEvaluationAggregationKey.copy(variantKey = null, allocationKey = null)
@@ -119,17 +147,15 @@ internal class EvaluationAggregationStatsTest {
     }
 
     @Test
-    fun `M set runtime default true W toEvaluationEvent() { ERROR reason }`(forge: Forge) {
+    fun `M set runtime default true W toEvaluationEvent() { ERROR reason }`() {
         // Given - ERROR reason (reason = null, no flag data)
-        val errorMessage = forge.anAlphabeticalString()
         val keyWithError = fakeEvaluationAggregationKey.copy(
             variantKey = null,
             allocationKey = null,
             errorCode = "FLAG_NOT_FOUND"
         )
         val stats = createStats(
-            evaluationAggregationKey = keyWithError,
-            errorMessage = errorMessage
+            evaluationAggregationKey = keyWithError
         )
 
         // When
@@ -137,7 +163,7 @@ internal class EvaluationAggregationStatsTest {
 
         // Then
         assertThat(event.runtimeDefaultUsed).isTrue()
-        assertThat(event.error?.message).isEqualTo(errorMessage)
+        assertThat(event.error?.message).isEqualTo("FLAG_NOT_FOUND")
     }
 
     @Test
@@ -165,22 +191,23 @@ internal class EvaluationAggregationStatsTest {
     }
 
     @Test
-    fun `M include error message W toEvaluationEvent() { error provided }`(forge: Forge) {
+    fun `M include sanitized error code W toEvaluationEvent() { error provided }`() {
         // Given
-        val errorMessage = forge.anAlphabeticalString()
-        val stats = createStats(errorMessage = errorMessage)
+        val stats = createStats(
+            evaluationAggregationKey = fakeEvaluationAggregationKey.copy(errorCode = "FLAG_NOT_FOUND")
+        )
 
         // When
         val event = stats.toEvaluationEvent(fakeDatadogContext)
 
         // Then
-        assertThat(event.error?.message).isEqualTo(errorMessage)
+        assertThat(event.error?.message).isEqualTo("FLAG_NOT_FOUND")
     }
 
     @Test
     fun `M omit error W toEvaluationEvent() { no error }`() {
         // Given
-        val stats = createStats(errorMessage = null)
+        val stats = createStats()
 
         // When
         val event = stats.toEvaluationEvent(fakeDatadogContext)
@@ -310,19 +337,6 @@ internal class EvaluationAggregationStatsTest {
         assertThat(updated.lastEvaluation).isEqualTo(5000L)
     }
 
-    @Test
-    fun `M create new instance W copy() { errorMessage updated }`() {
-        // Given
-        val original = createStats(errorMessage = "first error")
-
-        // When
-        val updated = original.copy(errorMessage = "second error")
-
-        // Then - original unchanged
-        assertThat(original.errorMessage).isEqualTo("first error")
-        assertThat(updated.errorMessage).isEqualTo("second error")
-    }
-
     // endregion
 
     // region Helpers
@@ -332,17 +346,13 @@ internal class EvaluationAggregationStatsTest {
         count: Int = fakeCount,
         firstEvaluation: Long = fakeFirstTimestamp,
         lastEvaluation: Long = fakeLastTimestamp,
-        context: EvaluationContext = fakeContext,
-        rumApplicationId: String? = fakeApplicationId,
-        errorMessage: String? = null
+        rumApplicationId: String? = fakeApplicationId
     ): EvaluationAggregationStats = EvaluationAggregationStats(
         aggregationKey = evaluationAggregationKey,
         count = count,
         firstEvaluation = firstEvaluation,
         lastEvaluation = lastEvaluation,
-        context = context,
-        rumApplicationId = rumApplicationId,
-        errorMessage = errorMessage
+        rumApplicationId = rumApplicationId
     )
 
     // endregion

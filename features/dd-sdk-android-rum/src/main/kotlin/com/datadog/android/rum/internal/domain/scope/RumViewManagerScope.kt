@@ -161,12 +161,30 @@ internal class RumViewManagerScope(
 
     // region Internal
 
-    internal fun renewViewScopes(eventTime: Time) {
-        val newChildScope = childrenScopes.map { rumViewScope ->
-            rumViewScope.renew(eventTime)
+    // Note: stopViewsForSessionRenewal and carryOverView are a workaround to move the last active view
+    // to the new session. They break encapsulation and the natural lifecycle of the scopes.
+    // TODO RUM-19867 Review session renewal flow.
+    @WorkerThread
+    internal fun stopViewsForSessionRenewal(
+        eventTime: Time,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ): RumViewScope? {
+        val lastActiveView = childrenScopes.lastOrNull { it.isActive() }
+        childrenScopes.forEach {
+            it.handleEvent(RumRawEvent.StopSession(eventTime), datadogContext, writeScope, writer)
         }
         childrenScopes.clear()
-        childrenScopes.addAll(newChildScope)
+        return lastActiveView
+    }
+
+    /**
+     * Starts a new view scope with the same configuration as [previousView]. Must be called after
+     * the session context switches, so that the new view is attributed to the new session.
+     */
+    internal fun carryOverView(previousView: RumViewScope, eventTime: Time) {
+        childrenScopes.add(RumViewScope.fromExisting(previousView, eventTime, initialResourceIdentifier))
     }
 
     private fun isViewManagerComplete(): Boolean {
@@ -465,7 +483,6 @@ internal class RumViewManagerScope(
 
         internal val silentOrphanEventTypes = arrayOf<Class<*>>(
             RumRawEvent.ApplicationStarted::class.java,
-            RumRawEvent.ResetSession::class.java,
             RumRawEvent.StopView::class.java,
             RumRawEvent.ActionDropped::class.java,
             RumRawEvent.ActionSent::class.java,

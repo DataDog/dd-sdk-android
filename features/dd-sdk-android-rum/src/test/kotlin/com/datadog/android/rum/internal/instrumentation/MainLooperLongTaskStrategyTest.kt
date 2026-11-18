@@ -401,7 +401,7 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
         // that is reported must carry the duration we actually simulated
         val durationCaptor = argumentCaptor<Long>()
         verify(rumMonitor.mockInstance as AdvancedRumMonitor, atLeastOnce())
-            .addLongTask(durationCaptor.capture(), eq("$fakeTarget $fakeCallback: $fakeWhat"))
+            .addLongTask(durationCaptor.capture(), eq("$fakeTarget $fakeCallback: $fakeWhat"), eq(emptyMap()))
         assertThat(durationCaptor.allValues).allMatch { it == LONG_TASK_DURATION_NS }
     }
 

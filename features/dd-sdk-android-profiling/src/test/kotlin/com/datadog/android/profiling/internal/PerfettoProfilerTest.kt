@@ -1452,7 +1452,7 @@ internal class PerfettoProfilerTest {
 
     companion object {
         // First version of the profiling system package which no longer records empty stack sampling traces.
-        private const val FIXED_PROFILING_MODULE_VERSION_CODE = 371020780L
+        private const val FIXED_PROFILING_MODULE_VERSION_CODE = 373040100L
 
         private const val LATCH_TIMEOUT_SECONDS = 5L
         private const val JOIN_TIMEOUT_MS = 5000L

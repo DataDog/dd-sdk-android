@@ -152,7 +152,7 @@ internal class ResourceDataStoreManagerMigrationTest {
             deserializer: Deserializer<String, T>
         ) {
             val storedEntry = entry
-            if (storedEntry == null || version != null && version != storedEntry.version) {
+            if (storedEntry == null || (version != null && version != storedEntry.version)) {
                 callback.onSuccess(null)
             } else {
                 callback.onSuccess(

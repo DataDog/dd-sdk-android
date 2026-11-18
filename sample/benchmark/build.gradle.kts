@@ -10,12 +10,11 @@ import com.datadog.gradle.config.java17
 import com.datadog.gradle.plugin.InstrumentationMode
 
 plugins {
+    // Apply ktlint before AGP: built-in Kotlin otherwise causes duplicate ktlint tasks.
+    id("ktlint")
+
     // Build
     id("com.android.application")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    kotlin("android")
     alias(libs.plugins.composeCompilerPlugin)
     alias(libs.plugins.kotlinSPGradlePlugin)
     kotlin("plugin.serialization")
@@ -24,8 +23,7 @@ plugins {
     alias(libs.plugins.datadogGradlePlugin)
 }
 
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION", "StringLiteralDuplication")
+@Suppress("StringLiteralDuplication")
 android {
     namespace = "com.datadog.sample.benchmark"
     compileSdk = AndroidConfig.TARGET_SDK
@@ -92,7 +90,7 @@ dependencies {
     implementation(libs.kotlinRuntime)
 
     // Android dependencies
-    implementation(libs.adapterDelegatesViewBinding)
+    implementation(libs.androidXRecyclerView)
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
     implementation(libs.androidXConstraintLayout)
@@ -103,6 +101,8 @@ dependencies {
     implementation(platform(libs.androidXComposeBom))
     implementation(libs.material3Android)
     implementation(libs.bundles.androidXCompose)
+    implementation(libs.androidXComposeUiToolingPreview)
+    debugImplementation(libs.androidXComposeUiTooling)
     implementation(libs.coilCompose)
     implementation(libs.daggerLib)
     ksp(libs.daggerCompiler)
@@ -129,6 +129,7 @@ dependencies {
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.systemStubsJupiter)
     testImplementation(libs.ktorClientMock)
+    testImplementation(libs.coroutinesTest)
 }
 
 datadogBuild {

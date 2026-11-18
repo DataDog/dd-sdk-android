@@ -12,7 +12,7 @@ import com.datadog.android.core.persistence.datastore.DataStoreContent
  * Callback for asynchronous read operations on the datastore.
  * @param T the datatype being retrieved.
  */
-interface DataStoreReadCallback<T : Any> {
+interface DataStoreReadCallback<in T : Any> {
 
     /**
      * Triggered on successfully reading data from the datastore.

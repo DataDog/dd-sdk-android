@@ -11,8 +11,8 @@ import com.datadog.android.trace.coroutines.CoroutineScopeSpan
 import kotlinx.coroutines.CoroutineScope
 
 internal class CoroutineScopeSpanImpl(
-    private val scope: CoroutineScope,
-    private val span: DatadogSpan
+    scope: CoroutineScope,
+    span: DatadogSpan
 ) : CoroutineScopeSpan,
     CoroutineScope by scope,
     DatadogSpan by span

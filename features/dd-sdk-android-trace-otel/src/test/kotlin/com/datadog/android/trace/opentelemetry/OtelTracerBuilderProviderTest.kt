@@ -11,9 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
-import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.api.feature.SdkFeatureMock
-import com.datadog.android.api.feature.getContextFuture
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.forceSamplingDecision
@@ -80,7 +78,7 @@ internal class OtelTracerBuilderProviderTest {
     lateinit var mockTracingFeature: StubTracingFeature
 
     @Mock
-    lateinit var mockSdkCore: FeatureSdkCore
+    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -445,8 +443,8 @@ internal class OtelTracerBuilderProviderTest {
 
         val mockContextFuture = completedFutureMock(fakeInitialDatadogContext)
 
-        val mockRumFeatureScope = SdkFeatureMock.create()
-        whenever(mockRumFeatureScope.getContextFuture(setOf(Feature.RUM_FEATURE_NAME)))
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getDatadogContextFuture(setOf(Feature.RUM_FEATURE_NAME)))
             .thenReturn(mockContextFuture)
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME))
             .thenReturn(mockRumFeatureScope)

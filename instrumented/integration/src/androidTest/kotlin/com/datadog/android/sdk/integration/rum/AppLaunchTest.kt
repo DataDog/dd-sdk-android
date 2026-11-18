@@ -38,7 +38,7 @@ internal class AppLaunchTest : RumTest<AppLaunchPlaygroundActivity, AppLaunchAct
             )
         )
 
-        /**
+        /*
          * We aren't checking the startup type (cold or warm) here
          * because the tests are run within the same OS process and we don't
          * know which startup type it will be. If this test is executed the first,

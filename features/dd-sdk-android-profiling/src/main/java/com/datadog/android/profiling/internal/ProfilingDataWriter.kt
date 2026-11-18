@@ -21,6 +21,7 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.internal.perfetto.ProfileType
 import com.datadog.android.profiling.internal.telemetry.ProfilingTelemetry
 import com.datadog.android.profiling.internal.utils.fileDeleteSafe
+import com.datadog.android.profiling.internal.utils.fileSizeSafe
 import com.datadog.android.profiling.model.ProfileEvent
 import com.datadog.android.profiling.model.RumMetadataEvent
 import com.google.gson.JsonArray
@@ -80,14 +81,12 @@ internal class ProfilingDataWriter(
         feature.withWriteContext { context, writeScope ->
             writeScope { writer ->
                 synchronized(this) {
-                    val profileBytes = readProfilingData(resultFilePath)
-                    if (profileBytes == null || profileBytes.isEmpty()) {
-                        logWriteResultMetric(
-                            dropped = true,
-                            dropReason = DROP_REASON_PERFETTO_UNREADABLE,
-                            startReason = operation,
-                            hasRumErrorId = rumErrorId.isNotEmpty()
-                        )
+                    val profileBytes = readProfilingDataOrDrop(
+                        profilingPath = resultFilePath,
+                        startReason = operation,
+                        hasRumErrorId = rumErrorId.isNotEmpty()
+                    )
+                    if (profileBytes == null) {
                         fileDeleteSafe(resultFilePath, sdkCore.internalLogger)
                         return@synchronized
                     }
@@ -164,23 +163,19 @@ internal class ProfilingDataWriter(
         anrEvents: List<ProfilerEvent.RumAnrEvent>,
         vitalEvents: List<ProfilerEvent.RumVitalEvent>
     ): RawBatchEvent? {
-        val perfettoBytes = readProfilingData(profilingResult.resultFilePath)
+        val perfettoBytes = readProfilingDataOrDrop(
+            profilingPath = profilingResult.resultFilePath,
+            startReason = profilingResult.startReason.value,
+            longTaskEvents = longTaskEvents,
+            anrEvents = anrEvents,
+            vitalEvents = vitalEvents
+        )
         val firstRumContext =
             longTaskEvents.firstOrNull()?.rumContext
                 ?: anrEvents.firstOrNull()?.rumContext
                 ?: vitalEvents.firstOrNull()?.rumContext
         return when {
-            perfettoBytes == null || perfettoBytes.isEmpty() -> {
-                logWriteResultMetric(
-                    dropped = true,
-                    dropReason = DROP_REASON_PERFETTO_UNREADABLE,
-                    startReason = profilingResult.startReason.value,
-                    longTaskEvents = longTaskEvents,
-                    anrEvents = anrEvents,
-                    vitalEvents = vitalEvents
-                )
-                null
-            }
+            perfettoBytes == null -> null
 
             firstRumContext == null -> {
                 logWriteResultMetric(
@@ -226,7 +221,8 @@ internal class ProfilingDataWriter(
         longTaskEvents: List<ProfilerEvent.RumLongTaskEvent>? = null,
         anrEvents: List<ProfilerEvent.RumAnrEvent>? = null,
         vitalEvents: List<ProfilerEvent.RumVitalEvent>? = null,
-        hasRumErrorId: Boolean? = null
+        hasRumErrorId: Boolean? = null,
+        profileSizeBytes: Long? = null
     ) {
         val writeResult = buildMap {
             put(KEY_DROPPED, dropped)
@@ -236,6 +232,7 @@ internal class ProfilingDataWriter(
             anrEvents?.let { put(KEY_ANR_COUNT, it.size) }
             vitalEvents?.let { put(KEY_VITAL_COUNT, it.size) }
             hasRumErrorId?.let { put(KEY_HAS_RUM_ERROR_ID, it) }
+            profileSizeBytes?.let { put(KEY_PROFILE_SIZE_BYTES, it) }
         }
         sdkCore.internalLogger.logMetric(
             messageBuilder = { ProfilingTelemetry.TELEMETRY_MSG_PROFILING_SESSION },
@@ -399,6 +396,34 @@ internal class ProfilingDataWriter(
         }
     }
 
+    @Suppress("LongParameterList")
+    private fun readProfilingDataOrDrop(
+        profilingPath: String,
+        startReason: String,
+        longTaskEvents: List<ProfilerEvent.RumLongTaskEvent>? = null,
+        anrEvents: List<ProfilerEvent.RumAnrEvent>? = null,
+        vitalEvents: List<ProfilerEvent.RumVitalEvent>? = null,
+        hasRumErrorId: Boolean? = null
+    ): ByteArray? {
+        val sizeBytes = fileSizeSafe(profilingPath, sdkCore.internalLogger)
+        val profileBytes = if (sizeBytes > MAX_PROFILE_SIZE_BYTES) null else readProfilingData(profilingPath)
+        if (profileBytes == null || profileBytes.isEmpty()) {
+            val tooLarge = sizeBytes > MAX_PROFILE_SIZE_BYTES
+            logWriteResultMetric(
+                dropped = true,
+                dropReason = if (tooLarge) DROP_REASON_PROFILE_TOO_LARGE else DROP_REASON_PERFETTO_UNREADABLE,
+                startReason = startReason,
+                longTaskEvents = longTaskEvents,
+                anrEvents = anrEvents,
+                vitalEvents = vitalEvents,
+                hasRumErrorId = hasRumErrorId,
+                profileSizeBytes = if (tooLarge) sizeBytes else null
+            )
+            return null
+        }
+        return profileBytes
+    }
+
     private fun readProfilingData(profilingPath: String): ByteArray? {
         @Suppress("UnsafeThirdPartyFunctionCall")
         // profilingPath is not null in kotlin, it can't throw NPE
@@ -418,6 +443,11 @@ internal class ProfilingDataWriter(
         internal const val DROP_REASON_PERFETTO_UNREADABLE = "perfetto_unreadable"
         internal const val DROP_REASON_NO_RUM_CONTEXT = "no_rum_context"
         internal const val KEY_HAS_RUM_ERROR_ID = "has_rum_error_id"
+        internal const val KEY_PROFILE_SIZE_BYTES = "profile_size_bytes"
+        internal const val DROP_REASON_PROFILE_TOO_LARGE = "profile_too_large"
+
+        // The Datadog profiling intake rejects requests larger than 30 MiB.
+        internal const val MAX_PROFILE_SIZE_BYTES = 30L * 1024 * 1024
 
         private const val TAG_KEY_SERVICE = "service"
         private const val TAG_KEY_VERSION = "version"

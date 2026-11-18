@@ -50,9 +50,9 @@ class JetpackComposeActivity : AppCompatActivity() {
             topBar = {
                 TopAppBar(
                     title =
-                    {
-                        Text("Jetpack compose top bar")
-                    }
+                        {
+                            Text("Jetpack compose top bar")
+                        }
                 )
             }
         ) {

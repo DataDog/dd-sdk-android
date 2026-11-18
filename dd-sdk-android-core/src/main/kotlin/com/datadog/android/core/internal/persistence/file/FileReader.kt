@@ -10,7 +10,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.internal.telemetry.TelemetryContext
 import java.io.File
 
-internal interface FileReader<T> {
+internal interface FileReader<out T> {
 
     /**
      * Reads data from the given file.

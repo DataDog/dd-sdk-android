@@ -1,10 +1,12 @@
 Dependencies List
 
-androidx.annotation:annotation-jvm:1.9.1                        :   59 Kb
-org.chromium.net:cronet-api:143.7445.0                          :   82 Kb
-org.chromium.net:cronet-shared:143.7445.0                       :   97 Kb
-org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
-org.jetbrains:annotations:13.0                                  :   17 Kb
+Dependency                                                                           |     Size | Classpath
+androidx.annotation:annotation-jvm:1.9.1                                             |    59 Kb | both
+com.google.protobuf:protobuf-javalite:3.22.3                                         |   697 Kb | runtime
+org.chromium.net:cronet-api:143.7445.0                                               |    82 Kb | both
+org.chromium.net:cronet-shared:143.7445.0                                            |    97 Kb | both
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                                            |  1706 Kb | both
+org.jetbrains:annotations:13.0                                                       |    17 Kb | both
 
-Total transitive dependencies size                              : 1962 Kb
-
+Total compile dependency artifact size: 1962 Kb
+Total runtime dependency artifact size: 2 Mb

@@ -8,7 +8,9 @@ package com.datadog.android.flags.openfeature.internal
 
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsContextSupersededException
 import com.datadog.android.flags.FlagsInitializationTimeoutException
+import com.datadog.android.flags.FlagsInvalidContextException
 import com.datadog.android.flags.StateObservable
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
@@ -35,6 +37,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CancellationException
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -43,6 +46,52 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 @ForgeConfiguration(BaseConfigurator::class)
 internal class FlagsClientExtTest {
+
+    @Test
+    fun `M throw InvalidContextError W setEvaluationContextSuspend() {callback onFailure invalid context}`(
+        @StringForgery targetingKey: String,
+        @StringForgery errorMessage: String
+    ) {
+        // Given
+        val context = EvaluationContext(targetingKey = targetingKey)
+        val stubError = mock<FlagsInvalidContextException>()
+        whenever(stubError.message).thenReturn(errorMessage)
+        doAnswer { invocation ->
+            invocation.getArgument<EvaluationContextCallback>(1).onFailure(stubError)
+            Unit
+        }.whenever(mockFlagsClient).setEvaluationContext(eq(context), any())
+
+        // When / Then
+        assertThatThrownBy {
+            runBlocking {
+                mockFlagsClient.setEvaluationContextSuspend(context)
+            }
+        }
+            .isInstanceOf(OpenFeatureError.InvalidContextError::class.java)
+            .hasMessage(errorMessage)
+    }
+
+    @Test
+    fun `M throw GeneralError W setEvaluationContextSuspend() {callback onFailure other IllegalArgumentException}`(
+        @StringForgery targetingKey: String,
+        @StringForgery errorMessage: String
+    ) {
+        // Given
+        val context = EvaluationContext(targetingKey = targetingKey)
+        doAnswer { invocation ->
+            invocation.getArgument<EvaluationContextCallback>(1).onFailure(IllegalArgumentException(errorMessage))
+            Unit
+        }.whenever(mockFlagsClient).setEvaluationContext(eq(context), any())
+
+        // When / Then
+        assertThatThrownBy {
+            runBlocking {
+                mockFlagsClient.setEvaluationContextSuspend(context)
+            }
+        }
+            .isInstanceOf(OpenFeatureError.GeneralError::class.java)
+            .hasMessage(errorMessage)
+    }
 
     @Mock
     lateinit var mockFlagsClient: FlagsClient
@@ -104,7 +153,7 @@ internal class FlagsClientExtTest {
             callback.onFailure(error)
         }.whenever(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
 
-        // When/Then
+        // When / Then
         assertThatThrownBy {
             runBlocking {
                 mockFlagsClient.setEvaluationContextSuspend(context)
@@ -131,7 +180,7 @@ internal class FlagsClientExtTest {
             callback.onFailure(error)
         }.whenever(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
 
-        // When/Then
+        // When / Then
         assertThatThrownBy {
             runBlocking {
                 mockFlagsClient.setEvaluationContextSuspend(context)
@@ -158,7 +207,7 @@ internal class FlagsClientExtTest {
             callback.onFailure(error)
         }.whenever(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
 
-        // When/Then
+        // When / Then
         assertThatThrownBy {
             runBlocking {
                 mockFlagsClient.setEvaluationContextSuspend(context)
@@ -186,7 +235,7 @@ internal class FlagsClientExtTest {
             callback.onFailure(error)
         }.whenever(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
 
-        // When/Then
+        // When / Then
         assertThatThrownBy {
             runBlocking {
                 mockFlagsClient.setEvaluationContextSuspend(context)
@@ -229,5 +278,23 @@ internal class FlagsClientExtTest {
         // Then - verify the correct context and attributes were passed
         verify(mockFlagsClient).setEvaluationContext(contextCaptor.capture(), any())
         assertThat(contextCaptor.firstValue).isEqualTo(context)
+    }
+
+    @Test
+    fun `M throw CancellationException W setEvaluationContextSuspend() {callback onFailure superseded}`(
+        @StringForgery targetingKey: String
+    ) {
+        // Given
+        val context = EvaluationContext(targetingKey = targetingKey)
+        val stubError = mock<FlagsContextSupersededException>()
+        doAnswer { invocation ->
+            invocation.getArgument<EvaluationContextCallback>(1).onFailure(stubError)
+            Unit
+        }.whenever(mockFlagsClient).setEvaluationContext(eq(context), any())
+
+        // When / Then
+        assertThatThrownBy {
+            runBlocking { mockFlagsClient.setEvaluationContextSuspend(context) }
+        }.isInstanceOf(CancellationException::class.java)
     }
 }

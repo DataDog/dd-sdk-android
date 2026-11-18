@@ -67,7 +67,6 @@ data class com.datadog.android.profiling.model.ProfileEvent
       fun fromJson(kotlin.String): Error
       fun fromJsonObject(com.google.gson.JsonObject): Error
   enum Family
-    constructor(kotlin.String)
     - ANDROID
     - CHROME
     - IOS
@@ -81,7 +80,6 @@ data class com.datadog.android.profiling.model.RumMetadataEvent
     fun fromJson(kotlin.String): RumMetadataEvent
     fun fromJsonObject(com.google.gson.JsonObject): RumMetadataEvent
   enum Type
-    constructor(kotlin.String)
     - VITAL
     - LONG_TASK
     - ERROR

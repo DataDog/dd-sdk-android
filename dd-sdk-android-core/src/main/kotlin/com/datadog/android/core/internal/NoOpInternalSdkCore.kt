@@ -208,6 +208,8 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override fun getDatadogContext(withFeatureContexts: Set<String>): DatadogContext? = null
 
+    override fun getDatadogContextFuture(withFeatureContexts: Set<String>): Future<DatadogContext?>? = null
+
     override fun flushContextThread() {}
 
     override fun flushStoredData() {}

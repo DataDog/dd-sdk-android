@@ -13,12 +13,10 @@ import com.datadog.android.internal.tests.elmyr.ProfilingAnrDetectedEventForgery
 import com.datadog.android.internal.tests.elmyr.ProfilingRumContextFactory
 import com.datadog.android.internal.tests.elmyr.ProfilingThreadDumpForgeryFactory
 import com.datadog.android.internal.tests.elmyr.RumContextForgeryFactory
-import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
 
-@OptIn(ExperimentalProfilingApi::class)
 class Configurator : BaseConfigurator() {
 
     override fun configure(forge: Forge) {

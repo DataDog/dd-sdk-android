@@ -49,6 +49,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.AutoClose
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -96,6 +97,7 @@ class ApolloIntegrationTest {
     @StringForgery
     lateinit var fakeViewName: String
 
+    @AutoClose
     private lateinit var stubSdkCore: StubSDKCore
     private lateinit var mockServer: MockWebServer
     private lateinit var apolloClient: ApolloClient

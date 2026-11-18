@@ -9,6 +9,7 @@ package com.datadog.android.flags.openfeature.internal.adapters
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionDetails
+import com.datadog.android.flags.openfeature.internal.exposure.ExposureMetadata
 import dev.openfeature.kotlin.sdk.Builder
 import dev.openfeature.kotlin.sdk.EvaluationMetadata
 import dev.openfeature.kotlin.sdk.ProviderEvaluation
@@ -19,17 +20,24 @@ import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 /**
  * Converts an OpenFeature [EvaluationContext] to a Datadog [EvaluationContext].
  */
-internal fun OpenFeatureEvaluationContext.toDatadogEvaluationContext(): EvaluationContext {
+internal fun OpenFeatureEvaluationContext.toDatadogEvaluationContext(
+    experimentationOptOutEnabled: Boolean = false
+): EvaluationContext {
     val targetingKey = this.getTargetingKey()
 
     val stringAttributes = this.asMap()
-        .mapValues { (_, value) ->
-            when (value) {
-                is Value.String -> value.asString() ?: value.toString()
-                is Value.Boolean -> value.asBoolean()?.toString() ?: value.toString()
-                is Value.Integer -> value.asInteger()?.toString() ?: value.toString()
-                is Value.Double -> value.asDouble()?.toString() ?: value.toString()
-                else -> value.toString()
+        .mapValues { (key, value) ->
+            if (experimentationOptOutEnabled && key == "dd_experimentation_opt_out_at" && value !is Value.String) {
+                // Preserve invalid typed input as an invalid timestamp for native validation.
+                ""
+            } else {
+                when (value) {
+                    is Value.String -> value.asString() ?: value.toString()
+                    is Value.Boolean -> value.asBoolean()?.toString() ?: value.toString()
+                    is Value.Integer -> value.asInteger()?.toString() ?: value.toString()
+                    is Value.Double -> value.asDouble()?.toString() ?: value.toString()
+                    else -> value.toString()
+                }
             }
         }
 
@@ -51,7 +59,7 @@ internal fun <T : Any> ResolutionDetails<T>.toProviderEvaluation(): ProviderEval
     metadata = this.flagMetadata.toEvaluationMetadata()
 )
 
-private fun Map<String, Any>.toEvaluationMetadata(): EvaluationMetadata {
+internal fun Map<String, Any>.toEvaluationMetadata(): EvaluationMetadata {
     val builder = Builder()
     forEach { (key, value) ->
         when (value) {
@@ -66,9 +74,26 @@ private fun Map<String, Any>.toEvaluationMetadata(): EvaluationMetadata {
 }
 
 /**
+ * Returns the `HOOK` features in [ResolutionDetails.flagMetadata], keyed by feature key.
+ */
+internal fun ResolutionDetails<*>.hookFeatures(): Map<String, Any> {
+    if (flagMetadata.keys.none { it.startsWith(ExposureMetadata.FEATURE_PREFIX) }) return emptyMap()
+    val features = mutableMapOf<String, Any>()
+    flagMetadata.forEach { (key, value) ->
+        if (key.startsWith(ExposureMetadata.FEATURE_PREFIX)) {
+            features[key.removePrefix(ExposureMetadata.FEATURE_PREFIX)] = value
+        }
+    }
+    return features
+}
+
+/**
  * Converts a Datadog [ErrorCode] to an OpenFeature [ErrorCode].
  */
 internal fun ErrorCode.toOpenFeatureErrorCode(): OpenFeatureErrorCode = when (this) {
+    ErrorCode.INVALID_CONTEXT ->
+        OpenFeatureErrorCode.INVALID_CONTEXT
+
     ErrorCode.PROVIDER_NOT_READY ->
         OpenFeatureErrorCode.PROVIDER_NOT_READY
 

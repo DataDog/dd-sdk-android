@@ -7,12 +7,11 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    // Apply ktlint before AGP: built-in Kotlin otherwise causes duplicate ktlint tasks.
+    id("ktlint")
+
     // Build
     id("com.android.library")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    kotlin("android")
     id("datadogBuildConfig")
 
     // Analysis tools
@@ -22,21 +21,37 @@ plugins {
     id("de.mobilej.unmock")
 }
 
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.flags.integration"
+    testBuildType = "release"
+    defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
 }
 
 dependencies {
     implementation(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
-    implementation(project(":features:dd-sdk-android-flags"))
+    val flagsArtifactDirectory = providers.gradleProperty("flagsArtifactDirectory").orNull
+    if (flagsArtifactDirectory == null) {
+        implementation(project(":features:dd-sdk-android-flags"))
+        implementation(project(":features:dd-sdk-android-flags-openfeature"))
+    } else {
+        implementation(files("$flagsArtifactDirectory/dd-sdk-android-flags-release.aar"))
+        implementation(files("$flagsArtifactDirectory/dd-sdk-android-flags-openfeature-release.aar"))
+    }
+    androidTestImplementation(libs.openFeatureKotlinSdk)
+    androidTestImplementation(libs.coroutinesCore)
+    androidTestImplementation(libs.androidXTestCore)
+    androidTestImplementation(libs.androidXTestRunner)
+    androidTestImplementation(libs.androidXTestJUnitExt)
+    androidTestImplementation(libs.okHttpMock)
+    testImplementation(libs.openFeatureKotlinSdk)
+    testImplementation(libs.coroutinesTest)
     implementation(libs.kotlinRuntime)
 
     // Testing
-    testImplementation(project(":features:dd-sdk-android-flags-openfeature"))
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -48,6 +63,7 @@ dependencies {
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(project(":reliability:stub-core"))
+    testImplementation(libs.coroutinesTest)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttp)

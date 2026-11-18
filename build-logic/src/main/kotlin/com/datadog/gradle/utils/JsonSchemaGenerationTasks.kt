@@ -99,7 +99,7 @@ fun Project.createJsonModelsGenerationTask(
                 " the generated sources cannot be wired to any variant."
         )
     androidComponents.onVariants { variant ->
-        variant.sources.java?.addGeneratedSourceDirectory(
+        variant.sources.kotlin?.addGeneratedSourceDirectory(
             task,
             GenerateJsonSchemaTask::destinationGenDirectory
         )

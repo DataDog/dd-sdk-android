@@ -7,12 +7,11 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    // Apply ktlint before AGP: built-in Kotlin otherwise causes duplicate ktlint tasks.
+    id("ktlint")
+
     // Build
     id("com.android.library")
-    // Applied before `kotlin("android")` on purpose (not under "Analysis tools"): ktlint-gradle
-    // 14.2.0 registers its Android source-set tasks twice when it comes after the Kotlin plugin.
-    id("ktlint")
-    kotlin("android")
     id("datadogBuildConfig")
 
     // Publish
@@ -36,8 +35,6 @@ plugins {
     id("test-pyramid-api-surface")
 }
 
-// TODO RUM-18189 Support new AGP DSL
-@Suppress("DEPRECATION")
 android {
     namespace = "com.datadog.android.fresco"
 }
@@ -45,8 +42,9 @@ android {
 dependencies {
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(libs.kotlinRuntime)
-    implementation(libs.okHttp)
-    implementation(libs.bundles.fresco)
+    implementation(libs.frescoImagePipelineBase)
+    // The documented Fresco setup uses the OkHttp image pipeline at runtime.
+    runtimeOnly(libs.bundles.fresco)
 
     testImplementation(project(":tools:unit")) {
         attributes {
@@ -56,6 +54,7 @@ dependencies {
             )
         }
     }
+    testImplementation(libs.frescoImagePipeline)
     testImplementation(libs.okHttpMock)
 }
 

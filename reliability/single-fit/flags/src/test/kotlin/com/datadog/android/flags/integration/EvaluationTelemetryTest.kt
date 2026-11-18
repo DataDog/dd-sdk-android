@@ -15,6 +15,7 @@ import com.datadog.android.flags.integration.tests.utils.FlagsTelemetryTestFixtu
 import com.datadog.android.flags.integration.tests.utils.FlagsTelemetryTestFixture.Companion.CONTROL
 import com.datadog.android.flags.integration.tests.utils.MainLooperTestConfiguration
 import com.datadog.android.flags.integration.tests.utils.bodyAsJson
+import com.datadog.android.flags.integration.tests.utils.getBooleanEvaluationWithHooks
 import com.datadog.android.flags.integration.tests.utils.httpResponse
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.EvaluationContext
@@ -43,6 +44,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import java.security.MessageDigest
@@ -67,17 +69,19 @@ internal class EvaluationTelemetryTest {
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = [true, false])
+    @CsvSource("true,true", "true,false", "false,true", "false,false")
     fun `M preserve telemetry policy W resolve() {encoded assignments and missing flag}`(
         optedOut: Boolean,
+        consent: Boolean,
         @StringForgery fakeTargetingKey: String,
         @StringForgery fakeFlagKey: String,
         @StringForgery(regex = "[0-9a-f]{32}") fakeSalt: String,
         @BoolForgery fakeValue: Boolean
     ) {
         // Given
-        val response = encodedResponse(fakeFlagKey, fakeValue, fakeSalt)
-        fixture.stubCore.stubNetworkResponses { httpResponse(it, body = response) }
+        val response = JSONObject(encodedResponse(fakeFlagKey, fakeValue, fakeSalt))
+        response.getJSONObject("data").getJSONObject("attributes").put("observeFullEvaluationData", consent)
+        fixture.stubCore.stubNetworkResponses { httpResponse(it, body = response.toString()) }
         val client = newClient()
         client.setEvaluationContext(EvaluationContext(fakeTargetingKey))
         client.setEvaluationTelemetryOptOut(optedOut)
@@ -89,6 +93,16 @@ internal class EvaluationTelemetryTest {
 
         // Then
         assertThat(assigned.value).isEqualTo(fakeValue)
+        assertThat(assigned.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", consent)
+        assertThat(missing.flagMetadata).containsEntry("__dd_observe_full_evaluation_data", consent)
+        val evaluationEvents = fixture.events(Feature.FLAGS_EVALUATIONS_FEATURE_NAME)
+        if (!optedOut) {
+            assertThat(evaluationEvents.map { it["targeting_key"].asString }).allMatch {
+                if (consent) it == fakeTargetingKey else it.startsWith("sha256_") && it != fakeTargetingKey
+            }
+            assertThat(evaluationEvents.single { it.has("error") }["error"].asJsonObject["message"].asString)
+                .isEqualTo("FLAG_NOT_FOUND")
+        }
         assertThat(missing.errorCode).isEqualTo(ErrorCode.FLAG_NOT_FOUND)
         assertThat(fixture.evaluationCount()).isEqualTo(if (optedOut) 0 else 2)
         assertThat(fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).hasSize(if (optedOut) 0 else 1)
@@ -125,7 +139,7 @@ internal class EvaluationTelemetryTest {
         try {
             // When
             if (initializing) provider.initialize(interleaved) else provider.onContextSet(original, interleaved)
-            val result = provider.getBooleanEvaluation("enabled", false, null)
+            val result = provider.getBooleanEvaluationWithHooks("enabled", false)
             fixture.flush()
 
             // Then
@@ -156,11 +170,11 @@ internal class EvaluationTelemetryTest {
         }
 
         // When
-        val previous = provider.getBooleanEvaluation("enabled", false, null)
+        val previous = provider.getBooleanEvaluationWithHooks("enabled", false)
         val rumWhilePending = fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME).size
         fixture.completeNextAssignment()
         pending.join()
-        val updated = provider.getBooleanEvaluation("enabled", false, null)
+        val updated = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.flush()
 
         // Then
@@ -183,7 +197,7 @@ internal class EvaluationTelemetryTest {
         }
 
         // When
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.flush()
 
         // Then
@@ -208,7 +222,7 @@ internal class EvaluationTelemetryTest {
         }
 
         // When
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.completeNextAssignment()
         fixture.completeNextAssignment()
         first.join()
@@ -231,7 +245,7 @@ internal class EvaluationTelemetryTest {
         provider.initialize(context(Value.Boolean(true)))
 
         // When
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.flush()
 
         // Then
@@ -255,7 +269,7 @@ internal class EvaluationTelemetryTest {
         provider.initialize(context(fakeControl))
 
         // When
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.flush()
 
         // Then
@@ -435,7 +449,7 @@ internal class EvaluationTelemetryTest {
         val refresh = runCatching { provider.onContextSet(original, context(Value.Boolean(optedOut))) }
 
         // When
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.flush()
 
         // Then
@@ -461,7 +475,7 @@ internal class EvaluationTelemetryTest {
 
         // When
         val wasPending = !pending.isCompleted
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.completeNextAssignment()
         pending.join()
         fixture.flush()
@@ -488,7 +502,7 @@ internal class EvaluationTelemetryTest {
 
         // When
         val latestWasPending = !newer.isCompleted
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.completeNextAssignment()
         newer.join()
         fixture.flush()
@@ -585,11 +599,11 @@ internal class EvaluationTelemetryTest {
         val provider = newClient().asOpenFeatureProvider()
         val original = context(Value.Boolean(false))
         provider.initialize(original)
-        provider.getBooleanEvaluation("enabled", false, null)
+        provider.getBooleanEvaluationWithHooks("enabled", false)
 
         // When
         provider.onContextSet(original, context(Value.Boolean(true)))
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.flush()
 
         // Then
@@ -606,12 +620,12 @@ internal class EvaluationTelemetryTest {
         val original = context(Value.Boolean(false))
         fixture.assignments(enabled = false)
         provider.initialize(original)
-        val previous = provider.getBooleanEvaluation("enabled", true, null)
+        val previous = provider.getBooleanEvaluationWithHooks("enabled", true)
         fixture.assignments(enabled = true)
 
         // When
         provider.onContextSet(original, context(Value.Boolean(true)))
-        val result = provider.getBooleanEvaluation("enabled", false, null)
+        val result = provider.getBooleanEvaluationWithHooks("enabled", false)
         fixture.flush()
 
         // Then
@@ -681,7 +695,8 @@ internal class EvaluationTelemetryTest {
             listOf(
                 Arguments.of("missing", false, ErrorCode.FLAG_NOT_FOUND, optedOut),
                 Arguments.of("enabled", "fallback", ErrorCode.TYPE_MISMATCH, optedOut),
-                Arguments.of("malformed", false, ErrorCode.PARSE_ERROR, optedOut)
+                Arguments.of("malformed", false, ErrorCode.PARSE_ERROR, optedOut),
+                Arguments.of("number", 0, ErrorCode.TYPE_MISMATCH, optedOut)
             )
         }
 

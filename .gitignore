@@ -10,6 +10,7 @@ captures/
 # Gradle files
 .gradle/
 build/
+**/workspace/build-cache/
 
 # CMake
 .cxx/
@@ -38,3 +39,8 @@ gh_token
 
 # Claude
 .claude/worktrees/
+
+ci/scripts/__pycache__/
+
+# Vitrine
+.vitrine/

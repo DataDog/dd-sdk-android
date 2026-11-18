@@ -37,8 +37,7 @@ class AarMetadataPlugin : Plugin<Project> {
 
         target.tasks
             .register<CheckAarMetadataInfoTask>(TASK_CHECK_AAR_METADATA) {
-                this.aarMetadataFile.set(aarMetadataFile)
-                dependsOn(generateAarMetadataTask)
+                this.aarMetadataFile.set(generateAarMetadataTask.flatMap { it.aarMetadataFile })
             }
 
         target.extensions.configure<LibraryAndroidComponentsExtension>("androidComponents") {

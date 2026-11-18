@@ -6,13 +6,14 @@
 
 package com.datadog.android.profiling
 
+import android.os.Build
 import androidx.annotation.FloatRange
+import androidx.annotation.RequiresApi
 
 /**
  * Describes configuration to be used for the Profiling feature.
  */
 @ExposedCopyVisibility
-@ExperimentalProfilingApi
 data class ProfilingConfiguration internal constructor(
     internal val customEndpointUrl: String?,
     internal val applicationLaunchSampleRate: Float,
@@ -76,6 +77,7 @@ data class ProfilingConfiguration internal constructor(
          *
          * @param enabled `true` to collect a profile on ANR (default), `false` to disable it.
          */
+        @RequiresApi(Build.VERSION_CODES.BAKLAVA)
         fun enableAnrTrigger(enabled: Boolean): Builder {
             this.anrTriggerEnabled = enabled
             return this

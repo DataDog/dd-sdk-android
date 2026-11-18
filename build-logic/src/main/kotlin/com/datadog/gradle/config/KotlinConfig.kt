@@ -59,6 +59,11 @@ internal fun Project.kotlinConfig(
             allWarningsAsErrors.set(isCI.map { evaluateWarningsAsErrors && it })
             apiVersion.set(kotlinApiVersion)
             languageVersion.set(kotlinLanguageVersion)
+            if (kotlinLanguageVersion == KotlinVersion.KOTLIN_2_0) {
+                // Kotlin 2.3 deprecates this language level; retain SDK compatibility without
+                // disabling warnings-as-errors for source diagnostics.
+                freeCompilerArgs.add("-Xsuppress-version-warnings")
+            }
         }
     }
 }

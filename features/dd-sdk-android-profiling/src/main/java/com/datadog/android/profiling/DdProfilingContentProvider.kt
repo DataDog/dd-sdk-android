@@ -27,7 +27,6 @@ import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
  * A [ContentProvider] to start Profiling request as early as possible in the app's
  * lifecycle.
  */
-@OptIn(ExperimentalProfilingApi::class)
 class DdProfilingContentProvider(
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DEFAULT
 ) : ContentProvider() {

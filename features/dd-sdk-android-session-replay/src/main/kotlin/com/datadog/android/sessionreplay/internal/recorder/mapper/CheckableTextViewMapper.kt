@@ -23,7 +23,7 @@ import com.datadog.android.sessionreplay.utils.OPAQUE_ALPHA_VALUE
 import com.datadog.android.sessionreplay.utils.ViewBoundsResolver
 import com.datadog.android.sessionreplay.utils.ViewIdentifierResolver
 
-internal abstract class CheckableTextViewMapper<T>(
+internal abstract class CheckableTextViewMapper<in T>(
     private val textWireframeMapper: TextViewMapper<T>,
     viewIdentifierResolver: ViewIdentifierResolver,
     colorStringFormatter: ColorStringFormatter,

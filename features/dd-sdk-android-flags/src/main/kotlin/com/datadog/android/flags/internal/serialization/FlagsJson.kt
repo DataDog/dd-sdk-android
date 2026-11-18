@@ -10,6 +10,7 @@ import com.datadog.android.flags.internal.model.Assignment
 import com.datadog.android.flags.internal.model.FlagKeyObfuscation
 import com.datadog.android.flags.internal.model.FlagsState
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.model.SplitFeature
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
@@ -17,6 +18,11 @@ import org.json.JSONObject
 
 /** Generated model adapters, legacy JSON conversions, and encoding validation. */
 internal object FlagsJson {
+    fun readConsent(json: JsonObject): Boolean {
+        val value = json.get(OBSERVE_FULL_EVALUATION_DATA)
+        return value?.isJsonPrimitive == true && value.asJsonPrimitive.isBoolean && value.asBoolean
+    }
+
     @Throws(JsonParseException::class)
     fun readAssignment(json: JsonObject): PrecomputedFlag {
         // Preserve JSONObject's string conversion, including JSON variants and explicit null.
@@ -33,6 +39,8 @@ internal object FlagsJson {
         // Existing readers ignore null and nonnumeric serial IDs.
         val serialId = json.get("serialId")
         if (serialId?.isJsonPrimitive != true || !serialId.asJsonPrimitive.isNumber) json.remove("serialId")
+        val features = SplitFeaturesJson.normalize(json.get(FEATURES))
+        if (features == null) json.remove(FEATURES) else json.add(FEATURES, features)
 
         val assignment = Assignment.fromJsonObject(json)
 
@@ -46,7 +54,10 @@ internal object FlagsJson {
             variationKey = assignment.variationKey,
             extraLogging = extraLogging,
             reason = assignment.reason,
-            serialId = assignment.serialId
+            serialId = assignment.serialId,
+            features = assignment.features.orEmpty().map { feature ->
+                SplitFeature(feature.key, SplitFeaturesJson.value(feature.value), feature.destinations)
+            }
         )
     }
 
@@ -58,7 +69,10 @@ internal object FlagsJson {
         variationKey = flag.variationKey,
         extraLogging = Assignment.ExtraLogging.fromJson(flag.extraLogging.toString()),
         reason = flag.reason,
-        serialId = flag.serialId
+        serialId = flag.serialId,
+        features = flag.features.takeIf { it.isNotEmpty() }?.map { feature ->
+            Assignment.Feature(feature.key, SplitFeaturesJson.modelValue(feature.value), feature.destinations)
+        }
     )
 
     @Throws(JsonParseException::class)
@@ -72,6 +86,7 @@ internal object FlagsJson {
             @Suppress("ThrowingInternalException") // Caught by the cache deserializer.
             throw JsonParseException("Invalid persisted flag timestamp")
         }
+        json.addProperty(OBSERVE_FULL_EVALUATION_DATA, readConsent(json))
         return FlagsState.fromJsonObject(json)
     }
 
@@ -124,4 +139,6 @@ internal object FlagsJson {
 
     private val STRING_FIELDS = listOf("variationType", "variationValue", "allocationKey", "variationKey", "reason")
     private const val DIGEST_HEX_LENGTH = 64
+    private const val OBSERVE_FULL_EVALUATION_DATA = "observeFullEvaluationData"
+    private const val FEATURES = "features"
 }

@@ -6,7 +6,6 @@
 
 package com.datadog.android.profiling.internal
 
-import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.ProfilingConfiguration.Companion.DEFAULT_CONTINUOUS_SAMPLE_RATE
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -22,7 +21,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
-@OptIn(ExperimentalProfilingApi::class)
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)

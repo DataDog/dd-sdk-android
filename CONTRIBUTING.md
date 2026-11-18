@@ -71,6 +71,7 @@ This project hosts the following modules:
     - `tools/unit`: a utility library with code to help writing unit tests;
   - `sample/***`: a few sample applications showcasing how to use the library features in production code;
     - `sample/kotlin`: a sample mobile application;
+    - `sample/kotlin/sqldelight`: the SQLDelight 1.x sample database, generated in a JVM module;
     - `sample/vendor-lib`: a sample Android library, to showcase vendors using Datadog in a host app also using Datadog;
     - `sample/wear`: a sample Wear OS application;
     - `sample/automotive`: a sample Automotive OS application;
@@ -79,10 +80,33 @@ This project hosts the following modules:
 
 ### Building the SDK
 
+We use newer Kotlin build tooling while retaining Kotlin 2.0 language/API settings
+and a compatible standard library so customers using Kotlin 2.0 can consume the SDK.
+Keep the SDK's compatibility settings separate from build-tool upgrades. Android
+modules use AGP's built-in Kotlin support; do not apply `org.jetbrains.kotlin.android`
+to them.
+
 You can build the SDK using the following Gradle command:
 
 ```shell script
 ./gradlew assembleLibraries
+```
+
+### Reviewing dependency requirements
+
+A module's `transitiveDependencies` report lists external artifacts on its
+release compile and runtime classpaths. Check other SDK modules' reports for
+their dependencies. Entries show the resolved version, classpath, and any
+declared `minCompileSdk`.
+
+When changing a dependency, compare the consumer's resolved compile and runtime
+classpaths and check the highest declared `minCompileSdk` across both. Use
+`runtimeOnly` for dependencies needed solely at runtime.
+
+Regenerate reports after dependency or generator changes:
+
+```shell
+./gradlew generateTransitiveDependenciesList
 ```
 
 ### Running the tests
@@ -180,6 +204,27 @@ requests must:
 Make sure that your code is clean and readable, that your commits are small and
 atomic, with a proper commit message. We tend to use 
 [gitmoji](https://gitmoji.carloscuesta.me/), but this is not mandatory.
+
+### Handoff to human review
+
+Before applying the `ready-for-human-review` label, verify that at least one
+agentic or bot review has completed against the current PR head and that no
+agentic reviews remain queued or running. No feedback does not prove that a
+review occurred, and a review of an older revision does not qualify. If an
+expected review has not appeared, eligibility remains unconfirmed.
+
+Address all agentic review feedback or explain with evidence why a suggestion
+does not apply. Reply to each feedback item and resolve its associated review
+thread, including outdated threads.
+Check the latest PR revision, feedback, and thread status before applying the label;
+local fixes, draft replies, or a clean bot summary alone are not sufficient.
+
+Apply the existing label once these conditions are met so reviewers know it is
+their turn. If you do not have permission to label the PR, ask a maintainer to
+apply it. Do not resolve un-addressed feedback solely to qualify for the label.
+
+The label indicates that agentic feedback has been addressed. It does not replace
+human approval or required CI and merge checks.
 
 ## Coding Conventions
 

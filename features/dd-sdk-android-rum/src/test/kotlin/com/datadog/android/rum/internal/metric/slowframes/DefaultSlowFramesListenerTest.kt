@@ -443,7 +443,8 @@ internal class DefaultSlowFramesListenerTest {
         val expectedFreezeFramesRate = longTaskDuration.toDouble() / viewDurationNs * 3600
         val testedListener = stubSlowFramesListener(
             SlowFramesConfiguration(
-                freezeDurationThresholdNs = freezeDurationThresholdNs
+                freezeDurationThresholdNs = freezeDurationThresholdNs,
+                minViewLifetimeThresholdNs = 0
             )
         ).apply {
             onViewCreated(viewId, viewStartedAtTimestampNs)

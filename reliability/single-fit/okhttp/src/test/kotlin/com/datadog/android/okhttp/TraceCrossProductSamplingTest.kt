@@ -9,8 +9,8 @@ package com.datadog.android.okhttp
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.internal.sampling.DeterministicSampling
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
@@ -22,8 +22,6 @@ import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.TraceContextInjection
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants.PrioritySampling
-import com.datadog.android.utils.withRumContext
-import com.datadog.tools.unit.completedFutureMock
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.getStaticValue
 import fr.xgouchet.elmyr.Forge
@@ -38,14 +36,13 @@ import okhttp3.mockwebserver.RecordedRequest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.AutoClose
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
 
 /**
@@ -69,6 +66,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 class TraceCrossProductSamplingTest {
 
+    @AutoClose
     private lateinit var stubSdkCore: StubSDKCore
     private lateinit var mockServer: MockWebServer
 
@@ -284,20 +282,17 @@ class TraceCrossProductSamplingTest {
 
     /**
      * Registers a stubbed RUM feature on [stubSdkCore] with the given session identifier and
-     * sample rate. Uses [SdkFeatureMock] so that `RumContextPropagator` can pull a non-null
-     * `Future<DatadogContext?>` from it.
+     * sample rate.
      */
     private fun stubRumSessionContext(sessionIdToken: Long, sessionSampleRate: Float) {
         val sessionId = sessionIdToFakeUuid(sessionIdToken)
-        val datadogContext = stubSdkCore.getDatadogContext().withRumContext(
-            fakeRumContext.copy(sessionId = sessionId, sessionSampleRate = sessionSampleRate)
-        )
-        val rumFeature = mock<Feature> {
-            on { name } doReturn Feature.RUM_FEATURE_NAME
-        }
-        stubSdkCore.stubFeatureScope(
-            rumFeature,
-            SdkFeatureMock.create(completedFutureMock(datadogContext))
+        stubSdkCore.stubFeature(Feature.RUM_FEATURE_NAME)
+        stubSdkCore.stubFeatureContext(
+            Feature.RUM_FEATURE_NAME,
+            mapOf(
+                FeatureContextKeys.RUM_CONTEXT to
+                    fakeRumContext.copy(sessionId = sessionId, sessionSampleRate = sessionSampleRate)
+            )
         )
     }
 

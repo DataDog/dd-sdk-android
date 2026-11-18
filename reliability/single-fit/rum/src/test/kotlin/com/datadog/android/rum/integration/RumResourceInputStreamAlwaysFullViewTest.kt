@@ -27,6 +27,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AutoClose
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.extension.ExtendWith
@@ -49,6 +50,7 @@ import java.io.InputStream
 @MockitoSettings(strictness = Strictness.LENIENT)
 class RumResourceInputStreamAlwaysFullViewTest {
 
+    @AutoClose
     private lateinit var stubSdkCore: StubSDKCore
 
     @StringForgery

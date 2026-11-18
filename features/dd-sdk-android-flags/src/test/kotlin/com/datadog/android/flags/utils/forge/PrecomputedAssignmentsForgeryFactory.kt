@@ -12,7 +12,11 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class PrecomputedAssignmentsForgeryFactory : ForgeryFactory<PrecomputedAssignments> {
-    override fun getForgery(forge: Forge): PrecomputedAssignments = PrecomputedAssignments(
-        flags = forge.aMap { anAlphabeticalString() to getForgery<PrecomputedFlag>() }
-    )
+    override fun getForgery(forge: Forge): PrecomputedAssignments {
+        val consent = forge.aBool()
+        val flags = forge.aList {
+            anAlphabeticalString() to getForgery<PrecomputedFlag>().copy(observeFullEvaluationData = consent)
+        }.toMap()
+        return PrecomputedAssignments(flags, observeFullEvaluationData = consent)
+    }
 }

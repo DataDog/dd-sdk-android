@@ -11,7 +11,6 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
-import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.rum.RumContext
 import com.datadog.android.log.LogAttributes
@@ -43,9 +42,11 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.isNull
@@ -55,6 +56,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import org.mockito.verification.VerificationMode
 import java.util.concurrent.Future
@@ -68,6 +70,7 @@ import java.util.concurrent.TimeUnit
 @ForgeConfiguration(Configurator::class)
 class RumContextPropagatorTest {
 
+    @Mock
     private lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock
@@ -96,7 +99,6 @@ class RumContextPropagatorTest {
     fun `set up`(forge: Forge) {
         fakeAccountInfo = forge.aNullable { AccountInfo(id = forge.aString()) }
         fakeUserInfo = UserInfo(id = forge.aString())
-        mockRumFeatureScope = SdkFeatureMock.create()
         fakeDatadogContext = forge.aDatadogContextWithRumContext(fakeRumContext, fakeAccountInfo, fakeUserInfo)
     }
 
@@ -263,7 +265,7 @@ class RumContextPropagatorTest {
     fun `M withTag(DATADOG_INITIAL_CONTEXT) W injectRumContextFeature`() {
         // Given
         val futureMock = completedFutureMock(fakeDatadogContext)
-        mockRumFeatureScope = SdkFeatureMock.create(futureMock)
+        whenever(mockSdkCore.getDatadogContextFuture(any())) doReturn futureMock
 
         // When
         mockSpanBuilder.injectRumContext(testedRumContextPropagator)

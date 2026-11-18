@@ -7,9 +7,7 @@
 package com.datadog.benchmark.sample.ui.rumauto.screens.episodedetails
 
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
@@ -17,17 +15,17 @@ import androidx.recyclerview.widget.GridLayoutManager
 import com.datadog.benchmark.sample.activities.scenarios.benchmarkActivityComponent
 import com.datadog.benchmark.sample.navigation.args
 import com.datadog.benchmark.sample.network.rickandmorty.models.Episode
-import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.CharacterItem
+import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.CharacterAdapter
 import com.datadog.benchmark.sample.ui.rumauto.screens.episodedetails.di.DaggerRumAutoEpisodeDetailsComponent
 import com.datadog.benchmark.sample.ui.rumauto.screens.episodedetails.di.RumAutoEpisodeDetailsComponent
 import com.datadog.benchmark.sample.utils.componentHolderViewModel
-import com.datadog.benchmark.sample.utils.recycler.applyNewItems
+import com.datadog.sample.benchmark.R
 import com.datadog.sample.benchmark.databinding.FragmentRumAutoEpisodeDetailsBinding
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
-internal class RumAutoEpisodeDetailsFragment : Fragment() {
+internal class RumAutoEpisodeDetailsFragment : Fragment(R.layout.fragment_rum_auto_episode_details) {
 
     private val episode: Episode by args()
 
@@ -40,22 +38,20 @@ internal class RumAutoEpisodeDetailsFragment : Fragment() {
     }
 
     @Inject
-    internal lateinit var adapter: RumAutoEpisodeDetailsAdapter
-
-    @Inject
     internal lateinit var viewModel: RumAutoEpisodeDetailsViewModel
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         component.inject(this)
 
-        val binding: FragmentRumAutoEpisodeDetailsBinding = FragmentRumAutoEpisodeDetailsBinding.inflate(
-            inflater,
-            container,
-            false
-        )
+        val binding = FragmentRumAutoEpisodeDetailsBinding.bind(view)
 
-        @Suppress("MagicNumber")
-        binding.characterDetailsRecycler.layoutManager = GridLayoutManager(requireContext(), 3)
+        val adapter = CharacterAdapter {
+            viewModel.dispatch(RumAutoEpisodeDetailsAction.OnCharacterClicked(it))
+        }
+
+        binding.characterDetailsRecycler.layoutManager =
+            GridLayoutManager(requireContext(), CHARACTER_GRID_COLUMN_COUNT)
         binding.characterDetailsRecycler.adapter = adapter
 
         viewModel.state
@@ -69,17 +65,14 @@ internal class RumAutoEpisodeDetailsFragment : Fragment() {
                     .charactersLoadingTask
                     .optionalResult
                     ?.optionalResult
-                    ?.map { character ->
-                        CharacterItem(
-                            character = character,
-                            key = character.id.toString()
-                        )
-                    } ?: emptyList()
+                    ?: emptyList()
 
-                adapter.applyNewItems(characters)
+                adapter.submitList(characters)
             }
-            .launchIn(lifecycleScope)
+            .launchIn(viewLifecycleOwner.lifecycleScope)
+    }
 
-        return binding.root
+    private companion object {
+        const val CHARACTER_GRID_COLUMN_COUNT = 3
     }
 }

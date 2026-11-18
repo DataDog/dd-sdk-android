@@ -60,8 +60,7 @@ internal class CronetRedirectTracingRequestWrapper(
         val postMethodChangeCode = redirectStatusCode == HttpSpec.StatusCode.MOVED_PERMANENTLY ||
             redirectStatusCode == HttpSpec.StatusCode.FOUND
 
-        return if (seeOtherMethodChangeAllowed || (postMethodChangeCode && originalMethod == HttpSpec.Method.POST)
-        ) {
+        return if (seeOtherMethodChangeAllowed || (postMethodChangeCode && originalMethod == HttpSpec.Method.POST)) {
             HttpSpec.Method.GET
         } else {
             originalMethod

@@ -11,7 +11,6 @@ import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.internal.FeatureContextKeys
 import com.datadog.android.internal.data.SharedPreferencesStorage
 import com.datadog.android.internal.rum.RumSessionConstants
-import com.datadog.android.profiling.ExperimentalProfilingApi
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.profiling.fixtures.ProfilingFeatureTestHandle
 import com.datadog.android.profiling.fixtures.ProfilingStorageFixture
@@ -29,6 +28,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.AutoClose
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -38,7 +38,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
 
-@OptIn(ExperimentalProfilingApi::class)
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
@@ -48,6 +47,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ProfilingRumSessionBootstrapTest {
 
+    @AutoClose
     private lateinit var stubSdkCore: StubSDKCore
 
     @BeforeEach

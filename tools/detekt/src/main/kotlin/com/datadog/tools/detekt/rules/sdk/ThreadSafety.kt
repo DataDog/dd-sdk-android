@@ -86,7 +86,7 @@ class ThreadSafety(
         val resolvedCall = analyze(expression) {
             expression.resolveToCall()?.successfulFunctionCallOrNull()?.let { call ->
                 ResolvedThreadCall(
-                    calleeGroup = call.partiallyAppliedSymbol.signature.symbol.extractMethodGroup(),
+                    calleeGroup = call.signature.symbol.extractMethodGroup(),
                     callFullNames = resolveCallFullNames(call)
                 )
             }
@@ -162,8 +162,8 @@ class ThreadSafety(
     }
 
     private fun KaSession.resolveCallFullNames(call: KaFunctionCall<*>): Set<String> {
-        val callableId = call.partiallyAppliedSymbol.signature.symbol.callableId ?: return emptySet()
-        val hostType = call.partiallyAppliedSymbol.dispatchReceiver
+        val callableId = call.signature.symbol.callableId ?: return emptySet()
+        val hostType = call.dispatchReceiver
             ?.type
 
         // An inherited member is named after the receiver's class (e.g. `LinearLayout.post` rather than `View.post`)

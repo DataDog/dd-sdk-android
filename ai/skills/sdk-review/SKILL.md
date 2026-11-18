@@ -101,6 +101,8 @@ Build a working list of **candidate findings**. Aim for **at least 5 candidates*
 
 In parallel, run your own built-in code review (e.g. the `code-review` skill in Claude Code, or `/review` in Codex) on the same diff. Merge its findings into the candidate list, dropping duplicates.
 
+Verify every candidate against the code before keeping it, including findings from other review bots on the PR. Common false positives: ABI breaks for declarations customers can't reach, "a Kotlin `List` can be cast to `MutableList`" as a reason to wrap collections, and treating an existing SDK-owned call site as a precedent for a customer-code boundary.
+
 Check every changed file against the following categories. Findings may belong to multiple categories; record the most specific one.
 
 ### 2.1 UI / hot-path allocations and work
@@ -125,7 +127,9 @@ This SDK is published as a library. **Breaking binary compatibility forces downs
 
 Models generated from JSON schemas (see Generated Models in `AGENTS.md`) are an exception: adding a new property changes their constructor signature, and this is expected — do not flag it.
 
-Classes inside `internal` packages (commonly `…/internal/…`) or annotated `@InternalApi` / `@RestrictTo(LIBRARY_GROUP)` are **not** public API — do not flag them.
+Classes inside `internal` packages (commonly `…/internal/…`) or annotated `@InternalApi` / `@RestrictTo(LIBRARY_GROUP)` are **not** public API — do not flag them. The same goes for public declarations that customers can't reach from any public entry point (e.g. generated models that only appear in `apiSurface` as declarations, with no public signature referencing them): removing them or making them `internal` is not a breaking change worth keeping them for.
+
+Also flag public API shape problems listed under Public API in `AGENTS.md`, notably `Collections.unmodifiableList(...)` returned to customers (it surfaces as a `java.util.List` whose mutators throw) and public constructors on types the SDK creates for customers.
 
 ### 2.3 Multithreading correctness
 
@@ -138,6 +142,7 @@ Flag potential deadlocks, races, and visibility bugs:
 - Callbacks fired while holding a lock that may re-enter the same lock (lock re-entrance via listener graph).
 - Coroutine code that assumes a specific dispatcher without `withContext`, or switches context while holding a non-reentrant lock.
 - New `Thread`s or executors where an existing one could be reused (e.g. `contextExecutorService` or `persistenceExecutorService` in `CoreFeature`, via `submitSafe`/`executeSafe` from `ConcurrencyExt.kt`).
+- State set asynchronously and read synchronously elsewhere (a race at startup), where a synchronous read of immutable state would do.
 
 ### 2.4 Redundant or wrong synchronization
 
@@ -160,10 +165,22 @@ The SDK must never stall the host app's UI thread. Flag:
 - `Future.get`, `CountDownLatch.await`, `Object.wait`, `Lock.lock` with known long-held critical sections.
 - Heavy CPU work (JSON parse of large payloads, crypto, image decoding, reflection-heavy class scanning) without a documented background dispatcher.
 - Newly added methods on classes historically called from the main thread (check the class's KDoc / existing callers).
+- Non-UI work posted to a main-thread `Handler` (e.g. reusing the `Handler` RUM keeps for lifecycle tracking), and `@MainThread` annotations without a real main-thread requirement.
+- Immutable configuration re-read from the feature context on every call instead of once.
 
-### 2.6 Other defects (open-ended)
+### 2.6 PR scope
 
-Also flag anything else you would catch in a normal review: null-deref risks, incorrect `equals`/`hashCode`, resource leaks (`Cursor`, `InputStream`, `BufferedReader` not closed / no `use {}`), swallowed exceptions, logging of PII, incorrect `when` exhaustiveness, misuse of `apply`/`also`, off-by-one, missing `@Throws`, wrong unit-test assertions, etc.
+Flag changes unrelated to the PR's stated purpose (drive-by refactors, unrelated bug fixes, dependency bumps, formatting churn, build-script cleanups) and suggest a separate PR for each. `AGENTS.md` requires focused PRs; mixed changes are harder to review and to revert.
+
+### 2.7 Schemas, models and build logic
+
+- Edits to schema folders cloned from `rum-events-format` (listed under Generated Models in `AGENTS.md`): the change must be made upstream first.
+- Hand-written JSON parsing or serialization where a JSON schema and a generated model would do, or manual parsing next to a schema that already exists.
+- Build scripts and `build-logic`: eager task APIs where lazy ones exist (`tasks.matching { }` instead of `tasks.named { }` / `configureEach`), dependencies on the Kotlin Gradle Plugin artifact where its API artifact suffices, dependency resolution at configuration time, dependencies declared out of order (main source set first, then test, then test fixtures; see Static Analysis and Compatibility in `AGENTS.md`), and hard-coded worker counts or memory settings without evidence they help.
+
+### 2.8 Other defects (open-ended)
+
+Also flag anything else you would catch in a normal review: null-deref risks, incorrect `equals`/`hashCode`, resource leaks (`Cursor`, `InputStream`, `BufferedReader` not closed / no `use {}`), swallowed exceptions, catching `Error` (`OutOfMemoryError`, `AssertionError`) to continue, logging of PII, non-exhaustive `when` over sealed types or enums (an `else` branch that silently absorbs new subtypes), misuse of `apply`/`also`, off-by-one, missing `@Throws`, wrong unit-test assertions, a new copy of a helper that already exists in the module, time values whose name doesn't state the clock base and unit, cross-platform assumptions about `DatadogContext.sdkVersion` (see Public API in `AGENTS.md`), etc.
 
 Also check that the project's agent docs (`AGENTS.md`, `ai/skills/*`) are still accurate after the change — especially when Gradle tasks, build scripts, or module layout change. Flag any skill or doc that references a renamed, removed, or changed task, command, file, or path.
 
@@ -174,7 +191,7 @@ Do **not** ask the user about each finding individually. Instead, present the fu
 1. Print a **detailed description of every finding** to the terminal, in order. Each finding gets its own numbered section with:
    - **Title** — short, category-tagged, e.g. `[UI hot path] Paint allocated in onDraw`.
    - **Location** — `path/to/File.kt:line` (use the current HEAD line, not the diff index).
-   - **Category** — one of `UI hot path`, `Binary compatibility`, `Concurrency`, `Redundant sync`, `Main-thread blocking`, `Other`.
+   - **Category** — one of `UI hot path`, `Binary compatibility`, `Concurrency`, `Redundant sync`, `Main-thread blocking`, `PR scope`, `Schemas and build`, `Other`.
    - **Explanation** — 3–6 sentences. Explain *what* the problem is, *why* it matters (concrete user-visible impact: dropped frames, crash on update, ANR, data corruption, etc.), and *how* a reader can verify it. Quote the offending snippet.
    - **Suggested fix** — one concrete suggestion.
 

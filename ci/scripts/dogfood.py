@@ -12,32 +12,23 @@ import os
 from argparse import ArgumentParser, Namespace
 from tempfile import TemporaryDirectory
 from typing import Tuple
-from xmlrpc.client import Boolean
 
 import requests
 from git import Repo
 
 TARGET_APP = "app"
-TARGET_DEMO = "demo"
-TARGET_GRADLE_PLUGIN = "gradle-plugin"
 
 REPOSITORIES = {
-    TARGET_APP: "datadog-android",
-    TARGET_DEMO: "shopist-android",
-    TARGET_GRADLE_PLUGIN: "dd-sdk-android-gradle-plugin",
+    TARGET_APP: "ddoghq/datadog-android",
     # Flutter is not needed because it pulls updates instead of being pushed them with the dogfood script.
 }
 
 FILE_PATH = {
     TARGET_APP: os.path.join("gradle", "libs.versions.toml"),
-    TARGET_DEMO: os.path.join("gradle", "libs.versions.toml"),
-    TARGET_GRADLE_PLUGIN: os.path.join("gradle", "libs.versions.toml"),
 }
 
 PREFIX = {
     TARGET_APP: "datadog",
-    TARGET_DEMO: "datadogSdk",
-    TARGET_GRADLE_PLUGIN: "datadogSdk",
 }
 
 
@@ -46,7 +37,7 @@ def parse_arguments(args: list) -> Namespace:
 
     parser.add_argument("-v", "--version", required=True, help="the version of the SDK")
     parser.add_argument("-t", "--target", required=True,
-                        choices=[TARGET_APP, TARGET_DEMO, TARGET_GRADLE_PLUGIN],
+                        choices=[TARGET_APP],
                         help="the target repository")
     parser.add_argument("-d", "--dry-run", required=False, dest="dry_run",
                         help="Don't push changes or create a PR.", action="store_true")
@@ -67,7 +58,7 @@ def github_create_pr(repository: str, branch_name: str, base_name: str, version:
            '"title": "Update Datadog SDK to version ' + version + '", ' \
            '"base":"' + base_name + '", "head":"' + branch_name + '"}'
 
-    url = "https://api.github.com/repos/DataDog/" + repository + "/pulls"
+    url = "https://api.github.com/repos/" + repository + "/pulls"
     response = requests.post(url=url, headers=headers, data=data)
     if response.status_code == 201:
         print("Pull Request created successfully")
@@ -100,7 +91,7 @@ def generate_target_code(target: str, temp_dir_path: str, version: str):
 
 def git_clone_repository(repo_name: str, gh_token: str, temp_dir_path: str) -> Tuple[Repo, str]:
     print("Cloning repository " + repo_name)
-    url = "https://x-access-token:" + gh_token + "@github.com/DataDog/" + repo_name
+    url = "https://x-access-token:" + gh_token + "@github.com/" + repo_name
     repo = Repo.clone_from(url, temp_dir_path)
     base_name = repo.active_branch.name
     return repo, base_name
@@ -112,7 +103,7 @@ def git_push_changes(repo: Repo, version: str, repo_name: str, branch_name: str,
     repo.index.commit("Update Datadog SDK to " + version)
 
     print("Pushing branch with commit-headless (signed)")
-    target = "DataDog/" + repo_name
+    target = repo_name
     head_sha = repo.head.commit.hexsha
     result = subprocess.run(
         [

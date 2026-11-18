@@ -7,6 +7,7 @@
 package com.datadog.android.flags
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.internal.LogWithPolicy
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.model.ErrorCode
@@ -37,6 +38,9 @@ internal class NoOpFlagsClientTest {
     @Mock
     lateinit var mockLogWithPolicy: LogWithPolicy
 
+    @Mock
+    lateinit var mockSdkCore: FeatureSdkCore
+
     private lateinit var testedClient: NoOpFlagsClient
 
     @StringForgery
@@ -50,6 +54,7 @@ internal class NoOpFlagsClientTest {
         testedClient = NoOpFlagsClient(
             name = fakeClientName,
             reason = fakeReason,
+            sdkCore = mockSdkCore,
             logWithPolicy = mockLogWithPolicy
         )
     }
@@ -232,7 +237,7 @@ internal class NoOpFlagsClientTest {
         val fakeDefaultValue = forge.aDouble()
 
         // When
-        val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue.toDouble())
+        val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)

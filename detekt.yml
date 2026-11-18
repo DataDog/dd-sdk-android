@@ -18,16 +18,21 @@ comments:
   active: true
   AbsentOrWrongFileLicense:
     active: true
-    licenseTemplateFile: 'license.template'
+    licenseTemplate: |
+      /*
+       * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+       * This product includes software developed at Datadog (https://www.datadoghq.com/).
+       * Copyright 2016-Present Datadog, Inc.
+       */
     licenseTemplateIsRegex: false
     excludes:
       # Gradle build outputs and generated artifacts.
       - '**/build/generated/**'
       # Vendored test files ported from the upstream dd-trace-java library.
       - '**/features/dd-sdk-android-trace-internal/src/test/kotlin/com/datadog/trace/**'
-  CommentOverPrivateFunction:
+  DocumentationOverPrivateFunction:
     active: false
-  CommentOverPrivateProperty:
+  DocumentationOverPrivateProperty:
     active: false
   DeprecatedBlockTag:
     active: true
@@ -623,15 +628,41 @@ style:
     allowedPatterns: ''
   ForbiddenImport:
     active: false
-    imports: []
-    forbiddenPatterns: ''
+    forbiddenImports: []
+    allowedImports: []
   ForbiddenMethodCall:
-    active: false
+    active: true
+    includes:
+      # Flags public types reach Java callers; see the reason below.
+      - '**/features/dd-sdk-android-flags/src/main/**'
+      - '**/features/dd-sdk-android-flags-openfeature/src/main/**'
     methods:
       - reason: 'print does not allow you to configure the output stream. Use a logger instead.'
         value: 'kotlin.io.print'
       - reason: 'println does not allow you to configure the output stream. Use a logger instead.'
         value: 'kotlin.io.println'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableCollection'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableList'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableMap'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableNavigableMap'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableNavigableSet'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableSequencedCollection'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableSequencedMap'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableSequencedSet'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableSet'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableSortedMap'
+      - reason: 'it hands Java callers a collection whose mutators throw. Return a copy typed as a Kotlin collection instead.'
+        value: 'java.util.Collections.unmodifiableSortedSet'
   ForbiddenSuppress:
     active: false
     rules: []
@@ -749,8 +780,6 @@ style:
   AbstractClassCanBeInterface:
     active: false
     excludes: ['**/test/**', '**/*Test/**', '**/testFixtures/**', '**/tools/**']
-  UnnecessaryAnnotationUseSiteTarget:
-    active: false
   UnnecessaryApply:
     active: true
   UnnecessaryBackticks:

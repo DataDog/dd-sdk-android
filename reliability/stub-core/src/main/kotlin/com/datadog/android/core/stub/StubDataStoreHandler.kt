@@ -23,7 +23,7 @@ import com.datadog.android.core.persistence.datastore.DataStoreContent
  */
 class StubDataStoreHandler : DataStoreHandler {
 
-    private val entries = mutableMapOf<String, Pair<Int, String>>()
+    private val entries = mutableMapOf<String, Pair<Int, ByteArray>>()
 
     override fun <T : Any> setValue(
         key: String,
@@ -32,7 +32,7 @@ class StubDataStoreHandler : DataStoreHandler {
         callback: DataStoreWriteCallback?,
         serializer: Serializer<T>
     ) {
-        val serialized = serializer.serialize(data)
+        val serialized = serializer.serialize(data)?.toByteArray(Charsets.UTF_8)
         if (serialized == null) {
             callback?.onFailure()
         } else {
@@ -51,7 +51,9 @@ class StubDataStoreHandler : DataStoreHandler {
         if (entry == null || (version != null && entry.first != version)) {
             callback.onSuccess(null)
         } else {
-            callback.onSuccess(DataStoreContent(entry.first, deserializer.deserialize(entry.second)))
+            callback.onSuccess(
+                DataStoreContent(entry.first, deserializer.deserialize(entry.second.toString(Charsets.UTF_8)))
+            )
         }
     }
 

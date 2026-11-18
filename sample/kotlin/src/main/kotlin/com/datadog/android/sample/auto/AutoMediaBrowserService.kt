@@ -29,7 +29,8 @@ class AutoMediaBrowserService : MediaBrowserServiceCompat() {
         val stateBuilder = PlaybackStateCompat.Builder()
             .setActions(
                 PlaybackStateCompat.ACTION_PLAY or
-                    PlaybackStateCompat.ACTION_PLAY_PAUSE
+                    PlaybackStateCompat.ACTION_PLAY_PAUSE or
+                    PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH
             )
         mediaSession.setPlaybackState(stateBuilder.build())
 
@@ -40,6 +41,13 @@ class AutoMediaBrowserService : MediaBrowserServiceCompat() {
                 Timber.i("Playing song with mediaId: $mediaId")
                 GlobalRumMonitor.get()
                     .addAction(RumActionType.CUSTOM, "Play song", mapOf("media_id" to mediaId))
+            }
+
+            override fun onPlayFromSearch(query: String?, extras: Bundle?) {
+                super.onPlayFromSearch(query, extras)
+                Timber.i("Playing song from search: $query")
+                GlobalRumMonitor.get()
+                    .addAction(RumActionType.CUSTOM, "Play song from search", mapOf("query" to query))
             }
 
             override fun onPause() {

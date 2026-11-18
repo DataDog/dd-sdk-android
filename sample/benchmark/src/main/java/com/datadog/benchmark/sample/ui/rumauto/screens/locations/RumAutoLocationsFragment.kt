@@ -7,9 +7,7 @@
 package com.datadog.benchmark.sample.ui.rumauto.screens.locations
 
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
@@ -19,14 +17,14 @@ import com.datadog.benchmark.sample.activities.scenarios.benchmarkActivityCompon
 import com.datadog.benchmark.sample.ui.rumauto.screens.locations.di.DaggerRumAutoLocationsComponent
 import com.datadog.benchmark.sample.ui.rumauto.screens.locations.di.RumAutoLocationsComponent
 import com.datadog.benchmark.sample.utils.componentHolderViewModel
-import com.datadog.benchmark.sample.utils.recycler.applyNewItems
 import com.datadog.benchmark.sample.utils.recycler.trackRecyclerViewVisibleItems
+import com.datadog.sample.benchmark.R
 import com.datadog.sample.benchmark.databinding.FragmentRumAutoLocationsBinding
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
-internal class RumAutoLocationsFragment : Fragment() {
+internal class RumAutoLocationsFragment : Fragment(R.layout.fragment_rum_auto_locations) {
 
     private val component: RumAutoLocationsComponent by componentHolderViewModel {
         DaggerRumAutoLocationsComponent.factory().create(
@@ -36,15 +34,17 @@ internal class RumAutoLocationsFragment : Fragment() {
     }
 
     @Inject
-    lateinit var adapter: RumAutoLocationsAdapter
-
-    @Inject
     lateinit var viewModel: RumAutoLocationsViewModel
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         component.inject(this)
 
-        val binding = FragmentRumAutoLocationsBinding.inflate(inflater, container, false)
+        val binding = FragmentRumAutoLocationsBinding.bind(view)
+
+        val adapter = RumAutoLocationsAdapter {
+            viewModel.dispatch(RumAutoLocationsAction.OnLocationClicked(it))
+        }
 
         val layoutManager = LinearLayoutManager(requireContext(), RecyclerView.VERTICAL, false)
         binding.locationsRecycler.layoutManager = layoutManager
@@ -52,9 +52,9 @@ internal class RumAutoLocationsFragment : Fragment() {
 
         viewModel.state
             .onEach { items ->
-                adapter.applyNewItems(items)
+                adapter.submitList(items)
             }
-            .launchIn(lifecycleScope)
+            .launchIn(viewLifecycleOwner.lifecycleScope)
 
         trackRecyclerViewVisibleItems(
             recyclerView = binding.locationsRecycler,
@@ -62,8 +62,6 @@ internal class RumAutoLocationsFragment : Fragment() {
             adapter = adapter
         ).onEach { items ->
             viewModel.dispatch(RumAutoLocationsAction.VisibleItemsChanged(items))
-        }.launchIn(lifecycleScope)
-
-        return binding.root
+        }.launchIn(viewLifecycleOwner.lifecycleScope)
     }
 }

@@ -85,10 +85,10 @@ class FeatureSdkCoreTest : MockServerTest() {
     @Test
     fun mustReturnAllTheRegisteredFeatures_when_getFeature_newFeaturesRegistered() {
         // Given
-        val registeredFeatures = forge.aList(forge.anInt(1, 10)) {
+        val registeredFeatures = List(forge.anInt(min = 1, max = 10)) { index ->
             StubStorageBackedFeature(
                 forge,
-                forge.anAlphabeticalString(),
+                "${fakeFeatureName}_$index",
                 getMockServerWrapper().getServerUrl()
             )
         }.onEach { testedFeatureSdkCore.registerFeature(it) }
@@ -147,14 +147,16 @@ class FeatureSdkCoreTest : MockServerTest() {
     @Test
     fun isThreadSafe_when_registerMultipleFeatures_fromDifferentThreads() {
         // Given
-        val registeredFeatures = forge.aList(size = forge.anInt(min = 1, max = 10)) {
+        val registeredFeatures = List(forge.anInt(min = 2, max = 10)) { index ->
             StubStorageBackedFeature(
                 forge,
-                forge.anAlphabeticalString(),
+                "${fakeFeatureName}_$index",
                 getMockServerWrapper().getServerUrl()
             )
         }
         val countDownLatch = CountDownLatch(registeredFeatures.size)
+
+        // When
         registeredFeatures.forEach { feature ->
             val thread = Thread {
                 testedFeatureSdkCore.registerFeature(feature)
@@ -162,13 +164,14 @@ class FeatureSdkCoreTest : MockServerTest() {
             }
             thread.start()
         }
-        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
-
-        // When
-        val retrievedFeatures = registeredFeatures.mapNotNull { testedFeatureSdkCore.getFeature(it.name)?.unwrap() }
+        val registrationsCompleted = countDownLatch.await(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
 
         // Then
-        assertThat(retrievedFeatures).containsAll(registeredFeatures)
+        assertThat(registrationsCompleted)
+            .describedAs("All feature registration threads completed")
+            .isTrue()
+        val retrievedFeatures = registeredFeatures.mapNotNull { testedFeatureSdkCore.getFeature(it.name)?.unwrap() }
+        assertThat(retrievedFeatures).containsExactlyElementsOf(registeredFeatures)
     }
 
     @Test

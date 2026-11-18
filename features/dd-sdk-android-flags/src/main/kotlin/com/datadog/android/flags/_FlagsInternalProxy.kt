@@ -6,8 +6,11 @@
 
 package com.datadog.android.flags
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.DatadogFlagsClient
+import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.lint.InternalApi
 
@@ -22,8 +25,20 @@ import com.datadog.android.lint.InternalApi
  * are not considered part of the public interface of the Datadog SDK.
  */
 @InternalApi
-@Suppress("ClassName", "ClassNaming", "UndocumentedPublicFunction")
+@Suppress("ClassName", "ClassNaming", "UndocumentedPublicFunction", "TooManyFunctions")
 class _FlagsInternalProxy(private val client: FlagsClient) {
+    /**
+     * Returns the logger of the SDK core that the client was created for. A [FlagsClient] that the application
+     * implements gets [InternalLogger.UNBOUND].
+     */
+    fun getInternalLogger(): InternalLogger = when (client) {
+        is DatadogFlagsClient -> client.featureSdkCore.internalLogger
+        is NoOpFlagsClient -> client.sdkCore.internalLogger
+        else -> InternalLogger.UNBOUND
+    }
+
+    fun isExperimentationOptOutEnabled(): Boolean =
+        (client as? DatadogFlagsClient)?.experimentationOptOut?.enabled == true
     fun setEvaluationContext(
         context: EvaluationContext,
         callback: EvaluationContextCallback?,
@@ -39,6 +54,15 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
     fun isEvaluationTelemetryOptOutParameterEnabled(): Boolean =
         (client as? DatadogFlagsClient)?.evaluationTelemetryOptOutParameterEnabled == true
 
+    /**
+     * Returns the installed assignments only if they were fetched for [context] and, with an enabled
+     * experimentation opt-out mode, [context] is still the current request. Returns null otherwise,
+     * including for a client that is not a Datadog client.
+     * Use it in a completion callback: a newer request can install before the callback runs.
+     */
+    fun getFlagAssignmentsSnapshot(context: EvaluationContext): Map<String, UnparsedFlag>? =
+        (client as? DatadogFlagsClient)?.getFlagAssignmentsSnapshot(context)
+
     fun getFlagAssignmentsSnapshot(): Map<String, UnparsedFlag> = if (client is DatadogFlagsClient) {
         client.getFlagAssignmentsSnapshot()
     } else {
@@ -50,8 +74,23 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
      * Use the separate operations below for independently selected tracking hooks.
      */
     fun trackFlagSnapshotEvaluation(flagKey: String, flag: UnparsedFlag, context: EvaluationContext) {
+        trackFlagSnapshotEvaluation(flagKey, flag, context, context.targetingKey)
+    }
+
+    /**
+     * Replays an evaluation with a separate identity for evaluation telemetry.
+     *
+     * [telemetryTargetingKey] is omitted when null and preserved when empty. Non-empty values follow
+     * the snapshot's telemetry consent. [context] still identifies the subject for exposures and opt-out.
+     */
+    fun trackFlagSnapshotEvaluation(
+        flagKey: String,
+        flag: UnparsedFlag,
+        context: EvaluationContext,
+        telemetryTargetingKey: String?
+    ) {
         if (client is DatadogFlagsClient) {
-            client.trackFlagSnapshotEvaluation(flagKey, flag, context)
+            client.trackFlagSnapshotEvaluation(flagKey, flag, context, telemetryTargetingKey)
         }
     }
 
@@ -83,6 +122,31 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
     }
 
     /**
+     * Records an evaluation with the consent and telemetry identity captured by the bridge.
+     * This also preserves consent for errors without an assignment. Null identities are omitted;
+     * empty identities remain empty. [context] continues to identify the subject for opt-out.
+     */
+    fun trackFlagEvaluationEvent(
+        flagKey: String,
+        flag: UnparsedFlag?,
+        context: EvaluationContext,
+        errorCode: String?,
+        observeFullEvaluationData: Boolean,
+        telemetryTargetingKey: String?
+    ) {
+        if (client is DatadogFlagsClient) {
+            client.trackFlagEvaluationEvent(
+                flagKey,
+                flag,
+                context,
+                errorCode,
+                observeFullEvaluationData,
+                telemetryTargetingKey
+            )
+        }
+    }
+
+    /**
      * Records only a RUM flag annotation, respecting the client's evaluation telemetry opt-out settings.
      * Does not fetch configuration, record an exposure, or record an evaluation event.
      */
@@ -91,4 +155,32 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
             client.trackFlagRumEvaluation(flagKey, variantKey, context)
         }
     }
+
+    /**
+     * Resolves like [FlagsClient.resolve], but does not record the exposure. The caller invokes
+     * [DeferredExposureResolution.recordExposure] once, after the evaluation has succeeded.
+     * A client that is not a Datadog client resolves normally and returns no exposure.
+     */
+    fun <T : Any> resolveDeferringExposure(flagKey: String, defaultValue: T): DeferredExposureResolution<T> =
+        if (client is DatadogFlagsClient) {
+            client.resolveDeferringExposure(flagKey, defaultValue)
+        } else {
+            DeferredExposureResolution(client.resolve(flagKey, defaultValue), null, null)
+        }
+
+    /**
+     * A resolution whose exposure is not recorded yet.
+     *
+     * @param T the type of the flag value.
+     * @property details the resolution.
+     * @property context the evaluation context of the assignments that were read, or null when none were read.
+     * @property recordExposure records the exposure, sends it when exposure tracking is on, and returns whether
+     * it was already recorded. It returns null when a newer evaluation context has replaced the evaluated one.
+     * The property is null for a non-exposure.
+     */
+    class DeferredExposureResolution<T : Any>(
+        val details: ResolutionDetails<T>,
+        val context: EvaluationContext?,
+        val recordExposure: (() -> Boolean?)?
+    )
 }

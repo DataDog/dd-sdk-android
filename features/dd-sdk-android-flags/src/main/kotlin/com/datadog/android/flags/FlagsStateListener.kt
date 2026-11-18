@@ -23,10 +23,10 @@ interface FlagsStateListener {
      * operations (network calls, database queries, heavy computation), dispatch them to a
      * background thread.
      *
-     * **Exception handling:** Exceptions thrown from this method will propagate to the caller
-     * and may crash the application if not caught. Subsequent listeners will not be notified
-     * if an exception is thrown. Always catch and handle exceptions within your implementation
-     * to prevent crashes and ensure other listeners are notified.
+     * **Threading and exceptions:** Transitions can arrive on any thread, including the caller of
+     * [FlagsClient.setEvaluationContext]. The client logs exceptions during transition delivery;
+     * later listeners for that transition may not be notified. Registration invokes the listener
+     * synchronously and propagates its exceptions. Handle exceptions within your implementation.
      *
      * @param newState The new state of the client. If the state is [FlagsClientState.Error],
      *                 the error details are contained within the state object itself.

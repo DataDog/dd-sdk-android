@@ -13,7 +13,7 @@ package com.datadog.android.core.persistence.datastore
  * @property versionCode version used by the entry.
  * @property data content of the entry.
  */
-data class DataStoreContent<T : Any>(
+data class DataStoreContent<out T : Any>(
     val versionCode: Int,
     val data: T?
 )

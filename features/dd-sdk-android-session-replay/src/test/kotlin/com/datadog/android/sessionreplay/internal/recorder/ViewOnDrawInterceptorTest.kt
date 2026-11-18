@@ -18,6 +18,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -37,6 +38,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.lang.ref.Reference
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -85,7 +87,7 @@ internal class ViewOnDrawInterceptorTest {
         testedInterceptor = ViewOnDrawInterceptor(
             internalLogger = mockInternalLogger,
             onDrawListenerProducer = mockOnDrawListenerProducer,
-            adaptiveCaptureSchedulingEnabled = true,
+            adaptiveCaptureSchedulingEnabled = forge.aBool(),
             touchPrivacyManager = mockTouchPrivacyManager
         )
     }
@@ -208,6 +210,67 @@ internal class ViewOnDrawInterceptorTest {
     }
 
     @Test
+    fun `M clean listeners safely W stopIntercepting() {last weak key cleared}`() {
+        // Given
+        setupCollectedDecorView()
+
+        // When
+        assertDoesNotThrow { testedInterceptor.stopIntercepting() }
+
+        // Then
+        assertThat(testedInterceptor.decorOnDrawListeners).isEmpty()
+        verifyNoInteractions(mockOnDrawListener)
+    }
+
+    @Test
+    fun `M report not intercepting W requestCapture() {last weak key cleared}`() {
+        // Given
+        setupCollectedDecorView()
+
+        // When
+        val result = assertDoesNotThrow<ViewOnDrawInterceptor.CaptureRequestResult> {
+            testedInterceptor.requestCapture()
+        }
+
+        // Then
+        assertThat(result).isEqualTo(ViewOnDrawInterceptor.CaptureRequestResult.NOT_INTERCEPTING)
+        verifyNoInteractions(mockOnDrawListener)
+    }
+
+    @Test
+    fun `M skip collected listeners W scheduleCapture() {last weak key cleared}`() {
+        // Given
+        setupCollectedDecorView()
+
+        // When
+        assertDoesNotThrow { testedInterceptor.scheduleCapture() }
+
+        // Then
+        verifyNoInteractions(mockOnDrawListener)
+    }
+
+    @Test
+    fun `M register listeners W intercept() {last weak key cleared}`() {
+        // Given
+        testedInterceptor = ViewOnDrawInterceptor(
+            internalLogger = mockInternalLogger,
+            onDrawListenerProducer = mockOnDrawListenerProducer,
+            adaptiveCaptureSchedulingEnabled = true,
+            touchPrivacyManager = mockTouchPrivacyManager
+        )
+        setupCollectedDecorView()
+
+        // When
+        assertDoesNotThrow {
+            testedInterceptor.intercept(fakeDecorViews, fakeTextAndInputPrivacy, fakeImagePrivacy)
+        }
+
+        // Then
+        assertThat(testedInterceptor.decorOnDrawListeners)
+            .isEqualTo(fakeDecorViews.associateWith { mockOnDrawListener })
+    }
+
+    @Test
     fun `M retain other windows W intercept {opt-in omitted}`() {
         // Given
         testedInterceptor = ViewOnDrawInterceptor(
@@ -243,6 +306,12 @@ internal class ViewOnDrawInterceptorTest {
     @Test
     fun `M cancel replaced listener W intercept { new window set }`() {
         // Given
+        testedInterceptor = ViewOnDrawInterceptor(
+            internalLogger = mockInternalLogger,
+            onDrawListenerProducer = mockOnDrawListenerProducer,
+            adaptiveCaptureSchedulingEnabled = true,
+            touchPrivacyManager = mockTouchPrivacyManager
+        )
         testedInterceptor.intercept(fakeDecorViews, fakeTextAndInputPrivacy, fakeImagePrivacy)
         clearInvocations(mockOnDrawListener)
 
@@ -272,8 +341,7 @@ internal class ViewOnDrawInterceptorTest {
         // When
         testedInterceptor.scheduleCapture()
 
-        // Then - the same listener instance is registered for every decor view, so the dedup via
-        // decorOnDrawListeners.values.toSet() schedules it once for all decor views.
+        // Then
         verify(mockOnDrawListener).scheduleCapture()
     }
 
@@ -432,6 +500,13 @@ internal class ViewOnDrawInterceptorTest {
     }
 
     // region Internal
+
+    private fun setupCollectedDecorView() {
+        testedInterceptor.decorOnDrawListeners[fakeDecorViews.first()] = mockOnDrawListener
+        // Clearing without enqueueing models GC leaving a stale size of one and no live entries.
+        val weakEntry = testedInterceptor.decorOnDrawListeners.entries.single() as Reference<*>
+        weakEntry.clear()
+    }
 
     private fun Forge.aMockedDecorViewsList(): List<View> {
         return aList(size = 2) {
