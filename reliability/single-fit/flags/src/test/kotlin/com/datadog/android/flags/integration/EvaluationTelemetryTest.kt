@@ -186,7 +186,7 @@ internal class EvaluationTelemetryTest {
     }
 
     @Test
-    fun `M retain subject opt-out W getBooleanEvaluation() {different subject refresh fails}`() = runBlocking<Unit> {
+    fun `M use requested policy W getBooleanEvaluation() {different subject fails}`() = runBlocking<Unit> {
         // Given
         val provider = newClient().asOpenFeatureProvider()
         val original = context(Value.Boolean(true), "A")
@@ -202,10 +202,10 @@ internal class EvaluationTelemetryTest {
 
         // Then
         assertThat(refresh.isFailure).isTrue()
-        assertThat(result.value).isTrue()
-        assertThat(fixture.evaluationCount()).isZero()
+        assertThat(result.value).isFalse()
+        assertThat(fixture.evaluationCount()).isEqualTo(1)
         assertThat(fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).isEmpty()
-        assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).hasSize(1)
+        assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).isEmpty()
     }
 
     @Test
@@ -454,9 +454,10 @@ internal class EvaluationTelemetryTest {
 
         // Then
         assertThat(refresh.isFailure).isTrue()
-        assertThat(result.value).isTrue()
+        assertThat(result.value).isFalse()
         assertThat(fixture.evaluationCount()).isEqualTo(if (optedOut) 0 else 1)
-        assertThat(fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).hasSize(if (optedOut) 0 else 1)
+        assertThat(fixture.stubCore.eventsReceived(Feature.RUM_FEATURE_NAME)).isEmpty()
+        assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).isEmpty()
     }
 
     @ParameterizedTest

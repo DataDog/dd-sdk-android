@@ -26,6 +26,12 @@ internal class NoOpFlagsRepository : FlagsRepository {
 
     override fun getEvaluationSnapshot(key: String): FlagEvaluationSnapshot? = null
 
+    override fun retargetInvalidatedContext(context: EvaluationContext) = Unit
+
+    override fun clearFlagsIfContextChanged(context: EvaluationContext) = Unit
+
+    override val cachedFlagsLoaded = FirstFlagsLatch().apply { complete(emptyList()) }
+
     override val firstFlags = FirstFlagsLatch()
 
     override fun hasConfiguration(): Boolean = false

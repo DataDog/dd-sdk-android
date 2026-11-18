@@ -795,6 +795,64 @@ internal class DefaultFlagsRepositoryTest {
         return callback
     }
 
+    @Test
+    fun `M accept pending cache W retargetInvalidatedContext() {previous request failed}`(forge: Forge) {
+        // Given
+        val callback = preparePersistenceLoad(forge)
+        testedRepository.clearFlagsIfContextChanged(EvaluationContext(forge.anAlphabeticalString()))
+
+        // When
+        testedRepository.retargetInvalidatedContext(testContext)
+        callback.onSuccess(DataStoreContent(0, FlagsStateEntry(testContext, singleFlagMap, 0)))
+
+        // Then
+        assertThat(testedRepository.hasConfigurationForContext(testContext)).isTrue()
+        assertThat(testedRepository.getAssignmentsSnapshot()?.flags?.keys).isEqualTo(singleFlagMap.keys)
+    }
+
+    @Test
+    fun `M retain accepted assignments W retargetInvalidatedContext()`(forge: Forge) {
+        // Given
+        testedRepository.installFlagsAndContext(testContext, singleFlagMap).complete {}
+
+        // When
+        testedRepository.retargetInvalidatedContext(EvaluationContext(forge.anAlphabeticalString()))
+
+        // Then
+        assertThat(testedRepository.hasConfigurationForContext(testContext)).isTrue()
+    }
+
+    @Test
+    fun `M signal completed read W onFailure()`(forge: Forge) {
+        // Given
+        val callback = preparePersistenceLoad(forge)
+        var completed = false
+        testedRepository.cachedFlagsLoaded.whenComplete { completed = true }
+
+        // When
+        callback.onFailure()
+
+        // Then
+        assertThat(completed).isTrue()
+        assertThat(testedRepository.hasConfiguration()).isFalse()
+    }
+
+    @Test
+    fun `M report no pending read W whenComplete() {storage unavailable}`() {
+        // Given
+        val testedNoOp = NoOpFlagsRepository()
+        var cacheCompleted = false
+        var flagsPublished = false
+
+        // When
+        testedNoOp.cachedFlagsLoaded.whenComplete { cacheCompleted = true }
+        testedNoOp.firstFlags.whenComplete { flagsPublished = true }
+
+        // Then
+        assertThat(cacheCompleted).isTrue()
+        assertThat(flagsPublished).isFalse()
+    }
+
     // region hasConfiguration
 
     @Test
@@ -912,6 +970,52 @@ internal class DefaultFlagsRepositoryTest {
 
         // Then
         assertThat(result).isFalse()
+    }
+
+    // endregion
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M reject invalidated snapshots W clearFlagsIfContextChanged()`(acceptedBefore: Boolean, forge: Forge) {
+        // Given
+        if (acceptedBefore) testedRepository.installFlagsAndContext(testContext, multipleFlagsMap).complete {}
+        val nextContext = EvaluationContext(forge.anAlphabeticalString())
+
+        // When
+        testedRepository.clearFlagsIfContextChanged(nextContext)
+
+        // Then
+        assertThat(testedRepository.getAssignmentsSnapshot()).isNull()
+        assertThat(testedRepository.getEvaluationContext()).isNull()
+        assertThat(testedRepository.getEvaluationSnapshot(singleFlagMap.keys.first())).isNull()
+    }
+
+    @Test
+    fun `M expose accepted empty snapshot W installFlagsAndContext()`() {
+        // Given
+        testedRepository.clearFlagsIfContextChanged(testContext)
+
+        // When
+        testedRepository.installFlagsAndContext(testContext, emptyMap()).complete {}
+
+        // Then
+        val snapshot = checkNotNull(testedRepository.getAssignmentsSnapshot())
+        assertThat(snapshot.context).isEqualTo(testContext)
+        assertThat(snapshot.flags).isEmpty()
+    }
+
+    // region getFlagsSnapshot
+
+    @Test
+    fun `M return flags map W getAssignmentsSnapshot() { flags state set }`() {
+        // Given
+        testedRepository.installFlagsAndContext(testContext, multipleFlagsMap).complete {}
+
+        // When
+        val result = testedRepository.getAssignmentsSnapshot()?.flags
+
+        // Then
+        assertThat(result).isEqualTo(multipleFlagsMap)
     }
 
     // endregion

@@ -11,13 +11,14 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.EvaluationContextCallback
 import com.datadog.android.flags.ExperimentationOptOutMode
 import com.datadog.android.flags.FlagsStateListener
+import com.datadog.android.flags.internal.FlagsStateHolder
 import com.datadog.android.flags.internal.FlagsStateManager
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
+import com.datadog.android.flags.internal.repository.FirstFlagsLatch
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.FlagsClientState
-import com.datadog.android.internal.utils.DDCoreStateHolder
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeEach
@@ -50,6 +51,7 @@ internal class ExperimentationCallbackTest {
     @BeforeEach
     fun setUp() {
         whenever(mockCore.timeProvider).thenReturn(mock())
+        whenever(mockRepository.cachedFlagsLoaded).thenReturn(FirstFlagsLatch())
     }
 
     @ParameterizedTest
@@ -100,7 +102,7 @@ internal class ExperimentationCallbackTest {
 
     private fun invalidContext() = EvaluationContext("subject", mapOf("dd_experimentation_opt_out_at" to "invalid"))
     private fun stateManager() = FlagsStateManager(
-        DDCoreStateHolder.create<FlagsClientState, FlagsStateListener>(FlagsClientState.NotReady) { onStateChanged(it) }
+        FlagsStateHolder.create<FlagsClientState, FlagsStateListener>(FlagsClientState.NotReady) { onStateChanged(it) }
     )
     private fun manager(mode: ExperimentationOptOutMode, states: FlagsStateManager) = EvaluationsManager(
         mockCore, mockExecutor, mockLogger, mockRepository, mockReader, mockMapper, states,

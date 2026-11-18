@@ -509,9 +509,9 @@ internal class ExperimentationOptOutTest {
         // Then
         val disabled = mode == ExperimentationOptOutMode.DISABLED
         assertThat(pendingValue).isEqualTo(disabled)
-        assertThat(result.value).isEqualTo(disabled)
+        assertThat(result.value).isFalse()
         assertThat(pendingError).isEqualTo(if (disabled) null else ErrorCode.PROVIDER_NOT_READY)
-        assertThat(result.errorCode).isEqualTo(if (disabled) null else ErrorCode.PROVIDER_NOT_READY)
+        assertThat(result.errorCode).isEqualTo(ErrorCode.PROVIDER_NOT_READY)
     }
 
     @ParameterizedTest

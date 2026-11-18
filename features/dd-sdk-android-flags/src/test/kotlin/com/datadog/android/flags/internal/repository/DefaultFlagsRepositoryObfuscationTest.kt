@@ -31,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -186,6 +187,38 @@ internal class DefaultFlagsRepositoryObfuscationTest {
         // Then
         assertThat(firstFlags).containsExactly(listOf(fakeFlagKey))
         assertThat(checkNotNull(testedRepository.getAssignmentsSnapshot()).flags).containsOnlyKeys(fakeFlagKey)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `M notify once W clearFlagsIfContextChanged() + installFlagsAndContext() {unreadable cache}`(
+        emptyRecovery: Boolean,
+        @StringForgery fakeNextTargetingKey: String
+    ) {
+        // Given
+        val entry = cachedEntry(encoded = true)
+        whenever(mockSdkCore.source) doReturn "react-native"
+        doAnswer { it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2).onSuccess(DataStoreContent(0, entry)) }
+            .whenever(mockDataStore).value<FlagsStateEntry>(any(), anyOrNull(), any(), any())
+        testedRepository = DefaultFlagsRepository(mockSdkCore, fakeInstanceName, mockDataStore, flagSelection = null)
+        val fakeNextContext = fakeContext.copy(targetingKey = fakeNextTargetingKey)
+        val firstFlags = mutableListOf<List<String>>()
+        testedRepository.firstFlags.whenComplete { firstFlags.add(it) }
+        val fakePlaintextFlags = if (emptyRecovery) emptyMap() else mapOf(fakeFlagKey to fakeFlag)
+
+        // When
+        testedRepository.clearFlagsIfContextChanged(fakeNextContext)
+        val signalsBeforeInstallation = firstFlags.toList()
+        val snapshotBeforeInstallation = testedRepository.getEvaluationSnapshot(fakeFlagKey)
+        testedRepository.installFlagsAndContext(fakeNextContext, fakePlaintextFlags).complete {}
+        testedRepository.installFlagsAndContext(fakeNextContext, fakePlaintextFlags).complete {}
+
+        // Then
+        assertThat(signalsBeforeInstallation).isEmpty()
+        assertThat(snapshotBeforeInstallation).isNull()
+        assertThat(firstFlags).containsExactly(fakePlaintextFlags.keys.toList())
+        assertThat(testedRepository.getEvaluationSnapshot(fakeFlagKey)?.flag).isEqualTo(fakePlaintextFlags[fakeFlagKey])
+        assertThat(testedRepository.getEvaluationSnapshot(fakeFlagKey)?.context).isEqualTo(fakeNextContext)
     }
 
     private fun cachedEntry(encoded: Boolean): FlagsStateEntry = FlagsStateEntry(

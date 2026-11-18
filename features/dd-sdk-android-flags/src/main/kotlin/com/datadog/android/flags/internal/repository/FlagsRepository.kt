@@ -22,11 +22,21 @@ internal interface FlagsRepository {
         observeFullEvaluationData: Boolean = false
     ): FlagsInstallation
 
+    /** Clears assignments from another context without persisting or publishing a configuration. */
+    fun clearFlagsIfContextChanged(context: EvaluationContext)
+
+    /** Retargets an existing invalidation without replacing accepted assignments. */
+    fun retargetInvalidatedContext(context: EvaluationContext)
+
     /** Waits for initial persistence loading, up to the repository's timeout. Call without holding locks. */
     fun waitForPersistenceLoad()
 
     // Nonblocking snapshot. Missing flags retain their context from the same atomic state read.
     fun getEvaluationSnapshot(key: String): FlagEvaluationSnapshot?
+
+    /** Completes after every startup cache read, including missing, rejected, and unreadable data. */
+    val cachedFlagsLoaded: FirstFlagsLatch
+
     val firstFlags: FirstFlagsLatch
 
     /** True once a configuration is installed, including a valid configuration with zero flags. */
