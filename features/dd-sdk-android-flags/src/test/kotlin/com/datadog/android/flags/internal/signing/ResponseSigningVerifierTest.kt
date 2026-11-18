@@ -17,7 +17,6 @@ import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
@@ -63,10 +62,6 @@ internal class ResponseSigningVerifierTest {
         assertThat(result).isEqualTo(roots)
     }
 
-    @Disabled(
-        "Shared v1 fixtures carry single-intermediate proofs. ffe-system-test-data regenerates them for the " +
-            "chain format; a follow-up commit updates the pin and enables this suite."
-    )
     @TestFactory
     fun `M match every central manifest vector W verify()`(): List<DynamicTest> {
         // Given
@@ -85,7 +80,9 @@ internal class ResponseSigningVerifierTest {
             cases.map { entry ->
                 val vector = entry.asJsonObject
                 DynamicTest.dynamicTest("$name: ${vector["id"].asString}") {
-                    val testedVerifier = ResponseSigningVerifier(listOf(corpus["anchor_der_base64"].asString))
+                    // A case anchor replaces the file anchor (root-profile cases).
+                    val anchor = (vector["anchor_der_base64"] ?: corpus["anchor_der_base64"]).asString
+                    val testedVerifier = ResponseSigningVerifier(listOf(anchor))
                     // When
                     val result = verify(testedVerifier, vector)
                     // Then
@@ -101,28 +98,6 @@ internal class ResponseSigningVerifierTest {
                         assertThat(transcript.toByteString().base64()).isEqualTo(vector["transcript_base64"].asString)
                     }
                 }
-            }
-        }
-    }
-
-    @Disabled(
-        "The local KeyUsage supplement carries single-intermediate proofs with codeSigning leaves. " +
-            "ResponseSigningChainTest covers nonminimal KeyUsage until the follow-up fixture pin update."
-    )
-    @TestFactory
-    fun `M reject nonminimal named bits W verify()`(): List<DynamicTest> {
-        val corpus = JsonParser.parseString(
-            resourceBytes("response-signing-key-usage.json").toString(Charsets.UTF_8)
-        ).asJsonObject
-        return corpus.getAsJsonArray("cases").map { entry ->
-            val vector = entry.asJsonObject
-            DynamicTest.dynamicTest(vector["id"].asString) {
-                // Given
-                val testedVerifier = ResponseSigningVerifier(listOf(corpus["anchor"].asString))
-                // When
-                val result = verify(testedVerifier, vector)
-                // Then
-                assertThat(result != null).isEqualTo(vector["expected_accept"].asBoolean)
             }
         }
     }

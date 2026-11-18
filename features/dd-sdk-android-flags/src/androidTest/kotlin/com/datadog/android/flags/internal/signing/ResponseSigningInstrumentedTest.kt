@@ -17,14 +17,9 @@ import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Ignore
 import org.junit.Test
 
 /** Exercise the shared contract with Android's actual EC key and signature providers. */
-@Ignore(
-    "Shared v1 fixtures carry single-intermediate proofs. ffe-system-test-data regenerates them for the " +
-        "chain format; a follow-up commit updates the pin and enables this suite."
-)
 internal class ResponseSigningInstrumentedTest {
     @Test
     fun mustMatchCentralManifest_whenVerifyingOnAndroid() {
@@ -45,17 +40,13 @@ internal class ResponseSigningInstrumentedTest {
         }
     }
 
-    @Test
-    fun mustRejectNonminimalKeyUsage_whenVerifyingOnAndroid() {
-        assertCorpus(json(asset("response-signing-key-usage.json")))
-    }
-
     private fun assertCorpus(corpus: JsonObject) {
-        val root = (corpus["anchor_der_base64"] ?: corpus["anchor"]).asString
-        val verifier = ResponseSigningVerifier(listOf(root))
         corpus.getAsJsonArray("cases").forEach { entry ->
             // Given
             val vector = entry.asJsonObject
+            // A case anchor replaces the file anchor (root-profile cases).
+            val anchor = (vector["anchor_der_base64"] ?: corpus["anchor_der_base64"]).asString
+            val verifier = ResponseSigningVerifier(listOf(anchor))
             val input = vector.getAsJsonObject("request")
             val output = vector.getAsJsonObject("response")
             val request = Request.Builder().url(input["url"].asString)

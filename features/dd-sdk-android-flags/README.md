@@ -133,11 +133,11 @@ The signing fixtures use the existing snapshot importer and weekly update workfl
 `src/test/resources/response-signing-v1/SOURCE.json` records the central commit and file checksums.
 The JVM and Android instrumented verifier tests discover every manifest-listed suite and check its checksum and counts.
 They assert acceptance decisions and exact transcripts for every response vector.
-The local two-case KeyUsage supplement remains separate. Server-only signing cases are excluded.
-The current snapshot carries single-intermediate proofs, so these suites are disabled.
-`ffe-system-test-data` regenerates them for the chain format. A follow-up commit updates
-the pin and enables the suites. Until then, `ResponseSigningChainTest` covers the chain
-contract with test-only Vault credentials in `src/test/resources/response-signing-chain/`.
+A case `anchor_der_base64` replaces the file anchor for that case.
+Clients do not run the `signing_cases`, because they hold no signing keys.
+`rejection_reason` is a rule code; the tests do not compare native error messages.
+`ResponseSigningChainTest` adds Vault-issued chains and minted profile cases, including
+nonminimal KeyUsage named bits, with test-only credentials in `src/test/resources/response-signing-chain/`.
 
 ```shell
 python3 ci/sync-precomputed-fixtures.py --signing --ref <full-upstream-sha>
