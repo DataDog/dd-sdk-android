@@ -69,8 +69,11 @@ internal class KioskTrackingTest :
 
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
-                docVersion = 2
+                docVersion = 3
             )
+        )
+        expectedEvents.add(
+            ExpectedApplicationLaunchViewUpdateEvent(docVersion = 3)
         )
 
         // kiosk splash view started

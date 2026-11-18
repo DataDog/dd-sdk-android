@@ -21,6 +21,7 @@ import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.integration.rum.AppLaunchMetric
 import com.datadog.android.sdk.integration.rum.ExpectedApplicationLaunchViewEvent
+import com.datadog.android.sdk.integration.rum.ExpectedApplicationLaunchViewUpdateEvent
 import com.datadog.android.sdk.integration.rum.ExpectedEvent
 import com.datadog.android.sdk.integration.rum.ExpectedVitalAppLaunchEvent
 import com.datadog.android.sdk.integration.rum.RumTest
@@ -67,8 +68,11 @@ internal class AppStartupActivityPredicateTest :
         // Expect application launch view for MainContentActivity (not InterstitialSplashActivity)
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
-                docVersion = 2
+                docVersion = 3
             )
+        )
+        expectedEvents.add(
+            ExpectedApplicationLaunchViewUpdateEvent(docVersion = 3)
         )
 
         // Expect TTID to be reported for MainContentActivity

@@ -28,8 +28,11 @@ internal abstract class FragmentTrackingTest :
 
         expectedEvents.add(
             ExpectedApplicationLaunchViewEvent(
-                docVersion = 2
+                docVersion = 3
             )
+        )
+        expectedEvents.add(
+            ExpectedApplicationLaunchViewUpdateEvent(docVersion = 3)
         )
 
         val instrumentation = InstrumentationRegistry.getInstrumentation()
