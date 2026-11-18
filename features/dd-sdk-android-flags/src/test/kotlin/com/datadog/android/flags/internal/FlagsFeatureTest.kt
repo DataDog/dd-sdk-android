@@ -176,19 +176,6 @@ internal class FlagsFeatureTest {
         assertThat(testedFeature.dataWriter).isInstanceOf(ExposureEventRecordWriter::class.java)
     }
 
-    @Test
-    fun `M store the package name W onInitialize`() {
-        // Given
-        whenever(mockContext.packageName) doReturn "com.example.shop"
-        assertThat(testedFeature.appPackageName).isNull()
-
-        // When
-        testedFeature.onInitialize(mockContext)
-
-        // Then
-        assertThat(testedFeature.appPackageName).isEqualTo("com.example.shop")
-    }
-
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
     fun `M send exposures only when tracking them W onInitialize() + processEvent()`(

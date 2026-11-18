@@ -453,10 +453,10 @@ controls exposures independently.
 
 ## Usage attribution
 
-When you set `service` in the core `Configuration`, flag requests send it in the `dd-service` header, so Usage
-Attribution can split Feature Flags usage by `service`. Without `service`, no header is sent: the SDK does not send
-the package name it uses by default. A service equal to the package name is not sent either. A service that is not
-a valid HTTP header value is not sent, and the request still goes out.
+Flag requests send the SDK's `service` in the `dd-service` header, so Usage Attribution can split Feature Flags
+usage by `service`. It is the same service RUM reports: the one set in the core `Configuration`, or else the
+package name. Use printable ASCII without spaces: other values, for example `Checkout API` or `café-api`, are not
+attributed correctly. A service that is not a valid HTTP header value is not sent, and the request still goes out.
 
 ## Integration with RUM
 

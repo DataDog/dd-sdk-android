@@ -230,8 +230,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         testedFactory = PrecomputedAssignmentsRequestFactory(
             mockInternalLogger,
             "https://custom-proxy.example.com/flags/assignments".takeIf { useCustomEndpoint },
-            null,
-            defaultService = { FAKE_PACKAGE_NAME }
+            null
         )
         val context = fakeDatadogContext.copy(service = "checkout-android")
 
@@ -243,31 +242,25 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     }
 
     @Test
-    fun `M not send dd-service W create() { service is the package name }`(
+    fun `M send dd-service W create() { service is the package name default }`(
         @Forgery fakeEvaluationContext: EvaluationContext
     ) {
         // Given
-        testedFactory = PrecomputedAssignmentsRequestFactory(
-            mockInternalLogger,
-            null,
-            null,
-            defaultService = { FAKE_PACKAGE_NAME }
-        )
-        val context = fakeDatadogContext.copy(service = FAKE_PACKAGE_NAME)
+        val context = fakeDatadogContext.copy(service = "com.example.shop")
 
         // When
         val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context, fakeDiagnostics))
 
         // Then
-        assertThat(request.header("dd-service")).isNull()
+        assertThat(request.header("dd-service")).isEqualTo("com.example.shop")
     }
 
     @Test
-    fun `M not send dd-service W create() { package name unknown }`(
+    fun `M not send dd-service W create() { empty service }`(
         @Forgery fakeEvaluationContext: EvaluationContext
     ) {
         // Given
-        val context = fakeDatadogContext.copy(service = "checkout-android")
+        val context = fakeDatadogContext.copy(service = "")
 
         // When
         val request = checkNotNull(testedFactory.create(fakeEvaluationContext, context, fakeDiagnostics))
@@ -283,12 +276,6 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         @Forgery fakeEvaluationContext: EvaluationContext
     ) {
         // Given
-        testedFactory = PrecomputedAssignmentsRequestFactory(
-            mockInternalLogger,
-            null,
-            null,
-            defaultService = { FAKE_PACKAGE_NAME }
-        )
         val context = fakeDatadogContext.copy(service = service)
 
         // When
@@ -602,8 +589,4 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
     }
 
     // endregion
-
-    companion object {
-        private const val FAKE_PACKAGE_NAME = "com.example.shop"
-    }
 }

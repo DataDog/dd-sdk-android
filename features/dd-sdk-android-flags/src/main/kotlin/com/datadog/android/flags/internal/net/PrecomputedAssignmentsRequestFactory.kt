@@ -30,8 +30,7 @@ internal class PrecomputedAssignmentsRequestFactory(
     private val internalLogger: InternalLogger,
     private val customFlagEndpoint: String?,
     private val flagSelection: CanonicalFlagSelection?,
-    private val experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
-    private val defaultService: () -> String? = { null }
+    private val experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED
 ) {
 
     val sendsFlagSelection: Boolean = flagSelection != null
@@ -107,11 +106,9 @@ internal class PrecomputedAssignmentsRequestFactory(
         return headersBuilder.build()
     }
 
-    // Core uses the package name when the app sets no service, so that value is treated as unset.
-    // An unknown package name sends nothing, so a default is never sent.
+    // Same value RUM puts on its events: the configured service, or the package name.
     private fun addService(headersBuilder: Headers.Builder, service: String) {
-        val defaultService = defaultService() ?: return
-        if (service == defaultService) return
+        if (service.isEmpty()) return
 
         // OkHttp validates the value. A rejected service drops only this header, not the request.
         try {
