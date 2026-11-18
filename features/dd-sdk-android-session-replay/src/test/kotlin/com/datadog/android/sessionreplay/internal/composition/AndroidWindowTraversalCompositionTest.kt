@@ -32,6 +32,8 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedVie
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedViewMapperResult
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 import com.datadog.android.utils.verifyLog
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -47,6 +49,7 @@ import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
@@ -211,6 +214,81 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
         assertThat(contentLayer.children).containsExactly(CapturedChild.Layer(nodeLayer.identity))
         assertThat(present.wireframes).hasSize(1)
         assertThat(present.layers).hasSize(4)
+    }
+
+    @Test
+    fun `M decompose with the host's resolved privacy W traverseWindow() { tagged host or ancestor }`(
+        @BoolForgery fakeTagOnHost: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val fakePrivacy = forge.aValueFrom(
+            TextAndInputPrivacy::class.java,
+            exclude = listOf(TextAndInputPrivacy.MASK_ALL)
+        )
+        val root = mockViewGroup(GlobalBounds(0, 0, 100, 100))
+        val composeHost = mockView(GlobalBounds(0, 0, 100, 100))
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(composeHost)
+        val taggedView = if (fakeTagOnHost) composeHost else root
+        whenever(taggedView.getTag(R.id.datadog_text_and_input_privacy)).thenReturn(fakePrivacy.toString())
+        val mockDecomposer: CompositionHostDecomposer = mock()
+        whenever(mockDecomposer.canDecompose(composeHost)).thenReturn(true)
+
+        // When
+        traversal(fallback = markerMapper, compositionHostDecomposer = mockDecomposer)
+            .traverseWindow(root, identityFactory.window("window"), identityFactory, fakeContext)
+
+        // Then
+        val requestCaptor = argumentCaptor<CompositionHostDecomposeRequest>()
+        verify(mockDecomposer).decompose(eq(composeHost), requestCaptor.capture())
+        assertThat(requestCaptor.firstValue.textAndInputPrivacy).isEqualTo(fakePrivacy)
+    }
+
+    @Test
+    fun `M copy embedded native views with the host's privacy W traverseWindow { native handoff }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeHostPrivacy = forge.aValueFrom(
+            TextAndInputPrivacy::class.java,
+            exclude = listOf(TextAndInputPrivacy.MASK_ALL)
+        )
+        val fakeChildPrivacy = forge.aValueFrom(
+            TextAndInputPrivacy::class.java,
+            exclude = listOf(fakeHostPrivacy)
+        )
+        val root = mockViewGroup(GlobalBounds(0, 0, 100, 100))
+        val composeHost = mockView(GlobalBounds(0, 0, 100, 100))
+        val interopRoot = mockViewGroup(GlobalBounds(0, 0, 50, 50))
+        val interopChild = mockView(GlobalBounds(0, 0, 20, 20))
+        whenever(root.childCount).thenReturn(1)
+        whenever(root.getChildAt(0)).thenReturn(composeHost)
+        whenever(interopRoot.childCount).thenReturn(1)
+        whenever(interopRoot.getChildAt(0)).thenReturn(interopChild)
+        whenever(composeHost.getTag(R.id.datadog_text_and_input_privacy)).thenReturn(fakeHostPrivacy.toString())
+        whenever(interopChild.getTag(R.id.datadog_text_and_input_privacy)).thenReturn(fakeChildPrivacy.toString())
+        val mockDecomposer: CompositionHostDecomposer = mock()
+        whenever(mockDecomposer.canDecompose(composeHost)).thenReturn(true)
+        whenever(mockDecomposer.decompose(eq(composeHost), any())).thenAnswer {
+            val request = it.getArgument<CompositionHostDecomposeRequest>(1)
+            val identity = request.identityFactory.composeNode(request.hostIdentity, "interop")
+            request.nativeViewHandoff(interopRoot, identity)
+            CompositionHostDecomposeResult(listOf(CapturedChild.Layer(identity)), emptyList(), emptyList(), emptyMap())
+        }
+        val fakeContexts = mutableMapOf<View, CapturedMappingContext>()
+        val stubRecordingMapper = CapturedViewMapper<View> { view, mappingContext ->
+            fakeContexts[view] = mappingContext
+            CapturedViewMapperResult.None
+        }
+
+        // When
+        traversal(fallback = stubRecordingMapper, compositionHostDecomposer = mockDecomposer)
+            .traverseWindow(root, identityFactory.window("window"), identityFactory, fakeContext)
+
+        // Then
+        assertThat(checkNotNull(fakeContexts[interopRoot]).textAndInputPrivacy).isEqualTo(fakeHostPrivacy)
+        assertThat(checkNotNull(fakeContexts[interopChild]).textAndInputPrivacy).isEqualTo(fakeChildPrivacy)
     }
 
     @Test
@@ -453,11 +531,12 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
     }
 
     @Test
-    fun `M retain native children W traverseWindow { decomposer returns null after native handoff }`() {
+    fun `M leave native children out but keep their touch overrides W traverseWindow { decomposer returns null }`() {
         // Given
         val root = mockViewGroup(GlobalBounds(0, 0, 100, 100))
         val composeHost = mockViewGroup(GlobalBounds(0, 0, 100, 100))
         val nativeChild = mockView(GlobalBounds(0, 0, 100, 100))
+        whenever(nativeChild.getTag(R.id.datadog_touch_privacy)).thenReturn(TouchPrivacy.HIDE.name)
         whenever(root.childCount).thenReturn(1)
         whenever(root.getChildAt(0)).thenReturn(composeHost)
         whenever(composeHost.childCount).thenReturn(1)
@@ -479,8 +558,9 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
 
         // Then
         val present = result.doneValue() as WindowWalkResult.Present
-        assertThat(present.layers).hasSize(3)
-        assertThat(present.wireframes).hasSize(3)
+        assertThat(present.layers).hasSize(2)
+        assertThat(present.wireframes).hasSize(2)
+        assertThat(present.touchOverrideAreas).containsValue(TouchPrivacy.HIDE)
     }
 
     @Test
@@ -509,10 +589,9 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
         verify(mockDecomposer, never()).decompose(any(), any())
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = [false, true])
-    fun `M retain native content and log W traverseWindow() { decomposer throws a linkage error }`(
-        fakeRecognitionFailure: Boolean,
+    @Test
+    fun `M log and contain the failure W traverseWindow() { decomposer throws a linkage error }`(
+        @BoolForgery fakeRecognitionFailure: Boolean,
         @StringForgery fakeErrorMessage: String
     ) {
         // Given
@@ -543,12 +622,17 @@ internal class AndroidWindowTraversalCompositionTest : AndroidWindowTraversalTes
 
         // Then
         val fakeWindow = result.doneValue() as WindowWalkResult.Present
-        assertThat(fakeWindow.layers).hasSize(3)
-        assertThat(fakeWindow.wireframes).hasSize(3)
+        val fakeExpectedViewCount = if (fakeRecognitionFailure) 3 else 2
+        assertThat(fakeWindow.layers).hasSize(fakeExpectedViewCount)
+        assertThat(fakeWindow.wireframes).hasSize(fakeExpectedViewCount)
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
-            "Composition host decomposition failed; falling back to native capture",
+            if (fakeRecognitionFailure) {
+                "Composition host recognition failed; capturing the view as a native view"
+            } else {
+                "Composition host decomposition failed; leaving the host content out of the replay"
+            },
             throwable = fakeError,
             onlyOnce = true
         )

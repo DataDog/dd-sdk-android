@@ -11,8 +11,6 @@ import android.view.View
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
-import com.datadog.android.sessionreplay.R
-import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMappingContext
 
@@ -22,11 +20,11 @@ import com.datadog.android.sessionreplay.internal.composition.mapper.CapturedMap
  */
 internal class CompositionHostCapture(
     private val decomposer: CompositionHostDecomposer,
-    private val internalLogger: InternalLogger,
-    private val textAndInputPrivacy: TextAndInputPrivacy
+    private val internalLogger: InternalLogger
 ) {
     @UiThread
-    fun canDecompose(view: View): Boolean = invokeDecomposer(false) { decomposer.canDecompose(view) }
+    fun canDecompose(view: View): Boolean =
+        invokeDecomposer(false, HOST_RECOGNITION_FAILED_MESSAGE) { decomposer.canDecompose(view) }
 
     @UiThread
     fun readTouchOverrideAreas(view: View, shouldContinue: () -> Boolean): Map<Rect, TouchPrivacy>? =
@@ -47,7 +45,7 @@ internal class CompositionHostCapture(
             hostIdentity = mappingContext.ownerIdentity,
             screenDensity = mappingContext.screenDensity,
             hostBounds = mappingContext.bounds,
-            textAndInputPrivacy = resolveTextPrivacy(view, shouldContinue),
+            textAndInputPrivacy = mappingContext.textAndInputPrivacy,
             internalLogger = internalLogger,
             shouldContinue = shouldContinue,
             nativeViewHandoff = { interopView, childIdentity ->
@@ -66,29 +64,6 @@ internal class CompositionHostCapture(
             null
         }
         return if (result != null && shouldContinue()) Result(result, pendingNativeCopies) else null
-    }
-
-    @UiThread
-    private fun resolveTextPrivacy(view: View, shouldContinue: () -> Boolean): TextAndInputPrivacy {
-        var current: View? = view
-        while (current != null && shouldContinue()) {
-            val override = current.getTag(R.id.datadog_text_and_input_privacy) as? String
-            if (override != null) {
-                try {
-                    return TextAndInputPrivacy.valueOf(override)
-                } catch (error: IllegalArgumentException) {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.USER,
-                        { INVALID_TEXT_PRIVACY_OVERRIDE_MESSAGE },
-                        throwable = error,
-                        onlyOnce = true
-                    )
-                }
-            }
-            current = current.parent as? View
-        }
-        return textAndInputPrivacy
     }
 
     @Suppress("TooGenericExceptionCaught") // Optional extension linkage failures must not escape onto the UI thread.
@@ -115,11 +90,11 @@ internal class CompositionHostCapture(
     )
 
     private companion object {
+        const val HOST_RECOGNITION_FAILED_MESSAGE =
+            "Composition host recognition failed; capturing the view as a native view"
         const val HOST_DECOMPOSITION_FAILED_MESSAGE =
-            "Composition host decomposition failed; falling back to native capture"
+            "Composition host decomposition failed; leaving the host content out of the replay"
         const val TOUCH_PRIVACY_REFRESH_FAILED_MESSAGE =
             "Composition touch privacy refresh failed; skipping touch recording"
-        const val INVALID_TEXT_PRIVACY_OVERRIDE_MESSAGE =
-            "Invalid text privacy override; inheriting the parent policy"
     }
 }

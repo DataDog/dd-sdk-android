@@ -11,6 +11,7 @@ import android.webkit.WebView
 import android.widget.TextView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
@@ -35,9 +36,10 @@ internal class DefaultCompositionPipelineFactory(
     private val sdkCore: FeatureSdkCore,
     private val internalCallback: SessionReplayInternalCallback,
     private val touchPrivacyManager: TouchPrivacyManager,
+    private val imagePrivacy: ImagePrivacy,
+    private val textAndInputPrivacy: TextAndInputPrivacy,
     private val compositionHostDecomposer: CompositionHostDecomposer? = null,
     private val dynamicOptimizationEnabled: Boolean,
-    private val textAndInputPrivacy: TextAndInputPrivacy,
     private val customDrawableMappers: List<DrawableToColorMapper> = emptyList(),
     private val snapshotProducerFactory: (ActiveWindowSource, RumContextProvider) -> CapturedSnapshotProducer = {
             windowSource,
@@ -51,7 +53,8 @@ internal class DefaultCompositionPipelineFactory(
                 mapperRegistry = builtInCapturedMappers(sdkCore.internalLogger, customDrawableMappers),
                 internalLogger = sdkCore.internalLogger,
                 compositionHostDecomposer = compositionHostDecomposer,
-                textAndInputPrivacy = textAndInputPrivacy
+                textAndInputPrivacy = textAndInputPrivacy,
+                rootImagePrivacy = imagePrivacy
             ),
             touchPrivacyManager = touchPrivacyManager
         )
@@ -125,7 +128,7 @@ internal class DefaultCompositionPipelineFactory(
 
     private fun createWindowSource(internalLogger: InternalLogger): ActiveWindowSource {
         val hostCapture = compositionHostDecomposer?.let {
-            CompositionHostCapture(it, internalLogger, textAndInputPrivacy)
+            CompositionHostCapture(it, internalLogger)
         }
         val touchPrivacyReader = WindowTouchPrivacyReader(
             internalLogger = internalLogger,

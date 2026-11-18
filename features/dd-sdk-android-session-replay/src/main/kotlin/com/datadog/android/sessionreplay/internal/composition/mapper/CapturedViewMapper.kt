@@ -11,18 +11,25 @@ import androidx.annotation.UiThread
 import com.datadog.android.internal.sessionreplay.composition.CapturedBounds
 import com.datadog.android.internal.sessionreplay.composition.CapturedIdentity
 import com.datadog.android.internal.sessionreplay.composition.CapturedWireframe
+import com.datadog.android.sessionreplay.ImagePrivacy
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.composition.CapturedIdentityFactory
 
 /**
- * Deliberately narrower than the legacy `MappingContext`: no privacy/image-helper fields, since
- * masking and image-resource capture are owned by a later workstream, not by View decomposition.
+ * Deliberately narrower than the legacy `MappingContext`: no image-helper fields, since
+ * image-resource capture is owned by a later workstream, not by View decomposition. During the
+ * UI-thread copy, [imagePrivacy] and [textAndInputPrivacy] carry the view's effective privacy
+ * (after per-view overrides) for mappers that mask while capturing. Contexts rebuilt for
+ * worker-side mapping keep the privacy defaults, so masking cannot be deferred to that step.
  */
 internal data class CapturedMappingContext(
     val identityFactory: CapturedIdentityFactory,
     val ownerIdentity: CapturedIdentity,
     val screenDensity: Float,
     // The native copier supplies geometry once for both the layer and its mapper.
-    val bounds: CapturedBounds? = null
+    val bounds: CapturedBounds? = null,
+    val imagePrivacy: ImagePrivacy = ImagePrivacy.MASK_ALL,
+    val textAndInputPrivacy: TextAndInputPrivacy = TextAndInputPrivacy.MASK_ALL
 )
 
 internal sealed interface CapturedViewMapperResult {

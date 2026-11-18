@@ -17,6 +17,7 @@ import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -379,8 +380,9 @@ internal class CompositionPipelineFactoryTest {
         sdkCore = mockSdkCore,
         internalCallback = mockInternalCallback,
         touchPrivacyManager = mock<TouchPrivacyManager>(),
-        dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+        imagePrivacy = ImagePrivacy.MASK_ALL,
         textAndInputPrivacy = TextAndInputPrivacy.MASK_ALL,
+        dynamicOptimizationEnabled = dynamicOptimizationEnabled,
         snapshotProducerFactory = snapshotProducerFactory,
         recordingTimeBankFactory = recordingTimeBankFactory
     )

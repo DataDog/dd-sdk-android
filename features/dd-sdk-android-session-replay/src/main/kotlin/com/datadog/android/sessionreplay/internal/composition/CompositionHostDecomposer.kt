@@ -37,7 +37,11 @@ import com.datadog.android.sessionreplay.TouchPrivacy
 @Suppress("PackageNameVisibility")
 interface CompositionHostDecomposer {
 
-    /** True if [view] is a host this decomposer knows how to decompose. */
+    /**
+     * True if [view] is a host this decomposer owns. The caller never walks an owned host's native
+     * implementation children, so the view that holds embedded native Views must stay owned, and
+     * recognizing it must not throw, even when it can no longer be decomposed.
+     */
     @InternalApi
     fun canDecompose(view: View): Boolean
 
@@ -51,8 +55,8 @@ interface CompositionHostDecomposer {
 
     /**
      * Decomposes [view]'s content per [request]. Returns null when the host cannot be decomposed.
-     * The SDK caller contains thrown failures, reports them through its SDK-bound logger, and
-     * falls back to ordinary native-View capture. An implementation may disable itself after an
+     * The SDK caller contains thrown failures, reports them through its SDK-bound logger, and then
+     * captures the host without its content. An implementation may disable itself after an
      * incompatible-runtime failure; it must let that first failure reach the caller for reporting.
      */
     @InternalApi
@@ -79,8 +83,8 @@ interface CompositionHostDecomposer {
  * @param nativeViewHandoff Copies an embedded native View for construction on the processing
  * executor. Returns true when the copy succeeds; the decomposer then references `childIdentity`
  * as a child layer in its result. Returns false when the View is filtered out or capture expires.
- * Native subtree construction is deferred. Copies are discarded if the
- * enclosing decomposition returns null, so ordinary native traversal can still provide fallback.
+ * Native subtree construction is deferred. Copies are discarded if the enclosing decomposition
+ * returns null; the host's embedded native Views are then left out of the replay.
  */
 @InternalApi
 class CompositionHostDecomposeRequest(
