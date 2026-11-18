@@ -758,7 +758,7 @@ internal class RumFeatureTest {
             .isInstanceOf(NoOpVitalMonitor::class.java)
         assertThat(testedFeature.frameRateVitalMonitor)
             .isInstanceOf(NoOpVitalMonitor::class.java)
-        assertThat(testedFeature.vitalExecutorService)
+        assertThat(testedFeature.schedulerExecutorService)
             .isInstanceOf(NoOpScheduledExecutorService::class.java)
     }
 
@@ -919,7 +919,7 @@ internal class RumFeatureTest {
             .getFieldValue<Looper, DefaultTimeseriesCollector>("looper")
         assertThat(
             looper.getFieldValue<ScheduledExecutorService, Looper>("scheduledExecutorService")
-        ).isSameAs(testedFeature.vitalExecutorService)
+        ).isSameAs(testedFeature.schedulerExecutorService)
 
         val sessionRegistry = timeseriesCollector
             .getFieldValue<CollectedTimeseriesSessionRegistry, DefaultTimeseriesCollector>("sessionRegistry")
@@ -1081,7 +1081,7 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(appContext.mockInstance)
 
         // Then: timeseries sampling needs a real executor even when vitals are disabled.
-        assertThat(testedFeature.vitalExecutorService)
+        assertThat(testedFeature.schedulerExecutorService)
             .isNotInstanceOf(NoOpScheduledExecutorService::class.java)
     }
 
@@ -1183,7 +1183,7 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(appContext.mockInstance)
 
         // Then
-        assertThat(testedFeature.vitalExecutorService)
+        assertThat(testedFeature.schedulerExecutorService)
             .isInstanceOf(NoOpScheduledExecutorService::class.java)
     }
 
@@ -1233,14 +1233,14 @@ internal class RumFeatureTest {
     fun `M shut down vital executor W onStop()`() {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
-        val mockVitalExecutorService: ScheduledThreadPoolExecutor = mock()
-        testedFeature.vitalExecutorService = mockVitalExecutorService
+        val mockSchedulerExecutorService: ScheduledThreadPoolExecutor = mock()
+        testedFeature.schedulerExecutorService = mockSchedulerExecutorService
 
         // When
         testedFeature.onStop()
 
         // Then
-        verify(mockVitalExecutorService).shutdownNow()
+        verify(mockSchedulerExecutorService).shutdownNow()
     }
 
     @Test
@@ -1252,7 +1252,7 @@ internal class RumFeatureTest {
         testedFeature.onStop()
 
         // Then
-        assertThat(testedFeature.vitalExecutorService)
+        assertThat(testedFeature.schedulerExecutorService)
             .isInstanceOf(NoOpScheduledExecutorService::class.java)
     }
 
