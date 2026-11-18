@@ -3,8 +3,6 @@ Dependencies List
 Dependency                                                                           |     Size | Classpath
 androidx.annotation:annotation-jvm:1.9.1                                             |    59 Kb | both
 com.google.code.gson:gson:2.10.1                                                     |   276 Kb | both
-com.google.re2j:re2j:1.7                                                             |   111 Kb | both
-org.jctools:jctools-core:3.3.0                                                       |   328 Kb | both
 org.jetbrains.kotlin:kotlin-stdlib:2.0.21                                            |  1706 Kb | both
 org.jetbrains:annotations:13.0                                                       |    17 Kb | both
 

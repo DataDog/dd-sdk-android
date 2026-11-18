@@ -253,6 +253,8 @@ coil3ComposeCore = { module = "io.coil-kt.coil3:coil-compose-core", version.ref 
 coil3NetworkOkHttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil3" }
 
 frescoCore = { module = "com.facebook.fresco:fresco", version.ref = "fresco" }
+frescoImagePipeline = { module = "com.facebook.fresco:imagepipeline", version.ref = "fresco" }
+frescoImagePipelineBase = { module = "com.facebook.fresco:imagepipeline-base", version.ref = "fresco" }
 frescoOkHttp3 = { module = "com.facebook.fresco:imagepipeline-okhttp3", version.ref = "fresco" }
 
 glideAnnotations = { module = "com.github.bumptech.glide:annotations", version.ref = "glide" }

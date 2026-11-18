@@ -94,17 +94,14 @@ You can build the SDK using the following Gradle command:
 
 ### Reviewing dependency requirements
 
-Each publishable module's `transitiveDependencies` report follows its external
-dependency trees on the release classpaths, stopping at SDK project references.
-Check those projects' reports for their dependencies. Artifacts appear once,
-labelled `compile`, `runtime`, or `both`. Different resolved versions remain
-separate. Each AAR with a usable declaration has
-`(minCompileSdk=…)` next to its coordinates. Check the highest value across both
-classpaths when reviewing updates. An unannotated artifact has no usable AAR
-declaration; this metadata does not guarantee consumer compatibility.
+A module's `transitiveDependencies` report lists external artifacts on its
+release compile and runtime classpaths. Check other SDK modules' reports for
+their dependencies. Entries show the resolved version, classpath, and any
+declared `minCompileSdk`.
 
-Compile and runtime size totals overlap, so do not add them. They measure resolved
-artifact sizes, not final APK size after shrinking and packaging.
+When changing a dependency, compare the consumer's resolved compile and runtime
+classpaths and check the highest declared `minCompileSdk` across both. Use
+`runtimeOnly` for dependencies needed solely at runtime.
 
 Regenerate reports after dependency or generator changes:
 

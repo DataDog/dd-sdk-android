@@ -6,7 +6,7 @@ androidx.annotation:annotation-experimental:1.1.0                               
 androidx.annotation:annotation-jvm:1.9.1                                             |    59 Kb | both
 androidx.arch.core:core-common:2.1.0                                                 |    10 Kb | both
 androidx.arch.core:core-runtime:2.1.0                                                |     5 Kb | both
-androidx.collection:collection-jvm:1.4.5                                             |   770 Kb | both
+androidx.collection:collection:1.0.0                                                 |    40 Kb | runtime
 androidx.core:core:1.6.0 (minCompileSdk=1)                                           |   905 Kb | runtime
 androidx.lifecycle:lifecycle-common:2.1.0                                            |    21 Kb | both
 androidx.lifecycle:lifecycle-livedata-core:2.1.0                                     |     8 Kb | both
@@ -32,5 +32,5 @@ org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                                  
 org.jetbrains.kotlin:kotlin-stdlib:2.0.21                                            |  1706 Kb | both
 org.jetbrains:annotations:13.0                                                       |    17 Kb | both
 
-Total compile dependency artifact size: 5 Mb
+Total compile dependency artifact size: 4 Mb
 Total runtime dependency artifact size: 6 Mb
