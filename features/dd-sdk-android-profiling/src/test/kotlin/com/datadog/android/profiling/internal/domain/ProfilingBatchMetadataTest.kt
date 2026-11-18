@@ -99,6 +99,78 @@ internal class ProfilingBatchMetadataTest {
     }
 
     @Test
+    fun `M read a batch written by the previous implementation W fromBytesOrNull()`(forge: Forge) {
+        // Given — a blob built the way the previous implementation wrote it (ByteBuffer + toBytes)
+        val fakePerfettoBytes = forge.aString(size = forge.anInt(min = 1, max = 4096)).toByteArray()
+        val fakeRumBytes = forge.aString().toByteArray()
+
+        // When
+        val restored = checkNotNull(
+            ProfilingBatchMetadata.fromBytesOrNull(
+                legacyBlob(fakePerfettoBytes, fakeRumBytes)
+            )
+        )
+
+        // Then
+        assertThat(restored.perfetto()).isEqualTo(fakePerfettoBytes)
+        assertThat(restored.rumMobileEvents()).isEqualTo(fakeRumBytes)
+    }
+
+    @Test
+    fun `M read a batch written by the previous implementation W fromBytesOrNull() {empty rum events}`(forge: Forge) {
+        // Given
+        val fakePerfettoBytes = forge.aString(size = forge.anInt(min = 1, max = 4096)).toByteArray()
+
+        // When
+        val restored = checkNotNull(
+            ProfilingBatchMetadata.fromBytesOrNull(legacyBlob(fakePerfettoBytes, ByteArray(0)))
+        )
+
+        // Then
+        assertThat(restored.perfetto()).isEqualTo(fakePerfettoBytes)
+        assertThat(restored.rumMobileEvents()).isEmpty()
+    }
+
+    @Test
+    fun `M read a batch written by the previous implementation W fromBytesOrNull() {large perfetto payload}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakePerfettoBytes = forge.aString(size = 65_536 + forge.anInt(min = 1, max = 1024)).toByteArray()
+        val fakeRumBytes = forge.aString().toByteArray()
+
+        // When
+        val restored = checkNotNull(
+            ProfilingBatchMetadata.fromBytesOrNull(
+                legacyBlob(fakePerfettoBytes, fakeRumBytes)
+            )
+        )
+
+        // Then
+        assertThat(restored.perfetto()).isEqualTo(fakePerfettoBytes)
+        assertThat(restored.rumMobileEvents()).isEqualTo(fakeRumBytes)
+    }
+
+    @Test
+    fun `M keep the golden DDCP layout W fromBytesOrNull() and encode()`() {
+        // Given — perfetto [1, 2, 3] and rum events "[]", spelled out byte by byte
+        val goldenBlob = byteArrayOf(
+            0x44, 0x44, 0x43, 0x50, // "DDCP"
+            0x00, 0x00, 0x00, 0x03, // perfetto length, big-endian
+            0x01, 0x02, 0x03, // perfetto payload
+            0x5B, 0x5D // "[]"
+        )
+
+        // When
+        val restored = checkNotNull(ProfilingBatchMetadata.fromBytesOrNull(goldenBlob))
+
+        // Then
+        assertThat(restored.perfetto()).isEqualTo(byteArrayOf(0x01, 0x02, 0x03))
+        assertThat(restored.rumMobileEvents()).isEqualTo("[]".toByteArray())
+        assertThat(encode(byteArrayOf(0x01, 0x02, 0x03), "[]".toByteArray())).isEqualTo(goldenBlob)
+    }
+
+    @Test
     fun `M return null W encode() {input longer than declared length}`(forge: Forge) {
         // Given
         val fakePerfettoBytes = forge.aString(size = forge.anInt(min = 2, max = 100)).toByteArray()
@@ -251,6 +323,16 @@ internal class ProfilingBatchMetadataTest {
         // When / Then
         assertThat(ProfilingBatchMetadata.fromBytesOrNull(randomBytes)).isNull()
     }
+
+    // Spelled out independently of the production code, the way the previous implementation built it.
+    private fun legacyBlob(perfettoBytes: ByteArray, rumBytes: ByteArray): ByteArray =
+        ByteBuffer.allocate(4 + Int.SIZE_BYTES + perfettoBytes.size + rumBytes.size)
+            .order(ByteOrder.BIG_ENDIAN)
+            .put(byteArrayOf(0x44, 0x44, 0x43, 0x50))
+            .putInt(perfettoBytes.size)
+            .put(perfettoBytes)
+            .put(rumBytes)
+            .array()
 
     private fun encode(perfettoBytes: ByteArray, rumBytes: ByteArray): ByteArray =
         checkNotNull(ProfilingBatchMetadata.encode(ByteArrayInputStream(perfettoBytes), perfettoBytes.size, rumBytes))
