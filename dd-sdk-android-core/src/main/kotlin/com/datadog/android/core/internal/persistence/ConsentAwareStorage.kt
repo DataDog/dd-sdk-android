@@ -102,9 +102,8 @@ internal class ConsentAwareStorage(
             return BatchData(id = batchId, data = batchData, metadata = batchMetadata)
         } finally {
             if (!isBatchRead) {
-                synchronized(lockedReadBatches) {
-                    lockedReadBatches.remove(batch)
-                }
+                // A batch that failed to read would fail again on every upload cycle and block newer batches
+                releaseBatch(batch, RemovalReason.Invalid, deleteBatch = true)
             }
         }
     }
@@ -120,15 +119,7 @@ internal class ConsentAwareStorage(
             lockedReadBatches.firstOrNull { batchId.matchesFile(it.file) }
         } ?: return
 
-        try {
-            if (deleteBatch) {
-                deleteBatch(batch, removalReason)
-            }
-        } finally {
-            synchronized(lockedReadBatches) {
-                lockedReadBatches.remove(batch)
-            }
-        }
+        releaseBatch(batch, removalReason, deleteBatch)
     }
 
     /** @inheritdoc */
@@ -163,6 +154,19 @@ internal class ConsentAwareStorage(
             TrackingConsent.GRANTED -> grantedOrchestrator
             TrackingConsent.PENDING -> pendingOrchestrator
             TrackingConsent.NOT_GRANTED -> null
+        }
+    }
+
+    @WorkerThread
+    private fun releaseBatch(batch: Batch, removalReason: RemovalReason, deleteBatch: Boolean) {
+        try {
+            if (deleteBatch) {
+                deleteBatch(batch, removalReason)
+            }
+        } finally {
+            synchronized(lockedReadBatches) {
+                lockedReadBatches.remove(batch)
+            }
         }
     }
 

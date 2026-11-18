@@ -49,6 +49,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -330,8 +331,7 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `M release batch W readNextBatch() { readData throws }`(
-        @Forgery fakeData: List<RawBatchEvent>,
+    fun `M delete and release batch W readNextBatch() { readData throws }`(
         @Forgery batchFile: File,
         @StringForgery fakeMessage: String
     ) {
@@ -340,16 +340,21 @@ internal class ConsentAwareStorageTest {
         whenever(mockGrantedOrchestrator.getMetadataFile(batchFile)) doReturn null
         whenever(mockBatchReaderWriter.readData(batchFile, fakeTelemetryContext))
             .doThrow(IllegalStateException(fakeMessage))
-            .doReturn(fakeData)
+        whenever(mockFileMover.delete(batchFile)) doReturn true
 
         // When
-        assertThrows<IllegalStateException> { testedStorage.readNextBatch() }
-        val batchData = testedStorage.readNextBatch()
+        repeat(2) {
+            assertThrows<IllegalStateException> { testedStorage.readNextBatch() }
+        }
 
         // Then
-        checkNotNull(batchData)
-        assertThat(batchData.id).isEqualTo(BatchId.fromFile(batchFile))
-        assertThat(batchData.data).isEqualTo(fakeData)
+        verify(mockFileMover, times(2)).delete(batchFile)
+        verify(mockMetricsDispatcher, times(2)).sendBatchDeletedMetric(
+            batchFile,
+            RemovalReason.Invalid,
+            fakePendingBatches - 1
+        )
+        verify(mockGrantedOrchestrator, times(2)).getReadableFile(emptySet())
     }
 
     @Test
