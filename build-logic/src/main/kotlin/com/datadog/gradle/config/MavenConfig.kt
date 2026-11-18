@@ -9,6 +9,7 @@ package com.datadog.gradle.config
 import com.android.build.api.dsl.LibraryExtension
 import com.datadog.gradle.utils.Version
 import org.gradle.api.Project
+import org.gradle.api.component.AdhocComponentWithVariants
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.authentication.aws.AwsImAuthentication
@@ -93,6 +94,14 @@ internal fun Project.publishingConfig(
         return
     }
 
+    val publicationVersion = AndroidConfig.VERSION.name
+    val publishesTestFixtures = androidExtension.testFixtures.enable
+    if (publishesTestFixtures) {
+        // AGP uses the project coordinates to generate the published fixture capabilities.
+        group = MavenConfig.GROUP_ID
+        version = publicationVersion
+    }
+
     androidExtension.publishing {
         singleVariant(MavenConfig.PUBLICATION) {
             withSourcesJar()
@@ -108,13 +117,24 @@ internal fun Project.publishingConfig(
             return@afterEvaluate
         }
 
+        val releaseComponent = components.getByName(MavenConfig.PUBLICATION)
+        if (publishesTestFixtures) {
+            val component = releaseComponent as AdhocComponentWithVariants
+            listOf("Api", "Runtime").forEach { usage ->
+                val fixtures = configurations.getByName("releaseTestFixturesVariantRelease${usage}Publication")
+                component.withVariantsFromConfiguration(fixtures) {
+                    mapToOptional()
+                }
+            }
+        }
+
         publishingExtension.apply {
             publications.create<MavenPublication>(MavenConfig.PUBLICATION) {
-                from(components.getByName("release"))
+                from(releaseComponent)
 
                 groupId = MavenConfig.GROUP_ID
                 artifactId = customArtifactId
-                version = AndroidConfig.VERSION.name
+                version = publicationVersion
 
                 pom {
                     name.set(projectName)
