@@ -6,7 +6,7 @@
 
 package com.datadog.android.trace.internal.compat.function
 
-internal interface IntFunction<R> {
+internal interface IntFunction<out R> {
 
     fun apply(value: Int): R
 }

@@ -14,6 +14,8 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.res.Resources
 import android.os.Handler
+import android.view.ViewGroup
+import android.widget.LinearLayout
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.storage.DataWriter
@@ -1277,9 +1279,9 @@ internal class RumFeatureTest {
         testedFeature.enableDebugging(mockRumMonitor)
 
         // Then
-        assertThat(testedFeature.debugActivityLifecycleListener.get()).isNotNull
+        assertThat(testedFeature.debugActivityLifecycleListener).isNotNull
         verify(testedFeature.appContext as Application)
-            .registerActivityLifecycleCallbacks(testedFeature.debugActivityLifecycleListener.get())
+            .registerActivityLifecycleCallbacks(testedFeature.debugActivityLifecycleListener)
     }
 
     @Test
@@ -1292,9 +1294,9 @@ internal class RumFeatureTest {
         testedFeature.enableDebugging(mockRumMonitor)
 
         // Then
-        assertThat(testedFeature.debugActivityLifecycleListener.get()).isNotNull
+        assertThat(testedFeature.debugActivityLifecycleListener).isNotNull
         verify(testedFeature.appContext as Application)
-            .registerActivityLifecycleCallbacks(testedFeature.debugActivityLifecycleListener.get())
+            .registerActivityLifecycleCallbacks(testedFeature.debugActivityLifecycleListener)
     }
 
     @Test
@@ -1303,7 +1305,7 @@ internal class RumFeatureTest {
         testedFeature.enableDebugging(mockRumMonitor)
 
         // Then
-        assertThat(testedFeature.debugActivityLifecycleListener).hasValue(null)
+        assertThat(testedFeature.debugActivityLifecycleListener).isNull()
     }
 
     @Test
@@ -1311,13 +1313,92 @@ internal class RumFeatureTest {
         // Given
         testedFeature.onInitialize(appContext.mockInstance)
         testedFeature.enableDebugging(mockRumMonitor)
-        val listener = testedFeature.debugActivityLifecycleListener.get()
+        val listener = testedFeature.debugActivityLifecycleListener
 
         // When
         testedFeature.disableDebugging()
 
         // Then
-        assertThat(testedFeature.debugActivityLifecycleListener).hasValue(null)
+        assertThat(testedFeature.debugActivityLifecycleListener).isNull()
+        verify(testedFeature.appContext as Application)
+            .unregisterActivityLifecycleCallbacks(listener)
+    }
+
+    @Test
+    fun `M remove debug overlay W disableDebugging() {on main thread}`() {
+        // Given
+        val mockHandler: Handler = mock()
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter },
+            handler = mockHandler
+        )
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.enableDebugging(mockRumMonitor)
+        val mockParent: ViewGroup = mock()
+        val mockContainer: LinearLayout = mock()
+        whenever(mockContainer.parent) doReturn mockParent
+        checkNotNull(testedFeature.debugActivityLifecycleListener).rumViewsContainer = mockContainer
+
+        // When
+        testedFeature.disableDebugging()
+
+        // Then
+        verify(mockParent).removeView(mockContainer)
+        verify(mockRumMonitor).setDebugListener(null)
+        verifyNoInteractions(mockHandler)
+    }
+
+    @Test
+    fun `M post debug overlay removal to handler W disableDebugging() {not on main thread}`() {
+        // Given
+        val mockHandler: Handler = mock()
+        whenever(mockHandler.post(any())) doAnswer {
+            it.getArgument(0, Runnable::class.java).run()
+            true
+        }
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter },
+            handler = mockHandler
+        )
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.enableDebugging(mockRumMonitor)
+        val mockParent: ViewGroup = mock()
+        val mockContainer: LinearLayout = mock()
+        whenever(mockContainer.parent) doReturn mockParent
+        checkNotNull(testedFeature.debugActivityLifecycleListener).rumViewsContainer = mockContainer
+
+        // When
+        Thread { testedFeature.disableDebugging() }.apply {
+            start()
+            join()
+        }
+
+        // Then
+        inOrder(mockRumMonitor, mockHandler, mockParent) {
+            verify(mockRumMonitor).setDebugListener(null)
+            verify(mockHandler).post(any())
+            verify(mockParent).removeView(mockContainer)
+        }
+    }
+
+    @Test
+    fun `M disable RUM debugging W onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        testedFeature.enableDebugging(mockRumMonitor)
+        val listener = testedFeature.debugActivityLifecycleListener
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(testedFeature.debugActivityLifecycleListener).isNull()
         verify(testedFeature.appContext as Application)
             .unregisterActivityLifecycleCallbacks(listener)
     }

@@ -25,11 +25,14 @@ internal class ExperimentationOptOut(val mode: ExperimentationOptOutMode = Exper
     val stateLock = Any()
     private var currentRequest: Request? = null
 
-    fun prepare(context: EvaluationContext): Request {
+    fun prepare(
+        context: EvaluationContext,
+        assignmentAuthorization: AssignmentAuthorization.Request? = null
+    ): Request {
         val snapshot = context.copy(attributes = context.attributes.toMap())
         val supplied = enabled && snapshot.attributes.containsKey(ATTRIBUTE)
         val invalid = supplied && !isValidTimestamp(snapshot.attributes[ATTRIBUTE])
-        val request = Request(snapshot, supplied && !invalid, invalid, mode)
+        val request = Request(snapshot, supplied && !invalid, invalid, mode, assignmentAuthorization)
         synchronized(stateLock) { currentRequest = request }
         return request
     }
@@ -67,7 +70,8 @@ internal class ExperimentationOptOut(val mode: ExperimentationOptOutMode = Exper
         val context: EvaluationContext,
         val optedOut: Boolean,
         val invalid: Boolean,
-        val mode: ExperimentationOptOutMode
+        val mode: ExperimentationOptOutMode,
+        val assignmentAuthorization: AssignmentAuthorization.Request? = null
     )
 
     private data class Timestamp(val wholeSecondMillis: Long, val fraction: String)

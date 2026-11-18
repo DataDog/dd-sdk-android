@@ -1,15 +1,19 @@
 Dependencies List
 
-androidx.annotation:annotation:1.0.0                            :   24 Kb
-androidx.sqlite:sqlite:2.1.0                                    :   10 Kb
-com.squareup.okhttp3:okhttp:4.12.1                              :  773 Kb
-com.squareup.okio:okio-jvm:3.6.0                                :  351 Kb
-com.squareup.sqldelight:android-driver:1.5.5                    :   23 Kb
-com.squareup.sqldelight:runtime-jvm:1.5.5                       :   44 Kb
-org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
-org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
-org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
-org.jetbrains:annotations:13.0                                  :   17 Kb
+Dependency                                                                           |     Size | Classpath
+androidx.annotation:annotation-jvm:1.9.1                                             |    59 Kb | runtime
+androidx.annotation:annotation:1.0.0                                                 |    24 Kb | compile
+androidx.sqlite:sqlite-framework:2.3.0 (minCompileSdk=33)                            |    31 Kb | runtime
+androidx.sqlite:sqlite:2.1.0                                                         |    10 Kb | compile
+androidx.sqlite:sqlite:2.3.0 (minCompileSdk=33)                                      |    29 Kb | runtime
+com.squareup.sqldelight:android-driver:1.5.5                                         |    23 Kb | both
+com.squareup.sqldelight:runtime-jvm:1.5.5                                            |    44 Kb | both
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0                                        |    963 b | compile
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                                       |    959 b | runtime
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0                                        |    968 b | compile
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                                       |    965 b | runtime
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                                            |  1706 Kb | both
+org.jetbrains:annotations:13.0                                                       |    17 Kb | both
 
-Total transitive dependencies size                              :    2 Mb
-
+Total compile dependency artifact size: 1829 Kb
+Total runtime dependency artifact size: 1914 Kb

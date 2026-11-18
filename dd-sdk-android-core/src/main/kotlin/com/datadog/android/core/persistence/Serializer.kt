@@ -13,7 +13,7 @@ import java.util.Locale
 /**
  * An interface which can transform an object of type [T] into a formatted String.
  */
-interface Serializer<T : Any> {
+interface Serializer<in T : Any> {
     /**
      * Serializes the data into a String.
      * @return the String representing the data or null if any exception occurs

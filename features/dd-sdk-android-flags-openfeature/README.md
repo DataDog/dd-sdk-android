@@ -81,6 +81,39 @@ OpenFeatureAPI.setProviderAndWait(provider)
 
 You can configure the underlying `FlagsClient` before converting it to an OpenFeature provider:
 
+#### Authorize assignment downloads for a subject
+
+Subject authorization prevents the SDK from returning cached flag assignments for one subject (targeting key) while
+the app requests assignments for another subject. If your environment requires subject authorization, get a JWT for
+the subject from your backend. Then pass the complete OpenFeature context, including the token in the
+`dd_assignment_token` attribute, in a single `OpenFeatureAPI.setEvaluationContext` call:
+
+```kotlin
+OpenFeatureAPI.setEvaluationContext(
+    ImmutableContext(
+        targetingKey = "user-123",
+        attributes = mapOf(
+            "country" to Value.String("US"),
+            "dd_assignment_token" to Value.String(jwtFromYourBackend)
+        )
+    )
+)
+```
+
+The provider sends the token only in the reserved `DD-Assignment-Token` request header. It removes the token from the
+Datadog targeting context, persistence, exposure data, evaluation telemetry, and logs.
+
+**Note**: OpenFeature and application hooks can still read the token from the original OpenFeature context. OpenFeature
+Kotlin SDK 0.6.2 uses a global provider and evaluation context, and named clients do not isolate that context. If hooks
+or other consumers must not receive the token, use the native `FlagsClient` API instead of the shared OpenFeature
+context.
+
+Pass the token as a `Value.String`. If the value is `Value.Null`, missing, or an empty string, the provider sends no
+header. For other value types, or strings that contain whitespace or characters other than printable ASCII, the
+provider omits the token, logs a fixed warning that does not include the value, and sends the request without a token.
+For details about same-subject fallback, cross-subject isolation, recovery, and server rejections, see
+[Authorize assignment downloads for a subject](../dd-sdk-android-flags/README.md#authorize-assignment-downloads-for-a-subject).
+
 #### Control evaluation telemetry
 
 Enable the control on the underlying client. Supply your decision as a typed boolean in the OpenFeature context:

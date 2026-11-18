@@ -46,7 +46,6 @@ dependencies {
     implementation(libs.kotlinRuntime)
 
     // Android Instrumentation
-    implementation(libs.androidXFragment)
     implementation(libs.androidXCoreKtx)
 
     testImplementation(project(":tools:unit")) {

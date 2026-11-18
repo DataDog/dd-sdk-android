@@ -390,15 +390,9 @@ internal class ExposureHookTest {
     fun `M report a non-exposure W getBooleanDetails() {after hook replaces the context}`(forge: Forge) {
         // Given
         lateinit var client: FlagsClient
-        val contextHook = object : Hook<Boolean> {
-            override fun after(
-                ctx: HookContext<Boolean>,
-                details: FlagEvaluationDetails<Boolean>,
-                hints: Map<String, Any>
-            ) {
-                fixture.pauseAssignments = true
-                client.setEvaluationContext(EvaluationContext(fakeOtherSubject))
-            }
+        val contextHook = afterEvaluation {
+            fixture.pauseAssignments = true
+            client.setEvaluationContext(EvaluationContext(fakeOtherSubject))
         }
         client = start(forge, optOutMode = ExperimentationOptOutMode.IMMEDIATE)
 
@@ -411,6 +405,51 @@ internal class ExposureHookTest {
         assertThat(evaluations.single().isExposure).isFalse()
         assertThat(evaluations.single().shouldSend()).isFalse()
         assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).isEmpty()
+    }
+
+    @Test
+    fun `M keep evaluation and skip exposure W getBooleanDetails() {authorized subject replaced in after hook}`(
+        forge: Forge
+    ) {
+        // Given
+        lateinit var client: FlagsClient
+        val contextHook = afterEvaluation {
+            fixture.pauseAssignments = true
+            client.setEvaluationContext(
+                EvaluationContext(
+                    fakeOtherSubject,
+                    mapOf(ASSIGNMENT_TOKEN_ATTRIBUTE to REPLACEMENT_ASSIGNMENT_TOKEN)
+                )
+            )
+        }
+        client = start(
+            forge,
+            initialContext = ImmutableContext(
+                SUBJECT,
+                mapOf(
+                    fakeAttributeKey to Value.String(fakeAttributeValue),
+                    ASSIGNMENT_TOKEN_ATTRIBUTE to Value.String(ASSIGNMENT_TOKEN)
+                )
+            )
+        )
+
+        // When
+        val details = OpenFeatureAPI.getClient().getBooleanDetails(FLAG, false, hookOptions(contextHook))
+        fixture.flush()
+
+        // Then
+        assertThat(details.value).isTrue()
+        assertThat(details.errorCode).isNull()
+        val evaluation = evaluations.single()
+        assertThat(evaluation.isExposure).isFalse()
+        assertThat(evaluation.shouldSend()).isFalse()
+        assertThat(evaluation.targetingKey).isEqualTo(SUBJECT)
+        assertThat(evaluation.features).isEqualTo(hookFeatures())
+        val callbackContext = checkNotNull(evaluation.evaluationContext)
+        assertThat(callbackContext.asMap()).doesNotContainKey(ASSIGNMENT_TOKEN_ATTRIBUTE)
+        assertThat(fixture.events(Feature.FLAGS_FEATURE_NAME)).isEmpty()
+        assertThat(fixture.events(Feature.FLAGS_EVALUATIONS_FEATURE_NAME).single().toString())
+            .doesNotContain(ASSIGNMENT_TOKEN_ATTRIBUTE, ASSIGNMENT_TOKEN, REPLACEMENT_ASSIGNMENT_TOKEN)
     }
 
     @Test
@@ -509,6 +548,14 @@ internal class ExposureHookTest {
         repeat(times) { OpenFeatureAPI.getClient().getBooleanValue(INNER_FLAG, false) }
     }
 
+    private fun afterEvaluation(action: () -> Unit) = object : Hook<Boolean> {
+        override fun after(
+            ctx: HookContext<Boolean>,
+            details: FlagEvaluationDetails<Boolean>,
+            hints: Map<String, Any>
+        ) = action()
+    }
+
     private fun start(
         forge: Forge,
         trackExposures: Boolean = true,
@@ -517,7 +564,11 @@ internal class ExposureHookTest {
         hooksBefore: List<Hook<*>> = emptyList(),
         clientCore: (InternalSdkCore) -> InternalSdkCore = { it },
         wrapProvider: (FeatureProvider) -> FeatureProvider = { it },
-        registerExposureHook: Boolean = true
+        registerExposureHook: Boolean = true,
+        initialContext: ImmutableContext = ImmutableContext(
+            SUBJECT,
+            mapOf(fakeAttributeKey to Value.String(fakeAttributeValue))
+        )
     ): FlagsClient {
         fixture = FlagsTelemetryTestFixture(forge, trackExposures)
         fixture.assignments(
@@ -561,7 +612,7 @@ internal class ExposureHookTest {
         runBlocking {
             OpenFeatureAPI.setProviderAndWait(
                 wrapProvider(client.asOpenFeatureProvider()),
-                ImmutableContext(SUBJECT, mapOf(fakeAttributeKey to Value.String(fakeAttributeValue))),
+                initialContext,
                 Dispatchers.Unconfined
             )
         }
@@ -578,6 +629,9 @@ internal class ExposureHookTest {
         private const val SUBJECT = "subject"
         private const val ALLOCATION = "holdout-allocation"
         private const val INNER_FLAG = "inner-flag"
+        private const val ASSIGNMENT_TOKEN_ATTRIBUTE = "dd_assignment_token"
+        private const val ASSIGNMENT_TOKEN = "header.payload.signature"
+        private const val REPLACEMENT_ASSIGNMENT_TOKEN = "replacement.header.payload.signature"
         private const val DELEGATES_ALL = "delegates hooks and metadata"
         private const val OWN_METADATA = "own metadata"
         private const val DROPS_HOOKS = "drops hooks"

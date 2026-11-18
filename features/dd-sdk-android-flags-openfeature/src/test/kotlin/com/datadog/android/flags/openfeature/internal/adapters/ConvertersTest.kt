@@ -32,6 +32,43 @@ import dev.openfeature.kotlin.sdk.exceptions.ErrorCode as OpenFeatureErrorCode
 internal class ConvertersTest {
 
     @Test
+    fun `M preserve string assignment token for native extraction W toDatadogEvaluationContext()`() {
+        // Given
+        val token = "header.payload.signature"
+        val context = ImmutableContext("subject", mapOf("dd_assignment_token" to Value.String(token)))
+
+        // When
+        val converted = context.toDatadogEvaluationContext()
+
+        // Then
+        assertThat(converted.attributes).isEqualTo(mapOf("dd_assignment_token" to token))
+    }
+
+    @Test
+    fun `M omit null assignment token W toDatadogEvaluationContext()`() {
+        // Given
+        val context = ImmutableContext("subject", mapOf("dd_assignment_token" to Value.Null))
+
+        // When
+        val converted = context.toDatadogEvaluationContext()
+
+        // Then
+        assertThat(converted.attributes).doesNotContainKey("dd_assignment_token")
+    }
+
+    @Test
+    fun `M preserve invalid typed assignment token for native rejection W toDatadogEvaluationContext()`() {
+        // Given
+        val context = ImmutableContext("subject", mapOf("dd_assignment_token" to Value.Boolean(true)))
+
+        // When
+        val converted = context.toDatadogEvaluationContext()
+
+        // Then
+        assertThat(converted.attributes["dd_assignment_token"]).isEqualTo("\u0000")
+    }
+
+    @Test
     fun `M return only HOOK features W hookFeatures()`(
         @StringForgery fakeAllocationKey: String,
         @StringForgery fakeFeatureValue: String,
@@ -484,14 +521,10 @@ internal class ConvertersTest {
 
     // endregion
 
-    // region toDatadogEvaluationContext
-    // Note: Context conversion is tested indirectly through provider integration tests
-    // Direct unit tests removed due to ImmutableContext API complexity
-    // endregion
-
     companion object {
         @JvmStatic
         fun errorCodeMappings() = listOf(
+            Arguments.of(ErrorCode.GENERAL, OpenFeatureErrorCode.GENERAL),
             Arguments.of(ErrorCode.PROVIDER_NOT_READY, OpenFeatureErrorCode.PROVIDER_NOT_READY),
             Arguments.of(ErrorCode.FLAG_NOT_FOUND, OpenFeatureErrorCode.FLAG_NOT_FOUND),
             Arguments.of(ErrorCode.PARSE_ERROR, OpenFeatureErrorCode.PARSE_ERROR),

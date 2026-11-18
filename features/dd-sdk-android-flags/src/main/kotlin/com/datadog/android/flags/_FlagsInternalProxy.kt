@@ -9,7 +9,9 @@ package com.datadog.android.flags
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.NoOpFlagsClient
+import com.datadog.android.flags.internal.evaluation.EvaluationContextOutcomeCallback
 import com.datadog.android.flags.model.EvaluationContext
+import com.datadog.android.flags.model.FlagsClientState
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.UnparsedFlag
 import com.datadog.android.lint.InternalApi
@@ -39,11 +41,21 @@ class _FlagsInternalProxy(private val client: FlagsClient) {
 
     fun isExperimentationOptOutEnabled(): Boolean =
         (client as? DatadogFlagsClient)?.experimentationOptOut?.enabled == true
-    fun setEvaluationContext(
+
+    fun setEvaluationContextWithOutcome(
         context: EvaluationContext,
-        callback: EvaluationContextCallback?,
-        telemetryOptedOut: Boolean
+        telemetryOptedOut: Boolean?,
+        completion: (FlagsClientState, Throwable?) -> Unit
     ) {
+        val callback = object : EvaluationContextOutcomeCallback {
+            override fun onSuccess(state: FlagsClientState) = completion(state, null)
+
+            override fun onFailure(error: Throwable, state: FlagsClientState) = completion(state, error)
+
+            override fun onSuccess() = completion(client.state.getCurrentState(), null)
+
+            override fun onFailure(error: Throwable) = completion(client.state.getCurrentState(), error)
+        }
         if (client is DatadogFlagsClient) {
             client.setEvaluationContext(context, callback, telemetryOptedOut)
         } else {

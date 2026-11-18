@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "AssignmentAuthorizationErrorResponse",
+  "description": "JSON:API error response used to identify assignment authorization failures.",
+  "type": "object",
+  "properties": {
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string" }
+        }
+      }
+    }
+  },
+  "required": ["errors"]
+}
