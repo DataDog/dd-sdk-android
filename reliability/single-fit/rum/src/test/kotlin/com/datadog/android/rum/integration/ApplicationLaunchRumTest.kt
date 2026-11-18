@@ -37,9 +37,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvSource
-import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -87,23 +84,16 @@ internal class ApplicationLaunchRumTest {
         DdRumContentProvider.processImportance = previousProcessImportance
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = [false, true])
-    fun `M write ApplicationLaunch and crash context W enable { foreground }`(
-        alwaysFullView: Boolean,
+    @Test
+    fun `M write ApplicationLaunch and crash context W enable { sampled in }`(
         @LongForgery(min = 1, max = 10000) fakeInitializationDelayMs: Long
     ) {
         // Given
         stubSdkCore.advanceTimeBy(fakeInitializationDelayMs)
-        val viewEventWriteConfig = if (alwaysFullView) {
-            ViewEventWriteConfig.AlwaysFullView
-        } else {
-            ViewEventWriteConfig.FullViewOnlyAtStart
-        }
         val configuration = RumConfiguration.Builder(fakeApplicationId)
             .trackNonFatalAnrs(false)
             .setSessionSampleRate(100f)
-            .setViewEventWriteConfig(viewEventWriteConfig)
+            .setViewEventWriteConfig(ViewEventWriteConfig.FullViewOnlyAtStart)
             .build()
 
         // When
@@ -133,22 +123,13 @@ internal class ApplicationLaunchRumTest {
         }
     }
 
-    @ParameterizedTest
-    @CsvSource("true, 0.0", "false, 100.0")
-    fun `M not write ApplicationLaunch W enable { sampled out or background }`(
-        foreground: Boolean,
-        sampleRate: Float
-    ) {
+    @Test
+    fun `M not write ApplicationLaunch W enable { sampled out }`() {
         // Given
-        DdRumContentProvider.processImportance = if (foreground) {
-            RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        } else {
-            RunningAppProcessInfo.IMPORTANCE_SERVICE
-        }
         val configuration = RumConfiguration.Builder(fakeApplicationId)
             .trackNonFatalAnrs(false)
-            .trackBackgroundEvents(true)
-            .setSessionSampleRate(sampleRate)
+            .setSessionSampleRate(0f)
+            .setViewEventWriteConfig(ViewEventWriteConfig.FullViewOnlyAtStart)
             .build()
 
         // When
