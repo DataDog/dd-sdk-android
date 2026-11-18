@@ -1,54 +1,75 @@
 Dependencies List
 
-androidx.activity:activity-compose:1.7.0                        : 1082 Kb
-androidx.activity:activity-ktx:1.7.0                            :   25 Kb
-androidx.activity:activity:1.7.0                                :  139 Kb
-androidx.annotation:annotation-experimental:1.1.0               :   16 Kb
-androidx.annotation:annotation:1.5.0                            :   52 Kb
-androidx.arch.core:core-common:2.2.0                            :   11 Kb
-androidx.collection:collection:1.0.0                            :   40 Kb
-androidx.compose.animation:animation-android:1.5.4              : 1309 Kb
-androidx.compose.animation:animation-core-android:1.5.4         : 1338 Kb
-androidx.compose.foundation:foundation-android:1.5.4            :    3 Mb
-androidx.compose.foundation:foundation-layout-android:1.5.4     :  525 Kb
-androidx.compose.material:material-android:1.5.4                :    2 Mb
-androidx.compose.material:material-icons-core-android:1.5.4     :  700 Kb
-androidx.compose.material:material-ripple-android:1.5.4         :   73 Kb
-androidx.compose.runtime:runtime-android:1.5.4                  :    2 Mb
-androidx.compose.runtime:runtime-saveable-android:1.5.4         : 1087 Kb
-androidx.compose.ui:ui-android:1.5.4                            :    4 Mb
-androidx.compose.ui:ui-geometry-android:1.5.4                   :   36 Kb
-androidx.compose.ui:ui-graphics-android:1.5.4                   : 1422 Kb
-androidx.compose.ui:ui-text-android:1.5.4                       :  770 Kb
-androidx.compose.ui:ui-unit-android:1.5.4                       :   64 Kb
-androidx.core:core-ktx:1.2.0                                    :  155 Kb
-androidx.core:core:1.8.0                                        : 1052 Kb
-androidx.lifecycle:lifecycle-common-java8:2.6.1                 :  261 b 
-androidx.lifecycle:lifecycle-common:2.6.1                       :   51 Kb
-androidx.lifecycle:lifecycle-livedata-core:2.6.1                :   11 Kb
-androidx.lifecycle:lifecycle-runtime-ktx:2.6.1                  :   60 Kb
-androidx.lifecycle:lifecycle-runtime:2.6.1                      :   21 Kb
-androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1            :   21 Kb
-androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1                :    4 Kb
-androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.1         :   38 Kb
-androidx.lifecycle:lifecycle-viewmodel:2.6.1                    :   38 Kb
-androidx.navigation:navigation-common-ktx:2.6.0                 :    2 Kb
-androidx.navigation:navigation-common:2.6.0                     :  178 Kb
-androidx.navigation:navigation-compose:2.6.0                    : 1110 Kb
-androidx.navigation:navigation-runtime-ktx:2.6.0                :    2 Kb
-androidx.navigation:navigation-runtime:2.6.0                    :  125 Kb
-androidx.savedstate:savedstate-ktx:1.2.1                        :    3 Kb
-androidx.savedstate:savedstate:1.2.1                            :   19 Kb
-androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
-com.google.code.gson:gson:2.10.1                                :  276 Kb
-io.coil-kt.coil3:coil-compose-core-android:3.0.4                :  117 Kb
-io.coil-kt:coil-compose-base:2.1.0                              :   98 Kb
-org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0                   :  963 b 
-org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0                   :  968 b 
-org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
-org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4          :   19 Kb
-org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.4         : 1442 Kb
-org.jetbrains:annotations:13.0                                  :   17 Kb
+Dependency                                                                           |     Size | Classpath
+androidx.activity:activity-compose:1.7.0 (minCompileSdk=33)                          |  1082 Kb | both
+androidx.activity:activity-ktx:1.7.0 (minCompileSdk=33)                              |    25 Kb | both
+androidx.activity:activity:1.7.0 (minCompileSdk=33)                                  |   139 Kb | both
+androidx.annotation:annotation-experimental:1.1.0                                    |    16 Kb | compile
+androidx.annotation:annotation-experimental:1.3.0 (minCompileSdk=33)                 |    35 Kb | runtime
+androidx.annotation:annotation-jvm:1.9.1                                             |    59 Kb | runtime
+androidx.annotation:annotation:1.5.0                                                 |    52 Kb | compile
+androidx.arch.core:core-common:2.2.0                                                 |    11 Kb | both
+androidx.arch.core:core-runtime:2.2.0 (minCompileSdk=33)                             |     7 Kb | runtime
+androidx.autofill:autofill:1.0.0                                                     |     4 Kb | runtime
+androidx.collection:collection-jvm:1.4.5                                             |   770 Kb | runtime
+androidx.collection:collection-ktx:1.4.5                                             |    261 b | runtime
+androidx.collection:collection:1.0.0                                                 |    40 Kb | compile
+androidx.compose.animation:animation-android:1.5.4 (minCompileSdk=33)                |  1309 Kb | both
+androidx.compose.animation:animation-core-android:1.5.4 (minCompileSdk=33)           |  1338 Kb | both
+androidx.compose.foundation:foundation-android:1.5.4 (minCompileSdk=33)              |     3 Mb | both
+androidx.compose.foundation:foundation-layout-android:1.5.4 (minCompileSdk=33)       |   525 Kb | both
+androidx.compose.material:material-android:1.5.4 (minCompileSdk=33)                  |     2 Mb | both
+androidx.compose.material:material-icons-core-android:1.5.4 (minCompileSdk=33)       |   700 Kb | both
+androidx.compose.material:material-ripple-android:1.5.4 (minCompileSdk=33)           |    73 Kb | both
+androidx.compose.runtime:runtime-android:1.5.4 (minCompileSdk=33)                    |     2 Mb | both
+androidx.compose.runtime:runtime-saveable-android:1.5.4 (minCompileSdk=33)           |  1087 Kb | both
+androidx.compose.ui:ui-android:1.5.4 (minCompileSdk=33)                              |     4 Mb | both
+androidx.compose.ui:ui-geometry-android:1.5.4 (minCompileSdk=33)                     |    36 Kb | both
+androidx.compose.ui:ui-graphics-android:1.5.4 (minCompileSdk=33)                     |  1422 Kb | both
+androidx.compose.ui:ui-text-android:1.5.4 (minCompileSdk=33)                         |   770 Kb | both
+androidx.compose.ui:ui-unit-android:1.5.4 (minCompileSdk=33)                         |    64 Kb | both
+androidx.compose.ui:ui-util-android:1.5.4 (minCompileSdk=33)                         |     7 Kb | runtime
+androidx.concurrent:concurrent-futures:1.1.0                                         |    25 Kb | runtime
+androidx.core:core-ktx:1.10.0 (minCompileSdk=33)                                     |   178 Kb | runtime
+androidx.core:core-ktx:1.2.0                                                         |   155 Kb | compile
+androidx.core:core:1.10.0 (minCompileSdk=33)                                         |  1219 Kb | runtime
+androidx.core:core:1.8.0 (minCompileSdk=31)                                          |  1052 Kb | compile
+androidx.customview:customview-poolingcontainer:1.0.0 (minCompileSdk=32)             |     6 Kb | runtime
+androidx.emoji2:emoji2:1.4.0 (minCompileSdk=34)                                      |   140 Kb | runtime
+androidx.interpolator:interpolator:1.0.0                                             |     7 Kb | runtime
+androidx.lifecycle:lifecycle-common-java8:2.6.1                                      |    261 b | both
+androidx.lifecycle:lifecycle-common:2.6.1                                            |    51 Kb | both
+androidx.lifecycle:lifecycle-livedata-core:2.6.1 (minCompileSdk=33)                  |    11 Kb | both
+androidx.lifecycle:lifecycle-process:2.6.1 (minCompileSdk=33)                        |    15 Kb | runtime
+androidx.lifecycle:lifecycle-runtime-ktx:2.6.1 (minCompileSdk=33)                    |    60 Kb | both
+androidx.lifecycle:lifecycle-runtime:2.6.1 (minCompileSdk=33)                        |    21 Kb | both
+androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1 (minCompileSdk=33)              |    21 Kb | both
+androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1 (minCompileSdk=33)                  |     4 Kb | both
+androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.1 (minCompileSdk=33)           |    38 Kb | both
+androidx.lifecycle:lifecycle-viewmodel:2.6.1 (minCompileSdk=33)                      |    38 Kb | both
+androidx.navigation:navigation-common-ktx:2.6.0 (minCompileSdk=33)                   |     2 Kb | both
+androidx.navigation:navigation-common:2.6.0 (minCompileSdk=33)                       |   178 Kb | both
+androidx.navigation:navigation-compose:2.6.0 (minCompileSdk=33)                      |  1110 Kb | both
+androidx.navigation:navigation-runtime-ktx:2.6.0 (minCompileSdk=33)                  |     2 Kb | both
+androidx.navigation:navigation-runtime:2.6.0 (minCompileSdk=33)                      |   125 Kb | both
+androidx.profileinstaller:profileinstaller:1.3.0 (minCompileSdk=33)                  |    46 Kb | runtime
+androidx.savedstate:savedstate-ktx:1.2.1 (minCompileSdk=33)                          |     3 Kb | both
+androidx.savedstate:savedstate:1.2.1 (minCompileSdk=33)                              |    19 Kb | both
+androidx.startup:startup-runtime:1.1.1 (minCompileSdk=31)                            |    18 Kb | runtime
+androidx.tracing:tracing:1.0.0                                                       |     4 Kb | runtime
+androidx.versionedparcelable:versionedparcelable:1.1.1                               |    30 Kb | both
+com.google.code.gson:gson:2.10.1                                                     |   276 Kb | both
+com.google.guava:listenablefuture:1.0                                                |     3 Kb | runtime
+io.coil-kt.coil3:coil-compose-core-android:3.0.4 (minCompileSdk=1)                   |   117 Kb | compile
+io.coil-kt:coil-compose-base:2.1.0 (minCompileSdk=1)                                 |    98 Kb | compile
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0                                        |    963 b | compile
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                                       |    959 b | runtime
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0                                        |    968 b | compile
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                                       |    965 b | runtime
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                                            |  1706 Kb | both
+org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4                               |    19 Kb | both
+org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.4                              |  1442 Kb | both
+org.jetbrains:annotations:13.0                                                       |    17 Kb | both
 
-Total transitive dependencies size                              :   27 Mb
-
+Total compile dependency artifact size: 27 Mb
+Total runtime dependency artifact size: 28 Mb

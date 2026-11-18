@@ -1,11 +1,12 @@
 Dependencies List
 
-com.squareup.okhttp3:okhttp:4.12.1                              :  773 Kb
-com.squareup.okio:okio-jvm:3.6.0                                :  351 Kb
-org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
-org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
-org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
-org.jetbrains:annotations:13.0                                  :   17 Kb
+Dependency                                                                           |     Size | Classpath
+com.squareup.okhttp3:okhttp:4.12.1                                                   |   773 Kb | both
+com.squareup.okio:okio-jvm:3.6.0                                                     |   351 Kb | both
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                                       |    959 b | both
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                                       |    965 b | both
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                                            |  1706 Kb | both
+org.jetbrains:annotations:13.0                                                       |    17 Kb | both
 
-Total transitive dependencies size                              :    2 Mb
-
+Total compile dependency artifact size: 2 Mb
+Total runtime dependency artifact size: 2 Mb

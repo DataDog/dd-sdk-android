@@ -1,8 +1,10 @@
 Dependencies List
 
-com.jakewharton.timber:timber:5.0.1                             :   31 Kb
-org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
-org.jetbrains:annotations:13.0                                  :   17 Kb
+Dependency                                                                           |     Size | Classpath
+com.jakewharton.timber:timber:5.0.1 (minCompileSdk=1)                                |    31 Kb | both
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                                            |  1706 Kb | both
+org.jetbrains:annotations:13.0                                                       |    17 Kb | compile
+org.jetbrains:annotations:20.1.0                                                     |    25 Kb | runtime
 
-Total transitive dependencies size                              : 1755 Kb
-
+Total compile dependency artifact size: 1755 Kb
+Total runtime dependency artifact size: 1763 Kb
