@@ -115,6 +115,42 @@ val flagsConfig = FlagsConfiguration.Builder()
 - If the server ignores a selection, the SDK loads the full flag configuration and logs an error with the reason. A reason that the SDK does not know is reported as `unknown`.
 - With a custom flag endpoint, the proxy must forward the `DD-Flag-Selection-Ignored` response header. Otherwise, the SDK cannot report a selection that the server ignored.
 
+#### Require TLS pinning for flag assignments (preview)
+
+To require TLS public-key pinning on the flag assignment connection, set a response protection. For the Datadog staging endpoint, use the bundled profile:
+
+```kotlin
+val flagsConfig = FlagsConfiguration.Builder()
+    .responseProtection(
+        ResponseProtection.tlsPinning(
+            mode = ResponseProtectionMode.REQUIRED,
+            profile = TlsPinningProfile.DATADOG_STAGING_V1
+        )
+    )
+    .build()
+```
+
+`DATADOG_STAGING_V1` sends requests to `https://protected.ff-cdn.datad0g.com`. It pins the issuer keys of the Certainly Intermediate R1, Certainly Intermediate E1, Certainly Root R1, and Certainly Root E1 certificate authorities. The CDN manages the leaf certificate and can change its key at each renewal, so the profile does not pin the leaf. This endpoint is pending provisioning and live validation.
+
+For an advanced policy, create a custom profile:
+
+```kotlin
+TlsPinningProfile.custom(
+    origin = "https://flags.example.com",
+    pinTarget = TlsPinTarget.ISSUER, // or TlsPinTarget.LEAF
+    pins = listOf("sha256/<primary-hash>", "sha256/<backup-hash>")
+)
+```
+
+- The SDK applies normal TLS validation first. Each pin is the SHA-256 hash of a certificate public key (SPKI).
+- With `TlsPinTarget.ISSUER`, at least one certificate of the validated chain, other than the leaf, must match a pin. The validated chain is the chain that the platform builds to a trusted root, not the list that the server sends. The leaf never satisfies an issuer policy.
+- With `TlsPinTarget.LEAF`, the leaf certificate must match a pin. A pin that matches only an issuer does not satisfy a leaf policy. Use leaf pins only when you control the server key.
+- The SDK rejects a failed check before it sends the HTTP request. It does not fall back to an unprotected connection.
+- The profile defines one exact HTTPS origin. The SDK sends flag assignment requests to `<origin>/precompute-assignments`. A custom flag endpoint must use the same origin. A request or redirect to another origin fails.
+- A profile needs at least two different pins. An invalid profile does not throw. The SDK logs an error and does not fetch flag assignments.
+- The SDK does not load flag assignments that were cached without the same pinning policy. Until the next successful protected fetch, a client starts without cached flags.
+- Only flag assignment requests use the pinning policy. RUM, Logs, exposure, and evaluation uploads keep their current transport.
+
 ## Use the Feature Flags SDK
 
 ### Create a Flags client

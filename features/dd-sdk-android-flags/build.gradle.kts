@@ -46,6 +46,11 @@ createJsonModelsGenerationTask("generateFlagsInternalModelsFromJson") {
 
 android {
     namespace = "com.datadog.android.flags"
+
+    defaultConfig {
+        // Runs only the opt-in live test, which skips unless a staging client token argument is set.
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
 }
 
 dependencies {
@@ -74,7 +79,11 @@ dependencies {
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))
     testImplementation(libs.okHttpMock)
+    testImplementation(libs.okHttpTls)
     unmock(libs.robolectric)
+
+    androidTestImplementation(libs.bundles.integrationTests)
+    androidTestImplementation(libs.assertJ)
 }
 
 unMock {

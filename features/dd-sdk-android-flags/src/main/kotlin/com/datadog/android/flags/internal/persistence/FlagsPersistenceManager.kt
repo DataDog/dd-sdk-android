@@ -24,6 +24,7 @@ internal class FlagsPersistenceManager(
     private val flagSelection: CanonicalFlagSelection?,
     private val internalLogger: InternalLogger,
     experimentationOptOutMode: ExperimentationOptOutMode = ExperimentationOptOutMode.DISABLED,
+    protectionScope: String? = null,
     onStateLoaded: (FlagsStateEntry?) -> Unit
 ) {
     private val serializer = FlagsStateSerializer(internalLogger)
@@ -31,8 +32,13 @@ internal class FlagsPersistenceManager(
 
     // SDK versions without flag selection read only the unselected key for their opt-out mode and ignore the
     // flagSelection field, so selected state uses its own key and is never read by them as a full configuration.
-    private val unselectedStateKey = stateKey(instanceName, experimentationOptOutMode, selected = false)
-    private val selectedStateKey = stateKey(instanceName, experimentationOptOutMode, selected = true)
+    // State fetched under a response protection policy uses a key derived from that policy. Under required
+    // protection, state persisted without the same policy (including unprotected state) is therefore never read.
+    // Unprotected state is kept on disk so that disabling protection does not lose it.
+    private val unselectedStateKey =
+        stateKey(instanceName, experimentationOptOutMode, selected = false, protectionScope = protectionScope)
+    private val selectedStateKey =
+        stateKey(instanceName, experimentationOptOutMode, selected = true, protectionScope = protectionScope)
     private val flagsStateKey: String = if (flagSelection == null) unselectedStateKey else selectedStateKey
     private val staleStateKey: String = if (flagSelection == null) selectedStateKey else unselectedStateKey
 
@@ -90,14 +96,20 @@ internal class FlagsPersistenceManager(
     }
 
     companion object {
-        internal fun stateKey(instanceName: String, mode: ExperimentationOptOutMode, selected: Boolean): String {
+        internal fun stateKey(
+            instanceName: String,
+            mode: ExperimentationOptOutMode,
+            selected: Boolean,
+            protectionScope: String? = null
+        ): String {
+            val protection = protectionScope?.let { "protected-$it-" }.orEmpty()
             val selection = if (selected) "selection-" else ""
             val modePart = when (mode) {
                 ExperimentationOptOutMode.DISABLED -> ""
                 ExperimentationOptOutMode.IMMEDIATE -> "immediate-v1-"
                 ExperimentationOptOutMode.FUTURE_EXPERIMENTS_ONLY -> "future-v1-"
             }
-            return "flags-$selection${modePart}state-$instanceName"
+            return "flags-$protection$selection${modePart}state-$instanceName"
         }
     }
 }

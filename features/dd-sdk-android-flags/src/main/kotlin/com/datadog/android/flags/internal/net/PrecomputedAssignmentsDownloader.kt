@@ -15,6 +15,7 @@ import com.datadog.android.flags.model.EvaluationContext
 import okhttp3.Call
 import okhttp3.Request
 import okhttp3.Response
+import javax.net.ssl.SSLPeerUnverifiedException
 
 /**
  * Downloads precomputed flag assignments from Datadog Feature Flags service.
@@ -43,6 +44,15 @@ internal class PrecomputedAssignmentsDownloader(
     private fun executeDownloadRequest(request: Request): PrecomputedAssignmentsResponse? = try {
         val response = callFactory.newCall(request).execute()
         handleResponse(response)
+    } catch (e: SSLPeerUnverifiedException) {
+        // Includes certificate pinning and response protection failures; no request was sent to the server.
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+            { "Flag assignment connection rejected: TLS peer verification failed (${e.message})" },
+            e
+        )
+        null
     } catch (e: Throwable) {
         internalLogger.log(
             InternalLogger.Level.ERROR,

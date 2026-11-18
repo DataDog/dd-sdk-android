@@ -484,6 +484,7 @@ interface FlagsClient {
                     dataStore = datastore,
                     instanceName = name,
                     flagSelection = flagsFeature.flagSelection,
+                    protectionScope = flagsFeature.responseProtection.persistenceScope,
                     experimentationOptOutMode = experimentationOptOutMode,
                     deliverFirstFlags = { delivery ->
                         val worker = featureSdkCore.createSingleThreadExecutorService(FLAGS_FIRST_FLAGS_EXECUTOR_NAME)
@@ -498,14 +499,16 @@ interface FlagsClient {
                 NoOpFlagsRepository()
             }
 
-            val callFactory = featureSdkCore.createOkHttpCallFactory()
+            // Only the assignment client gets the response protection; other SDK uploads keep their transport.
+            val responseProtection = flagsFeature.responseProtection
+            val callFactory = featureSdkCore.createOkHttpCallFactory { responseProtection.configure(this) }
             val assignmentsDownloader = PrecomputedAssignmentsDownloader(
                 internalLogger = featureSdkCore.internalLogger,
                 callFactory = callFactory,
                 requestFactory = if (experimentationOptOut.enabled) {
                     PrecomputedAssignmentsRequestFactory(
                         featureSdkCore.internalLogger,
-                        configuration.customFlagEndpoint,
+                        flagsFeature.assignmentEndpoint,
                         flagSelection = flagsFeature.flagSelection,
                         experimentationOptOutMode = experimentationOptOutMode
                     )
