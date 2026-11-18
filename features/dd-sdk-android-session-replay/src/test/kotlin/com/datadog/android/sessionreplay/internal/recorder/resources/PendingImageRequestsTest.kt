@@ -119,18 +119,6 @@ internal class PendingImageRequestsTest {
     }
 
     @Test
-    fun `M start a request per capture W start() { no key }`() {
-        // Given
-        startRequest(null, fakeByteCount, mockCallback)
-
-        // When
-        val otherRequest = testedRequests.start(null, 0L, mockOtherCallback)
-
-        // Then
-        assertThat(otherRequest).isNotNull
-    }
-
-    @Test
     fun `M refuse and fail the capture W start() { budget exceeded }`(
         @StringForgery fakeOtherKey: String,
         @LongForgery(min = 1, max = MAX_PENDING_BYTES) fakeOtherByteCount: Long
@@ -245,8 +233,25 @@ internal class PendingImageRequestsTest {
         verify(mockOtherCallback).onFailure()
     }
 
+    @Test
+    fun `M keep the full budget W start() { API 26+, small heap }`(
+        @LongForgery(min = 1, max = MAX_PENDING_BYTES) fakeMaxHeapBytes: Long,
+        @StringForgery fakeOtherKey: String
+    ) {
+        // Given
+        testedRequests = PendingImageRequests(mockBuildSdkVersionProvider, fakeMaxHeapBytes)
+        startRequest(fakeKey, MAX_PENDING_BYTES - 1, mockCallback)
+
+        // When
+        val otherRequest = testedRequests.start("$fakeKey-$fakeOtherKey", 1L, mockOtherCallback)
+
+        // Then
+        assertThat(otherRequest).isNotNull
+        verifyNoInteractions(mockOtherCallback)
+    }
+
     private fun startRequest(
-        key: String?,
+        key: String,
         byteCount: Long,
         callback: ResourceResolverCallback
     ): PendingImageRequests.Request {

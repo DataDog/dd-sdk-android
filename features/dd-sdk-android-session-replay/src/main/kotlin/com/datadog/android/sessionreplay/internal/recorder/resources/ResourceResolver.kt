@@ -66,6 +66,7 @@ internal class ResourceResolver(
         bitmap: Bitmap,
         resourceResolverCallback: ResourceResolverCallback
     ) {
+        bitmapCachesManager.registerCallbacks(applicationContext)
         if (bitmap.isRecycled) {
             resourceResolverCallback.onFailure()
             return
@@ -86,12 +87,7 @@ internal class ResourceResolver(
         ) ?: return
         // The application can change or recycle its bitmap once this returns, and compressing a hardware bitmap
         // fails, so the worker gets a copy. ALPHA_8 bitmaps are converted on the worker instead.
-        val capturedBitmap = if (bitmap.config == Bitmap.Config.ALPHA_8) {
-            bitmap
-        } else {
-            @Suppress("UnsafeThirdPartyFunctionCall") // isMutable is always false
-            bitmap.copy(Bitmap.Config.ARGB_8888, false)
-        }
+        val capturedBitmap = if (bitmap.config == Bitmap.Config.ALPHA_8) bitmap else copyBitmap(bitmap)
         if (capturedBitmap == null) {
             request.onFailure()
             return
@@ -193,8 +189,9 @@ internal class ResourceResolver(
     ) {
         bitmapCachesManager.registerCallbacks(applicationContext)
 
-        val resourceKey = customResourceIdCacheKey ?: generateKey(originalDrawable)
-        val resourceId = resourceKey?.let { bitmapCachesManager.getFromResourceCache(it) }
+        val resourceKey =
+            customResourceIdCacheKey ?: bitmapCachesManager.generateResourceKeyFromDrawable(originalDrawable)
+        val resourceId = bitmapCachesManager.getFromResourceCache(resourceKey)
 
         if (resourceId != null) {
             // if we got here it means we saw the bitmap before,
@@ -592,7 +589,7 @@ internal class ResourceResolver(
             }
         }
         try {
-            @Suppress("UnsafeThirdPartyFunctionCall") // Rejection fails the captures below.
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here; rejection is handled below.
             threadPoolExecutor.execute(task)
         } catch (e: RejectedExecutionException) {
             logger.log(
@@ -603,6 +600,29 @@ internal class ResourceResolver(
             )
             request.onFailure()
         }
+    }
+
+    private fun copyBitmap(bitmap: Bitmap): Bitmap? {
+        return try {
+            bitmap.copy(Bitmap.Config.ARGB_8888, false)
+        } catch (e: IllegalArgumentException) {
+            logCopyFailure(e)
+            null
+        } catch (e: IllegalStateException) {
+            // The application can recycle its bitmap from another thread.
+            logCopyFailure(e)
+            null
+        }
+    }
+
+    private fun logCopyFailure(error: RuntimeException) {
+        logger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            { BITMAP_COPY_FAILED },
+            error,
+            onlyOnce = true
+        )
     }
 
     // Changing the pixels of a bitmap changes its generation, so the key identifies this exact content.
@@ -650,6 +670,7 @@ internal class ResourceResolver(
         private const val RESOURCE_RESOLVER_ALIAS = "resolveResourceId"
         private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
         private const val RESOURCE_TASK_REJECTED = "Unable to schedule Session Replay image processing"
+        private const val BITMAP_COPY_FAILED = "Unable to copy a bitmap for Session Replay"
 
         // Drawable keys hold only digits, dashes and drawable states, so they never start with this prefix.
         private const val BITMAP_KEY_PREFIX = "bitmap-"

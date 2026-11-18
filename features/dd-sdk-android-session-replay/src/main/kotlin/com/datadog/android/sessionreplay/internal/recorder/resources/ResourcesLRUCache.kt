@@ -19,7 +19,8 @@ internal class ResourcesLRUCache(
         object :
             LruCache<String, ByteArray>(MAX_CACHE_MEMORY_SIZE_BYTES) {
             override fun sizeOf(key: String, value: ByteArray): Int {
-                return value.size
+                // Keys can be as long as the resource ids they map to, so both count towards the limit.
+                return key.length + value.size
             }
         }
 ) : Cache<String, ByteArray>, ComponentCallbacks2 {

@@ -97,7 +97,8 @@ interface ImageWireframeHelper {
      * @param width the width of the image
      * @param height the width of the image
      * @param usePIIPlaceholder whether to replace the image content with a placeholder when we suspect it contains PII
-     * @param drawable the drawable to capture
+     * @param drawable the drawable to capture. Keep it referenced, for example by the view, until it is captured:
+     * a drawable that is garbage collected before its capture is processed is skipped.
      * @param drawableCopier the callback to copy the original drawable to a new one.
      * @param asyncJobStatusCallback the callback for the async capture process
      * @param clipping the bounds of the image that are actually visible
