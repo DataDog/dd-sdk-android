@@ -35,6 +35,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -329,6 +330,29 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
+    fun `M release batch W readNextBatch() { readData throws }`(
+        @Forgery fakeData: List<RawBatchEvent>,
+        @Forgery batchFile: File,
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn batchFile
+        whenever(mockGrantedOrchestrator.getMetadataFile(batchFile)) doReturn null
+        whenever(mockBatchReaderWriter.readData(batchFile, fakeTelemetryContext))
+            .doThrow(IllegalStateException(fakeMessage))
+            .doReturn(fakeData)
+
+        // When
+        assertThrows<IllegalStateException> { testedStorage.readNextBatch() }
+        val batchData = testedStorage.readNextBatch()
+
+        // Then
+        checkNotNull(batchData)
+        assertThat(batchData.id).isEqualTo(BatchId.fromFile(batchFile))
+        assertThat(batchData.data).isEqualTo(fakeData)
+    }
+
+    @Test
     fun `M return null no batch available W readNextBatch() {no file}`() {
         // Given
         whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturn null
@@ -431,6 +455,28 @@ internal class ConsentAwareStorageTest {
         verify(mockFileMover, never()).delete(file)
         verify(mockFileMover, never()).delete(mockMetaFile)
         verifyNoInteractions(mockMetricsDispatcher)
+    }
+
+    @Test
+    fun `M release batch W readNextBatch() + confirmBatchRead() {delete=true, delete throws}`(
+        @Forgery reason: RemovalReason,
+        @Forgery file: File,
+        @StringForgery fakeMessage: String
+    ) {
+        // Given
+        whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
+        whenever(mockGrantedOrchestrator.getReadableFile(setOf(file))) doReturn null
+        whenever(mockFileMover.delete(file)) doThrow IllegalStateException(fakeMessage)
+
+        // When
+        val batchData1 = testedStorage.readNextBatch()
+        assertThrows<IllegalStateException> {
+            testedStorage.confirmBatchRead(checkNotNull(batchData1).id, reason, true)
+        }
+        val batchData2 = testedStorage.readNextBatch()
+
+        // Then
+        assertThat(batchData2).isEqualTo(batchData1)
     }
 
     @Test

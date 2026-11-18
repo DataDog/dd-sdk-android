@@ -75,28 +75,38 @@ internal class ConsentAwareStorage(
     /** @inheritdoc */
     @WorkerThread
     override fun readNextBatch(): BatchData? {
-        val (batchFile, metaFile) = synchronized(lockedReadBatches) {
+        val batch = synchronized(lockedReadBatches) {
             val batchFile = grantedOrchestrator
                 .getReadableFile(lockedReadBatches.map { it.file }.toSet()) ?: return null
 
             val metaFile = grantedOrchestrator.getMetadataFile(batchFile)
-            lockedReadBatches.add(Batch(batchFile, metaFile))
-            batchFile to metaFile
+            Batch(batchFile, metaFile).also { lockedReadBatches.add(it) }
         }
 
-        val batchId = BatchId.fromFile(batchFile)
-        val telemetryContext = TelemetryContext(featureName = featureName)
-        val batchMetadata = if (metaFile == null || !metaFile.existsSafe(internalLogger)) {
-            null
-        } else {
-            batchMetadataReaderWriter.readData(metaFile, telemetryContext)
-        }
-        val batchData = batchEventsReaderWriter.readData(
-            batchFile,
-            telemetryContext
-        )
+        var isBatchRead = false
+        try {
+            val batchId = BatchId.fromFile(batch.file)
+            val telemetryContext = TelemetryContext(featureName = featureName)
+            val metaFile = batch.metaFile
+            val batchMetadata = if (metaFile == null || !metaFile.existsSafe(internalLogger)) {
+                null
+            } else {
+                batchMetadataReaderWriter.readData(metaFile, telemetryContext)
+            }
+            val batchData = batchEventsReaderWriter.readData(
+                batch.file,
+                telemetryContext
+            )
 
-        return BatchData(id = batchId, data = batchData, metadata = batchMetadata)
+            isBatchRead = true
+            return BatchData(id = batchId, data = batchData, metadata = batchMetadata)
+        } finally {
+            if (!isBatchRead) {
+                synchronized(lockedReadBatches) {
+                    lockedReadBatches.remove(batch)
+                }
+            }
+        }
     }
 
     /** @inheritdoc */
@@ -110,11 +120,14 @@ internal class ConsentAwareStorage(
             lockedReadBatches.firstOrNull { batchId.matchesFile(it.file) }
         } ?: return
 
-        if (deleteBatch) {
-            deleteBatch(batch, removalReason)
-        }
-        synchronized(lockedReadBatches) {
-            lockedReadBatches.remove(batch)
+        try {
+            if (deleteBatch) {
+                deleteBatch(batch, removalReason)
+            }
+        } finally {
+            synchronized(lockedReadBatches) {
+                lockedReadBatches.remove(batch)
+            }
         }
     }
 
