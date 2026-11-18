@@ -1,31 +1,31 @@
 Dependencies List
 
 Dependency                                                                           |     Size | Classpath
-com.facebook.fresco:drawee:2.3.0                                                     |   133 Kb | both
-com.facebook.fresco:fbcore:2.3.0                                                     |   122 Kb | both
-com.facebook.fresco:fresco:2.3.0                                                     |    47 Kb | both
+com.facebook.fresco:drawee:2.3.0                                                     |   133 Kb | runtime
+com.facebook.fresco:fbcore:2.3.0                                                     |   122 Kb | runtime
+com.facebook.fresco:fresco:2.3.0                                                     |    47 Kb | runtime
 com.facebook.fresco:imagepipeline-base:2.3.0                                         |   138 Kb | both
-com.facebook.fresco:imagepipeline-native:2.3.0                                       |    23 Kb | both
-com.facebook.fresco:imagepipeline-okhttp3:2.3.0                                      |     8 Kb | both
-com.facebook.fresco:imagepipeline:2.3.0                                              |   402 Kb | both
-com.facebook.fresco:memory-type-ashmem:2.3.0                                         |     4 Kb | both
-com.facebook.fresco:memory-type-java:2.3.0                                           |     3 Kb | both
-com.facebook.fresco:memory-type-native:2.3.0                                         |     4 Kb | both
+com.facebook.fresco:imagepipeline-native:2.3.0                                       |    23 Kb | runtime
+com.facebook.fresco:imagepipeline-okhttp3:2.3.0                                      |     8 Kb | runtime
+com.facebook.fresco:imagepipeline:2.3.0                                              |   402 Kb | runtime
+com.facebook.fresco:memory-type-ashmem:2.3.0                                         |     4 Kb | runtime
+com.facebook.fresco:memory-type-java:2.3.0                                           |     3 Kb | runtime
+com.facebook.fresco:memory-type-native:2.3.0                                         |     4 Kb | runtime
 com.facebook.fresco:middleware:2.3.0                                                 |     2 Kb | runtime
-com.facebook.fresco:nativeimagefilters:2.3.0                                         |    52 Kb | both
-com.facebook.fresco:nativeimagetranscoder:2.3.0                                      |   764 Kb | both
+com.facebook.fresco:nativeimagefilters:2.3.0                                         |    52 Kb | runtime
+com.facebook.fresco:nativeimagetranscoder:2.3.0                                      |   764 Kb | runtime
 com.facebook.fresco:soloader:2.3.0                                                   |   1631 b | runtime
 com.facebook.fresco:ui-common:2.3.0                                                  |     6 Kb | runtime
 com.facebook.soloader:annotation:0.9.0                                               |   1107 b | runtime
 com.facebook.soloader:nativeloader:0.9.0                                             |     2 Kb | runtime
 com.facebook.soloader:soloader:0.9.0                                                 |    64 Kb | runtime
 com.parse.bolts:bolts-tasks:1.4.0                                                    |    37 Kb | runtime
-com.squareup.okhttp3:okhttp:4.12.1                                                   |   773 Kb | both
-com.squareup.okio:okio-jvm:3.6.0                                                     |   351 Kb | both
-org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                                       |    959 b | both
-org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                                       |    965 b | both
+com.squareup.okhttp3:okhttp:4.12.1                                                   |   773 Kb | runtime
+com.squareup.okio:okio-jvm:3.6.0                                                     |   351 Kb | runtime
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                                       |    959 b | runtime
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                                       |    965 b | runtime
 org.jetbrains.kotlin:kotlin-stdlib:2.0.21                                            |  1706 Kb | both
 org.jetbrains:annotations:13.0                                                       |    17 Kb | both
 
-Total compile dependency artifact size: 4 Mb
+Total compile dependency artifact size: 1862 Kb
 Total runtime dependency artifact size: 4 Mb

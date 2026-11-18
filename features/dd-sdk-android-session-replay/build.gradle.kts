@@ -56,6 +56,7 @@ dependencies {
     implementation(libs.kotlinRuntime)
     implementation(libs.gson)
     implementation(libs.androidXAppCompat)
+    implementation(libs.androidXCollection)
 
     ksp(project(":tools:noopfactory"))
 

@@ -63,10 +63,9 @@ androidx.versionedparcelable:versionedparcelable:1.1.1                          
 androidx.viewpager:viewpager:1.0.0                                                   |    52 Kb | both
 androidx.viewpager2:viewpager2:1.0.0                                                 |    60 Kb | both
 com.google.android.material:material:1.3.0                                           |  1535 Kb | both
-com.google.code.gson:gson:2.10.1                                                     |   276 Kb | both
 com.google.guava:listenablefuture:1.0                                                |     3 Kb | runtime
 org.jetbrains.kotlin:kotlin-stdlib:2.0.21                                            |  1706 Kb | both
 org.jetbrains:annotations:13.0                                                       |    17 Kb | both
 
-Total compile dependency artifact size: 7 Mb
+Total compile dependency artifact size: 6 Mb
 Total runtime dependency artifact size: 8 Mb

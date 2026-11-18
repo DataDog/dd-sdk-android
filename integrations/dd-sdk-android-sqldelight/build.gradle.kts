@@ -43,7 +43,6 @@ dependencies {
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(libs.kotlinRuntime)
-    implementation(libs.okHttp)
     implementation(libs.sqlDelight)
 
     testImplementation(project(":tools:unit")) {

@@ -59,7 +59,6 @@ dependencies {
     implementation(libs.kotlinRuntime)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
-    implementation(libs.bundles.traceCore)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
