@@ -106,58 +106,92 @@ internal class TraceInternalProxyTest {
     }
 
     @Test
-    fun `M remove retained anonymous id W removeRetainedUserAnonymousIdBaggage() {no anonymous id tag}`() {
+    fun `M remove anonymous id members W removeRetainedUserAnonymousIdBaggage() {no anonymous id tag}`() {
         // Given
         val span = mock<DatadogSpan>()
 
         // When
         val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(
             span,
-            "user.id=userId,user.anonymous_id=anonymousId"
+            listOf("user.id=user+id;prop=value,user.anonymous_id=old", " user.anonymous_id ;p=1 ,custom=")
         )
 
         // Then
-        assertThat(result).isEqualTo("user.id=userId")
+        assertThat(result).containsExactly("user.id=user+id;prop=value", "custom=")
     }
 
     @Test
-    fun `M return null W removeRetainedUserAnonymousIdBaggage() {only anonymous id, no tag}`() {
+    fun `M remove anonymous id W removeRetainedUserAnonymousIdBaggage() {empty values}`() {
         // Given
         val span = mock<DatadogSpan>()
 
         // When
-        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(span, "user.anonymous_id=anonymousId")
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(
+            span,
+            listOf("custom=,user.anonymous_id=old")
+        )
+
+        // Then
+        assertThat(result).containsExactly("custom=")
+    }
+
+    @Test
+    fun `M remove anonymous id W removeRetainedUserAnonymousIdBaggage() {malformed members}`() {
+        // Given
+        val span = mock<DatadogSpan>()
+
+        // When
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(
+            span,
+            listOf("not a member,,=x,user.anonymous_id=old,k=%zz")
+        )
+
+        // Then
+        assertThat(result).containsExactly("not a member,,=x,k=%zz")
+    }
+
+    @Test
+    fun `M drop emptied values W removeRetainedUserAnonymousIdBaggage() {only anonymous id}`() {
+        // Given
+        val span = mock<DatadogSpan>()
+
+        // When
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(
+            span,
+            listOf("user.anonymous_id=old", "first=one")
+        )
+
+        // Then
+        assertThat(result).containsExactly("first=one")
+    }
+
+    @Test
+    fun `M return null W removeRetainedUserAnonymousIdBaggage() {anonymous id tag set}`(
+        @StringForgery fakeAnonymousId: String
+    ) {
+        // Given
+        val span = mock<DatadogSpan>()
+        whenever(span.getTag(HttpCodec.RUM_KEY_USER_ANONYMOUS_ID)).thenReturn(fakeAnonymousId)
+
+        // When
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(span, listOf("user.anonymous_id=old"))
 
         // Then
         assertThat(result).isNull()
     }
 
     @Test
-    fun `M keep header W removeRetainedUserAnonymousIdBaggage() {anonymous id tag set}`(
-        @StringForgery fakeAnonymousId: String
-    ) {
+    fun `M return null W removeRetainedUserAnonymousIdBaggage() {no anonymous id member}`() {
         // Given
         val span = mock<DatadogSpan>()
-        whenever(span.getTag(HttpCodec.RUM_KEY_USER_ANONYMOUS_ID)).thenReturn(fakeAnonymousId)
-        val header = "user.id=userId,user.anonymous_id=anonymousId"
 
         // When
-        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(span, header)
+        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(
+            span,
+            listOf("user.id=userId,user.anonymous_idx=other")
+        )
 
         // Then
-        assertThat(result).isSameAs(header)
-    }
-
-    @Test
-    fun `M keep header W removeRetainedUserAnonymousIdBaggage() {no anonymous id entry}`() {
-        // Given
-        val span = mock<DatadogSpan>()
-        val header = "user.id=userId,session.id=sessionId"
-
-        // When
-        val result = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(span, header)
-
-        // Then
-        assertThat(result).isSameAs(header)
+        assertThat(result).isNull()
     }
 }

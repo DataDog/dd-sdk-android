@@ -460,14 +460,14 @@ class DatadogPropagationHelper internal constructor() {
         // A retried request keeps the baggage of its previous attempt, which may hold an anonymous ID
         // that must not be propagated anymore and that no new baggage would replace.
         private fun HttpRequestInfoBuilder.removeRetainedUserAnonymousIdBaggage(span: DatadogSpan) {
-            val existing = resolveExistingBaggageHeaderValue()
-            val stripped = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(span, existing)
-            if (stripped == existing) return
-            if (stripped == null) {
-                removeHeader(W3CHttpCodec.BAGGAGE_KEY)
-            } else {
-                replaceHeader(W3CHttpCodec.BAGGAGE_KEY, stripped)
-            }
+            // Header names are case-insensitive, and some builders (e.g. Cronet) preserve their case.
+            val baggageHeaders = build().headers.filterKeys { it.equals(W3CHttpCodec.BAGGAGE_KEY, ignoreCase = true) }
+            val cleanedValues = _TraceInternalProxy.removeRetainedUserAnonymousIdBaggage(
+                span,
+                baggageHeaders.values.flatten()
+            ) ?: return
+            baggageHeaders.keys.forEach { removeHeader(it) }
+            cleanedValues.forEach { addHeader(W3CHttpCodec.BAGGAGE_KEY, it) }
         }
 
         @Suppress("UnsafeThirdPartyFunctionCall") // exceptions are caught

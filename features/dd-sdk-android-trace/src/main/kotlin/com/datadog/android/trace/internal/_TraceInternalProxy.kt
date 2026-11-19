@@ -117,25 +117,37 @@ object _TraceInternalProxy {
     }
 
     /**
-     * Removes a user anonymous ID entry retained in a baggage header (e.g. from a previous attempt of
-     * the same request) when [span] must not propagate it, for instance because tracking consent is
-     * not granted.
+     * Removes user anonymous ID list members retained in baggage header values (e.g. from a previous
+     * attempt of the same request) when [span] must not propagate it, for instance because tracking
+     * consent is not granted. Other list members are kept byte-for-byte.
      *
      * @param span The span of the request being traced.
-     * @param header The existing baggage header, which may be null.
-     * @return The header without the user anonymous ID entry, null if no entry remains, or
-     * [header] unchanged when it has no such entry or [span] propagates the anonymous ID.
+     * @param headerValues The values of every existing baggage header field.
+     * @return The values to set instead, without the values left empty, or null when the headers
+     * must be kept as they are.
      */
-    fun removeRetainedUserAnonymousIdBaggage(span: DatadogSpan, header: String?): String? {
-        if (span.getTag(HttpCodec.RUM_KEY_USER_ANONYMOUS_ID) != null) return header
-        val items = Baggage.from(header).asMap()
-        val remaining = items.filterKeys { it != HttpCodec.BAGGAGE_USER_ANONYMOUS_ID }
-        return when {
-            remaining.size == items.size -> header
-            remaining.isEmpty() -> null
-            else -> Baggage().apply { remaining.forEach { (key, value) -> put(key, value) } }.toString()
+    fun removeRetainedUserAnonymousIdBaggage(span: DatadogSpan, headerValues: List<String>): List<String>? {
+        if (span.getTag(HttpCodec.RUM_KEY_USER_ANONYMOUS_ID) != null) return null
+        var changed = false
+        val cleanedValues = headerValues.mapNotNull { value ->
+            val members = value.split(BAGGAGE_MEMBER_SEPARATOR)
+            val kept = members.filterNot { isUserAnonymousIdMember(it) }
+            if (kept.size == members.size) {
+                value
+            } else {
+                changed = true
+                kept.joinToString(BAGGAGE_MEMBER_SEPARATOR).takeIf { kept.any { member -> member.isNotBlank() } }
+            }
         }
+        return cleanedValues.takeIf { changed }
     }
+
+    private fun isUserAnonymousIdMember(member: String): Boolean {
+        val key = member.substringBefore('=').substringBefore(';').trim()
+        return key == HttpCodec.BAGGAGE_USER_ANONYMOUS_ID
+    }
+
+    private const val BAGGAGE_MEMBER_SEPARATOR = ","
 
     /**
      * Creates an [ApmNetworkInstrumentation] instance from the provided configuration.
